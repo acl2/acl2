@@ -10,6 +10,8 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/utilities/define-sk" :dir :system)
+
 (include-book "basics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,3 +87,105 @@
        (cons byte bytes))
      :no-function t
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk hp-encoding-p ((encoding byte-listp))
+  :returns (yes/no booleanp)
+  :parents (hex-prefix)
+  :short "Check if a byte array is a hex-prefix encoding."
+  :long
+  (xdoc::topp
+   "This is a declarative, non-executable definition,
+    which essentially characterizes the image of @(tsee hp-encode).")
+  (exists (nibbles flag)
+          (and (nibble-listp nibbles)
+               (booleanp flag)
+               (equal (hp-encode nibbles flag) (byte-list-fix encoding))))
+  :skolem-name hp-encoding-witness
+  ///
+
+  (fty::deffixequiv hp-encoding-p
+    :args ((encoding byte-listp))
+    :hints (("Goal"
+             :in-theory (disable hp-encoding-p-suff)
+             :use ((:instance hp-encoding-p-suff
+                    (nibbles (mv-nth 0 (hp-encoding-witness
+                                        (byte-list-fix encoding))))
+                    (flag (mv-nth 1 (hp-encoding-witness
+                                     (byte-list-fix encoding)))))
+                   (:instance hp-encoding-p-suff
+                    (nibbles (mv-nth 0 (hp-encoding-witness encoding)))
+                    (flag (mv-nth 1 (hp-encoding-witness encoding)))
+                    (encoding (byte-list-fix encoding))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hp-decode ((encoding byte-listp))
+  :returns
+  (mv (error? booleanp)
+      (nibbles nibble-listp
+               :hints (("Goal"
+                        :in-theory
+                        (e/d
+                         (hp-encoding-p)
+                         (hp-encoding-p-of-byte-list-fix-encoding)))))
+      (flag booleanp
+            :hints (("Goal"
+                     :in-theory
+                     (e/d
+                      (hp-encoding-p)
+                      (hp-encoding-p-of-byte-list-fix-encoding))))))
+  :parents (hex-prefix)
+  :short "Hex-prefix decoding function."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "If the argument byte array is the result of encoding
+     some nibble array and boolean flag,
+     we return the nibble array and boolean flag,
+     along with a @('nil') error flag.
+     Otherwise, we return a @('t') error flag,
+     along with an empty byte array and a false flag
+     (but these two values are irrelevant in this case).")
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which says that decoding is the inverse of encoding.")
+   (xdoc::p
+    "More precisely, we define decoding as, essentially,
+     the right inverse of encoding
+     (with respect to byte arrays that are valid encodings),
+     as explicated by the theorem @('hp-encode-of-hp-decode').
+     To prove that decoding is left inverse of encoding
+     (with respect to nibble arrays and boolean flags that can be encoded),
+     we need to show that encoding is injective
+     over nibble arrays and boolean flags that can be encoded.
+     We conjecture that the proof of this property
+     may be a by-product of deriving an executable implementation of decoding
+     via stepwise refinement
+     (e.g. using <see topic='@(url apt::apt)'>APT</see>):
+     if there were two different pairs of nibble arrays and boolean flags
+     whose encodings are equal,
+     an executable implementation of decoding,
+     which returns a unique nibble array and boolean flag,
+     could not be shown to be equal to @('hp-endoding-witness'),
+     which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
+     and therefore could be either pair (of a nibble array and a boolean flag).
+     Thus, we defer the injectivity and left inverse proofs for now."))
+  (b* ((encoding (byte-list-fix encoding)))
+    (if (hp-encoding-p encoding)
+        (b* (((mv nibbles flag) (hp-encoding-witness encoding)))
+          (mv nil nibbles flag))
+      (mv t nil nil)))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule hp-encode-of-hp-decode
+    (implies (and (byte-listp encoding)
+                  (hp-encoding-p encoding))
+             (b* (((mv d-error? d-nibbles d-flag) (hp-decode encoding))
+                  (e-encoding (hp-encode d-nibbles d-flag)))
+               (and (not d-error?)
+                    (equal e-encoding encoding))))
+    :enable hp-encoding-p))

@@ -31,8 +31,8 @@
    (xdoc::p
     "This macro captures the mathematical notation
      @($\\max\\: \\{y \\in \\mathbb{N} \\mid \\psi[x_1,\\ldots,x_n,y]\\}$),
-     where @($n \\geq 0$),
-     @($\\mathbb{N}$) is the set of natural numbers,
+     where @($\\mathbb{N}$) is the set of natural numbers,
+     @($n \\geq 0$),
      and @($\\psi[x_1,\\ldots,x_n,y]$) is a formula
      that depends on @($x_1,\\ldots,x_n$) and @($y$).
      Each value of the tuple @($\\langle x_1, \\ldots, x_n \\rangle$)

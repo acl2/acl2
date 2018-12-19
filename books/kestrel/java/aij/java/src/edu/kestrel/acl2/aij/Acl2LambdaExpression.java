@@ -82,6 +82,16 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
+     * Checks if this function is the {@code or} ACL2 "pseudo-function".
+     * This is not an ACL2 notion; it is an AIJ notion.
+     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     */
+    @Override
+    boolean isOr() {
+        return false;
+    }
+
+    /**
      * Returns the parameters of this lambda expression.
      */
     Acl2Symbol[] getParameters() {

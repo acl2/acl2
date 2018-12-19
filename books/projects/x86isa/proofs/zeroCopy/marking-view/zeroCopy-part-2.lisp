@@ -124,6 +124,14 @@
 
 (local (in-theory (e/d* (disjointness-of-las-to-pas-from-wb-to-a-paging-entry) ())))
 
+; This theorem is used by the following one to eliminate the I64 truncations
+; from the incremented and decremented stack pointers (see ADD-TO-*SP).
+(defrulel i64-when-canonical-address-p
+  (implies (canonical-address-p addr)
+           (equal (logext 64 addr) addr))
+  :enable (canonical-address-p logext loghead logapp logbitp)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
 (defthmd rewire_dst_to_src-effects-46-to-58-instructions
   ;; !!! FIXME: Speed this monster up.
   (implies

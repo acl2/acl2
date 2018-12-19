@@ -30,6 +30,24 @@
 
 (in-package "ACL2")
 
+;; Note about the following commented-out form.  This allows a significant
+;; reduction of memory usage by this book: of ~130 million conses in the ACL2
+;; world after all books are loaded, 51 million are due to tau automatically
+;; computing implicants from theorems/definitions -- 42 million conses are
+;; stored in various POS-IMPLICANTS and 9.2 million in various NEG-IMPLICANTS
+;; properties.  So overriding the default setting of tau-auto-mode saves a
+;; significant amount of memory when loading this book.  Question is whether
+;; it's worth the cheating.
+
+#||
+(defttag :override-tau-auto-mode)
+(progn!
+ (set-raw-mode t)
+ (setf (cdr (assoc :tau-auto-modep *initial-acl2-defaults-table*)) nil)
+ (set-raw-mode nil))
+||#
+
+(progn ;; use progn to time including all the books
 (include-book "build/ifdef" :dir :system)
 
 ; Note, 7/28/2014: if we include
@@ -59,12 +77,17 @@
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 10 (expt 2 30))))
 
+;; this is included in some other books, but I'm putting it here so we never
+;; accidentally leave it out -- important for getting reasonable performance
+;; when building the final documentation.
+(include-book "std/strings/fast-cat" :dir :system)
 
 (include-book "relnotes")
 (include-book "practices")
 
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)
+(include-book "xdoc/archive-matching-topics" :dir :system)
 
 (include-book "build/doc" :dir :system)
 
@@ -233,7 +256,13 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+
+;; This book memoizes several functions including translate11, translate11-lst,
+;; translate11-call, which end up taking a lot of space and causing us to spend
+;; a lot of time GCing.
 (include-book "tools/memoize-prover-fns" :dir :system)
+(unmemoize-lst (f-get-global 'memoized-prover-fns state))
+
 (include-book "tools/untranslate-for-exec" :dir :system)
 (include-book "tools/er-soft-logic" :dir :system)
 (include-book "tools/run-script" :dir :system)
@@ -317,7 +346,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
-
+) ;; end progn for including all the books
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl
@@ -405,7 +434,7 @@ book that depends on Glucose being installed.</p>")
 ;                  (cw "; Note: Removing 'redundant' ACL2 parent for ~x0.~%"
 ;                      (cdr (assoc :name topic)))
 ;                  (cons (cons :parents '(acl2::top))
-;                        (delete-assoc-equal :parents topic)))
+;                        (remove1-assoc-equal :parents topic)))
 ;               topic)))
 ;   (cons topic
 ;         (fix-redundant-acl2-parents (cdr all-topics))))

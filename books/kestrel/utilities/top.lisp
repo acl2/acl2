@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "acceptable-rewrite-rule-p")
+(include-book "alists/top")
 (include-book "apply-fn-if-known")
 (include-book "assert")
 (include-book "auto-instance")
@@ -25,7 +26,7 @@
 (include-book "doublets")
 (include-book "enumerations")
 (include-book "er-soft-plus")
-(include-book "error-checking")
+(include-book "error-checking/top")
 (include-book "fixbytes/instances")
 (include-book "include-book-paths")
 (include-book "integer-range-fixing")
@@ -42,6 +43,7 @@
 (include-book "nati")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
+(include-book "omaps/fty")
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")

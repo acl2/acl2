@@ -373,8 +373,8 @@
         (merge-text rest (cons tok1 acc) codes href topic-to-rendered-table
                     xdoc-tag-elide-alist))
 
-       (merged-tok (list :TEXT (str::cat (texttok-text (car acc))
-                                         (texttok-text tok1)))))
+       (merged-tok (list :TEXT (cons (texttok-texttree (car acc))
+                                     (texttok-texttree tok1)))))
     (merge-text rest (cons merged-tok (cdr acc)) codes href
                 topic-to-rendered-table
                 xdoc-tag-elide-alist)))
@@ -783,7 +783,7 @@
                                               state
                                               nil ;; accumulator
                                               ))
-       (short (str::rchars-to-string short-acc))
+       (short (str::printtree->str short-acc))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))
        ((mv err tokens) (parse-xml short))

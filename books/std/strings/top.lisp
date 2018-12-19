@@ -63,6 +63,7 @@
 (include-book "subseq")
 (include-book "suffixp")
 (include-book "symbols")
+(include-book "strrange-equiv")
 
 (defxdoc std/strings
   :parents (std acl2::strings)

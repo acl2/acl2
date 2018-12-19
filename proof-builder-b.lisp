@@ -1300,7 +1300,7 @@
              pc-state
              :abbreviations
              (if args
-                 (delete-assoc-eq-lst vars abbreviations)
+                 (remove1-assoc-eq-lst vars abbreviations)
                nil))
             state)))))
 
@@ -1324,7 +1324,7 @@
          (let ((untrans-1 (untrans0 (cdr pair)))
                (untrans-2 (untrans0 (cdr pair)
                                     nil
-                                    (delete-assoc-eq (car pair) abbreviations))))
+                                    (remove1-assoc-eq (car pair) abbreviations))))
            (pprogn
             (io? proof-builder nil state
                  (pair)
@@ -3961,7 +3961,7 @@
 
 (defun unsave-fn (name state)
   (pc-assign ss-alist
-             (delete-assoc-eq name (ss-alist))))
+             (remove1-assoc-eq name (ss-alist))))
 
 (defmacro unsave (name)
   `(unsave-fn ',name state))

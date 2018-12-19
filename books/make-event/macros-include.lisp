@@ -7,75 +7,34 @@
 
 ; Here is the expected :expansion-alist from macros.cert.
 (defconst *macros-expansion-alist*
-  '((2 RECORD-EXPANSION
-       (MY-MAC (MAKE-EVENT '(DEFUN FOO (X) X)))
-       (DEFUN FOO (X) X))
-    (3 RECORD-EXPANSION
-       (MY-MAC (MAKE-EVENT '(DEFUN FOO (X) X)
-                           :CHECK-EXPANSION T))
-       (MAKE-EVENT '(DEFUN FOO (X) X)
-                   :CHECK-EXPANSION (DEFUN FOO (X) X)))
-    (4
-     RECORD-EXPANSION
-     (ENCAPSULATE ((LOCAL-FN (X) T))
-                  (LOCAL (DEFUN LOCAL-FN (X) X))
-                  (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                      :CHECK-EXPANSION T)))
-     (ENCAPSULATE
-      ((LOCAL-FN (X) T))
-      (LOCAL (DEFUN LOCAL-FN (X) X))
-      (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                            :CHECK-EXPANSION T))
-                        (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                    :CHECK-EXPANSION (DEFUN FOO2 (X) X)))))
-    (5 RECORD-EXPANSION
-       (ENCAPSULATE NIL
-                    (MY-MAC (MAKE-EVENT '(DEFUN FOO3 (X) X))))
-       (ENCAPSULATE NIL
-                    (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO3 (X) X)))
-                                      (DEFUN FOO3 (X) X))))
-    (7
-     RECORD-EXPANSION
-     (ENCAPSULATE ((LOCAL-FN (X) T))
-                  (LOCAL (DEFUN LOCAL-FN (X) X))
-                  (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                      :CHECK-EXPANSION T)))
-     (ENCAPSULATE
-      ((LOCAL-FN (X) T))
-      (LOCAL (DEFUN LOCAL-FN (X) X))
-      (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                            :CHECK-EXPANSION T))
-                        (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                    :CHECK-EXPANSION (DEFUN FOO2 (X) X)))))
-    (8
-     RECORD-EXPANSION
-     (ENCAPSULATE ((LOCAL-FN (X) T))
-                  (LOCAL (DEFUN LOCAL-FN (X) X))
-                  (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                      :CHECK-EXPANSION T)))
-     (ENCAPSULATE
-      ((LOCAL-FN (X) T))
-      (LOCAL (DEFUN LOCAL-FN (X) X))
-      (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                            :CHECK-EXPANSION T))
-                        (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                    :CHECK-EXPANSION (DEFUN FOO2 (X) X)))))
-    (10 RECORD-EXPANSION
-        (MUST-FAIL (ENCAPSULATE ((LOCAL-FN (X) T))
-                                (LOCAL (DEFUN LOCAL-FN (X) X))
-                                (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                            :CHECK-EXPANSION T)))
-        (WITH-OUTPUT :OFF
-          :ALL (VALUE-TRIPLE 'T)))
-    (11
-     RECORD-EXPANSION
-     (MUST-FAIL
-      (ENCAPSULATE ((LOCAL-FN (X) T))
-                   (LOCAL (DEFUN LOCAL-FN (X) X))
-                   (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
-                                       :CHECK-EXPANSION (DEFUN FOO2 (X) X)))))
-     (WITH-OUTPUT :OFF
-       :ALL (VALUE-TRIPLE 'T)))))
+  '((2 DEFUN FOO (X) X)
+    (3 MAKE-EVENT '(DEFUN FOO (X) X)
+       :CHECK-EXPANSION (DEFUN FOO (X) X))
+    (4 ENCAPSULATE ((LOCAL-FN (X) T))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
+       (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                             :CHECK-EXPANSION T))
+                         (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                     :CHECK-EXPANSION (DEFUN FOO2 (X) X))))
+    (5 ENCAPSULATE NIL
+       (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO3 (X) X)))
+                         (DEFUN FOO3 (X) X)))
+    (7 ENCAPSULATE ((LOCAL-FN (X) T))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
+       (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                             :CHECK-EXPANSION T))
+                         (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                     :CHECK-EXPANSION (DEFUN FOO2 (X) X))))
+    (8 ENCAPSULATE ((LOCAL-FN (X) T))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
+       (RECORD-EXPANSION (MY-MAC (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                             :CHECK-EXPANSION T))
+                         (MAKE-EVENT '(DEFUN FOO2 (X) X)
+                                     :CHECK-EXPANSION (DEFUN FOO2 (X) X))))
+    (10 WITH-OUTPUT :OFF
+        :ALL (VALUE-TRIPLE 'T))
+    (11 WITH-OUTPUT :OFF
+        :ALL (VALUE-TRIPLE 'T))))
 
 ; Include the book whose certificate we want to check.
 (include-book "macros")
@@ -99,3 +58,4 @@
        (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
                               *macros-expansion-alist*))))
          (mv erp nil state))))))
+

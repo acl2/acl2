@@ -11,6 +11,10 @@
 
 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, this book should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defun raw-acl2-exports1 (x pkg-witness wrld allp acc)
 
 ; Extend acc with a list of all documented symbols in the package of symbol
@@ -116,14 +120,19 @@
     ALIST-KEYS-SUBSETP
     ALIST-TO-DOUBLETS
     ALL-CALLS
+    ALL-FNNAMES
+    ALL-FNNAMES-LST
+    ALL-FNNAMES1
     BODY
     CONJOIN
+    CONJOIN2
     CONS-COUNT-BOUNDED
     CONS-TERM
     CONS-TERM*
     DEFINED-CONSTANT
     DISJOIN
     DISJOIN2
+    DUMB-NEGATE-LIT
     ENABLED-NUMEP
     ENABLED-RUNEP
     EVENS
@@ -139,6 +148,7 @@
     FIRST-KEYWORD
     FLAMBDA-APPLICATIONP
     FLAMBDAP
+    FN-RUNE-NUME
     FN-SYMB
     FORMALS
     FSUBCOR-VAR
@@ -150,6 +160,7 @@
     IMPLICATE
     IO?
     KEYWORD-LISTP
+    KNOWN-PACKAGE-ALIST
     LAMBDA-APPLICATIONP
     LAMBDA-BODY
     LAMBDA-FORMALS
@@ -169,6 +180,7 @@
     PROGRAMP
     RECURSIVEP
     RW-CACHE-STATE
+    STOBJP
     STOBJS-IN
     STOBJS-OUT
     SUBCOR-VAR
@@ -187,8 +199,11 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    TRUE-LIST-FIX
-    ))
+    BRR-EVISC-TUPLE
+    SET-BRR-EVISC-TUPLE
+    SHOW-BRR-EVISC-TUPLE
+
+  ))
 
 (defconst *special-ops*
 

@@ -22,6 +22,7 @@
 (include-book "rev-theorems")
 (include-book "set-difference-theorems")
 (include-book "set-size")
+(include-book "take-theorems")
 (include-book "union-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -38,11 +38,11 @@
 ; And here is a random lemma we need:
 
 (local
- (defthm assoc-after-delete-assoc
+ (defthm assoc-after-remove1-assoc
    ;; borrowed from projects/filesystems/file-system-lemmas.lisp --
    ;; should probably be in std/alists somewhere, I guess?
    (implies (not (equal name1 name2))
-            (equal (assoc-equal name1 (delete-assoc name2 alist))
+            (equal (assoc-equal name1 (remove1-assoc name2 alist))
                    (assoc-equal name1 alist)))))
 
 

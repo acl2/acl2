@@ -1791,7 +1791,7 @@
 ; this case, so that appropriate live stobj checks can be made.
 
                            (not (and stobj-flag
-; But is it an abstract concrete stobj?
+; But is it an abstract stobj?
                                      (getpropc stobj-flag 'absstobj-info nil
                                                wrld)))))
           (fn (car def))
@@ -7314,6 +7314,9 @@
          ((encapsulate when)
           (loop for x in (cddr form)
                 do (note-fns-in-form x ht)))
+         (partial-encapsulate
+          (loop for x in (cdddr form)
+                do (note-fns-in-form x ht)))
          ((skip-proofs local)
           (note-fns-in-form (cadr form) ht))
          (defrec ; pick just one function introduced
@@ -7381,7 +7384,9 @@
            make-event
            make-apply$-prim-body-fn-raw
            set-raw-mode
-           set-compile-fns)
+           set-compile-fns
+           set-ignore-ok
+           set-irrelevant-formals-ok)
           nil)
          (t
           (error "Unexpected type of form, ~s.  See note-fns-in-form."

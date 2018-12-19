@@ -21,14 +21,14 @@ data last modified: [2015-06-09 Tue]
 (defun well-formed-metadata-entry-p (key val wrld)
   (case key
     (:predicate  (allows-arity val 1 wrld))
-    (:enumerator (allows-arity val 1 wrld)) 
+    (:enumerator (allows-arity val 1 wrld))
     (:enum/acc   (allows-arity val 2 wrld))
     (:equiv (allows-arity val 2 wrld))
     (:equiv-fixer (allows-arity val 1 wrld))
     (:fixer (allows-arity val 1 wrld))
     (:fixer-domain (is-type-predicate val wrld))
     (:lub (predicate-name val))
-    (:glb (predicate-name val)) 
+    (:glb (predicate-name val))
     (:sampling (possible-constant-values-p val))
     (:size (or (eq 't val) (natp val)))
     (:verbose (booleanp val))
@@ -41,7 +41,7 @@ data last modified: [2015-06-09 Tue]
     (:meta-precondition t)
     (:match-type (member-eq val '(:match :subterm-match)))
     (:meta-replace (symbol-doublet-listp val)) ;let binding
-    
+
     (otherwise t) ;dont be strict.
     ))
 
@@ -49,7 +49,7 @@ data last modified: [2015-06-09 Tue]
   (declare (ignorable val))
   (case key
     (:predicate        "~x0 should be a 1-arity fn")
-    (:enumerator       "~x0 should be a 1-arity fn") 
+    (:enumerator       "~x0 should be a 1-arity fn")
     (:enum/acc         "~x0 should be a 2-arity fn")
 
     (:equiv            "~x0 should be a 2-arity fn")
@@ -58,7 +58,7 @@ data last modified: [2015-06-09 Tue]
     (:fixer-domain     "~x0 should be a defdata predicate")
 
     (:lub              "~x0 should be a type name")
-    (:glb              "~x0 should be a type name") 
+    (:glb              "~x0 should be a type name")
     (:sampling         "~x0 should be a list of constants" )
     (:size             "~x0 should be either 't or a natural")
     (:verbose         "~x0 should be a boolean")
@@ -88,7 +88,7 @@ data last modified: [2015-06-09 Tue]
 
 (logic)
 
-(defconst *defdata-attach-need-override-permission-keywords* 
+(defconst *defdata-attach-need-override-permission-keywords*
   '(:size :prettyified-def)) ;add more later
 
 (defconst *defdata-attach-constraint-rules-keywords* '(:constraint :constraint-variable :match-type :rule :meta-precondition :meta-replace))
@@ -109,8 +109,8 @@ data last modified: [2015-06-09 Tue]
        (override-ok-p (let ((lst (member :override-ok keys)))
                         (and lst (cadr lst))))
        (keys (remove-keywords-from-args '(:verbose :override-ok) keys)))
-   
-  `(with-output 
+
+  `(with-output
     ,@(and (not verbosep) '(:off :all)) :stack :push
     (make-event
         (cons 'progn
@@ -178,21 +178,21 @@ data last modified: [2015-06-09 Tue]
 
        (existing-kwd-alist (cdr (assoc-eq name (table-alist 'type-metadata-table wrld))))
        (existing-crules (get1 :constraint-rules existing-kwd-alist))
-       (new-crules (union-equal (list crule) existing-crules)) 
+       (new-crules (union-equal (list crule) existing-crules))
        (kwd-alist (put-assoc-equal :constraint-rules new-crules existing-kwd-alist)))
     `((TABLE TYPE-METADATA-TABLE ',name ',kwd-alist :put))))
-  
+
 (defun defdata-attach/enum (name enum verbosep wrld)
   (declare (ignorable verbosep))
   (b* ((kwd-alist (cdr (assoc-eq name (type-metadata-table wrld))))
        ((when (eq (get1 :enumerator kwd-alist) enum)) '())
-       
+
        (ctx 'defdata-attach)
        ((unless (allows-arity enum 1 wrld))
         (er hard? ctx "~|~x0 should be an enumerator function with arity 1~%" enum)))
        ;;TODO: type soundness obligation
-    
-    
+
+
     `((DEFTTAG :defdata-attach)
       (DEFATTACH (,(get1 :enumerator kwd-alist) ,enum) :skip-checks t)
       (DEFTTAG nil))))
@@ -201,13 +201,13 @@ data last modified: [2015-06-09 Tue]
     (declare (ignorable verbosep))
   (b* ((kwd-alist (cdr (assoc-eq name (type-metadata-table wrld))))
        ((when (eq (get1 :enum/acc kwd-alist) enum2)) '())
-       
+
        (ctx 'defdata-attach)
        ((unless (allows-arity enum2 2 wrld))
         (er hard? ctx "~|~x0 should be an enum/acc function with arity 1~%" enum2)))
        ;;TODO: type soundness obligation
-    
-    
+
+
     `((DEFTTAG :defdata-attach)
       (DEFATTACH (,(get1 :enum/acc kwd-alist) ,enum2) :skip-checks t)
       (DEFTTAG nil))))
@@ -220,18 +220,18 @@ data last modified: [2015-06-09 Tue]
   (b* ((ctx 'defdata-attach)
        ((unless (assoc-eq name (type-metadata-table wrld)))
         (er hard? ctx "~x0 is not a recognized type. Use register-type to register it.~%" name))
-       
+
        ((mv kwd-alist rest) (extract-keywords ctx *defdata-attach-keywords* keys nil))
        ((when rest) (er hard? ctx "~| Unsupported/Extra args: ~x0~%" rest))
 
-       
-       
+
+
        ;;support the alias to enumerator -- legacy issue
        (test-enumerator (get1 :test-enumerator kwd-alist))
        (kwd-alist (if test-enumerator
-                      (put-assoc-eq :enumerator test-enumerator (delete-assoc-eq :test-enumerator kwd-alist))
+                      (put-assoc-eq :enumerator test-enumerator (remove1-assoc-eq :test-enumerator kwd-alist))
                     kwd-alist))
-       
+
        (- (cw? verbosep "~|Got kwd-alist: ~x0~%" kwd-alist))
        ((unless (well-formed-type-metadata-p kwd-alist wrld))
         (er hard? ctx "~| ~s0~%" (ill-formed-type-metadata-msg kwd-alist wrld)))
@@ -271,6 +271,6 @@ data last modified: [2015-06-09 Tue]
     `((defdata-attach ,name :enumerator ,test-enum)
       (defdata-attach ,name :enum/acc ,test-enum/acc))))
 
-    
+
 (defmacro defdata-attach/testing-subtype (name test-tname)
   `(defdata-attach/test-subtype-fn ',name ',test-tname (w state)))

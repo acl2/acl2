@@ -8,13 +8,13 @@
 
 ;NOTE: fix vertex to be a bounded set (len = 124) of names that are easy to read
 (defdata vertex
-  (enum '(a u v w x y z 
-            u1 u2 v1 v2 w1 w2 x1 x2 y1 y2 z1 z2 
-            u3 u4 u5 v3 v4 v5 w3 w4 w5 w3 w4 w5 x3 x4 x5 y3 y4 y5 z3 z4 z5 
+  (enum '(a u v w x y z
+            u1 u2 v1 v2 w1 w2 x1 x2 y1 y2 z1 z2
+            u3 u4 u5 v3 v4 v5 w3 w4 w5 w3 w4 w5 x3 x4 x5 y3 y4 y5 z3 z4 z5
             u6 u7 u8 u9 v6 v7 v8 v9 w6 w7 w8 w9 x6 x7 x8 x9 y6 y7 y8 y9 z6 z7 z8 z9
             a b c d e f g h i j k l m n o p q r s t0
             a1 b1 c1 d1 e1 f1 g1 h1 i1 j1 k1 l1 m1 n1 o1 p1 q1 r1 s1 t1
-            a2 b2 c2 d2 e2 f2 g2 h2 i2 j2 k2 l2 m2 n2 o2 p2 q2 r2 s2 t2))) 
+            a2 b2 c2 d2 e2 f2 g2 h2 i2 j2 k2 l2 m2 n2 o2 p2 q2 r2 s2 t2)))
 
 (defdata source-vertex 'A)
 (in-theory (disable vertexp source-vertexp))
@@ -52,7 +52,7 @@
                           (1 (nth-edge-list>0/e/acc n seed.))
                           (2 (nth-edge-list>1/e/acc n seed.))
                           (t (nth-edge-list>2/e/acc n seed.)))))
-        
+
       (mv (remove-duplicate-entries x) seed.)))
 
 ;Register the enumerator for edge-list
@@ -78,7 +78,7 @@
 ;try to create vertex lists that have no duplicates
 (defun vertex-list/e (n)
   (declare (xargs :mode :program))
-  (b* ((x (nth-vertex-list>0-builtin n))) 
+  (b* ((x (nth-vertex-list>0-builtin n)))
       (if (= 0 (mod n 8))
         x
         (remove-duplicates x))))
@@ -89,16 +89,16 @@
       (if (= 0 (mod n 5))
         (mv (add-to-set 'A x) seed.) ;sometimes add source vertex.
         (mv (remove-duplicates x) seed.)))) ;most of the time remove dups
-  
+
 (defdata vertex-list (listof vertex))
 (acl2s::defdata-attach vertex-list :enumerator vertex-list/e)
 (acl2s::defdata-attach vertex-list :enum/acc vertex-list/e/acc)
 
 
 (defdata vertex-path-alist>0 (oneof (acons vertex vertex-list nil)
-                                    (acons vertex vertex-list 
+                                    (acons vertex vertex-list
                                            (acons vertex vertex-list nil))
-                                    (acons vertex vertex-list vertex-path-alist>0))) 
+                                    (acons vertex vertex-list vertex-path-alist>0)))
 
 (defun remove-empty-entries (alist)
   (declare (xargs :guard (alistp alist)))
@@ -113,14 +113,14 @@
 ;try to create non-empty vertex-path-alist with non-empty paths and no duplicates
 (defun vertex-path-alist/e (n)
   (declare (xargs :mode :program))
-  (b* ((x (nth-vertex-path-alist>0-builtin n))) 
+  (b* ((x (nth-vertex-path-alist>0-builtin n)))
       (remove-duplicate-entries (remove-empty-entries x))))
 
 (defun vertex-path-alist/e/acc (n seed.)
   (declare (xargs :mode :program))
   (b* (((mv x seed.) (nth-vertex-path-alist>0/acc-builtin n seed.)))
-      (mv (remove-duplicate-entries (remove-empty-entries x)) seed.))) 
-  
+      (mv (remove-duplicate-entries (remove-empty-entries x)) seed.)))
+
 (defdata vertex-path-alist (alistof vertex vertex-list))
 (acl2s::defdata-attach vertex-path-alist :enumerator vertex-path-alist/e)
 (acl2s::defdata-attach vertex-path-alist :enum/acc vertex-path-alist/e/acc)
@@ -131,7 +131,7 @@
 (defun tlp-fix (L)
   (declare (xargs :guard t))
   (if (atom L)
-      nil 
+      nil
     (cons (car L) (tlp-fix (cdr L)))))
 
 (defun del-fx2 (a L1 L)
@@ -200,7 +200,7 @@
 
 
 #|
-(defun node-fx2 (x g) 
+(defun node-fx2 (x g)
 ; BAD fixer : does not have good variability. and especially it returns nodes
 ; with zero neighbors
   (if (nodep x g)
@@ -220,8 +220,8 @@
         (put-assoc-equal x edges g))))
 
 (defun path-non-empty-fix (u vs pt)
-  (if (path u pt) 
-    pt 
+  (if (path u pt)
+    pt
     (put-assoc-equal u (cons 'A (append vs (list u))) pt))) ;add source vertex
 
 
@@ -267,12 +267,12 @@
          (edges-with-weights (cdr entry))
          (edges (strip-cars edges-with-weights)))
         (change-rep (cdr vs) (put-assoc-equal (car vs) edges g)))))
-  
+
 (defun find-all-simple-paths (a b g)
   (if (and (equal a b) (nodep a g)) ; added for type-safety and less-restrictive fixer rules
     (list (list a))
     (b* ((g1 (change-rep (all-nodes g) g)))
-        (find-all-next-steps (neighbors2 a g1) ;(neighbors a g1) bug 
+        (find-all-next-steps (neighbors2 a g1) ;(neighbors a g1) bug
                              (list a) b g1))))
 )
 
@@ -299,9 +299,9 @@
     g
     (if (endp (cdr p))
       g
-      (add-path/wts (cdr p) (cdr wts) 
+      (add-path/wts (cdr p) (cdr wts)
                 (add-edge (car p) (cadr p) (car wts) g)))))
-;Auxiliary function      
+;Auxiliary function
 (defun add-path (p g)
   (add-path/wts p (make-list (len p) :initial-element 1) g))
 
@@ -330,7 +330,7 @@
   (if (pathp P g)
     (mv P g)
     (if (endp P)
-        (mv (list (node-fx1 'u g)) g) 
+        (mv (list (node-fx1 'u g)) g)
       (if (endp (cdr P))
           (mv (list (node-fx1 (car P) g)) g)
         (path-from-to-fix P (car P) (car (last P)) g)))))
@@ -339,7 +339,7 @@
   (if (endp pt)
       (mv '() g)
     (b* (((cons v path) (first pt))
-         ;;(v (node-fx1 v g)) 
+         ;;(v (node-fx1 v g))
          (g (node-fx2 v g)) ;this is better because it avoid duplicate entries for small graphs
          ((mv path g) (path-from-to-fix path a v g))
          ((mv rest-pt-fixed g) (pt-propertyp-fix2 a (rest pt) g)))
@@ -368,10 +368,10 @@
 (defund shortest-confined-path-fxr (a b p fs g)
   (let ((p0 (pick-shortest (confinedp-lst (find-all-simple-paths a b g) fs) g p)))
     (if (shorterp p p0 g) p p0)))
-      
+
 
 (defund shortest-path-fxr2 (a b p g) ;dont use
-  (b* (((mv p g) (path-from-to-fix p a b g))) 
+  (b* (((mv p g) (path-from-to-fix p a b g)))
       ;lets add paths that might be shorter
       (mv (pick-shortest (find-all-simple-paths a b g) g p) g)))
 
@@ -393,9 +393,9 @@
       pt
     (b* ((p (path (car ts) pt))
          (p (shortest-confined-path-fxr a (car ts) p fs g))
-         ((unless (confinedp p fs)) 
-          (ts-propertyp-fix a (cdr ts) fs (delete-all-assoc (car ts) pt) g)) ;bug: delete-assoc 
-         ;;update pt with this "fixed" confined path 
+         ((unless (confinedp p fs))
+          (ts-propertyp-fix a (cdr ts) fs (delete-all-assoc (car ts) pt) g)) ;bug: remove1-assoc
+         ;;update pt with this "fixed" confined path
          (pt (put-assoc-equal (car ts) p pt)))
       (ts-propertyp-fix a (cdr ts) fs pt g))))
 
@@ -405,7 +405,7 @@
   (if (endp g)
     '()
     (b* (((cons u edges) (car g))
-         (edges~ (delete-assoc-equal b edges)))
+         (edges~ (remove1-assoc-equal b edges)))
         (cons (cons u edges~)
               (delete-edges-to b (cdr g))))))
 ;Auxiliary
@@ -416,7 +416,7 @@
       (delete-edges-to b g)
     (delete-edges-to b (put-assoc-equal b '() g))))
 
-;Auxiliary function  
+;Auxiliary function
 (defun remove-non-paths (pt g) ;ideally one should replace non-paths with alternative paths
   (if (endp pt)
     '()
@@ -431,7 +431,7 @@
       (mv pt g)
     (b* ((p (path (car fs) pt))
          (p (shortest-path-fxr a (car fs) p g))
-          ((unless (confinedp p fs0)) 
+          ((unless (confinedp p fs0))
            (b* ((g1 (delete-edges-to-but-keep-node (car fs) g))
                 ;phew!! fix failed fixer rule (hyp pt-propertyp was not preserved) bugfix
                 (pt1 (remove-non-paths pt g1)))
@@ -442,11 +442,10 @@
 (defund invp-fx (ts pt g a) ;fixes all three invariants
   (b* (((mv pt g) (pt-propertyp-fix2 a pt g))
        (fs (comp-set ts (all-nodes g)))
-       
+
        (pt (ts-propertyp-fix a ts fs pt g))
-       
+
        ((mv pt g) (fs-propertyp-fix3 a fs fs pt g))
        ((mv pt g) (fs-propertyp-fix3 a fs fs pt g)) ;twice!!
        )
     (mv pt g)))
-

@@ -30,6 +30,7 @@
 
 (in-package "GL")
 (include-book "bvar-db")
+(include-book "gl-util")
 (include-book "def-gl-rewrite")
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
@@ -1384,7 +1385,7 @@
        ;; (- (cw "term-vals first 1000: ~x0~%" (take 1000 term-vals)))
        (term-revgraph ;; maps terms to other terms that might affect their value
         (glcp-ctrex-reverse-term-dep-map term-depgraph nil))
-       (- (cw "stats:~%depgraph length: ~x0~%revgraph length: ~x1~%bvar-db entries: ~x2~%"
+       (- (obs-cw "stats:~%depgraph length: ~x0~%revgraph length: ~x1~%bvar-db entries: ~x2~%"
               (len term-depgraph) (len term-revgraph) (len term-vals)))
        ((mv seen term-vals)
         (glcp-ctrex-resolve-termlist-values (glcp-ctrex-revmap-variable-keys term-revgraph nil)
@@ -1393,10 +1394,10 @@
                                             term-vals
                                             rule-table
                                             state))
-       (- (cw "nodes traversed: ~x0~%updates: ~x1~%" (len seen) (len term-vals)))
+       (- (obs-cw "nodes traversed: ~x0~%updates: ~x1~%" (len seen) (len term-vals)))
        (- (fast-alist-free seen))
        (term-vals (fast-alist-clean term-vals))
-       (- (cw "number of terms assigned values: ~x0~%" (len term-vals)))
+       (- (obs-cw "number of terms assigned values: ~x0~%" (len term-vals)))
        (var-alist (glcp-ctrex-collect-var-alist term-vals nil))
        ;; (bad-terminals (glcp-ctrex-collect-bad-terminal-terms term-depgraph nil))
        ;; (- (and bad-terminals

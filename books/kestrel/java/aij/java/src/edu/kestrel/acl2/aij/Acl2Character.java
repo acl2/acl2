@@ -95,7 +95,7 @@ public final class Acl2Character extends Acl2Value {
             int thatCode = ((Acl2Character) o).jchar;
             return Integer.compare(thisCode, thatCode);
         }
-        // characters are less than strings, symbols, and pairs:
+        // characters are less than strings, symbols, and cons pairs:
         return -1;
     }
 

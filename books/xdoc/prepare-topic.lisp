@@ -108,24 +108,24 @@
   (b* ((name     (cdr (assoc :name x)))
        (short    (cdr (assoc :short x)))
        (base-pkg (cdr (assoc :base-pkg x)))
-       (acc   (str::revappend-chars "<index_entry>" acc))
+       (acc   (str::printtree-rconcat "<index_entry>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<index_head><see topic=\"" acc))
+       (acc   (str::printtree-rconcat "<index_head><see topic=\"" acc))
        (acc   (file-name-mangle name acc))
-       (acc   (str::revappend-chars "\">" acc))
+       (acc   (str::printtree-rconcat "\">" acc))
        (acc   (sym-mangle-cap name index-pkg acc))
-       (acc   (str::revappend-chars "</see>" acc))
-       (acc   (str::revappend-chars "</index_head>" acc))
+       (acc   (str::printtree-rconcat "</see>" acc))
+       (acc   (str::printtree-rconcat "</index_head>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "<index_body>" acc))
+       (acc   (str::printtree-rconcat "<index_body>" acc))
        (acc   (cons #\Newline acc))
        ((mv acc state)
         (preprocess-main short name topics-fal disable-autolinking-p base-pkg
                          state acc))
        (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "</index_body>" acc))
+       (acc   (str::printtree-rconcat "</index_body>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (str::revappend-chars "</index_entry>" acc))
+       (acc   (str::printtree-rconcat "</index_entry>" acc))
        (acc   (cons #\Newline acc)))
       (mv acc state)))
 
@@ -148,24 +148,24 @@
 ; X is a list of topics.  Generate <index>...</index> for these topics and
 ; add to acc.
 
-  (b* ((acc (str::revappend-chars "<index title=\"" acc))
-       (acc (str::revappend-chars title acc))
-       (acc (str::revappend-chars "\">" acc))
+  (b* ((acc (str::printtree-rconcat "<index title=\"" acc))
+       (acc (str::printtree-rconcat title acc))
+       (acc (str::printtree-rconcat "\">" acc))
        (acc (cons #\Newline acc))
        ((mv acc state) (index-add-topics x topics-fal disable-autolinking-p
                                          index-pkg state acc))
-       (acc (str::revappend-chars "</index>" acc))
+       (acc (str::printtree-rconcat "</index>" acc))
        (acc (cons #\Newline acc)))
       (mv acc state)))
 
 (defun add-parents (parents base-pkg acc)
   (b* (((when (atom parents))
         acc)
-       (acc (str::revappend-chars "<parent topic=\"" acc))
+       (acc (str::printtree-rconcat "<parent topic=\"" acc))
        (acc (file-name-mangle (car parents) acc))
-       (acc (str::revappend-chars "\">" acc))
+       (acc (str::printtree-rconcat "\">" acc))
        (acc (sym-mangle-cap (car parents) base-pkg acc))
-       (acc (str::revappend-chars "</parent>" acc))
+       (acc (str::printtree-rconcat "</parent>" acc))
        (acc (cons #\Newline acc)))
     (add-parents (cdr parents) base-pkg acc)))
 
@@ -234,25 +234,25 @@
        (suborder (cdr (assoc :suborder x)))
 
        (acc    nil)
-       (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
+       (acc    (str::printtree-rconcat "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic.xsl\"?>" acc))
+       (acc    (str::printtree-rconcat "<?xml-stylesheet type=\"text/xsl\" href=\"xml-topic.xsl\"?>" acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars *xml-entity-stuff* acc))
-       (acc    (str::revappend-chars "<page>" acc))
-       (acc    (str::revappend-chars "<topic name=\"" acc))
+       (acc    (str::printtree-rconcat *xml-entity-stuff* acc))
+       (acc    (str::printtree-rconcat "<page>" acc))
+       (acc    (str::printtree-rconcat "<topic name=\"" acc))
        (acc    (sym-mangle-cap name base-pkg acc))
-       (acc    (str::revappend-chars "\">" acc))
+       (acc    (str::printtree-rconcat "\">" acc))
        (acc    (cons #\Newline acc))
        (acc    (add-parents parents base-pkg acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<short>" acc))
+       (acc    (str::printtree-rconcat "<short>" acc))
 
        ((mv short-acc state)
         (preprocess-main short name
                          topics-fal disable-autolinking-p
                          base-pkg state nil))
-       (short-str  (str::rchars-to-string short-acc))
+       (short-str  (str::printtree->str short-acc))
 
        ((mv err &) (parse-xml short-str))
        (state
@@ -274,21 +274,21 @@
           state))
 
        (acc (b* (((unless err)
-                  (append short-acc acc))
-                 (acc (str::revappend-chars "<b>Markup error in :short: </b><code>" acc))
+                  (str::printtree-rconcat short-acc acc))
+                 (acc (str::printtree-rconcat "<b>Markup error in :short: </b><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
-                 (acc (str::revappend-chars "</code>" acc)))
+                 (acc (str::printtree-rconcat "</code>" acc)))
               acc))
 
-       (acc    (str::revappend-chars "</short>" acc))
+       (acc    (str::printtree-rconcat "</short>" acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "<long>" acc))
+       (acc    (str::printtree-rconcat "<long>" acc))
 
        ((mv long-acc state)
         (preprocess-main long name
                          topics-fal disable-autolinking-p
                          base-pkg state nil))
-       (long-str (str::rchars-to-string long-acc))
+       (long-str (str::printtree->str long-acc))
        ((mv err &) (parse-xml long-str))
 
        (state
@@ -305,13 +305,13 @@
           state))
 
        (acc (b* (((unless err)
-                  (append long-acc acc))
-                 (acc (str::revappend-chars "<h3>Markup error in :long</h3><code>" acc))
+                  (str::printtree-rconcat long-acc acc))
+                 (acc (str::printtree-rconcat "<h3>Markup error in :long</h3><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
-                 (acc (str::revappend-chars "</code>" acc)))
+                 (acc (str::printtree-rconcat "</code>" acc)))
               acc))
 
-       (acc    (str::revappend-chars "</long>" acc))
+       (acc    (str::printtree-rconcat "</long>" acc))
        (acc    (cons #\Newline acc))
 
        (children-names
@@ -337,8 +337,8 @@
           (index-topics children-topics "Subtopics"
                         topics-fal disable-autolinking-p
                         base-pkg state acc)))
-       (acc    (str::revappend-chars "</topic>" acc))
+       (acc    (str::printtree-rconcat "</topic>" acc))
        (acc    (cons #\Newline acc))
-       (acc    (str::revappend-chars "</page>" acc))
+       (acc    (str::printtree-rconcat "</page>" acc))
        (acc    (cons #\Newline acc)))
-      (mv (str::rchars-to-string acc) state)))
+      (mv (str::printtree->str acc) state)))

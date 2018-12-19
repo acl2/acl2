@@ -88,14 +88,14 @@
    )
   (b* (((when (atom urls))
         rchars)
-       (rchars (str::revappend-chars "<li><a href=\"" rchars))
+       (rchars (str::printtree-rconcat "<li><a href=\"" rchars))
        ;; We shouldn't need to encode the URL, because right now it's just the
        ;; raw text from the href='...' part that the user wrote, so it *should*
        ;; already be a valid URL.  BOZO could add a check and warn about this.
-       (rchars (str::revappend-chars (car urls) rchars))
-       (rchars (str::revappend-chars "\">" rchars))
+       (rchars (str::printtree-rconcat (car urls) rchars))
+       (rchars (str::printtree-rconcat "\">" rchars))
        (rchars (simple-html-encode-chars (explode (car urls)) rchars))
-       (rchars (str::revappend-chars "</a></li>" rchars))
+       (rchars (str::printtree-rconcat "</a></li>" rchars))
        (rchars (cons #\Newline rchars)))
     (lc-print-links (cdr urls) rchars)))
 
@@ -118,14 +118,14 @@
         ;; No external links from this topic, don't do anything
         rchars)
 
-       (rchars (str::revappend-chars "<p>External links from <b>" rchars))
+       (rchars (str::printtree-rconcat "<p>External links from <b>" rchars))
        (rchars (file-name-mangle xtopic.name rchars))
-       (rchars (str::revappend-chars "</b></p>" rchars))
+       (rchars (str::printtree-rconcat "</b></p>" rchars))
        (rchars (cons #\Newline rchars))
-       (rchars (str::revappend-chars "<ul>" rchars))
+       (rchars (str::printtree-rconcat "<ul>" rchars))
        (rchars (cons #\Newline rchars))
        (rchars (lc-print-links (mergesort urls-acc) rchars))
-       (rchars (str::revappend-chars "</ul>" rchars))
+       (rchars (str::printtree-rconcat "</ul>" rchars))
        (rchars (cons #\Newline rchars)))
     rchars))
 
@@ -138,7 +138,7 @@
 (defun linkcheck (xtopics)
   "Returns the contents of the linkcheck page as a string."
   (b* ((rchars nil)
-       (rchars (str::revappend-chars
+       (rchars (str::printtree-rconcat
 "<html>
 <head>
 <title>XDOC Link Check</title>
@@ -183,10 +183,10 @@ system's package manager.</p>
 
 " rchars))
        (rchars (lc-collect-xtopics xtopics rchars))
-       (rchars (str::revappend-chars "
+       (rchars (str::printtree-rconcat "
 </body>
 </html>
 " rchars)))
-    (str::rchars-to-string rchars)))
+    (str::printtree->str rchars)))
 
 

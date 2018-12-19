@@ -14,7 +14,7 @@ package edu.kestrel.acl2.aij;
  * strings (subclass {@link Acl2String}),
  * symbols (subclass {@link Acl2Symbol}),
  * numbers (subclass {@link Acl2Number}),
- * and pairs (subclass {@link Acl2Cons}).
+ * and {@code cons} pairs (subclass {@link Acl2ConsPair}).
  * No other subclasses can be defined outside this package
  * because this class provides no public or protected constructors.
  * <p>
@@ -129,7 +129,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * Supports the native implementation of
      * the {@code consp} ACL2 function.
      * It returns {@code nil} by default;
-     * it is overridden in {@link Acl2Cons}.
+     * it is overridden in {@link Acl2ConsPair}.
      */
     Acl2Symbol consp() {
         return Acl2Symbol.NIL;
@@ -312,7 +312,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * Supports the native implementation of
      * the {@code car} ACL2 function.
      * It returns {@code nil} by default;
-     * it is overridden in {@link Acl2Cons}.
+     * it is overridden in {@link Acl2ConsPair}.
      */
     Acl2Value car() {
         return Acl2Symbol.NIL;
@@ -322,7 +322,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      * Supports the native implementation of
      * the {@code cdr} ACL2 function.
      * It returns {@code nil} by default;
-     * it is overridden in {@link Acl2Cons}.
+     * it is overridden in {@link Acl2ConsPair}.
      */
     Acl2Value cdr() {
         return Acl2Symbol.NIL;

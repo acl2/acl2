@@ -1030,7 +1030,7 @@
                 (member e A)
                 (< i (len A)))
            (equal (make-inverse-map (update-nth i e A) k)
-                  (put-assoc e (+ k i) (delete-assoc (nth i A) (make-inverse-map A k))))))
+                  (put-assoc e (+ k i) (remove1-assoc (nth i A) (make-inverse-map A k))))))
 )
 
 (acl2::must-fail
@@ -1046,7 +1046,7 @@
                 (< i (len A)))
            (acl2::alist-equiv (make-inverse-map (update-nth i (nth j A) A) k)
                         (put-assoc (nth j A) (+ k i) 
-                                   (delete-assoc (nth i A) (make-inverse-map A k))))))
+                                   (remove1-assoc (nth i A) (make-inverse-map A k))))))
 )
 
 
@@ -1100,3 +1100,28 @@
                
           (and (consp c)
                (<= x (len c)))))
+
+; Make sure the following doesn't give any errors.
+(defun fnc-2 (x y)
+  (equal x y))
+
+(thm
+  (implies
+   (and
+    (equal a0 a1)
+    (equal b0 b1))
+   (equal (fnc-2 a0 b0) (fnc-2 a1 b1))))
+
+(defun fnc-3 (x y z)
+  (and
+   (equal x y)
+   (equal y z)))
+
+(thm
+  (implies
+   (and
+    (equal a0 a1)
+    (equal b0 b1)
+    (equal c0 c1))
+   (equal (fnc-3 a0 b0 c0) (fnc-3 a1 b1 c1))))
+

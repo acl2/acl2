@@ -7,17 +7,17 @@
 
 <b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
 
-<p><hr size=3 noshade><p>
+<p><hr size=3 noshade></p>
 
-ACL2 Version 8.1<br> Copyright (C) 2018, Regents of the University of
-Texas<br>
+<p>ACL2 Version 8.1<br> Copyright (C) 2018, Regents of the University of
+Texas</p>
 
-ACL2 is licensed under the terms of
+<p>ACL2 is licensed under the terms of
 the <a href="../LICENSE">LICENSE</a>
 file distributed with ACL2.  See also the documentation topic,
-<a href="../../manual/index.html?topic=ACL2____COPYRIGHT">COPYRIGHT</a>.
+<a href="../../manual/index.html?topic=ACL2____COPYRIGHT">COPYRIGHT</a>.</p>
 
-<p><hr size=3 noshade><p>
+<p><hr size=3 noshade></p>
 
 <H3>Table of Contents</H3>
 
@@ -35,23 +35,23 @@ file distributed with ACL2.  See also the documentation topic,
   </UL>
 </UL>
 
-<p><hr size=3 noshade><p>
+<p><hr size=3 noshade></p>
 
 <H3><A NAME="Performance">Performance comparisons</A></H3>
 
-You can see recent performance numbers by following <a
+<p>You can see recent performance numbers by following <a
 href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/new.html#performance">this
 link</a>, or by going to the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page on
-the web</a> and following the link "Recent changes to this page".
+the web</a> and following the link "Recent changes to this page".</p>
 
 <H3><A NAME="Obtaining-Lisp">Obtaining Common Lisp</A></H3>
 
-ACL2 works on Unix, GNU-Linux, and Mac OS X, which we call "Unix-like
+<p>ACL2 works on Unix, GNU-Linux, and Mac OS X, which we call "Unix-like
 systems", as well as many Windows operating systems (at least
 including Windows 98, Windows 2000, and Windows XP).  It can be built
 on top of any of the following Common Lisps, listed here
-alphabetically.
+alphabetically.</p>
 
 <ul>
 <LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
@@ -63,48 +63,42 @@ alphabetically.
 <LI><A HREF="#Obtaining-SBCL">SBCL</A></B><P>
 </ul>
 
-<p>
+<P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B></P>
 
-<P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B><P>
-
-The website for Allegro Common Lisp, a commercial implementation, is
+<p>The website for Allegro Common Lisp, a commercial implementation, is
 <code><a href="http://www.franz.com/">http://www.franz.com/</a></code>.
-You may be able to obtain a trial version there.
+You may be able to obtain a trial version there.</p>
 
-<P><B><A NAME="Obtaining-CCL">Obtaining CCL (OpenMCL)</A></B><P>
+<P><B><A NAME="Obtaining-CCL">Obtaining CCL (OpenMCL)</A></B></P>
 
-Clozure Common Lisp (Clozure CL, or CCL) was formerly known as
+<p>Clozure Common Lisp (Clozure CL, or CCL) was formerly known as
 OpenMCL.  Quoting from the <a href="http://ccl.clozure.com/">Clozure
 Common Lisp web page</a> (July, 2014): ``Some distinguishing features
 of the implementation include fast compilation speed, native threads,
 a precise, generational, compacting garbage collector, and a
-convenient foreign-function interface.''
+convenient foreign-function interface.''</p>
 
-<p>
-
-<font color="red">NOTE</font>:
+<p><font color="red">NOTE</font>:
 Certain <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">ACL2
 features</a> are optimized for 64-bit CCL.  Some large developments
 may even fail with 32-bit CCL; so for CCL, the 64-bit version is
 preferred.  To check if your CCL is a 64-bit CCL, evaluate the
 following expression in your CCL; the result should
-be <code>YES</code>.
+be <code>YES</code>.</p>
 
 <pre>
 #+x86_64 'yes #-x86_64 'no
 </pre>
 
-Here are <a href="ccl.html">instructions for fetching and installing
-CCL</a>.
-
-<p>
+<p>Here are <a href="ccl.html">instructions for fetching and installing
+CCL</a>.</p>
 
 <P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
 
-CLISP is a non-commercial Common Lisp implementation, available from
+<p>CLISP is a non-commercial Common Lisp implementation, available from
 <code><a href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
 We do not recommend CLISP as a platform for ACL2, for the following
-reasons.
+reasons.</p>
 
 <ul>
 
@@ -120,7 +114,7 @@ Common Lisp implementations.</li>
 
 </ul>
 
-<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B><P>
+<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B></P>
 
 <blockquote>
 
@@ -133,25 +127,23 @@ Common Lisp implementations.</li>
 
 <p>
 
-CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
+<p>CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
 implementation, available from <code><a
-href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
+href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.</p>
 
-<P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B><P>
+<P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B></P>
 
-You might be able
+<p>You might be able
 to <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
 binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
 maintaining this package.  Note however that it may take some time
 after each ACL2 release for this binary Debian package to be updated
-for that release.
+for that release.</p>
 
-<p>
-
-Otherwise, it should be easy to obtain and build GCL yourself.  Note
+<p>Otherwise, it should be easy to obtain and build GCL yourself.  Note
 that ACL2 requires ANSI GCL version 2.6.12 or later.  Perhaps simplest
 is to fetch it via git and then build the
-executable <code>gcl/gcl/bin/gcl</code> as follows.
+executable <code>gcl/gcl/bin/gcl</code> as follows.</p>
 
 <pre>
 git clone git://git.sv.gnu.org/gcl.git
@@ -160,60 +152,72 @@ git checkout Version_2_6_13pre
 ./configure --enable-ansi && make
 </pre>
 
-It may also be possible to fetch it from
+<p>It may also be possible to fetch it from
 the <a href="http://www.gnu.org/software/gcl/">main GNU website for
 GCL</a> or perhaps
 from <code><a href="http://backports.debian.org">backports.debian.org</a></code>,
-in which case ANSI GCL can be built as shown above:
+in which case ANSI GCL can be built as shown above:</p>
 
 <pre>
 cd gcl && ./configure --enable-ansi && make
 </pre>
 
-<P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
+<P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B></P>
 
-LispWorks is a commercial Common Lisp implementation. You can download
+<p>LispWorks is a commercial Common Lisp implementation. You can download
 a free, restricted, version
 from <code><a href="http://www.lispworks.com/">http://www.lispworks.com/</a></code>.
 You may ask the vendor for an evaluation license for the full product
-if you are considering purchasing a license.
+if you are considering purchasing a license.</p>
 
-<P><B><A NAME="Obtaining-SBCL">Obtaining SBCL</A></B><P>
+<P><B><A NAME="Obtaining-SBCL">Obtaining SBCL</A></B></P>
 
-SBCL (Steel Bank Common Lisp) is a non-commercial Common Lisp
-implementation, available from <code><a
-href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
+<p>SBCL (Steel Bank Common Lisp) is a non-commercial Common Lisp
+implementation, available
+from <code><a href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
+You may be able to download a suitable binary distribution from that
+website, but for some of the older versions (such as 1.2.11, which as
+of December 2018 has been the latest binary available for MacOS from
+that website for some years), you will not be able to certify some of
+the community books.  If you download a binary, you can check that the
+form <code>(member :sb-thread *features*)</code> evaluates to a value
+other than <code>NIL</code>.  To avoid this issue you can build from
+source, following instructions from the <code>INSTALL</code> file of
+the SBCL distribution using this command:</p>
 
-<p>
+<pre>
+sh make.sh --with-sb-thread
+</pre>
 
-Building ACL2 may initially fail with SBCL because of insufficient heap
-memory.  Harsh Raju Chamarthi points out that a fix is to run SBCL
-with an increased heap size limit.  As of 2014 we find that the
-the option <code>--dynamic-space-size 2000</code> following works well
-on 64-bit linux, for example using a script like the following for
-SBCL.
+<p>Depending on the platform, building ACL2 may initially fail with SBCL
+because of insufficient heap memory.  Harsh Raju Chamarthi points out
+that a fix is to run SBCL with an increased heap size limit.  As of
+2014 we find that the the option <code>--dynamic-space-size
+2000</code> following works well on 64-bit linux, for example using a
+script like the following for SBCL.</p>
+
 <pre>
 #!/bin/sh
 &lt;sbcl-dir-path&gt;/src/runtime/sbcl --core &lt;sbcl-dir-path&gt;/output/sbcl.core --dynamic-space-size 2000 "$@"
 </pre>
 
-<p>
+<p><font color="red"><b>NOTE</b></font>: The remaining remarks on SBCL
+  installation can probably be ignored for SBCL versions around 1.2.11
+  or earlier.</p>
 
-If you try to run large jobs using ACL2 build on SBCL, such as
+<p>If you try to run large jobs using ACL2 build on SBCL, such as
 building the ACL2+books combined manual, you may fail with an error,
 "Immobile space exhausted".  We have avoided this error by building
 SBCL from source rather than obtaining a binary, using options as
-follows:
+follows:</p>
 
 <pre>
 sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header
 </pre>
 
-<p>
-
-Rather comparable test runs produced a significant speed-up when
+<p>Rather comparable test runs produced a significant speed-up when
 building with the options above, as shown by the following results
-when using the "time" command for such runs.
+when using the "time" command for such runs.</p>
 
 <pre>
 ;;; before using the options above in the build
@@ -223,7 +227,7 @@ when using the "time" command for such runs.
 72693.740u 1565.148s 2:58:36.10 692.9%  0+0k 3778176+7630768io 1250pf+0w
 </pre>
 
-<b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
+<p><b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b></p>
 
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
 

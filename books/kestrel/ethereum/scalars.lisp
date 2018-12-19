@@ -26,39 +26,3 @@
     i.e. natural numbers.
     We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
     to model scalars in our Ethereum model."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defflexsum nat/error
-  :parents (basics)
-  :short "Union of @(see scalars) and @(':error')."
-  (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:nat :fields ((nat :type nat :acc-body x)) :ctor-body nat))
-
-(defsection nat/error-ext
-  :extension nat/error
-
-  (defruled nat/error-p-alt-def
-    (equal (nat/error-p x)
-           (or (eq x :error)
-               (natp x)))
-    :enable nat/error-p)
-
-  (defrule disjoint-nat/error
-    (not (and (eq x :error)
-              (natp x)))
-    :rule-classes nil)
-
-  (defrule nat/error-p-when-natp
-    (implies (natp x)
-             (nat/error-p x))
-    :enable nat/error-p)
-
-  (defrule nat/error-p-of-error
-    (nat/error-p :error))
-
-  (defrule natp-when-nat/error-p-and-not-error
-    (implies (and (nat/error-p x)
-                  (not (nat/error-case x :error)))
-             (natp x))
-    :enable nat/error-p))

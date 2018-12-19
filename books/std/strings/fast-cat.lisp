@@ -30,12 +30,14 @@
 
 (in-package "STR")
 (include-book "cat")
+(include-book "printtree")
 (include-book "tools/include-raw" :dir :system)
 ; (depends-on "fast-cat-raw.lsp")
 
 ; Matt K. mod: Include the following three books, which define
 ; STR::FAST-STRING-APPEND, STR::FAST-STRING-APPEND-LST, and
-; STR::RCHARS-TO-STRING, before we smash their definitions.  Otherwise, we can
+; STR::RCHARS-TO-STRING (sol note: also printtree->str1, now)
+; before we smash their definitions.  Otherwise, we can
 ; get an error when including fast-cat first and then including any of these
 ; books (e.g., when including centaur/gl/bfr-satlink, which includes all three
 ; of these books).  That's because the three function symbols above all belong

@@ -270,10 +270,10 @@
    ))
 
 (local
- (defthm delete-assoc-equal-returns-an-alistp
+ (defthm remove1-assoc-equal-returns-an-alistp
    (implies (alistp y)
-	    (alistp (delete-assoc-equal x y)))
-   :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))))
+	    (alistp (remove1-assoc-equal x y)))
+   :hints (("Goal" :in-theory (e/d (remove1-assoc-equal) ())))))
 
 (local
  (defthmd not-consp-not-assoc-equal
@@ -329,10 +329,10 @@
 		;; have the following legal keys now:
 		;; (*compound-cells-legal-keys* - '(:i64 :o64))
 		(if 64-bit-modep
-		    (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+		    (b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 			 (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 		      (or o64-cell no-i64-cell))
-		  (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+		  (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 		       (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 		    (or i64-cell no-o64-cell))))
 	       (this-computed-val  (cond
@@ -923,10 +923,10 @@
 		 ;; mode, we ignore the opcode information that is valid
 		 ;; only in 64-bit mode.
 		 (if 64-bit-modep
-		     (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+		     (b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 			  (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 		       (or o64-cell no-i64-cell))
-		   (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+		   (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 			(i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 		     (or i64-cell no-o64-cell))))
 		;; If a stripped cell is compound, then it can only have
@@ -3323,10 +3323,10 @@
 			    ;; information that is valid only in 64-bit
 			    ;; mode.
 			    (if 64-bit-modep
-				(b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+				(b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 				     (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 				  (or o64-cell no-i64-cell))
-			      (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+			      (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 				   (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 				(or i64-cell no-o64-cell)))))
 			(if (and (basic-simple-cell-p stripped-cell)
@@ -3448,7 +3448,7 @@
 	      (list (acl2::flatten (acl2::rev acc)))
 	    (acl2::rev acc)))
 	 (new-acc (cons val acc))
-	 (new-alst (delete-assoc-equal key alst)))
+	 (new-alst (remove1-assoc-equal key alst)))
       (collect-all-vals-of-a-key key new-alst new-acc)))
 
   (define delete-all-keys ((key)
@@ -3457,16 +3457,16 @@
     (if (endp alst)
 	nil
       (if (assoc-equal key alst)
-	  (delete-all-keys key (delete-assoc-equal key alst))
+	  (delete-all-keys key (remove1-assoc-equal key alst))
 	alst))
     ///
 
     (local
-     (defthm len-reduced-by-delete-assoc-equal
+     (defthm len-reduced-by-remove1-assoc-equal
        (implies (and (alistp alst) (assoc-equal key alst))
-		(< (len (delete-assoc-equal key alst))
+		(< (len (remove1-assoc-equal key alst))
 		   (len alst)))
-       :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
+       :hints (("Goal" :in-theory (e/d (remove1-assoc-equal) ())))
        :rule-classes :linear))
 
     (defthm len-reduced-by-delete-all-keys

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -85,7 +85,7 @@
                             *queue10$go-num*
                             *gcd$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -133,7 +133,7 @@
          (queue10$st-format q10 (* 2 data-width))
          (gcd$st-format gcd data-width))))
 
-(defthm q10-gcd$st-format=>data-width-constraint
+(defthm q10-gcd$st-format=>constraint
   (implies (q10-gcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -149,12 +149,12 @@
          (queue10$valid-st q10 (* 2 data-width))
          (gcd$valid-st gcd data-width))))
 
-(defthmd q10-gcd$valid-st=>data-width-constraint
+(defthmd q10-gcd$valid-st=>constraint
   (implies (q10-gcd$valid-st st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
   :hints (("Goal"
-           :in-theory (enable gcd$valid-st=>data-width-constraint
+           :in-theory (enable gcd$valid-st=>constraint
                               q10-gcd$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -278,10 +278,6 @@
            (q10-gcd$data-out inputs st data-width)))
   )
 
-;; Prove that Q10-GCD is not a DE primitive.
-
-(not-primp-lemma q10-gcd)
-
 ;; The value lemma for Q10-GCD
 
 (defthm q10-gcd$value
@@ -397,7 +393,7 @@
              (* 2 data-width)))
    :hints (("Goal"
             :in-theory (e/d (q10-gcd$input-format
-                             gcd$valid-st=>data-width-constraint
+                             gcd$valid-st=>constraint
                              queue10$input-format
                              queue10$data-in
                              q10-gcd$valid-st
@@ -413,7 +409,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (q10-gcd$input-format
-                             gcd$valid-st=>data-width-constraint
+                             gcd$valid-st=>constraint
                              gcd$input-format
                              gcd$data-in
                              q10-gcd$valid-st
@@ -595,7 +591,7 @@
                    q10-gcd$input-format=>gcd$input-format)
              :in-theory (e/d (get-field
                               f-sr
-                              gcd$valid-st=>data-width-constraint
+                              gcd$valid-st=>constraint
                               queue10$extracted-step
                               gcd$extracted-step
                               q10-gcd$extracted-step

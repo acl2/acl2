@@ -93,5 +93,5 @@
       )
     )
    ;; Things to remove
-   '(good-atom-listp)))
-
+   '(true-list-fix ; removed by Matt K. 12/2018, when added to *acl2-exports*
+     good-atom-listp)))

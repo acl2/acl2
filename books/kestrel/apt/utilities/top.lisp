@@ -15,6 +15,7 @@
 (include-book "transformation-table")
 (include-book "pattern-matching")
 (include-book "pattern-matching-ext")
+(include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

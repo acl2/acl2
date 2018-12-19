@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -93,7 +93,7 @@
         (si 'v-buf data-width)
         (sis 'q5-l0-data-out 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -136,7 +136,7 @@
     (and (queue5-l$st-format q5-l0 data-width)
          (queue5-l$st-format q5-l1 data-width))))
 
-(defthm queue10-l$st-format=>data-width-constraint
+(defthm queue10-l$st-format=>constraint
   (implies (queue10-l$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue10-l$st-format)))
@@ -148,10 +148,10 @@
     (and (queue5-l$valid-st q5-l0 data-width)
          (queue5-l$valid-st q5-l1 data-width))))
 
-(defthmd queue10-l$valid-st=>data-width-constraint
+(defthmd queue10-l$valid-st=>constraint
   (implies (queue10-l$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue5-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue5-l$valid-st=>constraint
                                      queue10-l$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -297,10 +297,6 @@
            (queue10-l$data-out st)))
   )
 
-;; Prove that QUEUE10-L is not a DE primitive.
-
-(not-primp-lemma queue10-l)
-
 ;; The value lemma for QUEUE10-L
 
 (defthm queue10-l$value
@@ -425,7 +421,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue5-l$valid-st=>data-width-constraint
+                             queue5-l$valid-st=>constraint
                              queue5-l$input-format
                              queue5-l$in-act
                              queue5-l$out-act
@@ -447,7 +443,7 @@
    :hints (("Goal"
             :in-theory (e/d (get-field
                              joint-act
-                             queue5-l$valid-st=>data-width-constraint
+                             queue5-l$valid-st=>constraint
                              queue5-l$input-format
                              queue5-l$in-act
                              queue5-l$out-act
@@ -601,7 +597,7 @@
     :hints (("Goal"
              :use queue10-l$input-format=>q5-l0$input-format
              :in-theory (e/d (get-field
-                              queue5-l$valid-st=>data-width-constraint
+                              queue5-l$valid-st=>constraint
                               queue5-l$extracted-step
                               queue10-l$extracted-step
                               queue10-l$input-format
@@ -654,7 +650,7 @@
              :do-not-induct t
              :use queue10-l$input-format=>q5-l1$input-format
              :in-theory (e/d (get-field
-                              queue5-l$valid-st=>data-width-constraint
+                              queue5-l$valid-st=>constraint
                               queue10-l$input-format
                               queue10-l$valid-st
                               queue10-l$extract

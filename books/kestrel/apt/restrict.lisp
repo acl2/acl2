@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/error-checking" :dir :system)
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
@@ -33,10 +33,10 @@
    </p>
    <ul>
      <li>
-     @('state') is the ACL2's @(see state).
+     @('state') is the ACL2 @(see state).
      </li>
      <li>
-     @('wrld') is the ACL2's @(see world).
+     @('wrld') is the ACL2 @(see world).
      </li>
      <li>
      @('ctx') is the context used for errors.
@@ -54,12 +54,12 @@
      @('hints'),
      @('print'), and
      @('show-only')
-     are the homonymous inputs to @(tsee tailrec),
+     are the homonymous inputs to @(tsee restrict),
      before being processed.
      These formal parameters have no types because they may be any values.
      </li>
      <li>
-     @('call') is the call to @(tsee tailrec) supplied by the user.
+     @('call') is the call to @(tsee restrict) supplied by the user.
      </li>
      <li>
      @('old$'),

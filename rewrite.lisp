@@ -6922,6 +6922,10 @@
                    (restore-brr-globals1 'brr-monitored-runes
                                          new-alist old-alist)
                    state)
+     (f-put-global 'brr-evisc-tuple
+                   (restore-brr-globals1 'brr-evisc-tuple
+                                         new-alist old-alist)
+                   state)
      (f-put-global 'brr-stack
                    (restore-brr-globals1 'brr-stack
                                          new-alist old-alist)
@@ -6951,6 +6955,8 @@
                  (list
                   (cons 'brr-monitored-runes
                         (f-get-global 'brr-monitored-runes state))
+                  (cons 'brr-evisc-tuple
+                        (f-get-global 'brr-evisc-tuple state))
                   (cons 'brr-stack
                         (f-get-global 'brr-stack state))
                   (cons 'brr-gstack
@@ -6980,6 +6986,8 @@
          (case var
                (brr-monitored-runes
                 (f-get-global 'brr-monitored-runes state))
+               (brr-evisc-tuple
+                (f-get-global 'brr-evisc-tuple state))
                (brr-stack
                 (f-get-global 'brr-stack state))
                (brr-gstack
@@ -7080,8 +7088,8 @@
 
 ; This is a no-op that returns nil.  But it has the secret side effect of
 ; setting the brr-global brr-stack to nil.  We don't want to reset all the
-; brr-globals: brr-monitored-runes should persist.  The others are irrelevant
-; because they will be assigned before they are read.
+; brr-globals: brr-monitored-runes and brr-evisc-tuple should persist.  The
+; others are irrelevant because they will be assigned before they are read.
 
   (and (f-get-global 'gstackp state)
        (brr-wormhole '(lambda (whs)
@@ -8057,13 +8065,69 @@
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
+(defun brr-evisc-tuple (state)
+  (cond
+   ((eq (f-get-global 'wormhole-name state) 'brr)
+    (let ((val (get-brr-global 'brr-evisc-tuple state)))
+      (if (eq val :DEFAULT)
+          (term-evisc-tuple t state)
+        val)))
+   (t (er hard 'brr-evisc-tuple
+          "It is illegal to call ~x0 unless you are under ~
+           break-rewrite and you are not.  Consider instead evaluating ~x1."
+          'brr-evisc-tuple
+          '(show-brr-evisc-tuple)))))
+
+(defun set-brr-evisc-tuple (val state)
+  (pprogn
+   (f-put-global 'brr-evisc-tuple-initialized t state)
+   (cond
+    ((eq (f-get-global 'wormhole-name state) 'brr)
+     (f-put-global 'brr-evisc-tuple val state))
+    (t (prog2$
+        (brr-wormhole
+         '(lambda (whs)
+            (set-wormhole-entry-code whs :ENTER))
+         nil
+         `(pprogn (f-put-global 'brr-evisc-tuple ',val state)
+                  (value nil))
+         nil)
+        state)))))
+
+(defun maybe-initialize-brr-evisc-tuple (state)
+  (cond ((f-get-global 'brr-evisc-tuple-initialized state)
+; The test above is always true inside :brr.
+         state)
+        (t (set-brr-evisc-tuple :DEFAULT state))))
+
+(defun show-brr-evisc-tuple-fn (state)
+  (pprogn
+   (maybe-initialize-brr-evisc-tuple state)
+   (cond
+    ((eq (f-get-global 'wormhole-name state) 'brr)
+     (prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
+             (value :invisible)))
+    (t
+     (prog2$
+      (brr-wormhole
+       '(lambda (whs)
+          (set-wormhole-entry-code whs :ENTER))
+       nil
+       `(prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
+                (value nil))
+       nil)
+      (value :invisible))))))
+
+(defmacro show-brr-evisc-tuple ()
+  '(show-brr-evisc-tuple-fn state))
+
 (defun show-ancestors-stack-msg (state)
   (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
         actual ancestors stack.~%"
        (tilde-*-ancestors-stack-msg
         (get-brr-local 'ancestors state)
         (w state)
-        (term-evisc-tuple t state))
+        (brr-evisc-tuple state))
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
@@ -8354,7 +8418,7 @@
                          (get-rule-field (get-brr-local 'lemma state)
                                          :rune)
                          (get-brr-local 'target state)
-                         (term-evisc-tuple t state))
+                         (brr-evisc-tuple state))
                      (value t))))
            (t (pprogn
                (pop-brr-stack-frame state)
@@ -8457,7 +8521,7 @@
             (prog2$
              (cw "~*0"
                  (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (term-evisc-tuple t state)
+                                       (brr-evisc-tuple state)
                                        5))
              (value :invisible))))
        (:type-alist
@@ -8525,7 +8589,7 @@
              (value :invisible))))
        (:path
         0 (lambda nil
-            (prog2$ (cw-gstack)
+            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
                     (value :invisible))))
        (:frame
         1 (lambda (n)
@@ -8595,6 +8659,9 @@
                  (f-put-global 'brr-monitored-runes
                                (get-brr-local 'saved-brr-monitored-runes state)
                                state)
+                 (f-put-global 'brr-evisc-tuple
+                               (get-brr-local 'saved-brr-evisc-tuple state)
+                               state)
                  (pop-brr-stack-frame state)
                  (value nil))))
        ((eq (get-brr-local 'action state) 'print)
@@ -8605,7 +8672,7 @@
                          (get-brr-local 'depth state)
                          (get-rule-field (get-brr-local 'lemma state) :rune)
                          (brr-result state)
-                         (term-evisc-tuple t state))
+                         (brr-evisc-tuple state))
                    (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
                        (get-brr-local 'depth state)
                        (get-rule-field (get-brr-local 'lemma state) :rune)
@@ -8613,12 +8680,15 @@
                         (get-brr-local 'failure-reason state)
                         1
                         (get-brr-local 'unify-subst state)
-                        (term-evisc-tuple t state)
+                        (brr-evisc-tuple state)
                         (free-vars-display-limit state)
                         state)))
                  (pprogn
                   (f-put-global 'brr-monitored-runes
                                 (get-brr-local 'saved-brr-monitored-runes state)
+                                state)
+                  (f-put-global 'brr-evisc-tuple
+                                (get-brr-local 'saved-brr-evisc-tuple state)
                                 state)
                   (pop-brr-stack-frame state)
                   (value nil)))))
@@ -8635,13 +8705,17 @@
                                   (get-brr-local 'saved-brr-monitored-runes
                                                  state)
                                   state)
+                    (f-put-global 'brr-evisc-tuple
+                                  (get-brr-local 'saved-brr-evisc-tuple
+                                                 state)
+                                  state)
                     (prog2$
                      (if (get-brr-local 'wonp state)
                          (cw "~%~F0! ~F1 produced ~X23.~|~%"
                              (get-brr-local 'depth state)
                              (get-rule-field (get-brr-local 'lemma state) :rune)
                              (brr-result state)
-                             (term-evisc-tuple t state))
+                             (brr-evisc-tuple state))
                        (cw "~%~F0x ~F1 failed because ~@2~|~%"
                            (get-brr-local 'depth state)
                            (get-rule-field (get-brr-local 'lemma state) :rune)
@@ -8649,7 +8723,7 @@
                             (get-brr-local 'failure-reason state)
                             1
                             (get-brr-local 'unify-subst state)
-                            (term-evisc-tuple t state)
+                            (brr-evisc-tuple state)
                             (free-vars-display-limit state)
                             state)))
                      (value t)))))))
@@ -8736,7 +8810,7 @@
             (prog2$
              (cw "~*0"
                  (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (term-evisc-tuple t state)
+                                       (brr-evisc-tuple state)
                                        5))
              (value :invisible))))
        (:type-alist
@@ -8822,7 +8896,7 @@
                     (get-brr-local 'failure-reason state)
                     1
                     (get-brr-local 'unify-subst state)
-                    (term-evisc-tuple t state)
+                    (brr-evisc-tuple state)
                     (free-vars-display-limit state)
                     state)))
              (value :invisible))))
@@ -8837,7 +8911,7 @@
              (value :invisible))))
        (:path
         0 (lambda nil
-            (prog2$ (cw-gstack)
+            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
                     (value :invisible))))
        (:frame
         1 (lambda (n)
@@ -9542,7 +9616,7 @@
 ; logic-mode function symbol fn of w whose input arity is the length of
 ; arglist.  But (fncall-term fn arglist st2) is the term (equal (fn . arglist)
 ; 'val) where (magic-ev-fncall fn arglist st2 ...) = (mv nil val).  We arrange
-; that magic-ev-fncall has unknown constraints, but we conceive of it as being
+; that magic-ev-fncall has unknown-constraints, but we conceive of it as being
 ; axiomatized using clocked, logic mode definitions that follow the definitions
 ; supporting ev-fncall -- in particular, a clocked, logic-mode version of
 ; ev-fncall-rec-logical -- such that (mv t nil) is returned when the clock
@@ -9729,29 +9803,41 @@
 
 ; A hyp is a "good synp hyp" if either it does not mention SYNP as a function
 ; symbol or else it is a call of SYNP that we know how to handle in our
-; processing of rewrite and linear rules.  We return nil in this case, or else
-; an appropriate message explaining the problem.  See bad-synp-hyp-msg.
+; processing of rewrite and linear rules.  We return nil as the first value in
+; this case, or else an appropriate message explaining the problem.  See
+; bad-synp-hyp-msg.
 
   (if (ffnnamep 'synp hyp)
       (cond ((not (eq (ffn-symb hyp) 'synp))
+
+; Through Version_8.1, the message below seemed to suggest that we insist that
+; synp only occur as the top function symbol of hyp.  However, we can actually
+; allow it below that in a non-executable context, provided it also occurs as
+; the top function symbol.  So we changed "can occur only" to "should occur
+; only", since really, this weaker check is probably good enough.
+
              (mv (cons
-                  "a call of syntaxp or bind-free can occur only ~
+                  "a call of syntaxp or bind-free should occur only ~
                    at the top level of a hypothesis, but in ~x0 it ~
-                   appears elsewhere."
+                   appears elsewhere but not at the top level."
                   (list (cons #\0 (untranslate hyp t wrld))))
+                 bound-vars all-vars-bound-p))
+            ((not (all-quoteps (fargs hyp)))
+             (mv (cons
+                  "a call of ~x0 in a hypothesis should be made on quoted ~
+                   arguments, but that is not true for the hypothesis, ~x1."
+                  (list (cons #\0 'synp)
+                        (cons #\1 (untranslate hyp nil wrld))))
                  bound-vars all-vars-bound-p))
 
 ; Note that we check for the well-formedness of a call to synp in
 ; translate, so the following bindings should be safe.
 
             (t
-             (let* ((term-to-be-evaluated (get-evg (fargn hyp 3)
-                                                   'bad-synp-hyp-msg1-arg3))
+             (let* ((term-to-be-evaluated (unquote (fargn hyp 3)))
                     (vars (all-vars term-to-be-evaluated))
-                    (saved-term (get-evg (fargn hyp 2)
-                                         'bad-synp-hyp-msg1-arg2))
-                    (vars-to-be-bound (get-evg (fargn hyp 1)
-                                               'bad-synp-hyp-msg1-arg1)))
+                    (saved-term (unquote (fargn hyp 2)))
+                    (vars-to-be-bound (unquote (fargn hyp 1))))
                (cond ((not (termp term-to-be-evaluated wrld))
                       (mv (cons
                            "the term to be evaluated by the syntaxp or ~
@@ -10962,8 +11048,12 @@
 
                          (cond ((ffn-symb-p hyp 'synp)
                                 (let ((qterm (fargn hyp 3)))
-                                  (assert$ (quotep qterm)
-                                           (unquote qterm))))
+                                  (cond ((quotep qterm)
+
+; Probably qterm is always a quotep, but we prefer to be cautious here.
+
+                                         (unquote qterm))
+                                        (t hyp))))
                                (t hyp)))
                         :failure-reason failure-reason
                         :hyp-info hyp
@@ -11790,28 +11880,16 @@
                   even though this was the case when ~x2 was proved.  "
                  non-logic-fns nil name))))))
 
-(mutual-recursion
-
-(defun all-ffn-symbs (term ans)
-  (declare (xargs :guard (and (pseudo-termp term)
-                              (symbol-listp ans))))
-  (cond
-   ((variablep term) ans)
-   ((fquotep term) ans)
-   (t (all-ffn-symbs-lst (fargs term)
-                         (cond ((flambda-applicationp term)
-                                (all-ffn-symbs (lambda-body (ffn-symb term))
-                                               ans))
-                               (t (add-to-set-eq (ffn-symb term) ans)))))))
-
-(defun all-ffn-symbs-lst (lst ans)
-  (declare (xargs :guard (and (pseudo-term-listp lst)
-                              (symbol-listp ans))))
-  (cond ((endp lst) ans)
-        (t (all-ffn-symbs-lst (cdr lst)
-                              (all-ffn-symbs (car lst) ans)))))
-
-)
+; The following pair of macro definitions replaces function definitions that
+; unnecessarily duplicated all-fnnames1 (and all-fnnames, all-fnnames-lst).
+; This replacement doesn't perfectly preserve functionality, because the
+; original versions below could return the list of function symbols in a
+; different order than is returned by all-fnnames1 (and all-fnnames,
+; all-fnnames-lst).  Perhaps we will eliminate these macros in the future.
+(defmacro all-ffn-symbs (term ans)
+  `(all-fnnames1 nil ,term ,ans))
+(defmacro all-ffn-symbs-lst (lst ans)
+  `(all-fnnames1 t ,lst ,ans))
 
 (mutual-recursion
 

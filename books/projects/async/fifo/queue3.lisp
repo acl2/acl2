@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -114,7 +114,7 @@
         (si 'v-buf data-width)
         (sis 'd2-out 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -160,7 +160,7 @@
          (link$st-format l1 data-width)
          (link$st-format l2 data-width))))
 
-(defthm queue3$st-format=>data-width-constraint
+(defthm queue3$st-format=>constraint
   (implies (queue3$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue3$st-format)))
@@ -174,7 +174,7 @@
          (link$valid-st l1 data-width)
          (link$valid-st l2 data-width))))
 
-(defthmd queue3$valid-st=>data-width-constraint
+(defthmd queue3$valid-st=>constraint
   (implies (queue3$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue3$valid-st)))
@@ -270,10 +270,6 @@
            (queue3$out-act inputs st data-width)
            (queue3$data-out st)))
   )
-
-;; Prove that Q3 is not a DE primitive.
-
-(not-primp-lemma queue3)
 
 ;; The value lemma for Q3
 

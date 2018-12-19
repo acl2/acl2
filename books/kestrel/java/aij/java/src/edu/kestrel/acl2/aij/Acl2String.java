@@ -87,8 +87,8 @@ public final class Acl2String extends Acl2Value {
             throw new IllegalArgumentException("Null character list.");
         int len = 0;
         for (;
-             list instanceof Acl2Cons;
-             list = ((Acl2Cons) list).getCdr()) {
+             list instanceof Acl2ConsPair;
+             list = ((Acl2ConsPair) list).getCdr()) {
             if (len == Integer.MAX_VALUE)
                 throw new IllegalArgumentException("Character list too long.");
             else
@@ -96,7 +96,7 @@ public final class Acl2String extends Acl2Value {
         }
         char[] jcharacters = new char[len];
         for (int i = 0; i < len; ++i) {
-            Acl2Cons pair = (Acl2Cons) list;
+            Acl2ConsPair pair = (Acl2ConsPair) list;
             Acl2Value element = pair.getCar();
             if (element instanceof Acl2Character)
                 jcharacters[i] = ((Acl2Character) element).getJavaChar();
@@ -118,7 +118,7 @@ public final class Acl2String extends Acl2Value {
         for (int i = this.jstring.length() - 1; i >= 0; --i) {
             Acl2Character character =
                     Acl2Character.make(this.jstring.charAt(i));
-            list = Acl2Cons.make(character, list);
+            list = Acl2ConsPair.make(character, list);
         }
         return list;
     }
@@ -164,7 +164,7 @@ public final class Acl2String extends Acl2Value {
             int len = imported.size();
             Acl2Value result = Acl2Symbol.NIL;
             for (int i = len - 1; i >= 0; --i)
-                result = Acl2Cons.make(imported.get(i), result);
+                result = Acl2ConsPair.make(imported.get(i), result);
             return result;
         } else {
             throw new Acl2EvaluationException
@@ -231,7 +231,7 @@ public final class Acl2String extends Acl2Value {
             Acl2String that = (Acl2String) o;
             return this.jstring.compareTo(that.jstring);
         }
-        // strings are less than symbols and pairs:
+        // strings are less than symbols and cons pairs:
         return -1;
     }
 

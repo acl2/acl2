@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -41,7 +41,7 @@
                 (sis 'go 0 *merge$go-num*)))
  (list* 'act 'act0 'act1
         (sis 'data-out 0 data-width))
- '()
+ ()
  (list
   '(g0 (select~) b-not (select))
   '(g1 (ready-in0) b-and (full-in0 select~))
@@ -63,7 +63,7 @@
               (append (sis 'data-in1 0 data-width)
                       (sis 'data-in0 0 data-width)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; MERGE.
@@ -181,8 +181,6 @@
              (not (merge$act inputs data-width)))
     :hints (("Goal" :in-theory (enable merge$act))))
   )
-
-(not-primp-lemma merge) ;; Prove that MERGE is not a DE primitive.
 
 ;; The value lemma for MERGE
 

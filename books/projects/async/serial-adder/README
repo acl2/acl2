@@ -20,15 +20,12 @@ The modeling and verification of the old 32-bit self-timed serial
 adder are implemented in
 32-bit-serial-adder-old/32-bit-serial-adder.lisp.
 
-shift-register-piso.lisp: a parallel-in, serial-out (PISO) shift
-register model.
+piso-sreg.lisp: a parallel-in, serial-out (PISO) shift register model.
 
-shift-register2-piso.lisp: a module consists of two PISO shift
-registers that share the same communication signal at their input
-ports.
+piso2-sreg.lisp: a module consists of two PISO shift registers that
+share the same communication signal at their input ports.
 
-shift-register-sipo.lisp: a serial-in, parallel-out (SIPO) shift
-register model.
+sipo-sreg.lisp: a serial-in, parallel-out (SIPO) shift register model.
 
 serial-add.lisp: a serial adder model serial-add.
 

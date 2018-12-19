@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -69,7 +69,7 @@
         (list* 'full-in 'empty-out0- 'empty-out1- 'flag
                (append (sis 'data-in 0 (* 2 data-width))
                        (sis 'go 0 *branch$go-num*)))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; GCD-COND.
@@ -221,10 +221,6 @@
              (bvp (gcd-cond$data1-out inputs data-width)))
     :hints (("Goal" :in-theory (enable gcd-cond$data1-out))))
   )
-
-;; Prove that GCD-COND is not a DE primitive.
-
-(not-primp-lemma gcd-cond)
 
 ;; The value lemma for GCD-COND
 

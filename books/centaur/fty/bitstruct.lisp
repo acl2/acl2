@@ -77,7 +77,7 @@
 
 (defconst *defbitstruct-keywords*
   '(:pred :fix :equiv :xvar :signedp :inline :fullp
-    :parents :short :long))
+    :parents :short :long :msb-first))
 
 (define lookup-bitstruct (name bitstruct-table)
   (cond ((atom bitstruct-table) nil)
@@ -263,11 +263,15 @@
        (fullp (getarg :fullp t kwd-alist))
        (signedp (getarg :signedp nil kwd-alist))
        (inline (getarg :inline nil kwd-alist))
+       (msb-first (getarg :msb-first nil kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
 		 (intern-in-package-of-symbol "X" name)))
 
 
-       ((mv fields width fields-fullp) (parse-bitstruct-fields orig-fields 0 name bitstruct-table)))
+       ((mv fields width fields-fullp) 
+        (parse-bitstruct-fields 
+         (if msb-first (rev orig-fields) orig-fields)
+         0 name bitstruct-table)))
     (make-bitstruct :name name
 		    :pred pred
 		    :fix fix
@@ -582,6 +586,8 @@
 		   unsigned-byte-p-of-bool->bit
 		   signed-byte-p-of-bool->bit))
 	  part-select-width-low-in-terms-of-loghead-and-logtail
+          remove-inner-logext-from-logext-logtail-nest
+          remove-outer-logtail-from-logtail-logext-nest
 	  . ,subfield-accs)))
        ;; ,@(cond ((eql field.width 1)
        ;;          `(:guard-hints (("goal" :in-theory (enable part-select-is-logbit
@@ -894,15 +900,18 @@
 	 :in-theory
 	 (e/d
 	  (part-install-width-low-in-terms-of-logior-logmask-ash
-	   ,@(and (eql field.width 1)
+           ,@(and (eql field.width 1)
 		  '(logbit-at-zero-is-loghead-of-1
 		    unsigned-byte-p-of-bool->bit
 		    signed-byte-p-of-bool->bit))
 	   ,@(and (or x.signedp field.signedp)
 		  '(signed-byte-p-+1
 		    signed-byte-p-one-bigger-when-unsigned-byte-p))
-	   ,@(and field.subfield-hierarchy
-		  subfield-fns))
+	   ,@(and field.subfield-hierarchy                  
+                  `(,@subfield-fns
+                    simplify-subfield-updater-guard-expression-with-inner-logext
+                    simplify-subfield-updater-guard-expression-with-more-logext
+                    remove-inner-logext-from-logext-logtail-nest)))
 	  (,type-incr-rule
 	   bitops::logand-with-negated-bitmask
 	   ,@(and (eql field.width 1)
@@ -1073,49 +1082,53 @@
 			     (extra-binder-names->acc-alist (cdr (assoc :extra-binder-names x.kwd-alist)) x.name))))
 
     (value
-     `(defsection ,x.name
-	:parents ,(or (cdr (assoc :parents x.kwd-alist))
-		      (xdoc::get-default-parents (w state))
-		      '(acl2::undocumented))
-	:short ,(or (cdr (assoc :short x.kwd-alist))
-		    (cat "An " (str::natstr x.width) "-bit "
-			 (if x.signedp "signed" "unsigned")
-			 " bitstruct type."))
-	:long ,long
-	(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-	(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-	(local (include-book "arithmetic/top-with-meta" :dir :system))
-	(local (in-theory (disable unsigned-byte-p signed-byte-p
-				   part-select part-install
-				   acl2::bit->bool)))
-	,(bitstruct-pred x)
-	,(bitstruct-fix x)
-	,@(and (consp x.fields)
-	       (list `(def-ruleset! ,x.defs-ruleset nil)
-		     (bitstruct-ctor x)
-		     (bitstruct-equiv-under-mask x)))
-	,@(bitstruct-field-accessors x.fields x)
-	,@(and (Consp x.fields)
-	       `((defthmd ,(intern-in-package-of-symbol
-			    (cat (symbol-name x.fix) "-IN-TERMS-OF-" (symbol-name x.name))
-			    x.name)
-		   (equal (,x.fix ,x.xvar)
-			  (,(std::da-changer-name x.name) ,x.xvar))
-		   :hints(("Goal" :in-theory (enable ,x.fix ,x.name . ,(bitstruct-fields->accessors x.fields)))
-			  (and stable-under-simplificationp
-			       '(:in-theory (enable logext-part-select-at-0-identity
-						    part-select-at-0-of-unsigned-byte-identity)))
-			  ;; (bitops::logbitp-reasoning)
-			  ))))
-	,@(bitstruct-field-updaters x.fields x)
-	,@(and (consp x.fields)
-	       `((acl2::def-b*-binder ,x.name
-		   :body
-		   (std::da-patbind-fn ',x.name
-				       ',binder-alist
-				       acl2::args acl2::forms acl2::rest-expr))
-		 ,(bitstruct-debugger x)))
-	(table bitstruct-table ',x.name ',x)))))
+     `(with-output
+        :off (event acl2::prove)
+        :summary (acl2::form time)
+        (defsection ,x.name
+          :parents ,(or (cdr (assoc :parents x.kwd-alist))
+                        (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented))
+          :short ,(or (cdr (assoc :short x.kwd-alist))
+                      (cat "An " (str::natstr x.width) "-bit "
+                           (if x.signedp "signed" "unsigned")
+                           " bitstruct type."))
+          :long ,long
+          (set-inhibit-warnings "non-rec" "disable" "subsume") ;; implicitly local 
+          (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+          (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+          (local (include-book "arithmetic/top-with-meta" :dir :system))
+          (local (in-theory (disable unsigned-byte-p signed-byte-p
+                                     part-select part-install
+                                     acl2::bit->bool)))
+          ,(bitstruct-pred x)
+          ,(bitstruct-fix x)
+          ,@(and (consp x.fields)
+                 (list `(def-ruleset! ,x.defs-ruleset nil)
+                       (bitstruct-ctor x)
+                       (bitstruct-equiv-under-mask x)))
+          ,@(bitstruct-field-accessors x.fields x)
+          ,@(and (Consp x.fields)
+                 `((defthmd ,(intern-in-package-of-symbol
+                              (cat (symbol-name x.fix) "-IN-TERMS-OF-" (symbol-name x.name))
+                              x.name)
+                     (equal (,x.fix ,x.xvar)
+                            (,(std::da-changer-name x.name) ,x.xvar))
+                     :hints(("Goal" :in-theory (enable ,x.fix ,x.name . ,(bitstruct-fields->accessors x.fields)))
+                            (and stable-under-simplificationp
+                                 '(:in-theory (enable logext-part-select-at-0-identity
+                                                      part-select-at-0-of-unsigned-byte-identity)))
+;; (bitops::logbitp-reasoning)
+                            ))))
+          ,@(bitstruct-field-updaters x.fields x)
+          ,@(and (consp x.fields)
+                 `((acl2::def-b*-binder ,x.name
+                     :body
+                     (std::da-patbind-fn ',x.name
+                                         ',binder-alist
+                                         acl2::args acl2::forms acl2::rest-expr))
+                   ,(bitstruct-debugger x)))
+          (table bitstruct-table ',x.name ',x))))))
 
 (define defbitstruct-fn (args state)
   (b* ((bitstruct-table (table-alist 'bitstruct-table (w state)))

@@ -780,8 +780,8 @@ case, it is expected that the solver will write a file
 
 <h3>Axiomatization</h3>
 
-<p>We use ACL2's @(see define-trusted-clause-processor) @(':partial-theory')
-feature to assume that the function satisfies certain constraints.</p>
+<p>We use ACL2's @(see acl2::partial-encapsulate) feature to assume that the function
+satisfies certain constraints.</p>
 
 <p>To make our story as tight as possible, we would like to assume very little
 about @('satlink-run-fn').  It turns out we only need three constraints, with
@@ -832,34 +832,29 @@ top-level @(see sat) wrapper will verify those answers.</p>")
 (defun satlink-useless-clauseproc (clause)
   (list clause))
 
-(defttag :satlink)
+(acl2::partial-encapsulate
+ (((satlink-run-fn * * env$) => (mv * env$ *)
+   :formals (config formula env$)
+   :guard (and (config-p config)
+               (lit-list-listp formula))))
+ nil ;; supporters
+ (local (defun satlink-run-fn (config formula env$)
+          (declare (ignore config formula)
+                   (xargs :stobjs env$))
+          (mv :failed env$ nil)))
 
-(define-trusted-clause-processor
-  satlink-useless-clauseproc
-  (satlink-run-fn)
-  :partial-theory
-  (encapsulate
-    (((satlink-run-fn * * env$) => (mv * env$ *)
-      :formals (config formula env$)
-      :guard (and (config-p config)
-                  (lit-list-listp formula))))
-    (local (defun satlink-run-fn (config formula env$)
-             (declare (ignore config formula)
-                      (xargs :stobjs env$))
-             (mv :failed env$ nil)))
+ (defthm true-listp-of-satlink-run-fn
+   (true-listp (satlink-run-fn config formula env$))
+   :rule-classes :type-prescription)
 
-    (defthm true-listp-of-satlink-run-fn
-      (true-listp (satlink-run-fn config formula env$))
-      :rule-classes :type-prescription)
+ (defthm len-of-satlink-run-fn
+   (equal (len (satlink-run-fn config formula env$)) 3))
 
-    (defthm len-of-satlink-run-fn
-      (equal (len (satlink-run-fn config formula env$)) 3))
-
-    (defthm satlink-run-fn-unsat-claim
-      (implies (and (equal (eval-formula formula arbitrary-env) 1)
-                    (not (config->lrat-check config)))
-               (not (equal (mv-nth 0 (satlink-run-fn config formula env$))
-                           :unsat))))))
+ (defthm satlink-run-fn-unsat-claim
+   (implies (and (equal (eval-formula formula arbitrary-env) 1)
+                 (not (config->lrat-check config)))
+            (not (equal (mv-nth 0 (satlink-run-fn config formula env$))
+                        :unsat)))))
 
 (defsection satlink-run
   :parents (logical-story)
@@ -878,6 +873,8 @@ invoke @(see satlink-run-impl), which actually calls the SAT solver.</p>"
                     :guard (and (config-p config)
                                 (lit-list-listp formula))))
     (satlink-run-fn config formula env$)))
+
+(defttag :satlink)
 
 ; (depends-on "top-raw.lsp")
 (acl2::include-raw "top-raw.lsp")

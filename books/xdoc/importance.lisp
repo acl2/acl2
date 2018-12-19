@@ -94,6 +94,8 @@
    parents      ; copy of parents from normal topic
    short-tokens ; already preprocessed
    long-tokens  ; already preprocessed
+   short-err
+   long-err
    links        ; collected up links (short+long combined) keys (i.e., "ACL2____FOO")
    size         ; heuristic for how much content there is
    ))
@@ -117,6 +119,9 @@
          (car xtopics))
         (t
          (find-xtopic name (cdr xtopics)))))
+
+(defun xtopics-fal (xtopics)
+  (make-fast-alist (pairlis$ (xtopiclist->names xtopics) xtopics)))
 
 (defun extract-links
   (ctx       ; Context for warnings about malformed XML
@@ -410,7 +415,6 @@
 
 (defun xtopic-from-topic
   (topic      ; ordinary xdoc topic to convert
-   topics-fal ; for the preprocessor
    state      ; for the preprocessor
    )
   ; returns the corresponding xtopic
@@ -420,13 +424,14 @@
        (long     (or (cdr (assoc :long topic)) ""))
        (parents  (cdr (assoc :parents topic)))
 
-       ((mv long-rchars state) (preprocess-main long name
-                                                topics-fal nil
-                                                base-pkg state nil))
-       (long-str (str::rchars-to-string long-rchars))
-       ((mv err long-tokens) (parse-xml long-str))
+       ;; ((mv long-printtree state) (preprocess-main long name
+       ;;                                          topics-fal nil
+       ;;                                          base-pkg state nil))
+       ;; (long-str (str::printtree->str long-printtree))
+       ;; ((mv long-err long-tokens) (parse-xml long-str))
+       ((mv long-err long-tokens) (parse-xml long))
        (state
-        (if err
+        (if long-err
             (pprogn
              (prog2$ (note-xdoc-error) state)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
@@ -434,19 +439,20 @@
              (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
                   (list (cons #\0 name))
                     *standard-co* state nil)
-             (princ$ err *standard-co* state)
+             (princ$ long-err *standard-co* state)
              (fms "~%~%" nil *standard-co* state nil))
           state))
-       ((when err)
-        (mv nil state))
+       ;; ((when err)
+       ;;  (mv nil state))
 
-       ((mv short-rchars state) (preprocess-main short name
-                                                 topics-fal nil
-                                                 base-pkg state nil))
-       (short-str (str::rchars-to-string short-rchars))
-       ((mv err short-tokens) (parse-xml short-str))
+       ;; ((mv short-printtree state) (preprocess-main short name
+       ;;                                           topics-fal nil
+       ;;                                           base-pkg state nil))
+       ;; (short-str (str::printtree->str short-printtree))
+       ;; ((mv short-err short-tokens) (parse-xml short-str))
+       ((mv short-err short-tokens) (parse-xml short))
        (state
-        (if err
+        (if short-err
             (pprogn
              (prog2$ (note-xdoc-error) state)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
@@ -454,11 +460,11 @@
              (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
                   (list (cons #\0 name))
                   *standard-co* state nil)
-             (princ$ err *standard-co* state)
+             (princ$ short-err *standard-co* state)
              (fms "~%~%" nil *standard-co* state nil))
           state))
-       ((when err)
-        (mv nil state))
+       ;; ((when short-err)
+       ;;  (mv nil state))
 
        (short-links (extract-links (list name :short) short-tokens nil))
        (long-links  (extract-links (list name :long) long-tokens nil))
@@ -486,28 +492,30 @@
                             :parents parents
                             :short-tokens short-tokens
                             :long-tokens long-tokens
+                            :short-err short-err
+                            :long-err long-err
                             :links (append short-links long-links)
                             :size normalized-size)))
     (mv xtopic state)))
 
-(defun xtopics-from-topics-aux (topics topics-fal state)
+
+
+(defun xtopics-from-topics (topics state)
   (b* (((when (atom topics))
         (mv nil state))
        ((mv first state)
-        (xtopic-from-topic (car topics) topics-fal state))
+        (xtopic-from-topic (car topics) state))
        ((mv rest state)
-        (xtopics-from-topics-aux (cdr topics) topics-fal state))
-       (ret (if first
-                (cons first rest)
-              rest)))
-    (mv ret state)))
+        (xtopics-from-topics (cdr topics) state)))
+    (mv (cons first rest) state)))
 
-(defun xtopics-from-topics (topics state)
-  (b* ((topics-fal (topics-fal topics))
-       ((mv xtopics state)
-        (xtopics-from-topics-aux topics topics-fal state)))
-    (fast-alist-free topics-fal)
-    (mv xtopics state)))
+(defun xtopics-remove-errors (xtopics)
+  (if (atom xtopics)
+      nil
+    (if (b* (((xtopic x) (car xtopics)))
+          (or x.short-err x.long-err))
+        (xtopics-remove-errors (cdr xtopics))
+      (cons (car xtopics) (xtopics-remove-errors (cdr xtopics))))))
 
 ; Cross-reference/subtopic scoring.
 
@@ -671,38 +679,38 @@
               (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%")))
        (priority-str (priority-float (/ rank 200)))
 
-       (acc (str::revappend-chars " <url>" acc))
+       (acc (str::printtree-rconcat " <url>" acc))
        (acc (cons #\Newline acc))
        ;; The following three lines were used to generate a sitemap for
        ;; index.html.  But, we don't use index.html for indexing, because
        ;; search engines don't use javascript.
-       ;; (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL?topic=" acc))
-       ;; (acc (str::revappend-chars key acc))
-       ;; (acc (str::revappend-chars "</loc>" acc))
-       (acc (str::revappend-chars "  <loc>XDOCMANUALBASEURL/HTML/" acc))
-       (acc (str::revappend-chars key acc))
-       (acc (str::revappend-chars ".html</loc>" acc))
+       ;; (acc (str::printtree-rconcat "  <loc>XDOCMANUALBASEURL?topic=" acc))
+       ;; (acc (str::printtree-rconcat key acc))
+       ;; (acc (str::printtree-rconcat "</loc>" acc))
+       (acc (str::printtree-rconcat "  <loc>XDOCMANUALBASEURL/HTML/" acc))
+       (acc (str::printtree-rconcat key acc))
+       (acc (str::printtree-rconcat ".html</loc>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "  <changefreq>daily</changefreq>" acc))
+       (acc (str::printtree-rconcat "  <changefreq>daily</changefreq>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "  <priority>" acc))
-       (acc (str::revappend-chars priority-str acc))
-       (acc (str::revappend-chars "</priority>" acc))
+       (acc (str::printtree-rconcat "  <priority>" acc))
+       (acc (str::printtree-rconcat priority-str acc))
+       (acc (str::printtree-rconcat "</priority>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars " </url>" acc))
+       (acc (str::printtree-rconcat " </url>" acc))
        (acc (cons #\Newline acc)))
     (make-sitemap-aux (cdr xtopics) keys->ranks acc)))
 
 (defun make-sitemap (xtopics keys->ranks)
   (b* ((acc nil)
-       (acc (str::revappend-chars "<?xml version=\"1.0\" encoding=\"utf-8\"?>" acc))
+       (acc (str::printtree-rconcat "<?xml version=\"1.0\" encoding=\"utf-8\"?>" acc))
        (acc (cons #\Newline acc))
-       (acc (str::revappend-chars "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">" acc))
+       (acc (str::printtree-rconcat "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">" acc))
        (acc (cons #\Newline acc))
        (acc (make-sitemap-aux xtopics keys->ranks acc))
-       (acc (str::revappend-chars "</urlset>" acc))
+       (acc (str::printtree-rconcat "</urlset>" acc))
        (acc (cons #\Newline acc)))
-    (str::rchars-to-string acc)))
+    (str::printtree->str acc)))
 
 
 
@@ -732,7 +740,7 @@
 
 
 
-(defun order-topics-by-importance (all-topics state)
+(defun order-topics-by-importance (all-topics xtopics state)
   ;; Returns
   ;;  (mv result    ; reordered version of all-topics, in importance order
   ;;      xtopics   ; the computed xtopics
@@ -743,7 +751,8 @@
        ;(- (cw "Length of topics-fal: ~x0.~%" (len topics-fal)))
        (topics-names       (strip-cars topics-fal))
        (topics-keys        (acl2::cwtime (make-keys topics-names)))
-       ((mv xtopics state) (acl2::cwtime (xtopics-from-topics all-topics state)))
+       ;; ((mv xtopics state) (acl2::cwtime (xtopics-from-topics all-topics state)))
+       (xtopics            (xtopics-remove-errors xtopics))
        (state              (acl2::cwtime (report-broken-links xtopics state)))
        (keys->ranks        (acl2::cwtime (make-keys->ranks topics-keys xtopics)))
        (ordered-keys       (acl2::cwtime (rank-xtopics topics-keys keys->ranks)))
@@ -774,7 +783,7 @@
                       :name order-topics-sanity-check)
         (er hard? 'order-topics-by-importance
             "Screwed up the database!"))
-    (mv result xtopics site-map state)))
+    (mv result site-map state)))
 
 
 

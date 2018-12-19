@@ -32,6 +32,9 @@
 (include-book "xdoc/archive-matching-topics" :dir :system)
 
 (local (include-book "kit/top"))
+(local (include-book "lint/lvaluecheck"))
+(local (include-book "transforms/eliminitial"))
+(local (include-book "transforms/problem-mods"))
 (local (include-book "doc"))
 (local (include-book "mlib/remove-bad")) ;; hack -- only included by sv/vl/top
 

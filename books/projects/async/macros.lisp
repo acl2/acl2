@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -63,6 +63,10 @@
 (defmacro destructuring-lemma (fn args declare-form bindings
                                   name ins outs sts occs)
   (b* ((destructure (strings-to-symbol (symbol-name fn) "$DESTRUCTURE"))
+       (prefix-name (strings-to-symbol
+                     (coerce (butlast (coerce (symbol-name fn) 'list)
+                                      1)
+                             'string)))
        (form `(,fn ,@args)))
 
     `(progn
@@ -80,19 +84,27 @@
             (EQUAL (CADDDR ,form) ,sts)
             (EQUAL (CAR (CDDDDR ,form)) ,occs))))
 
+       ;; Prove that this module is not a DE primitive.
+
+       (not-primp-lemma ,prefix-name)
+
        (in-theory (disable ,fn)))))
 
 ;; MODULE-GENERATOR generator args name inputs outputs body state.
 
 (defmacro module-generator (generator args name inputs outputs sts body
-                                      &key guard)
+                                      &optional declare-form)
   (let ((destructuring-lemma (strings-to-symbol (symbol-name generator)
                                                 "$DESTRUCTURE"))
+        (prefix-name (strings-to-symbol
+                      (coerce (butlast (coerce (symbol-name generator) 'list)
+                                       1)
+                              'string)))
         (form `(,generator ,@args)))
 
     `(progn
        (defun ,generator ,args
-         (declare (xargs :guard ,guard))
+         ,declare-form
          (LIST ,name ,inputs ,outputs ,sts ,body))
 
        (defthmd ,destructuring-lemma
@@ -102,6 +114,10 @@
           (EQUAL (CADDR ,form) ,outputs)
           (EQUAL (CADDDR ,form) ,sts)
           (EQUAL (CAR (CDDDDR ,form)) ,body)))
+
+       ;; Prove that this module is not a DE primitive.
+
+       (not-primp-lemma ,prefix-name)
 
        (in-theory (disable ,generator)))))
 
@@ -722,7 +738,7 @@
                    (equal (append x y1 z)
                           (append ,seq y2 z)))
           :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                          (acl2::associativity-of-append))))))
+                                          (associativity-of-append))))))
 
        (defthmd ,dataflow-correct
          (b* ((extracted-st (,extract st))

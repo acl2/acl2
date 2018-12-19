@@ -445,10 +445,6 @@
 			(t #.*GS*))
 		      x86))
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
        ;; Update the x86 state:
 
        ((mv flg x86)

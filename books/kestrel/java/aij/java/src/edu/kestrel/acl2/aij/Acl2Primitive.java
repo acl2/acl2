@@ -26,6 +26,7 @@ import java.util.Map;
  * All the ACL2 primitive functions are implemented here, except for {@code if}.
  * The ACL2 function {@code if} is non-strict:
  * thus, it is handled specially by the term evaluator,
+ *
  * see {@link Acl2FunctionApplication#eval(Map)}.
  */
 class Acl2Primitive {
@@ -270,9 +271,9 @@ class Acl2Primitive {
     /**
      * Native implementation of the {@code cons} ACL2 function.
      */
-    private static Acl2Cons execCons(Acl2Value x, Acl2Value y) {
+    private static Acl2ConsPair execCons(Acl2Value x, Acl2Value y) {
         assert x != null && y != null;
-        return Acl2Cons.make(x, y);
+        return Acl2ConsPair.make(x, y);
     }
 
     /**

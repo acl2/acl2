@@ -70,7 +70,8 @@ build time for multi-core environments.</li>
 systems.</li>
 
 <li>Ifdef/ifndef constructs are supported for conditional build features -- see
-@(see acl2::ifdef) and @(see acl2::ifndef).</li>
+@(see acl2::ifdef), @(see acl2::ifndef), @(see acl2::ifdef-define), and @(see
+acl2::ifdef-undefine).</li>
 
 </ul>
 
@@ -977,6 +978,72 @@ which may in some ways be simpler to understand.</li>
 section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 --help') for a summary.</p>")
 
+(defxdoc acl2-system-feature-dependencies
+  :parents (cert.pl)
+  :short "Automatically forcing recertification when changes in the ACL2 sources
+          would invalidate a certificate"
+  :long "<p>In principle, every time the ACL2 system changes, all books should
+be recertified.  However, in practice many users don't do this because the ACL2
+system is updated frequently and it is time-consuming to rebuild all the
+community books.  But sometimes a change to the ACL2 system makes certain books
+no longer work correctly until they are recertified.  For example, the book
+@('system/apply/apply-prim') uses the value of
+@('*first-order-like-terms-and-out-arities*'), a constant defined by the ACL2
+system, in a make-event form in order to define @('apply$-prim-meta-fn-ev').
+If the value of that constant changes, that book should be recertified;
+otherwise, books that depend on it might fail to certify.</p>
+
+<p>The @('GNUMakefile') provided with the ACL2 community books provides a
+mechanism to force certain books to be recertified when the values of constants
+built into the ACL2 system change.  To fix @('apply-prim') using this
+mechanism, we add a comment to the book:</p>
+@({
+ ; (depends-on \"build/first-order-like-terms-and-out-arities.certdep\" :dir :system)
+ })
+
+<p>This forces @('apply-prim') to be recertified if that file changes. We
+arrange for this file to change by running ACL2 at the start of each invocation
+of the community books' @('GNUMakefile') and comparing the value of
+@('*first-order-like-terms-and-out-arities*') to the object read from
+@('build/first-order-like-terms-and-out-arities.certdep').  If those objects
+differ, then the current @('*first-order-like-terms-and-out-arities*') is
+written to that file, which then forces @('apply-prim') to be recertified.</p>
+
+<p>It is fairly easy to add dependencies on other ACL2 features: simply add a
+new invocation of @('write-file-if-obj-differs') to
+@('build/cert_features.lsp'), similar to the ones that already exist there.
+For example, the one used in the example above is:</p>
+@({
+ (write-file-if-obj-differs \"first-order-like-terms-and-out-arities.certdep\"
+                            *first-order-like-terms-and-out-arities*
+                            state)
+ })
+<p>Then add dependencies using @('depends-on') comments in the books that
+depend on the current value of that constant.</p>
+
+<p>The cert.pl build system by itself does not update these files, which means
+that Makefiles that use cert.pl will not support this feature unless they run
+the @('cert_features.lsp') script on startup, like @('books/GNUMakefile') does.
+A workaround is to invoke @('books/GNUMakefile') after any rebuild of ACL2,
+before using cert.pl alone or using a separate Makefile:</p>
+@({
+ cd acl2/books
+ make build/Makefile-features
+ })
+<p>Cert.pl and cert.pl-generated Makefiles will arrange for files
+@('build/%.certdep') to be created if they do not exist, so that books that
+depend on them can still be certified using cert.pl alone.</p>
+
+<p>Cert.pl also makes every certificate depend on two special certdep files:
+@('build/acl2-version.certdep') and @('build/universal-dependency.certdep').
+The former is updated by @('cert_features.lsp') like the others, containing the
+current ACL2 version string; this forces all books to be recertified when the
+ACL2 version number changes.  The latter, unlike the others, is stored in the
+ACL2 git repository.  It may be updated by ACL2 maintainers to force all books
+to be recertified when they make other changes that require this, or by
+community members who notice that such a change has been made without a
+corresponding update.</p>")
+
 
 (defxdoc using-extended-acl2-images ; Step 7
   :parents (cert.pl ACL2::building-acl2 ACL2::books-certification)
@@ -1174,6 +1241,7 @@ to the head node before returning control to the Makefile.</p>")
   (preliminaries certifying-simple-books pre-certify-book-commands
                  custom-certify-book-commands optimizing-build-time
                  raw-lisp-and-other-dependencies static-makefiles
+                 acl2-system-feature-dependencies
                  using-extended-acl2-images ; rename to remove "using"
                  distributed-builds cert_param acl2::ifdef acl2::ifndef))
 
@@ -1291,3 +1359,32 @@ as expected:</p>
           with build system support."
   :long "<p>See @(see ifdef).</p>"
   :pkg "ACL2")
+
+(defxdoc acl2::ifdef-define
+  :parents (cert.pl)
+  :short "Define an environment variable for use with @(see ifdef) and @(see ifndef)."
+  :long "<p>This is simply a macro defined as follows:</p>
+@(def ifdef-define)
+
+<p>When this form is loaded, it will set the given environment variable to
+@('\"1\"'), affecting subsequent uses of @(see ifdef) and @(see ifndef).  The
+cert.pl build system tracks uses of this macro in order to determine which
+forms in the file are really used, so as to correctly compute the dependencies
+between files.  In order to be correctly scannable by the build system, the @('ifdef-define') form must occur all on one line:</p>
+@({
+  (ifdef-define \"FOO\")
+ })
+<p>or</p>
+@({
+  (acl2::ifdef-define \"FOO\")
+ }) "
+  :pkg "ACL2")
+
+(defxdoc acl2::ifdef-undefine
+  :parents (cert.pl)
+  :short "Undefine an environment variable for use with @(see ifdef) and @(see ifndef)."
+  :long "<p>Analogous to @(see ifdef-define), but sets the environment variable
+to the empty string instead of to @('\"1\"'), so that it will be unset for the
+purposes of @(see ifdef) and @(see ifndef).</p>"
+  :pkg "ACL2")
+

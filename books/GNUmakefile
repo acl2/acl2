@@ -312,6 +312,11 @@ endif # ACL2_FEATURES_DETECTED
 # $(info EXPORTED_VARS = $(EXPORTED_VARS))
 EXPORT_SHELL_ENV := $(foreach v,$(EXPORTED_VARS),$(v)='$($(v))')
 
+EXPORT_EXPORT_SHELL_ENV := $(foreach v,$(EXPORTED_VARS),export $(v)='$($(v))';)
+
+BUILD_MAKEFILE_FEATURES_SH := $(shell \
+  echo "$(EXPORT_EXPORT_SHELL_ENV)" > $(BUILD_DIR)/Makefile-features.sh)
+
 # $(info EXPORT_SHELL_ENV = $(EXPORT_SHELL_ENV))
 
 ifndef NO_RESCAN

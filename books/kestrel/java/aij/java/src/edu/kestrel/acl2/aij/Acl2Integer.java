@@ -207,7 +207,7 @@ public final class Acl2Integer extends Acl2Rational {
                 return 0;
         }
         // integers are less than
-        // complex rationals, characters, strings, symbols, and pairs:
+        // complex rationals, characters, strings, symbols, and cons pairs:
         return -1;
     }
 

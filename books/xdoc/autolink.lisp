@@ -34,6 +34,7 @@
 (in-package "XDOC")
 (include-book "fmt-to-str")
 (include-book "names")
+(include-book "std/strings/printtree-concat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -260,7 +261,7 @@
 
 
 
-(defun autolink-and-encode (x n xl topics base-pkg kpa acc) ;; ==> ACC
+(defun autolink-and-encode (x n xl baseidx topics base-pkg kpa acc) ;; ==> ACC
 
 ; Main routine for autolinking and HTML encoding s-expressions.  X typically
 ; has a pretty-printed S-expression that we want to turn into an XDOC <code>
@@ -273,40 +274,45 @@
 ; symbol that is a documented topic, we insert a link to it.  We also HTML
 ; encode the string in the process.
 
+; The baseidx here points to the character after the last special element.
+; When we see normal characters, we don't accumulate anything, but when we
+; either reach the end of the string or something special we'll add the entire
+; sequence since the baseidx.
+
   (b* (((when (int= n xl))
-        acc)
+        (str::pcat acc (subseq x baseidx n)))
        (char1 (char x n))
        ((when (eql char1 #\<)) ;; --> "&lt;" in reverse
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa
-                             (list* #\; #\t #\l #\& acc)))
+        (autolink-and-encode x (+ 1 n) xl (+ 1 n) topics base-pkg kpa
+                             (str::pcat acc (subseq x baseidx n) "&lt;")))
        ((when (eql char1 #\>)) ;; --> "&gt;" in reverse
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa
-                             (list* #\; #\t #\g #\& acc)))
+        (autolink-and-encode x (+ 1 n) xl (+ 1 n) topics base-pkg kpa
+                             (str::pcat acc (subseq x baseidx n) "&gt;")))
        ((when (eql char1 #\&)) ;; --> "&amp;" in reverse
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa
-                             (list* #\; #\p #\m #\a #\& acc)))
+        (autolink-and-encode x (+ 1 n) xl (+ 1 n) topics base-pkg kpa
+                             (str::pcat acc (subseq x baseidx n) "&amp;")))
        ((when (eql char1 #\")) ;; --> "&quot;" in reverse
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa
-                             (list* #\; #\t #\o #\u #\q #\& acc)))
+        (autolink-and-encode x (+ 1 n) xl (+ 1 n) topics base-pkg kpa
+                             (str::pcat acc (subseq x baseidx n) "&quot;")))
        ((unless (eql char1 #\())
         ;; Anything else except an open paren, we aren't going to do anything
         ;; special with.  This way we don't have to call parse-symbol most of
         ;; the time.
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa (cons char1 acc)))
+        (autolink-and-encode x (+ 1 n) xl baseidx topics base-pkg kpa acc))
 
-       (acc (cons char1 acc))
+       ;; (acc (cons char1 acc))
        ((mv err symbol n-prime) (parse-symbol x (+ 1 n) xl base-pkg kpa nil))
 
        ((when err)
         ;; Failed to parse a valid symbol after it, so that's fine, maybe we hit
         ;; a quoted thing like '((1 . 2)) or whatever.  Just keep going.
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa acc))
+        (autolink-and-encode x (+ 1 n) xl baseidx topics base-pkg kpa acc))
 
        (look (hons-get symbol topics))
        ((unless look)
         ;; Nope, not a documented topic, so that's fine, just leave the paren
         ;; there and keep on encoding things without inserting a link.
-        (autolink-and-encode x (+ 1 n) xl topics base-pkg kpa acc))
+        (autolink-and-encode x (+ 1 n) xl baseidx topics base-pkg kpa acc))
 
        ;; Finally, the interesting case.  We just found something like
        ;; "(append".  We want to convert this into, e.g.,
@@ -314,11 +320,14 @@
        ;; and then keep going with our encoding.
        (acc
         ;; <see topic="
-        (list* #\" #\= #\c #\i #\p #\o #\t #\Space #\e #\e #\s #\< acc))
+        (str::pcat acc
+                   ;; Includes everything from the base index up to and including the open paren.
+                   (subseq x baseidx (+ 1 n))
+                   "<see topic=\""))
        (acc (file-name-mangle symbol acc))
        (acc
         ;; ">
-        (list* #\> #\" acc))
+        (str::pcat acc "\">"))
        ;; Subtle: normally the "xl" argument should be the length of the string
        ;; here, but we only want to encode the part of the name that we read.
        ;; So, use the new N-PRIME returned by the symbol parser for the XL part
@@ -326,9 +335,9 @@
        (acc (simple-html-encode-str x (+ 1 n) n-prime acc))
        (acc
         ;; </see>
-        (list* #\> #\e #\e #\s #\/ #\< acc)))
+        (str::pcat acc "</see>")))
     ;; Finally recur...
-    (autolink-and-encode x n-prime xl topics base-pkg kpa acc)))
+    (autolink-and-encode x n-prime xl n-prime topics base-pkg kpa acc)))
 
 (encapsulate
   ()
@@ -339,9 +348,9 @@
            (b* ((topics '(acl2::f g h foo bar baz + - xdoc::top1 xdoc::top2)) ;; just for testing
                 (alist  (make-fast-alist (pairlis$ topics nil)))
                 (known-pkgs (pairlis$ '("ACL2" "KEYWORD" "XDOC") nil))
-                (acc    (autolink-and-encode str 0 (length str) alist 'acl2::foo known-pkgs nil))
+                (acc    (autolink-and-encode str 0 (length str) 0 alist 'acl2::foo known-pkgs nil))
                 (-      (fast-alist-free alist))
-                (result (str::rchars-to-string acc)))
+                (result (str::printtree->str acc)))
              (or (equal result expect)
                  (cw "Result: ~x0~%" result)
                  (cw "Expected: ~x0~%" expect)))))
@@ -379,11 +388,11 @@
    acc)
   (b* ((kpa (known-package-alist state))
        (str (fmt-to-str x base-pkg))
-       (acc (autolink-and-encode str 0 (length str) topics-fal base-pkg kpa acc)))
+       (acc (autolink-and-encode str 0 (length str) 0 topics-fal base-pkg kpa acc)))
     acc))
 
 (defun xml-ppr-obj-fn (x topics-fal base-pkg state)
-  (str::rchars-to-string
+  (str::printtree->str
    (xml-ppr-obj-aux x topics-fal base-pkg state nil)))
 
 (defmacro xml-ppr-obj (x &key
@@ -391,7 +400,7 @@
                          (topics-fal 'nil)
                          (base-pkg   ''acl2::foo))
   `(b* ((acc (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
-        (ret (str::rchars-to-string acc)))
+        (ret (str::printtree->str acc)))
      ret))
 
 (local

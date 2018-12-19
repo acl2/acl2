@@ -5,14 +5,14 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
 ; This collection of things we need to define ACL2 version of DUAL-EVAL.
 
-; !!! Nathan believes that CONSP-N and TRUE-LISTP-AT-LEAST-N should
-; be exchanged for (and (TRUE-LISTP x) (= (LEN x) n)).
+; !!! Should CONSP-N and TRUE-LISTP-AT-LEAST-N be exchanged for
+; (and (TRUE-LISTP x) (= (LEN x) n))?
 
 (in-package "ADE")
 
@@ -1353,6 +1353,7 @@
   '(open-nth
     get-field
     len-1-true-listp=>true-listp
+    nthcdr-of-pos-const-idx
     md-name md-ins md-outs md-sts md-occs
     occ-name occ-outs occ-fn occ-ins
     take-of-len-free))

@@ -877,15 +877,15 @@
 (defattach forbidden-names forbidden-names-builtin)
 
 
-(defun delete-assoc-all (key alst)
+(defun remove1-assoc-all (key alst)
   "delete from alst all entries with key"
   (declare (xargs :guard (alistp alst)))
   (if (endp alst)
       '()
     (if (equal key (caar alst))
-        (delete-assoc-all key (cdr alst))
+        (remove1-assoc-all key (cdr alst))
       (cons (car alst)
-            (delete-assoc-all key (cdr alst))))))
+            (remove1-assoc-all key (cdr alst))))))
 
 (defun union-alist2 (al1 al2)
   "union ke-val entries of al1 with al2, with al1 entries taking preference."
@@ -894,7 +894,7 @@
   (if (endp al1)
       al2
     (cons (car al1)
-          (union-alist2 (cdr al1) (delete-assoc-all (caar al1) al2)))))
+          (union-alist2 (cdr al1) (remove1-assoc-all (caar al1) al2)))))
 
 (defun alist-equiv (A1 A2)
   (declare (xargs :guard (and (alistp A1)
@@ -904,7 +904,7 @@
     (b* ((key (caar A1)))
       (and ;(equal (get1 key A1) (get1 key A2))
        (equal (assoc-equal key A1) (assoc-equal key A2))
-       (alist-equiv (delete-assoc-all key A1) (delete-assoc-all key A2))))))
+       (alist-equiv (remove1-assoc-all key A1) (remove1-assoc-all key A2))))))
 
 
 (defloop collect-declares (xs)

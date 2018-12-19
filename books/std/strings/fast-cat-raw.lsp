@@ -87,3 +87,70 @@
     (nreverse
      (the string (coerce (the list rchars) 'string)))))
 
+
+
+(defun __printable-copy (x idx ret)
+  (declare (type fixnum idx)
+           (type string ret))
+  (declare (optimize (speed 3)
+                     (safety 0)))
+  (cond ((characterp x)
+         (setf (schar (the string ret) (1- idx)) (the character x))
+         (the fixnum (+ -1 idx)))
+        ((eq x nil) idx)
+        (t
+         (let* ((len (length (the string x)))
+                (last (+ -1 (the fixnum len)))
+                (stridx (- idx (the fixnum len))))
+           (declare (type fixnum len)
+                    (type fixnum last)
+                    (type fixnum stridx)
+                    (type string x))
+           (loop for i fixnum from 0 to last  do
+                 (setf (schar ret (+ i stridx)) (schar x i)))
+           stridx))))
+
+(defun __printtree-copy (x idx ret)
+  (declare (optimize (speed 3)
+                     (safety 0)))
+  (loop while (consp x) do
+        (progn (setq idx (if (atom (car x))
+                             (__printable-copy (car x) idx ret)
+                           (__printtree-copy (car x) idx ret)))
+               (setq x (cdr x))))
+  (__printable-copy x idx ret))
+
+(defun __printable-length (x)
+  (declare (optimize (speed 3)
+                     (safety 0)))
+  (cond ((characterp x) 1)
+        ((eq x nil) 0)
+        (t
+         (length (the string x)))))
+
+(declaim (inline __printable-length))
+
+(defun __printtree-length (x)
+  (declare (optimize (speed 3)
+                     (safety 0)))
+  (let ((sum (loop while (consp x) sum
+                   (let ((carlen (if (atom (car x))
+                                     (__printable-length (car x))
+                                   (__printtree-length (car x)))))
+                     (setq x (cdr x))
+                     (the fixnum carlen)))))
+    (declare (type fixnum sum))
+    (the fixnum
+         (+ (the fixnum sum)
+            (the fixnum (__printable-length x))))))
+
+
+(defun printtree->str1 (x)
+  (declare (optimize (speed 3)
+                     (safety 0)))
+  (let* ((length (__printtree-length x))
+         (str (make-array (the fixnum length) :element-type 'character)))
+    (declare (type string str)
+             (type fixnum length))
+    (__printtree-copy x length str)
+    str))

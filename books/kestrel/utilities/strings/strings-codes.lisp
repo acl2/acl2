@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Mihir Mehta <mihir@cs.utexas.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,3 +65,27 @@
            (if (< (nfix n) (len (explode string)))
                (char-code (char string n))
              nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection nats<=>string-inversion-theorems
+  :parents (nats=>string string=>nats)
+  :short "@(tsee nats=>string) and @(tsee string=>nats)
+          are mutual inverses."
+
+  (defrule nats=>string-of-string=>nats
+    (equal (nats=>string (string=>nats string))
+           (str-fix string))
+    :enable (nats=>string string=>nats))
+
+  (defrule string=>nats-of-nats=>string
+    (implies (unsigned-byte-listp 8 (true-list-fix nats))
+             (equal (string=>nats (nats=>string nats))
+                    (true-list-fix nats)))
+    :rule-classes
+    ((:rewrite
+      :corollary (implies (unsigned-byte-listp 8 nats)
+                          (equal (string=>nats (nats=>string nats))
+                                 nats))))
+    :enable (string=>nats nats=>string)
+    :use chars=>nats-of-nats=>chars))
