@@ -13943,83 +13943,93 @@
   (the-mv
    5
    (signed-byte 30)
-   (let* ((ttree-saved ttree)
-          (rw-cache-active-p (rw-cache-active-p rcnst))
-          (cached-failure-entry
-           (and rw-cache-active-p
-                (relieve-hyp-failure-entry rune unify-subst hyps ttree
-                                           step-limit)))
-          (cached-failure-reason-raw
-           (and cached-failure-entry
-                (access rw-cache-entry cached-failure-entry :failure-reason)))
-          (cached-failure-reason-free-p
-           (and (consp cached-failure-reason-raw)
-                (free-failure-p cached-failure-reason-raw)))
-          (cached-failure-reason-free
-           (and cached-failure-reason-free-p
-                (equal (access rw-cache-entry cached-failure-entry
-                               :hyp-info)
-                       hyps)
-                cached-failure-reason-raw))
-          (cached-failure-reason
-           (and (not cached-failure-reason-free-p)
-                cached-failure-reason-raw))
-          (debug
-           (and cached-failure-reason
-                (rw-cache-debug rune target unify-subst
-                                cached-failure-reason step-limit))))
-     (cond
-      ((and cached-failure-reason
-            (not debug))
-       (mv step-limit nil
-           (and (f-get-global 'gstackp state) ; cons optimization
-                (cons 'cached cached-failure-reason))
-           unify-subst ttree))
-      (t (let ((step-limit-saved step-limit)
-               (unify-subst-saved unify-subst)
-               (old-rw-cache-alist (cdr cached-failure-reason-free)))
-           (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp
-                                     new-rw-cache-alist)
-                   (rewrite-entry
-                    (relieve-hyps1 rune target hyps backchain-limit-lst
-                                   unify-subst 1 unify-subst ttree allp
-                                   old-rw-cache-alist nil)
-                    :obj nil :geneqv nil :pequiv-info nil ; all ignored
+   (cond
+    ((null hyps)
+
+; For an empty list of hypotheses, there is no reason to consider the rw-cache
+; at all, so we make a trivial successful return.  We rely on this in
+; rewrite-with-lemma in the comment: "If hyps is nil, then relieve-hyps returns
+; immediately with nil as the unifying substitution."
+
+     (mv step-limit t nil unify-subst ttree))
+    (t
+     (let* ((ttree-saved ttree)
+            (rw-cache-active-p (rw-cache-active-p rcnst))
+            (cached-failure-entry
+             (and rw-cache-active-p
+                  (relieve-hyp-failure-entry rune unify-subst hyps ttree
+                                             step-limit)))
+            (cached-failure-reason-raw
+             (and cached-failure-entry
+                  (access rw-cache-entry cached-failure-entry :failure-reason)))
+            (cached-failure-reason-free-p
+             (and (consp cached-failure-reason-raw)
+                  (free-failure-p cached-failure-reason-raw)))
+            (cached-failure-reason-free
+             (and cached-failure-reason-free-p
+                  (equal (access rw-cache-entry cached-failure-entry
+                                 :hyp-info)
+                         hyps)
+                  cached-failure-reason-raw))
+            (cached-failure-reason
+             (and (not cached-failure-reason-free-p)
+                  cached-failure-reason-raw))
+            (debug
+             (and cached-failure-reason
+                  (rw-cache-debug rune target unify-subst
+                                  cached-failure-reason step-limit))))
+       (cond
+        ((and cached-failure-reason
+              (not debug))
+         (mv step-limit nil
+             (and (f-get-global 'gstackp state) ; cons optimization
+                  (cons 'cached cached-failure-reason))
+             unify-subst ttree))
+        (t (let ((step-limit-saved step-limit)
+                 (unify-subst-saved unify-subst)
+                 (old-rw-cache-alist (cdr cached-failure-reason-free)))
+             (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp
+                                       new-rw-cache-alist)
+                     (rewrite-entry
+                      (relieve-hyps1 rune target hyps backchain-limit-lst
+                                     unify-subst 1 unify-subst ttree allp
+                                     old-rw-cache-alist nil)
+                      :obj nil :geneqv nil :pequiv-info nil ; all ignored
 
 ; If we are doing non-linear arithmetic, we will be rewriting linear
 ; terms under a different theory than the standard one.  However, when
 ; relieving hypotheses, we want to use the standard one, so we make
 ; sure that that is what we are using.
 
-                    :rcnst
-                    (if (eq (access rewrite-constant rcnst
-                                    :active-theory)
-                            :standard)
-                        rcnst
-                      (change rewrite-constant rcnst
-                              :active-theory :standard)))
-                   (declare (ignore allp))
-                   (cond ((and debug relieve-hyps-ans)
-                          (prog2$
-                           (rw-cache-debug-action
-                            rune target unify-subst-saved
-                            cached-failure-reason step-limit-saved)
-                           (mv step-limit nil cached-failure-reason
-                               unify-subst-saved ttree-saved)))
-                         (t (mv step-limit relieve-hyps-ans failure-reason
-                                unify-subst
-                                (cond
-                                 ((or relieve-hyps-ans
-                                      backchain-limit
-                                      (not rw-cache-active-p))
-                                  ttree)
-                                 (new-rw-cache-alist ; free vars case
-                                  (note-relieve-hyps-failure-free
-                                   rune unify-subst hyps
-                                   ttree
-                                   cached-failure-entry
-                                   old-rw-cache-alist
-                                   new-rw-cache-alist
+                      :rcnst
+                      (if (eq (access rewrite-constant rcnst
+                                      :active-theory)
+                              :standard)
+                          rcnst
+                        (change rewrite-constant rcnst
+                                :active-theory :standard)))
+                     (declare (ignore allp))
+                     (cond ((and debug relieve-hyps-ans)
+                            (prog2$
+                             (rw-cache-debug-action
+                              rune target unify-subst-saved
+                              cached-failure-reason step-limit-saved)
+                             (mv step-limit nil cached-failure-reason
+                                 unify-subst-saved ttree-saved)))
+                           (t (mv step-limit relieve-hyps-ans failure-reason
+                                  unify-subst
+                                  (cond
+                                   ((or relieve-hyps-ans
+                                        backchain-limit
+                                        (not rw-cache-active-p))
+                                    ttree)
+                                   (new-rw-cache-alist ; free vars case
+                                    (note-relieve-hyps-failure-free
+                                     rune unify-subst hyps
+                                     ttree
+                                     cached-failure-entry
+                                     old-rw-cache-alist
+                                     new-rw-cache-alist
 
 ; At one time we only saved the step-limit in debug mode, so that when we merge
 ; rw-caches after calls of cons-tag-trees, we avoid essentially duplicated
@@ -14029,8 +14039,8 @@
 ; record can give a quick result.  The potential for rare duplication seems
 ; harmless.
 
-                                   step-limit-saved))
-                                 (t
+                                     step-limit-saved))
+                                   (t
 
 ; We cache the rewriting failure into the ttree.  It would be a mistake to
 ; extend the rw-cache if there is a backchain-limit, because a later lookup
@@ -14039,14 +14049,14 @@
 ; workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp, fails with
 ; :rw-cache-state :atom.
 
-                                  (note-relieve-hyp-failure
-                                   rune unify-subst failure-reason
-                                   ttree hyps
+                                    (note-relieve-hyp-failure
+                                     rune unify-subst failure-reason
+                                     ttree hyps
 
 ; See comment above about regarding our formerly saving the step-limit only in
 ; debug mode.
 
-                                   step-limit-saved)))))))))))))
+                                     step-limit-saved)))))))))))))))
 
 (defun rewrite-with-lemma (term lemma ; &extra formals
                                 rdepth step-limit
@@ -14364,8 +14374,7 @@
                                                    :forbidden-fns)))
                                       term ttree))
                                  (t
-                                  (let* ((vars (all-vars term))
-                                         (hyps0 (flatten-ands-in-lit
+                                  (let* ((hyps0 (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
 ; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
@@ -14379,13 +14388,30 @@
                                                       (sublis-var nil
                                                                   extra-evaled-hyp)))
                                          (hyps (append? hyps0 extra-hyps))
+                                         (vars (and hyps
+
+; We avoid the cost of computing (all-vars term) when there are no hypotheses
+; (which is presumably a common case).  We have seen this reduce an event's
+; processing time from 67 seconds to 19 seconds.
+
+                                                    (all-vars term)))
                                          (rule-backchain-limit
                                           (access rewrite-rule lemma
                                                   :backchain-limit-lst))
                                          (bad-synp-hyp-msg
-                                          (bad-synp-hyp-msg hyps0 vars nil wrld))
+                                          (and hyps0
+
+; Vars should be (all-vars term) if we call bad-synp-hyp-msg, but if hyps0 is
+; nil then bad-synp-hyp-msg returns nil regardless of vars, so we avoid calling
+; it.
+
+                                               (bad-synp-hyp-msg hyps0 vars nil
+                                                                 wrld)))
                                          (bad-synp-hyp-msg-extra
-                                          (bad-synp-hyp-msg extra-hyps vars nil wrld)))
+                                          (and extra-hyps ; optimize, as above
+                                               (bad-synp-hyp-msg extra-hyps
+                                                                 vars nil
+                                                                 wrld))))
                                     (cond
                                      (bad-synp-hyp-msg
                                       (mv step-limit
@@ -14440,7 +14466,12 @@
 ; themselves.  There may be additional vars in both evaled-hyp and in
 ; val.  But they are free at the time we do this relieve-hyps.
 
-                                         (pairlis$ vars vars)
+; If hyps is nil, then relieve-hyps returns immediately with nil as the
+; unifying substitution.  That's OK, as explained in a comment below ("At one
+; point we ignored the unify-subst....").
+
+                                         (and hyps
+                                              (pairlis$ vars vars))
                                          nil ; allp=nil for meta rules
                                          )
                                         :obj nil         ; ignored
@@ -14478,10 +14509,12 @@
 
                                                            (sublis-var nil val)
 
-; At one point we ignored the unify-subst constructed above and used a
-; nil here.  That was unsound if val involved free vars bound by the
-; relief of the evaled-hyp.  We must rewrite val under the extended
-; substitution.  Often that is just the identity substitution.
+; At one point we ignored the unify-subst constructed above and used a nil
+; here.  That was unsound if val involved free vars bound by the relief of the
+; evaled-hyp.  We must rewrite val under the extended substitution.  Often that
+; is just the identity substitution.  If there are no hypotheses, however, then
+; there are no such free vars, so it is fine to rewrite with nil as the
+; unify-subst.
 
                                                            unify-subst
                                                            'meta))
