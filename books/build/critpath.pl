@@ -34,11 +34,11 @@
 
 use warnings;
 use strict;
-use Getopt::Long qw(:config bundling); 
+use Getopt::Long qw(:config bundling);
 use File::Spec;
 use FindBin qw($RealBin);
-use Storable;
 use lib "$RealBin/lib";
+use Storable qw(nstore retrieve);
 use Certlib;
 
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
@@ -49,7 +49,7 @@ use Certlib;
 
 my $HELP_MESSAGE = "
 
- critpath.pl [OPTIONS] <top-book1> <top-book2> ... 
+ critpath.pl [OPTIONS] <top-book1> <top-book2> ...
 
  This program displays the longest dependency chain leading up to any of the
  top-books specified, measured in sequential certification time.  This is the
@@ -179,7 +179,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'max-depth|m=i' =>  \$OPTIONS{'short'},
 			     'real|r'  => \$OPTIONS{'real'},
 			     'debug|d' => \$debug,
-			     "targets|t=s"          
+			     "targets|t=s"
 			              => sub { shift;
 					       read_targets(shift, \@user_targets);
 					   },
@@ -310,7 +310,7 @@ print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs, $updateds);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $updateds, $debug, $depdb); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $updateds, $debug, $depdb);
 
 
 	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});
