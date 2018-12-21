@@ -345,6 +345,7 @@ book that depends on Glucose being installed.</p>")
 ;; especially related to consp-append.
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
+
 (include-book "coi/documentation" :dir :system)
 
 ) ;; end progn for including all the books
