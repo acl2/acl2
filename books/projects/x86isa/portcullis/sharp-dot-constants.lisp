@@ -356,14 +356,14 @@
 (defconst *mxcsr-um*       11) ;; Underflow Mask
 (defconst *mxcsr-pm*       12) ;; Precision Mask
 (defconst *mxcsr-rc*       13) ;; Rounding Control
-(defconst *mxcsr-fz*       15) ;; Flush to Zero
+(defconst *mxcsr-ftz*      15) ;; Flush to Zero
 (defconst *mxcsr-reserved* 16) ;; Reserved
 
 
 (defconst *mxcsr-names*
   (list *mxcsr-ie* *mxcsr-de* *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
         *mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
-        *mxcsr-om* *mxcsr-um* *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
+        *mxcsr-om* *mxcsr-um* *mxcsr-pm* *mxcsr-rc* *mxcsr-ftz*
         *mxcsr-reserved*))
 
 
