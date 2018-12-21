@@ -43,8 +43,8 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-; Measure for power-of-2 below.
-(defun power-of-2-measure (x)
+; Measure for log-2 below.
+(defun log-2-measure (x)
   (cond ((or (not (natp x))
              (<= x 1))
          0)
@@ -52,13 +52,13 @@
 
 ; On powers of 2, this function is a base 2 logarithm:
 ; it maps 2^n to n+count -- count is the accumulator.
-(defun power-of-2 (x count)
-  (declare (xargs :measure (power-of-2-measure x)
+(defun log-2 (x count)
+  (declare (xargs :measure (log-2-measure x)
                   :guard (natp count)))
   (if (natp x)
       (if (<= x 1)
           count
-        (power-of-2 (* 1/2 x) (1+ count)))
+        (log-2 (* 1/2 x) (1+ count)))
     count))
 
 ; This function returns the list
@@ -545,7 +545,7 @@
          *pseudo-page-size-in-bytes*))
 
 (defconst *mem-table-size-bits*
-  (power-of-2 *mem-table-size* 0))
+  (log-2 *mem-table-size* 0))
 
 (defconst *mem-table-size-bits+1*
   (+ 1 *mem-table-size-bits*))
