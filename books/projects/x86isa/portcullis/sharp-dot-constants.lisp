@@ -79,9 +79,7 @@
   (if (or (endp l)
           (equal (len l) 1))
       (car l)
-    (if (> (car l) (max-list (cdr l)))
-        (car l)
-      (max-list (cdr l)))))
+    (max (car l) (max-list (cdr l)))))
 
 ;; ======================================================================
 ;; Some expt constants:
