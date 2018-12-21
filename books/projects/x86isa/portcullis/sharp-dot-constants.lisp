@@ -207,7 +207,7 @@
 ;; ======================================================================
 
 ;; Identifiers of some arithmetic and logical instructions: (note: different
-;; from the opcode)
+;; from the opcode; specific to the formal model)
 
 ;; Even IDs: Arithmetic Instructions
 
@@ -367,7 +367,7 @@
         *mxcsr-reserved*))
 
 
-;; Access GPR, XMM, YMM, or ZMM:
+;; Access GPR, XMM, YMM, or ZMM (specific to the formal model):
 
 (defconst *gpr-access*     0)
 (defconst *xmm-access*     1) ;; Non-VEX Encoded SIMD Instructions
@@ -383,7 +383,7 @@
 (defconst *rc-rz*             3)
 
 ;; Constants for (unordered) compare scalar floating-point
-;; instructions (COMISS,  UCOMISS, etc.):
+;; instructions (COMISS,  UCOMISS, etc.) (specific to the formal model):
 
 (defconst *unordered*    0)
 (defconst *greater_than* 1)
@@ -415,7 +415,6 @@
 
 (defconst *ia32_efer-names*
   (list *ia32_efer-sce* *ia32_efer-lme* *ia32_efer-lma* *ia32_efer-nxe*))
-
 
 ;; ======================================================================
 
@@ -563,7 +562,7 @@
 
 ;; ======================================================================
 
-;; Constants related to Flags:
+;; Constants related to Flags (specific to the formal model):
 
 (defconst *unchanged* 2)
 (defconst *undefined* 3)
@@ -572,7 +571,7 @@
 
 ;; Instruction Sets:
 
-;; Floating-Point:
+;; Floating-Point (specific to the formal model):
 (defconst *fpu*    0)
 (defconst *mmx*    1)
 (defconst *sse*    2)
@@ -584,7 +583,8 @@
 
 ;; ======================================================================
 
-;; Constants related to modes of operation of an x86 processor:
+;; Constants related to modes of operation of an x86 processor
+;; (specific to the formal model):
 
 ;; IA-32e Mode, introduced by Intel 64(R) Architecture, has the following two
 ;; sub-modes:
@@ -692,6 +692,8 @@
 
 (defun define-general-purpose-registers ()
 
+  ;; These indices are from Tables 2-1, 2-2, and 2-3 (addressing modes) of
+  ;; Intel manual, May'18, Volume 2:
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
                      *R8* *R9* *R10* *R11* *R12* *R13* *R14* *R15*
                      *64-bit-general-purpose-registers-len*)
@@ -701,6 +703,7 @@
 
 (defun define-32-bit-general-purpose-registers ()
 
+  ;; These are the same as *RAX* etc. above:
   `(defconsts (*EAX* *ECX* *EDX* *EBX* *ESP* *EBP* *ESI* *EDI*
                      *R8d* *R9d* *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
      ,(b* ((lst (gl-int 0 1 15))
@@ -709,14 +712,19 @@
 
 (defun define-segment-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg> ('MOV ..., CS'
+  ;; is disallowed, but the only index not used for the other segment registers
+  ;; is 1:
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
                     *segment-register-names-len*)
      ,(b* ((lst (gl-int 0 1 6))
            (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
+        (cons 'mv (append lst (list len))))))
 
 (defun define-gdtr/idtr-registers ()
 
+  ;; Specific to the formal model:
   `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
      ,(b* ((lst (gl-int 0 1 2))
            (len  (len lst)))
@@ -724,6 +732,7 @@
 
 (defun define-ldtr/tr-registers ()
 
+  ;; Specific to the formal model:
   `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
      ,(b* ((lst (gl-int 0 1 2))
            (len  (len lst)))
@@ -732,6 +741,8 @@
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions MOV from/to control registers:
   `(defconsts (*CR0* ;; cr0 controls operating mode and states of
                      ;; processor
                *CR1* ;; cr1 is reserved
@@ -748,7 +759,7 @@
                      ;; bit mode
                ;; cr9 thru cr15 are not implemented in our model yet.
                *CR9* *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
-               *XCR0*
+               *XCR0* ; TODO: separate this from the *CR...*s
                *control-register-names-len*)
      ,(b* ((lst (gl-int 0 1 17))
            (len  (len lst)))
@@ -756,6 +767,8 @@
 
 (defun define-debug-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions MOV from/to debug registers:
   `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
                *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
                *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
@@ -851,6 +864,10 @@
   ;; The constants ending with IDX are used to index into the STOBJ
   ;; field for model-specific registers.
 
+  ;; Note that *ia32_efer-idx* and *ia32_efer* (as well as the other pairs) are
+  ;; different.  The latter is the "address" of the register on the real
+  ;; machine and the former is the index of the register in the x86 stobj.  So
+  ;; the *...-IDX* values are specific to the formal model.
 
   `(defconsts (
                ;; extended features enables --- If
