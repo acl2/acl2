@@ -135,6 +135,130 @@
   (acl2-numberp (imaginary))
   :rule-classes (:type-prescription))
 
+(defthm realpart-imaginary
+  (equal (realpart (imaginary))
+         0))
+
+(defthm imagpart-imaginary
+  (equal (imagpart (imaginary))
+         1))
+
+(defthm imaginary-product-2
+  (equal (* (imaginary) (imaginary))
+         -1))
+
+(encapsulate
+    ()
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+  
+  (defthm imaginary-product-3
+    (equal (* (imaginary) (* (imaginary) x))
+           (* -1 x)))
+  
+  )
+
+(encapsulate
+    ()
+  
+  (local
+   (encapsulate
+       ()
+     
+     (local (include-book "arithmetic-5/top" :dir :system))
+     
+     (defthmd open-mod-4
+       (implies
+        (and 
+         (syntaxp (symbolp x))
+         (natp x))
+        (equal (mod x 4)
+               (if (<= 4 x)
+                   (mod (- x 4) 4)
+                 x))))
+     
+     (defthm move-constants
+       (implies
+        (syntaxp (and (not (quotep x)) (quotep y)))
+        (equal (* x (* y z))
+               (* y (* x z)))))
+     
+     ))
+  
+  (local
+   (encapsulate
+       ()
+
+     (defun mod4 (n)
+       (let ((n (nfix n)))
+         (cond
+          ((equal n 0) 0)
+          ((equal n 1) 1)
+          ((equal n 2) 2)
+          ((equal n 3) 3)
+          (t (mod4 (- n 4))))))
+     
+     (defthm equal-mod4-mod4
+       (implies
+        (natp x)
+        (equal (mod x 4)
+               (mod4 x)))
+       :hints (("Goal" :induct (mod4 x)
+                :in-theory (e/d (open-mod-4) (mod)))))
+     
+     (defthm alt-expt-definition
+       (implies
+        (and
+         (syntaxp (symbolp n))
+         (natp n))
+        (equal (expt x n)
+               (let ((x (fix x)))
+                 (cond
+                  ((equal n 0) 1)
+                  ((equal n 1) x)
+                  ((equal n 2) (* x x))
+                  ((equal n 3) (* x x x))
+                  (t (* x x x x (expt x (- n 4))))))))
+       :rule-classes (:definition)
+       :hints (("Goal" :do-not-induct t
+                :expand ((expt x 3) (expt x 2) (expt x 1)))
+               (and stable-under-simplificationp
+                    `(:expand (expt x n)))
+               (and stable-under-simplificationp
+                    `(:expand (expt x (+ -1 n))))
+               (and stable-under-simplificationp
+                    `(:expand (expt x (+ -2 n))))
+               ))
+     
+     (defthm collect-constants
+       (implies
+        (syntaxp (and (quotep x) (quotep y)))
+        (equal (* x (* y z))
+               (* (* x y) z))))
+     
+     ))
+  
+  (defthm expt-imaginary
+    (implies
+     (natp n)
+     (equal (expt (imaginary) n)
+            (let ((n (mod n 4)))
+              (cond
+               ((equal n 0) 1)
+               ((equal n 1) (imaginary))
+               ((equal n 2) -1)
+               (t (- (imaginary)))))))
+    :hints (("Goal" :induct (mod4 n)
+             :in-theory (disable mod expt (imaginary) imaginary))
+            (and stable-under-simplificationp
+                 '(:expand (
+                            (:free (x) (expt x 0))
+                            (:free (x) (expt x 1))
+                            (:free (x) (expt x 2))
+                            (:free (x) (expt x 3))
+                            )))))
+  )
+
 (encapsulate
     ()
   
