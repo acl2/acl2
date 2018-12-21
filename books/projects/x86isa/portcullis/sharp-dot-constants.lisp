@@ -626,6 +626,9 @@
 (defconst *#BR*     5)  ;    BOUND Range Exceeded
                         ;    BOUND instruction.
 
+(defconst *#UD*     6)  ;    Invalid Opcode (UnDefined Opcode)
+                        ;    UD instruction or reserved opcode.
+
 (defconst *#NM*     7)  ;    Device Not Available (No Math Coprocessor)
                         ;    Floating-point or WAIT/FWAIT instruction.
 
