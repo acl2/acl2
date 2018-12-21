@@ -43,13 +43,16 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+; Measure for power-of-2 below.
 (defun power-of-2-measure (x)
   (cond ((or (not (natp x))
              (<= x 1))
          0)
         (t (floor x 1))))
 
-(defn power-of-2 (x count)
+; On powers of 2, this function is a base 2 logarithm:
+; it maps 2^n to n+count -- count is the accumulator.
+(defun power-of-2 (x count)
   (declare (xargs :measure (power-of-2-measure x)
                   :guard (natp count)))
   (if (natp x)
@@ -58,6 +61,8 @@
         (power-of-2 (* 1/2 x) (1+ count)))
     count))
 
+; This function returns the list
+; (start (+ by start) (+ (* 2 by) start) ... (+ (* (1- count) by) start)).
 (defun gl-int (start by count)
   (declare (xargs :guard (and (natp start)
                               (natp by)
@@ -138,9 +143,9 @@
 (defconst *2^32-16*   (- *2^32* 16))
 
 ;; ======================================================================
-;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2.1.1):
+;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2):
 
-(defconst *prefixes-width* 
+(defconst *prefixes-width*
   ;; Width of the prefixes layout structure; see :doc
   ;; legacy-prefixes-layout-structure.
   52)
@@ -296,6 +301,7 @@
   (list *cf* *pf* *af* *zf* *sf* *tf* *if* *df*
         *of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
 
+; Maximum of a list of numbers (NIL if the list is empty).
 (defun max-list (l)
   (if (or (endp l)
           (equal (len l) 1))
@@ -325,8 +331,8 @@
 (defconst *fp-b*   15) ;; FPU Busy
 
 (defconst *fp-status-names*
-  (list *fp-ie* *fp-de* *fp-ze* *fp-oe*  *fp-ue*  *fp-pe* *fp-sf*
-        *fp-es* *fp-c0* *fp-c1* *fp-c2*  *fp-top* *fp-c3* *fp-b*))
+  (list *fp-ie* *fp-de* *fp-ze* *fp-oe* *fp-ue* *fp-pe* *fp-sf*
+        *fp-es* *fp-c0* *fp-c1* *fp-c2* *fp-top* *fp-c3* *fp-b*))
 
 ;; MXCSR (Intel Manual, Feb'14, Vol. 1, Section 10.2.3)
 
@@ -355,9 +361,9 @@
 
 
 (defconst *mxcsr-names*
-  (list *mxcsr-ie* *mxcsr-de*  *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
+  (list *mxcsr-ie* *mxcsr-de* *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
         *mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
-        *mxcsr-om* *mxcsr-um*  *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
+        *mxcsr-om* *mxcsr-um* *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
         *mxcsr-reserved*))
 
 
@@ -682,12 +688,12 @@
 ;; ======================================================================
 
 ;; Indices and length of fields in the x86 state (see
-;; machine/state-concrete.lisp):
+;; machine/concrete-state.lisp):
 
 (defun define-general-purpose-registers ()
 
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
-                     *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*
+                     *R8* *R9* *R10* *R11* *R12* *R13* *R14* *R15*
                      *64-bit-general-purpose-registers-len*)
      ,(b* ((lst (gl-int 0 1 16))
            (len  (len lst)))
@@ -696,7 +702,7 @@
 (defun define-32-bit-general-purpose-registers ()
 
   `(defconsts (*EAX* *ECX* *EDX* *EBX* *ESP* *EBP* *ESI* *EDI*
-                     *R8d*  *R9d*  *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
+                     *R8d* *R9d* *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
      ,(b* ((lst (gl-int 0 1 15))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
@@ -741,7 +747,7 @@
                      ;; (Task Priority Register) available only in 64
                      ;; bit mode
                ;; cr9 thru cr15 are not implemented in our model yet.
-               *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
+               *CR9* *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
                *XCR0*
                *control-register-names-len*)
      ,(b* ((lst (gl-int 0 1 17))

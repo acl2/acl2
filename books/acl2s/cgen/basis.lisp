@@ -94,7 +94,7 @@
                                                       (eq 'mv (car output-arg-type))
                                                       (symbol-listp output-arg-type)))))))
 
-(defrec def-metadata% 
+(defrec def-metadata%
   (actual-name  ;name of currently attached  actual defun
                 ; of type: symbolp (UNUSED)
    call-name    ;subtitute key (visible name) with this name
@@ -105,11 +105,11 @@
                 ; of type: (type-sigp x)
    mode         ;of type: (in :program :logic)
    inline?      ;of type: Boolean
-   trace        
+   trace
 ;;; nil  -> this function wont be traced
 ;;; t    -> this function will be traced on system-debug flag
 ;;; spec -> see trace$ for form of spec, fun will be traced on system-debug
-;;; 
+;;;
    )
   T);unTAGGED defrec
 
@@ -125,8 +125,8 @@
                                         (booleanp trace)))))
 
 
-                                 
-  
+
+
 
 ; A table storing properties associated with a def (key)
 ; Keys are the visible names of the def functions
@@ -140,7 +140,7 @@
 ;========================Function Metadata table >=======================
 
 
-(defmacro def  (&rest def)     `(make-event (defs-fn (list ',def) 
+(defmacro def  (&rest def)     `(make-event (defs-fn (list ',def)
                                               '() '()  'def (w state) state)))
 
 (defmacro defs (&rest def-lst) `(make-event (defs-fn ',def-lst
@@ -167,9 +167,9 @@
     (null x)
     (and (or (stringp (car x)) (symbolp (car x)))
          (str/sym-listp (cdr x)))))
-    
-  
-;;; foll 2 funs adapted from cutil/deflist.lisp 
+
+
+;;; foll 2 funs adapted from cutil/deflist.lisp
 (defun concatenate-names (x)
   (declare (xargs :guard (str/sym-listp x)))
   (if (consp x)
@@ -186,7 +186,7 @@
 
 ;;; mksym-package-symbol will be captured by calling lexical environment
 (defmacro mksym (&rest args)
-  "given a sequence of symbols or strings as args, 
+  "given a sequence of symbols or strings as args,
    it returns the concatenated symbol"
   `(intern-in-package-of-symbol
     (concatenate-names (list ,@args))
@@ -235,12 +235,12 @@
 (defthm modified-symbol-lst-len
   (= (len (modify-symbol-lst pre syms post))
      (len syms)))
-   
+
 (in-theory (disable modify-symbol-lst))
 
 
 ;; ;most functions are taken from either the COI books or rtl radix book
-;; (defthm character-listp-explode-nonnegative-integerp                            
+;; (defthm character-listp-explode-nonnegative-integerp
 ;;   (implies
 ;;    (character-listp list)
 ;;    (character-listp (explode-nonnegative-integer number 10 list))))
@@ -273,7 +273,7 @@
     (and (fn-p (car x))
          (fn-list-p (cdr x)))
     (equal x '())))
-   
+
 (defthm strip-cars-doesnt-change-length
   (implies (true-listp xs)
            (= (len (strip-cars xs))
@@ -283,7 +283,7 @@
    (implies (true-listp xs)
             (= (len (strip-cdrs xs))
                (len xs))))
-        
+
 ;; this shud be taken care automatically by some type-relationship inference algo
 (defthm fn-list-p-implies-alistp
   (implies (fn-list-p fns)
@@ -362,7 +362,7 @@
         (prefix      (mksym "_" nm))
         (old-names   (strip-cars fns))
         (new-names   (modify-symbol-lst (symbol-name prefix) old-names ""))
-        (def-events  (triplelis$ (make-list (len fns) 
+        (def-events  (triplelis$ (make-list (len fns)
                                    :initial-element 'defabbrev)
                                  new-names
                                  (strip-cdrs fns)))
@@ -370,10 +370,10 @@
         (def-events~ (sublis P def-events))) ;possible variable capture
    ;;in
    (mv def-events~ P)))
-                        
+
 
 (defconst *stobjs* '(state R$ types-ht$)) ;ACHTUNG: Keep in sync!
-    
+
 (defun mk-declare (K)
   (declare (xargs :guard (and (keyword-value-listp K)
                               ;;phew how ugly is this guard. u make code pretty with b* and u lose with guards
@@ -391,12 +391,12 @@
        (stobjs           (intersection-eq *stobjs* in)))
   `(declare (xargs :mode ,mode
                    :stobjs ,stobjs))))
-              
-(set-verify-guards-eagerness 0) 
+
+(set-verify-guards-eagerness 0)
 
 
 (defun trans-body (B nm)
-  "translate body, by making defun events for each f* binding"  
+  "translate body, by making defun events for each f* binding"
   (declare (xargs :guard (and (symbolp nm)
                              )))
   #||
@@ -405,29 +405,29 @@
          (ntimes (x) (* n x))) ;capture n from surrounding context
     body)
   ==>
-  (mv 
+  (mv
    ((defabbrev _nm-double (x) (* 2 x))
     (defabbrev _nm-sq (y) (* y y))
     (defabbrev _nm-ntimes (x) (* n x)))
    body')
   where body' = body[subst real names of introduced inline functions]
 ||#
-  
-  (case-match B 
+
+  (case-match B
     (('f* fns body)   (b* (((mv evts P) (mk-f*-events fns nm))
                              (body~       (sublis P body)))
                          (mv evts body~)))
     ;;ignore otherwise
     (&                  (mv nil B))))
 
-           
-  
+
+
 (defun trans-arglist (A )
   (declare (xargs :guard (and (true-listp A)
-                             
+
                               )))
   "not implemented at the moment i.e noop"
-; (|x as (list a b ...)| x2 x3 
+; (|x as (list a b ...)| x2 x3
 ;  |ts$ as {curr-subgoal-idx, cur-run-idx, ...}|)
 ;  =>
 ;  (mv (X X2 X3 TS$)
@@ -451,7 +451,7 @@
                               (keyword-value-listp decl-kv-list)
                               (true-listp decls)
                               (plist-worldp wrld))))
-  
+
   (let ((K decl-kv-list)
         (A arglist)
         (B body))
@@ -461,10 +461,10 @@
        ((unless (assoc-keyword :sig K))
         (er hard ctx "~|:sig not found in ~x0.~%" K))
 ; make a declaration form
-       (decl (mk-declare K)) 
+       (decl (mk-declare K))
 ; get doc string
        ((list & doc) (or (assoc-keyword :doc K) '(:doc "n/a")))
-       
+
 ; translate arglist to get the actual arglist and a list of b* bindings
        ((mv A1 b*-bindings) (trans-arglist A))
 ; translate body to get events for nested defuns and actual body
@@ -474,7 +474,7 @@
               B~)))
     ;;in
     (list aux-events `(,name ,A1 ,doc ,@(cons decl decls) ,B~1)))))
- 
+
 (defun def-fn (def ctx wrld state)
   (declare (ignorable wrld state))
   (declare (xargs :stobjs (state)
@@ -484,11 +484,11 @@
     ((nm A ('decl . K) ('declare . ds) B)
      ;; =>
      (def-fn1 nm A K (list (cons 'declare ds)) B ctx wrld state))
-    
+
     ((nm A ('decl . K) B)
      ;; =>
      (def-fn1 nm A K '() B ctx wrld state))
-    
+
     (& (er hard ctx "~|Ill-formed def form. ~
 General form: ~
 (def name arglist decl [declare] body)~%"))))
@@ -505,14 +505,14 @@ General form: ~
                               (symbolp ctx)
                               (plist-worldp wrld))))
   (if (endp def-lst)
-      `(progn ,@aux-events. 
+      `(progn ,@aux-events.
               ,(if (null (cdr defuns-tuples.));singleton
                    `(defun . ,(car defuns-tuples.))
                  `(defuns . ,defuns-tuples.)))
     ;;else
     (b* (((list ae def-tuple);ae: aux-events
            (def-fn (first def-lst) ctx wrld state)))
-     
+
       (defs-fn (rest def-lst)
                (append ae aux-events.)
                (append defuns-tuples. (list def-tuple)) ctx wrld state))))
@@ -557,7 +557,7 @@ General form: ~
     er er0 prog2$ cw ev-fncall-w
     fn-count-evg lexorder
     if not implies and or iff
-    acl2-numberp rationalp integerp consp 
+    acl2-numberp rationalp integerp consp
     characterp symbolp stringp
     booleanp termp keywordp
     true-listp symbol-listp
@@ -590,83 +590,84 @@ General form: ~
     add-to-set-eq pseudo-termp all-vars ffn-symb fargs
     translate-and-test intersectp check-vars-not-free position
     collect-cdrs-when-car-eq restrict-alist substitute sublis
-    delete-assoc function-symbolp the 32-bit-integerp
+    ;; added remove1-assoc here, after the change in commit 374edd977999637845227330eb8e99985529b1fc:
+    remove1-assoc function-symbolp the 32-bit-integerp
     32-bit-integer-listp with-live-state state-global-let*
     integer-range-p signed-byte-p unsigned-byte-p boole$
-    make-var-lst the-mv nth-aliases fix-true-list 
+    make-var-lst the-mv nth-aliases fix-true-list
     duplicates evens odds resize-list conjoin2
     conjoin-untranslated-terms search count our-multiple-value-prog1
     all-calls filter-atoms unprettyify variantp free-vars-in-hyps
     destructors  alist-to-keyword-alist
     occur
-    
+
 ;linear-a.lisp
     dumb-occur
-    
+
     ;other-processes.lisp
     sublis-expr generate-variable
     ; tau.lisp
     subst-var subst-var-lst
     ))
 
-(defconst   *special-forms* 
+(defconst   *special-forms*
   '(b* let mv-let cond case case-match defabbrev defun defmacro
     ))
 
 
 
 
-; NOTE on what is stored in the acl2 world for 
+; NOTE on what is stored in the acl2 world for
 ; Functions
 ; in Raw lisp do the following
 #||
 (get 'acl2::binary-append *current-acl2-world-key*)
 ==>
-((COARSENINGS NIL) 
- 
- (RUNIC-MAPPING-PAIRS ((620 :DEFINITION BINARY-APPEND) 
+((COARSENINGS NIL)
+
+ (RUNIC-MAPPING-PAIRS ((620 :DEFINITION BINARY-APPEND)
                        (621 :EXECUTABLE-COUNTERPART BINARY-APPEND)
                        (622 :TYPE-PRESCRIPTION BINARY-APPEND)
-                       (623 :INDUCTION BINARY-APPEND))) 
- (DEF-BODIES (((620 NIL IF (CONSP X) (CONS (CAR X) (BINARY-APPEND (CDR X) Y)) Y) 
+                       (623 :INDUCTION BINARY-APPEND)))
+ (DEF-BODIES (((620 NIL IF (CONSP X) (CONS (CAR X) (BINARY-APPEND (CDR X) Y)) Y)
                (BINARY-APPEND)
                (X Y)
-               (:DEFINITION BINARY-APPEND) 
-               (BINARY-APPEND T NIL)))) 
-(TYPE-PRESCRIPTIONS ...) 
+               (:DEFINITION BINARY-APPEND)
+               (BINARY-APPEND T NIL))))
+(TYPE-PRESCRIPTIONS ...)
 
-(CONGRUENCES NIL) 
+(CONGRUENCES NIL)
 
-(SYMBOL-CLASS :COMMON-LISP-COMPLIANT :COMMON-LISP-COMPLIANT 
-              :ACL2-PROPERTY-UNBOUND :PROGRAM :PROGRAM) 
+(SYMBOL-CLASS :COMMON-LISP-COMPLIANT :COMMON-LISP-COMPLIANT
+              :ACL2-PROPERTY-UNBOUND :PROGRAM :PROGRAM)
 
 (LEMMAS  ...)
- 
-(STOBJS-OUT (NIL) :ACL2-PROPERTY-UNBOUND (NIL)) 
 
-(FORMALS (X Y) :ACL2-PROPERTY-UNBOUND (X Y)) 
+(STOBJS-OUT (NIL) :ACL2-PROPERTY-UNBOUND (NIL))
 
-(PRIMITIVE-RECURSIVE-DEFUNP T) 
+(FORMALS (X Y) :ACL2-PROPERTY-UNBOUND (X Y))
 
-(LEVEL-NO 1) 
+(PRIMITIVE-RECURSIVE-DEFUNP T)
 
-(UNNORMALIZED-BODY (IF (ENDP X) Y (CONS (CAR X) (BINARY-APPEND (CDR X) Y)))) 
+(LEVEL-NO 1)
 
-(QUICK-BLOCK-INFO (SELF-REFLEXIVE UNCHANGING)) 
+(UNNORMALIZED-BODY (IF (ENDP X) Y (CONS (CAR X) (BINARY-APPEND (CDR X) Y))))
 
-(JUSTIFICATION (JUSTIFICATION (X) (NIL O-P . O<) 
+(QUICK-BLOCK-INFO (SELF-REFLEXIVE UNCHANGING))
+
+(JUSTIFICATION (JUSTIFICATION (X) (NIL O-P . O<)
                               ((ACL2-COUNT X) MV-LIST RETURN-LAST)))
- 
-(INDUCTION-MACHINE ((TESTS-AND-CALLS ((ENDP X))) 
-                    (TESTS-AND-CALLS ((NOT (ENDP X))) 
-                                     (BINARY-APPEND (CDR X) Y)))) 
-(RECURSIVEP (BINARY-APPEND)) 
 
-(REDEFINED (:RECLASSIFYING-OVERWRITE BINARY-APPEND (X Y) (NIL NIL) (NIL))) 
+(INDUCTION-MACHINE ((TESTS-AND-CALLS ((ENDP X)))
+                    (TESTS-AND-CALLS ((NOT (ENDP X)))
+                                     (BINARY-APPEND (CDR X) Y))))
+(RECURSIVEP (BINARY-APPEND))
 
-(ABSOLUTE-EVENT-NUMBER 6858 :ACL2-PROPERTY-UNBOUND 227) 
-(PREDEFINED T T) 
-(GUARD (TRUE-LISTP X) :ACL2-PROPERTY-UNBOUND (TRUE-LISTP X)) 
+(REDEFINED (:RECLASSIFYING-OVERWRITE BINARY-APPEND (X Y) (NIL NIL) (NIL)))
+
+(ABSOLUTE-EVENT-NUMBER 6858 :ACL2-PROPERTY-UNBOUND 227)
+(PREDEFINED T T)
+(GUARD (TRUE-LISTP X) :ACL2-PROPERTY-UNBOUND (TRUE-LISTP X))
 
 (STOBJS-IN (NIL NIL) :ACL2-PROPERTY-UNBOUND (NIL NIL)))
 ||#
@@ -676,12 +677,12 @@ General form: ~
 (get 'acl2::append *current-acl2-world-key*)
 ==>
 
-((MACRO-BODY (IF (NULL RST) 
-                 'NIL 
-                 (IF (NULL (CDR RST)) 
-                     (CAR RST) 
-                     (XXXJOIN 'BINARY-APPEND RST)))) 
- (ABSOLUTE-EVENT-NUMBER 228) 
- (PREDEFINED T) 
+((MACRO-BODY (IF (NULL RST)
+                 'NIL
+                 (IF (NULL (CDR RST))
+                     (CAR RST)
+                     (XXXJOIN 'BINARY-APPEND RST))))
+ (ABSOLUTE-EVENT-NUMBER 228)
+ (PREDEFINED T)
  (MACRO-ARGS (&REST RST)))
 ||#

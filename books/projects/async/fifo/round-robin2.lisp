@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -117,7 +117,7 @@
                                *alt-branch$go-num*)
                             *alt-merge$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -164,7 +164,7 @@
          (queue4-l$st-format q4-l data-width)
          (queue5-l$st-format q5-l data-width))))
 
-(defthm round-robin2$st-format=>data-width-constraint
+(defthm round-robin2$st-format=>constraint
   (implies (round-robin2$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin2$st-format)))
@@ -182,10 +182,10 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd round-robin2$valid-st=>data-width-constraint
+(defthmd round-robin2$valid-st=>constraint
   (implies (round-robin2$valid-st st data-width)
            (posp data-width))
-  :hints (("Goal" :in-theory (enable queue4-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue4-l$valid-st=>constraint
                                      round-robin2$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -371,7 +371,7 @@
                                        round-robin2$out-act
                                        round-robin2$data-out
                                        round-robin2$me-inputs
-                                       queue4-l$valid-st=>data-width-constraint
+                                       queue4-l$valid-st=>constraint
                                        alt-merge$valid-st
                                        alt-merge$act
                                        alt-merge$act0
@@ -382,10 +382,6 @@
            (round-robin2$out-act inputs st data-width)
            (round-robin2$data-out st)))
   )
-
-;; Prove that RR2 is not a DE primitive.
-
-(not-primp-lemma round-robin2)
 
 ;; The value lemma for RR2
 
@@ -580,7 +576,7 @@
              (round-robin2$me-inputs inputs st data-width)
              data-width))
    :hints (("Goal"
-            :in-theory (e/d (queue4-l$valid-st=>data-width-constraint
+            :in-theory (e/d (queue4-l$valid-st=>constraint
                              alt-merge$input-format
                              alt-merge$data0-in
                              alt-merge$data1-in
@@ -946,7 +942,7 @@
      :hints (("Goal"
               :in-theory (enable get-field
                                  f-or3
-                                 queue4-l$valid-st=>data-width-constraint
+                                 queue4-l$valid-st=>constraint
                                  queue4-l$in-act
                                  alt-branch$act0
                                  round-robin2$q4-l-inputs
@@ -980,7 +976,7 @@
                         (round-robin2$q4-l-inputs inputs st data-width)))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue4-l$valid-st=>data-width-constraint
+                                 queue4-l$valid-st=>constraint
                                  queue4-l$out-act
                                  alt-merge$act0
                                  round-robin2$q4-l-inputs
@@ -1012,7 +1008,7 @@
                         (round-robin2$q5-l-inputs inputs st data-width)))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue5-l$valid-st=>data-width-constraint
+                                 queue5-l$valid-st=>constraint
                                  queue5-l$in-act
                                  alt-branch$act1
                                  round-robin2$q5-l-inputs
@@ -1046,7 +1042,7 @@
                         (round-robin2$q5-l-inputs inputs st data-width)))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue5-l$valid-st=>data-width-constraint
+                                 queue5-l$valid-st=>constraint
                                  queue5-l$out-act
                                  alt-merge$act1
                                  round-robin2$q5-l-inputs
@@ -1062,7 +1058,7 @@
                    round-robin2$input-format=>q5-l$input-format)
              :in-theory (e/d (get-field
                               f-sr
-                              queue4-l$valid-st=>data-width-constraint
+                              queue4-l$valid-st=>constraint
                               queue4-l$extracted-step
                               queue5-l$extracted-step
                               round-robin2$valid-st
@@ -1193,7 +1189,7 @@
                    round-robin2$input-format=>q5-l$input-format)
              :in-theory (e/d (get-field
                               f-sr
-                              queue4-l$valid-st=>data-width-constraint
+                              queue4-l$valid-st=>constraint
                               queue4-l$extracted-step
                               queue5-l$extracted-step
                               round-robin2$extracted-step
@@ -1277,7 +1273,7 @@
                             (round-robin2$extract st))))
     :hints (("Goal"
              :do-not-induct t
-             :use round-robin2$valid-st=>data-width-constraint
+             :use round-robin2$valid-st=>constraint
              :in-theory (e/d (f-and3
                               queue4-l$extract-lemma-2
                               queue5-l$extract-lemma-2
@@ -1291,7 +1287,7 @@
                               alt-merge$act
                               alt-merge$act0
                               alt-merge$act1)
-                             (round-robin2$valid-st=>data-width-constraint)))))
+                             (round-robin2$valid-st=>constraint)))))
   )
 
 ;; Extract the accepted input sequence

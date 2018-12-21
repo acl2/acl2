@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -38,7 +38,7 @@
                 (sis 'go 0 *branch$go-num*)))
  (list* 'act 'act0 'act1
         (sis 'data-out 0 data-width))
- '()
+ ()
  (list
   '(g0 (select~) b-not (select))
   '(g1 (ready-out0-) b-or (empty-out0- select))
@@ -58,7 +58,7 @@
         (si 'v-buf data-width)
         (sis 'data-in 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; BRANCH.
@@ -160,8 +160,6 @@
              (not (branch$act inputs data-width)))
     :hints (("Goal" :in-theory (enable branch$act))))
   )
-
-(not-primp-lemma branch) ;; Prove that BRANCH is not a DE primitive.
 
 ;; The value lemma for BRANCH
 

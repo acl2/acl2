@@ -60,7 +60,7 @@ data last modified: [2017-06-26 Mon]
 (defmacro acl2::tag= (x tag)
   `(and (consp ,x)
         (equal (acl2::mget :0tag ,x) ,tag)))
-  
+
 
 
 
@@ -110,18 +110,18 @@ B is the builtin combinator table."
                 `(AND ,@recog-calls
                       (LET ,binding (AND . ,rst)))
               `(AND ,@recog-calls ,@rst))))
-         
+
          (t
 ;TODO: maybe dependent expr...
           `(,(car s) . ,(make-pred-Is... (cdr s) (make-list (len (cdr s)) :initial-element x))))))
-         
+
  (defun make-pred-Is (texps xs   kwd-alist M C B wrld)
    (if (endp texps)
        '()
      (cons (make-pred-I... (car texps) (car xs))
            (make-pred-Is... (cdr texps) (cdr xs)))))
 )
-         
+
 
 
 (defun make-pred-declare-forms (xvar kwd-alist)
@@ -152,12 +152,12 @@ B is the builtin combinator table."
        (curr-pkg (get1 :current-package top-kwd-alist))
        (pred-name (make-predicate-symbol name curr-pkg))
        ((when (allows-arity pred-name 1 wrld)) nil) ;already defined
-       
+
        ((acl2::assocs ndef ?N new-constructors new-types kwd-alist) A)
        (recp (get1 :recp kwd-alist))
        ;non-recursive record predicate is defined elsewhere
        ((when (and new-constructors (not recp))) nil)
-       
+
        (M (append new-types (table-alist 'type-metadata-table wrld)))
        (C (append new-constructors (table-alist 'data-constructor-table wrld)))
        (B (table-alist 'builtin-combinator-table wrld))
@@ -169,7 +169,7 @@ B is the builtin combinator table."
        (pred-decls (make-pred-declare-forms xvar kwd-alist))
        (pred-name (predicate-name name M))
        (def (if (and (not recp) (get1 :disable-non-recursive-p kwd-alist))
-                'defund 
+                'defund
               'defun))
 
        ;; :satisfies with defdata is a bad idea. at least the top-level version does not gel well with recursive types.
@@ -180,10 +180,10 @@ B is the builtin combinator table."
        ;; (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
        ;; (satisfies-pred-body `(AND (,pred-name-aux ,xvar)
        ;;                            ,@satisfies-exprs))
-       
+
        )
     `((,def ,pred-name (,xvar) ,@pred-decls ,pred-body))))
-    
+
 
 
 (defloop pred-events (ps kwd-alist wrld)
@@ -217,7 +217,7 @@ B is the builtin combinator table."
                             ;;clique
                             (funcalls-append (get1 :in-pred-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)))
        )
-    
+
     (if (and (consp pred-events) (consp (cdr pred-events))) ;len = 2
         `((mutual-recursion ,@pred-events)) ;;TODO -- only keep clique inside a mutual-recursion.
       (append already-defined-pred-defthm-events pred-events))))
@@ -228,16 +228,16 @@ B is the builtin combinator table."
        ((acl2::assocs kwd-alist) A)
        (all-ev (get1 key kwd-alist)))
     all-ev))
-   
+
 (defloop collect-events1 (ps key)
   (for ((p in ps)) (append (collect-keyword-ev p key))))
 
 (defun collect-events (key D kwd-alist)
   (append (get1 key kwd-alist)
           (collect-events1 D key)))
-  
 
-;foll 3 functions copied from FTY/deftypes.lisp 
+
+;foll 3 functions copied from FTY/deftypes.lisp
 (defun pred-rule-disablep (rule)
   ;; disable backchain rules, rules that target (pred x), i.e. where the
   ;; argument to pred doesn't have a function symbol, and rules that rewrite
@@ -258,7 +258,7 @@ B is the builtin combinator table."
       (collect-pred-runes-to-disable (cdr rules)))))
 
 (defloop collect-disable-runes-preds (preds wrld)
-  (for ((pred in preds)) 
+  (for ((pred in preds))
        (append (collect-pred-runes-to-disable (acl2-getprop pred 'acl2::lemmas wrld)))))
 
 
@@ -267,7 +267,7 @@ B is the builtin combinator table."
        ((acl2::assocs kwd-alist) A)
        (all-ev (get1 key kwd-alist)))
     all-ev))
-   
+
 
 
 (defun predicate-events (D kwd-alist wrld)
@@ -275,30 +275,30 @@ B is the builtin combinator table."
 
     `(,@(funcalls-append (get1 :pre-pred-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
       ,@(collect-events :pre-pred-events D kwd-alist)
-    
+
 
     (commentary ,(get1 :print-commentary kwd-alist) "~| Predicate events...~%")
     ,@(predicate-events1 D kwd-alist wrld)
 
     (local (in-theory (acl2::disable* . ,disable-rules))) ;TODO.Note: we can shift this above to make CCG faster
     (local (in-theory (enable ,@(make-predicate-symbol-lst (strip-cars D) (get1 :current-package kwd-alist)))))
-      
+
     ;; ,@(new-conx/record-events D kwd-alist) ;constructor/destructor defs and related
     ,@(collect-events :post-pred-events D kwd-alist)
     ,@(funcalls-append (get1 :post-pred-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
     )))
-    
 
 
 
-;; USER COMBINATOR THEORY EVENTS 
+
+;; USER COMBINATOR THEORY EVENTS
 
 
 ;; (defun user-combinator-theory-ev (p top-kwd-alist wrld)
 ;;   (b* (((cons name A) p)
 ;;        ((acl2::assocs odef new-constructors kwd-alist) A) ;what about pdef?
 ;;        (kwd-alist (append kwd-alist top-kwd-alist)))
-       
+
 ;;     (case-match odef
 ;;       (('LISTOF cbody) (listof-theory-events name cbody kwd-alist wrld))
 ;;       (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body kwd-alist wrld))
@@ -311,7 +311,7 @@ B is the builtin combinator table."
 ;;       (& (if new-constructors
 ;;              (record-theory-events-lst new-constructors kwd-alist wrld)
 ;;            '())))))
-             
+
 
 ;; (defloop user-combinator-theory-events (ps kwd-alist wrld)
 ;;   (for ((p in ps)) (append (user-combinator-theory-ev p kwd-alist wrld))))
@@ -352,7 +352,7 @@ B is the builtin combinator table."
    `(commentary ,(get1 :print-commentary kwd-alist) "~| Registering type...~%")
    (register-type-events1 ps kwd-alist wrld)))
 
-       
+
 
 ; TOP-LEVEL EVENT GENERATION
 
@@ -378,12 +378,12 @@ B is the builtin combinator table."
 
              ,@(predicate-events D kwd-alist wrld)
 
-             
+
 ;             ,@(tau-characterization-events D kwd-alist wrld)
 ;             ,@(polymorphic-inst-defdata-events D kwd-alist wrld)
              ;; Run the above commented out generation functions as post-pred-hooks
 
-             
+
 
              ;; ,@(enumerator-events D kwd-alist wrld)
              ;; ,@(enumerator/acc-events D kwd-alist wrld)
@@ -396,7 +396,7 @@ B is the builtin combinator table."
        ,@(funcalls-append (get1 :post-hook-fns kwd-alist) (list D kwd-alist wrld) wrld)
        ,@(collect-events :post-events D kwd-alist)
        ))))
-       
+
 
 ; PARSING
 
@@ -404,7 +404,7 @@ B is the builtin combinator table."
 
 
 (defloop deref-combinator-alias (comb table)
-  (for ((entry in table)) 
+  (for ((entry in table))
        (when (member-eq comb (get1 :aliases (cdr entry)))
          (return (car entry)))))
 
@@ -432,7 +432,7 @@ B is the builtin combinator table."
                  (er hard? ctx "~| Expecting ~x0 to be a symbol.~%" comb))
                 (ccomb (deref-combinator-alias comb B))
                 ((when (member-eq ccomb '(acl2s::range acl2s::member))) '()))
-                                   
+
              (collect-names-texps (cdr texp) ccomb ctx B)))))
 
 
@@ -447,13 +447,13 @@ B is the builtin combinator table."
          ((when (consp non-unique-names))
           (er hard? ctx "~| Names ~x0 being used more than once.~%" non-unique-names)))
       (append N1 N2))))
-    
+
 )
 
 (defun get-arity (comb wrld)
-  (or (let ((B (table-alist 'builtin-combinator-table wrld))) 
+  (or (let ((B (table-alist 'builtin-combinator-table wrld)))
         (get2 (deref-combinator-alias comb B) :arity B))
-      (let ((U (table-alist 'user-combinator-table wrld))) 
+      (let ((U (table-alist 'user-combinator-table wrld)))
         (get2 (deref-combinator-alias comb U) :arity U))
       (get2 comb :arity (table-alist 'data-constructor-table wrld))))
 
@@ -461,7 +461,7 @@ B is the builtin combinator table."
 
 
 ; basic syntax check for defdata type expressions.
-; scope is the name scope, in form of an alist/bindings 
+; scope is the name scope, in form of an alist/bindings
 ;BUGFIX: Earlier I had scope was named it N, but that was overwritten by (n (len (cdr texp)) Woaaa HORRIBLE BUG
 ; tnames is the type name clique being defined
 (mutual-recursion
@@ -487,7 +487,7 @@ B is the builtin combinator table."
                 ((unless (or (not (natp arity))
                              (equal (len (cdr texp)) arity)))
                  (er hard? ctx "~| Arity mismatch! ~x0 expects ~x1 arguments but got ~x2.~%" comb arity (len (cdr texp))))
-                
+
                 (B (table-alist 'builtin-combinator-table wrld))
                 (bcomb (deref-combinator-alias comb B))
                 ((when bcomb)
@@ -501,7 +501,7 @@ B is the builtin combinator table."
                    (otherwise (check-syntax-texps (cdr texp) scope tnames ctx wrld))))
                 ((when (assoc-eq (car texp) (table-alist 'data-constructor-table wrld)))
                  (check-syntax-texps (cdr texp) ;extend scope
-                                     (append (collect-names-texps (cdr texp) nil ctx B) scope) 
+                                     (append (collect-names-texps (cdr texp) nil ctx B) scope)
                                      tnames ctx wrld)))
              (check-syntax-texps (cdr texp) scope tnames ctx wrld)))))
 
@@ -515,9 +515,9 @@ B is the builtin combinator table."
 
 
 (defloop find-recursive-texps (texps tnames wrld)
-  (for ((texp in texps)) 
+  (for ((texp in texps))
        (append (and (is-recursive-type-exp texp tnames wrld) (list texp)))))
-  
+
 (defun normalize-union-texps (texps tnames wrld)
  "remove duplicates and put base cases before recursive texps"
  (b* ((texps (remove-duplicates-equal texps))
@@ -525,7 +525,7 @@ B is the builtin combinator table."
       (base-texps (acl2::set-difference-equal texps recursive-texps)))
    (append base-texps recursive-texps)))
 
-(mutual-recursion                 
+(mutual-recursion
 (defun parse-texp (texp tnames ctx wrld)
   (cond ((possible-constant-value-p texp) (if (quotep texp) texp (kwote texp)))
         ((proper-symbolp texp) texp)
@@ -552,7 +552,7 @@ B is the builtin combinator table."
                           (acl2::macroexpand1-cmp (cons (car texp) (parse-texps (cdr texp) tnames ctx wrld)) ctx wrld (acl2::make acl2::state-vars)))
                          ((when erp) (er hard? ctx "~| Macroexpanding ~x0 failed!~%" texp)))
                       ans))
-                         
+
 ; either undefined comb/cons, a dependent expression or a new constructor
 ; (record) to be registered. we will take the benefit of doubt and assume it is
 ; a new constructor. if it is not, then we will raise error in the
@@ -584,7 +584,7 @@ B is the builtin combinator table."
                             ((when erp)
                              (er hard? ctx "~| Eval failed in user-combinator expansion of ~x0.~%" texp)))
                          result)
-                         
+
                      (b* ((x0-str (get2 ucomb :syntax-restriction-msg U))
                           (msg (to-string1 x0-str (acons #\0 (cdr texp) '()))))
                        (er hard? ctx "~| ~s0 ~%" msg))))))
@@ -596,7 +596,7 @@ B is the builtin combinator table."
   (and (assoc-eq x N)
        (let ((texp (cdr (assoc-eq x N))))
 ;texp should be a typename:
-         (and (proper-symbolp texp) 
+         (and (proper-symbolp texp)
               (not (assoc-eq texp N))))))
 
 (defloop valid-record-fields-p (xs N)
@@ -663,10 +663,10 @@ B is the builtin combinator table."
        (prefix (get-dest-prefix conx-name))
        (selector-fn-names (modify-symbol-lst prefix fnames "" curr-pkg))
        (dest-pred-alist (pairlis$ selector-fn-names preds)))
-    (cons conx-name (acons :arity (len (cdr prod)) (acons :recog recog 
-                                                          (acons :dest-pred-alist dest-pred-alist 
+    (cons conx-name (acons :arity (len (cdr prod)) (acons :recog recog
+                                                          (acons :dest-pred-alist dest-pred-alist
                                                                  (acons :field-pred-alist fname-pred-alist '())))))))
-       
+
 (defloop data-constructor-bases (prods curr-pkg M)
   (for ((prod in prods)) (collect (data-constructor-basis prod curr-pkg M))))
 
@@ -674,7 +674,7 @@ B is the builtin combinator table."
 (defun type-metadata-basis (tname curr-pkg)
   (declare (xargs :guard (symbolp tname)))
   (b* ((minimal-vals (list (make-predicate-symbol tname curr-pkg)
-                           ;; [2015-06-17 Wed] enumerators are defattachable 
+                           ;; [2015-06-17 Wed] enumerators are defattachable
                            (s+ "NTH-" tname "-BUILTIN" :pkg curr-pkg)
                            ;;(make-enumerator-symbol tname curr-pkg)
                            (s+ "NTH-" tname "/ACC-BUILTIN" :pkg curr-pkg)
@@ -704,10 +704,10 @@ B is the builtin combinator table."
        ((list* tname body kwd-val-list) def)
        ((unless (symbolp tname))
         (er hard? ctx "~| name ~x0 should be a symbol.~%" tname))
-       
+
 ;       (kwd-val-list (append kwd-val-list args))
        ((mv kwd-alist ?rest) (extract-keywords ctx *per-def-keywords* kwd-val-list '()))
-      
+
 
 ; check if names are not nested and are unique
        (N (collect-names-texp body 'TOP ctx (table-alist 'builtin-combinator-table wrld)))
@@ -744,7 +744,7 @@ B is the builtin combinator table."
 ; specially handle allp aliases
        (allp-alias-events (and (proper-symbolp nbody) (is-allp-alias nbody wrld)
                                `((table allp-aliases ',(predicate-name tname new-types) ',tname :put))))
-       (kwd-alist (put-assoc-eq :post-pred-events 
+       (kwd-alist (put-assoc-eq :post-pred-events
                                 (append (get1 :post-pred-events kwd-alist) allp-alias-events)
                                 kwd-alist))
 
@@ -754,8 +754,8 @@ B is the builtin combinator table."
        (new-types (put2-fn tname :prettyified-def pbody new-types))
 
        ;; (reg-conx-ev (register-record-constructor-events new-constructors kwd-alist))
-       ;; (kwd-alist (put-assoc-eq :post-events 
-       ;;                          (append (get1 :post-events kwd-alist) reg-conx-ev) 
+       ;; (kwd-alist (put-assoc-eq :post-events
+       ;;                          (append (get1 :post-events kwd-alist) reg-conx-ev)
        ;;                          kwd-alist))
 
        )
@@ -768,25 +768,25 @@ B is the builtin combinator table."
                       (cons 'new-constructors new-constructors)
                       (cons 'new-types new-types)
                       (cons 'kwd-alist kwd-alist)))))
-    
+
 
 (defloop parse-data-defs (ds tnames kwd-args curr-pkg ctx wrld)
-  (for ((d in ds)) 
+  (for ((d in ds))
        (collect (parse-data-def d tnames kwd-args curr-pkg ctx wrld))))
 
 
 #||
-(:conc-name      . nil)  
+(:conc-name      . nil)
 (:tag            . :0_conc_name_)
-(:dest-prefix    . "_conc-name_-")  
+(:dest-prefix    . "_conc-name_-")
 (:modifier-prefix . "SET-_conc-name_-")
 (:inline          . nil)))
 ||#
 
 
 
-(defconst *defdata-keywords* 
-  (append '(:pred-prefix 
+(defconst *defdata-keywords*
+  (append '(:pred-prefix
             ;:pred-suffix :enum-prefix :enum-suffix :enum/acc-prefix :enum/acc-suffix
             ;:pred-guard :enum-guard :enum/acc-guard
             :theory-name
@@ -798,17 +798,17 @@ B is the builtin combinator table."
           *per-def-keywords*
           ))
 
-(defun delete-assoc-eq-lst (keys alst)
+(defun remove1-assoc-eq-lst (keys alst)
   (if (endp keys)
       alst
-    (delete-assoc-eq-lst (cdr keys) (delete-assoc-eq (car keys) alst))))
+    (remove1-assoc-eq-lst (cdr keys) (remove1-assoc-eq (car keys) alst))))
 
 (defun parse-defdata (args curr-pkg wrld)
   (b* (((mv ds kwd-val-list) (separate-kwd-args args '()))
        (ctx 'parse)
 
       (defaults-alst (table-alist 'defdata-defaults-table wrld)) ;TODO chek
-      (defaults-alst (delete-assoc-eq-lst (evens kwd-val-list) defaults-alst))
+      (defaults-alst (remove1-assoc-eq-lst (evens kwd-val-list) defaults-alst))
       ((mv kwd-alist rest-args) (extract-keywords ctx *defdata-keywords* kwd-val-list defaults-alst))
       (acl2-defaults-tbl (table-alist 'acl2::acl2-defaults-table wrld))
       (current-termination-method-entry (assoc :termination-method acl2-defaults-tbl))
@@ -819,12 +819,12 @@ B is the builtin combinator table."
       (kwd-alist (put-assoc-eq :theory-name theory-name kwd-alist))
       (kwd-alist (put-assoc-eq :clique tnames kwd-alist))
       (preds (make-predicate-symbol-lst tnames curr-pkg)) ;these are not yet defined, so we choose the predicate naming convention
-      (kwd-alist (put-assoc-eq :post-pred-events 
+      (kwd-alist (put-assoc-eq :post-pred-events
                                `((acl2::def-ruleset! ,theory-name ',preds)) ;definitions
                                  kwd-alist))
       (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
 
-      ((unless (and (consp ds) 
+      ((unless (and (consp ds)
                      (true-listp ds)))
        (er hard? ctx "~| Empty form not allowed.~%"))
 
@@ -833,7 +833,7 @@ B is the builtin combinator table."
        (list (parse-data-defs ds tnames rest-args curr-pkg ctx wrld) kwd-alist))
 
 
-       (d (if (symbolp (car ds)) ds (car ds))) 
+       (d (if (symbolp (car ds)) ds (car ds)))
 ;rename ds to d to avoid confusion, d is the single definition
        ((unless (> (len d) 1))
         (er hard? ctx "~| Empty definition.~%" ))
@@ -845,7 +845,7 @@ B is the builtin combinator table."
 
     (list (parse-data-defs (list d) tnames args curr-pkg ctx wrld) kwd-alist)))
 
-    
+
 (defmacro defdata (&rest args)
   (b* ((verbosep (let ((lst (member :verbose args)))
                    (and lst (cadr lst)))))
@@ -886,7 +886,7 @@ B is the builtin combinator table."
                        (assoc-eq T2 M)))
 ;if not existing typenames raise error
         (er hard ctx  "~|One of ~x0 and ~x1 is not a defined type!~%" T1 T2))
-       
+
 ;; ((when (and rule-classes
 ;;                    (or (eq T1 'ACL2::ALL)
 ;;                        (eq T2 'ACL2::ALL))))
@@ -916,14 +916,14 @@ B is the builtin combinator table."
                        :otf-flg ,otf-flg
                        )))
        (ev-form-to-print `(defthm ,nm
-                            ,form 
+                            ,form
                             ,@(and hints
                                    `((:hints ,hints)))
                             ,@(and rule-classes
                                   `((:rule-classes ,rule-classes)))))
 
        (- (cw "~|Submitting ~x0~|" ev-form-to-print)))
-           
+
              `(progn
 ;macros call so dont need quotes
                 ,@event-form
@@ -931,8 +931,8 @@ B is the builtin combinator table."
 
 
 
- 
-(defmacro defdata-subtype (T1 T2 
+
+(defmacro defdata-subtype (T1 T2
                                &key (rule-classes '(:tau-system))
                                verbose
                                hints otf-flg)
@@ -941,12 +941,12 @@ B is the builtin combinator table."
                               )))
   `(with-output ,@(and (not verbose) '(:off :all)) :stack :push
 
-       (make-event 
-        (compute-defdata-relation ',T1 ',T2  
+       (make-event
+        (compute-defdata-relation ',T1 ',T2
                                   ',hints ',rule-classes ',otf-flg
                                   'defdata::defdata-subtype (w state)))))
 
-(defmacro defdata-disjoint (T1 T2 
+(defmacro defdata-disjoint (T1 T2
                                &key (rule-classes '(:tau-system))
                                verbose
                                hints otf-flg)
@@ -955,16 +955,16 @@ B is the builtin combinator table."
                               )))
   `(with-output ,@(and (not verbose) '(:off :all)) :stack :push
 
-       (make-event 
-        (compute-defdata-relation ',T1 ',T2  
+       (make-event
+        (compute-defdata-relation ',T1 ',T2
                                   ',hints ',rule-classes ',otf-flg
                                   'defdata::defdata-disjoint (w state)))))
-       
+
 
 (logic)
 ; misc functions needed by other files in cgen
 
-;;is a predicate explicitly recognized in the defdata framework? 
+;;is a predicate explicitly recognized in the defdata framework?
 ;;if true then returns the corresponding type
 ;; BUG here, with every change of type table, you might have to change this function
 (defun is-datadef-type-predicate (fn-name M)
@@ -988,7 +988,7 @@ B is the builtin combinator table."
                   :guard (and (symbolp fn-name)
                               (plist-worldp wrld))))
   (is-datadef-type-predicate fn-name (table-alist 'type-metadata-table wrld)));is in types table
-  
+
 (defun is-type-predicate-gv (fn w)
   (declare (xargs :guard t))
   (ec-call (is-type-predicate-current fn w)))
@@ -999,7 +999,7 @@ B is the builtin combinator table."
 (defun is-a-typeName-current (type wrld)
   (declare (xargs :verify-guards nil))
   (predicate-name type wrld))
-  
+
 
 (defun is-a-typeName-gv (type wrld)
   (declare (xargs :guard t))
@@ -1022,7 +1022,7 @@ B is the builtin combinator table."
 Read this in org-mode.
 
 This is a rewrite of [[file:defdata.lisp]] whose original author is Peter
-Dillinger. 
+Dillinger.
 
 The design of defdata library revolves around two data structures; the
 [[Combinators and Constructors][first]] contains information that describes the syntax of the defdata
@@ -1092,7 +1092,7 @@ The pred/enum-I can be null, in which case the generating functions
 have the responsibility of handling these.
 
 ** Data constructors
-[2014-04-23 Wed 23:32] 
+[2014-04-23 Wed 23:32]
 
 The following accomodates both primitive and user-defined
 constructors.
@@ -1117,7 +1117,7 @@ constructors.
 | :theory-name           | symbol              | '_key_-THEORY | name of deftheory      |
 |------------------------+---------------------+---------------+------------------------|
 
-Notes: 
+Notes:
 
 ** User-defined combinators
 [2014-04-24 Thu 00:17]
@@ -1181,7 +1181,7 @@ to install appropriate theories and to support polymorphism.
 
 
 * Type Metadata
-[2014-04-20 Sun 22:22] 
+[2014-04-20 Sun 22:22]
 [2017-06-28 Wed] Last updated.
 
 The keys of this table are type names and values, satisfying
@@ -1255,20 +1255,20 @@ capturing the metadata associated with each typename.
 
 ** Invariants:
 - <<Tau predicate>> :: predicate should be recognized by Tau.
--  :: 
-      
-      
+-  ::
+
+
 ** Examples of future extensions:
 - improper constructors :: non-uniquely decomposable functions
   1. (defdata enum-string (string-append "nth-" string))
-  2. 
+  2.
 - dependent types :: (leave this for now... TAU characterization an obstacle)
   1. x (defdata graph (record (vertices . vertex-list) (edges . (map vertices (listof vertices)))))
-  2. 
+  2.
   3. (defdata a-kind-of-list (cons (len x) (x as true-list))) ;A list implementation, whose len is in car
 - quotient types :: equivalence relation (other than equal)
   1. (defdata vertices-set (set (listof vertex)))
-  2. 
+  2.
   3. (defdata vertices-set (listof vertex) :equiv set-equal)
 
 - x (defdata edge-list (alistof vertex pos-rational) :no-duplicatesp t)
@@ -1277,9 +1277,9 @@ capturing the metadata associated with each typename.
 - predicate subtypes :: refinement types, arbitrary constraints
   1. (defdata no-dup-list (oneof nil (cons (x as all) (y as no-dup-list))) :satisfies (not (member x y)))
   2. (defdata no-dup-list (oneof nil (cons (and all (not (member y))) (y as no-dup-list))))
-  3. (defdata 
+  3. (defdata
   4. (defdata same-length-lists (l) (listof (x as (listof pos))) :satisfies (= (len x) l))
-     
+
 
 * general plan of action
 top down

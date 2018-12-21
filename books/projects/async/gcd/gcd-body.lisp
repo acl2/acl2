@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -76,7 +76,7 @@
                (append (sis 'data0-out 0 (* 2 data-width))
                        (sis 'data1-out 0 (* 2 data-width))
                        (sis 'go 0 *merge$go-num*)))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; GCD-BODY.
@@ -223,10 +223,6 @@
     :hints (("Goal" :in-theory (enable gcd-body$a<b
                                        gcd-body$data-out))))
   )
-
-;; Prove that GCD-BODY is not a DE primitive.
-
-(not-primp-lemma gcd-body)
 
 ;; The value lemma for GCD-BODY
 

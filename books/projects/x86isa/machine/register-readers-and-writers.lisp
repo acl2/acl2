@@ -1806,6 +1806,12 @@ using the @(see undef-read) function.</p>"
 
 (include-book "tools/include-raw" :dir :system)
 (defttag :undef-flg)
-(include-raw "register-readers-and-writers-raw.lsp")
+(include-raw "register-readers-and-writers-raw.lsp"
+             :on-compile-fail
+             (format t "[register-readers-and-writers-raw.lsp] Compilation failed with message ~a~%"
+                     condition)
+             :on-load-fail
+             (cw "[register-readers-and-writers-raw.lsp] Load failed; Moving On.~%")
+             :host-readtable t)
 
 ;; ======================================================================

@@ -1426,6 +1426,19 @@ checking, and add direction/name annotations.</p>"
        (new-x (change-vl-modinst x :portargs new-args)))
     (mv (ok) new-x)))
 
+(define vl-modinst-maybe-argresolve
+  :short "Resolve arguments in a @(see vl-modinst-p), if the flag is true."
+  ((flag booleanp)
+   (x vl-modinst-p)
+   (ss vl-scopestack-p)
+   (warnings vl-warninglist-p))
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (new-x    vl-modinst-p))
+  (if flag
+      (vl-modinst-argresolve x ss warnings)
+    (mv (vl-warninglist-fix warnings) (vl-modinst-fix x))))
+
 (define vl-modinstlist-argresolve
   ((x        vl-modinstlist-p)
    (ss       vl-scopestack-p)

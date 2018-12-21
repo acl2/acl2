@@ -48,6 +48,7 @@
 (include-book "kestrel/java/portcullis" :dir :system)
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
+(include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
 ; Please note:
 ;
@@ -104,6 +105,26 @@
 
  <h3>New Libraries</h3>
 
+ <h4><see topic='@(url alist-utilities)'>Alist Utilities</see></h4>
+
+ <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
+ remove-assoc) from single keys to lists of keys.</p>
+
+ <h4>Declarative Definitions of Maxima</h4>
+
+ <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
+ set of natural numbers.</p>
+
+ <h4>Graphviz</h4>
+
+ <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
+ for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+
+ <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
+
+ <p>Formalized an instant run-off voting scheme and proved that it
+ meets certain fairness criteria.</p>
+
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
  <p>Added a library for Java-related formalizations and tools, including:</p>
@@ -121,30 +142,53 @@
 
  </ul>
 
- <h4><see topic='@(url irv::instant-runoff-voting)'>Instant Run-Off Voting</see></h4>
+ <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
 
- <p>Formalized an instant run-off voting scheme and proved that it
- meets certain fairness criteria.</p>
-
- <h4>Other</h4>
-
- <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
- for the Graphviz @('.dot') file syntax and a printer for that syntax.</p>
+ <p>Added a library for omaps (ordered maps), analogous to @(see
+ set::std/osets).</p>
 
  <h3>Changes to Existing Libraries</h3>
 
- <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+ <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
- <p>Finished adding support for 32-bit application-level execution for
- non-floating-point instructions.</p>
+ <p>Slightly extended the applicability of the @(tsee apt::tailrec)
+ transformation, by relaxing a requirement on the function to be
+ transformed.</p>
 
- <p>Added support for enabling/disabling machine features that depend on CPUID
- flags.</p>
+ <p>Improved and extended some documentation.</p>
 
- <p>Detection of many decode-time exceptions is now done during opcode
- dispatch, as opposed to inside the instruction semantic functions.  This not
- only lets us catch exceptions early, but also allows us to specify them
- even if the semantic functions themselves are missing.</p>
+ <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+
+ <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+
+ <p>Improved the documentation of the Bitcoin library.</p>
+
+ <h4><see topic='@(url std::define)'>Define</see></h4>
+
+ <p>Added support for configuration objects that can be used to specify some
+ extended options.  Also added support for @(':verify-guards :after-returns')
+ that indicates that guards are to be verified after the returns
+ specifiers.</p>
+
+ <h4><see topic='@(url rstobj::defrstobj)'>Defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
+
+ <h4>Digits in Arbitrary Bases</h4>
+
+ <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
+ and renamed.  Some files have been refactored into smaller files.  The macro
+ to generate additional return types for conversions from natural numbers to
+ digits has been generalized and renamed.</p>
+
+ <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
+
+ <p>Added more error-checking functions.</p>
+
+ <p>The files @('[books]/kestrel/utilities/error-checking*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/error-checking/')
+ and renamed.  Some files have been refactored into smaller files.</p>
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
@@ -153,13 +197,13 @@
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
- <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
- <p>Improved the documentation of the Bitcoin library.</p>
+ <p>Mofified the formalizations of RLP encoding and decoding to return an
+ explicit error flag.</p>
 
- <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
-
- <p>Added @(tsee ensure-string), an error-checking function for strings.</p>
+ <p>Added a formalization of hex-prefix decoding, declaratively defined as the
+ inverse of hex-prefix encoding.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -170,6 +214,54 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <h4>FTY Type Definition Library</h4>
+
+ <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
+ to define list types that must contain at least one element.</p>
+
+ <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
+ writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <h4>FTY Types for Bytes</h4>
+
+ <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ theorems for both bytes and lists of bytes, has been split into two macros
+ @(tsee fty::defbyte), which generates a fixtype and some additional theorems
+ for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
+ additional theorems for lists of byte.  See the documentation for details.</p>
+
+ <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
+
+ <p>Added some theorems about functions on lists.</p>
+
+ <h4>RAC: Restricted Algorithmic C</h4>
+
+ <p>Minor modifications of @('projects/rac/') include a bug fix in the parser
+ and a rewrite of @('examples/hello.cpp')
+ (hat-tip to D. Hardin).</p>
+
+ <h4>@(csee rtl)</h4>
+
+ <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
+ required in the verification of an Arm FPU currently under development.  This
+ in turn required some minor modifications of @('projects/arm/*/').</p>
+
+ <h4>@(csee std/io)</h4>
+
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ byte-combining libraries</see>.</p>
+
+ <h4>@(csee std/lists)</h4>
+
+ <p>The definition of function @(see list-fix) from
+ @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
+ sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
+
+ <p>Added new lemmas and generalized some existing lemmas.</p>
+
  <h4>System Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even
@@ -179,39 +271,6 @@
  utilities have been moved to the subdirectory
  @('[books]/kestrel/utilities/system/').</p>
 
- <h4>Typed List Utilities</h4>
-
- <p>Refactored the old file
- @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
- under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
-
- <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
-
- <p>Added new lemmas and generalized some existing lemmas.</p>
-
- <h4>@(csee std/io)</h4>
-
- <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
- byte-combining libraries</see>.</p>
-
- <h4>Digits in Arbitrary Bases</h4>
-
- <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
- moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  Some files have been refactored into smaller files.  The macro
- to generate additional return types for conversions from natural numbers to
- digits has been generalized and renamed.</p>
-
- <h4>FTY Type Definition Library</h4>
-
- <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
- to define list types that must contain at least one element.</p>
-
- <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
- writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
-
- <h4>Other</h4>
-
  <p>The utility, @(tsee directed-untranslate), has been improved in several
  ways, including more complete handling of @(tsee mv-let), @(tsee let*), @(tsee
  b*), @(tsee progn$), @(tsee er), @(tsee cw), and @(tsee mbe).</p>
@@ -220,16 +279,32 @@
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
 
- <p>The definition of function @(see list-fix) from
- @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
- sources in a way that minimizes changes to existing books.  See @(see
- note-8-2) for details.</p>
+ <h4>Typed List Utilities</h4>
 
- <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
- theorems for both bytes and lists of bytes, has been split into two macros
- @(tsee fty::defbyte), which generates a fixtype and some additional theorems
- for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
- additional theorems for lists of byte.  See the documentation for details.</p>
+ <p>Refactored the old file
+ @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
+ under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
+ <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
+
+ <p>Finished adding support for 32-bit application-level execution for
+ non-floating-point instructions.  Added support for 32-bit application-level
+ execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
+ MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
+ SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
+ SQRTPS, SQRTPD, and BSF.</p>
+
+ <p>Added support for enabling/disabling machine features that depend on CPUID
+ flags.</p>
+
+ <p>Detection of many decode-time exceptions is now done during opcode
+ dispatch, as opposed to inside the instruction semantic functions.  This not
+ only lets us catch exceptions early, but also allows us to specify them
+ even if the semantic functions themselves are missing.</p>
+
+ <p>Improved incrementing and decrementing of the stack pointer to be modular:
+ 64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
+ current stack segment.</p>
 
  <h3>Licensing Changes</h3>
 

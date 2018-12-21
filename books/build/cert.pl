@@ -63,12 +63,19 @@
 
 use strict;
 use warnings;
+use File::Basename;
+use File::Spec;
 
 use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
-(do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
-(do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
+use lib "$RealBin/lib";
+use Certlib;
+use Bookscan;
+use Cygwin_paths;
+
+# (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
+# (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
 my %reqparams = ("hons-only"      => "HONS_ONLY",
                  "uses-glucose"   => "USES_GLUCOSE",
@@ -712,7 +719,7 @@ certlib_add_dir("SYSTEM", $acl2_books);
 my $acl2_books_env = path_export($acl2_books);
 $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
-my $depdb = new Depdb(evcache => $cache);
+my $depdb = new Depdb(evcache => $cache, pcert_all => $certlib_opts{"pcert_all"});
 
 $target_ext =~ s/^\.//;
 
@@ -756,7 +763,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
         my @parts = $pline =~ m/([^:]*):(.*)/;
         if (@parts) {
             my ($certname, $paramstr) = @parts;
-            my $certpars = cert_get_params($certname, $depdb);
+            my $certpars = $depdb->cert_get_params($certname);
             if ($certpars) {
                 my $passigns = parse_params($paramstr);
                 foreach my $pair (@$passigns) {
@@ -811,10 +818,10 @@ my @certs = sort(keys %{$depdb->certdeps});
 # Warn about books that include relocation stubs
 my %stubs = (); # maps stub files to the books that include them
 foreach my $cert (@certs) {
-    my $certdeps = cert_bookdeps($cert, $depdb);
+    my $certdeps = $depdb->cert_bookdeps($cert);
     foreach my $dep (@$certdeps) {
-        if (cert_get_param($dep, $depdb, "reloc_stub")
-            || cert_get_param($dep, $depdb, "reloc-stub")) {
+        if ($depdb->cert_get_param($dep, "reloc_stub")
+            || $depdb->cert_get_param($dep, "reloc-stub")) {
             if (exists $stubs{$dep}) {
                 push(@{$stubs{$dep}}, $cert);
             } else {
@@ -830,7 +837,7 @@ if (%stubs && ! $quiet) {
     foreach my $stub (@stubbooks) {
         print "Stub file:       $stub\n";
         # note: assumes each stub file includes only one book.
-        print "relocated to:    ${cert_bookdeps($stub, $depdb)}[0]\n";
+        print "relocated to:    ${$depdb->cert_bookdeps($stub)}[0]\n";
         print "is included by:\n";
         foreach my $cert (sort(@{$stubs{$stub}})) {
             print "                 $cert\n";
@@ -889,6 +896,7 @@ unless ($no_makefile) {
     print $mf "all-cert-pl-certs:\n\n";
 
     # declare $var_prefix_CERTS to be the list of certificates
+    print $mf "# Note: This variable lists the certificates for all books to be built.\n";
     print $mf $var_prefix . "_CERTS :=";
 
     foreach my $cert (@certs) {
@@ -900,6 +908,35 @@ unless ($no_makefile) {
     }
 
     print $mf "\n\n";
+
+    print $mf "# Note: This variable lists the certificates for all books to be built \n";
+    print $mf "# along with any pcert or acl2x files to be built along the way.\n";
+    print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
+
+    my $pcert_all = $certlib_opts{"pcert_all"};
+    foreach my $cert (@certs) {
+        my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
+        # BOZO acl2x implies no pcert
+        my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
+        if (! $pcert_ok && ! $useacl2x) {
+            next;
+        }
+	(my $base = $cert) =~ s/\.cert$//;
+	my $encbase = make_encode($base);
+	if ($useacl2x) {
+	    print $mf " \\\n     ${encbase}.acl2x";
+	}
+	if ($pcert_ok) {
+	    print $mf " \\\n     ${encbase}.pcert0";
+	    print $mf " \\\n     ${encbase}.pcert1";
+	}
+        # if (cert_get_param($cert, $depdb, "acl2x")) {
+        #     my $acl2xfile = cert_to_acl2x($cert);
+        #     print $mf " \\\n     $acl2xfile";
+        # }
+    }
+    print $mf "\n\n";
+    
 
     # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
     # print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
@@ -933,7 +970,7 @@ unless ($no_makefile) {
 
         print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
         foreach my $cert (@certs) {
-            if (cert_get_param($cert, $depdb, $reqparam)) {
+            if ($depdb->cert_get_param($cert, $reqparam)) {
                 print $mf " \\\n     " . make_encode($cert) . " ";
             }
         }
@@ -980,18 +1017,17 @@ unless ($no_makefile) {
     }
 
     my $warned_bindir = 0;
-    my $pcert_all = $certlib_opts{"pcert_all"};
 
     # write out the dependencies
     foreach my $cert (@certs) {
-        my $certdeps = cert_deps($cert, $depdb);
-        my $srcdeps = cert_srcdeps($cert, $depdb);
-        my $otherdeps = cert_otherdeps($cert, $depdb);
-        my $image = cert_image($cert, $depdb);
-        my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
+        my $certdeps = $depdb->cert_deps($cert);
+        my $srcdeps = $depdb->cert_srcdeps($cert);
+        my $otherdeps = $depdb->cert_otherdeps($cert);
+        my $image = $depdb->cert_image($cert);
+        my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
         # BOZO acl2x implies no pcert
-        my $pcert_ok = ( ! $useacl2x && (cert_get_param($cert, $depdb, "pcert") || $pcert_all)) || 0;
-        my $acl2xskip = cert_get_param($cert, $depdb, "acl2xskip") || 0;
+        my $pcert_ok = ( ! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
+        my $acl2xskip = $depdb->cert_get_param($cert, "acl2xskip") || 0;
 
         print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
         print $mf make_encode($cert) . " : pcert = $pcert_ok\n";
@@ -1060,19 +1096,19 @@ unless ($no_makefile) {
     # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
 
     foreach my $cert (@certs) {
-        my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
+        my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
         # BOZO acl2x implies no pcert
-        my $pcert_ok = (! $useacl2x && (cert_get_param($cert, $depdb, "pcert") || $pcert_all)) || 0;
+        my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
         if (! $pcert_ok) {
             next;
         }
-        my $deps = cert_deps($cert, $depdb);
-        my $srcdeps = cert_srcdeps($cert, $depdb);
-        my $otherdeps = cert_otherdeps($cert, $depdb);
-        my $image = cert_image($cert, $depdb);
+        my $deps = $depdb->cert_deps($cert);
+        my $srcdeps = $depdb->cert_srcdeps($cert);
+        my $otherdeps = $depdb->cert_otherdeps($cert);
+        my $image = $depdb->cert_image($cert);
         (my $base = $cert) =~ s/\.cert$//;
         # this is either the pcert0 or pcert1 depending on pcert_ok
-        my $pcert = cert_sequential_dep($cert, $depdb);
+        my $pcert = $depdb->cert_sequential_dep($cert);
         my $encpcert = make_encode($pcert);
         print $mf "$encpcert : pcert = $pcert_ok\n";
         print $mf "$encpcert : acl2x = $useacl2x\n";
@@ -1080,7 +1116,7 @@ unless ($no_makefile) {
         foreach my $dep (@$deps) {
             # this is either the pcert0 or pcert1 depending whether the dependency
             # has pcert set
-            print $mf " \\\n     " . make_encode(cert_sequential_dep($dep, $depdb));
+            print $mf " \\\n     " . make_encode($depdb->cert_sequential_dep($dep));
         }
         foreach my $dep (@$srcdeps, @$otherdeps) {
             print $mf " \\\n     " . make_encode($dep);
@@ -1118,6 +1154,13 @@ unless ($no_makefile) {
 
     # print $mf "\nendif\n\n";
 
+    # Add a dependency from every certificate to build/acl2-version.certdep and build/universal-dependency.certdep.
+    print $mf "\n";
+    my $builddir = make_encode(canonical_path("$acl2_books/build"));
+    print $mf "\$(${var_prefix}_ALLCERTS) : ${builddir}/acl2-version.certdep ${builddir}/universal-dependency.certdep\n\n";
+
+    # Add a trivial recipe to build the required files in case they're missing.
+    print $mf "${builddir}/%.certdep :\n\ttouch \$@\n\n";
 
     foreach my $incl (@include_afters) {
         print $mf "\ninclude $incl\n";

@@ -1247,7 +1247,13 @@ x86isa-build-instructions) for details.</p>
 ; Instruction to cert.pl for dependency tracking.
 ; (depends-on "environment-and-syscalls-raw.lsp")
 
-     (include-raw "environment-and-syscalls-raw.lsp"))
+     (include-raw "environment-and-syscalls-raw.lsp"
+                  :on-compile-fail
+                  (format t "[environment-and-syscalls-raw.lsp] Compilation failed with message ~a~%"
+                          condition)
+                  :on-load-fail
+                  (cw "[environment-and-syscalls-raw.lsp] Load failed; Moving On.~%")
+                  :host-readtable t))
 
    (value-triple
     (cw "~%~%X86ISA_EXEC Warning: environment-and-syscalls-raw.lsp is not included.~%~%~%"))))

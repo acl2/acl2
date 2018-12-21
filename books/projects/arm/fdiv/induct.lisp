@@ -2162,6 +2162,8 @@
   :hints (("Goal" :in-theory (enable rn* nextrem-lemma f p prec dp sp hp) 
                   :use (fnum-vals nextrem-3))))
 
+(local (in-theory (disable ash-rewrite)))
+
 (local-defthmd nextrem-61
   (implies (and (not (specialp))
                 (not (zp j))

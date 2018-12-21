@@ -1429,7 +1429,7 @@
                                            (our-merge-pathnames
                                             resolve-dir
                                             standard-oi-expanded)
-                                           (delete-assoc-eq 'dir alist)))
+                                           (remove1-assoc-eq 'dir alist)))
                             (t alist)))))))
           ((and (not (stringp standard-oi))
                 dir)
@@ -1441,7 +1441,7 @@
                 ld."
                standard-oi))
           ((assoc-eq 'dir alist)
-           (delete-assoc-eq 'dir alist))
+           (remove1-assoc-eq 'dir alist))
           (t alist))))
 
 (defun ld-fn0 (alist state bind-flg)
@@ -2826,18 +2826,25 @@
      (t wrld)))
    (t (scan-past-deeper-event-landmarks depth (cdr wrld)))))
 
-(defun puffable-encapsulate-p (cddr-car-wrld)
-  (and (eq (access-event-tuple-type cddr-car-wrld) 'encapsulate)
-       (let ((last-form (car (last (access-event-tuple-form cddr-car-wrld)))))
-         (case-match last-form
-           (('table
-             'trusted-clause-processor-table
-             &
-             ('quote (& . t))) ; t indicates a dependent clause processor
-            nil)
-           (& t)))))
+(defun puffable-encapsulate-p (cddr-car-wrld installed-wrld)
 
-(defun puffable-command-blockp (wrld cmd-form)
+; An encapsulate is puffable unless it is a encapsulate that introduces a
+; function symbol with unknown-constraints -- equivalently, a non-trivial
+; encapsulate all of whose function symbols are introduced with
+; unknown-constraints.
+
+  (and (eq (access-event-tuple-type cddr-car-wrld) 'encapsulate)
+       (let* ((encap (access-event-tuple-form cddr-car-wrld))
+              (signatures (cadr encap))
+              (fns (signature-fns signatures)))
+         (not (and (consp fns)
+                   (mv-let
+                     (name x)
+                     (constraint-info (car fns) installed-wrld)
+                     (declare (ignore name))
+                     (unknown-constraints-p x)))))))
+
+(defun puffable-command-blockp (wrld cmd-form installed-wrld)
 
 ; Initially, wrld should be the cdr of a world starting at some
 ; command-landmark.  Cmd-form should be the command-tuple form of that landmark
@@ -2870,11 +2877,12 @@
             'include-book))
           ((eq (car cmd-form) 'encapsulate)
            (and (puffable-encapsulate-p
-                 (cddr (car wrld)))
+                 (cddr (car wrld))
+                 installed-wrld)
                 'encapsulate))
           (t (not (equal cmd-form
                          (access-event-tuple-form (cddr (car wrld))))))))
-   (t (puffable-command-blockp (cdr wrld) cmd-form))))
+   (t (puffable-command-blockp (cdr wrld) cmd-form installed-wrld))))
 
 (defun puffable-command-numberp (i state)
 
@@ -2889,7 +2897,8 @@
                (let ((wrld (lookup-world-index 'command n (w state))))
                  (puffable-command-blockp
                   (cdr wrld)
-                  (access-command-tuple-form (cddr (car wrld))))))))
+                  (access-command-tuple-form (cddr (car wrld)))
+                  (w state))))))
 
 (defun puff-include-book (wrld final-cmds ctx state)
 
@@ -3099,7 +3108,8 @@
   (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
     (let ((cmd-type (puffable-command-blockp
                      (cdr cmd-wrld)
-                     (access-command-tuple-form (cddr (car cmd-wrld)))))
+                     (access-command-tuple-form (cddr (car cmd-wrld)))
+                     (w state)))
           (final-cmds (commands-back-to wrld cmd-wrld nil)))
       (cond
        (cmd-type
@@ -3692,12 +3702,13 @@
 
 ; This defthm has two forcing rounds and is very realistic.
 
-      (defthm ordered-symbol-alistp-delete-assoc-eq-test
+      (defthm ordered-symbol-alistp-remove1-assoc-eq-test
         (implies (and (ordered-symbol-alistp l)
                       (symbolp key)
                       (assoc-eq key l))
-                 (ordered-symbol-alistp (delete-assoc-eq key l)))
-        :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
+                 (ordered-symbol-alistp (remove1-assoc-eq key l)))
+        :hints (("Goal"
+                 :in-theory (disable ordered-symbol-alistp-remove1-assoc-eq))))
 
       (value-triple "Mini-proveall completed successfully.")
 
@@ -3888,56 +3899,45 @@
 ; execute-only-in-meta-level-functions semantics, as per defun-overrides calls
 ; for mfc-ts-fn and such.
 
-(defun acl2-magic-mfc (x)
-
-; This function is a sort of placeholder, used in a
-; define-trusted-clause-processor event for noting that various mfc functions
-; have unknown constraints.
-
-  (declare (xargs :guard t))
-  (list x))
-
 #+acl2-loop-only
-(encapsulate
- ()
- (define-trusted-clause-processor
-   acl2-magic-mfc
-   (mfc-ts-fn mfc-ts-ttree mfc-rw-fn mfc-rw-ttree mfc-rw+-fn mfc-rw+-ttree
-              mfc-relieve-hyp-fn mfc-relieve-hyp-ttree mfc-ap-fn)
-   :partial-theory
-   (encapsulate
-    (((mfc-ap-fn * * state *) => *)
-     ((mfc-relieve-hyp-fn * * * * * * state *) => *)
-     ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
-     ((mfc-rw+-fn * * * * * state *) => *)
-     ((mfc-rw+-ttree * * * * * state *) => (mv * *))
-     ((mfc-rw-fn * * * * state *) => *)
-     ((mfc-rw-ttree * * * * state *) => (mv * *))
-     ((mfc-ts-fn * * state *) => *)
-     ((mfc-ts-ttree * * state *) => (mv * *)))
-    (logic)
-    (set-ignore-ok t)
-    (set-irrelevant-formals-ok t)
-    (local (defun mfc-ts-fn (term mfc state forcep)
-             t))
-    (local (defun mfc-ts-ttree (term mfc state forcep)
-             (mv t t)))
-    (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
-             t))
-    (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
-             (mv t t)))
-    (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
-             t))
-    (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
-             (mv t t)))
-    (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
-                                          forcep)
-             t))
-    (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
-                                             forcep)
-             (mv t t)))
-    (local (defun mfc-ap-fn (term mfc state forcep)
-             t)))))
+(partial-encapsulate
+  (((mfc-ap-fn * * state *) => *)
+   ((mfc-relieve-hyp-fn * * * * * * state *) => *)
+   ((mfc-relieve-hyp-ttree * * * * * * state *) => (mv * *))
+   ((mfc-rw+-fn * * * * * state *) => *)
+   ((mfc-rw+-ttree * * * * * state *) => (mv * *))
+   ((mfc-rw-fn * * * * state *) => *)
+   ((mfc-rw-ttree * * * * state *) => (mv * *))
+   ((mfc-ts-fn * * state *) => *)
+   ((mfc-ts-ttree * * state *) => (mv * *)))
+
+; Supporters = nil since each missing axiom equates a call of one of the
+; signature functions (above) on explicit arguments with its result.
+
+  nil
+  (logic)
+  (set-ignore-ok t)
+  (set-irrelevant-formals-ok t)
+  (local (defun mfc-ts-fn (term mfc state forcep)
+           t))
+  (local (defun mfc-ts-ttree (term mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw-fn (term obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw-ttree (term obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
+           t))
+  (local (defun mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+           (mv t t)))
+  (local (defun mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                        forcep)
+           t))
+  (local (defun mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state
+                                           forcep)
+           (mv t t)))
+  (local (defun mfc-ap-fn (term mfc state forcep)
+           t)))
 
 #-acl2-loop-only
 (progn
@@ -4824,7 +4824,8 @@
    (er-progn (ld (list form)
                  :ld-verbose nil
                  :ld-prompt nil
-                 :ld-evisc-tuple nil)
+                 :ld-evisc-tuple nil
+                 :ld-user-stobjs-modified-warning nil)
              (value :invisible))))
 
 (defmacro without-evisc (form)

@@ -12,12 +12,12 @@ import java.util.Map;
  * Representation of ACL2 quoted constants.
  * These are translated terms of the form {@code (quote ...)}.
  */
-public final class Acl2Constant extends Acl2Term {
+public final class Acl2QuotedConstant extends Acl2Term {
 
     //////////////////////////////////////// private members:
 
     /**
-     * ACL2 value of the constant.
+     * ACL2 value of the quoted constant.
      * This is never {@code null}.
      */
     private final Acl2Value value;
@@ -25,7 +25,7 @@ public final class Acl2Constant extends Acl2Term {
     /**
      * Constructs an ACL2 quoted constant from its value.
      */
-    private Acl2Constant(Acl2Value value) {
+    private Acl2QuotedConstant(Acl2Value value) {
         assert value != null;
         this.value = value;
     }
@@ -35,7 +35,7 @@ public final class Acl2Constant extends Acl2Term {
     /**
      * Evaluates this ACL2 quoted constant to an ACL2 value,
      * with respect to the given binding of values to variable symbols.
-     * The result is the value of the constant,
+     * The result is the value of the quoted constant,
      * which is actually independent from the bindings.
      * This evaluation never fails.
      */
@@ -48,18 +48,18 @@ public final class Acl2Constant extends Acl2Term {
     //////////////////////////////////////// public members:
 
     /**
-     * Checks if this ACL2 constant is equal to the argument object.
+     * Checks if this ACL2 quoted constant is equal to the argument object.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Acl2Constant)) return false;
-        Acl2Constant that = (Acl2Constant) o;
+        if (!(o instanceof Acl2QuotedConstant)) return false;
+        Acl2QuotedConstant that = (Acl2QuotedConstant) o;
         return value.equals(that.value);
     }
 
     /**
-     * Returns a hash code for this ACL2 constant.
+     * Returns a hash code for this ACL2 quoted constant.
      */
     @Override
     public int hashCode() {
@@ -67,11 +67,11 @@ public final class Acl2Constant extends Acl2Term {
     }
 
     /**
-     * Compares this ACL2 constant with the argument ACL2 term for order.
+     * Compares this ACL2 quoted constant with the argument ACL2 term for order.
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
-     * then constants, ordered according to their underlying symbols;
+     * then quoted constants, ordered according to their underlying symbols;
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
@@ -84,21 +84,21 @@ public final class Acl2Constant extends Acl2Term {
         if (o == null)
             throw new NullPointerException();
         if (o instanceof Acl2Variable)
-            // constants are greater than variables:
+            // quoted constants are greater than variables:
             return 1;
-        if (o instanceof Acl2Constant) {
-            Acl2Constant that = (Acl2Constant) o;
+        if (o instanceof Acl2QuotedConstant) {
+            Acl2QuotedConstant that = (Acl2QuotedConstant) o;
             return this.value.compareTo(that.value);
         }
-        // constants are less than applications:
+        // quoted constants are less than applications:
         return -1;
     }
 
     /**
-     * Returns a printable representation of this ACL2 constant.
+     * Returns a printable representation of this ACL2 quoted constant.
      * This is meant for printing;
      * it should be improved to return something non-confusing
-     * when the constant includes "unusual" characters.
+     * when the quoted constant includes "unusual" characters.
      */
     @Override
     public String toString() {
@@ -106,14 +106,14 @@ public final class Acl2Constant extends Acl2Term {
     }
 
     /**
-     * Returns an ACL2 quoted constant with the given ACL2 value.
+     * Returns an ACL2 quoted quoted constant with the given ACL2 value.
      *
      * @throws IllegalArgumentException if value is null
      */
-    public static Acl2Constant make(Acl2Value value) {
+    public static Acl2QuotedConstant make(Acl2Value value) {
         if (value == null)
             throw new IllegalArgumentException("Null value.");
         else
-            return new Acl2Constant(value);
+            return new Acl2QuotedConstant(value);
     }
 }

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -93,7 +93,7 @@
         (list 'select-buf-status 'select-status (si 'go 1)))
   '(buf-op (select-in) b-buf (select-buf-out)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -223,10 +223,6 @@
              (not (alt-branch$act inputs st data-width)))
     :hints (("Goal" :in-theory (enable alt-branch$act))))
   )
-
-;; Prove that ALT-BRANCH is not a DE primitive.
-
-(not-primp-lemma alt-branch)
 
 ;; The value lemma for ALT-BRANCH
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -139,7 +139,7 @@
         (append (sis 'a1-out 0 data-width)
                 (sis 'b1-out 0 data-width))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -196,7 +196,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm comp-v-or$st-format=>data-width-constraint
+(defthm comp-v-or$st-format=>constraint
   (implies (comp-v-or$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable comp-v-or$st-format)))
@@ -217,7 +217,7 @@
          (queue2$valid-st q2 data-width)
          (queue3$valid-st q3 data-width))))
 
-(defthmd comp-v-or$valid-st=>data-width-constraint
+(defthmd comp-v-or$valid-st=>constraint
   (implies (comp-v-or$valid-st st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable comp-v-or$valid-st)))
@@ -380,10 +380,6 @@
            (comp-v-or$out-act inputs st data-width)
            (comp-v-or$data-out st)))
   )
-
-;; Prove that COMP-V-OR is not a DE primitive.
-
-(not-primp-lemma comp-v-or)
 
 ;; The value lemma for COMP-V-OR
 
@@ -861,7 +857,7 @@
                             comp-v-or$out-act
                             comp-v-or$data-out)
                            (acl2::append-of-cons
-                            acl2::associativity-of-append
+                            associativity-of-append
                             append)))))
 
 ;; Extract the accepted input sequence

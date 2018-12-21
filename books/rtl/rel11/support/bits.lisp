@@ -1881,6 +1881,18 @@
                   (cat-r b x m y n)))
   :enable radix-cat)
 
+(defrule cat-r-digits-3
+  (implies (and (radixp b) (integerp i) (integerp m) (>= i (1- m)))
+           (equal (cat-r b (digits x i 0 b) m y n)
+                  (cat-r b x m y n)))
+  :enable radix-cat)
+
+(defrule cat-r-digits-4
+  (implies (and  (radixp b)(integerp i) (integerp n) (>= i (1- n)))
+           (equal (cat-r b x m (digits y i 0 b) n)
+                  (cat-r b x m y n)))
+  :enable radix-cat)
+
 (defrule cat-r-associative
   (implies (and (case-split (<= (+ m n) p))
                 (case-split (<= 0 m))
@@ -2221,6 +2233,18 @@
     (equal (cat x m (bits y (1- n) 0) n)
 	   (cat x m y n))
     :use (:instance cat-r-digits-2 (b 2)))
+
+(defrule cat-bits-3
+  (implies (and (integerp i) (integerp m) (>= i (1- m)))
+           (equal (cat (bits x i 0) m y n)
+                  (cat x m y n)))
+    :use (:instance cat-r-digits-3 (b 2)))
+
+(defrule cat-bits-4
+  (implies (and (integerp i) (integerp n) (>= i (1- n)))
+           (equal (cat x m (bits y i 0) n)
+                  (cat x m y n)))
+    :use (:instance cat-r-digits-4 (b 2)))
 
 (defrule cat-associative
   (implies (and (case-split (<= (+ m n) p))

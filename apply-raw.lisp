@@ -1077,7 +1077,7 @@
         (lambda-code (access cl-cache-line line :lambda-code)))
     (cw "~c0. :lambda-object ~y1
           ~t2:status         ~x3
-          ~t2:abs event no   ~x4
+          ~t2:abs-event-no   ~x4
           ~t2:extracts       ~y5
           ~t2:problem        ~y6
           ~t2:hits           ~x7~%~

@@ -1339,6 +1339,14 @@ ACL2-Doc browser."
   (interactive)
   (acl2-doc-go 'ACL2-DOC))
 
+(defun acl2-doc-summary ()
+
+  "Go to the ACL2-DOC-SUMMARY topic for one-line summaries of
+ACL2-Doc browser commands."
+
+  (interactive)
+  (acl2-doc-go 'ACL2-DOC-SUMMARY))
+
 ; Start implementations of acl2-doc-definition and
 ; acl2-doc-where-definition.
 
@@ -1509,6 +1517,7 @@ with, for example, meta-3 control-t /."
 (define-key acl2-doc-mode-map "/" 'acl2-doc-definition)
 (define-key acl2-doc-mode-map "g" 'acl2-doc-go)
 (define-key acl2-doc-mode-map "h" 'acl2-doc-help)
+(define-key acl2-doc-mode-map "?" 'acl2-doc-summary)
 (define-key acl2-doc-mode-map "i" 'acl2-doc-index)
 (define-key acl2-doc-mode-map "l" 'acl2-doc-last)
 (define-key acl2-doc-mode-map "n" 'acl2-doc-search-next)

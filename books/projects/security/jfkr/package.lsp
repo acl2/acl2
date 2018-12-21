@@ -20,6 +20,10 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defpkg "CRYPTO" 
   (union-eq '()
     (union-eq *acl2-exports*

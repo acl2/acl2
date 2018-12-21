@@ -51,9 +51,9 @@
   (implies (equal i (len l))
            (equal (take i l) (true-list-fix l))))
 
-(defthm assoc-after-delete-assoc
+(defthm assoc-after-remove1-assoc
   (implies (not (equal name1 name2))
-           (equal (assoc-equal name1 (delete-assoc name2 alist))
+           (equal (assoc-equal name1 (remove1-assoc name2 alist))
                   (assoc-equal name1 alist))))
 
 (defthm character-listp-of-revappend
@@ -602,9 +602,9 @@
       (len lst))
   :rule-classes :linear)
 
-(defthm len-of-delete-assoc-equal
+(defthm len-of-remove1-assoc-equal
   (implies (consp (assoc-equal key alist))
-           (equal (len (delete-assoc-equal key alist))
+           (equal (len (remove1-assoc-equal key alist))
                   (- (len alist) 1))))
 
 (defthm len-of-remove1-equal
@@ -614,12 +614,12 @@
              (len l))))
 
 (defthm
-  assoc-equal-of-delete-assoc-equal
+  assoc-equal-of-remove1-assoc-equal
   (implies
    (and (not (equal key1 nil))
         (not (consp (assoc-equal key1 alist))))
    (not (consp (assoc-equal key1
-                            (delete-assoc-equal key2 alist))))))
+                            (remove1-assoc-equal key2 alist))))))
 
 (defthm
   assoc-equal-of-remove1-equal

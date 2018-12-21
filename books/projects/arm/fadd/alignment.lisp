@@ -317,11 +317,6 @@
                         (:instance bits-plus-bits (x (expdiff)) (n 11) (m 0) (p 7))
                         (:instance bits-bounds (x (expdiff)) (i 6) (j 0))))))
 
-(defthm ash-rewrite
-  (implies (and (integerp x) (integerp n))
-           (equal (ash x n) (fl (* (expt 2 n) x))))
-  :hints (("Goal" :in-theory (enable ash fl))))
-
 (defthmd bvecp-sigs
   (bvecp (sigs) 108)
   :hints (("Goal" :in-theory (enable bvecp sigs sigaprime-rewrite sigbprime-rewrite)

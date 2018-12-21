@@ -189,7 +189,7 @@ final class Acl2ComplexRational extends Acl2Number {
                 return this.imaginaryPart.compareTo(that.imaginaryPart);
         }
         // complex rationals are less than
-        // characters, strings, symbols, and pairs:
+        // characters, strings, symbols, and cons pairs:
         return -1;
     }
 

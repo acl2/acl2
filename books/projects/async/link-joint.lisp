@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -281,7 +281,7 @@
  '(s d)
  '((s (status) link-cntl (fill drain))
    (d (bit-out bit-out~) latch (fill bit-in)))
- :guard t)
+ (declare (xargs :guard t)))
 
 (make-event
  `(progn
@@ -318,10 +318,6 @@
          (equal (len d) 1)
          (or (emptyp s)
              (booleanp (car d))))))
-
-;; Prove that LINK1 is not a DE primitive.
-
-(not-primp-lemma link1)
 
 ;; The value lemma for LINK1
 
@@ -401,7 +397,7 @@
         (sis 'data-out 0 data-width)
         (si 'latch-n data-width)
         (list* 'fill (sis 'data-in 0 data-width))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -451,7 +447,7 @@
     (and (len-1-true-listp d)
          (equal (len d) data-width))))
 
-(defthm link$st-format=>data-width-constraint
+(defthm link$st-format=>constraint
   (implies (link$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable link$st-format)))
@@ -466,14 +462,10 @@
          (or (emptyp s)               ;; When the link is full,
              (bvp (strip-cars d)))))) ;; its data must be a bit vector.
 
-(defthmd link$valid-st=>data-width-constraint
+(defthmd link$valid-st=>constraint
   (implies (link$valid-st st data-width)
            (natp data-width))
   :rule-classes :forward-chaining)
-
-;; Prove that LINK is not a DE primitive.
-
-(not-primp-lemma link)
 
 ;; The value lemma for LINK
 

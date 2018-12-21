@@ -1592,8 +1592,8 @@
 
 (defun constraint-lstp (sym val)
   (declare (ignore sym))
-  (or (eq val *unknown-constraints*)
-      (pseudo-function-symbolp val nil) ; the fn under which the constraints are stored
+  (or (unknown-constraints-p val)
+      (pseudo-function-symbolp val nil) ; the fn where constraints are stored
       (pseudo-term-listp val)))
 
 ;-----------------------------------------------------------------

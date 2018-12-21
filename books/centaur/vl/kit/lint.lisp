@@ -707,7 +707,13 @@ shown.</p>"
        (design-orig design)
        (- (vl-lint-suppress-large-integer-problems t))
 
-       (design (vl-annotate-design design))
+       (simpconfig
+        (change-vl-simpconfig *vl-default-simpconfig*
+                              :sv-simplify nil
+                              :elab-limit config.elab-limit
+                              :sc-limit config.stmt-limit))
+
+       (design (vl-annotate-design design simpconfig))
        ;; We originally did this before annotate, but that doesn't work in the
        ;; new world of loaditems.  we need to annotate first.
        (design (xf-cwtime (vl-design-drop-user-submodules design config.dropmods)))
@@ -768,13 +774,6 @@ shown.</p>"
        (design (xf-cwtime (vl-design-dupeinst-check design)))
        (design (xf-cwtime (vl-centaur-seqcheck-hook design)))
        (design (xf-cwtime (vl-design-logicassign design)))
-
-
-       ((vl-simpconfig simpconfig)
-        (change-vl-simpconfig *vl-default-simpconfig*
-                              :sv-simplify nil
-                              :elab-limit config.elab-limit
-                              :sc-limit config.stmt-limit))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually

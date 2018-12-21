@@ -180,15 +180,18 @@
 ; viz., their position in the array.  This seems like a useful capability for
 ; implementing search features.
 
-(defun short-xml-for-topic (topic topics-fal state)
+(defun short-xml-for-topic (topic xtopic state)
   ;; Returns (mv xml-string state)
   (b* ((short    (or (cdr (assoc :short topic)) ""))
-       (base-pkg (cdr (assoc :base-pkg topic)))
+       ;; (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv short-rchars state)
-        (preprocess-main short name topics-fal nil base-pkg state nil))
-       (short-str (str::rchars-to-string short-rchars))
-       ((mv err &) (parse-xml short-str))
+       ((xtopic xtopic))
+       ;; ((mv short-rchars state)
+       ;;  (preprocess-main short name topics-fal nil base-pkg state nil))
+       ;; (short-str (str::printtree->str short-rchars))
+       ;; ((mv err &) (parse-xml short-str))
+       (err xtopic.short-err)
+       (short-str short)
        (state
         (if err
             (pprogn
@@ -205,23 +208,26 @@
         (b* (((unless err)
               short-str)
              (tmp nil)
-             (tmp (str::revappend-chars
+             (tmp (str::printtree-rconcat
                    "<b><color rgb='#ff0000'>Markup error in :short</color></b>
                     <code>" tmp))
              (tmp (simple-html-encode-str err 0 (length err) tmp))
-             (tmp (str::revappend-chars "</code>" tmp)))
-          (str::rchars-to-string tmp))))
+             (tmp (str::printtree-rconcat "</code>" tmp)))
+          (str::printtree->str tmp))))
     (mv short-str-xml state)))
 
-(defun long-xml-for-topic (topic topics-fal state)
+(defun long-xml-for-topic (topic xtopic state)
   ;; Returns (mv xml-string state)
   (b* ((long     (or (cdr (assoc :long topic)) ""))
-       (base-pkg (cdr (assoc :base-pkg topic)))
+       ;; (base-pkg (cdr (assoc :base-pkg topic)))
        (name     (cdr (assoc :name topic)))
-       ((mv long-rchars state)
-        (preprocess-main long name topics-fal nil base-pkg state nil))
-       (long-str (str::rchars-to-string long-rchars))
-       ((mv err &) (parse-xml long-str))
+       ((xtopic xtopic))
+       ;; ((mv long-rchars state)
+       ;;  (preprocess-main long name topics-fal nil base-pkg state nil))
+       ;; (long-str (str::printtree->str long-rchars))
+       ;; ((mv err &) (parse-xml long-str))
+       (err xtopic.long-err)
+       (long-str long)
        (state
         (if err
             (pprogn
@@ -238,16 +244,16 @@
         (b* (((unless err)
               long-str)
              (tmp nil)
-             (tmp (str::revappend-chars
+             (tmp (str::printtree-rconcat
                    "<h3><color rgb='#ff0000'>Markup error in :long</color></h3>
                     <code>" tmp))
              (tmp (simple-html-encode-str err 0 (length err) tmp))
-             (tmp (str::revappend-chars "</code>" tmp)))
-          (str::rchars-to-string tmp))))
+             (tmp (str::printtree-rconcat "</code>" tmp)))
+          (str::printtree->str tmp))))
     (mv long-str-xml state)))
 
 
-(defun json-encode-index-entry (topic topics topics-fal uid-map state acc)
+(defun json-encode-index-entry (topic topics xtopics-fal uid-map state acc)
   (b* ((- (check-topic-syntax topic))
 
        (name      (cdr (assoc :name topic)))
@@ -262,7 +268,8 @@
 
        (parent-uids (collect-uids parents uid-map))
        (suborder    (and suborder (collect-uids suborder uid-map)))
-       ((mv short-str state) (short-xml-for-topic topic topics-fal state))
+       (xtopic   (cdr (hons-get name xtopics-fal)))
+       ((mv short-str state) (short-xml-for-topic topic xtopic state))
 
 ; I originally used a JSON object like {"name":"Append","rawname":"..."}  But
 ; then some back-of-the-napkin calculations said that these nice names were
@@ -311,24 +318,24 @@
   state)
 ||#
 
-(defun json-encode-index-aux (all-topics topics topics-fal uid-map state acc)
+(defun json-encode-index-aux (all-topics topics xtopics-fal uid-map state acc)
   (b* (((when (atom topics))
         (mv acc state))
-       ((mv acc state) (json-encode-index-entry (car topics) all-topics topics-fal
+       ((mv acc state) (json-encode-index-entry (car topics) all-topics xtopics-fal
                                                 uid-map state acc))
        ((when (atom (cdr topics)))
         (mv acc state))
        (acc (list* #\Space #\Newline #\, acc)))
-    (json-encode-index-aux all-topics (cdr topics) topics-fal uid-map state acc)))
+    (json-encode-index-aux all-topics (cdr topics) xtopics-fal uid-map state acc)))
 
-(defun json-encode-index (topics0 topics topics-fal uid-map state acc)
+(defun json-encode-index (topics0 topics xtopics-fal uid-map state acc)
 
 ; Topics is a version of topics0 that has been ordered.  Topics0 preserves the
 ; order in which each topic was introduced into the xdoc table.
 
   (b* ((acc (cons #\[ acc))
        ((mv acc state)
-        (json-encode-index-aux topics0 topics topics-fal uid-map state acc))
+        (json-encode-index-aux topics0 topics xtopics-fal uid-map state acc))
        (acc (cons #\] acc)))
     (mv acc state)))
 
@@ -342,14 +349,15 @@
 ||#
 
 
-(defun json-encode-data-entry (topic topics-fal state acc)
+(defun json-encode-data-entry (topic xtopics-fal state acc)
   (b* ((- (check-topic-syntax topic))
        (name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
        (parents  (cdr (assoc :parents topic)))
        (from     (or (cdr (assoc :from topic)) "Unknown"))
 
-       ((mv long-str state) (long-xml-for-topic topic topics-fal state))
+       (xtopic   (cdr (hons-get name xtopics-fal)))
+       ((mv long-str state) (long-xml-for-topic topic xtopic state))
 
        (from-xml (str::rchars-to-string
                   (simple-html-encode-chars
@@ -384,18 +392,18 @@
   state)
 ||#
 
-(defun json-encode-data-aux (topics topics-fal state acc)
+(defun json-encode-data-aux (topics xtopics-fal state acc)
   (b* (((when (atom topics))
         (mv acc state))
-       ((mv acc state) (json-encode-data-entry (car topics) topics-fal state acc))
+       ((mv acc state) (json-encode-data-entry (car topics) xtopics-fal state acc))
        ((when (atom (cdr topics)))
         (mv acc state))
        (acc (list* #\Space #\Newline #\Newline #\, acc)))
-    (json-encode-data-aux (cdr topics) topics-fal state acc)))
+    (json-encode-data-aux (cdr topics) xtopics-fal state acc)))
 
-(defun json-encode-data (topics topics-fal state acc)
+(defun json-encode-data (topics xtopics-fal state acc)
    (b* ((acc (cons #\{ acc))
-        ((mv acc state) (json-encode-data-aux topics topics-fal state acc))
+        ((mv acc state) (json-encode-data-aux topics xtopics-fal state acc))
         (acc (cons #\} acc)))
      (mv acc state)))
 
@@ -422,9 +430,19 @@
               (list (f-get-global 'xdoc-get-event-table state))))
        (state (f-put-global 'xdoc-get-event-table (make-get-event*-table (w state) nil) state))
         
+       (topics-fal (time$ (topics-fal topics0)))
+
+       (- (cw "; Preprocessing ~x0 topics.~%" (len topics0)))
+       ((mv preproc-topics state) (time$ (preprocess-transform-topics topics0 topics-fal state)
+                              :msg "; Preprocessing: ~st sec, ~sa bytes.~%"))
+
+       (- (cw "; XML parsing preprocessed topics.~%"))
+       ((mv xtopics state) (time$ (xtopics-from-topics preproc-topics state)
+                                  :msg "; XML parsing: ~st sec, ~sa bytes.~%"))
+
        (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics0)))
-       ((mv topics xtopics ?sitemap state)
-        (time$ (order-topics-by-importance topics0 state)
+       ((mv ordered-topics ?sitemap state)
+        (time$ (order-topics-by-importance preproc-topics xtopics state)
                :msg "; Importance sorting topics: ~st sec, ~sa bytes.~%"
                :mintime 1/2))
 
@@ -438,13 +456,14 @@
        (state (princ$ (linkcheck xtopics) channel state))
        (state (close-output-channel channel state))
 
-       (topics-fal (time$ (topics-fal topics)))
-       (uid-map    (time$ (make-uid-map 0 topics nil)))
+;       (topics-fal (time$ (topics-fal topics)))
+       (uid-map    (time$ (make-uid-map 0 ordered-topics nil)))
 
        (index nil)
        (index (str::revappend-chars "var xindex = " index));
+       (xtopics-fal (time$ (xtopics-fal xtopics)))
        ((mv index state)
-        (time$ (json-encode-index topics0 topics topics-fal uid-map state index)
+        (time$ (json-encode-index preproc-topics ordered-topics xtopics-fal uid-map state index)
                :msg "; Preparing JSON index: ~st sec, ~sa bytes.~%"))
        (index (cons #\; index))
        (index (str::rchars-to-string index))
@@ -456,7 +475,7 @@
        (data nil)
        (data (str::revappend-chars "var xdata = " data))
        ((mv data state)
-        (time$ (json-encode-data topics topics-fal state data)
+        (time$ (json-encode-data ordered-topics xtopics-fal state data)
                :msg "; Preparing JSON topic data: ~st sec, ~sa bytes.~%"
                :mintime 1/2))
        (data (cons #\; data))

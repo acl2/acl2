@@ -60,7 +60,7 @@
 ;                              (<= m n))
 ;                         (overspill-p m x)))))
 ;     :hints (("Goal" :use (overspill-p-overspill-main-2)))
-;               :rule-classes nil)
+;     :rule-classes nil)
 
 (defstub overspill-p (n x) t)
 
@@ -304,7 +304,7 @@
                               (least-overspill-p-failure
                                (overspill-p*-failure-witness x)
                                x))))))))
-            :rule-classes nil)
+  :rule-classes nil)
 
 (defthm overspill-p-overspill
   (let ((n (overspill-p-witness x)))
@@ -317,4 +317,4 @@
                            (<= m n))
                       (overspill-p m x)))))
   :hints (("Goal" :use (overspill-p-overspill-main-2)))
-            :rule-classes nil)
+  :rule-classes nil)

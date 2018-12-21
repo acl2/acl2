@@ -36,7 +36,7 @@
     (b* (((mv acc state)
           (preprocess-main ',str 'context nil nil (pkg-witness "XDOC") state
                            nil))
-         (result (str::rchars-to-string acc))
+         (result (str::printtree->str acc))
          (- (cw "~s0 --> ~s1~%" ',str result))
          ((when (equal result ',expect))
           (value '(value-triple :success))))

@@ -60,6 +60,10 @@
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (value-triple (set-max-mem (* 10 (expt 2 30))))
 
+;; this is included in some other books, but I'm putting it here so we never
+;; accidentally leave it out -- important for getting reasonable performance
+;; when building the final documentation.
+(include-book "std/strings/fast-cat" :dir :system)
 
 (include-book "relnotes")
 (include-book "practices")
@@ -162,7 +166,14 @@
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+
+;; This book memoizes several functions including translate11, translate11-lst,
+;; translate11-call.  This hasn't been much of a problem in doc/top-fast (as
+;; opposed to doc/top), but we'll unmemoize these here anyway because having
+;; them memoized is a little unexpected.
 (include-book "tools/memoize-prover-fns" :dir :system)
+(unmemoize-lst (f-get-global 'memoized-prover-fns state))
+
 (include-book "tools/untranslate-for-exec" :dir :system)
 (include-book "tools/er-soft-logic" :dir :system)
 (include-book "tools/run-script" :dir :system)
@@ -247,6 +258,19 @@
 (include-book "centaur/aig/top-doc" :dir :system)
 (include-book "std/util/termhints" :dir :system)
 
+;; omitted from gl
+(include-book "centaur/misc/outer-local" :dir :system)
+(include-book "tools/pattern-match" :dir :system)
+
+;; omitted from aignet
+(include-book "std/stobjs/nested-stobjs" :dir :system)
+(include-book "tools/symlet" :dir :system)
+(include-book "std/stobjs/updater-independence" :dir :system)
+(include-book "centaur/misc/iter" :dir :system)
+(include-book "centaur/misc/nth-equiv" :dir :system)
+
+;; omitted from aig
+(include-book "system/random" :dir :system)
 
 ) ;; end progn so we can see total include-book time
 
@@ -338,7 +362,7 @@
 ;                  (cw "; Note: Removing 'redundant' ACL2 parent for ~x0.~%"
 ;                      (cdr (assoc :name topic)))
 ;                  (cons (cons :parents '(acl2::top))
-;                        (delete-assoc-equal :parents topic)))
+;                        (remove1-assoc-equal :parents topic)))
 ;               topic)))
 ;   (cons topic
 ;         (fix-redundant-acl2-parents (cdr all-topics))))

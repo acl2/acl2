@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Mihir Mehta <mihir@cs.utexas.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,6 +14,8 @@
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+
+(local (include-book "std/strings/make-character-list" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,19 +160,35 @@
     (equal (chars=>nats (make-character-list x))
            (chars=>nats x))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection nats<=>chars-inversion-theorems
   :parents (nats=>chars chars=>nats)
   :short "@(tsee nats=>chars) and @(tsee chars=>nats)
           are mutual inverses."
 
-  (defrule
-    chars=>nats-of-nats=>chars
-    (implies (unsigned-byte-listp 8 (list-fix nats))
+  (defrule chars=>nats-of-nats=>chars
+    (implies (unsigned-byte-listp 8 (true-list-fix nats))
              (equal (chars=>nats (nats=>chars nats))
-                    (list-fix nats)))
+                    (true-list-fix nats)))
     :enable (chars=>nats nats=>chars)
     :rule-classes
     ((:rewrite
       :corollary (implies (unsigned-byte-listp 8 nats)
                           (equal (chars=>nats (nats=>chars nats))
-                                 nats))))))
+                                 nats)))))
+
+  (defrule nats=>chars-of-chars=>nats
+    (equal (nats=>chars (chars=>nats chars))
+           (make-character-list chars))
+    :prep-lemmas
+    ((defruled
+       nats=>chars-of-chars=>nats-when-character-listp
+       (implies (character-listp chars)
+                (equal (nats=>chars (chars=>nats chars))
+                       chars))
+       :enable (nats=>chars chars=>nats)
+       :induct (chars=>nats chars)))
+    :use
+    (:instance nats=>chars-of-chars=>nats-when-character-listp
+               (chars (make-character-list chars)))))

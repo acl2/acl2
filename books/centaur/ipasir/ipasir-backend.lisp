@@ -42,3 +42,4 @@
 (defttag ipasir-backend)
 (acl2::include-raw "load-ipasir-sharedlib-raw.lsp")
 (acl2::include-raw "ipasir-interface-raw.lsp" :host-readtable t)
+(defttag nil)

@@ -343,7 +343,7 @@
   (if (atom hns)
       fs ;;error case, basically
     (if (atom (cdr hns))
-        (delete-assoc (car hns) fs)
+        (remove1-assoc (car hns) fs)
       (if (atom fs)
           nil
         (let ((sd (assoc (car hns) fs)))
@@ -354,7 +354,7 @@
                   fs ;; we still have names but we're at a regular file - error
                 (cons (cons (car sd)
                             (l3-unlink (cdr hns) contents))
-                      (delete-assoc (car hns) fs))))))))
+                      (remove1-assoc (car hns) fs))))))))
     ))
 
 (defthmd l3-unlink-returns-fs-lemma-1
@@ -370,8 +370,8 @@
 
 (defthm l3-unlink-correctness-1-lemma-1
   (implies (and (l3-fs-p fs) (block-listp disk))
-           (equal (delete-assoc-equal name (l3-to-l2-fs fs disk))
-                  (l3-to-l2-fs (delete-assoc-equal name fs)
+           (equal (remove1-assoc-equal name (l3-to-l2-fs fs disk))
+                  (l3-to-l2-fs (remove1-assoc-equal name fs)
                                disk))))
 
 (defthm
@@ -396,7 +396,7 @@
 
 ;; putting these lemmas on the back burner because we would need to add uniquep
 ;; to our l3-fs-p definition to make this work
-;; (defthm l3-unlink-works-lemma-1 (not (assoc-equal key (delete-assoc-equal key alist))))
+;; (defthm l3-unlink-works-lemma-1 (not (assoc-equal key (remove1-assoc-equal key alist))))
 
 ;; (defthm l3-unlink-works (implies (l3-fs-p fs) (not (l3-stat hns (l3-unlink hns fs)))))
 
@@ -438,7 +438,7 @@
             (if (l3-regular-file-entry-p contents)
                 (if (cdr hns)
                     (mv (cons (cons (car sd) contents)
-                              (delete-assoc (car hns) fs))
+                              (remove1-assoc (car hns) fs))
                         disk) ;; error, so leave fs unchanged
                   (let* ((oldtext
                           (unmake-blocks
@@ -451,11 +451,11 @@
                                            (len disk)
                                            (len newblocks))
                                           (len newtext)))
-                              (delete-assoc (car hns) fs))
+                              (remove1-assoc (car hns) fs))
                         (binary-append disk newblocks))))
               (mv-let (new-contents new-disk) (l3-wrchs (cdr hns) contents disk start text)
                 (mv (cons (cons (car sd) new-contents)
-                          (delete-assoc (car hns) fs))
+                          (remove1-assoc (car hns) fs))
                     new-disk)))
             ))))))
 
@@ -463,7 +463,7 @@
 
 (defthm l3-wrchs-returns-fs-lemma-1
   (implies (l3-fs-p fs)
-           (l3-fs-p (delete-assoc-equal s fs))))
+           (l3-fs-p (remove1-assoc-equal s fs))))
 
 (defthmd l3-wrchs-returns-fs-lemma-2
   (implies (and (consp (assoc-equal s fs))
@@ -540,7 +540,7 @@
 
 (defthm l3-wrchs-correctness-1-lemma-6
   (implies (l3-bounded-fs-p fs disk-length)
-           (l3-bounded-fs-p (delete-assoc-equal name fs)
+           (l3-bounded-fs-p (remove1-assoc-equal name fs)
                             disk-length))
   :hints (("Goal" :in-theory (enable l3-bounded-fs-p))))
 
@@ -620,12 +620,12 @@
         (let ((contents (cdr sd)))
           (if (l3-regular-file-entry-p contents)
               (mv (cons (cons (car sd) contents) ;; file already exists, so leave fs unchanged
-                        (delete-assoc (car hns) fs))
+                        (remove1-assoc (car hns) fs))
                   disk)
             (mv-let (new-fs new-disk) (l3-create (cdr hns) contents disk text)
               (mv (cons (cons (car sd)
                               new-fs)
-                        (delete-assoc (car hns) fs))
+                        (remove1-assoc (car hns) fs))
                   new-disk)))
           )))))
 
@@ -685,7 +685,7 @@
            (equal (stringp (l3-stat hns (mv-nth 0 (l3-wrchs hns fs disk start text))
                                     (mv-nth 1 (l3-wrchs hns fs disk start text))))
                   (stringp (l3-stat hns fs disk))))
-  :hints (("Subgoal *1/7.2'" 
+  :hints (("Subgoal *1/7.2'"
            :in-theory (disable l3-wrchs-returns-fs)
            :use (:instance l3-wrchs-returns-fs (hns (cdr hns))
                            (fs (cdr (assoc-equal (car hns) fs))))) ))
@@ -873,7 +873,7 @@
                      (l3-rdchs hns1 fs disk start1 n1)))))
   :hints (("Goal"
            :in-theory (disable
-                       (:rewrite l2-read-after-create-2) 
+                       (:rewrite l2-read-after-create-2)
                        (:rewrite l3-to-l2-fs-correctness-1)
                        (:rewrite l3-stat-correctness-2)
                        (:rewrite l3-create-returns-fs)

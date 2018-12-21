@@ -410,9 +410,9 @@
              (alistp (put-assoc-equal i y x)))
     :rule-classes :type-prescription)
 
-  (defthm alistp-delete-assoc-equal-equal
+  (defthm alistp-remove1-assoc-equal-equal
     (implies (force (alistp x))
-             (alistp (delete-assoc-equal i x)))
+             (alistp (remove1-assoc-equal i x)))
     :rule-classes :type-prescription)
 
   (define env-read-logic (x86)
@@ -563,7 +563,7 @@
          (file-des-field  (cdr (assoc-equal :file-descriptors env)))
          (x86
           (env-write
-           (acons ':file-descriptors (delete-assoc-equal fd file-des-field)
+           (acons ':file-descriptors (remove1-assoc-equal fd file-des-field)
                   (acons ':file-contents (cdr (assoc-equal :file-contents env))
                          (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
            x86)))
@@ -696,7 +696,7 @@
           (env-write
            (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
                   (acons ':file-contents
-                         (delete-assoc-equal name file-contents-field)
+                         (remove1-assoc-equal name file-contents-field)
                          (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
            x86)))
         x86))

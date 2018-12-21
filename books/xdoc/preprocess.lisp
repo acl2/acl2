@@ -294,8 +294,8 @@
                                         0))))
 
 (defun start-event (event acc)
-  (b* ((acc (str::revappend-chars "<b>" acc))
-       (acc (str::revappend-chars (case (and (consp event)
+  (b* ((acc (str::printtree-rconcat "<b>" acc))
+       (acc (str::printtree-rconcat (case (and (consp event)
                                              (car event))
                                     (defun     "Function: ")
                                     (defthm    "Theorem: ")
@@ -304,7 +304,7 @@
                                     ;; stobjs and accessors...
                                     (otherwise "Definition: "))
                                   acc))
-       (acc (str::revappend-chars "</b>" acc)))
+       (acc (str::printtree-rconcat "</b>" acc)))
     acc))
 
 
@@ -422,31 +422,32 @@
 ; Convention: X is a string we are traversing, N is our current position in the
 ; string, and XL is the length of the string.  See autolink.lisp.
 
-(defun read-literal (x n xl chars) ;; ==> (MV SUCCESSP N-PRIME)
-  ;; Try to read CHARS, verbatim.
-  (declare (type string x))
-  (cond ((eql n xl)
-         (mv (atom chars) n))
-        ((consp chars)
-         (if (eql (char x n) (car chars))
-             (read-literal x (+ n 1) xl (cdr chars))
-           (mv nil n)))
-        (t
-         (mv t n))))
+;; these appear not to be used
+;; (defun read-literal (x n xl chars) ;; ==> (MV SUCCESSP N-PRIME)
+;;   ;; Try to read CHARS, verbatim.
+;;   (declare (type string x))
+;;   (cond ((eql n xl)
+;;          (mv (atom chars) n))
+;;         ((consp chars)
+;;          (if (eql (char x n) (car chars))
+;;              (read-literal x (+ n 1) xl (cdr chars))
+;;            (mv nil n)))
+;;         (t
+;;          (mv t n))))
 
-(defun read-through-some-char-aux (x n xl chars acc) ;; ==> (MV SUCCESSP STRING N-PRIME)
-  (declare (type string x))
-  (b* (((when (eql xl n))
-        (mv nil (str::rchars-to-string acc) n))
-       (charN (char x n))
-       ((when (member charN chars))
-        (mv t (str::rchars-to-string (cons charN acc)) n)))
-    (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))
+;; (defun read-through-some-char-aux (x n xl chars acc) ;; ==> (MV SUCCESSP STRING N-PRIME)
+;;   (declare (type string x))
+;;   (b* (((when (eql xl n))
+;;         (mv nil (str::rchars-to-string acc) n))
+;;        (charN (char x n))
+;;        ((when (member charN chars))
+;;         (mv t (str::rchars-to-string (cons charN acc)) n)))
+;;     (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))
 
-(defun read-through-some-char (x n xl chars)
-  ;; Try to read until one of CHARS is found
-  (declare (type string x))
-  (read-through-some-char-aux x n xl chars nil))
+;; (defun read-through-some-char (x n xl chars)
+;;   ;; Try to read until one of CHARS is found
+;;   (declare (type string x))
+;;   (read-through-some-char-aux x n xl chars nil))
 
 
 ; Basic preprocessor directives:
@@ -698,33 +699,33 @@
   ;; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
   ;; some trouble to preserve case for things like @(see Guard).
   (b* (((preproc-data preproc-data))
-       (acc (str::revappend-chars "<see topic=\"" acc))
+       (acc (str::printtree-rconcat "<see topic=\"" acc))
        (acc (file-name-mangle arg acc))
-       (acc (str::revappend-chars "\">" acc))
+       (acc (str::printtree-rconcat "\">" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw preproc-data.base-pkg)
                 ;; BOZO can this possibly be right?  What if arg-raw has '<' in it?
                 ;; If this is a bug, fix the other see-like directives below, too.
-                (str::revappend-chars (str::trim arg-raw) acc)
+                (str::printtree-rconcat (str::trim arg-raw) acc)
               (sym-mangle arg preproc-data.base-pkg acc)))
-       (acc (str::revappend-chars "</see>" acc)))
+       (acc (str::printtree-rconcat "</see>" acc)))
     acc))
 
 (defun process-see-cap-directive (arg preproc-data acc) ;; ===> ACC
   ;; @(csee foo) just expands into a link with a capitalized name.
   (b* (((preproc-data preproc-data))
-       (acc (str::revappend-chars "<see topic=\"" acc))
+       (acc (str::printtree-rconcat "<see topic=\"" acc))
        (acc (file-name-mangle arg acc))
-       (acc (str::revappend-chars "\">" acc))
+       (acc (str::printtree-rconcat "\">" acc))
        (acc (sym-mangle-cap arg preproc-data.base-pkg acc))
-       (acc (str::revappend-chars "</see>" acc)))
+       (acc (str::printtree-rconcat "</see>" acc)))
     acc))
 
 (defun process-tsee-directive (arg arg-raw preproc-data acc) ;; ===> ACC
   ;; @(tsee foo) is basically <tt>@(see ...)</tt>.
   (b* (((preproc-data preproc-data))
-       (acc (str::revappend-chars "<tt>" acc))
+       (acc (str::printtree-rconcat "<tt>" acc))
        (acc (process-see-directive arg arg-raw preproc-data acc))
-       (acc (str::revappend-chars "</tt>" acc)))
+       (acc (str::printtree-rconcat "</tt>" acc)))
     acc))
 
 (defun process-see?-directive (arg arg-raw preproc-data acc) ;; ===> ACC
@@ -735,53 +736,53 @@
   (b* (((preproc-data preproc-data))
        ((when preproc-data.archive-p)
         ;; Don't have the topics-fal yet so just preserve it as-is.
-        (b* ((acc (str::revappend-chars "@(see? " acc))
-             (acc (str::revappend-chars arg-raw acc))
-             (acc (str::revappend-chars ")" acc)))
+        (b* ((acc (str::printtree-rconcat "@(see? " acc))
+             (acc (str::printtree-rconcat arg-raw acc))
+             (acc (str::printtree-rconcat ")" acc)))
           acc))
        ((when (hons-get arg preproc-data.topics-fal))
         (process-see-directive arg arg-raw preproc-data acc))
        ;; Not documented, don't insert a link.
-       (acc (str::revappend-chars "<tt>" acc))
+       (acc (str::printtree-rconcat "<tt>" acc))
        (acc (if (want-to-preserve-case-p arg arg-raw preproc-data.base-pkg)
-                (str::revappend-chars (str::trim arg-raw) acc)
+                (str::printtree-rconcat (str::trim arg-raw) acc)
               (sym-mangle arg preproc-data.base-pkg acc)))
-       (acc (str::revappend-chars "</tt>" acc)))
+       (acc (str::printtree-rconcat "</tt>" acc)))
     acc))
 
 (defun process-srclink-directive (arg acc) ;; ===> ACC
   (b* ((shortname (explode (str::downcase-string (symbol-name arg))))
-       (acc (str::revappend-chars "<srclink>" acc))
+       (acc (str::printtree-rconcat "<srclink>" acc))
        (acc (simple-html-encode-chars shortname acc))
-       (acc (str::revappend-chars "</srclink>" acc)))
+       (acc (str::printtree-rconcat "</srclink>" acc)))
     acc))
 
 (defun process-obj-to-code (obj preproc-data state acc)
   (b* (((preproc-data preproc-data))
        ((when preproc-data.archive-p)
-        (b* ((acc  (str::revappend-chars "@({" acc))
+        (b* ((acc  (str::printtree-rconcat "@({" acc))
              (acc  (revappend-chars-escaping-end-delim (fmt-to-str obj preproc-data.base-pkg) #\} acc))
-             (acc  (str::revappend-chars "})" acc)))
+             (acc  (str::printtree-rconcat "})" acc)))
           acc))
-       (acc  (str::revappend-chars "<code>" acc))
+       (acc  (str::printtree-rconcat "<code>" acc))
        (acc  (xml-ppr-obj-aux obj (and (not preproc-data.disable-autolinking-p)
                                        preproc-data.topics-fal)
                               preproc-data.base-pkg state acc))
-       (acc  (str::revappend-chars "</code>" acc)))
+       (acc  (str::printtree-rconcat "</code>" acc)))
     acc))
 
 (defun process-obj-to-verb (obj preproc-data state acc)
   (b* (((preproc-data preproc-data))
        ((when preproc-data.archive-p)
-        (b* ((acc  (str::revappend-chars "@('" acc))
+        (b* ((acc  (str::printtree-rconcat "@('" acc))
              (acc  (revappend-chars-escaping-end-delim (fmt-to-str obj preproc-data.base-pkg) #\' acc))
-             (acc  (str::revappend-chars "')" acc)))
+             (acc  (str::printtree-rconcat "')" acc)))
           acc))
-       (acc  (str::revappend-chars "<v>" acc))
+       (acc  (str::printtree-rconcat "<v>" acc))
        (acc  (xml-ppr-obj-aux obj (and (not preproc-data.disable-autolinking-p)
                                        preproc-data.topics-fal)
                               preproc-data.base-pkg state acc))
-       (acc  (str::revappend-chars "</v>" acc)))
+       (acc  (str::printtree-rconcat "</v>" acc)))
     acc))
 
 (defun process-body-directive (arg preproc-data state acc) ;; ===> ACC
@@ -795,10 +796,10 @@
   ;; block, along with a source-code link.
   (b* (((preproc-data preproc-data))
        (def (get-event arg preproc-data.context state))
-       (acc (str::revappend-chars "<p>" acc))
+       (acc (str::printtree-rconcat "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
-       (acc (str::revappend-chars "</p>" acc)))
+       (acc (str::printtree-rconcat "</p>" acc)))
     (process-obj-to-code def preproc-data state acc)))
 
 (defun process-gdef-directive (arg preproc-data state acc) ;; ===> ACC
@@ -807,10 +808,10 @@
   ;; for which a tags-search will probably fail.
   (b* (((preproc-data preproc-data))
        (def (get-event arg preproc-data.context state))
-       (acc (str::revappend-chars "<p>" acc))
+       (acc (str::printtree-rconcat "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg preproc-data.base-pkg acc))
-       (acc (str::revappend-chars "</p>" acc)))
+       (acc (str::printtree-rconcat "</p>" acc)))
     (process-obj-to-code def preproc-data state acc)))
 
 (defun process-thm-directive (arg preproc-data state acc) ;; ===> ACC
@@ -818,10 +819,10 @@
   ;; along with a source link.
   (b* (((preproc-data preproc-data))
        (def (get-event arg preproc-data.context state))
-       (acc (str::revappend-chars "<p>" acc))
+       (acc (str::printtree-rconcat "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
-       (acc (str::revappend-chars "</p>" acc)))
+       (acc (str::printtree-rconcat "</p>" acc)))
     (process-obj-to-code def preproc-data state acc)))
 
 (defun process-gthm-directive (arg preproc-data state acc) ;; ===> ACC
@@ -829,10 +830,10 @@
   ;; is a generated theorem.
   (b* (((preproc-data preproc-data))
        (def (get-event arg preproc-data.context state))
-       (acc (str::revappend-chars "<p>" acc))
+       (acc (str::printtree-rconcat "<p>" acc))
        (acc (start-event def acc))
        (acc (sym-mangle arg preproc-data.base-pkg acc))
-       (acc (str::revappend-chars "</p>" acc)))
+       (acc (str::printtree-rconcat "</p>" acc)))
     (process-obj-to-code def preproc-data state acc)))
 
 (defun process-formals-directive (arg preproc-data state acc) ;; ===> ACC
@@ -848,9 +849,9 @@
   (b* (((preproc-data preproc-data))
        (formals (get-formals arg preproc-data.context (w state)))
        (call    (cons arg formals))
-       (acc     (str::revappend-chars "<tt>" acc))
+       (acc     (str::printtree-rconcat "<tt>" acc))
        (acc     (fmt-and-encode-to-acc call preproc-data.base-pkg acc))
-       (acc     (str::revappend-chars "</tt>" acc)))
+       (acc     (str::printtree-rconcat "</tt>" acc)))
     acc))
 
 (defun process-ccall-directive (arg preproc-data state acc) ;; ===> ACC
@@ -859,9 +860,9 @@
   (b* (((preproc-data preproc-data))
        (formals (get-formals arg preproc-data.context (w state)))
        (call    (cons arg formals))
-       (acc     (str::revappend-chars "<code>" acc))
+       (acc     (str::printtree-rconcat "<code>" acc))
        (acc     (fmt-and-encode-to-acc call preproc-data.base-pkg acc))
-       (acc     (str::revappend-chars "</code>" acc)))
+       (acc     (str::printtree-rconcat "</code>" acc)))
     acc))
 
 (defun process-measure-directive (arg preproc-data state acc) ;; ===> ACC
@@ -905,11 +906,11 @@
       (b* (((preproc-data preproc-data)))
        (and (xdoc-verbose-p)
             (xdoc-error "unknown directive ~x1." preproc-data.context command))
-       (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
-              (acc (str::revappend-chars (symbol-package-name command) acc))
-              (acc (str::revappend-chars "::" acc))
-              (acc (str::revappend-chars (symbol-name command) acc))
-              (acc (str::revappend-chars "]]" acc)))
+       (let* ((acc (str::printtree-rconcat "[[ unknown directive " acc))
+              (acc (str::printtree-rconcat (symbol-package-name command) acc))
+              (acc (str::printtree-rconcat "::" acc))
+              (acc (str::printtree-rconcat (symbol-name command) acc))
+              (acc (str::printtree-rconcat "]]" acc)))
          (mv acc state))))))
 
 
@@ -991,6 +992,7 @@
               (eql (fourth acc) #\o)
               (eql (fifth acc) #\c)
               (eql (sixth acc) #\<)))))
+
 
 (defun read-code-segment
 
@@ -1369,7 +1371,7 @@ baz
                             " returned "
                             (str::pretty ret :config (str::make-printconfig :home-package preproc-data.base-pkg)))
                   acc state))
-             (acc (str::revappend-chars str acc)))
+             (acc (str::printtree-rconcat str acc)))
           (mv nil acc state))))
     (mv (msg "Error: @(`(~x0 ...)`) is not a known evaluation keyword.  Input sexpr: ~x1."
              kind (str::pretty sexpr))
@@ -1395,27 +1397,38 @@ baz
 
 (defun preprocess-encode-string (x preproc-data acc)
   (b* (((preproc-data preproc-data)))
-    (autolink-and-encode x 0 (length x)
+    (autolink-and-encode x 0 (length x) 0
                          (and (not preproc-data.disable-autolinking-p)
                               preproc-data.topics-fal)
                          preproc-data.base-pkg preproc-data.kpa acc)))
 
-(defun preprocess-aux (x n xl preproc-data state acc)
+(defun just-passed-code-p (x idx baseidx)
+  (let* ((tag "<code>")
+         (taglen (length tag)))
+    (and (<= baseidx (- idx taglen))
+         (str::strrange-equiv taglen x (- idx taglen) tag 0))))
+
+(defun preprocess-aux (x n xl xbaseidx preproc-data state acc)
   "Returns (MV ACC STATE)"
   ;; Main preprocessor loop.  Read from the string and accumulate the result
   ;; into acc, expanding away any preprocessor directives.
+
+  ;; xbaseidx is <= n and is the earliest character such that all chars past it
+  ;; up to n are not anything special.  Whenever we see a special sequence or
+  ;; come to the end of the string we accumulate that subsequence onto the acc.
   (declare (type string x))
   (b* (((when (= n xl))
-        (mv acc state))
+        (mv (str::pcat acc (subseq x xbaseidx n)) state))
        (context (b* (((preproc-data preproc-data))) preproc-data.context))
 
        (char (char x n))
        ((when (eql char #\@))
         (cond ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\@))
-               (b* (((preproc-data preproc-data)))
+               (b* (((preproc-data preproc-data))
+                    (acc (str::pcat acc (subseq x xbaseidx n))))
                  ;; @@ --> @, but if archive-p, leave it
-                 (preprocess-aux x (+ n 2) xl preproc-data state
+                 (preprocess-aux x (+ n 2) xl (+ n 2) preproc-data state
                                  (if preproc-data.archive-p
                                      (cons #\@ (cons #\@ acc))
                                    (cons #\@ acc)))))
@@ -1442,13 +1455,11 @@ baz
                            (prog2$ (and (xdoc-verbose-p)
                                         (xdoc-error "no closing ~s1 found for @(~s2 ..." context
                                                     end-str (coerce (list char) 'string)))
-                                   (mv acc state)))
+                                   (mv (str::pcat acc (subseq x xbaseidx n)) state)))
                           ((preproc-data preproc-data))
                           ((when preproc-data.archive-p)
                            ;; skip
-                           (preprocess-aux x (+ end 2) xl preproc-data state
-                                           (str::revappend-chars
-                                            (subseq x n (+ end 2)) acc)))
+                           (preprocess-aux x (+ end 2) xl xbaseidx preproc-data state acc))
                           (sub
                            (if (eql char #\')
                                ;; Change January 2014: we were using fancy-extract-block here, but it
@@ -1458,10 +1469,11 @@ baz
                              (maybe-fix-spaces-in-sub
                               (unescape-end-delim (fancy-extract-block x (+ n 3) end) #\}))))
                           
-                          (acc (str::revappend-chars start-xml acc))
+                          (acc (str::pcat acc (subseq x xbaseidx n)))
+                          (acc (str::printtree-rconcat start-xml acc))
                           (acc (preprocess-encode-string sub preproc-data acc))
-                          (acc (str::revappend-chars end-xml acc)))
-                       (preprocess-aux x (+ end 2) xl preproc-data state acc)))
+                          (acc (str::printtree-rconcat end-xml acc)))
+                       (preprocess-aux x (+ end 2) xl (+ end 2) preproc-data state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (or (eql (char x (+ n 2)) #\[)
@@ -1478,20 +1490,19 @@ baz
                                         (if fragp
                                             (xdoc-error "no closing $) found for @($ ..." context)
                                           (xdoc-error "no closing ]) found for @([ ..." context)))
-                                   (mv acc state)))
+                                   (mv (str::pcat acc (subseq x xbaseidx n)) state)))
                           ((preproc-data preproc-data))
                           ((when preproc-data.archive-p)
                            ;; skip
-                           (preprocess-aux x (+ end 2) xl preproc-data state
-                                           (str::revappend-chars
-                                            (subseq x n (+ end 2)) acc)))
+                           (preprocess-aux x (+ end 2) xl xbaseidx preproc-data state acc))
                           (sub (subseq x (+ n 3) end))
-                          (acc (str::revappend-chars (if fragp "<mathfrag>" "<math>") acc))
+                          (acc (str::pcat acc (subseq x xbaseidx n)))
+                          (acc (str::printtree-rconcat (if fragp "<mathfrag>" "<math>") acc))
                           ;; Unlike @('...') we don't want to try to automatically insert hyperlinks, as
                           ;; that would very likely totally screw up katex.
                           (acc (simple-html-encode-str sub 0 (length sub) acc))
-                          (acc (str::revappend-chars (if fragp "</mathfrag>" "</math>") acc)))
-                       (preprocess-aux x (+ end 2) xl preproc-data state acc)))
+                          (acc (str::printtree-rconcat (if fragp "</mathfrag>" "</math>") acc)))
+                       (preprocess-aux x (+ end 2) xl (+ end 2) preproc-data state acc)))
 
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\`)))
@@ -1500,46 +1511,54 @@ baz
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
                                         (xdoc-error "no closing `) found for @(` ..." context))
-                                   (mv acc state)))
+                                   (mv (str::pcat acc (subseq x xbaseidx n)) state)))
                           (str (subseq x (+ n 3) end))
+                          (acc (str::pcat acc (subseq x xbaseidx n)))
                           ((mv acc state)
                            (preprocess-eval str preproc-data state acc)))
-                       (preprocess-aux x (+ end 2) xl preproc-data state acc)))
+                       (preprocess-aux x (+ end 2) xl (+ end 2) preproc-data state acc)))
 
                     ((preproc-data preproc-data))
+                    (orig-n n)
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl preproc-data.base-pkg preproc-data.kpa))
+                    (acc (str::pcat acc (subseq x xbaseidx orig-n)))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
                                   (xdoc-error "~x1." context error))
                              (mv acc state)))
                     ((mv acc state)
                      (process-directive command arg arg-raw preproc-data state acc)))
-                 (preprocess-aux x n xl preproc-data state acc)))
+                 (preprocess-aux x n xl n preproc-data state acc)))
 
               (t
                ;; @ sign in some other context.
-               (preprocess-aux x (+ n 1) xl preproc-data state (cons #\@ acc)))))
+               (preprocess-aux x (+ n 1) xl xbaseidx preproc-data state acc))))
        
        ((preproc-data preproc-data))
        ((when (and (not preproc-data.archive-p)
                    (eql char #\Newline)))
         ;; Gross hack #1: eat initial newlines from the start of a <code>
         ;; block, since otherwise they look ugly when firefox renders them.
-        (if (just-started-code-p acc)
-            (if (and (< (+ n 1) xl)
-                     (eql (char x (+ n 1)) #\Newline))
-                ;; Avoid eating multiple newlines at the start of a code block.
-                (preprocess-aux x (+ n 2) xl preproc-data state (cons #\Newline acc))
-              (preprocess-aux x (+ n 1) xl preproc-data state acc))
+        (b* (;; (codetag "<code>")
+             ;; (taglen (length codetag))
+             ;; ;; Regardless we're going to accumulate the string here.
+             (acc (str::pcat acc (subseq x xbaseidx n))))
+          (if ;; Check that the next substring to be added has <code> as a suffix.
+              (just-passed-code-p x n xbaseidx)
+              (if (and (< (+ n 1) xl)
+                       (eql (char x (+ n 1)) #\Newline))
+                  ;; Avoid eating multiple newlines at the start of a code block.
+                  (preprocess-aux x (+ n 2) xl (+ n 2) preproc-data state acc)
+                (preprocess-aux x (+ n 1) xl (+ n 1) preproc-data state acc))
           ;; Gross hack #2: the XSLT transformer in firefox seems to have some
           ;; problems if there aren't spaces at the end of lines, e.g., it will
           ;; run together the hover-text in the hierarchical description in
           ;; preview.html.  Fix by putting a space before newlines.  Horrible.
-          (preprocess-aux x (+ n 1) xl preproc-data state
-                          (list* #\Newline #\Space acc)))))
+          (preprocess-aux x (+ n 1) xl (+ n 1) preproc-data state
+                          (list* #\Newline #\Space acc))))))
 
     ;; Otherwise just keep the char and keep going.
-    (preprocess-aux x (+ n 1) xl preproc-data state (cons char acc))))
+    (preprocess-aux x (+ n 1) xl xbaseidx preproc-data state acc)))
 
 (defun preprocess-main (x context topics-fal disable-autolinking-p base-pkg
                           state acc)
@@ -1557,9 +1576,45 @@ baz
                        (:disable-autolinking-p . ,disable-autolinking-p)
                        (:topics-fal . ,topics-fal)
                        (:kpa . ,kpa)))
-       ((mv acc state) (preprocess-aux x 0 (length x) preproc-data state acc))
+       ((mv acc state) (preprocess-aux x 0 (length x) 0 preproc-data state acc))
        ;; Restore base-pkg for whoever called us.
        ;; ((mv & & state) (acl2::set-current-package current-pkg state))
        )
     (mv acc state)))
+
+
+(defun replace-assoc (key val alist)
+  (declare (xargs :guard (if (eqlablep key)
+                             (alistp alist)
+                           (eqlable-alistp alist))))
+  (if (atom alist)
+      (list (cons key val))
+    (if (eql key (caar alist))
+        (cons (cons key val) (cdr alist))
+      (cons (car alist)
+            (replace-assoc key val (cdr alist))))))
+
+;; This differs from preprocess-topic (in prepare-topic.lisp) in that this just
+;; replaces the :long and :short parts of a topic with their preprocessed
+;; results, whereas that produces one entire string (which also includes XML
+;; headers and error checking).
+(defun preprocess-transform-topic (topic topics-fal state)
+  (b* ((long (or (cdr (assoc :long topic)) ""))
+       (short (or (cdr (assoc :short topic)) ""))
+       (base-pkg (cdr (assoc :base-pkg topic)))
+       (name (cdr (assoc :name topic)))
+       ((mv short-printtree state)
+        (preprocess-main short name topics-fal nil base-pkg state nil))
+       (short-pre (str::printtree->str short-printtree))
+       ((mv long-printtree state)
+        (preprocess-main long name topics-fal nil base-pkg state nil))
+       (long-pre (str::printtree->str long-printtree)))
+    (mv (replace-assoc :long long-pre (replace-assoc :short short-pre topic)) state)))
+
+(defun preprocess-transform-topics (x topics-fal state)
+  (b* (((when (atom x))
+        (mv nil state))
+       ((mv first state) (preprocess-transform-topic (car x) topics-fal state))
+       ((mv rest state)  (preprocess-transform-topics (cdr x) topics-fal state)))
+    (mv (cons first rest) state)))
 

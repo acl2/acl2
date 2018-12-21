@@ -2310,6 +2310,11 @@
                            (mv t ignored-vars))
                           (& (mv nil nil))))))))))
 
+(defun all-quoteps (lst)
+  (cond ((null lst) t)
+        (t (and (quotep (car lst))
+                (all-quoteps (cdr lst))))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3773,18 +3778,17 @@
           ((eq (ffn-symb term) 'cons) (untranslate-cons term untrans-tbl
                                                         preprocess-fn wrld))
           ((and (eq (ffn-symb term) 'synp)
-
-; Even though translate insists that the second argument of synp is quoted, can
-; we really guarantee that every termp given to untranslate came through
-; translate?  Not necessarily; for example, maybe substitution was performed
-; for some reason (say, in the proof-builder one replaces the quoted argument
-; by a variable known to be equal to it).
-
-                (quotep (fargn term 2)))
+                (all-quoteps (fargs term))
+                (let ((uarg2 (unquote (fargn term 2))))
+                  (and (consp uarg2)
+                       (member-eq (car uarg2) '(syntaxp bind-free)))))
 
 ; We store the quotation of the original form of a syntaxp or bind-free
 ; hypothesis in the second arg of its expansion.  We do this so that we
 ; can use it here and output something that the user will recognize.
+
+; One can certainly generate calls of synp where this result will be
+; misleading, but we aren't compelled to concern ourselves with such a case.
 
            (cadr (fargn term 2)))
           ((and (eq (ffn-symb term) 'return-last)
@@ -6643,12 +6647,6 @@
 
 )
 
-(defconst *synp-trans-err-string*
-  "A synp term must take three quoted arguments, unlike ~x0.  Normally, a call ~
-   to synp is the result of the macroexpansion of a call to syntaxp or ~
-   bind-free, but this does not seem to be the case here.  If you believe this ~
-   error message is itself in error please contact the maintainers of ACL2.")
-
 (defun unknown-binding-msg (stobjs-bound str1 str2 str3)
   (msg
    "The single-threaded object~#0~[ ~&0 has~/s ~&0 have~] been bound in ~@1.  ~
@@ -6961,6 +6959,7 @@
 
 (defconst *brr-globals*
   '(brr-monitored-runes
+    brr-evisc-tuple
     brr-stack
     brr-gstack
     brr-alist))
@@ -8332,14 +8331,8 @@
             (all-unbadged-fnnames (car terms) wrld acc))))))
 
 (defconst *gratuitous-lambda-object-restriction-msg*
-
-; When relevant documentation exists, change to:
-; "See :DOC gratuitous-lambda-object-restrictions for a workaround if you ~
-;  really mean to have an ill-formed LAMBDA-like constant in your code."
-
-  "If you really want an ill-formed lambda-like object here, backquote the ~
-   constant or cons up a suitable constant from quoted parts, or refer to a ~
-   previously defined defconst containing such an object.")
+  "See :DOC gratuitous-lambda-object-restrictions for a workaround if you ~
+   really mean to have an ill-formed LAMBDA-like constant in your code.")
 
 (defun edcls-from-lambda-object-dcls (dcls x bindings cform ctx wrld)
 
@@ -9220,8 +9213,8 @@
                             stobjs-out)
                      (if (eq new-stobjs-out t)
                          bindings
-                       (delete-assoc-eq-all new-stobjs-out
-                                            bindings))))))))))))))))))
+                       (remove-assoc-eq new-stobjs-out
+                                        bindings))))))))))))))))))
 
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)
@@ -10275,8 +10268,8 @@
        ((not (arglistp vars))
         (trans-er+? cform x
                     ctx
-                    "The second element of a well-formed LAMBDA or LAMBDA$ ~
-                     expression must be a true list of distinct legal ~
+                    "The second element of a well-formed LAMBDA object or ~
+                     lambda$ term must be a true list of distinct legal ~
                      variable symbols and ~x0 is not.  ~@1"
                     vars
                     *gratuitous-lambda-object-restriction-msg*))
@@ -10328,8 +10321,8 @@
                            (trans-er+?
                             cform x
                             ctx
-                            "The guard of a LAMBDA must be a fully translated ~
-                             term and ~x0 is not.  ~@1"
+                            "The guard of a LAMBDA object must be a fully ~
+                             translated term and ~x0 is not.  ~@1"
                             guard
                             *gratuitous-lambda-object-restriction-msg*))
                          (translate11 guard
@@ -10357,20 +10350,20 @@
                (bad-fns
                 (trans-er+? cform x
                             ctx
-                            "The guard of a lambda object or LAMBDA$ must be ~
-                             in :logic mode but ~x0 calls the :program mode ~
-                             function~#1~[~/s~] ~&1.  ~@2"
+                            "The guard of a LAMBDA object or lambda$ term ~
+                             must be in :logic mode but ~x0 calls the ~
+                             :program mode function~#1~[~/s~] ~&1.  ~@2"
                             (untranslate tguard t wrld)
                             bad-fns
                             *gratuitous-lambda-object-restriction-msg*))
                (free-vars
                 (trans-er+? cform x
                             ctx
-                            "The guard of a lambda object or LAMBDA$ may ~
+                            "The guard of a LAMBDA object or lambda$ term may ~
                              contain no free variables.  This is violated by ~
                              the guard ~x0, which uses the variable~#1~[~/s~] ~
-                             ~&1 which ~#1~[is~/are~] not among the formals ~
-                             of the LAMBDA expression. ~@2"
+                             ~&1 which ~#1~[is~/are~] not among the formals. ~
+                             ~@2"
                             (untranslate tguard t wrld)
                             free-vars
                             *gratuitous-lambda-object-restriction-msg*))
@@ -10382,7 +10375,7 @@
 
                 (trans-er+? cform x
                             ctx
-                            "In a lambda object or a LAMBDA$ with ~
+                            "In a LAMBDA object or a lambda$ term with ~
                              :SPLIT-TYPES T, every TYPE expression derived ~
                              from the TYPE specifiers must be an explicit ~
                              conjunct in the :GUARD, and the guard ~x0 is ~
@@ -10399,19 +10392,19 @@
                                (trans-er+?
                                 cform x
                                 ctx
-                                "The body of a lambda object may not be of ~
+                                "The body of a LAMBDA object may not be of ~
                                  the form (RETURN-LAST 'PROGN '(LAMBDA$ ...) ~
                                  ...) because that idiom is used to flag ~
-                                 lambda objects generated by translating ~
-                                 LAMBDA$s. But you wrote a lambda object with ~
-                                 body ~x0.  ~@1"
+                                 LAMBDA objects generated by translating ~
+                                 lambda$ terms. But you wrote a LAMBDA object ~
+                                 with body ~x0.  ~@1"
                                 body
                                 *gratuitous-lambda-object-restriction-msg*)
                                (trans-value body))
                            (trans-er+?
                             cform x
                             ctx
-                            "The body of a lambda object must be in fully ~
+                            "The body of a LAMBDA object must be in fully ~
                              translated form and ~x0 is not.  ~@1"
                             body
                             *gratuitous-lambda-object-restriction-msg*))
@@ -10452,8 +10445,8 @@
                     (bad-fns
                      (trans-er+? cform x
                                  ctx
-                                 "The body of a lambda object or LAMBDA$ must ~
-                                  be in :logic mode but ~x0 calls the ~
+                                 "The body of a LAMBDA object or lambda$ term ~
+                                  must be in :logic mode but ~x0 calls the ~
                                   :program mode function~#1~[~/s~] ~&1.  ~@2"
                                  (untranslate tbody t wrld)
                                  bad-fns
@@ -10461,23 +10454,22 @@
                     (free-vars
                      (trans-er+? cform x
                                  ctx
-                                 "The body of a lambda object or LAMBDA$ may ~
-                                  contain no free variables.  This is ~
+                                 "The body of a LAMBDA object or lambda$ term ~
+                                  may contain no free variables.  This is ~
                                   violated by the body ~x0, which uses the ~
                                   variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
-                                  not among the formals of the LAMBDA ~
-                                  expression.  ~@2"
+                                  not among the formals.  ~@2"
                                  (untranslate tbody nil wrld)
                                  free-vars
                                  *gratuitous-lambda-object-restriction-msg*))
                     (used-ignores
                      (trans-er+? cform x
                                  ctx
-                                 "The body of a lambda object or LAMBDA$ may ~
-                                  not use a variable declared IGNOREd.  This ~
-                                  is violated by the body ~x0, which uses the ~
-                                  variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
-                                  declare IGNOREd. ~@2"
+                                 "The body of a LAMBDA object or lambda$ term ~
+                                  may not use a variable declared IGNOREd.  ~
+                                  This is violated by the body ~x0, which ~
+                                  uses the variable~#1~[~/s~] ~&1 which ~
+                                  ~#1~[is~/are~] declare IGNOREd. ~@2"
                                  (untranslate tbody nil wrld)
                                  used-ignores
                                  *gratuitous-lambda-object-restriction-msg*))
@@ -10485,12 +10477,12 @@
                      (trans-er+? cform x
                                  ctx
                                  "Every formal variable that is unused in the ~
-                                  body of a lambda object or LAMBDA$ must be ~
-                                  declared IGNOREd or IGNORABLE.  This is ~
-                                  violated by the body ~x0, which fails to ~
-                                  use the variable~#1~[~/s~] ~&1 which ~
-                                  ~#1~[is~/are~] not declared IGNOREd or ~
-                                  IGNORABLE. ~@2"
+                                  body of a LAMBDA object or LAMBDA$ term ~
+                                  must be declared IGNOREd or IGNORABLE.  ~
+                                  This is violated by the body ~x0, which ~
+                                  fails to use the variable~#1~[~/s~] ~&1 ~
+                                  which ~#1~[is~/are~] not declared IGNOREd ~
+                                  or IGNORABLE. ~@2"
                                  (untranslate tbody nil wrld)
                                  unused-not-ignorables
                                  *gratuitous-lambda-object-restriction-msg*))
@@ -10499,9 +10491,10 @@
                           (bad-fns
                            (trans-er+
                             x ctx
-                            "The body of a lambda object or LAMBDA$ should be ~
-                             fully badged but ~&0 ~#0~[is~/are~] used in ~x1 ~
-                             and ~#0~[has no badge~/have no badges~].  ~@2"
+                            "The body of a LAMBDA object or lambda$ term ~
+                             should be fully badged but ~&0 ~#0~[is~/are~] ~
+                             used in ~x1 and ~#0~[has no badge~/have no ~
+                             badges~].  ~@2"
                             (reverse bad-fns)
                             tbody
                             *gratuitous-lambda-object-restriction-msg*))
@@ -10509,7 +10502,7 @@
                            (trans-er+?
                             cform x
                             ctx
-                            "The body of a lambda object or LAMBDA$ constant ~
+                            "The body of a LAMBDA object or lambda$ term ~
                              must be tame and ~x0 is not.  ~@1"
                             body
                             *gratuitous-lambda-object-restriction-msg*))
@@ -10549,8 +10542,8 @@
                               stobjs-out bindings known-stobjs flet-alist
                               cform ctx wrld state-vars))))))))))))))))))
    (t (trans-er+? cform x ctx
-                  "Every lambda object and lambda$ expressions must be a true ~
-                   list of at least 3 elements, e.g., (LAMBDA vars ...dcls... ~
+                  "Every LAMBDA object and lambda$ term must be a true list ~
+                   of at least 3 elements, e.g., (LAMBDA vars ...dcls... ~
                    body) and ~x0 is not.  ~@1"
                   x *gratuitous-lambda-object-restriction-msg*))))
 
@@ -11493,7 +11486,7 @@
                 loop.  Such forms are only allowed in the bodies of functions ~
                 and in theorems.  Also see :DOC with-local-stobj."
                (car x)))
-   ((equal (arity (car x) wrld) (length (cdr x)))
+   ((eql (arity (car x) wrld) (length (cdr x)))
     (cond ((untouchable-fn-p (car x)
                              wrld
                              (access state-vars state-vars
@@ -11558,18 +11551,22 @@
                                         stobjs-out bindings known-stobjs
                                         flet-alist x ctx wrld state-vars)))
                     (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))))))
-          ((eq (car x) 'synp)
+          ((and (eq (car x) 'synp)
+                (eql (length x) 4) ; else fall through to normal error
+                (eq stobjs-out t))
 
-; Synp is a bit odd.  We store the quotation of the term to be evaluated in the
+; Synp is a bit odd.  We typically -- that is, from macroexpansion of syntaxp
+; and bind-free calls -- store the quotation of the term to be evaluated in the
 ; third arg of the synp form.  We store the quotation so that ACL2 will not see
 ; the term as a potential induction candidate.  (Eric Smith first pointed out
 ; this issue.)  This, however forces us to treat synp specially here in order
 ; to translate the term to be evaluated and thereby get a proper ACL2 term.
 ; Without this special treatment (cadr x), for instance, would be left alone
-; whereas it needs to be translated into (car (cdr x)).
-
-; This mangling of the third arg of synp is sound because synp always returns
-; t.
+; whereas it needs to be translated into (car (cdr x)).  This mangling of the
+; third arg of synp is sound because synp always returns t.  Note, however,
+; that after Version_8.1 we no longer insist that stobjs-out = t or that the
+; arguments to synp all be quoted, since these restrictions defeat the ability
+; to include synp as a function symbol supplied to defevaluator.
 
 ; Robert Krug has mentioned the possibility that the known-stobjs below could
 ; perhaps be t.  This would allow a function called by synp to use, although
@@ -11579,92 +11576,69 @@
 ; appear in the unifying substitution that binds variables in the evg of
 ; (cadddr x).  So it seems that such a relaxation would not be of much value.
 
-           (cond ((not (eq stobjs-out t))
-                  (trans-er ctx
-                            "A call to synp is not allowed here.  This ~
-                             call may have come from the use of syntaxp ~
-                             or bind-free within a function definition ~
-                             since these two macros expand into calls to ~
-                             synp.  The form we were translating when we ~
-                             encountered this problem is ~x0.  If you ~
-                             believe this error message is itself in error ~
-                             or that we have been too restrictive, please ~
-                             contact the maintainers of ACL2."
-                            x))
-                 ((eql (length x) 4)
-                  (mv-let
-                   (erp val bindings)
-                   (trans-er-let*
-                    ((quoted-vars (translate11 (cadr x)
-                                               nil ; ilk
-                                               '(nil) ; stobjs-out
-                                               bindings
-                                               '(state) ; known-stobjs
-                                               flet-alist x ctx wrld state-vars))
-                     (quoted-user-form (translate11 (caddr x)
-                                                    nil ; ilk
-                                                    '(nil) ; stobjs-out
-                                                    bindings
-                                                    '(state) ; known-stobjs
-                                                    flet-alist x ctx wrld
-                                                    state-vars))
-                     (quoted-term (translate11 (cadddr x)
-                                               nil ; ilk
-                                               '(nil) ; stobjs-out
-                                               bindings
-                                               '(state) ; known-stobjs
-                                               flet-alist x ctx wrld state-vars)))
-                    (let ((quoted-term (if (quotep quoted-term)
-                                           quoted-term
-                                         (sublis-var nil quoted-term))))
-                      (cond ((quotep quoted-term)
-                             (trans-er-let*
-                              ((term-to-be-evaluated
-                                (translate11 (cadr quoted-term)
-                                             nil ; ilk
-                                             '(nil) ; stobjs-out
-                                             bindings
-                                             '(state) ; known-stobjs
-                                             flet-alist x ctx wrld state-vars)))
-                              (let ((quoted-vars (if (quotep quoted-vars)
-                                                     quoted-vars
-                                                   (sublis-var nil quoted-vars)))
-                                    (quoted-user-form (if (quotep quoted-user-form)
-                                                          quoted-user-form
-                                                        (sublis-var nil
-                                                                    quoted-user-form))))
-                                (cond ((and (quotep quoted-vars)
-                                            (quotep quoted-user-form))
-                                       (trans-value
-                                        (fcons-term* 'synp quoted-vars
-                                                     quoted-user-form
-                                                     (kwote
-                                                      term-to-be-evaluated))))
-                                      (t (trans-er ctx
-                                                   *synp-trans-err-string*
-                                                   x))))))
-                            (t
-                             (trans-er ctx
-                                       *synp-trans-err-string*
-                                       x)))))
-                   (cond (erp
-                          (let ((quoted-user-form (caddr x)))
-                            (case-match quoted-user-form
-                              (('QUOTE ('SYNTAXP form))
-                               (mv erp
-                                   (msg "The form ~x0, from a ~x1 hypothesis, ~
-                                         is not suitable for evaluation in an ~
-                                         environment where its variables are ~
-                                         bound to terms.  See :DOC ~x1.  Here ~
-                                         is further explanation:~|~t2~@3"
-                                        form 'syntaxp 5 val)
-                                   bindings))
-                              (& (mv erp val bindings)))))
-                         (t (mv erp val bindings)))))
-                 (t
-                  (trans-er ctx
-                            *synp-trans-err-string*
-                            x))))
+           (mv-let
+             (erp val bindings)
+             (trans-er-let*
+              ((vars0 (translate11 (cadr x)
+                                   nil    ; ilk
+                                   '(nil) ; stobjs-out
+                                   bindings
+                                   '(state) ; known-stobjs
+                                   flet-alist x ctx wrld state-vars))
+               (user-form0 (translate11 (caddr x)
+                                        nil ; ilk
+                                        '(nil) ; stobjs-out
+                                        bindings
+                                        '(state) ; known-stobjs
+                                        flet-alist x ctx wrld
+                                        state-vars))
+               (term0 (translate11 (cadddr x)
+                                   nil    ; ilk
+                                   '(nil) ; stobjs-out
+                                   bindings
+                                   '(state) ; known-stobjs
+                                   flet-alist x ctx wrld state-vars)))
+              (let ((quoted-vars (if (quotep vars0)
+                                     vars0
+                                   (sublis-var nil vars0)))
+                    (quoted-user-form (if (quotep user-form0)
+                                          user-form0
+                                        (sublis-var nil user-form0)))
+                    (quoted-term (if (quotep term0)
+                                     term0
+                                   (sublis-var nil term0))))
+                (cond ((and (quotep quoted-vars)
+                            (quotep quoted-user-form)
+                            (quotep quoted-term))
+                       (trans-er-let*
+                        ((term-to-be-evaluated
+                          (translate11 (unquote quoted-term)
+                                       nil    ; ilk
+                                       '(nil) ; stobjs-out
+                                       bindings
+                                       '(state) ; known-stobjs
+                                       flet-alist x ctx wrld state-vars)))
+                        (trans-value
+                         (fcons-term* 'synp
+                                      quoted-vars
+                                      quoted-user-form
+                                      (kwote term-to-be-evaluated)))))
+                      (t (trans-value
+                          (fcons-term* 'synp vars0 user-form0 term0))))))
+             (cond (erp
+                    (let ((quoted-user-form-original (caddr x)))
+                      (case-match quoted-user-form-original
+                        (('QUOTE ('SYNTAXP form))
+                         (mv erp
+                             (msg "The form ~x0, from a ~x1 hypothesis, is ~
+                                   not suitable for evaluation in an ~
+                                   environment where its variables are bound ~
+                                   to terms.  See :DOC ~x1.  Here is further ~
+                                   explanation:~|~t2~@3"
+                                  form 'syntaxp 5 val)
+                             bindings))
+                        (& (mv erp val bindings)))))
+                   (t (mv erp val bindings)))))
           ((eq stobjs-out t)
            (trans-er-let*
             ((args (translate11-lst (cdr x)

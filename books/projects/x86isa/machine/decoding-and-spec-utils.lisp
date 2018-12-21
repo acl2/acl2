@@ -568,6 +568,13 @@ the @('fault') field instead.</li>
      or a previous invocation of @(tsee add-to-*sp).
      </p>
      <p>
+     The increment or decrement is modular:
+     64 bits in 64-bit mode,
+     and either 32 or 16 bits in 32-bit mode (depending on the SS.B bit).
+     Since our model uses signed 64-bit addresses, we use @(tsee i64) for them,
+     while we use @(tsee n32) or @(tsee n16) for 32-bit and 16-bit addresses.
+     </p>
+     <p>
      In 64-bit mode, we check whether the result is a canonical address;
      in 32-bit mode, we check whether the result is within the segment limit.
      If these checks are not satisfied,
@@ -587,23 +594,16 @@ the @('fault') field instead.</li>
      (see Intel manual, Mar'17, Vol. 3, Sec. 3.4.5.1),
      so the checks need to cover these two cases.
      See @(tsee segment-base-and-bounds) and @(tsee ea-to-la).
-     </p>
-     <p>
-     With well-formed segments,
-     the segment limit checks should ensure that
-     the new stack pointer is a 32-bit or 16-bit (based on SS.B)
-     unsigned integer in 32-bit mode.
-     Thus, the conversions @(tsee n32) and @(tsee n16) below
-     are expected to leave their arguments unchanged.
      </p>"
     (b* ((*sp+delta (the (signed-byte 65) (+ *sp delta))))
       (case proc-mode
 	(#.*64-bit-mode*
-	 (if (mbe :logic (canonical-address-p *sp+delta)
-		  :exec (and (<= #.*-2^47* *sp+delta)
-			     (< *sp+delta #.*2^47*)))
-	     (mv nil *sp+delta)
-	   (mv (list :non-canonical-stack-address *sp+delta) 0)))
+         (let ((*sp+delta (i64 *sp+delta)))
+           (if (mbe :logic (canonical-address-p *sp+delta)
+                    :exec (and (<= #.*-2^47* *sp+delta)
+                               (< *sp+delta #.*2^47*)))
+               (mv nil *sp+delta)
+             (mv (list :non-canonical-stack-address *sp+delta) 0))))
 	(#.*compatibility-mode*
 	 (b* (((the (unsigned-byte 32) ss.limit)
 	       (xr :seg-hidden-limit #.*ss* x86))
@@ -619,14 +619,13 @@ the @('fault') field instead.</li>
 				#xffffffff
 			      #xffff)
 			  ss.limit))
+              (*sp+delta (if (= ss.b 1) (n32 *sp+delta) (n16 *sp+delta)))
 	      ((unless (and (<= ss-lower *sp+delta)
 			    (<= *sp+delta ss-upper)))
 	       (mv (list :out-of-segment-stack-address
 			 *sp+delta ss-lower ss-upper)
 		   0)))
-	   (if (= ss.b 1)
-	       (mv nil (n32 *sp+delta))
-	     (mv nil (n16 *sp+delta)))))
+           (mv nil *sp+delta)))
 	(otherwise
 	 (mv (list :unimplemented-proc-mode proc-mode)
 	     0))))
@@ -642,14 +641,14 @@ the @('fault') field instead.</li>
 
     (defrule mv-nth-0-of-add-to-*sp-when-64-bit-modep
       (equal (mv-nth 0 (add-to-*sp #.*64-bit-mode* *sp delta x86))
-	     (if (canonical-address-p (+ *sp delta))
+	     (if (canonical-address-p (i64 (+ *sp delta)))
 		 nil
-	       (list :non-canonical-stack-address (+ *sp delta)))))
+	       (list :non-canonical-stack-address (i64 (+ *sp delta))))))
 
     (defrule mv-nth-1-of-add-to-*sp-when-64-bit-modep
       (equal (mv-nth 1 (add-to-*sp #.*64-bit-mode* *sp delta x86))
-	     (if (canonical-address-p (+ *sp delta))
-		 (+ *sp delta)
+	     (if (canonical-address-p (i64 (+ *sp delta)))
+		 (i64 (+ *sp delta))
 	       0)))
 
     (defthm-usb mv-nth-1-of-add-to-*sp-when-compatibility-modep

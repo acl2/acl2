@@ -72,6 +72,9 @@ use POSIX qw(strftime);
 use Cwd;
 use utf8;
 
+use lib "$RealBin/lib";
+use Cygwin_paths;
+use Bookscan;
 # Use ms-precision timing if we can load the Time::HiRes module,
 # otherwise gracefully default to second precision.
 # Note (Sol): I tried
@@ -95,7 +98,6 @@ sub mytime {
 
 binmode(STDOUT,':utf8');
 
-(do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
 sub trim
 {
@@ -270,35 +272,33 @@ sub write_whole_file
     close($fd);
 }
 
-sub parse_max_mem_arg
+sub scan_source_file
 {
-    # Try to parse the "..." part of (set-max-mem ...), return #GB needed
     my $filename = shift;
-    my $arg = shift;
-    my $ret = 0;
+    my $events = scan_src_run($filename);
+    my $max_mem = 0;
+    my $max_time = 0;
+    my @includes = ();
+    my @pbs = ();
+    foreach my $event (@$events) {
+	my $type = shift @$event;
+	if ($type eq set_max_mem_event) {
+	    $max_mem = $event->[0];
+	} elsif ($type eq set_max_time_event) {
+	    $max_time = $event->[0];
+	} elsif ($type eq include_book_event) {
+	    (my $book, my $dir, my $noport) = @$event;
+	    if (! $noport) {
+		push (@includes, [$book, $dir]);
+	    }
+	} elsif ($type eq pbs_event) {
+	    push @pbs, $event->[0];
+	}
+    }
 
-    if ($arg =~ m/\(\* ([0-9]+) \(expt 2 30\)\)/) {
-	# (* n (expt 2 30)) is n gigabytes
-	$ret = $1;
-    }
-    elsif ($arg =~ m/\(\* \(expt 2 30\) ([0-9]+)\)/) {
-	# (* (expt 2 30) n) is n gigabytes
-	$ret = $1;
-    }
-    elsif ($arg =~ m/^\(expt 2 ([0-9]+)\)*$/) {       # Example: arg is (expt 2 36))
-	my $expt  = $1;                               # 36
-	my $rexpt = ($expt > 30) ? ($expt - 30) : 0;  # 6  (but at least 0 in general)
-	$ret      = 2 ** $rexpt;                      # 64 (e.g., 2^6)
-    }
-    else {
-	print "Warning in $filename: skipping unsupported set-max-mem line: $arg\n";
-	print "Currently supported forms:\n";
-	print "  - (set-max-mem (expt 2 k))\n";
-	print "  - (set-max-mem (* n (expt 2 30)))\n";
-	print "  - (set-max-mem (* (expt 2 30) n))\n";
-    }
-    return $ret;
+     return ( $max_mem, $max_time, \@includes, \@pbs );
 }
+
 
 sub extract_pbs_from_acl2file
 {
@@ -308,62 +308,12 @@ sub extract_pbs_from_acl2file
     #    ;PBS -l host=<my-host-name>
 
     my $filename = shift;
-    my @pbs = ();
-    open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
-    while(<$fd>) {
-	my $line = $_;
-	chomp($line);
-	if ($line =~ m/^;PBS (.*)$/)
-	{
-	    push(@pbs, $1);
-	}
-    }
-    close($fd);
+    (my $max_mem, my $max_time, my $includes, my $pbs) = scan_source_file($filename);
+    return $pbs;
 
-    return \@pbs;
 }
 
-sub scan_source_file
-{
-    my $filename = shift;
-    my $max_mem = 0;
-    my $max_time = 0;
-    my @includes = ();
-    my @pbs = ();
-    open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
-    while(<$fd>) {
-	my $line = $_;
-	chomp($line);
-	if ($line =~ m/^[^;]*\((?:acl2::)?set-max-mem (.*)\)/)
-	{
-	    $max_mem = parse_max_mem_arg($filename, $1);
-	}
-	elsif ($line =~ m/^[^;]*\((?:acl2::)?set-max-time ([0-9]*)\)/)
-	{
-	    $max_time = $1;
-	}
-	elsif ($line =~ m/^[^;]*\((?:acl2::)?include-book[\s]*"([^"]*)"(?:.*:dir[\s]*:([^\s)]*))?(.*)/i)
-	{
-	    # We allow "no_port" in a comment after the include book to prevent
-	    # us from loading this book's .port file.  Note if we ever use this
-	    # collection of includes for anything other than determining what
-	    # port files to load, we should revisit this.
-	    my $book = $1;
-	    my $dir = $2;
-	    my $remainder = $3;
-	    if (! ($remainder =~ m/no[_-]port/i)) {
-		push (@includes, [$1, $2]);
-	    }
-	}
-	elsif ($line =~ m/^;PBS (.*)$/)
-	{
-	    push (@pbs, $1);
-	}
-    }
-    close($fd);
 
-     return ( $max_mem, $max_time, \@includes, \@pbs );
-}
 
 sub maybe_switch_to_tempdir
 {

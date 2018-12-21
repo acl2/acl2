@@ -112,9 +112,9 @@ Decided to leave out for now because
 
 #| 
 
-PETE: I'm sure there was a good reason for these rules but I am
-leaving them out for now since I think that they shouldn't be needed
-and they can slow things down.
+PETE: See if there is a way to get rid of these rules.
+
+|#
 
 (defthm natp-implies-acl2-numberp
   (implies (natp x)
@@ -150,7 +150,6 @@ and they can slow things down.
   (implies (integerp x)
            (rationalp x))
   :rule-classes ((:rewrite)))
-|#
 
 (defthm numerator-1-decreases
   (implies (rationalp n) 

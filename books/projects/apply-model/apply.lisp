@@ -2190,6 +2190,9 @@
 
   (declare (xargs :guard (symbol-listp names)))
   (cond ((endp names) nil)
+        ((assoc-eq (car names)
+                   *badge-prim-falist*) ; primitives don't have warrants
+         (warrant-fn (cdr names)))
         (t (cons (list (warrant-name (car names)))
                  (warrant-fn (cdr names))))))
 

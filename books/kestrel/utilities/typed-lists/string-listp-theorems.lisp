@@ -23,4 +23,4 @@
 
   (defrule string-listp-of-remove-duplicates-equal
     (equal (string-listp (remove-duplicates-equal x))
-           (string-listp (list-fix x)))))
+           (string-listp (true-list-fix x)))))

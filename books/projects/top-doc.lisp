@@ -37,4 +37,5 @@
    (include-projects-doc)))
 
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/projects/" (cdr (assoc :from x))))
+ (or (str::strprefixp "[books]/projects/" (cdr (assoc :from x)))
+     (equal "[books]/tools/defsum.lisp" (cdr (assoc :from x)))))

@@ -303,6 +303,10 @@
        (<= (+ (expo x) (bias f)) 0)
        (exactp x (+ (1- (prec f)) (bias f) (expo x)))))
 
+(defthmd drepp-exactp
+  (implies (drepp x f)
+           (exactp x (prec f))))
+
 (defund dencode (x f)
   (declare (xargs :guard (drepp x f)))
   (cat (if (= (sgn x) 1) 0 1)
@@ -329,6 +333,10 @@
   (implies (drepp x f)
            (equal (ddecode (dencode x f) f)
                   x)))
+
+(defthmd drepp<spn
+  (implies (drepp x f)
+           (< (abs x) (spn f))))
 
 ;; Smallest positive denormal:
 

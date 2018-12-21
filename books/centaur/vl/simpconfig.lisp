@@ -151,6 +151,14 @@
     booleanp :default t
     "Make a fatal warning when a nonexistent parameter is overridden by a module instance.")
 
+   (defer-argresolve
+     booleanp :default nil
+     "Don't run the argresolve transform before elaborate; instead, do it once
+      the parameters for the given module are resolved.  This may avoid errors
+      when a module conditionally instantiates another module that hasn't been
+      found, but the condition under which it instantiates that module is never
+      satisfied.")
+
    (suppress-fatal-warning-types
     symbol-listp :default nil
     "Treat the listed warnings as non-fatal during vl-design-propagate-errors.

@@ -819,9 +819,9 @@
                     (rassoc-equal val alst))
                (natp (car (rassoc-equal val alst))))))
 
-   (defthm count-alistp-of-delete-assoc-equal
+   (defthm count-alistp-of-remove1-assoc-equal
      (implies (count-alistp alst)
-              (count-alistp (delete-assoc-equal key alst)))))
+              (count-alistp (remove1-assoc-equal key alst)))))
   :returns
   (cids nat-listp :hyp :guard)
 
@@ -831,17 +831,17 @@
       (if (equal pair nil)
           nil
         (cons (car pair)
-              (all-keys val (delete-assoc-equal
+              (all-keys val (remove1-assoc-equal
                              (car pair)
                              alst))))))
 
   ///
 
-  (defthm delete-assoc-equal-and-subset-equal
-    (subsetp-equal (delete-assoc-equal val alst) alst))
+  (defthm remove1-assoc-equal-and-subset-equal
+    (subsetp-equal (remove1-assoc-equal val alst) alst))
 
-  (defthm strip-cars-of-delete-assoc-equal-and-subset-equal
-    (subsetp-equal (strip-cars (delete-assoc-equal val alst))
+  (defthm strip-cars-of-remove1-assoc-equal-and-subset-equal
+    (subsetp-equal (strip-cars (remove1-assoc-equal val alst))
                    (strip-cars alst)))
 
   (defthmd all-keys-returns-nil-when-value-not-found-in-alist
@@ -882,15 +882,15 @@
   ;;            :in-theory (e/d (acl2::<-ordered-p nat-listp) ()))))
 
   ;; (local
-  ;;  (defthm remove-equal-and-strip-cars-of-delete-assoc-equal
+  ;;  (defthm remove-equal-and-strip-cars-of-remove1-assoc-equal
   ;;    (implies (no-duplicatesp-equal (strip-cars alst))
-  ;;             (equal (strip-cars (delete-assoc-equal key alst))
+  ;;             (equal (strip-cars (remove1-assoc-equal key alst))
   ;;                    (remove-equal key (strip-cars alst))))))
 
-  ;; (defthm <-ordered-p-after-delete-assoc-equal
+  ;; (defthm <-ordered-p-after-remove1-assoc-equal
   ;;   (implies (and (acl2::<-ordered-p (strip-cars alst))
   ;;                 (no-duplicatesp-equal (strip-cars alst)))
-  ;;            (acl2::<-ordered-p (strip-cars (delete-assoc-equal key alst))))
+  ;;            (acl2::<-ordered-p (strip-cars (remove1-assoc-equal key alst))))
   ;;   :hints (("Goal"
   ;;            :do-not-induct t
   ;;            :use ((:instance <-ordered-p-after-remove-equal
@@ -898,30 +898,30 @@
   ;;                             (lst (strip-cars alst))))
   ;;            :in-theory (e/d () (<-ordered-p-after-remove-equal)))))
 
-  ;; (defthm nat-listp-of-strip-cars-after-delete-assoc-equal
+  ;; (defthm nat-listp-of-strip-cars-after-remove1-assoc-equal
   ;;   (implies (nat-listp (strip-cars alst))
-  ;;            (nat-listp (strip-cars (delete-assoc-equal key alst))))
+  ;;            (nat-listp (strip-cars (remove1-assoc-equal key alst))))
   ;;   :hints (("Goal"
   ;;            :in-theory (e/d (nat-listp) ()))))
 
 
   ;; (local
-  ;;  (defthm strip-cars-of-delete-assoc-equal-if-key-not-in-alist
+  ;;  (defthm strip-cars-of-remove1-assoc-equal-if-key-not-in-alist
   ;;    (implies (not (member-equal key (strip-cars alst)))
-  ;;             (equal (strip-cars (delete-assoc-equal key alst))
+  ;;             (equal (strip-cars (remove1-assoc-equal key alst))
   ;;                    (strip-cars alst)))))
 
   ;; (local
-  ;;  (defthm <-ordered-p-after-delete-assoc-equal-2
+  ;;  (defthm <-ordered-p-after-remove1-assoc-equal-2
   ;;    (implies (and (member-equal key (strip-cars alst))
   ;;                  (acl2::<-ordered-p (strip-cars alst)))
-  ;;             (acl2::<-ordered-p (strip-cars (delete-assoc-equal key alst))))
+  ;;             (acl2::<-ordered-p (strip-cars (remove1-assoc-equal key alst))))
   ;;    :hints (("Goal" :in-theory (e/d (acl2::<-ordered-p) ())))))
 
-  ;; (defthm <-ordered-p-after-delete-assoc-equal
+  ;; (defthm <-ordered-p-after-remove1-assoc-equal
   ;;   (implies (and (acl2::<-ordered-p (strip-cars alst))
   ;;                 (nat-listp (strip-cars alst)))
-  ;;            (acl2::<-ordered-p (strip-cars (delete-assoc-equal key alst))))
+  ;;            (acl2::<-ordered-p (strip-cars (remove1-assoc-equal key alst))))
   ;;   :hints (("Goal"
   ;;            :do-not-induct t
   ;;            :cases ((member-equal key (strip-cars alst)))

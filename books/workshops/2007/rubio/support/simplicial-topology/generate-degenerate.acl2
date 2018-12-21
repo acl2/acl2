@@ -1,5 +1,9 @@
 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defconst *abstract-proofs-exports* 
   '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
     first-of-proof last-of-proof steps-up steps-down steps-valley

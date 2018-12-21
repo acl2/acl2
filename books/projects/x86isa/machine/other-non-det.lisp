@@ -106,6 +106,12 @@ HW_RND_GEN)\).</p>"
 ; (depends-on "other-non-det-raw.lsp")
 
   (defttag :other-non-det)
-  (include-raw "other-non-det-raw.lsp"))
+  (include-raw "other-non-det-raw.lsp"
+               :on-compile-fail
+               (format t "[other-non-det-raw.lsp] Compilation failed with message ~a~%"
+                       condition)
+               :on-load-fail
+               (cw "[other-non-det-raw.lsp] Load failed; Moving On.~%")
+               :host-readtable t))
 
 ;; ======================================================================

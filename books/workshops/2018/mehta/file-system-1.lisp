@@ -101,7 +101,7 @@
       fs ;;error case, basically
     (if
         (atom (cdr hns))
-        (delete-assoc (car hns) fs)
+        (remove1-assoc (car hns) fs)
       (if
           (atom fs)
           nil
@@ -114,7 +114,7 @@
                   (and (null (cdr hns)) contents)
                 (cons (cons (car sd)
                             (l1-unlink (cdr hns) contents))
-                      (delete-assoc (car hns) fs))))))))))
+                      (remove1-assoc (car hns) fs))))))))))
 
 ; The problem with this definition of l1-wrchs is that it deletes a directory if
 ; it's found where a text file is expected
@@ -141,7 +141,7 @@
             (cons (cons (car sd)
                         (l1-wrchs (cdr hns)
                                   contents start text))
-                  (delete-assoc (car hns) fs))))))))
+                  (remove1-assoc (car hns) fs))))))))
 
 (defthm l1-wrchs-returns-fs-lemma-1
   (implies (and (consp (assoc-equal s fs))
@@ -150,7 +150,7 @@
 
 (defthm l1-wrchs-returns-fs-lemma-2
   (implies (l1-fs-p fs)
-           (l1-fs-p (delete-assoc-equal s fs))))
+           (l1-fs-p (remove1-assoc-equal s fs))))
 
 (defthm l1-wrchs-returns-fs-lemma-3
   (implies (and (consp fs) (l1-fs-p fs)
@@ -189,7 +189,7 @@
                       (if (stringp (cdr sd))
                           contents ;; file already exists, so leave fs unchanged
                         (l1-create (cdr hns) contents text)))
-                (delete-assoc (car hns) fs))
+                (remove1-assoc (car hns) fs))
           )))))
 
 (defthm l1-create-returns-fs
@@ -247,12 +247,12 @@
                  (let ((contents (cdr sd)))
                    (if (atom (cdr hns1))
                        (cons (cons (car sd) contents)
-                             (delete-assoc (car hns2) fs))
+                             (remove1-assoc (car hns2) fs))
                      (cons (cons (car sd)
                                  (induction-scheme (cdr hns1)
                                                    (cdr hns2)
                                                    contents))
-                           (delete-assoc (car hns2) fs))))))))))))
+                           (remove1-assoc (car hns2) fs))))))))))))
 
   (defthm
     l1-read-after-write-2-lemma-3
@@ -312,7 +312,7 @@
 ;;       (stringp (l1-stat hns1 fs)))
 ;;  (equal (l1-stat hns1 (l1-create hns2 fs text2)) (l1-stat hns1 fs)))
 ;; now, let's semi-formally write the cases we want.
-;; case 1: (atom hns1) - this will violate the hypothesis 
+;; case 1: (atom hns1) - this will violate the hypothesis
 ;; (stringp (l1-stat hns1 fs))
 ;; case 2: (and (consp hns1) (atom fs)) - this will violate the hypothesis
 ;; (stringp (l1-stat hns1 fs))
@@ -327,7 +327,7 @@
 ;; hypothesis (not (l1-stat hns2 fs))
 ;; case 6: (and (consp hns1) (consp fs) (consp (assoc (car hns1) fs))
 ;;              (consp hns2) (equal (car hns1) (car hns2))
-;;              (not (stringp (cdr (assoc (car hns1) fs))))) - in this case, 
+;;              (not (stringp (cdr (assoc (car hns1) fs))))) - in this case,
 ;; (l1-stat hns1 (l1-create hns2 fs text2)) =
 ;; (l1-stat (cdr hns1) (cdr (assoc (car hns1) (l1-create hns2 fs text2)))) =
 ;; (l1-stat (cdr hns1) (l1-create (cdr hns2) (cdr (assoc (car hns1) fs)) text2)) =
@@ -365,12 +365,12 @@
                  (let ((contents (cdr sd)))
                    (if (stringp (cdr sd))
                        (cons (cons (car sd) contents)
-                             (delete-assoc (car hns2) fs))
+                             (remove1-assoc (car hns2) fs))
                      (cons (cons (car sd)
                                  (induction-scheme (cdr hns1)
                                                    (cdr hns2)
                                                    contents))
-                           (delete-assoc (car hns2) fs))))))))))))
+                           (remove1-assoc (car hns2) fs))))))))))))
 
   (defthm
     l1-stat-after-create

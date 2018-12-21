@@ -4,7 +4,6 @@
  "../portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-
 (in-package "CGEN")
 
 (include-book "utilities")

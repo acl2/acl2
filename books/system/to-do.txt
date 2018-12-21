@@ -21,6 +21,24 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Perhaps split :doc hints into separate topics.}}
+
+This item was added by Matt K. but is based on correspondence
+initiated by Eric McCarthy.  Note that it could take some effort to do
+well, since a lot of other stuff might point to :doc hints that would
+then need to point somewhere else (e.g., in error messages).  Also,
+it's pretty simple to search for a specific hint type within that
+page, so this is perhaps not high priority [note from Matt: which is
+why I'm adding this item here rather than doing it myself].  Eric
+points out that with separate topics, "people can add more tips on
+using hints and examples without making the page unmanageably large."
+
+Perhaps a simple but adequate change would be for each kind of hint to
+have HINTS as its parent.  Then error messages could still point to
+:DOC hints, which would then show a clickable list of all hint types.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Improve argument names for set-guard-checking.}}
 
 Alessandro Coglio had the following suggestions for renaming arguments
