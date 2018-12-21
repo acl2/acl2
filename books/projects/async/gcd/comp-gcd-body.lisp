@@ -31,8 +31,8 @@
 
 ;; 1. DE Module Generator of COMP-GCD-BODY
 ;;
-;; COMP-GCD-BODY performs the GCD operation in one iteration.  It is constructed
-;; using the ripple-carry subtractor RIPPLE-SUB.
+;; COMP-GCD-BODY performs the GCD operation in one iteration.  It is
+;; constructed using the ripple-carry subtractor RIPPLE-SUB.
 
 (defconst *comp-gcd-body$go-num* 3)
 (defconst *comp-gcd-body$st-len* 3)
@@ -513,8 +513,8 @@
          (append (comp-gcd-body$op-map x)
                  (comp-gcd-body$op-map y))))
 
-;; The extraction function for COMP-GCD-BODY that extracts the future
-;; output sequence from the current state.
+;; The extraction function for COMP-GCD-BODY that extracts the future output
+;; sequence from the current state.
 
 (defund comp-gcd-body$extract (st data-width)
   (b* ((l0 (get-field *comp-gcd-body$l0* st))

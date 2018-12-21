@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -874,5 +874,5 @@
 
 ;; The multi-step input-output relationship
 
-(in-out-stream-lemma comp-v-or :op t :inv t)
+(in-out-stream-lemma comp-v-or :op comp-v-or$op :inv t)
 

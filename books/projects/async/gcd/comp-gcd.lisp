@@ -10,9 +10,9 @@
 
 (include-book "comp-gcd-body")
 (include-book "gcd-cond")
+(include-book "gcd-spec")
 (include-book "../merge")
 
-(local (include-book "gcd-alg"))
 (local (include-book "arithmetic-3/top" :dir :system))
 
 (local (in-theory (disable nth)))
@@ -561,211 +561,6 @@
 
 ;; 3. Single-Step-Update Property
 
-;; Specify the functionality of COMP-GCD, i.e., compute the greatest common
-;; divisor of two natural numbers (see comp-gcd$op).  Prove the correctness of
-;; comp-gcd$op.
-
-(encapsulate
-  ()
-
-  (local
-   (defthm v-<-correct-instance
-     (implies (and (natp data-width)
-                   (equal (len x) (* 2 data-width))
-                   (bvp x)
-                   (v-< nil t
-                        (rev (take data-width x))
-                        (rev (nthcdr data-width x))))
-              (< (v-to-nat (take data-width x))
-                 (v-to-nat (nthcdr data-width x))))
-     :hints (("Goal"
-              :use (:instance v-<-correct-1
-                              (a (take data-width x))
-                              (b (nthcdr data-width x)))
-              :in-theory (disable v-<-correct-1)))
-     :rule-classes :linear))
-
-  (local
-   (defthm v-to-nat-of-v-zp
-     (equal (v-zp x)
-            (equal (v-to-nat x) 0))
-     :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
-
-  (local
-   (defun my-count (x)
-     (nfix (+ (v-to-nat (take (/ (len x) 2) x))
-              (v-to-nat (nthcdr (/ (len x) 2) x))))))
-
-  (local
-   (defun comp-gcd$op (x)
-     (declare
-      (xargs :hints (("Goal"
-                      :in-theory (e/d ()
-                                      (v-not-take
-                                       v-not-nthcdr))))
-             :measure (my-count x)))
-     (b* ((data-width (/ (len x) 2))
-          (a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (cond
-        ((or (atom x)
-             (zp data-width)
-             (not (bvp x)))
-         x)
-        ((v-zp a) b)
-        ((v-zp b) a)
-        ((equal a b) a)
-        (t (comp-gcd$op
-            (v-if a<b
-                  (append a b-a)
-                  (append a-b b))))))))
-
-  (defun comp-gcd$op (x)
-    (declare (xargs :measure (:? x)))
-    (b* ((data-width (/ (len x) 2))
-         (a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (cond
-       ((or (atom x)
-            (zp data-width)
-            (not (bvp x)))
-        x)
-       ((v-zp a) b)
-       ((v-zp b) a)
-       ((equal a b) a)
-       (t (comp-gcd$op
-           (v-if a<b
-                 (append a b-a)
-                 (append a-b b)))))))
-
-  (defthm bvp-comp-gcd$op
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (bvp (comp-gcd$op x))))
-
-  (defthm len-comp-gcd$op
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (equal (len (comp-gcd$op x))
-                    (/ (len x) 2))))
-
-  (local
-   (defthm comp-gcd$op-lemma-aux-1
-     (implies (and (bv2p a b)
-                   (not (v-< nil t (rev a) (rev b)))
-                   (equal (v-to-nat a) 0))
-              (equal a b))
-     :hints (("Goal" :use (v-to-nat-equality
-                           v-<-correct-2)))
-     :rule-classes nil))
-
-  (local
-   (defthm comp-gcd$op-lemma-aux-2
-     (b* ((a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (implies (and (natp data-width)
-                     (equal data-width (/ (len x) 2))
-                     (bvp x))
-                (equal (comp-gcd$op (v-if a<b
-                                          (append a b-a)
-                                          (append a-b b)))
-                       (comp-gcd$op x))))
-     :hints (("Goal"
-              :induct (comp-gcd$op x)
-              :in-theory (e/d ()
-                              (v-to-nat-equality
-                               v-not-take
-                               v-not-nthcdr)))
-             ("Subgoal *1/3"
-              :use (:instance
-                    v-to-nat-equality
-                    (a (take data-width
-                             (v-adder t (take data-width x)
-                                      (v-not (nthcdr data-width x)))))
-                    (b (take data-width x))))
-             ("Subgoal *1/2"
-              :use ((:instance
-                     v-to-nat-equality
-                     (a (take data-width
-                              (v-adder t (nthcdr data-width x)
-                                       (v-not (take data-width x)))))
-                     (b (nthcdr data-width x)))
-                    (:instance
-                     comp-gcd$op-lemma-aux-1
-                     (a (take data-width x))
-                     (b (nthcdr data-width x))))))))
-
-  ;; Prove that comp-gcd$op correctly computes the greatest common divisor
-
-  (local
-   (defthm v-to-nat-of-COMP-GCD$OP-is-GCD-ALG
-     (implies (and (equal data-width (/ (len x) 2))
-                   (bvp x))
-              (equal (v-to-nat (comp-gcd$op x))
-                     (gcd-alg (v-to-nat (take data-width x))
-                              (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d ()
-                                     (v-not-take
-                                      v-not-nthcdr))))))
-
-  (in-theory (disable comp-gcd$op))
-
-  (defthmd comp-gcd$op-commutative
-    (implies (bv2p a b)
-             (equal (comp-gcd$op (append a b))
-                    (comp-gcd$op (append b a))))
-    :hints (("Goal"
-             :use (:instance v-to-nat-equality
-                             (a (comp-gcd$op (append a b)))
-                             (b (comp-gcd$op (append b a))))
-             :in-theory (e/d (gcd-alg-commutative)
-                             (v-to-nat-equality))))
-    :rule-classes ((:rewrite :loop-stopper ((a b)))))
-
-  (defthm comp-gcd$op-lemma
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (equal (comp-gcd$op (comp-gcd-body$op x))
-                    (comp-gcd$op x)))
-    :hints (("Goal"
-             :use (:instance comp-gcd$op-lemma-aux-2
-                             (data-width (/ (len x) 2)))
-             :in-theory (e/d (comp-gcd-body$op
-                              comp-gcd$op-commutative)
-                             (comp-gcd$op-lemma-aux-2)))))
-  )
-
-;; The operation of COMP-GCD over a data sequence
-
-(defun comp-gcd$op-map (x)
-  (if (atom x)
-      nil
-    (cons (comp-gcd$op (car x))
-          (comp-gcd$op-map (cdr x)))))
-
-(defthm len-of-comp-gcd$op-map
-  (equal (len (comp-gcd$op-map x))
-         (len x)))
-
-(defthm comp-gcd$op-map-of-append
-  (equal (comp-gcd$op-map (append x y))
-         (append (comp-gcd$op-map x) (comp-gcd$op-map y))))
-
 ;; The extraction function for COMP-GCD that extracts the future output
 ;; sequence from the current state.
 
@@ -774,7 +569,7 @@
        (l1 (get-field *comp-gcd$l1* st))
        (l2 (get-field *comp-gcd$l2* st))
        (body (get-field *comp-gcd$body* st)))
-    (comp-gcd$op-map
+    (gcd$op-map
      (append (extract-valid-data (list l1 l2 l0))
              (comp-gcd-body$extract body data-width)))))
 
@@ -876,7 +671,7 @@
 ;; avoids exploring the internal computation of COMP-GCD.
 
 (defund comp-gcd$extracted-step (inputs st data-width)
-  (b* ((data (comp-gcd$op (comp-gcd$data-in inputs data-width)))
+  (b* ((data (gcd$op (comp-gcd$data-in inputs data-width)))
        (extracted-st (comp-gcd$extract st data-width))
        (n (1- (len extracted-st))))
     (cond
@@ -921,6 +716,19 @@
      :hints (("Goal" :in-theory (enable get-field
                                         comp-gcd-body$data-in
                                         comp-gcd$body-inputs)))))
+
+  (local
+   (defthm gcd$op-of-comp-gcd-body$op
+     (implies (and (natp (/ (len x) 2))
+                   (bvp x))
+              (equal (gcd$op (comp-gcd-body$op x))
+                     (gcd$op x)))
+     :hints (("Goal"
+              :use (:instance gcd$op-lemma
+                              (data-width (/ (len x) 2)))
+              :in-theory (e/d (comp-gcd-body$op
+                               gcd$op-commutative)
+                              (gcd$op-lemma))))))
 
   (defthm comp-gcd$extracted-step-correct
     (b* ((next-st (comp-gcd$step inputs st data-width)))
@@ -1033,7 +841,7 @@
                             comp-gcd$valid-st
                             comp-gcd$inv
                             comp-gcd$extract
-                            comp-gcd$op
+                            gcd$op
                             comp-gcd$br-inputs
                             comp-gcd$out-act
                             comp-gcd$data-out)
@@ -1059,9 +867,9 @@
   (local
    (defthm comp-gcd$dataflow-correct-aux
      (implies (equal (append x y1)
-                     (append (comp-gcd$op-map seq) y2))
+                     (append (gcd$op-map seq) y2))
               (equal (append x y1 z)
-                     (append (comp-gcd$op-map seq)
+                     (append (gcd$op-map seq)
                              y2 z)))
      :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
                                      (associativity-of-append))))))
@@ -1078,7 +886,7 @@
        (equal (append final-extracted-st
                       (comp-gcd$out-seq
                        inputs-seq st data-width n))
-              (append (comp-gcd$op-map
+              (append (gcd$op-map
                        (comp-gcd$in-seq
                         inputs-seq st data-width n))
                       extracted-st))))
@@ -1098,7 +906,7 @@
        (equal (append final-extracted-st
                       (comp-gcd$netlist-out-seq
                        inputs-seq st netlist data-width n))
-              (append (comp-gcd$op-map
+              (append (gcd$op-map
                        (comp-gcd$netlist-in-seq
                         inputs-seq st netlist data-width n))
                       extracted-st))))

@@ -25,7 +25,7 @@
 
 (defun read-reg (reg)
   (declare (xargs :guard t))
-  reg)
+  (list-fix reg))
 
 ;; The write operation on shift registers is allowed to write only one bit at a
 ;; time at the most-significant-bit (msb) position.  More precisely, there are
@@ -232,14 +232,14 @@
   (case fn
     ((fd1 latch) 2)
     ((par-shift-reg32 shift-reg32) 32)
-    (otherwise   1)))
+    (otherwise 1)))
 
 (defun len-de-primp-apply (fn ins sts)
   (declare (xargs :guard (true-listp ins))
            (ignore ins sts))
   (case fn
     ((fd1 latch link-cntl par-shift-reg32 shift-reg32) 1)
-    (otherwise             0)))
+    (otherwise 0)))
 
 (defthm len-de-primp-apply-lemma
   (equal (len (de-primp-apply fn ins sts))
@@ -370,15 +370,14 @@
     (let* ((module (car netlist))
            (rest-netlist (cdr netlist)))
       (and
-       (consp module)
+       (module-syntax-okp module)
        (let ((module-name (car module)))
          (and (net-syntax-okp rest-netlist)
               (not (primp module-name))    ; Module name is not a primitive
               (not (assoc-eq module-name   ; nor previously defined module
-                             rest-netlist))
-              (module-syntax-okp module)))))))
+                             rest-netlist))))))))
 
-; Some facts about our netlist syntax.
+; Some facts about our netlist syntax
 
 (defthm net-syntax-okp-forward-to-symbol-alistp
   ;; For effeciency, this lemms before guard proof for NET-SYNTAX-OKP
@@ -664,8 +663,8 @@
                 (md-outs    (md-outs  module))
                 (md-sts     (md-sts   module))
                 (md-occs    (md-occs  module))
-                (wire-alist (pairs md-ins ins))
-                (sts-alist  (pairs md-sts sts)))
+                (wire-alist (pairlis$ md-ins ins))
+                (sts-alist  (pairlis$ md-sts sts)))
            (assoc-eq-values
             md-outs
             (se-occ md-occs wire-alist sts-alist
@@ -685,7 +684,7 @@
             (ins       (assoc-eq-values occ-ins wire-alist))
             (sts       (assoc-eq-value  occ-name sts-alist))
             (new-vals  (se occ-fn ins sts netlist))
-            (new-alist (pairs occ-outs new-vals))
+            (new-alist (pairlis$ occ-outs new-vals))
             (new-wire-alist
              (append new-alist wire-alist)))
        (se-occ (cdr occs) new-wire-alist sts-alist netlist)))))
@@ -704,8 +703,8 @@
          (let* ((md-ins      (md-ins   module))
                 (md-sts      (md-sts   module))
                 (md-occs     (md-occs  module))
-                (wire-alist  (pairs    md-ins ins))
-                (sts-alist   (pairs    md-sts sts))
+                (wire-alist  (pairlis$ md-ins ins))
+                (sts-alist   (pairlis$ md-sts sts))
                 (new-netlist (delete-to-eq fn netlist)))
            (assoc-eq-values
             md-sts
@@ -754,8 +753,8 @@
                               (md-outs (md-outs module))
                               (md-sts (md-sts module))
                               (md-occs (md-occs module))
-                              (wire-alist (pairs md-ins ins))
-                              (sts-alist (pairs md-sts sts)))
+                              (wire-alist (pairlis$ md-ins ins))
+                              (sts-alist (pairlis$ md-sts sts)))
                          (assoc-eq-values
                           md-outs
                           (se-occ md-occs wire-alist sts-alist
@@ -775,7 +774,7 @@
            (ins       (assoc-eq-values occ-ins  wire-alist))
            (sts       (assoc-eq-value  occ-name sts-alist))
            (new-vals  (se occ-fn ins sts netlist))
-           (new-alist (pairs occ-outs new-vals))
+           (new-alist (pairlis$ occ-outs new-vals))
            (new-wire-alist
             (append new-alist wire-alist)))
       (se-occ-induct (cdr occs) new-wire-alist sts-alist netlist))))
@@ -812,18 +811,16 @@
      :in-theory (disable symbol-alistp occ-outs
                          occ-arity-okp occs-arity-okp)))))
 
+(local
+ (defthm symbol-listp=>true-listp
+   (implies (symbol-listp x)
+            (true-listp x))))
+
 (verify-guards se
   ;;:guard-debug t
-  :hints
-  (("Goal" :in-theory
-    (e/d ()
-         (not
-          occ-accessors-defuns
-          md-accessors-defuns
-          md-occs md-sts)))
-   ("Subgoal 2"
-    :use net-syntax-okp->module-syntax-okp))
-  :otf-flg t)
+  :hints (("Goal" :in-theory (e/d ()
+                                  ()))
+          ("Subgoal 2" :use net-syntax-okp->module-syntax-okp)))
 
 (make-event
  `(progn
@@ -913,8 +910,8 @@
                        (let* ((md-ins      (md-ins   module))
                               (md-sts      (md-sts   module))
                               (md-occs     (md-occs  module))
-                              (wire-alist  (pairs    md-ins ins))
-                              (sts-alist   (pairs    md-sts sts))
+                              (wire-alist  (pairlis$ md-ins ins))
+                              (sts-alist   (pairlis$ md-sts sts))
                               (new-netlist (delete-to-eq fn netlist)))
                          (assoc-eq-values
                           md-sts
@@ -987,13 +984,9 @@
                   alist))
   :hints (("Goal" :in-theory (enable update-alist))))
 
-(verify-guards
-  de
-  :hints
-  (("Goal"
-    :in-theory (enable occ-name assoc-eq-value))
-   ("Subgoal 2"
-    :use net-syntax-okp->module-syntax-okp)))
+(verify-guards de
+  :hints (("Goal" :in-theory (enable occ-name assoc-eq-value))
+          ("Subgoal 2" :use net-syntax-okp->module-syntax-okp)))
 
 (make-event
  `(progn

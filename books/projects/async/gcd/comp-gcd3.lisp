@@ -10,8 +10,7 @@
 
 (include-book "comp-gcd-cond")
 (include-book "gcd-body")
-
-(local (include-book "gcd-alg"))
+(include-book "gcd-spec")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -544,175 +543,6 @@
 
 ;; 3. Single-Step-Update Property
 
-;; Specify the functionality of COMP-GCD3, i.e., computing the greatest common
-;; divisor of two natural numbers (see comp-gcd3$op).  Prove the correctness of
-;; comp-gcd3$op.
-
-(encapsulate
-  ()
-
-  (local
-   (defthm v-<-correct-instance
-     (implies (and (natp data-width)
-                   (equal (len x) (* 2 data-width))
-                   (bvp x)
-                   (v-< nil t
-                        (rev (take data-width x))
-                        (rev (nthcdr data-width x))))
-              (< (v-to-nat (take data-width x))
-                 (v-to-nat (nthcdr data-width x))))
-     :hints (("Goal"
-              :use (:instance v-<-correct-1
-                              (a (take data-width x))
-                              (b (nthcdr data-width x)))
-              :in-theory (disable v-<-correct-1)))
-     :rule-classes :linear))
-
-  (local
-   (defthm v-to-nat-of-v-zp
-     (equal (v-zp x)
-            (equal (v-to-nat x) 0))
-     :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
-
-  (local
-   (defun my-count (x)
-     (nfix (+ (v-to-nat (take (/ (len x) 2) x))
-              (v-to-nat (nthcdr (/ (len x) 2) x))))))
-
-  (local
-   (defun comp-gcd3$op (x)
-     (declare
-      (xargs :hints (("Goal"
-                      :in-theory (e/d ()
-                                      (v-not-take
-                                       v-not-nthcdr))))
-             :measure (my-count x)))
-     (b* ((data-width (/ (len x) 2))
-          (a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (cond
-        ((or (atom x)
-             (zp data-width)
-             (not (bvp x)))
-         x)
-        ((v-zp a) b)
-        ((v-zp b) a)
-        ((equal a b) a)
-        (t (comp-gcd3$op
-            (v-if a<b
-                  (append a b-a)
-                  (append a-b b))))))))
-
-  (defun comp-gcd3$op (x)
-    (declare (xargs :measure (:? x)))
-    (b* ((data-width (/ (len x) 2))
-         (a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (cond
-       ((or (atom x)
-            (zp data-width)
-            (not (bvp x)))
-        x)
-       ((v-zp a) b)
-       ((v-zp b) a)
-       ((equal a b) a)
-       (t (comp-gcd3$op
-           (v-if a<b
-                 (append a b-a)
-                 (append a-b b)))))))
-
-  (local
-   (defthm comp-gcd3$op-lemma-aux
-     (implies (and (bv2p a b)
-                   (not (v-< nil t (rev a) (rev b)))
-                   (equal (v-to-nat a) 0))
-              (equal a b))
-     :hints (("Goal" :use (v-to-nat-equality
-                           v-<-correct-2)))
-     :rule-classes nil))
-
-  (defthm comp-gcd3$op-lemma
-    (b* ((a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (implies (and (natp data-width)
-                    (equal data-width (/ (len x) 2))
-                    (bvp x))
-               (equal (comp-gcd3$op (v-if a<b
-                                          (append a b-a)
-                                          (append a-b b)))
-                      (comp-gcd3$op x))))
-    :hints (("Goal"
-             :induct (comp-gcd3$op x)
-             :in-theory (e/d ()
-                             (v-to-nat-equality
-                              v-not-take
-                              v-not-nthcdr)))
-            ("Subgoal *1/3"
-             :use (:instance
-                   v-to-nat-equality
-                   (a (take data-width
-                            (v-adder t (take data-width x)
-                                     (v-not (nthcdr data-width x)))))
-                   (b (take data-width x))))
-            ("Subgoal *1/2"
-             :use ((:instance
-                    v-to-nat-equality
-                    (a (take data-width
-                             (v-adder t (nthcdr data-width x)
-                                      (v-not (take data-width x)))))
-                    (b (nthcdr data-width x)))
-                   (:instance
-                    comp-gcd3$op-lemma-aux
-                    (a (take data-width x))
-                    (b (nthcdr data-width x)))))))
-
-  ;; Prove that comp-gcd3$op correctly computes the greatest common divisor
-
-  (local
-   (defthm v-to-nat-of-COMP-GCD3$OP-is-GCD-ALG
-     (implies (and (equal data-width (/ (len x) 2))
-                   (bvp x))
-              (equal (v-to-nat (comp-gcd3$op x))
-                     (gcd-alg (v-to-nat (take data-width x))
-                              (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d ()
-                                     (v-not-take
-                                      v-not-nthcdr))))))
-
-  (in-theory (disable comp-gcd3$op))
-  )
-
-;; The operation of COMP-GCD3 over a data sequence
-
-(defun comp-gcd3$op-map (x)
-  (if (atom x)
-      nil
-    (cons (comp-gcd3$op (car x))
-          (comp-gcd3$op-map (cdr x)))))
-
-(defthm len-of-comp-gcd3$op-map
-  (equal (len (comp-gcd3$op-map x))
-         (len x)))
-
-(defthm comp-gcd3$op-map-of-append
-  (equal (comp-gcd3$op-map (append x y))
-         (append (comp-gcd3$op-map x) (comp-gcd3$op-map y))))
-
 ;; The extraction function for COMP-GCD3 that extracts the future output
 ;; sequence from the current state.
 
@@ -721,7 +551,7 @@
        (l1 (get-field *comp-gcd3$l1* st))
        (l2 (get-field *comp-gcd3$l2* st))
        (br (get-field *comp-gcd3$br* st)))
-    (comp-gcd3$op-map
+    (gcd$op-map
      (append (extract-valid-data (list l1 l2 l0))
              (comp-gcd-cond$extract br)))))
 
@@ -945,7 +775,7 @@
 ;; avoids exploring the internal computation of COMP-GCD3.
 
 (defund comp-gcd3$extracted-step (inputs st data-width)
-  (b* ((data (comp-gcd3$op (comp-gcd3$data-in inputs data-width)))
+  (b* ((data (gcd$op (comp-gcd3$data-in inputs data-width)))
        (extracted-st (comp-gcd3$extract st))
        (n (1- (len extracted-st))))
     (cond
@@ -981,8 +811,8 @@
                      (equal (len l1.d) (* 2 data-width))
                      (bvp (strip-cars l1.d)))
                 (equal
-                 (comp-gcd3$op (gcd-body$data-out body-inputs data-width))
-                 (comp-gcd3$op (strip-cars l1.d)))))
+                 (gcd$op (gcd-body$data-out body-inputs data-width))
+                 (gcd$op (strip-cars l1.d)))))
      :hints (("Goal"
               :do-not-induct t
               :in-theory (e/d (get-field
@@ -1109,7 +939,7 @@
    (defthm comp-gcd3$extract-lemma-aux-2
      (implies (and (comp-gcd-cond$valid-st st data-width)
                    (comp-gcd-cond$out-act0 inputs st data-width))
-              (equal (comp-gcd3$op
+              (equal (gcd$op
                       (comp-gcd-cond$data1-out inputs st data-width))
                      (comp-gcd-cond$data0-out inputs st data-width)))
      :hints (("Goal" :in-theory (enable branch$act0
@@ -1124,7 +954,7 @@
                                         comp-gcd-cond$out-act0
                                         comp-gcd-cond$data0-out
                                         comp-gcd-cond$data1-out
-                                        comp-gcd3$op)))))
+                                        gcd$op)))))
 
   (defthm comp-gcd3$extract-lemma
     (implies (and (comp-gcd3$valid-st st data-width)
@@ -1158,5 +988,5 @@
 
 ;; The multi-step input-output relationship
 
-(in-out-stream-lemma comp-gcd3 :op t :inv t)
+(in-out-stream-lemma comp-gcd3 :op gcd$op :inv t)
 
