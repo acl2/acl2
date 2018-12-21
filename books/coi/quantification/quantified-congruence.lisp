@@ -180,7 +180,7 @@
          (relation-rule               (acl2::add-suffix relation-witness   "-STRENGTHEN"))
          (relation-witness-canary     (acl2::add-suffix relation-witness   "-CANARY"))
          (relation                    `(lambda (,a ,@args) ,relation))
-         (relation                    (if (equal quantifier :exists) relation `(not (,relation ,@args))))
+         (relation                    (if (equal quantifier :exists) relation `(lambda (,a ,@args) (not (,relation ,a ,@args)))))
          (args1                       (number-symbol-list args name))
          (hyps-x                      `(lambda (x y) (,hyps ,@(into-args args 'x) ,@(into-args args 'y) ,@free)))
          (hyps                        (with-guard-checking :none (ec-call (beta-reduce-lambda-term `(,hyps ,@args ,@args1 ,@free)))))
