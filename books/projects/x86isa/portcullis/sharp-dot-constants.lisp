@@ -43,6 +43,8 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+; Some functions, used in this file and elsewhere in the formal model:
+
 ; Measure for log-2 below.
 (defun log-2-measure (x)
   (cond ((or (not (natp x))
@@ -71,6 +73,15 @@
       nil
     (cons start
           (increasing-list (+ by start) by (1- count)))))
+
+; Maximum of a list of numbers (NIL if the list is empty).
+(defun max-list (l)
+  (if (or (endp l)
+          (equal (len l) 1))
+      (car l)
+    (if (> (car l) (max-list (cdr l)))
+        (car l)
+      (max-list (cdr l)))))
 
 ;; ======================================================================
 ;; Some expt constants:
@@ -300,15 +311,6 @@
 (defconst *flg-names*
   (list *cf* *pf* *af* *zf* *sf* *tf* *if* *df*
         *of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
-
-; Maximum of a list of numbers (NIL if the list is empty).
-(defun max-list (l)
-  (if (or (endp l)
-          (equal (len l) 1))
-      (car l)
-    (if (> (car l) (max-list (cdr l)))
-        (car l)
-      (max-list (cdr l)))))
 
 (defconst *max-flg-index*
   (max-list *flg-names*))
