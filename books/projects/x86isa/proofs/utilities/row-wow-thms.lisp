@@ -279,7 +279,7 @@
                                       (loghead 2 (logtail 12 rflags)))
                    (loghead 2 (logtail 12 rflags)))
      :g-bindings
-     `((rflags (:g-number ,(gl-int 0 1 33))))))
+     `((rflags (:g-number ,(increasing-list 0 1 33))))))
 
   (defthm flgi-!flgi
     (implies (and (member i1 *flg-names*)

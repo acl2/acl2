@@ -63,14 +63,14 @@
 
 ; This function returns the list
 ; (start (+ by start) (+ (* 2 by) start) ... (+ (* (1- count) by) start)).
-(defun gl-int (start by count)
+(defun increasing-list (start by count)
   (declare (xargs :guard (and (natp start)
                               (natp by)
                               (natp count))))
   (if (zp count)
       nil
     (cons start
-          (gl-int (+ by start) by (1- count)))))
+          (increasing-list (+ by start) by (1- count)))))
 
 ;; ======================================================================
 ;; Some expt constants:
@@ -700,7 +700,7 @@
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
                      *R8* *R9* *R10* *R11* *R12* *R13* *R14* *R15*
                      *64-bit-general-purpose-registers-len*)
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -709,7 +709,7 @@
   ;; These are the same as *RAX* etc. above:
   `(defconsts (*EAX* *ECX* *EDX* *EBX* *ESP* *EBP* *ESI* *EDI*
                      *R8d* *R9d* *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
-     ,(b* ((lst (gl-int 0 1 15))
+     ,(b* ((lst (increasing-list 0 1 15))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -721,7 +721,7 @@
   ;; is 1:
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
                     *segment-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 6))
+     ,(b* ((lst (increasing-list 0 1 6))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -729,7 +729,7 @@
 
   ;; Specific to the formal model:
   `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
+     ,(b* ((lst (increasing-list 0 1 2))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -737,7 +737,7 @@
 
   ;; Specific to the formal model:
   `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
+     ,(b* ((lst (increasing-list 0 1 2))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -764,7 +764,7 @@
                *CR9* *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
                *XCR0* ; TODO: separate this from the *CR...*s
                *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 17))
+     ,(b* ((lst (increasing-list 0 1 17))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -781,7 +781,7 @@
                *DR6* ;; dr6
                *DR7* ;; dr7
                *debug-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -795,7 +795,7 @@
   `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
                      *fp-data-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -808,7 +808,7 @@
   `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
                      *mmx-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -820,7 +820,7 @@
                       *XMM12* *XMM13* *XMM14* *XMM15*
                       *xmm-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -832,7 +832,7 @@
                       *YMM12* *YMM13* *YMM14* *YMM15*
                       *ymm-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -851,7 +851,7 @@
                         *ZMM26* *ZMM27* *ZMM28* *ZMM29* *ZMM30*
                         *ZMM31*)
 
-       ,(b* ((lst (gl-int 0 1 31))
+       ,(b* ((lst (increasing-list 0 1 31))
              (len  (len lst)))
           (cons 'mv (append lst (list len)))))))
 

@@ -147,7 +147,7 @@
              (power-of-2-p x))
    :concl (equal (logand x (+ -1 x)) 0)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-2
@@ -156,7 +156,7 @@
              (not (power-of-2-p x)))
    :concl (equal (equal (logand x (+ -1 x)) 0) nil)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-3
@@ -166,7 +166,7 @@
                          (loghead 64 (+ -1 x)))
                  0)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-4
@@ -177,7 +177,7 @@
                               (loghead 64 (+ -1 x)))
                       0))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-1
@@ -185,21 +185,21 @@
    :concl (equal (loghead 8 (logior 1 (logext 64 (bitops::logsquash 8 (+ -1 x)))))
                  1)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-2
    :hyp (signed-byte-p 64 x)
    :concl (signed-byte-p 64 (logior 1 (bitops::logsquash 8 (logext 64 (+ -1 x)))))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-3
    :hyp (signed-byte-p 64 x)
    :concl (signed-byte-p 64 (bitops::logsquash 8 (logext 64 (+ -1 x))))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 ;; ======================================================================
 
