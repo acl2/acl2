@@ -168,9 +168,6 @@ public final class Acl2LambdaExpression extends Acl2Function {
 
     /**
      * Returns a printable representation of this ACL2 lambda expression.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the parameters or body includes "unusual" characters.
      */
     @Override
     public String toString() {

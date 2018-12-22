@@ -101,9 +101,6 @@ public final class Acl2Variable extends Acl2Term {
 
     /**
      * Returns a printable representation of this ACL2 variable.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the variable includes "unusual" characters.
      */
     @Override
     public String toString() {

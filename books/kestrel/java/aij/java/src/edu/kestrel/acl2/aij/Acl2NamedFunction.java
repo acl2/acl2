@@ -111,9 +111,6 @@ public final class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Returns a printable representation of this ACL2 named function.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the function name includes "unusual" characters.
      */
     @Override
     public String toString() {
