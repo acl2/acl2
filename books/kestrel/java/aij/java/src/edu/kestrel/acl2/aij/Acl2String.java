@@ -238,8 +238,9 @@ public final class Acl2String extends Acl2Value {
     /**
      * Returns a printable representation of this ACL2 string.
      * The returned Java string is preceded and followed by double quotes.
-     * Each character is kept as is if it is visible and not a backslash
-     * (i.e. its code is between 33 and 126 inclusive, except 92);
+     * Each character is kept as is if it is visible
+     * (i.e. its code is between 33 and 126 inclusive)
+     * and is not a backslash;
      * if it is a backslash, it is preceded by another backslash;
      * otherwise, it is turned into its hexadecimal code,
      * always as two digits, with lowercase letters,
@@ -252,9 +253,9 @@ public final class Acl2String extends Acl2Value {
         result.append('"');
         for (int i = 0; i < this.jstring.length(); ++i) {
             char jchar = this.jstring.charAt(i);
-            if (33 <= jchar && jchar <= 126 && jchar != 92) {
+            if (33 <= jchar && jchar <= 126 && jchar != '\\') {
                 result.append(jchar);
-            } else if (jchar == 92) {
+            } else if (jchar == '\\') {
                 result.append("\\\\");
             } else {
                 result.append("\\")
