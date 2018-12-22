@@ -34,7 +34,7 @@
 
 (defconst *comp-gcd-body2$prim-go-num* 2)
 (defconst *comp-gcd-body2$go-num* (+ *comp-gcd-body2$prim-go-num*
-                                    *serial-sub$go-num*))
+                                     *serial-sub$go-num*))
 (defconst *comp-gcd-body2$st-len* 4)
 
 (defun comp-gcd-body2$data-ins-len (data-width)
@@ -548,8 +548,8 @@
          (append (comp-gcd-body2$op-map x)
                  (comp-gcd-body2$op-map y))))
 
-;; The extraction function for COMP-GCD-BODY2 that extracts the future
-;; output sequence from the current state.
+;; The extraction function for COMP-GCD-BODY2 that extracts the future output
+;; sequence from the current state.
 
 (defund comp-gcd-body2$extract (st data-width)
   (b* ((l0 (get-field *comp-gcd-body2$l0* st))
@@ -742,8 +742,8 @@
           (sub-inputs (comp-gcd-body2$sub-inputs inputs st data-width)))
        (implies (fullp l2.s)
                 (not (serial-sub$out-act sub-inputs
-                                                sub
-                                                data-width))))
+                                         sub
+                                         data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         comp-gcd-body2$sub-inputs)))))
 

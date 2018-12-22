@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -155,29 +155,6 @@
   (implies (and (member e x)
                 (true-list-listp x))
            (true-listp e)))
-
-(defun pair-with-nil (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (cons (cons (car x) nil)
-          (pair-with-nil (cdr x)))))
-
-(defun pairs (x y)
-  (declare (xargs :guard t))
-  (if (atom x)
-      nil
-    (if (atom y)
-        (pair-with-nil x)
-      (cons (cons (car x)
-                  (car y))
-            (pairs (cdr x) (cdr y))))))
-
-(defthm pairs-is-pairlis$
-  (equal (pairs    x y)
-         (pairlis$ x y)))
-
-(in-theory (disable pairs))
 
 ;; Some facts about pairlis$
 
