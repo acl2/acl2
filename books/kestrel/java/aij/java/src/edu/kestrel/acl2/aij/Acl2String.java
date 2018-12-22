@@ -237,12 +237,33 @@ public final class Acl2String extends Acl2Value {
 
     /**
      * Returns a printable representation of this ACL2 string.
-     * This should be improved to return something non-confusing
-     * when the string includes "unusual" characters.
+     * The returned Java string is preceded and followed by double quotes.
+     * Each character is kept as is if it is visible and not a backslash
+     * (i.e. its code is between 33 and 126 inclusive, except 92);
+     * if it is a backslash, it is preceded by another backslash;
+     * otherwise, it is turned into its hexadecimal code,
+     * always as two digits, with lowercase letters,
+     * preceded by backslash.
+     * This scheme should ensure that ACL2 strings are always printed clearly.
      */
     @Override
     public String toString() {
-        return this.jstring;
+        StringBuilder result = new StringBuilder();
+        result.append('"');
+        for (int i = 0; i < this.jstring.length(); ++i) {
+            char jchar = this.jstring.charAt(i);
+            if (33 <= jchar && jchar <= 126 && jchar != 92) {
+                result.append(jchar);
+            } else if (jchar == 92) {
+                result.append("\\\\");
+            } else {
+                result.append("\\")
+                        .append(Integer.toHexString(jchar / 16))
+                        .append(Integer.toHexString(jchar % 16));
+            }
+        }
+        result.append('"');
+        return new String(result);
     }
 
     /**
