@@ -307,6 +307,8 @@
  64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
  current stack segment.</p>
 
+ <p>Improved and extended some documentation.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
