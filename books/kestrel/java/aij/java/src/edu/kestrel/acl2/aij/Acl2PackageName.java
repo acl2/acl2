@@ -108,8 +108,7 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * if every character in the package name is a letter, digit, or a dash,
      * and the first character is not a digit.
      * otherwise, this Java string is preceded and followed by a vertical bar,
-     * and any backslash (code 92) or vertical bar (code 124)
-     * in the package name
+     * and any backslash or vertical bar in the package name
      * is preceded by backslash.
      * This scheme should ensure that
      * ACL2 package names are always printed clearly.
@@ -118,6 +117,8 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * are more stringent than in ACL2;
      * future versions of this method may relax those conditions
      * and match ACL2's conditions more closely.
+     * This scheme should ensure that ACL2 package names
+     * are always printed clearly.
      */
     @Override
     public String toString() {
@@ -136,10 +137,10 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
             else
                 result.append(jchar);
         }
-        if (noBars)
-            return new String(result);
-        result.insert(0, '|');
-        result.append('|');
+        if (!noBars) {
+            result.insert(0, '|');
+            result.append('|');
+        }
         return new String(result);
     }
 
