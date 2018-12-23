@@ -275,37 +275,6 @@ ERC>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Fix profile book for sbcl.}}
-
-This could be a good one for Lisp hackers.
-
-The following is on linux -- I should try it on a Mac.  Maybe SBCL has
-some thread-local settings that I could increase.
-
-The error shown below even happens when starting SBCL with:
---dynamic-space-size 240000 --control-stack-size 640
-
-acl2s
-(include-book "centaur/memoize/old/profile" :dir :system)
-(profile-all) ; goes into ldb
-
-The error (using the large settings above, but the error is
-essentially the same either way):
-
-ACL2 !>(profile-all)
-
-ACL2 Observation in MEMOIZE-CALL-ARRAY-GROW:  Now reinitializing memoization
-structures.  This will erase saved values and statistics.
-Thread local storage exhausted.
-fatal error encountered in SBCL pid 14538(tid 0x7ffff7fd4740):
-%PRIMITIVE HALT called; the party is over.
-
-
-Welcome to LDB, a low-level debugger for the Lisp runtime environment.
-ldb>
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Maybe support custom printing for table guard violations.}}
 
 I asked in an ACL2 seminar (12/4, I think), and nobody seemed to care
