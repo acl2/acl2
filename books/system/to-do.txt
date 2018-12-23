@@ -306,47 +306,6 @@ ldb>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Improve redundancy for verify-termination.}}
-
-[Warning: This one might be tricky.]
-
-Try the files below with:
-
-(certify-book "sub")
-(certify-book "foo")
-
-The include-book phase of the latter is an error, I think because the
-make-event expansion wasn't recorded in the first phase.  How should
-we deal with this?  Notice that if we replace the verify-termination with
-(defun foo (x) x), the problem goes away.  But adding layers of make-event,
-encapsulate, etc. didn't seem to help.
-
-ginger:~/temp% cat sub.lisp
-(in-package "ACL2")
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-ginger:~/temp% cat foo.lisp
-(in-package "ACL2")
-
-(local (include-book "sub"))
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-
-(defun bar (x)
-  (foo x))
-
-ginger:~/temp%
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Maybe support custom printing for table guard violations.}}
 
 I asked in an ACL2 seminar (12/4, I think), and nobody seemed to care
