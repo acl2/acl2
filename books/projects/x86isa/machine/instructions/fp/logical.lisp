@@ -180,17 +180,15 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
 
   :body
   (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
 
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :unimplemented-in-32-bit-mode))
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
@@ -203,44 +201,45 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
        (inst-ac? ;; Exceptions Type 3
         t)
-
-       ((mv flg0 xmm/mem (the (integer 0 4) increment-RIP-by) (the (signed-byte 64) ?v-addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode
-         #.*xmm-access* operand-size inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         1 ;; One-byte immediate operand
-         x86))
-
+       ((mv flg0
+            xmm/mem
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+                                                #.*xmm-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                1 ;; One-byte immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ((mv flg1 (the (unsigned-byte 8) imm) x86)
-        (rml-size 1 (the (signed-byte #.*max-linear-address-size*) temp-rip) :x x86))
-
+        (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86 :mem-ptr? nil))
        ((when flg1)
-        (!!ms-fresh :rml-size-error flg1))
+        (!!ms-fresh :imm-rme-size-error flg1))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (1+ temp-rip))
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -261,8 +260,10 @@
 
        (x86 (!xmmi-size operand-size xmm-index result x86))
 
-       (x86 (!rip temp-rip x86)))
-      x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (enable rme-size))))
 
 (def-inst x86-cmpps-Op/En-RMI
 
