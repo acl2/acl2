@@ -234,6 +234,14 @@
 
  <p>Added some theorems about functions on lists.</p>
 
+ <h4>Profiling</h4>
+
+ <p>Attempts to run @(tsee profile-acl2) or @(tsee profile-all) had failed, for
+ ACL2 built on SBCL, with an obscure SBCL error message.  Now, the error
+ message gives instructions for how to avoid the error by rebuilding SBCL from
+ sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
+ the appropriate SBCL source code line.</p>
+
  <h4>RAC: Restricted Algorithmic C</h4>
 
  <p>Minor modifications of @('projects/rac/') include a bug fix in the parser

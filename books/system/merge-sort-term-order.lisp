@@ -22,10 +22,13 @@
       0 (+ 1 (steps-to-nil (cdr x)))))
 
 (verify-termination merge-term-order
-                    (declare (xargs :measure (+ (steps-to-nil l1)
-                                                (steps-to-nil l2))
-                                    :guard (and (pseudo-term-listp l1)
-                                                (pseudo-term-listp l2)))))
+  (declare (xargs
+            :guard (and (pseudo-term-listp l1)
+                        (pseudo-term-listp l2))))
+  #+acl2-devel ; else not redundant with :? measure
+  (declare (xargs
+            :measure (+ (steps-to-nil l1)
+                        (steps-to-nil l2)))))
 
 (defthm steps-to-nil-evens
   (implies (cdr x)
@@ -53,9 +56,10 @@
   :rule-classes :linear)
 
 (verify-termination merge-sort-term-order
-                    (declare (xargs :measure (steps-to-nil l)
-                                    :guard (pseudo-term-listp l)
-                                    :verify-guards nil)))
+  (declare (xargs :guard (pseudo-term-listp l)
+                  :verify-guards nil))
+  #+acl2-devel ; else not redundant with :? measure
+  (declare (xargs :measure (steps-to-nil l))))
 
 (defthm pseudo-term-listp-merge-term-order
   (implies (and (pseudo-term-listp l1)

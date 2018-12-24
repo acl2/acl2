@@ -1912,7 +1912,12 @@
 
                (and (not super-stobjs-in) (ignore-vars dcls)))
               (ignorable-vars (ignorable-vars dcls))
-              (*1*guard (oneify guard nil wrld program-p))
+              (declared-stobjs (if stobj-flag
+                                   (list stobj-flag)
+                                 (get-declared-stobjs dcls)))
+              (user-stobj-is-arg (and declared-stobjs
+                                      (not (equal declared-stobjs '(state)))))
+              (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
 
 ; We throw away most declarations and the doc string, keeping only ignore and
 ; ignorable declarations.  Note that it is quite reasonable to ignore
@@ -2013,12 +2018,6 @@
                      `(live-stobjp ,first-non-nil))
                  `(live-state-p
                    ,(select-stobj 'state super-stobjs-in formals))))
-              (declared-stobjs (if stobj-flag
-                                   (list stobj-flag)
-                                 (get-declared-stobjs dcls)))
-              (user-stobj-is-arg (and declared-stobjs
-                                      (not (equal declared-stobjs '(state)))))
-              (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
               (declare-stobj-special
 
 ; Without a special declaration for the live stobj, a defstobj or defabsstobj
@@ -2126,15 +2125,22 @@
                                          (list ,@formals)
                                          ,safe-form))))
               (early-exit-code-main
-               (let ((cl-compliant-code-guard-not-t
+               (let* ((*1*guard
+                       (cond
+                        ((and cl-compliant-p-optimization
+                              (not live-stobjp-test))
+                         (assert$ (not guard-is-t) ; already handled way above
+                                  :unused))        ; optimization
+                        (t (oneify guard nil wrld program-p))))
+                      (cl-compliant-code-guard-not-t
+                       (and (not program-only) ; optimization
 
 ; We lay down code for the common-lisp-compliant case that checks the guard and
 ; acts accordingly: if the guard checks, then it returns the result of calling
 ; fn, and if not, then it fails if appropriate and otherwise falls through.
 
-                      (and
-                       (not guard-is-t)       ; optimization for code below
-                       (eq defun-mode :logic) ; optimization for code below
+                            (not guard-is-t) ; optimization for code below
+                            (eq defun-mode :logic) ; optimization for code below
 
 ; NOTE: we have to test for live stobjs before we evaluate the guard, since the
 ; Common Lisp guard may assume all stobjs are live.  We actually only need
@@ -2143,14 +2149,14 @@
 ; check that all stobjs are live before evaluating the raw Lisp guard.  After
 ; all, the cost of that check is only some eq tests.
 
-                       `(cond
-                         ,(cond
-                           ((eq live-stobjp-test t)
-                            `(,guard
-                              (return-from ,*1*fn (,fn ,@formals))))
-                           (t
-                            `((if ,live-stobjp-test
-                                  ,(if stobj-flag
+                            `(cond
+                              ,(cond
+                                ((eq live-stobjp-test t)
+                                 `(,guard
+                                   (return-from ,*1*fn (,fn ,@formals))))
+                                (t
+                                 `((if ,live-stobjp-test
+                                       ,(if stobj-flag
 
 ; Essay on Stobj Guard Attachments
 
@@ -2227,36 +2233,36 @@
 ; not yet been put into wrld.  But as of this writing, the test seems to apply
 ; only to stobj updaters and resize functions.
 
-                                       (let ((stobjs-out
-                                              (getpropc fn 'stobjs-out nil
-                                                        wrld)))
-                                         (cond
-                                          ((and stobjs-out ; property is there
-                                                (all-nils stobjs-out))
-                                           guard)
-                                          (t `(let ((*aokp* nil))
-                                                ,guard))))
-                                     guard)
-                                ,*1*guard)
-                              ,(assert$
+                                            (let ((stobjs-out
+                                                   (getpropc fn 'stobjs-out nil
+                                                             wrld)))
+                                              (cond
+                                               ((and stobjs-out ; property is there
+                                                     (all-nils stobjs-out))
+                                                guard)
+                                               (t `(let ((*aokp* nil))
+                                                     ,guard))))
+                                          guard)
+                                     ,*1*guard)
+                                   ,(assert$
 
 ; No user-stobj-based functions are primitives for which we need to give
 ; special consideration to safe-mode.
 
-                                (not guarded-primitive-p)
-                                `(cond (,live-stobjp-test
-                                        (return-from ,*1*fn
-                                                     (,fn ,@formals))))))))
-                         ,@(cond (super-stobjs-in
-                                  `((t ,fail_guard)))
-                                 (guarded-primitive-p
-                                  `((,safe-form
-                                     ,fail_safe)
-                                    (,guard-checking-is-really-on-form
-                                     ,fail_guard)))
-                                 (t
-                                  `((,guard-checking-is-really-on-form
-                                     ,fail_guard))))))))
+                                     (not guarded-primitive-p)
+                                     `(cond (,live-stobjp-test
+                                             (return-from ,*1*fn
+                                                          (,fn ,@formals))))))))
+                              ,@(cond (super-stobjs-in
+                                       `((t ,fail_guard)))
+                                      (guarded-primitive-p
+                                       `((,safe-form
+                                          ,fail_safe)
+                                         (,guard-checking-is-really-on-form
+                                          ,fail_guard)))
+                                      (t
+                                       `((,guard-checking-is-really-on-form
+                                          ,fail_guard))))))))
                  (cond
                   (cl-compliant-p-optimization
                    (assert$ (not guard-is-t) ; already handled way above
@@ -2277,7 +2283,8 @@
 ; we do so in *1*-body-forms below.
 
                                    (not guard-is-t)
-                                   `(((eq (symbol-class ',fn (w *the-live-state*))
+                                   `(((eq (symbol-class ',fn
+                                                        (w *the-live-state*))
                                           :common-lisp-compliant)
                                       ,cl-compliant-code-guard-not-t)))
                             ,@(and (not guard-is-t)

@@ -9559,8 +9559,13 @@
      (not (getpropc fn 'non-executablep nil wrld))
      `(,fn ,args
            ,@new-dcls
-           ,@(if (and (not (member-eq :mode new-fields))
-                      (eq (default-defun-mode wrld) :program))
+           ,@(if (not (member-eq :mode new-fields))
+
+; At one time we also required (eq (default-defun-mode wrld) :program) here.
+; But it seems safest to eliminate that condition, thus guaranteeing that the
+; defun form specifies a :logic-mode definition.  (Perhaps that was already
+; guaranteed, but this way there is no doubt.)
+
                  '((declare (xargs :mode :logic)))
                nil)
            ,@modified-old-dcls
@@ -9651,7 +9656,7 @@
       (er soft ctx
           "The symbol ~x0 is not a function symbol in the current ACL2 world."
           (caar lst)))
-     ((not (programp (caar lst) wrld))
+     ((and (not (programp (caar lst) wrld))
 
 ; If (caar lst) was introduced by encapsulate, then recover-defs-lst below will
 ; cause an implementation error.  So we short-circuit our checks here,
@@ -9661,18 +9666,16 @@
 ; except: as a courtesy to the user, we may cause an error here if the function
 ; could not have been upgraded from :program mode.
 
-      (cond ((getpropc (caar lst) 'constrainedp nil wrld)
-             (er soft ctx
-                 "The :LOGIC mode function symbol ~x0 was originally ~
-                  introduced introduced not with DEFUN, but ~#1~[as a ~
-                  constrained function~/with DEFCHOOSE~].  So ~
-                  VERIFY-TERMINATION does not make sense for this function ~
-                  symbol."
-                 (caar lst)
-                 (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
-                        1)
-                       (t 0))))
-            (t (value :redundant))))
+           (getpropc (caar lst) 'constrainedp nil wrld))
+      (er soft ctx
+          "The :LOGIC mode function symbol ~x0 was originally introduced ~
+           introduced not with DEFUN, but ~#1~[as a constrained ~
+           function~/with DEFCHOOSE~].  So VERIFY-TERMINATION does not make ~
+           sense for this function symbol."
+          (caar lst)
+          (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
+                 1)
+                (t 0))))
      ((getpropc (caar lst) 'non-executablep nil wrld)
       (er soft ctx
           "The :PROGRAM mode function symbol ~x0 is declared non-executable, ~
@@ -9729,13 +9732,19 @@
                   (t (msg "( VERIFY-TERMINATION (~x0 ...) ...)" (caar lst)))))
                 (t (cons 'VERIFY-TERMINATION lst))))
          (wrld (w state)))
-    (er-let* ((temp (chk-acceptable-verify-termination lst ctx wrld state)))
-      (let ((defs (if (eq temp :redundant)
-                      nil
-                    (recover-defs-lst (caar lst) wrld))))
-        (value (make-verify-termination-defs-lst
-                defs
-                lst wrld))))))
+    (er-progn
+     (chk-acceptable-verify-termination lst ctx wrld state)
+     (let ((defs
+
+; At one time we returned nil here if the chk-acceptable-verify-termination
+; returned a value of :redundant.  However, it was then possible for
+; verify-termination to be redundant when that was undesirable.  For an
+; example, see community book books/system/tests/verify-termination/top.lisp.
+
+             (recover-defs-lst (caar lst) wrld)))
+       (value (make-verify-termination-defs-lst
+               defs
+               lst wrld))))))
 
 (defun verify-termination-boot-strap-fn (lst state event-form)
   (cond
