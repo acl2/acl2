@@ -135,7 +135,7 @@
                  ;; And here we can add congruence proofs ..
                  ,@(process-congruence-arguments name args cong-hints cong-specs induction-defun)
 
-                 ,@(and disable `((in-theory (disable ,name))))
+                 ,@(and disable `((in-theory (disable ,name ,@(and (null args) `((,name)))))))
 
                  )))))))))
 

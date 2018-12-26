@@ -114,10 +114,12 @@ public final class Acl2ConsPair extends Acl2Value {
 
     /**
      * Returns a printable representation of this ACL2 {@code cons} pair.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the components of the {@code cons} pair (or their sub-components)
-     * contain "unusual" characters.
+     * We use the same dotted pair notation as ACL2.
+     * The {@code car} and the {@code cdr}
+     * are recursively turned into string representations.
+     * Overall, this method
+     * and the {@code toString} methods of the other value classes
+     * should ensure that {@code cons} pairs are always printed clearly.
      */
     @Override
     public String toString() {

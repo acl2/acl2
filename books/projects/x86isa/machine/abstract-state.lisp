@@ -112,7 +112,7 @@
     `(progn
        (defconsts
          ,abstract-const-names
-         ,(b* ((lst (gl-int 0 1 len-const-names)))
+         ,(b* ((lst (increasing-list 0 1 len-const-names)))
             (cons 'mv lst)))
        (defconst *x86-abs-stobj-len*
          ,len-const-names))))

@@ -316,8 +316,8 @@
    :concl (equal (n32 (* (n32-to-i32 a) (n32-to-i32 n)))
                  a)
    :g-bindings
-   `((n   (:g-number ,(gl-int 0 2 33)))
-     (a   (:g-number ,(gl-int 1 2 33))))))
+   `((n   (:g-number ,(increasing-list 0 2 33)))
+     (a   (:g-number ,(increasing-list 1 2 33))))))
 
 (defthm Loop-Inv-To-Halt
   (implies (and (loop-inv n0 n a0 a)

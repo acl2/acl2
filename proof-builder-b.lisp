@@ -4498,7 +4498,7 @@
                (hyps-type-alist w)
                (pprogn
                 (fms0 "~|Current type-alist, including forward chaining:~%")
-                (prog2$ (print-type-alist hyps-type-alist w)
+                (prog2$ (print-type-alist hyps-type-alist w nil)
                         state))))))))))
 
 (define-pc-macro print-main ()

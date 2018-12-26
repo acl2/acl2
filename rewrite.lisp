@@ -7635,7 +7635,7 @@
                           (caar type-alist)
                           acc))))
 
-(defun print-terms (terms iff-flg wrld)
+(defun print-terms (terms iff-flg wrld evisc-tuple)
 
 ; Print untranslations of the given terms with respect to iff-flg, following
 ; each with a newline.
@@ -7647,10 +7647,12 @@
   (if (endp terms)
       terms
     (prog2$
-     (cw "~q0" (untranslate (car terms) iff-flg wrld))
-     (print-terms (cdr terms) iff-flg wrld))))
+     (cw "~Y01"
+         (untranslate (car terms) iff-flg wrld)
+         evisc-tuple)
+     (print-terms (cdr terms) iff-flg wrld evisc-tuple))))
 
-(defun print-type-alist-segments (segs wrld)
+(defun print-type-alist-segments (segs wrld evisc-tuple)
 
 ; We use cw instead of the fmt functions because we want to be able to use this
 ; function in brkpt1, which does not return state.
@@ -7665,11 +7667,14 @@
                                                *ts-non-nil*
                                                *ts-nil*
                                                *ts-boolean*))
-                                 wrld)
-                    (print-type-alist-segments (cdr segs) wrld)))))
+                                 wrld
+                                 evisc-tuple)
+                    (print-type-alist-segments (cdr segs) wrld evisc-tuple)))))
 
-(defun print-type-alist (type-alist wrld)
-  (print-type-alist-segments (type-alist-segments type-alist nil) wrld))
+(defun print-type-alist (type-alist wrld evisc-tuple)
+  (print-type-alist-segments (type-alist-segments type-alist nil)
+                             wrld
+                             evisc-tuple))
 
 ; End of code for printing type-alists.
 
@@ -8121,18 +8126,19 @@
 (defmacro show-brr-evisc-tuple ()
   '(show-brr-evisc-tuple-fn state))
 
-(defun show-ancestors-stack-msg (state)
+(defun show-ancestors-stack-msg (state evisc-tuple)
   (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
         actual ancestors stack.~%"
        (tilde-*-ancestors-stack-msg
         (get-brr-local 'ancestors state)
         (w state)
-        (brr-evisc-tuple state))
+        evisc-tuple)
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
                                                        info
-                                                       state)
+                                                       state
+                                                       evisc-tuple)
   (msg
    "a backchain limit was reached while processing :HYP ~x0.  ~@1"
    hyp-number
@@ -8162,7 +8168,7 @@
                for backchaining through its indicated hypothesis.~|~%~@2"
               (strip-cars pairs)
               (strip-cdrs pairs)
-              (show-ancestors-stack-msg state)))))))))
+              (show-ancestors-stack-msg state evisc-tuple)))))))))
 
 (mutual-recursion
 
@@ -8236,9 +8242,8 @@
              (time-out (msg "we ran out of time while processing :HYP ~x0."
                             n))
              (ancestors (msg ":HYP ~x0 is judged more complicated than its ~
-                                ancestors (type :ANCESTORS to see the ~
-                                ancestors and :PATH to see how we got to this ~
-                                point)."
+                              ancestors (type :ANCESTORS to see the ancestors ~
+                              and :PATH to see how we got to this point)."
                              n))
              (known-nil (msg ":HYP ~x0 is known nil by type-set."
                              n))
@@ -8296,7 +8301,8 @@
                 (tilde-@-failure-reason-phrase1-backchain-limit
                  n
                  (cddr failure-reason)
-                 state))
+                 state
+                 evisc-tuple))
                ((eq (cadr failure-reason) 'rewrote-to)
                 (msg ":HYP ~x0 rewrote to ~X12."
                      n
@@ -8355,6 +8361,642 @@
     (cond ((eq (record-type (get-brr-local 'lemma state)) 'linear-lemma)
            (show-poly-lst result))
           (t result))))
+
+(defconst *brkpt1-aliases*
+
+; Keep this in sync (as appropriate) with *brkpt2-aliases*.
+
+  (flet ((not-yet-evaled-fn ()
+                            `(lambda nil
+                               (prog2$
+                                (cw "~F0 has not yet been :EVALed.~%"
+                                    (get-rule-field (get-brr-local 'lemma state)
+                                                    :rune))
+                                (value :invisible))))
+         (ancestors-fn (plusp)
+                       `(lambda nil
+                          (prog2$
+                           (cw "~@0" (show-ancestors-stack-msg
+                                      state
+                                      ,(if plusp
+                                           nil
+                                         '(brr-evisc-tuple state))))
+                           (value :invisible))))
+         (btm-fn (plusp)
+                 `(lambda nil
+                    (prog2$
+                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                       (cw-gframe (length gstack) nil (car gstack)
+                                  ,(if plusp
+                                       nil
+                                     '(brr-evisc-tuple state))))
+                     (value :invisible))))
+         (final-ttree-fn ()
+                         '(lambda nil
+                            (let ((lemma (get-brr-local 'lemma state)))
+                              (cond
+                               ((eq (record-type lemma) 'linear-lemma)
+                                (er soft :FINAL-TTREE
+                                    ":FINAL-TTREE is not legal for a :LINEAR ~
+                                     rule."))
+                               (t (prog2$
+                                   (cw "~F0 has not yet been :EVALed.~%"
+                                       (get-rule-field lemma :rune))
+                                   (value :invisible)))))))
+         (frame-fn (plusp)
+                   `(lambda (n)
+                      (let ((rgstack
+                             (reverse (get-brr-global 'brr-gstack state))))
+                        (cond
+                         ((and (integerp n)
+                               (>= n 1)
+                               (<= n (length rgstack)))
+                          (prog2$
+                           (cw-gframe n
+                                      (if (= n 1)
+                                          nil
+                                        (access gframe (nth (- n 2) rgstack)
+                                                :sys-fn))
+                                      (nth (- n 1) rgstack)
+                                      ,(if plusp
+                                           nil
+                                         '(brr-evisc-tuple state)))
+                           (value :invisible)))
+                         (t (er soft :frame
+                                ":FRAME must be given an integer argument ~
+                                 between 1 and ~x0."
+                                (length rgstack)))))))
+         (initial-ttree-fn (plusp)
+                           `(lambda nil
+                              (let ((lemma (get-brr-local 'lemma state)))
+                                (cond
+                                 ((eq (record-type lemma) 'linear-lemma)
+                                  (er soft :INITIAL-TTREE
+                                      ":INITIAL-TTREE is not legal for a ~
+                                       :LINEAR rule."))
+                                 (t (prog2$
+                                     (cw "~X01~|"
+                                         (get-brr-local 'initial-ttree state)
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state)))
+                                     (value :invisible)))))))
+         (path-fn (plusp)
+                  `(lambda nil
+                     (prog2$ (cw-gstack :evisc-tuple
+                                        ,(if plusp
+                                             nil
+                                           '(brr-evisc-tuple state)))
+                             (value :invisible))))
+         (target-fn (plusp)
+                    `(lambda nil
+                       (prog2$ (cw "~X01~|"
+                                   (get-brr-local 'target state)
+                                   ,(if plusp
+                                        nil
+                                      '(brr-evisc-tuple state)))
+                               (value :invisible))))
+         (top-fn (plusp)
+                 `(lambda nil
+                    (prog2$
+                     (cw-gframe 1
+                                nil
+                                (car (reverse (get-brr-global 'brr-gstack
+                                                              state)))
+                                ,(if plusp
+                                     nil
+                                   '(brr-evisc-tuple state)))
+                     (value :invisible))))
+         (type-alist-fn (plusp)
+                        `(lambda nil
+                           (prog2$
+                            (cw "~%Decoded type-alist:~%")
+                            (prog2$
+                             (print-type-alist-segments
+                              (type-alist-segments
+                               (get-brr-local 'type-alist state)
+                               nil)
+                              (w state)
+                              ,(if plusp
+                                   nil
+                                 '(brr-evisc-tuple state)))
+                             (prog2$
+                              (cw "~%==========~%Use ~x0 to see actual ~
+                                   type-alist.~%"
+                                  '(get-brr-local 'type-alist state))
+                              (value :invisible))))))
+         (unify-subst-fn (plusp)
+                         `(lambda nil
+                            (prog2$
+                             (cw "~*0"
+                                 (tilde-*-alist-phrase
+                                  (get-brr-local 'unify-subst state)
+                                  ,(if plusp
+                                       nil
+                                     '(brr-evisc-tuple state))
+                                  5))
+                             (value :invisible)))))
+    `(
+; If you add commands, change the documentation for brr-commands.
+      (:ancestors
+       0 ,(ancestors-fn nil))
+      (:ancestors+
+       0 ,(ancestors-fn t))
+      (:btm
+       0 ,(btm-fn nil))
+      (:btm+
+       0 ,(btm-fn t))
+      (:eval
+       0 (lambda nil
+           (proceed-from-brkpt1 'break t :eval state)))
+      (:eval!
+       0 (lambda nil
+           (proceed-from-brkpt1 'break nil :eval! state)))
+      (:eval$
+       1 (lambda (runes)
+           (proceed-from-brkpt1 'break runes :eval$ state)))
+      (:failure-reason
+       0 ,(not-yet-evaled-fn))
+      (:failure-reason+
+       0 ,(not-yet-evaled-fn))
+      (:final-ttree
+       0 ,(not-yet-evaled-fn))
+      (:final-ttree+
+       0 ,(not-yet-evaled-fn))
+      (:frame
+       1 ,(frame-fn nil))
+      (:frame+
+       1 ,(frame-fn t))
+      (:go
+       0 (lambda nil
+           (proceed-from-brkpt1 'print t :go state)))
+      (:go!
+       0 (lambda nil
+           (proceed-from-brkpt1 'print nil :go! state)))
+      (:go$
+       1 (lambda (runes)
+           (proceed-from-brkpt1 'print runes :go$ state)))
+      (:help
+       0 (lambda nil
+           (doc 'brr-commands)))
+      (:hyp
+       1 (lambda (n)
+           (cond
+            ((and (integerp n)
+                  (>= n 1)
+                  (<= n (length (get-rule-field (get-brr-local 'lemma state)
+                                                :hyps))))
+             (prog2$ (cw "~X01~|"
+                         (nth (1- n)
+                              (get-rule-field (get-brr-local 'lemma state)
+                                              :hyps))
+                         nil)
+                     (value :invisible)))
+            (t (er soft :HYP
+                   ":HYP must be given an integer argument between 1 and ~x0."
+                   (length (get-rule-field (get-brr-local 'lemma state)
+                                           :hyps)))))))
+      (:hyps
+       0 (lambda nil
+           (prog2$
+            (cw "~x0~|"
+                (get-rule-field (get-brr-local 'lemma state)
+                                :hyps))
+            (value :invisible))))
+      (:initial-ttree
+       0 ,(initial-ttree-fn nil))
+      (:initial-ttree+
+       0 ,(initial-ttree-fn t))
+      (:lhs
+       0 (lambda nil
+           (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                      :lhs)))
+             (cond
+              ((eq val :get-rule-field-none) ; linear lemma
+               (er soft :LHS
+                   ":LHS is only legal for a :REWRITE rule."))
+              (t
+               (prog2$
+                (cw "~x0~|" val)
+                (value :invisible)))))))
+      (:ok
+       0 (lambda nil
+
+; Note:  Proceed-from-brkpt1 is not defined in this file!  It is here used
+; in a constant, fortunately, because it cannot yet be defined.  The problem
+; is that it involves chk-acceptable-monitors, which in turn must look at
+; the rules named by given runes, which is a procedure we can define only
+; after introducing certain history management utilities.
+
+           (proceed-from-brkpt1 'silent t :ok state)))
+      (:ok!
+       0 (lambda nil
+           (proceed-from-brkpt1 'silent nil :ok! state)))
+      (:ok$
+       1 (lambda (runes)
+           (proceed-from-brkpt1 'silent runes :ok$ state)))
+      (:path
+       0 ,(path-fn nil))
+      (:path+
+       0 ,(path-fn t))
+      (:poly-list
+       0 ,(not-yet-evaled-fn))
+      (:poly-list+
+       0 ,(not-yet-evaled-fn))
+      (:q
+       0 (lambda nil
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
+                      :p! to pop or :a! to abort.~%")
+                   (value :invisible))))
+      (:rewritten-rhs
+       0 ,(not-yet-evaled-fn))
+      (:rewritten-rhs+
+       0 ,(not-yet-evaled-fn))
+      (:rhs
+       0 (lambda nil
+           (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                      :rhs)))
+             (cond
+              ((eq val :get-rule-field-none) ; linear lemma
+               (er soft :RHS
+                   ":RHS is only legal for a :REWRITE rule."))
+              (t
+               (prog2$
+                (cw "~x0~|" val)
+                (value :invisible)))))))
+      (:standard-help 0 help)
+      (:target
+       0 ,(target-fn nil))
+      (:target+
+       0 ,(target-fn t))
+      (:top
+       0 ,(top-fn nil))
+      (:top+
+       0 ,(top-fn t))
+      (:type-alist
+       0 ,(type-alist-fn nil))
+      (:type-alist+
+       0 ,(type-alist-fn t))
+      (:unify-subst
+       0 ,(unify-subst-fn nil))
+      (:unify-subst+
+       0 ,(unify-subst-fn t))
+      (:wonp
+       0 ,(not-yet-evaled-fn)))))
+
+(defconst *brkpt2-aliases*
+
+; Keep this in sync (as appropriate) with *brkpt1-aliases*.
+
+  (flet ((already-evaled-fn ()
+                            '(lambda nil
+                               (prog2$ (cw "You already have run some flavor ~
+                                            of :eval.~%")
+                                       (value :invisible))))
+         (ancestors-fn (plusp)
+                       `(lambda nil
+                          (prog2$
+                           (cw "~@0" (show-ancestors-stack-msg
+                                      state
+                                      ,(if plusp
+                                           nil
+                                         '(brr-evisc-tuple state))))
+                           (value :invisible))))
+         (btm-fn (plusp)
+                 `(lambda nil
+                    (prog2$
+                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                       (cw-gframe (length gstack) nil (car gstack)
+                                  ,(if plusp
+                                       nil
+                                     '(brr-evisc-tuple state))))
+                     (value :invisible))))
+         (failure-reason-fn (plusp)
+                            `(lambda nil
+                               (prog2$
+                                (if (get-brr-local 'wonp state)
+                                    (cw "? ~F0 succeeded.~%"
+                                        (get-rule-field (get-brr-local 'lemma
+                                                                       state)
+                                                        :rune))
+                                  (cw "~@0~|"
+                                      (tilde-@-failure-reason-phrase
+                                       (get-brr-local 'failure-reason state)
+                                       1
+                                       (get-brr-local 'unify-subst state)
+                                       ,(if plusp
+                                            nil
+                                          '(brr-evisc-tuple state))
+                                       (free-vars-display-limit state)
+                                       state)))
+                                (value :invisible))))
+         (final-ttree-fn (plusp)
+                         `(lambda nil
+                            (let ((lemma (get-brr-local 'lemma state)))
+                              (cond
+                               ((eq (record-type lemma) 'linear-lemma)
+                                (er soft :FINAL-TTREE
+                                    ":FINAL-TTREE is not legal for a :LINEAR ~
+                                     rule."))
+                               (t (prog2$
+                                   (cw "~X01~|"
+                                       (get-brr-local 'final-ttree state)
+                                       ,(if plusp
+                                            nil
+                                          '(brr-evisc-tuple state)))
+                                   (value :invisible)))))))
+         (frame-fn (plusp)
+                   `(lambda (n)
+                      (let ((rgstack
+                             (reverse (get-brr-global 'brr-gstack state))))
+                        (cond
+                         ((and (integerp n)
+                               (>= n 1)
+                               (<= n (length rgstack)))
+                          (prog2$
+                           (cw-gframe n
+                                      (if (= n 1)
+                                          nil
+                                        (access gframe (nth (- n 2) rgstack)
+                                                :sys-fn))
+                                      (nth (- n 1) rgstack)
+                                      ,(if plusp
+                                           nil
+                                         '(brr-evisc-tuple state)))
+                           (value :invisible)))
+                         (t (er soft :frame
+                                ":FRAME must be given an integer argument ~
+                                 between 1 and ~x0."
+                                (length rgstack)))))))
+         (initial-ttree-fn (plusp)
+                           `(lambda nil
+                              (let ((lemma (get-brr-local 'lemma state)))
+                                (cond
+                                 ((eq (record-type lemma) 'linear-lemma)
+                                  (er soft :INITIAL-TTREE
+                                      ":INITIAL-TTREE is not legal for a ~
+                                       :LINEAR rule."))
+                                 (t (prog2$
+                                     (cw "~X01~|"
+                                         (get-brr-local 'initial-ttree state)
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state)))
+                                     (value :invisible)))))))
+         (path-fn (plusp)
+                  `(lambda nil
+                     (prog2$ (cw-gstack :evisc-tuple
+                                        ,(if plusp
+                                             nil
+                                           '(brr-evisc-tuple state)))
+                             (value :invisible))))
+         (poly-list-fn (plusp)
+                       `(lambda nil
+                          (let ((lemma (get-brr-local 'lemma state)))
+                            (cond
+                             ((eq (record-type lemma) 'linear-lemma)
+                              (prog2$
+                               (cond
+                                ((get-brr-local 'wonp state)
+                                 (cw "~X01~|"
+                                     (brr-result state)
+                                     ,(if plusp
+                                          nil
+                                        '(brr-evisc-tuple state))))
+                                (t (cw "? ~F0 failed.~%"
+                                       (get-rule-field lemma :rune))))
+                               (value :invisible)))
+                             (t
+                              (er soft :POLY-LIST
+                                  ":POLY-LIST is only legal for a :LINEAR ~
+                                   rule."))))))
+         (rewritten-rhs-fn (plusp)
+                           `(lambda nil
+                              (let ((lemma (get-brr-local 'lemma state)))
+                                (cond
+                                 ((eq (record-type lemma) 'rewrite-rule)
+                                  (prog2$
+                                   (cond
+                                    ((or (get-brr-local 'wonp state)
+                                         (member-eq (get-brr-local
+                                                     'failure-reason state)
+                                                    '(too-many-ifs
+                                                      rewrite-fncallp)))
+                                     (cw "~X01~|"
+                                         (get-brr-local 'brr-result state)
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state))))
+                                    (t (cw "? ~F0 failed.~%"
+                                           (get-rule-field lemma :rune))))
+                                   (value :invisible)))
+                                 (t
+                                  (er soft :REWRITTEN-RHS
+                                      ":REWRITTEN-RHS is only legal for a ~
+                                       :REWRITE rule."))))))
+         (target-fn (plusp)
+                    `(lambda nil
+                       (prog2$ (cw "~X01~|"
+                                   (get-brr-local 'target state)
+                                   ,(if plusp
+                                        nil
+                                      '(brr-evisc-tuple state)))
+                               (value :invisible))))
+         (top-fn (plusp)
+                 `(lambda nil
+                    (prog2$
+                     (cw-gframe 1
+                                nil
+                                (car (reverse (get-brr-global 'brr-gstack
+                                                              state)))
+                                ,(if plusp
+                                     nil
+                                   '(brr-evisc-tuple state)))
+                     (value :invisible))))
+         (type-alist-fn (plusp)
+                        `(lambda nil
+                           (prog2$
+                            (cw "~%Decoded type-alist:~%")
+                            (prog2$
+                             (print-type-alist-segments
+                              (type-alist-segments
+                               (get-brr-local 'type-alist state)
+                               nil)
+                              (w state)
+                              ,(if plusp
+                                   nil
+                                 '(brr-evisc-tuple state)))
+                             (prog2$
+                              (cw "~%==========~%Use ~x0 to see actual ~
+                                   type-alist.~%"
+                                  '(get-brr-local 'type-alist state))
+                              (value :invisible))))))
+         (unify-subst-fn (plusp)
+                         `(lambda nil
+                            (prog2$
+                             (cw "~*0"
+                                 (tilde-*-alist-phrase
+                                  (get-brr-local 'unify-subst state)
+                                  ,(if plusp
+                                       nil
+                                     '(brr-evisc-tuple state))
+                                  5))
+                             (value :invisible)))))
+    `(
+; If you add commands, change the documentation for brr-commands.
+      (:ancestors
+       0 ,(ancestors-fn nil))
+      (:ancestors+
+       0 ,(ancestors-fn t))
+      (:btm
+       0 ,(btm-fn nil))
+      (:btm+
+       0 ,(btm-fn t))
+      (:eval
+       0 ,(already-evaled-fn))
+      (:eval!
+       0 ,(already-evaled-fn))
+      (:eval$
+       1 (lambda (runes)
+           (prog2$ runes ; avoid issues of ignored variable
+                   ,(already-evaled-fn))))
+      (:failure-reason
+       0 ,(failure-reason-fn nil))
+      (:failure-reason+
+       0 ,(failure-reason-fn t))
+      (:final-ttree
+       0 ,(final-ttree-fn nil))
+      (:final-ttree+
+       0 ,(final-ttree-fn t))
+      (:frame
+       1 ,(frame-fn nil))
+      (:frame+
+       1 ,(frame-fn t))
+      (:go
+       0 (lambda nil
+
+; Like :ok, :man.
+
+           (exit-brr state)))
+      (:go!
+       0 (lambda nil
+           (exit-brr state)))
+      (:go$
+       1 (lambda (runes)
+           (prog2$ runes ; avoid issues of ignored variable
+                   (exit-brr state))))
+      (:help
+       0 (lambda nil
+           (doc 'brr-commands)))
+      (:hyp
+       1 (lambda (n)
+           (cond
+            ((and (integerp n)
+                  (>= n 1)
+                  (<= n (length (get-rule-field (get-brr-local 'lemma state)
+                                                :hyps))))
+             (prog2$ (cw "~X01~|"
+                         (nth (1- n)
+                              (get-rule-field (get-brr-local 'lemma state)
+                                              :hyps))
+                         nil)
+                     (value :invisible)))
+            (t (er soft :HYP
+                   ":HYP must be given an integer argument between 1 and ~x0."
+                   (length (get-rule-field (get-brr-local 'lemma state)
+                                           :hyps)))))))
+      (:hyps
+       0 (lambda nil
+           (prog2$
+            (cw "~x0~|"
+                (get-rule-field (get-brr-local 'lemma state)
+                                :hyps))
+            (value :invisible))))
+      (:initial-ttree
+       0 ,(initial-ttree-fn nil))
+      (:initial-ttree+
+       0 ,(initial-ttree-fn t))
+      (:lhs
+       0 (lambda nil
+           (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                      :lhs)))
+             (cond
+              ((eq val :get-rule-field-none) ; linear lemma
+               (er soft :LHS
+                   ":LHS is only legal for a :REWRITE rule."))
+              (t
+               (prog2$
+                (cw "~x0~|" val)
+                (value :invisible)))))))
+      (:ok
+       0 (lambda nil
+
+; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
+; See the note above about that function.
+
+           (exit-brr state)))
+      (:ok!
+       0 (lambda nil
+           (exit-brr state)))
+      (:ok$
+       1 (lambda (runes)
+           (prog2$ runes ; avoid issues of ignored variable
+                   (exit-brr state))))
+      (:path
+       0 ,(path-fn nil))
+      (:path+
+       0 ,(path-fn t))
+      (:poly-list
+       0 ,(poly-list-fn nil))
+      (:poly-list+
+       0 ,(poly-list-fn t))
+      (:q
+       0 (lambda nil
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
+                      :p! to pop or :a! to abort.~%")
+                   (value :invisible))))
+      (:rewritten-rhs
+       0 ,(rewritten-rhs-fn nil))
+      (:rewritten-rhs+
+       0 ,(rewritten-rhs-fn t))
+      (:rhs
+       0 (lambda nil
+           (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                      :rhs)))
+             (cond
+              ((eq val :get-rule-field-none) ; linear lemma
+               (er soft :RHS
+                   ":RHS is only legal for a :REWRITE rule."))
+              (t
+               (prog2$
+                (cw "~x0~|" val)
+                (value :invisible)))))))
+      (:standard-help 0 help)
+      (:target
+       0 ,(target-fn nil))
+      (:target+
+       0 ,(target-fn t))
+      (:top
+       0 ,(top-fn nil))
+      (:top+
+       0 ,(top-fn t))
+      (:type-alist
+       0 ,(type-alist-fn nil))
+      (:type-alist+
+       0 ,(type-alist-fn t))
+      (:unify-subst
+       0 ,(unify-subst-fn nil))
+      (:unify-subst+
+       0 ,(unify-subst-fn t))
+      (:wonp
+       0 (lambda nil
+           (prog2$
+            (if (get-brr-local 'wonp state)
+                (cw "? ~F0 succeeded.~%"
+                    (get-rule-field (get-brr-local 'lemma state) :rune))
+              (cw "? ~F0 failed.~%"
+                  (get-rule-field (get-brr-local 'lemma state) :rune)))
+            (value :invisible)))))))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack rcnst state)
@@ -8423,207 +9065,7 @@
            (t (pprogn
                (pop-brr-stack-frame state)
                (value nil)))))))
-     '(
-; If you add commands, change the deflabel brr-commands.
-       (:ok
-        0 (lambda nil
-
-; Note:  Proceed-from-brkpt1 is not defined in this file!  It is here used
-; in a constant, fortunately, because it cannot yet be defined.  The problem
-; is that it involves chk-acceptable-monitors, which in turn must look at
-; the rules named by given runes, which is a procedure we can define only
-; after introducing certain history management utilities.
-
-            (proceed-from-brkpt1 'silent t :ok state)))
-       (:go
-        0 (lambda nil
-            (proceed-from-brkpt1 'print t :go state)))
-       (:eval
-        0 (lambda nil
-            (proceed-from-brkpt1 'break t :eval state)))
-       (:ok!
-        0 (lambda nil
-            (proceed-from-brkpt1 'silent nil :ok! state)))
-       (:go!
-        0 (lambda nil
-            (proceed-from-brkpt1 'print nil :go! state)))
-       (:eval!
-        0 (lambda nil
-            (proceed-from-brkpt1 'break nil :eval! state)))
-       (:ok$
-        1 (lambda (runes)
-            (proceed-from-brkpt1 'silent runes :ok$ state)))
-       (:go$
-        1 (lambda (runes)
-            (proceed-from-brkpt1 'print runes :go$ state)))
-       (:eval$
-        1 (lambda (runes)
-            (proceed-from-brkpt1 'break runes :eval$ state)))
-       (:q
-        0 (lambda nil
-            (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
-                       :p! to pop or :a! to abort.~%")
-                    (value :invisible))))
-       (:target
-        0 (lambda nil
-            (prog2$ (cw "~x0~|" (get-brr-local 'target state))
-                    (value :invisible))))
-       (:hyps
-        0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (get-rule-field (get-brr-local 'lemma state)
-                                 :hyps))
-             (value :invisible))))
-       (:hyp
-        1 (lambda (n)
-            (cond
-             ((and (integerp n)
-                   (>= n 1)
-                   (<= n (length (get-rule-field (get-brr-local 'lemma state)
-                                                 :hyps))))
-              (prog2$ (cw "~X01~|"
-                          (nth (1- n)
-                               (get-rule-field (get-brr-local 'lemma state)
-                                               :hyps))
-                          nil)
-                      (value :invisible)))
-             (t (er soft :HYP
-                    ":HYP must be given an integer argument between 1 and ~x0."
-                    (length (get-rule-field (get-brr-local 'lemma state)
-                                            :hyps)))))))
-       (:lhs
-        0 (lambda nil
-            (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                       :lhs)))
-              (cond
-               ((eq val :get-rule-field-none) ; linear lemma
-                (er soft :LHS
-                    ":LHS is only legal for a :REWRITE rule."))
-               (t
-                (prog2$
-                 (cw "~x0~|" val)
-                 (value :invisible)))))))
-       (:rhs
-        0 (lambda nil
-            (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                       :rhs)))
-              (cond
-               ((eq val :get-rule-field-none) ; linear lemma
-                (er soft :RHS
-                    ":RHS is only legal for a :REWRITE rule."))
-               (t
-                (prog2$
-                 (cw "~x0~|" val)
-                 (value :invisible)))))))
-       (:unify-subst
-        0 (lambda nil
-            (prog2$
-             (cw "~*0"
-                 (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (brr-evisc-tuple state)
-                                       5))
-             (value :invisible))))
-       (:type-alist
-        0 (lambda nil
-            (prog2$
-             (cw "~%Decoded type-alist:~%")
-             (prog2$
-              (print-type-alist-segments
-               (type-alist-segments (get-brr-local 'type-alist state) nil)
-               (w state))
-              (prog2$
-               (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
-                   '(get-brr-local 'type-alist state))
-               (value :invisible))))))
-       (:ancestors
-        0 (lambda nil
-            (prog2$
-             (cw "~@0" (show-ancestors-stack-msg state))
-             (value :invisible))))
-       (:initial-ttree
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'linear-lemma)
-                (er soft :INITIAL-TTREE
-                    ":INITIAL-TTREE is not legal for a :LINEAR rule."))
-               (t (prog2$
-                   (cw "~x0~|"
-                       (get-brr-local 'initial-ttree state))
-                   (value :invisible)))))))
-       (:final-ttree
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'linear-lemma)
-                (er soft :FINAL-TTREE
-                    ":FINAL-TTREE is not legal for a :LINEAR rule."))
-               (t (prog2$
-                   (cw "~F0 has not yet been :EVALed.~%"
-                       (get-rule-field lemma :rune))
-                   (value :invisible)))))))
-       (:rewritten-rhs
-        0 (lambda nil
-            (prog2$
-             (cw "~F0 has not yet been :EVALed.~%"
-                 (get-rule-field (get-brr-local 'lemma state) :rune))
-             (value :invisible))))
-       (:poly-list
-        0 (lambda nil
-            (prog2$
-             (cw "~F0 has not yet been :EVALed.~%"
-                 (get-rule-field (get-brr-local 'lemma state) :rune))
-             (value :invisible))))
-       (:failure-reason
-        0 (lambda nil
-            (prog2$
-             (cw "~F0 has not yet been :EVALed.~%"
-                 (get-rule-field (get-brr-local 'lemma state) :rune))
-             (value :invisible))))
-       (:wonp
-        0 (lambda nil
-            (prog2$
-             (cw "~F0 has not yet been :EVALed.~%"
-                 (get-rule-field (get-brr-local 'lemma state) :rune))
-             (value :invisible))))
-       (:path
-        0 (lambda nil
-            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
-                    (value :invisible))))
-       (:frame
-        1 (lambda (n)
-            (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
-              (cond
-               ((and (integerp n)
-                     (>= n 1)
-                     (<= n (length rgstack)))
-                (prog2$
-                 (cw-gframe n
-                            (if (= n 1)
-                                nil
-                              (access gframe (nth (- n 2) rgstack) :sys-fn))
-                            (nth (- n 1) rgstack)
-                            nil)
-                 (value :invisible)))
-               (t (er soft :frame
-                      ":FRAME must be given an integer argument between 1 and ~x0."
-                      (length rgstack)))))))
-       (:top
-        0 (lambda nil
-            (prog2$
-             (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
-             (value :invisible))))
-       (:btm
-        0 (lambda nil
-            (prog2$
-             (let ((gstack (get-brr-global 'brr-gstack state)))
-               (cw-gframe (length gstack) nil (car gstack) nil))
-             (value :invisible))))
-       (:help
-        0 (lambda nil
-            (doc 'brr-commands)))
-       (:standard-help 0 help))))))
+     *brkpt1-aliases*))))
 
 (defun brkpt2 (wonp failure-reason unify-subst gstack brr-result final-ttree
                     rcnst state)
@@ -8727,228 +9169,7 @@
                             (free-vars-display-limit state)
                             state)))
                      (value t)))))))
-     '(
-; If you add commands, change the deflabel brr-commands.
-       (:ok 0 (lambda nil
-
-; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
-; See the note above about that function.
-
-                (exit-brr state)))
-       (:eval  0 (lambda nil
-                   (prog2$ (cw "You already have run some flavor of :eval.~%")
-                           (value :invisible))))
-       (:eval!  0 (lambda nil
-                    (prog2$ (cw "You already have run some flavor of :eval.~%")
-                            (value :invisible))))
-       (:eval$  0 (lambda nil
-                    (prog2$ (cw "You already have run some flavor of :eval.~%")
-                            (value :invisible))))
-       (:go  0 (lambda nil
-
-; Like :ok, :man.
-
-                 (exit-brr state)))
-       (:go!  0 (lambda nil (exit-brr state)))
-       (:go$  0 (lambda nil (exit-brr state)))
-       (:q  0 (lambda nil
-                (prog2$ (cw "Exit with :ok or use :p! to pop or :a! to abort.~%")
-                        (value :invisible))))
-       (:target
-        0 (lambda nil
-            (prog2$ (cw "~x0~|" (get-brr-local 'target state))
-                    (value :invisible))))
-       (:hyps
-        0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (get-rule-field (get-brr-local 'lemma state) :hyps))
-             (value :invisible))))
-       (:hyp
-        1 (lambda (n)
-            (cond
-             ((and (integerp n)
-                   (>= n 1)
-                   (<= n (length (get-rule-field (get-brr-local 'lemma state)
-                                                 :hyps))))
-              (prog2$ (cw "~X01~|"
-                          (nth (1- n)
-                               (get-rule-field (get-brr-local 'lemma state)
-                                               :hyps))
-                          nil)
-                      (value :invisible)))
-             (t (er soft :HYP
-                    ":HYP must be given an integer argument between 1 and ~x0."
-                    (length (get-rule-field (get-brr-local 'lemma state)
-                                            :hyps)))))))
-       (:lhs
-        0 (lambda nil
-            (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                       :lhs)))
-              (cond
-               ((eq val :get-rule-field-none) ; linear lemma
-                (er soft :LHS
-                    ":LHS is only legal for a :REWRITE rule."))
-               (t
-                (prog2$
-                 (cw "~x0~|" val)
-                 (value :invisible)))))))
-       (:rhs
-        0 (lambda nil
-            (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                       :rhs)))
-              (cond
-               ((eq val :get-rule-field-none) ; linear lemma
-                (er soft :RHS
-                    ":RHS is only legal for a :REWRITE rule."))
-               (t
-                (prog2$
-                 (cw "~x0~|" val)
-                 (value :invisible)))))))
-       (:unify-subst
-        0 (lambda nil
-            (prog2$
-             (cw "~*0"
-                 (tilde-*-alist-phrase (get-brr-local 'unify-subst state)
-                                       (brr-evisc-tuple state)
-                                       5))
-             (value :invisible))))
-       (:type-alist
-        0 (lambda nil
-            (prog2$
-             (cw "~%Decoded type-alist:~%")
-             (prog2$
-              (print-type-alist-segments
-               (type-alist-segments (get-brr-local 'type-alist state) nil)
-               (w state))
-              (prog2$
-               (cw "~%==========~%Use ~x0 to see actual type-alist.~%"
-                   '(get-brr-local 'type-alist state))
-               (value :invisible))))))
-       (:ancestors
-        0 (lambda nil
-            (prog2$
-             (cw "~@0"
-                 (show-ancestors-stack-msg state))
-             (value :invisible))))
-       (:initial-ttree
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'linear-lemma)
-                (er soft :INITIAL-TTREE
-                    ":INITIAL-TTREE is not legal for a :LINEAR rule."))
-               (t (prog2$
-                   (cw "~x0~|"
-                       (get-brr-local 'initial-ttree state))
-                   (value :invisible)))))))
-       (:final-ttree
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'linear-lemma)
-                (er soft :FINAL-TTREE
-                    ":FINAL-TTREE is not legal for a :LINEAR rule."))
-               (t (prog2$
-                   (cw "~x0~|"
-                       (get-brr-local 'final-ttree state))
-                   (value :invisible)))))))
-       (:rewritten-rhs ; keep in sync with :poly-list, below
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'rewrite-rule)
-                (prog2$
-                 (cond
-                  ((or (get-brr-local 'wonp state)
-                       (member-eq (get-brr-local 'failure-reason state)
-                                  '(too-many-ifs rewrite-fncallp)))
-                   (cw "~x0~|" (get-brr-local 'brr-result state)))
-                  (t (cw "? ~F0 failed.~%"
-                         (get-rule-field lemma :rune))))
-                 (value :invisible)))
-               (t
-                (er soft :REWRITTEN-RHS
-                    ":REWRITTEN-RHS is only legal for a :REWRITE rule."))))))
-       (:poly-list ; keep in sync with :rewritten-rhs, above
-        0 (lambda nil
-            (let ((lemma (get-brr-local 'lemma state)))
-              (cond
-               ((eq (record-type lemma) 'linear-lemma)
-                (prog2$
-                 (cond
-                  ((get-brr-local 'wonp state)
-                   (cw "~x0~|" (brr-result state)))
-                  (t (cw "? ~F0 failed.~%"
-                         (get-rule-field lemma :rune))))
-                 (value :invisible)))
-               (t
-                (er soft :POLY-LIST
-                    ":POLY-LIST is only legal for a :LINEAR rule."))))))
-       (:failure-reason
-        0 (lambda nil
-            (prog2$
-             (if (get-brr-local 'wonp state)
-                 (cw "? ~F0 succeeded.~%"
-                     (get-rule-field (get-brr-local 'lemma state) :rune))
-               (cw "~@0~|"
-                   (tilde-@-failure-reason-phrase
-                    (get-brr-local 'failure-reason state)
-                    1
-                    (get-brr-local 'unify-subst state)
-                    (brr-evisc-tuple state)
-                    (free-vars-display-limit state)
-                    state)))
-             (value :invisible))))
-       (:wonp
-        0 (lambda nil
-            (prog2$
-             (if (get-brr-local 'wonp state)
-                 (cw "? ~F0 succeeded.~%"
-                     (get-rule-field (get-brr-local 'lemma state) :rune))
-               (cw "? ~F0 failed.~%"
-                     (get-rule-field (get-brr-local 'lemma state) :rune)))
-             (value :invisible))))
-       (:path
-        0 (lambda nil
-            (prog2$ (cw-gstack :evisc-tuple (brr-evisc-tuple state))
-                    (value :invisible))))
-       (:frame
-        1 (lambda (n)
-            (let ((rgstack (reverse (get-brr-global 'brr-gstack state))))
-              (cond
-               ((and (integerp n)
-                     (>= n 1)
-                     (<= n (length rgstack)))
-                (prog2$
-                 (cw-gframe n
-                            (if (= n 1)
-                                nil
-                              (access gframe (nth (- n 2) rgstack) :sys-fn))
-                            (nth (- n 1) rgstack)
-                            nil)
-                 (value :invisible)))
-               (t (er soft :frame
-                      ":FRAME must be given an integer argument between 1 and ~
-                       ~x0."
-                      (length rgstack)))))))
-       (:top
-        0 (lambda nil
-            (prog2$
-             (cw-gframe 1 nil
-                        (car (reverse (get-brr-global 'brr-gstack state)))
-                        nil)
-             (value :invisible))))
-       (:btm
-        0 (lambda nil
-            (prog2$
-             (let ((gstack (get-brr-global 'brr-gstack state)))
-               (cw-gframe (length gstack) nil (car gstack) nil))
-             (value :invisible))))
-       (:help
-        0 (lambda nil
-            (doc 'brr-commands)))
-       (:standard-help 0 help))))))
+     *brkpt2-aliases*))))
 
 ; We now develop some of the code for an implementation of an idea put
 ; forward by Diederik Verkest, namely, that patterns should be allowed
@@ -13943,83 +14164,93 @@
   (the-mv
    5
    (signed-byte 30)
-   (let* ((ttree-saved ttree)
-          (rw-cache-active-p (rw-cache-active-p rcnst))
-          (cached-failure-entry
-           (and rw-cache-active-p
-                (relieve-hyp-failure-entry rune unify-subst hyps ttree
-                                           step-limit)))
-          (cached-failure-reason-raw
-           (and cached-failure-entry
-                (access rw-cache-entry cached-failure-entry :failure-reason)))
-          (cached-failure-reason-free-p
-           (and (consp cached-failure-reason-raw)
-                (free-failure-p cached-failure-reason-raw)))
-          (cached-failure-reason-free
-           (and cached-failure-reason-free-p
-                (equal (access rw-cache-entry cached-failure-entry
-                               :hyp-info)
-                       hyps)
-                cached-failure-reason-raw))
-          (cached-failure-reason
-           (and (not cached-failure-reason-free-p)
-                cached-failure-reason-raw))
-          (debug
-           (and cached-failure-reason
-                (rw-cache-debug rune target unify-subst
-                                cached-failure-reason step-limit))))
-     (cond
-      ((and cached-failure-reason
-            (not debug))
-       (mv step-limit nil
-           (and (f-get-global 'gstackp state) ; cons optimization
-                (cons 'cached cached-failure-reason))
-           unify-subst ttree))
-      (t (let ((step-limit-saved step-limit)
-               (unify-subst-saved unify-subst)
-               (old-rw-cache-alist (cdr cached-failure-reason-free)))
-           (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp
-                                     new-rw-cache-alist)
-                   (rewrite-entry
-                    (relieve-hyps1 rune target hyps backchain-limit-lst
-                                   unify-subst 1 unify-subst ttree allp
-                                   old-rw-cache-alist nil)
-                    :obj nil :geneqv nil :pequiv-info nil ; all ignored
+   (cond
+    ((null hyps)
+
+; For an empty list of hypotheses, there is no reason to consider the rw-cache
+; at all, so we make a trivial successful return.  We rely on this in
+; rewrite-with-lemma in the comment: "If hyps is nil, then relieve-hyps returns
+; immediately with nil as the unifying substitution."
+
+     (mv step-limit t nil unify-subst ttree))
+    (t
+     (let* ((ttree-saved ttree)
+            (rw-cache-active-p (rw-cache-active-p rcnst))
+            (cached-failure-entry
+             (and rw-cache-active-p
+                  (relieve-hyp-failure-entry rune unify-subst hyps ttree
+                                             step-limit)))
+            (cached-failure-reason-raw
+             (and cached-failure-entry
+                  (access rw-cache-entry cached-failure-entry :failure-reason)))
+            (cached-failure-reason-free-p
+             (and (consp cached-failure-reason-raw)
+                  (free-failure-p cached-failure-reason-raw)))
+            (cached-failure-reason-free
+             (and cached-failure-reason-free-p
+                  (equal (access rw-cache-entry cached-failure-entry
+                                 :hyp-info)
+                         hyps)
+                  cached-failure-reason-raw))
+            (cached-failure-reason
+             (and (not cached-failure-reason-free-p)
+                  cached-failure-reason-raw))
+            (debug
+             (and cached-failure-reason
+                  (rw-cache-debug rune target unify-subst
+                                  cached-failure-reason step-limit))))
+       (cond
+        ((and cached-failure-reason
+              (not debug))
+         (mv step-limit nil
+             (and (f-get-global 'gstackp state) ; cons optimization
+                  (cons 'cached cached-failure-reason))
+             unify-subst ttree))
+        (t (let ((step-limit-saved step-limit)
+                 (unify-subst-saved unify-subst)
+                 (old-rw-cache-alist (cdr cached-failure-reason-free)))
+             (sl-let (relieve-hyps-ans failure-reason unify-subst ttree allp
+                                       new-rw-cache-alist)
+                     (rewrite-entry
+                      (relieve-hyps1 rune target hyps backchain-limit-lst
+                                     unify-subst 1 unify-subst ttree allp
+                                     old-rw-cache-alist nil)
+                      :obj nil :geneqv nil :pequiv-info nil ; all ignored
 
 ; If we are doing non-linear arithmetic, we will be rewriting linear
 ; terms under a different theory than the standard one.  However, when
 ; relieving hypotheses, we want to use the standard one, so we make
 ; sure that that is what we are using.
 
-                    :rcnst
-                    (if (eq (access rewrite-constant rcnst
-                                    :active-theory)
-                            :standard)
-                        rcnst
-                      (change rewrite-constant rcnst
-                              :active-theory :standard)))
-                   (declare (ignore allp))
-                   (cond ((and debug relieve-hyps-ans)
-                          (prog2$
-                           (rw-cache-debug-action
-                            rune target unify-subst-saved
-                            cached-failure-reason step-limit-saved)
-                           (mv step-limit nil cached-failure-reason
-                               unify-subst-saved ttree-saved)))
-                         (t (mv step-limit relieve-hyps-ans failure-reason
-                                unify-subst
-                                (cond
-                                 ((or relieve-hyps-ans
-                                      backchain-limit
-                                      (not rw-cache-active-p))
-                                  ttree)
-                                 (new-rw-cache-alist ; free vars case
-                                  (note-relieve-hyps-failure-free
-                                   rune unify-subst hyps
-                                   ttree
-                                   cached-failure-entry
-                                   old-rw-cache-alist
-                                   new-rw-cache-alist
+                      :rcnst
+                      (if (eq (access rewrite-constant rcnst
+                                      :active-theory)
+                              :standard)
+                          rcnst
+                        (change rewrite-constant rcnst
+                                :active-theory :standard)))
+                     (declare (ignore allp))
+                     (cond ((and debug relieve-hyps-ans)
+                            (prog2$
+                             (rw-cache-debug-action
+                              rune target unify-subst-saved
+                              cached-failure-reason step-limit-saved)
+                             (mv step-limit nil cached-failure-reason
+                                 unify-subst-saved ttree-saved)))
+                           (t (mv step-limit relieve-hyps-ans failure-reason
+                                  unify-subst
+                                  (cond
+                                   ((or relieve-hyps-ans
+                                        backchain-limit
+                                        (not rw-cache-active-p))
+                                    ttree)
+                                   (new-rw-cache-alist ; free vars case
+                                    (note-relieve-hyps-failure-free
+                                     rune unify-subst hyps
+                                     ttree
+                                     cached-failure-entry
+                                     old-rw-cache-alist
+                                     new-rw-cache-alist
 
 ; At one time we only saved the step-limit in debug mode, so that when we merge
 ; rw-caches after calls of cons-tag-trees, we avoid essentially duplicated
@@ -14029,8 +14260,8 @@
 ; record can give a quick result.  The potential for rare duplication seems
 ; harmless.
 
-                                   step-limit-saved))
-                                 (t
+                                     step-limit-saved))
+                                   (t
 
 ; We cache the rewriting failure into the ttree.  It would be a mistake to
 ; extend the rw-cache if there is a backchain-limit, because a later lookup
@@ -14039,14 +14270,14 @@
 ; workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp, fails with
 ; :rw-cache-state :atom.
 
-                                  (note-relieve-hyp-failure
-                                   rune unify-subst failure-reason
-                                   ttree hyps
+                                    (note-relieve-hyp-failure
+                                     rune unify-subst failure-reason
+                                     ttree hyps
 
 ; See comment above about regarding our formerly saving the step-limit only in
 ; debug mode.
 
-                                   step-limit-saved)))))))))))))
+                                     step-limit-saved)))))))))))))))
 
 (defun rewrite-with-lemma (term lemma ; &extra formals
                                 rdepth step-limit
@@ -14364,8 +14595,7 @@
                                                    :forbidden-fns)))
                                       term ttree))
                                  (t
-                                  (let* ((vars (all-vars term))
-                                         (hyps0 (flatten-ands-in-lit
+                                  (let* ((hyps0 (flatten-ands-in-lit
 
 ; Note: The sublis-var below normalizes the explicit constant constructors,
 ; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
@@ -14379,13 +14609,30 @@
                                                       (sublis-var nil
                                                                   extra-evaled-hyp)))
                                          (hyps (append? hyps0 extra-hyps))
+                                         (vars (and hyps
+
+; We avoid the cost of computing (all-vars term) when there are no hypotheses
+; (which is presumably a common case).  We have seen this reduce an event's
+; processing time from 67 seconds to 19 seconds.
+
+                                                    (all-vars term)))
                                          (rule-backchain-limit
                                           (access rewrite-rule lemma
                                                   :backchain-limit-lst))
                                          (bad-synp-hyp-msg
-                                          (bad-synp-hyp-msg hyps0 vars nil wrld))
+                                          (and hyps0
+
+; Vars should be (all-vars term) if we call bad-synp-hyp-msg, but if hyps0 is
+; nil then bad-synp-hyp-msg returns nil regardless of vars, so we avoid calling
+; it.
+
+                                               (bad-synp-hyp-msg hyps0 vars nil
+                                                                 wrld)))
                                          (bad-synp-hyp-msg-extra
-                                          (bad-synp-hyp-msg extra-hyps vars nil wrld)))
+                                          (and extra-hyps ; optimize, as above
+                                               (bad-synp-hyp-msg extra-hyps
+                                                                 vars nil
+                                                                 wrld))))
                                     (cond
                                      (bad-synp-hyp-msg
                                       (mv step-limit
@@ -14440,7 +14687,12 @@
 ; themselves.  There may be additional vars in both evaled-hyp and in
 ; val.  But they are free at the time we do this relieve-hyps.
 
-                                         (pairlis$ vars vars)
+; If hyps is nil, then relieve-hyps returns immediately with nil as the
+; unifying substitution.  That's OK, as explained in a comment below ("At one
+; point we ignored the unify-subst....").
+
+                                         (and hyps
+                                              (pairlis$ vars vars))
                                          nil ; allp=nil for meta rules
                                          )
                                         :obj nil         ; ignored
@@ -14478,10 +14730,12 @@
 
                                                            (sublis-var nil val)
 
-; At one point we ignored the unify-subst constructed above and used a
-; nil here.  That was unsound if val involved free vars bound by the
-; relief of the evaled-hyp.  We must rewrite val under the extended
-; substitution.  Often that is just the identity substitution.
+; At one point we ignored the unify-subst constructed above and used a nil
+; here.  That was unsound if val involved free vars bound by the relief of the
+; evaled-hyp.  We must rewrite val under the extended substitution.  Often that
+; is just the identity substitution.  If there are no hypotheses, however, then
+; there are no such free vars, so it is fine to rewrite with nil as the
+; unify-subst.
 
                                                            unify-subst
                                                            'meta))

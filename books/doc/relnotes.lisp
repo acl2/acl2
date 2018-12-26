@@ -163,6 +163,17 @@
 
  <p>Improved the documentation of the Bitcoin library.</p>
 
+ <h4><see topic='@(url std::define)'>Define</see></h4>
+
+ <p>Added support for configuration objects that can be used to specify some
+ extended options.  Also added support for @(':verify-guards :after-returns')
+ that indicates that guards are to be verified after the returns
+ specifiers.</p>
+
+ <h4><see topic='@(url rstobj::defrstobj)'>Defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
+
  <h4>Digits in Arbitrary Bases</h4>
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
@@ -171,13 +182,13 @@
  to generate additional return types for conversions from natural numbers to
  digits has been generalized and renamed.</p>
 
- <h4><see topic='@(url rstobj::defrstobj)'>defrstobj</see></h4>
-
- <p>Added support for defining universal accessor and updater functions.</p>
-
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
  <p>Added more error-checking functions.</p>
+
+ <p>The files @('[books]/kestrel/utilities/error-checking*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/error-checking/')
+ and renamed.  Some files have been refactored into smaller files.</p>
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
@@ -222,6 +233,26 @@
  <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
 
  <p>Added some theorems about functions on lists.</p>
+
+ <h4>Profiling</h4>
+
+ <p>Attempts to run @(tsee profile-acl2) or @(tsee profile-all) had failed, for
+ ACL2 built on SBCL, with an obscure SBCL error message.  Now, the error
+ message gives instructions for how to avoid the error by rebuilding SBCL from
+ sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
+ the appropriate SBCL source code line.</p>
+
+ <h4>RAC: Restricted Algorithmic C</h4>
+
+ <p>Minor modifications of @('projects/rac/') include a bug fix in the parser
+ and a rewrite of @('examples/hello.cpp')
+ (hat-tip to D. Hardin).</p>
+
+ <h4>@(csee rtl)</h4>
+
+ <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
+ required in the verification of an Arm FPU currently under development.  This
+ in turn required some minor modifications of @('projects/arm/*/').</p>
 
  <h4>@(csee std/io)</h4>
 
@@ -269,7 +300,10 @@
  execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
  MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
  SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
- SQRTPS, SQRTPD, and BSF.</p>
+ SQRTPS, SQRTPD, CVTSS2SI, CVTSD2SI, CVTTSS2SI, CVTTSD2SI, CVTSI2SS, CVTSI2SD,
+ CVTSS2SD, CVTSD2SS, CVTPS2PD, CVTPD2PS, ANDPS, ANDPD, ANDNPS, ANDNPD, ORPS,
+ ORPD, XORPS, XORPD, PAND, PANDN, POR, PXOR, CMPSS, CMPSD, CMPPS, CMPPD,
+ COMISS, COMISD, UCOMISS, UCOMISD, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
@@ -282,6 +316,8 @@
  <p>Improved incrementing and decrementing of the stack pointer to be modular:
  64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
  current stack segment.</p>
+
+ <p>Improved and extended some documentation.</p>
 
  <h3>Licensing Changes</h3>
 

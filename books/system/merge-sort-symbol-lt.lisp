@@ -5,6 +5,7 @@
 (in-package "ACL2")
 
 (verify-termination merge-symbol-<
+  #+acl2-devel ; otherwise fails to be redundant with :? measure
   (declare (xargs :measure (+ (len l1) (len l2)))))
 
 (defthm acl2-count-evens

@@ -14,7 +14,7 @@
 ; cert_param: non-acl2r
 
 (include-book "kestrel/utilities/doublets" :dir :system)
-(include-book "kestrel/utilities/error-checking" :dir :system)
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "oslib/top" :dir :system)

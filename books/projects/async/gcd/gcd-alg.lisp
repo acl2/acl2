@@ -20,7 +20,7 @@
                   :measure (nfix (+ a b))))
   (cond ((zp a) (nfix b))
         ((zp b) (nfix a))
-        ((equal a b) (nfix a))
+        ((equal a b) a)
         ((< a b)
          (gcd-alg a (- b a)))
         (t (gcd-alg (- a b) b))))

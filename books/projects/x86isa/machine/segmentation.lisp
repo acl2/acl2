@@ -231,6 +231,7 @@
 (define ea-to-la ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		  (eff-addr  :type (signed-byte 64))
 		  (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
+                  (nbytes :type (member 1 2 4 6 8 10 16))
 		  x86)
   :returns (mv flg
 	       (lin-addr i64p :hyp (i64p eff-addr)))
@@ -273,9 +274,26 @@
    default address size and override prefixes.
    </p>
    <p>
-   In 32-bit mode, the effective address is checked against
-   the lower and upper bounds of the segment.
-   In 64-bit mode, this check is skipped.
+   This function also takes as input the number of bytes
+   that have to be read or written starting from the effective address;
+   that is, the chunk of bytes to be accessed
+   goes from @('eff-addr') to @('eff-addr + nbytes - 1'), both inclusive.
+   In 32-bit mode, the @('eff-addr') (the start of the chunk)
+   is checked against the lower bound of the segment,
+   and @('eff-addr + nbytes - 1') (the end of the chunk)
+   is checked against the upper bound of the segment.
+   In 64-bit mode, these checks are skipped.
+   The calculation @('eff-addr + nbytes - 1') should be modular,
+   but if it wraps around then there are effectively two chunks of bytes
+   to check for containment in the segment.
+   For now we make a stricter check
+   by calculating @('eff-addr + nbytes - 1') non-modularly
+   and therefore always having one chunk to check.
+   Note that operations like @(tsee rme-size) always access one contiguous chunk
+   because they forward the translated addresses
+   to operations like @(tsee rml-size);
+   so improvements may need to be made
+   in @(tsee rme-size) and similar operations as well.
    </p>
    <p>
    In 32-bit mode,
@@ -334,8 +352,10 @@
 	       (the (unsigned-byte 33) lower-bound)
 	       (the (unsigned-byte 32) upper-bound))
 	   (segment-base-and-bounds proc-mode seg-reg x86))
-	  ((unless (and (<= lower-bound eff-addr)
-			(<= eff-addr upper-bound)))
+          (first-addr eff-addr)
+          (last-addr (+ eff-addr nbytes -1))
+	  ((unless (and (<= lower-bound first-addr)
+			(<= last-addr upper-bound)))
 	   (mv (list :segment-limit-fail
 		     (list seg-reg eff-addr lower-bound upper-bound))
 	       0))
@@ -355,14 +375,14 @@
   (defthm-sb ea-to-la-is-i64p
     :hyp (i64p eff-addr)
     :bound 64
-    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg x86))
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
     :gen-type t
     :gen-linear t)
 
   (defthm-sb ea-to-la-is-i48p-when-no-error
-    :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg x86)))
+    :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
     :bound 48
-    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg x86))
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
     :gen-type t
     :gen-linear t)
 
@@ -372,14 +392,14 @@
 	  (not (equal fld :seg-hidden-base))
 	  (not (equal fld :seg-hidden-limit))
 	  (not (equal fld :seg-hidden-attr)))
-     (equal (ea-to-la proc-mode eff-addr seg-reg (xw fld index value x86))
-	    (ea-to-la proc-mode eff-addr seg-reg x86))))
+     (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (xw fld index value x86))
+	    (ea-to-la proc-mode eff-addr seg-reg nbytes x86))))
 
   (defrule ea-to-la-when-64-bit-modep-and-not-fs/gs
     (implies
      (and (not (equal seg-reg #.*fs*))
 	  (not (equal seg-reg #.*gs*)))
-     (equal (ea-to-la #.*64-bit-mode* eff-addr seg-reg x86)
+     (equal (ea-to-la #.*64-bit-mode* eff-addr seg-reg nbytes x86)
 	    (if (canonical-address-p eff-addr)
 		(mv nil eff-addr)
 	      (mv (list :non-canonical-address eff-addr) 0))))))
@@ -404,7 +424,7 @@
    </p>"
   (if (zp n)
       (mv nil nil)
-    (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+    (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg 1 x86))
 	 ((when flg) (mv flg nil))
 	 (eff-addr+1 (i64 (1+ eff-addr)))
 	 ((mv flg lin-addrs) (eas-to-las proc-mode (1- n) eff-addr+1 seg-reg x86))

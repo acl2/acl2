@@ -178,7 +178,7 @@
        :short ,short-doc-string
        :long ,long-doc-string
 
-       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
 	    ((when flg) (mv flg 0 x86))
 	    ,@(and
 	       check-alignment?-var
@@ -501,7 +501,7 @@
   "<p>The effective address is translated to a canonical linear address using
    @(see ea-to-la). If this translation is successful and no other errors (like
    alignment errors) occur, then @(see rml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg 0 x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
@@ -638,7 +638,7 @@
   "<p>The effective address is translated to a canonical linear address using
    @(see ea-to-la). If this translation is successful and no other errors (like
    alignment errors) occur, then @(see riml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg 0 x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
@@ -782,7 +782,7 @@
        :short ,short-doc-string
        :long ,long-doc-string
 
-       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
 	    ((when flg) (mv flg x86))
 	    ,@(and
 	       check-alignment?-var
@@ -944,7 +944,7 @@
   "<p>The effective address is translated to a canonical linear address.  If
    this translation is successful and no other errors occur (like alignment
    errors), then @(see wml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))
@@ -1042,7 +1042,7 @@
   "<p>The effective address is translated to a canonical linear address.  If
    this translation is successful and no other errors occur (like alignment
    errors), then @(see wiml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg x86))
+  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg x86))
        ((unless (or (not check-alignment?)
 		    (address-aligned-p lin-addr nbytes mem-ptr?)))

@@ -101,12 +101,39 @@ public final class Acl2Character extends Acl2Value {
 
     /**
      * Returns a printable representation of this ACL2 character.
-     * This should be improved to return something non-confusing
-     * when the character is "unusual".
+     * If the character is visible
+     * (i.e. its code is between 33 and 126 inclusive),
+     * it is returned as is, preceded by {@code #\} as in ACL2.
+     * If the character is among the six with a special notation in ACL2
+     * ({@code #\Space} etc.), it is returned in that special notation.
+     * Otherwise, we return its hexadecimal code,
+     * always as two digits, with lowercase letters,
+     * preceded by {@code #\}.
+     * This scheme should ensure that
+     * ACL2 characters are always printed clearly.
      */
     @Override
     public String toString() {
-        return "#\\" + this.jchar;
+        if (33 <= this.jchar && this.jchar <= 126)
+            return "#\\" + this.jchar;
+        switch (this.jchar) {
+            case 9:
+                return "#\\Tab";
+            case 10:
+                return "#\\Newline";
+            case 12:
+                return "#\\Page";
+            case 13:
+                return "#\\Return";
+            case 32:
+                return "#\\Space";
+            case 127:
+                return "#\\Rubout";
+            default:
+                return "#\\"
+                        + Integer.toHexString(this.jchar / 16)
+                        + Integer.toHexString(this.jchar % 16);
+        }
     }
 
     /**

@@ -185,12 +185,48 @@ public final class Acl2Symbol extends Acl2Value {
 
     /**
      * Returns a printable representation of this ACL2 symbol.
-     * This should be improved to return something non-confusing
-     * when the package name or name includes "unusual" characters.
+     * We always include the package prefix,
+     * since there is no notion of "current package" here;
+     * the package name is represented
+     * as explained in {@link Acl2PackageName#toString()}.
+     * The symbol name comes after two colons.
+     * If the symbol name is not empty,
+     * consists of only of uppercase letters, digits, and dashes,
+     * and does not start with a digit,
+     * then the symbol name is used as is;
+     * otherwise, it is preceded and followed by vertical bars,
+     * and any backslash or vertical bar in the symbol name
+     * is preceded by a backslash.
+     * The conditions here under which
+     * the symbol name is surrounded by vertical bars
+     * are more stringent than in ACL2;
+     * future versions of this method may relax those conditions
+     * and match ACL2's conditions more closely.
+     * This scheme should ensure that ACL2 symbols are always printed clearly.
      */
     @Override
     public String toString() {
-        return this.packageName + "::" + this.name;
+        StringBuilder result = new StringBuilder();
+        boolean noBars = true;
+        String jstring = this.name.getJavaString();
+        noBars = noBars && !jstring.isEmpty();
+        for (int i = 0; i < jstring.length(); ++i) {
+            char jchar = jstring.charAt(i);
+            noBars = noBars &&
+                    (('A' <= jchar && jchar <= 'Z') ||
+                            ('0' <= jchar && jchar <= '9' && i != 0) ||
+                            (jchar == '-'));
+            if (jchar == '|')
+                result.append("\\|");
+            else if (jchar == '\\')
+                result.append("\\\\");
+            else result.append(jchar);
+        }
+        if (!noBars) {
+            result.insert(0, '|');
+            result.append('|');
+        }
+        return this.packageName + "::" + result;
     }
 
     /**

@@ -345,6 +345,7 @@
               (count-to-nil (car x))
               (count-to-nil (cdr x)))))
 
+     #+acl2-devel ; else not redundant with :? measure
      (verify-termination
        (ffnnamep (declare (xargs :measure (count-to-nil term)
                                  :verify-guards nil)))

@@ -182,9 +182,6 @@ public final class Acl2FunctionApplication extends Acl2Term {
 
     /**
      * Returns a printable representation of this ACL2 application.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the function or arguments include "unusual" characters.
      */
     @Override
     public String toString() {

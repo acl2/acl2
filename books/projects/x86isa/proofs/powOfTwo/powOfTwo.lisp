@@ -98,40 +98,40 @@
             (power-of-2-p (floor x 2))
           nil))))
 
-  (defun compute-power-of-2 (x count)
-    (declare (xargs :measure (power-of-2-measure x)
+  (defun compute-log-2 (x count)
+    (declare (xargs :measure (log-2-measure x)
                     :guard (natp count)))
     ;; Find the number n such that x approx.== 2^n.
     (if (natp x)
         (if (<= x 1)
             count
-          (compute-power-of-2 (* 1/2 x) (1+ count)))
+          (compute-log-2 (* 1/2 x) (1+ count)))
       count))
 
-  (defthm integerp-compute-power-of-2
+  (defthm integerp-compute-log-2
     (implies (integerp count)
-             (integerp (compute-power-of-2 x count)))
+             (integerp (compute-log-2 x count)))
     :rule-classes :type-prescription)
 
-  (defthm natp-compute-power-of-2
+  (defthm natp-compute-log-2
     (implies (natp count)
-             (natp (compute-power-of-2 x count)))
+             (natp (compute-log-2 x count)))
     :rule-classes :type-prescription)
 
   (local
-   (defthm compute-power-of-2-and-expt
+   (defthm compute-log-2-and-expt
      (implies
       ;; natp would lead to a stronger rule, but I want a weak one here.
       (posp count)
-      (equal (expt 2 (compute-power-of-2 x count))
-             (expt 2 (+ 1 (compute-power-of-2 x (1- count))))))))
+      (equal (expt 2 (compute-log-2 x count))
+             (expt 2 (+ 1 (compute-log-2 x (1- count))))))))
 
   (defthm if-power-of-2-p-returns-t-then-x-is-indeed-a-power-of-2
     ;; If (power-of-2-p x) is t, then there exists a natural number n
     ;; such that x is equal to (expt 2 n).
     (implies (and (power-of-2-p x)
                   (natp x))
-             (equal (expt 2 (compute-power-of-2 x 0)) x)))
+             (equal (expt 2 (compute-log-2 x 0)) x)))
 
   (defthm power-of-2-p-returns-t-for-x=2^n
     ;; Every number x == 2^n, where n is a natural number,
@@ -147,7 +147,7 @@
              (power-of-2-p x))
    :concl (equal (logand x (+ -1 x)) 0)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-2
@@ -156,7 +156,7 @@
              (not (power-of-2-p x)))
    :concl (equal (equal (logand x (+ -1 x)) 0) nil)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-3
@@ -166,7 +166,7 @@
                          (loghead 64 (+ -1 x)))
                  0)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm program-effects-helper-4
@@ -177,7 +177,7 @@
                               (loghead 64 (+ -1 x)))
                       0))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-1
@@ -185,21 +185,21 @@
    :concl (equal (loghead 8 (logior 1 (logext 64 (bitops::logsquash 8 (+ -1 x)))))
                  1)
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-2
    :hyp (signed-byte-p 64 x)
    :concl (signed-byte-p 64 (logior 1 (bitops::logsquash 8 (logext 64 (+ -1 x)))))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm power-of-2-p-result-helper-3
    :hyp (signed-byte-p 64 x)
    :concl (signed-byte-p 64 (bitops::logsquash 8 (logext 64 (+ -1 x))))
    :g-bindings
-   `((x    (:g-number ,(gl-int 0 1 65))))))
+   `((x    (:g-number ,(increasing-list 0 1 65))))))
 
 ;; ======================================================================
 

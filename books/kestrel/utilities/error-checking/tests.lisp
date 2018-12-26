@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "error-checking")
-(include-book "testing")
+(include-book "top")
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

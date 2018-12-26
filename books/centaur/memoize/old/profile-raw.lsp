@@ -165,7 +165,31 @@
      (format t ,@r)
      (force-output t)))
 
+#+sbcl
+(defun sbcl-check-tls-size ()
+
+; As of SBCL 1.4.14 (and probably many versions preceding that one),
+; sb-vm:tls-size is 4096, which is insufficient for profile-acl2 or
+; profile-all.  We could simply check the following inequality shortly before
+; profiling, replacing 5322 by the number of functions to profile.  But further
+; attempts to profile would need sb-vm::tls-size to be corresponding larger, so
+; we simply check that the default has been overridden, presumably by editing
+; an SBCL source file as suggested below.
+
+  (when (= sb-vm:tls-size 4096)
+    (error "~s will fail with default builds of SBCL.  A~%~
+            solution is to build SBCL with a larger value of ~s.~%~
+            You can do this by first editing~%~
+            src/compiler/generic/parms.lisp,~%replacing~%~
+            \"(defconstant tls-size 4096)\"~%by~%~
+            \"(defconstant tls-size 16384)\"~%~
+            and then building SBCL from source, preferably with:~%~a"
+           'profile-acl2
+           'sb-vm::tls-size
+           "sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header")))
+
 (defun profile-acl2-fn (start lots-of-info forget)
+  #+sbcl (sbcl-check-tls-size)
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
@@ -222,6 +246,7 @@
   nil)
 
 (defun profile-all-fn (lots-of-info forget pkg)
+  #+sbcl (sbcl-check-tls-size)
   (let ((*record-bytes* #+Clozure lots-of-info #-Clozure nil)
         (*record-calls* lots-of-info)
         (*record-hits* lots-of-info)
@@ -254,7 +279,9 @@
       (maphash (lambda (k v)
                  (if (eq v 'no) (remhash k fns-ht)))
                fns-ht)
-      (ofv2 "Profiling ~:d functions." (hash-table-count fns-ht))
+      (format t
+              "Profiling ~:d functions."
+              (hash-table-count fns-ht))
       (memoize-here-come (hash-table-count fns-ht))
       (maphash
        (lambda (k v) (declare (ignore v))

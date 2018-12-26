@@ -226,7 +226,7 @@
                 (>= (min-upper i (1- k))
                     (md8 k i)))))
 
-(defund i$ () (fl (* 128 (- (d$) 1/2))))
+(defund i64 (d) (fl (* 128 (- d 1/2))))
 
 (defthmd sel-limits-8
   (implies (and (= (r$) 8)
@@ -235,9 +235,9 @@
 		(< (d$) 1)
                 (member k '(-4 -3 -2 -1 0 1 2 3 4)))
            (and (<= (sel-lower-div k (d$))
-                    (max-lower (i$) k))
+                    (max-lower (i64 (d$)) k))
                 (>= (sel-upper-div k (d$))
-                    (min-upper (i$) k)))))
+                    (min-upper (i64 (d$)) k)))))
 
 (defthmd md8-k-bounds
   (implies (and (= (r$) 8)
@@ -246,20 +246,20 @@
 		(< (d$) 1))
            (and (implies (member k '(-3 -2 -1 0 1 2 3 4))
                          (<= (+ (sel-lower-div k (d$)) 1/64)
-                             (md8 k (i$))))
+                             (md8 k (i64 (d$)))))
                 (implies (member k '(-4 -3 -2 -1 0 1 2 3))
                          (>= (sel-upper-div k (d$))
-                             (md8 (1+ k) (i$)))))))
+                             (md8 (1+ k) (i64 (d$))))))))
 
-(defund select-digit-d8 (a)
-  (cond ((<= (md8 4 (i$)) a) 4)
-        ((<= (md8 3 (i$)) a) 3)
-        ((<= (md8 2 (i$)) a) 2)
-        ((<= (md8 1 (i$)) a) 1)
-        ((<= (md8 0 (i$)) a) 0)
-        ((<= (md8 -1 (i$)) a) -1)
-        ((<= (md8 -2 (i$)) a) -2)
-        ((<= (md8 -3 (i$)) a) -3)
+(defund select-digit-d8 (a i)
+  (cond ((<= (md8 4 i) a) 4)
+        ((<= (md8 3 i) a) 3)
+        ((<= (md8 2 i) a) 2)
+        ((<= (md8 1 i) a) 1)
+        ((<= (md8 0 i) a) 0)
+        ((<= (md8 -1 i) a) -1)
+        ((<= (md8 -2 i) a) -2)
+        ((<= (md8 -3 i) a) -3)
         (t -4)))
 
 (defthmd srt-div-rad-8
@@ -272,7 +272,7 @@
                 (rationalp approx)
                 (integerp (* 64 approx))
                 (< (abs (- approx (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 approx)))
+                (= (q$ (1+ j)) (select-digit-d8 approx (i64 (d$)))))
 	   (<= (abs (rem$ (1+ j))) (* 4/7 (d$)))))
 
 )

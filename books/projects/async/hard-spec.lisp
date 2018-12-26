@@ -922,6 +922,12 @@
   (equal (len (v-adder-output c a b))
          (len a)))
 
+(defthm bvp-v-adder-output
+  (bvp (v-adder-output c a b))
+  :rule-classes (:rewrite :type-prescription))
+
+(in-theory (disable v-adder-output))
+
 (defun v-adder-carry-out (c a b)
   (declare (xargs :guard (true-listp b)))
   (nth (len a) (v-adder c a b)))

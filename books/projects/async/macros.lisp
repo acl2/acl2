@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -582,17 +582,14 @@
              nil
            (b* ((inputs (car inputs-seq))
                 (,act-name ,act)
-                (data ,data))
+                (data ,data)
+                (seq (,seq (cdr inputs-seq)
+                           (,step inputs st ,@sizes)
+                           ,@sizes
+                           (1- n))))
              (if (equal ,act-name t)
-                 (append (,seq (cdr inputs-seq)
-                               (,step inputs st ,@sizes)
-                               ,@sizes
-                               (1- n))
-                         (list data))
-               (,seq (cdr inputs-seq)
-                     (,step inputs st ,@sizes)
-                     ,@sizes
-                     (1- n))))))
+                 (append seq (list data))
+               seq))))
 
        (defun ,netlist-seq (inputs-seq st netlist ,(car sizes) n)
          (declare (ignorable st netlist)
@@ -601,25 +598,20 @@
              nil
            (b* ((inputs (car inputs-seq))
                 (?outputs (se (si ',name ,(car sizes))
-                             inputs st netlist))
+                              inputs st netlist))
                 (,act-name ,(if (natp act-idx)
                                 `(nth ,act-idx outputs)
                               act))
-                (data ,(if netlist-data netlist-data data)))
+                (data ,(if netlist-data netlist-data data))
+                (seq (,netlist-seq (cdr inputs-seq)
+                                   (de (si ',name ,(car sizes))
+                                       inputs st netlist)
+                                   netlist
+                                   ,(car sizes)
+                                   (1- n))))
              (if (equal ,act-name t)
-                 (append (,netlist-seq (cdr inputs-seq)
-                                       (de (si ',name ,(car sizes))
-                                           inputs st netlist)
-                                       netlist
-                                       ,(car sizes)
-                                       (1- n))
-                         (list data))
-               (,netlist-seq (cdr inputs-seq)
-                             (de (si ',name ,(car sizes))
-                                 inputs st netlist)
-                             netlist
-                             ,(car sizes)
-                             (1- n))))))
+                 (append seq (list data))
+               seq))))
 
        (defthm ,seq-lemma
          (implies (and (,recognizer netlist ,@sizes)
@@ -640,7 +632,7 @@
                                     (inv 'nil)
                                     (clink 'nil))
   (declare (xargs :guard (and (symbolp name)
-                              (booleanp op)
+                              (symbolp op)
                               (booleanp inv)
                               (booleanp clink))))
   (b* ((recognizer (strings-to-symbol (symbol-name name)
@@ -669,8 +661,7 @@
                                    "$OUT-SEQ"))
        (netlist-out-seq (strings-to-symbol (symbol-name name)
                                            "$NETLIST-OUT-SEQ"))
-       (op-map (strings-to-symbol (symbol-name name)
-                                  "$OP-MAP"))
+       (op-map (strings-to-symbol (symbol-name op) "-MAP"))
        (seq (if op
                 `(,op-map seq)
               `(,in-seq inputs-seq st data-width n)))

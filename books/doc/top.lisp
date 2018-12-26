@@ -346,7 +346,10 @@ book that depends on Glucose being installed.</p>")
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
+(include-book "coi/documentation" :dir :system)
+
 ) ;; end progn for including all the books
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl

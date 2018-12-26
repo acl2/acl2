@@ -96,9 +96,6 @@ public final class Acl2QuotedConstant extends Acl2Term {
 
     /**
      * Returns a printable representation of this ACL2 quoted constant.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the quoted constant includes "unusual" characters.
      */
     @Override
     public String toString() {
