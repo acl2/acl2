@@ -530,7 +530,11 @@
                               (prog2$
                                (cw? (verbose-stats-flag vl)
                                     "~|CEGen/Warning: Ignoring rest of union types ~x0 ~|" (cdr types))
-                               (car types))))
+                               'acl2s::all)))
+; Pete: replaced (car types) by 'acl2s::all to fix a bug: if we take
+; the meet of say ((a neg pos)) and ((a integer)), the previous code
+; would turn that into the meet of ((a neg)) and ((a integer)) which
+; is ((a neg)), which is incorrect. 
          (eval-and-get-meet (typ1 typ2) ;(quoted-constant sym)|(sym quoted-constant)
                             (b* (((mv dt st) (if (defdata::proper-symbolp typ1)
                                                  (mv typ1 typ2)
