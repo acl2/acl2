@@ -162,7 +162,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection nats<=>chars-invertibility-theorems
+(defsection nats<=>chars-inverses-theorems
   :parents (nats=>chars chars=>nats)
   :short "@(tsee nats=>chars) and @(tsee chars=>nats)
           are mutual inverses."

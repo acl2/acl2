@@ -68,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection nats<=>string-invertibility-theorems
+(defsection nats<=>string-inverses-theorems
   :parents (nats=>string string=>nats)
   :short "@(tsee nats=>string) and @(tsee string=>nats)
           are mutual inverses."
