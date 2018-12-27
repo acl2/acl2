@@ -509,17 +509,15 @@
      0F 12: MOVLPS xmm, m64<br/>
   66 0F 12: MOVLPD xmm, m64<br/>"
 
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-RM)
 
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :unimplemented-in-32-bit-mode))
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -530,30 +528,33 @@
        (inst-ac? ;; Exceptions Type 5
         t)
 
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
        ((mv flg0
             (the (unsigned-byte 64) mem)
             (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) ?v-addr)
+            (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode
-         #.*xmm-access* 8 inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
-
+        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+                                                #.*xmm-access*
+                                                8
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -562,7 +563,7 @@
        ;; Update the x86 state:
        (x86 (!xmmi-size 8 xmm-index mem x86))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 
@@ -577,26 +578,29 @@
      0F 13: MOVLPS m64, xmm<br/>
   66 0F 13: MOVLPD m64, xmm<br/>"
 
-  :returns (x86 x86p :hyp (x86p x86))
+  :returns (x86 x86p :hyp (and (x86p x86)
+                               (canonical-address-p temp-rip)))
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-MR)
 
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :unimplemented-in-32-bit-mode))
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 64) xmm)
         (xmmi-size 8 xmm-index x86))
 
+       (p2 (prefixes->seg prefixes))
+
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+
        ((mv flg0
-            (the (signed-byte 64) v-addr)
+            (the (signed-byte 64) addr)
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
         (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
@@ -604,18 +608,10 @@
                             x86))
        ((when flg0)
         (!!ms-fresh :x86-effective-addr-error flg0))
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :v-addr-not-canonical v-addr))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -625,12 +621,20 @@
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem
-         8 inst-ac? xmm v-addr rex-byte r/m mod x86))
+        (x86-operand-to-xmm/mem$ proc-mode
+                                 8
+                                 inst-ac?
+                                 xmm
+                                 seg-reg
+                                 addr
+                                 rex-byte
+                                 r/m
+                                 mod
+                                 x86))
        ((when flg1)
         (!!ms-fresh :x86-operand-to-xmm/mem flg1))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 
