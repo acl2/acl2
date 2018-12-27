@@ -4759,7 +4759,7 @@
   (value `(print (show-geneqv
                   (geneqv-at-subterm-top (conc)
                                          (current-addr)
-                                         (pc-ens)
+                                         (make-pc-ens (pc-ens) state)
                                          (w state))
                   ',with-runes-p))))
 
