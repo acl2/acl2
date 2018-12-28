@@ -101,18 +101,14 @@
               (of (the (unsigned-byte 1) (,of-spec-fn signed-raw-result)))
 
               (output-rflags (the (unsigned-byte 32)
-                               (!rflags-slice
+                               (change-rflagsBits
+                                input-rflags
                                 :cf cf
-                                (!rflags-slice
-                                 :pf pf
-                                 (!rflags-slice
-                                  :af af
-                                  (!rflags-slice
-                                   :zf zf
-                                   (!rflags-slice
-                                    :sf sf
-                                    (!rflags-slice
-                                     :of of input-rflags))))))))
+                                :pf pf
+                                :af af
+                                :zf zf
+                                :sf sf
+                                :of of)))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))
@@ -181,7 +177,7 @@
               (input-rflags (mbe :logic (n32 input-rflags)
                                  :exec input-rflags))
               (input-cf (the (unsigned-byte 1)
-                          (rflags-slice :cf input-rflags)))
+                          (rflagsBits->cf input-rflags)))
 
               (raw-result (the (unsigned-byte ,(1+ result-nbits))
                             (+
@@ -208,18 +204,14 @@
               (of (the (unsigned-byte 1) (,of-spec-fn signed-raw-result)))
 
               (output-rflags (the (unsigned-byte 32)
-                               (!rflags-slice
+                               (change-rflagsBits
+                                 input-rflags
                                 :cf cf
-                                (!rflags-slice
-                                 :pf pf
-                                 (!rflags-slice
-                                  :af af
-                                  (!rflags-slice
-                                   :zf zf
-                                   (!rflags-slice
-                                    :sf sf
-                                    (!rflags-slice
-                                     :of of input-rflags))))))))
+                                :pf pf
+                                :af af
+                                :zf zf
+                                :sf sf
+                                :of of)))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))

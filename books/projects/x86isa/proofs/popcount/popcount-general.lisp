@@ -238,6 +238,15 @@
    :g-bindings
    `((rdi    (:g-number ,(gl-int 0 1 33))))))
 
+(local
+ (def-gl-thm x86-popcount-32-symbolic-simulation-helper-2
+   :hyp (unsigned-byte-p 32 rdi)
+   :concl
+   (equal (logext 64 (logcount rdi))
+          (logcount rdi))
+   :g-bindings
+   `((rdi    (:g-number ,(gl-int 0 1 33))))))
+
 (defthm x86-popcount-32-symbolic-simulation
   (implies (and (x86p x86)
                 (equal (ms x86) nil)
@@ -294,7 +303,6 @@
                                     write-user-rflags)
 
                                    (unsigned-byte-p
-                                    las-to-pas-values-and-!flgi
                                     las-to-pas
                                     default-+-2
                                     get-prefixes-opener-lemma-group-1-prefix
@@ -454,53 +462,24 @@
    :hyp (signed-byte-p 64 rdi)
    :concl
    (equal
-    (loghead
-     32
-     (+
-      (ifix
-       (logtail
-        24
-        (mv-nth
-         1
-         (imul-spec-32
-          (logand
-           252645135
-           (loghead
-            32
-            (+
-             (loghead
-              32
-              (+
-               (logand
-                858993459
-                (loghead
-                 32
-                 (+
-                  (logext 32 rdi)
-                  (-
-                   (logand
-                    1431655765
-                    (logext 32
-                            (loghead 31
-                                     (logtail 1 rdi))))))))
-               (logand
-                858993459
-                (loghead
-                 30
-                 (logtail
-                  2
-                  (+
-                   (logext 32 rdi)
-                   (-
-                    (logand
-                     1431655765
-                     (logext 32
-                             (loghead 31
-                                      (logtail 1 rdi)))))))))))
-             (loghead
-              28
-              (logtail
-               4
+    (logext
+     64
+     (loghead
+      32
+      (+
+       (ifix
+        (logtail
+         24
+         (mv-nth
+          1
+          (imul-spec-32
+           (logand
+            252645135
+            (loghead
+             32
+             (+
+              (loghead
+               32
                (+
                 (logand
                  858993459
@@ -525,56 +504,55 @@
                     (-
                      (logand
                       1431655765
-                      (logext
-                       32
-                       (loghead 31
-                                (logtail 1 rdi)))))))))))))))
-          16843009))))
-      (ifix
-       (logtail
-        24
-        (mv-nth
-         1
-         (imul-spec-32
-          (logand
-           252645135
-           (loghead
-            32
-            (+
-             (loghead
-              32
-              (+
-               (logand
-                858993459
-                (loghead
-                 32
-                 (+
-                  (logtail 32 rdi)
-                  (-
-                   (logand
-                    1431655765
-                    (logext 32
-                            (loghead 31
-                                     (logtail 33 rdi))))))))
-               (logand
-                858993459
-                (loghead
-                 30
-                 (logtail
-                  2
-                  (+
-                   (logtail 32 rdi)
-                   (-
-                    (logand
-                     1431655765
-                     (logext
-                      32
-                      (loghead 31
-                               (logtail 33 rdi)))))))))))
-             (loghead
-              28
-              (logtail
-               4
+                      (logext 32
+                              (loghead 31
+                                       (logtail 1 rdi)))))))))))
+              (loghead
+               28
+               (logtail
+                4
+                (+
+                 (logand
+                  858993459
+                  (loghead
+                   32
+                   (+
+                    (logext 32 rdi)
+                    (-
+                     (logand
+                      1431655765
+                      (logext 32
+                              (loghead 31
+                                       (logtail 1 rdi))))))))
+                 (logand
+                  858993459
+                  (loghead
+                   30
+                   (logtail
+                    2
+                    (+
+                     (logext 32 rdi)
+                     (-
+                      (logand
+                       1431655765
+                       (logext
+                        32
+                        (loghead 31
+                                 (logtail 1 rdi)))))))))))))))
+           16843009))))
+       (ifix
+        (logtail
+         24
+         (mv-nth
+          1
+          (imul-spec-32
+           (logand
+            252645135
+            (loghead
+             32
+             (+
+              (loghead
+               32
                (+
                 (logand
                  858993459
@@ -602,8 +580,40 @@
                       (logext
                        32
                        (loghead 31
-                                (logtail 33 rdi)))))))))))))))
-          16843009))))))
+                                (logtail 33 rdi)))))))))))
+              (loghead
+               28
+               (logtail
+                4
+                (+
+                 (logand
+                  858993459
+                  (loghead
+                   32
+                   (+
+                    (logtail 32 rdi)
+                    (-
+                     (logand
+                      1431655765
+                      (logext 32
+                              (loghead 31
+                                       (logtail 33 rdi))))))))
+                 (logand
+                  858993459
+                  (loghead
+                   30
+                   (logtail
+                    2
+                    (+
+                     (logtail 32 rdi)
+                     (-
+                      (logand
+                       1431655765
+                       (logext
+                        32
+                        (loghead 31
+                                 (logtail 33 rdi)))))))))))))))
+           16843009)))))))
     (logcount (loghead 64 rdi)))
 
    :g-bindings
@@ -613,7 +623,7 @@
  (def-gl-thm x86-popcount-64-symbolic-simulation-helper-2
    :hyp (signed-byte-p 64 rdi)
    :concl
-   (equal (loghead 32 (logcount (loghead 64 rdi)))
+   (equal (logext 32 (logcount (loghead 64 rdi)))
           (logcount (loghead 64 rdi)))
 
    :g-bindings
@@ -675,17 +685,11 @@
                    (:linear bitops::upper-bound-of-logand . 2)
                    (:rewrite bitops::logbitp-when-bitmaskp)
                    (:rewrite acl2::ash-0)
-                   (:rewrite bitops::logbitp-of-negative-const)
-                   (:rewrite bitops::logbitp-of-mask)
-                   (:rewrite bitops::logbitp-of-const)
                    (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
-                   (:meta bitops::open-logbitp-of-const-lite-meta)
-                   (:rewrite rb-values-and-!flgi-in-sys-view)
                    (:rewrite acl2::zip-open)
                    (:type-prescription natp)
                    (:type-prescription acl2::logtail-type)
                    (:rewrite canonical-address-p-limits-thm-3)
-                   (:rewrite rb-values-and-!flgi-undefined-in-sys-view)
                    (:rewrite default-<-1)
                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
                    (:rewrite acl2::difference-unsigned-byte-p)
@@ -710,7 +714,6 @@
                    (:rewrite default-*-2)
                    (:linear bitops::logand-<-0-linear)
                    (:rewrite bitops::logior-equal-0)
-                   (:type-prescription !flgi)
                    (:rewrite unsigned-byte-p-of-logand-1)
                    (:type-prescription set::setp-type)
                    (:type-prescription acl2::nonnil-symbol-listp)
@@ -749,7 +752,6 @@
                    (:linear mv-nth-1-imul-spec-32)
                    (:type-prescription booleanp-marking-view-type)))))
 
-;; The following takes ~250s. Sigh.
 (local
  (defthm x86-popcount-64-symbolic-simulation-snorkeling
    (implies (and (x86p x86)
@@ -765,6 +767,7 @@
             (equal (rgfi *rax* (x86-run 16 (x86-run 18 x86)))
                    (logcount n)))
    :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                     rflag-RoWs-enables
                                      x86-operation-mode
 
                                      shr-spec
@@ -815,7 +818,6 @@
                                      mv-nth)
 
                                     (unsigned-byte-p
-                                     las-to-pas-values-and-!flgi
                                      las-to-pas
                                      default-+-2
                                      get-prefixes-opener-lemma-group-1-prefix

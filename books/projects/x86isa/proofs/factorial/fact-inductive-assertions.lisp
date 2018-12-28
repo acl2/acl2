@@ -463,7 +463,8 @@
                 (program-at addr *factorial_recursive* x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* (check-instruction-length)
+           :in-theory (e/d* (check-instruction-length
+                             rflag-RoWs-enables)
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -472,6 +473,7 @@
           ("Subgoal 2"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        rflag-RoWs-enables
                         x86-operation-mode
 
                         gpr-and-spec-4
@@ -504,9 +506,6 @@
                         subset-p
                         ;; Flags
                         write-user-rflags
-                        !flgi-undefined
-                        !flgi
-                        flgi
                         zf-spec
                         pf-spec32
                         sub-af-spec32
@@ -531,6 +530,7 @@
           ("Subgoal 1"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        rflag-RoWs-enables
                         x86-operation-mode
 
                         gpr-and-spec-4
@@ -562,9 +562,6 @@
                         subset-p
                         ;; Flags
                         write-user-rflags
-                        !flgi-undefined
-                        !flgi
-                        flgi
                         zf-spec
                         pf-spec32
                         sub-af-spec32
@@ -597,6 +594,7 @@
   :hints (("Goal" :in-theory
            (e/d*
             (instruction-decoding-and-spec-rules
+             rflag-RoWs-enables
              x86-operation-mode
 
              gpr-and-spec-4
@@ -627,9 +625,6 @@
              subset-p
              ;; Flags
              write-user-rflags
-             !flgi-undefined
-             !flgi
-             flgi
              zf-spec
              pf-spec32)
             ()))

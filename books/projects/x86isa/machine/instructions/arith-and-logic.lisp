@@ -196,8 +196,7 @@
   :operation t
   :guard (and (natp operation)
 	      (<= operation 8))
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
@@ -321,8 +320,7 @@
 	      (natp operation)
 	      (<= operation 8))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
@@ -450,8 +448,7 @@
 					 rme-size-of-4-to-rme32)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (force
 						  (force)
@@ -620,8 +617,7 @@
 					   rme-size-of-2-to-rme16
 					   rme-size-of-4-to-rme32)))
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (force (force)
 							gpr-arith/logic-spec-8
@@ -709,8 +705,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-inc/dec-FE-FF)
@@ -763,7 +758,7 @@
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((the (unsigned-byte 1) old-cf)
-	(rflags-slice :cf input-rflags))
+	(rflagsBits->cf input-rflags))
        ((mv result output-rflags undefined-flags)
 	(gpr-arith/logic-spec r/mem-size
 			      (if (eql reg 0)
@@ -776,7 +771,7 @@
        ;; Updating the x86 state:
        ;; CF is unchanged.
        (output-rflags (the (unsigned-byte 32)
-			(!rflags-slice :cf old-cf output-rflags)))
+			(!rflagsBits->cf old-cf output-rflags)))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg1 x86)
@@ -804,8 +799,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-inc/dec-4x)
@@ -827,7 +821,7 @@
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((the (unsigned-byte 1) old-cf)
-	(rflags-slice :cf input-rflags))
+	(rflagsBits->cf input-rflags))
        ((mv result output-rflags undefined-flags)
 	(gpr-arith/logic-spec operand-size
 			      (if (logbitp 3 opcode) ; 48-4F
@@ -840,7 +834,7 @@
        ;; Updating the x86 state:
        ;; CF is unchanged (see Intel manual, Mar'17, Vol. 2, INC & DEC)
        (output-rflags (the (unsigned-byte 32)
-			   (!rflags-slice :cf old-cf output-rflags)))
+			   (!rflagsBits->cf old-cf output-rflags)))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rgfi-size operand-size reg result 0 x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -860,8 +854,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-not/neg-F6-F7)
@@ -931,7 +924,7 @@
 		   (cf (the (unsigned-byte 1) (if (equal 0 r/mem) 0 1)))
 		   (output-rflags
 		    (the (unsigned-byte 32)
-		      (!rflags-slice :cf cf output-rflags)))
+		      (!rflagsBits->cf cf output-rflags)))
 		   (x86 (write-user-rflags output-rflags undefined-flags x86)))
 	      x86)
 	  x86))

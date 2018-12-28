@@ -193,7 +193,7 @@
 
        (,(if signed? 'defthm-sb 'defthm-usb)
 	,(mk-name (if signed? "I" "N") size-str "P-OF-MV-NTH-1-" fn)
-	:hyp (x86p x86)
+	:hyp t
 	:bound ,size
 	:concl (mv-nth 1 ,fn-call)
 	:gen-linear t
@@ -329,8 +329,8 @@
        (defrule ,(mk-name fn "-XW-SYS-VIEW-RFLAGS-NOT-AC")
 	 (implies
 	  (and (not (app-view x86))
-	       (equal (rflags-slice :ac value)
-		      (rflags-slice :ac (rflags x86))))
+	       (equal (rflagsBits->ac value)
+		      (rflagsBits->ac (rflags x86))))
 	  (and
 	   (equal
 	    (mv-nth 0 ,(search-and-replace-once
@@ -492,7 +492,7 @@
    ;; relevant only for nbytes = 4.
    ((mem-ptr? booleanp) 'nil))
   :returns (mv flg
-	       (value natp :hyp (x86p x86))
+	       (value natp)
 	       (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)
   :short "Read an unsigned value with the specified number of bytes
@@ -629,7 +629,7 @@
    ;; relevant only for nbytes = 4.
    ((mem-ptr? booleanp) 'nil))
   :returns (mv flg
-	       (value integerp :hyp (and (x86p x86) (integerp nbytes)))
+	       (value integerp :hyp (integerp nbytes))
 	       (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)
   :short "Read a signed value with the specified number of bytes

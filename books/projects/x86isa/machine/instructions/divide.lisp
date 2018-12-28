@@ -75,11 +75,11 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
   :guard (equal (modr/m->reg modr/m) 6)
+  :guard-hints (("Goal" :in-theory (e/d () ((tau-system)))))
 
   :long
   "<h4>Op/En: M</h4>
@@ -179,12 +179,12 @@
 	     x86))))
 
        ;; All the flags are undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*zf* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
@@ -197,11 +197,11 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
   :guard (equal (modr/m->reg modr/m) 7)
+  :guard-hints (("Goal" :in-theory (e/d () ((tau-system)))))
 
   :long
   "<h4>Op/En: M</h4>
@@ -301,12 +301,12 @@
 	     x86))))
 
        ;; All the flags are undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*zf* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))

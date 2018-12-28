@@ -303,7 +303,8 @@
                             30
                             (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86)))
                30)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table)
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                                    ia32e-pdpte-1gb-pagebits->page)
                                    (commutativity-of-+
                                     not
                                     bitops::logand-with-negated-bitmask)))))
@@ -363,7 +364,9 @@
   :hints (("Goal"
            :in-theory (e/d* (ia32e-la-to-pa-pml4-table
                              pdpt-base-addr
-                             ia32e-la-to-pa-page-dir-ptr-table-values-for-same-1G-page)
+                             ia32e-la-to-pa-page-dir-ptr-table-values-for-same-1G-page
+                             cr3bits->pdb
+                             ia32e-pml4ebits->pdpt)
                             (commutativity-of-+
                              not
                              bitops::logand-with-negated-bitmask)))))
@@ -820,7 +823,9 @@
                              disjoint-p$
                              direct-map-p
                              pdpt-base-addr
-                             pml4-table-base-addr)
+                             pml4-table-base-addr
+                             cr3bits->pdb
+                             ia32e-pml4ebits->pdpt)
                             (commutativity-of-+
                              subset-p
                              (:linear acl2::loghead-upper-bound)
@@ -1140,7 +1145,9 @@
                  xlation-governing-entries-paddrs
                  xlation-governing-entries-paddrs-for-pml4-table
                  xlation-governing-entries-paddrs-for-page-dir-ptr-table
-                 rm-low-64-and-write-to-physical-memory-disjoint-commuted)
+                 rm-low-64-and-write-to-physical-memory-disjoint-commuted
+                 cr3bits->pdb
+                 ia32e-pml4ebits->pdpt)
 
                 (rm-low-64-and-write-to-physical-memory-disjoint
                  mv-nth-0-las-to-pas-subset-p
@@ -1294,7 +1301,8 @@
                                    (pml4-table-entry-addr
                                     lin-addr (pml4-table-base-addr x86))
                                    x86))))
-            :in-theory (e/d* (
+            :in-theory (e/d* (cr3bits->pdb
+                              ia32e-pml4ebits->pdpt
                               wb
                               direct-map-p
                               rm-low-64-and-write-to-physical-memory-disjoint-commuted
@@ -1389,7 +1397,9 @@
                              xlation-governing-entries-paddrs-for-pml4-table
                              xlation-governing-entries-paddrs-for-page-dir-ptr-table
                              pdpt-base-addr
-                             pml4-table-base-addr)
+                             pml4-table-base-addr
+                             cr3bits->pdb
+                             ia32e-pml4ebits->pdpt)
                             (subset-p
                              member-p
                              mv-nth-0-las-to-pas-subset-p
@@ -1718,7 +1728,10 @@
                             (entry-2 value)))
            :in-theory (e/d* (disjoint-p
                              member-p
-                             ia32e-la-to-pa-page-dir-ptr-table)
+                             ia32e-la-to-pa-page-dir-ptr-table
+                             cr3bits->pdb
+                             ia32e-pml4ebits->pdpt
+                             ia32e-pdpte-1gb-pagebits->page)
                             (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              wb
@@ -1807,7 +1820,10 @@
            :do-not-induct t
            :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
                              ia32e-la-to-pa-pml4-table
-                             pdpt-base-addr)
+                             pdpt-base-addr
+                             cr3bits->pdb
+                             ia32e-pml4ebits->pdpt
+                             ia32e-pdpte-1gb-pagebits->page)
                             (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              mv-nth-0-las-to-pas-subset-p
                              bitops::logand-with-negated-bitmask

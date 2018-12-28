@@ -47,11 +47,31 @@
 
 ;; ======================================================================
 
+(defthm xlate-equiv-memory-and-cr0Bits->wp
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (cr0Bits->wp (loghead 32 (xr :ctr *cr0* x86-1)))
+                  (cr0Bits->wp (loghead 32 (xr :ctr *cr0* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
+
 (defthm xlate-equiv-memory-and-cr0-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 16 (xr :ctr *cr0* x86-1)))
                   (bool->bit (logbitp 16 (xr :ctr *cr0* x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures
+                                    cr0bits->wp)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-cr3Bits->pdb
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (cr3Bits->pdb (xr :ctr *cr3* x86-1))
+                  (cr3Bits->pdb (xr :ctr *cr3* x86-2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
@@ -59,7 +79,27 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (loghead 40 (logtail 12 (xr :ctr *cr3* x86-1)))
                   (loghead 40 (logtail 12 (xr :ctr *cr3* x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures
+                                    cr3bits->pdb)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-cr4Bits->smep
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (cr4Bits->smep (loghead 22 (xr :ctr *cr4* x86-1)))
+                  (cr4Bits->smep (loghead 22 (xr :ctr *cr4* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-cr4Bits->smap
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (cr4Bits->smap (loghead 22 (xr :ctr *cr4* x86-1)))
+                  (cr4Bits->smap (loghead 22 (xr :ctr *cr4* x86-2)))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
@@ -67,7 +107,19 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 20 (xr :ctr *cr4* x86-1)))
                   (bool->bit (logbitp 20 (xr :ctr *cr4* x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures
+                                    cr4bits->smap
+                                    cr4bits->smep)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-ia32_eferbits->nxe
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (ia32_eferbits->nxe (loghead 12 (xr :msr *ia32_efer-idx* x86-1)))
+                  (ia32_eferbits->nxe (loghead 12 (xr :msr *ia32_efer-idx* x86-2)))))
+  :hints (("goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
@@ -75,7 +127,18 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-1)))
                   (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory 
+                                    xlate-equiv-structures
+                                    ia32_eferbits->nxe)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-rflagsbits->ac
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal (rflagsbits->ac (xr :rflags 0 x86-1))
+                  (rflagsbits->ac (xr :rflags 0 x86-2))))
+  :hints (("goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
@@ -83,7 +146,19 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 18 (xr :rflags 0 x86-1)))
                   (bool->bit (logbitp 18 (xr :rflags 0 x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures
+                                    rflagsbits->ac)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-memory-and-segment-selectorbits->rpl
+  (implies (xlate-equiv-memory x86-1 x86-2)
+           (equal 
+            (segment-selectorbits->rpl (xr :seg-visible 1 x86-1))
+            (segment-selectorbits->rpl (xr :seg-visible 1 x86-2))))
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures)
                                    ())))
   :rule-classes :congruence)
 
@@ -91,7 +166,9 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (loghead 2 (xr :seg-visible 1 x86-1))
                   (loghead 2 (xr :seg-visible 1 x86-2))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory xlate-equiv-structures)
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
+                                    xlate-equiv-structures
+                                    segment-selectorbits->rpl)
                                    ())))
   :rule-classes :congruence)
 
@@ -135,7 +212,8 @@
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86-2)))
             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1))
                    (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa)
+                                   ()))))
 
 (defthm xlate-equiv-memory-and-mv-nth-0-ia32e-la-to-pa-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
@@ -192,10 +270,11 @@
        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
        x86))
      :hints (("Goal"
-
               :in-theory (e/d* (ia32e-la-to-pa
                                 ia32e-la-to-pa-pml4-table
-                                ia32e-la-to-pa-page-dir-ptr-table)
+                                ia32e-la-to-pa-page-dir-ptr-table
+                                ia32e-pml4ebits->pdpt
+                                cr3bits->pdb)
                                (bitops::logand-with-negated-bitmask
                                 accessed-bit
                                 dirty-bit
@@ -226,33 +305,17 @@
        (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
        x86))
      :hints (("Goal"
-
               :in-theory (e/d* (ia32e-la-to-pa
                                 ia32e-la-to-pa-pml4-table
-                                ia32e-la-to-pa-page-dir-ptr-table)
+                                ia32e-la-to-pa-page-dir-ptr-table
+                                ia32e-pml4ebits->pdpt
+                                cr3bits->pdb
+                                ia32e-pdpte-pg-dirbits->pd)
                                (bitops::logand-with-negated-bitmask
                                 accessed-bit
                                 dirty-bit
                                 force (force)
                                 not)))))
-
-   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pml4-page-not-present
-   ;;   (implies
-   ;;    (equal (page-present
-   ;;            (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr) (pml4-table-base-addr x86)) x86))
-   ;;           0)
-   ;;    (all-mem-except-paging-structures-equal
-   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-   ;;     x86))
-   ;;   :hints (("Goal"
-
-   ;;            :in-theory (e/d* (ia32e-la-to-pa
-   ;;                              ia32e-la-to-pa-pml4-table)
-   ;;                             (bitops::logand-with-negated-bitmask
-   ;;                              accessed-bit
-   ;;                              dirty-bit
-   ;;                              force (force)
-   ;;                              not)))))
 
    (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pml4-page-size=1
      (implies
@@ -267,66 +330,13 @@
               :in-theory (e/d* (ia32e-la-to-pa
                                 ia32e-la-to-pa-pml4-table
                                 paging-entry-no-page-fault-p
-                                page-fault-exception)
+                                page-fault-exception
+                                cr3bits->pdb)
                                (bitops::logand-with-negated-bitmask
                                 accessed-bit
                                 dirty-bit
                                 force (force)
-                                not)))))
-
-   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-page-not-present
-   ;;   (implies
-   ;;    (and
-   ;;     (equal
-   ;;      (page-size
-   ;;       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
-   ;;      0)
-   ;;     ;; (equal
-   ;;     ;;  (page-present
-   ;;     ;;   (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
-   ;;     ;;  0)
-   ;;     )
-   ;;    (all-mem-except-paging-structures-equal
-   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-   ;;     x86))
-   ;;   :hints (("Goal"
-
-   ;;            :in-theory (e/d* (ia32e-la-to-pa
-   ;;                              ia32e-la-to-pa-pml4-table
-   ;;                              ia32e-la-to-pa-page-dir-ptr-table)
-   ;;                             (bitops::logand-with-negated-bitmask
-   ;;                              accessed-bit
-   ;;                              dirty-bit
-   ;;                              force (force)
-   ;;                              not)))))
-
-   ;; (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-pdpte-ps=0-and-pd-pp=0
-   ;;   (implies
-   ;;    (and
-   ;;     (equal
-   ;;      (page-size
-   ;;       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr) (page-dir-ptr-table-base-addr (logext 48 lin-addr) x86)) x86))
-   ;;      0)
-   ;;     ;; (equal
-   ;;     ;;  (page-present
-   ;;     ;;   (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr) (page-directory-base-addr (logext 48 lin-addr) x86)) x86))
-   ;;     ;;  0)
-   ;;     )
-   ;;    (all-mem-except-paging-structures-equal
-   ;;     (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-   ;;     x86))
-   ;;   :hints (("Goal"
-
-   ;;            :in-theory (e/d* (ia32e-la-to-pa
-   ;;                              ia32e-la-to-pa-pml4-table
-   ;;                              ia32e-la-to-pa-page-dir-ptr-table
-   ;;                              ia32e-la-to-pa-page-directory)
-   ;;                             (bitops::logand-with-negated-bitmask
-   ;;                              accessed-bit
-   ;;                              dirty-bit
-   ;;                              force (force)
-   ;;                              not)))))
-   ))
+                                not)))))))
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa
   (all-mem-except-paging-structures-equal
@@ -492,7 +502,7 @@
   ;; the 64-bit mode hyp makes the proof of this theorem easy
   ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa),
   ;; but could this hyp be removed from here?
-  (implies (64-bit-modep x86)
+  (implies (64-bit-modep (double-rewrite x86))
            (xlate-equiv-memory
             (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
             (double-rewrite x86)))

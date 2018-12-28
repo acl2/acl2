@@ -41,7 +41,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utils/constants")
+(include-book "../utils/structures")
 (include-book "opcode-maps")
 (include-book "top-level-memory")
 (include-book "dispatch-macros")
@@ -3082,11 +3082,11 @@
 		       (unsigned-byte-p 8 mandatory-prefix)
 		       :hints
 		       (("goal"
-			 :use ((:instance opr-p-of-prefixes->opr (x prefixes))
-			       (:instance rep-p-of-prefixes->rep (x prefixes)))
-			 :in-theory (e/d (opr-p rep-p)
-					 (opr-p-of-prefixes->opr
-					  rep-p-of-prefixes->rep))))))
+			 :use ((:instance 8bitsp-p-of-prefixes->opr (x prefixes))
+			       (:instance 8bitsp-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (8bitsp-p)
+					 (8bitsp-p-of-prefixes->opr
+					  8bitsp-p-of-prefixes->rep))))))
 
 	    (let ((rep-pfx (the (unsigned-byte 8)
 			     (prefixes->rep prefixes))))

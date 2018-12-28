@@ -58,20 +58,20 @@
   :long "<p>First, a quick note about virtual, linear, and physical
   addresses:</p>
 
-<ul>
-<li><i>Linear (or Virtual) Address:</i> In the flat memory model (see
-Intel Vol. 1, Section 3.3.1), memory appears to a program as a single,
-continuous address space, called a linear (or virtual) address
-space. An address for any byte in linear address space is called a
-linear address.  When paging is disabled, then a linear address is the
-same as a physical address.</li>
+ <ul>
+ <li><i>Linear (or Virtual) Address:</i> In the flat memory model (see
+ Intel Vol. 1, Section 3.3.1), memory appears to a program as a single,
+ continuous address space, called a linear (or virtual) address
+ space. An address for any byte in linear address space is called a
+ linear address.  When paging is disabled, then a linear address is the
+ same as a physical address.</li>
 
-<li><i>Physical Address:</i> The memory that the processor addresses
-on its bus is called physical memory. Physical memory is organized as
-a sequence of 8-bit bytes. Each byte is assigned a unique address,
-called a physical address. When employing the processor's memory
-management facilities, programs do not directly address physical
-memory.</li>
+ <li><i>Physical Address:</i> The memory that the processor addresses
+ on its bus is called physical memory. Physical memory is organized as
+ a sequence of 8-bit bytes. Each byte is assigned a unique address,
+ called a physical address. When employing the processor's memory
+ management facilities, programs do not directly address physical
+ memory.</li>
 
 </ul>" )
 
@@ -279,181 +279,6 @@ memory.</li>
 
 ;; ======================================================================
 
-#||
-
-;; Help on the unraveling loghead meta rule by Matt Kaufmann.
-
-;; Unraveling nests of loghead:
-
-;; unravel-loghead-meta-lemma will help me avoid explicitly proving
-;; theorems of the form loghead-12-of-x-+-3 used in the guard proofs
-;; of rm* and wm* functions.
-
-;; (defthm loghead-12-of-x-+-3
-;;   (implies (integerp x)
-;;            (equal (loghead 12 (+ 3 x))
-;;                   (if (equal (loghead 12 x) (- (ash 1 12) 3))
-;;                       0
-;;                     (if (equal (loghead 12 x) (- (ash 1 12) 2))
-;;                         1
-;;                       (if (equal (loghead 12 x) (- (ash 1 12) 1))
-;;                           2
-;;                         (+ 3 (loghead 12 x))))))))
-
-
-(defevaluator unravel-loghead-evl unravel-loghead-evl-list
-  ((acl2::loghead$inline n x)
-   (binary-+ m x)
-   (if x y z)
-   (car x)
-   (cdr x)
-   (integerp x)
-   (natp x)
-   (posp x)
-   (equal x y)))
-
-(defun unravel-loghead-1 (x n m m-copy)
-
-  ;; Example invocation: (unravel-loghead-1 'x 12 5 5)
-
-  ;; The args correspond to the args in the following call (with
-  ;; m-copy being another copy of the arg m):
-  ;; (loghead n (+ m x))
-
-  (declare (xargs :guard (and (posp n)
-                              (natp m)
-                              (natp m-copy)
-                              (<= m-copy m))))
-
-  (if (zp m-copy)
-      `(binary-+ (quote ,m) (acl2::loghead$inline (quote ,n) ,x))
-    `(if (equal (acl2::loghead$inline (quote ,n) ,x) (quote ,(- (ash 1 n) m-copy)))
-         (quote ,(- m m-copy))
-       ,(unravel-loghead-1 x n m (1- m-copy)))))
-
-(defthm pseudo-termp-unravel-loghead-1
-  ;; Sanity check...
-  (implies (and (natp n)
-                (natp m)
-                (natp m-copy)
-                (symbolp x))
-           (pseudo-termp (unravel-loghead-1 x n m m-copy))))
-
-(defun unravel-loghead (term)
-  (declare (xargs :guard (pseudo-termp term)))
-
-  ;; Example invocation:
-  ;; (unravel-loghead '(acl2::loghead$inline '12. (binary-+ '5. x)))
-
-  (if (and (consp term)
-           (equal (car term) 'acl2::loghead$inline)
-           (quotep (cadr term)) ;; '12
-           (equal (acl2::unquote (cadr term)) 12)
-           (equal (len (caddr term)) 3)
-           (equal (caaddr term) 'binary-+)
-           (quotep (cadadr (cdr term)))
-           (natp  (acl2::unquote (cadr (caddr term)))) ;; e.g., 5
-           (< (acl2::unquote (cadr (caddr term))) 4096)
-           (symbolp (cadr (cdaddr term)))) ;; x
-
-      (unravel-loghead-1
-       (cadr (cdaddr term))
-       12 ;; (acl2::unquote (cadr term))
-       (acl2::unquote (cadr (caddr term)))
-       (acl2::unquote (cadr (caddr term)))
-       )
-    term))
-
-(defthm pseudo-termp-unravel-loghead
-  ;; Sanity check...
-  (implies (pseudo-termp term)
-           (pseudo-termp (unravel-loghead term))))
-
-(defun unravel-loghead-hyp (term)
-  ;; (unravel-loghead-hyp '(acl2::loghead$inline '12. (binary-+ '5. x)))
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (and (consp term)
-           (equal (car term) 'acl2::loghead$inline)
-           (quotep (cadr term)) ;; '12
-           (equal (acl2::unquote (cadr term)) 12)
-           (equal (len (caddr term)) 3)
-           (equal (caaddr term) 'binary-+)
-           (quotep (cadadr (cdr term)))
-           (natp  (acl2::unquote (cadr (caddr term)))) ;; e.g., 5
-           (symbolp (cadr (cdaddr term))))             ;; x
-      `(integerp ,(cadr (cdaddr term)))
-    't))
-
-(defthm pseudo-termp-unravel-loghead-hyp
-  ;; Sanity check...
-  (implies (pseudo-termp term)
-           (pseudo-termp (unravel-loghead-hyp term))))
-
-(encapsulate
-  ()
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (local (defthm equal-len-n
-           (implies (and (syntaxp (quotep n))
-                         (natp n))
-                    (equal (equal (len x) n)
-                           (if (equal n 0)
-                               (atom x)
-                             (and (consp x)
-                                  (equal (len (cdr x)) (1- n))))))))
-
-  (local
-   (defthm loghead-12-bound
-     (implies (integerp n)
-              (<= (loghead 12 n) 4095))
-     :hints (("Goal" :in-theory (enable loghead)))
-     :rule-classes :linear))
-
-  (local
-   (defthm loghead-12-plus
-     (implies (and (natp m)
-                   (< m 4096)
-                   (integerp n))
-              (equal (loghead 12 (+ m n))
-                     (if (< (+ m (loghead 12 n)) 4096)
-                         (+ m (loghead 12 n))
-                       (- (+ m (loghead 12 n))
-                          4096))))
-     :hints (("Goal" :in-theory (enable loghead)))))
-
-  (local
-   (defthm unravel-loghead-meta-lemma-main-lemma
-     (implies
-      (and (natp m)
-           (natp m-copy)
-           (<= m-copy m)
-           (< m 4096)
-           (alistp a)
-           (symbolp x)
-           (integerp (cdr (assoc-equal x a)))
-           (not (and (<= (- 4096 m)
-                         (loghead 12 (cdr (assoc-equal x a))))
-                     (< (loghead 12 (cdr (assoc-equal x a)))
-                        (- 4096 m-copy))))
-           x)
-      (equal (unravel-loghead-evl (unravel-loghead-1 x 12 m m-copy)
-                                  a)
-             (loghead 12
-                      (+ m (cdr (assoc-equal x a))))))
-     :hints (("Goal" :induct (unravel-loghead-1 x 12 m m-copy)))))
-
-  (defthm unravel-loghead-meta-lemma
-    (implies (and (pseudo-termp term)
-                  (alistp a)
-                  (unravel-loghead-evl (unravel-loghead-hyp term) a))
-             (equal (unravel-loghead-evl term a)
-                    (unravel-loghead-evl (unravel-loghead term) a)))
-    :rule-classes ((:meta :trigger-fns (acl2::loghead$inline)))))
-
-||#
-
-;; ======================================================================
 ;; Events related to RB and WB:
 
 (defsection reasoning-about-memory-reads-and-writes
@@ -556,7 +381,12 @@ memory.</li>
                 (addr  integerp "First linear address")
                 (r-x  :type (member :r :x) "Type of memory access")
                 (x86))
-    :verify-guards nil
+    :verify-guards :after-returns
+    :returns
+    (mv flg
+        (val natp :rule-classes :type-prescription)
+        (new-x86 x86p :hyp (x86p x86)))
+
     :guard (canonical-address-p (+ -1 n addr))
     :enabled t
 
@@ -565,7 +395,7 @@ memory.</li>
       ;; rb-1 is used only in the app-level view so it makes sense to
       ;; use rvm08 here.
       (b* (((unless (canonical-address-p addr))
-            (mv t 0 x86))
+            (mv 'rb-1 0 x86))
            ((mv flg0 byte0 x86)
             (rvm08 addr x86))
            ((when flg0)
@@ -576,25 +406,13 @@ memory.</li>
 
     ///
 
-    (defthm integerp-of-mv-nth-1-rb-1
-      (integerp (mv-nth 1 (rb-1 n addr r-x x86)))
+    (defret integerp-of-mv-nth-1-rb-1
+      (integerp val)
       :rule-classes :type-prescription)
 
-    (verify-guards rb-1
-      :hints (("Goal" :in-theory (e/d* (signed-byte-p) ()))))
-
-    (defthm natp-of-mv-nth-1-rb-1
-      (implies (x86p x86)
-               (natp (mv-nth 1 (rb-1 n addr r-x x86))))
-      :rule-classes :type-prescription)
-
-    (defthm rb-1-returns-x86p
-      (implies (x86p x86)
-               (x86p (mv-nth 2 (rb-1 n addr r-x x86)))))
-
-    (defthm rb-1-returns-x86-app-view
+    (defret rb-1-returns-x86-app-view
       (implies (app-view x86)
-               (equal (mv-nth 2 (rb-1 n addr r-x x86)) x86)))
+               (equal new-x86 x86)))
 
     (local
      (defthm rb-1-returns-no-error-app-view-helper
@@ -655,7 +473,7 @@ memory.</li>
                                    (plus-and-expt))))))
 
       (defthm-usb size-of-rb-1
-        :hyp (and (equal m (ash n 3)) (natp n) (x86p x86))
+        :hyp (and (equal m (ash n 3)) (natp n))
         :bound m
         :concl (mv-nth 1 (rb-1 n addr r-x x86))
         :hints (("Goal" :in-theory (e/d* (rvm08 expt-to-ash) (signed-byte-p))))
@@ -733,18 +551,17 @@ memory.</li>
       (acl2::formals 'las-to-pas (w state))
       :output-index 2))
 
-    (defthm flgi-las-to-pas
-      (equal (flgi index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-             (flgi index (double-rewrite x86)))
-      :hints (("Goal" :in-theory (e/d* (flgi) (force (force))))))
+    ;; The double-rewrites below are crucial to the applicability of the rules
+    ;; below (in sys-view mode).
+    (defthm xr-rflags-las-to-pas
+      (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+               (equal (xr :rflags 0 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+                      (xr :rflags 0 (double-rewrite x86))))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (defthm xr-fault-las-to-pas
       (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
                (equal (xr :fault 0 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
-                      ;; A missing double-rewrite here would kill me
-                      ;; --- sigh, it's hard to figure out when
-                      ;; missing double-rewrites cause otherwise good
-                      ;; rules to become less applicable.
                       (xr :fault 0 (double-rewrite x86))))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
@@ -783,15 +600,6 @@ memory.</li>
       :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
                                        (las-to-pas)))))
 
-    (defthm las-to-pas-xw-rflags-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
-               (and
-                (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
-                       (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
-                (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
-                       (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))))
-
     ;; The following make-event generate a bunch of rules that
     ;; together say the same thing as las-to-pas-xw-state, but these
     ;; rules are more efficient than las-to-pas-xw-state as they match
@@ -805,9 +613,34 @@ memory.</li>
       (acl2::formals 'las-to-pas (w state))
       :output-index 2))
 
+    (local
+     (defun-nx las-to-pas-xw-rflags-not-ac-hint (lin-addr n r-w-x value x86)
+       (declare (xargs :measure (nfix n)))
+       (if (zp n)
+           x86
+         (if (not (canonical-address-p lin-addr))
+             x86
+           (if (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
+               x86
+             (las-to-pas-xw-rflags-not-ac-hint
+              (+ 1 lin-addr) (+ -1 n) r-w-x value 
+              (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))))))
+
+    (defthm las-to-pas-xw-rflags-not-ac
+      (implies (equal (rflagsBits->ac value)
+                      (rflagsBits->ac (rflags (double-rewrite x86))))
+               (and
+                (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
+                       (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
+                       (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))))
+      :hints (("Goal"
+               :induct (las-to-pas-xw-rflags-not-ac-hint lin-addr n r-w-x value x86)
+               :in-theory (e/d () (force (force))))))
+
     (defthm las-to-pas-xw-rflags-state-not-ac
-      (implies (equal (rflags-slice :ac value)
-                      (rflags-slice :ac (rflags x86)))
+      (implies (equal (rflagsBits->ac value)
+                      (rflagsBits->ac (rflags x86)))
                (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x (xw :rflags 0 value x86)))
                       (xw :rflags 0 value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
@@ -819,161 +652,17 @@ memory.</li>
                       x86))
       :hints (("Goal" :in-theory (e/d (las-to-pas) (force (force))))))
 
-    ;; (defthm len-of-mv-nth-1-las-to-pas
-    ;;   (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
-    ;;                 (natp n))
-    ;;            (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
-    ;;                   ;; Or I could remove the (natp n) hypothesis and say the following in the RHS:
-    ;;                   ;; (if (zp n) 0 n)
-    ;;                   n)))
-
     (defthm len-of-mv-nth-1-las-to-pas
       (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
                (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
-                      (nfix n))))
-
-    (defthm las-to-pas-values-and-!flgi
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
-                           (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
-                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
-                           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))))
-      :hints
-      (("Goal"
-        :do-not-induct t
-        :cases ((equal index *iopl*))
-        :use
-        ((:instance rflags-slice-ac-simplify
-                    (index index)
-                    (rflags (xr :rflags 0 x86)))
-         (:instance las-to-pas-xw-rflags-not-ac
-                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                   (logand (xr :rflags 0 x86)
-                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
-         (:instance las-to-pas-xw-rflags-not-ac
-                    (value (logior (ash (loghead 2 value) 12)
-                                   (logand 4294955007 (xr :rflags 0 x86))))))
-        :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                         (las-to-pas-xw-rflags-not-ac)))))
-
-    (defthm las-to-pas-values-and-!flgi-undefined
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (!flgi-undefined index x86)))
-                           (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
-                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (!flgi-undefined index x86)))
-                           (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
-      :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (las-to-pas)))))
-
-    (defthm mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
-      (implies (and (not (equal index *ac*))
-                    (x86p x86))
-               (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x (!flgi index value x86)))
-                      (!flgi index value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))
-      :hints
-      (("Goal"
-        :do-not-induct t
-        :cases ((equal index *iopl*))
-        :use
-        ((:instance rflags-slice-ac-simplify
-                    (index index)
-                    (rflags (xr :rflags 0 x86)))
-         (:instance las-to-pas-xw-rflags-state-not-ac
-                    (value (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                   (logand (xr :rflags 0 x86)
-                                           (loghead 32 (lognot (expt 2 (nfix index))))))))
-         (:instance las-to-pas-xw-rflags-state-not-ac
-                    (value (logior (ash (loghead 2 value) 12)
-                                   (logand 4294955007 (xr :rflags 0 x86))))))
-        :in-theory (e/d* (!flgi-open-to-xw-rflags)
-                         (las-to-pas-xw-rflags-state-not-ac))))))
-
-  ;; (define las-to-pas-tailrec ((l-addrs canonical-address-listp)
-  ;;                             (p-addrs physical-address-listp)
-  ;;                             (r-x :type (member :r :w :x))
-  ;;                             x86)
-  ;;   :short "Used to discharge @('mbe') proof obligations for @(see
-  ;;   rml128) and @(see wml128)"
-  ;;   :enabled t
-  ;;   :guard (not (app-view x86))
-
-  ;;   (if (atom l-addrs)
-  ;;       (mv nil (acl2::rev p-addrs) x86)
-
-  ;;     (b* (((mv flg p-addr x86)
-  ;;           (ia32e-la-to-pa (car l-addrs) r-x x86))
-  ;;          ((when flg) (mv flg nil x86)))
-  ;;       (las-to-pas-tailrec
-  ;;        (cdr l-addrs) (cons p-addr p-addrs) r-x x86)))
-
-  ;;   ///
-
-  ;;   (defthmd las-to-pas-tailrec-opener
-  ;;     (implies
-  ;;      (consp l-addrs)
-  ;;      (equal
-  ;;       (las-to-pas-tailrec l-addrs p-addrs r-x x86)
-  ;;       (mv-let
-  ;;         (flg p-addr x86)
-  ;;         (ia32e-la-to-pa (car l-addrs) r-x x86)
-  ;;         (if flg
-  ;;             (mv flg () x86)
-  ;;           (las-to-pas-tailrec (cdr l-addrs) (cons p-addr p-addrs) r-x x86))))))
-
-  ;;   (defthmd las-to-pas-tailrec-nil
-  ;;     (equal
-  ;;      (las-to-pas-tailrec () p-addrs r-x x86)
-  ;;      (mv nil (acl2::rev p-addrs) x86)))
-
-  ;;   (local
-  ;;    (defthmd las-to-pas-tailrec-as-las-to-pas-lemma
-  ;;      (b* (((mv flg-new p-addrs-new x86-new)
-  ;;            (las-to-pas n lin-addr r-x x86))
-  ;;           ((mv flg-alt p-addrs-alt x86-alt)
-  ;;            (las-to-pas-tailrec l-addrs p-addrs r-x x86)))
-  ;;        (and (equal flg-alt flg-new)
-  ;;             (equal p-addrs-alt
-  ;;                    (if flg-new
-  ;;                        ()
-  ;;                      (revappend p-addrs p-addrs-new)))
-  ;;             (equal x86-alt x86-new)))
-  ;;      :hints (("Goal" :induct (las-to-pas-tailrec l-addrs p-addrs r-x x86)))))
-
-  ;;   (local
-  ;;    (defthm las-to-pas-as-list
-  ;;      (let ((mv (las-to-pas n lin-addr r-x x86)))
-  ;;        (equal mv (list (mv-nth 0 mv)
-  ;;                        (mv-nth 1 mv)
-  ;;                        (mv-nth 2 mv))))
-  ;;      :rule-classes ()))
-
-  ;;   (local
-  ;;    (defthm las-to-pas-tailrec-as-list
-  ;;      (let ((mv (las-to-pas-tailrec l-addrs p-addrs r-x x86)))
-  ;;        (equal mv (list (mv-nth 0 mv)
-  ;;                        (mv-nth 1 mv)
-  ;;                        (mv-nth 2 mv))))
-  ;;      :rule-classes ()))
-
-  ;;   (local
-  ;;    (defrule last-to-pas-when-flg
-  ;;      (b* (((mv flg p-addrs ?x86) (las-to-pas n lin-addr r-x x86)))
-  ;;        (implies flg (not p-addrs)))))
-
-  ;;   (defthmd las-to-pas-as-las-to-pas-tailrec
-  ;;     (equal (las-to-pas n lin-addr r-x x86)
-  ;;            (las-to-pas-tailrec l-addrs () r-x x86))
-  ;;     :hints (("Goal" :use
-  ;;              (las-to-pas-as-list
-  ;;               (:instance las-to-pas-tailrec-as-list (p-addrs ()))
-  ;;               (:instance las-to-pas-tailrec-as-las-to-pas-lemma (p-addrs ())))))))
+                      (nfix n)))))
 
   (define read-from-physical-memory ((p-addrs physical-address-listp)
                                      x86)
     :parents (reasoning-about-memory-reads-and-writes physical-memory)
     :enabled t
-    :verify-guards nil
+    :verify-guards :after-returns
+    :returns (value integerp :rule-classes :type-prescription)
     :guard (not (app-view x86))
     (if (endp p-addrs)
         0
@@ -984,23 +673,16 @@ memory.</li>
 
     ///
 
-    (defthm integerp-of-read-from-physical-memory
-      (integerp (read-from-physical-memory p-addrs x86))
-      :rule-classes :type-prescription)
-
-    (verify-guards read-from-physical-memory)
-
     (local
      (defthm-usb size-of-read-from-physical-memory-helper
-       :hyp (x86p x86)
+       :hyp t
        :bound (ash (len p-addrs) 3)
        :concl (read-from-physical-memory p-addrs x86)
        :hints (("Goal" :in-theory (e/d* (expt-to-ash) (signed-byte-p))))))
 
     (defthm-usb size-of-read-from-physical-memory
       ;; Ugh, why do I need size-of-read-from-physical-memory-helper?
-      :hyp (and (equal n (ash (len p-addrs) 3))
-                (x86p x86))
+      :hyp (equal n (ash (len p-addrs) 3))
       :bound n
       :concl (read-from-physical-memory p-addrs x86)
       :hints (("Goal"
@@ -1009,11 +691,10 @@ memory.</li>
                                 (size-of-read-from-physical-memory-helper
                                  signed-byte-p))))
       :gen-type t
-      :hyp-t (x86p x86)
       :gen-linear t)
 
-    (defthm read-from-physical-memory-!flgi
-      (equal (read-from-physical-memory p-addrs (!flgi index val x86))
+    (defthm read-from-physical-memory-xw-rflags
+      (equal (read-from-physical-memory p-addrs (xw :rflags 0 val x86))
              (read-from-physical-memory p-addrs x86)))
 
     (defthm read-from-physical-memory-xw-not-mem
@@ -1026,7 +707,11 @@ memory.</li>
               (r-x :type (member :r :x) "Type of memory access")
               (x86))
     :enabled t
-    :verify-guards nil
+    :verify-guards :after-returns
+    :returns (mv flg
+                 (val integerp :rule-classes :type-prescription)
+                 (new-x86 x86p :hyp (x86p x86)))
+
     :guard (canonical-address-p (+ -1 n addr))
 
     (if (app-view x86)
@@ -1039,31 +724,20 @@ memory.</li>
 
     ///
 
-    (defthm integerp-of-mv-nth-1-rb
-      (integerp (mv-nth 1 (rb n addr r-x x86)))
+    (defret natp-of-mv-nth-1-rb
+      (natp val)
       :hints (("Goal" :in-theory (e/d* () (force (force)))))
       :rule-classes :type-prescription)
 
-    (verify-guards rb)
-
-    (defthm natp-of-mv-nth-1-rb
-      (implies (x86p x86)
-               (natp (mv-nth 1 (rb n addr r-x x86))))
-      :hints (("Goal" :in-theory (e/d* () (force (force)))))
-      :rule-classes :type-prescription)
-
-    (defthm rb-no-reads-when-zp-n
-      (equal (mv-nth 1 (rb 0 addr r-x x86)) 0)
+    (defret rb-no-reads-when-zp-n
+      (implies (zp n)
+               (equal val 0))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (defthmd rb-is-rb-1-for-app-view
       (implies (app-view x86)
                (equal (rb n addr r-x x86)
                       (rb-1 n addr r-x x86))))
-
-    (defthm x86p-of-mv-nth-2-rb
-      (implies (x86p x86)
-               (x86p (mv-nth 2 (rb n addr r-x x86)))))
 
     (defthm rb-returns-no-error-app-view
       (implies (and (app-view x86)
@@ -1084,10 +758,7 @@ memory.</li>
 
     (defthm-usb size-of-rb
       :hyp (and (equal m (ash n 3))
-                (canonical-address-p addr)
-                (canonical-address-p (+ -1 n addr))
-                (natp n)
-                (x86p x86))
+                (natp n))
       :bound m
       :concl (mv-nth 1 (rb n addr r-x x86))
       :hints (("Goal"
@@ -1098,35 +769,24 @@ memory.</li>
 
     (defthm-usb size-of-rb-in-app-view
       ;; No need to know whether the addresses are canonical or not...
-      :hyp (and (app-view x86) (natp n) (x86p x86))
+      :hyp (and (app-view x86) (natp n))
       :bound (ash n 3)
       :concl (mv-nth 1 (rb n addr r-x x86))
       :gen-linear t
       :hints-l (("Goal" :in-theory (e/d* () (rb)))))
 
-    (defthm rb-values-and-!flgi-in-sys-view
-      (implies (and (not (equal index *ac*))
+    (defthm rb-values-and-xw-rflags-in-sys-view
+      (implies (and (equal (rflagsBits->ac (double-rewrite value))
+                           (rflagsBits->ac (rflags x86)))
                     (not (app-view x86))
                     (x86p x86))
-               (and (equal (mv-nth 0 (rb n addr r-x (!flgi index value x86)))
-                           (mv-nth 0 (rb n addr r-x x86)))
-                    (equal (mv-nth 1 (rb n addr r-x (!flgi index value x86)))
-                           (mv-nth 1 (rb n addr r-x x86)))))
+               (and (equal (mv-nth 0 (rb n addr r-x (xw :rflags 0 value x86)))
+                           (mv-nth 0 (rb n addr r-x (double-rewrite x86))))
+                    (equal (mv-nth 1 (rb n addr r-x (xw :rflags 0 value x86)))
+                           (mv-nth 1 (rb n addr r-x (double-rewrite x86))))))
       :hints (("Goal"
                :do-not-induct t
                :in-theory (e/d* (rb) ()))))
-
-    (defthm rb-values-and-!flgi-undefined-in-sys-view
-      (implies (and (not (equal index *ac*))
-                    (not (app-view x86))
-                    (x86p x86))
-               (and (equal (mv-nth 0 (rb n addr r-x (!flgi-undefined index x86)))
-                           (mv-nth 0 (rb n addr r-x x86)))
-                    (equal (mv-nth 1 (rb n addr r-x (!flgi-undefined index x86)))
-                           (mv-nth 1 (rb n addr r-x x86)))))
-      :hints (("Goal"
-               :do-not-induct t
-               :in-theory (e/d* (!flgi-undefined) ()))))
 
     (defrule 64-bit-modep-of-rb
       (equal (64-bit-modep (mv-nth 2 (rb n addr r-x x86)))
@@ -1155,23 +815,19 @@ memory.</li>
     :enabled t
     :ignore-ok t
 
-    (if (mbt (canonical-address-p (+ -1 n addr)))
-
-        (if (zp n)
-            (mv nil x86)
-          ;; wb-1 is used only in the app-view, so it makes sense to
-          ;; use wvm08 here.
-          (b* (((unless (canonical-address-p addr))
-                (mv t x86))
-               ((mv flg0 x86)
-                (wvm08 addr (loghead 8 value) x86))
-               ((when flg0)
-                (mv flg0 x86))
-               ((mv rest-flg x86)
-                (wb-1 (1- n) (1+ addr) w (logtail 8 value) x86)))
-            (mv rest-flg x86)))
-
-      (mv t x86))
+    (if (zp n)
+        (mv nil x86)
+      ;; wb-1 is used only in the app-view, so it makes sense to
+      ;; use wvm08 here.
+      (b* (((unless (canonical-address-p addr))
+            (mv t x86))
+           ((mv flg0 x86)
+            (wvm08 addr (loghead 8 value) x86))
+           ((when flg0)
+            (mv flg0 x86))
+           ((mv rest-flg x86)
+            (wb-1 (1- n) (1+ addr) w (logtail 8 value) x86)))
+        (mv rest-flg x86)))
 
     ///
 
@@ -1329,18 +985,6 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm xr-rb-state-in-sys-view
-  ;;   (implies (and (not (app-view x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :fault)))
-  ;;            (equal (xr fld index (mv-nth 2 (rb addr r-x x86)))
-  ;;                   (xr fld index x86)))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; The following make-event generates a bunch of rules that together
-  ;; say the same thing as xr-rb-state-in-sys-view, but these
-  ;; rules are more efficient than xr-rb-state-in-sys-view as
-  ;; they match less frequently.
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
@@ -1367,27 +1011,6 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm rb-xw-values-in-sys-view
-  ;;   (implies (and (not (app-view x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :rflags))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :seg-visible))
-  ;;                 (not (equal fld :msr))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :app-view))
-  ;;                 (not (equal fld :marking-view)))
-  ;;            (and (equal (mv-nth 0 (rb addr r-x (xw fld index value x86)))
-  ;;                        (mv-nth 0 (rb addr r-x x86)))
-  ;;                 (equal (mv-nth 1 (rb addr r-x (xw fld index value x86)))
-  ;;                        (mv-nth 1 (rb addr r-x x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) ()))))
-
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-values-in-sys-view, but
-  ;; these rules are more efficient than
-  ;; rb-xw-values-in-sys-view as they match less frequently.
   (make-event
    (generate-read-fn-over-xw-thms
     (remove-elements-from-list
@@ -1410,8 +1033,8 @@ memory.</li>
 
   (defthm rb-1-xw-rflags-not-ac-values-in-sys-view
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (and (equal (mv-nth 0 (rb-1 n addr r-x (xw :rflags 0 value x86)))
                          (mv-nth 0 (rb-1 n addr r-x x86)))
                   (equal (mv-nth 1 (rb-1 n addr r-x (xw :rflags 0 value x86)))
@@ -1421,8 +1044,8 @@ memory.</li>
 
   (defthm rb-xw-rflags-not-ac-values-in-sys-view
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (and (equal (mv-nth 0 (rb n addr r-x (xw :rflags 0 value x86)))
                          (mv-nth 0 (rb n addr r-x x86)))
                   (equal (mv-nth 1 (rb n addr r-x (xw :rflags 0 value x86)))
@@ -1444,24 +1067,6 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  ;; (defthm rb-xw-state-in-sys-view
-  ;;   (implies (and (not (app-view x86))
-  ;;                 (not (equal fld :mem))
-  ;;                 (not (equal fld :rflags))
-  ;;                 (not (equal fld :ctr))
-  ;;                 (not (equal fld :seg-visible))
-  ;;                 (not (equal fld :msr))
-  ;;                 (not (equal fld :fault))
-  ;;                 (not (equal fld :app-view))
-  ;;                 (not (equal fld :marking-view)))
-  ;;            (equal (mv-nth 2 (rb addr r-x (xw fld index value x86)))
-  ;;                   (xw fld index value (mv-nth 2 (rb addr r-x x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
-
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as rb-xw-state-in-sys-view but
-  ;; these rules are more efficient than
-  ;; rb-xw-state-in-sys-view as they match less frequently.
   (make-event
    (generate-write-fn-over-xw-thms
     (remove-elements-from-list
@@ -1474,8 +1079,8 @@ memory.</li>
 
   (defthm rb-1-xw-rflags-not-ac-state-in-sys-view
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (equal (mv-nth 2 (rb-1 n addr r-x (xw :rflags 0 value x86)))
                     (xw :rflags 0 value (mv-nth 2 (rb-1 n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
@@ -1483,8 +1088,8 @@ memory.</li>
 
   (defthm rb-xw-rflags-not-ac-state-in-sys-view
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (equal (mv-nth 2 (rb n addr r-x (xw :rflags 0 value x86)))
                     (xw :rflags 0 value (mv-nth 2 (rb n addr r-x x86)))))
     :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
@@ -1529,10 +1134,6 @@ memory.</li>
 
   ;; Relating wb and xr/xw in the system-level view:
 
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as xr-wb-in-sys-view but
-  ;; these rules are more efficient than
-  ;; xr-wb-in-sys-view as they match less frequently.
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
@@ -1592,41 +1193,13 @@ memory.</li>
 
   (defthm wb-xw-rflags-not-ac-in-sys-view
     ;; Keep the state updated by wb inside all other nests of writes.
-    (implies (equal (rflags-slice :ac value)
-                    (rflags-slice :ac (rflags x86)))
+    (implies (equal (rflagsBits->ac value)
+                    (rflagsBits->ac (rflags x86)))
              (and (equal (mv-nth 0 (wb n addr w val (xw :rflags 0 value x86)))
-                         (mv-nth 0 (wb n addr w val x86)))
+                         (mv-nth 0 (wb n addr w val (double-rewrite x86))))
                   (equal (mv-nth 1 (wb n addr w val (xw :rflags 0 value x86)))
                          (xw :rflags 0 value (mv-nth 1 (wb n addr w val x86))))))
     :hints (("Goal" :in-theory (e/d* (wb) (write-to-physical-memory)))))
-
-  ;; (defthm mv-nth-1-wb-and-!flgi-commute
-  ;;   (implies (and (not (equal index *ac*))
-  ;;                 (not (app-view x86))
-  ;;                 (not (marking-view x86)))
-  ;;            (equal (mv-nth 1 (wb addr-lst (!flgi index val x86)))
-  ;;                   (!flgi index val (mv-nth 1 (wb addr-lst x86)))))
-  ;;   :hints (("Goal" :in-theory (e/d* (!flgi
-  ;;                                     rflags-slice-ac-simplify
-  ;;                                     !flgi-open-to-xw-rflags)
-  ;;                                    (force (force))))))
-
-  (defthm mv-nth-1-wb-and-!flgi-commute
-    (implies (not (equal index *ac*))
-             (equal (mv-nth 1 (wb n addr w val (!flgi index value x86)))
-                    (!flgi index value (mv-nth 1 (wb n addr w val x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi
-                                      rflags-slice-ac-simplify
-                                      !flgi-open-to-xw-rflags)
-                                     (force (force))))))
-
-  (defthm mv-nth-1-wb-and-!flgi-undefined-commute
-    (implies (and (not (equal index *ac*))
-                  (not (app-view x86))
-                  (not (marking-view x86)))
-             (equal (mv-nth 1 (wb n addr w val (!flgi-undefined index x86)))
-                    (!flgi-undefined index (mv-nth 1 (wb n addr w val x86)))))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (wb !flgi)))))
 
   (defthm xr-fault-wb-in-sys-view
     (implies (and (not (mv-nth 0 (las-to-pas n addr :w x86)))
@@ -1782,27 +1355,23 @@ memory.</li>
   :guard-hints (("Goal"
                  :in-theory (e/d* (ifix rvm08) ())))
 
-  (if (mbt (canonical-address-p lin-addr))
-
-      (mbe
-       :logic
-       (rb 1 lin-addr r-x x86)
-       :exec
-       (if (app-view x86)
-           (rvm08 lin-addr x86)
-         (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-               (la-to-pa lin-addr r-x x86))
-              ((when flag)
-               (mv flag 0 x86))
-              (byte (the (unsigned-byte 8) (memi p-addr x86))))
-           (mv nil byte x86))))
-
-    (mv 'rml08 0 x86))
+  (mbe
+   :logic
+   (rb 1 lin-addr r-x x86)
+   :exec
+   (if (app-view x86)
+       (rvm08 lin-addr x86)
+     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+           (la-to-pa lin-addr r-x x86))
+          ((when flag)
+           (mv flag 0 x86))
+          (byte (the (unsigned-byte 8) (memi p-addr x86))))
+       (mv nil byte x86))))
 
   ///
 
   (defthm-usb n08p-mv-nth-1-rml08
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 8
     :concl (mv-nth 1 (rml08 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -1814,10 +1383,20 @@ memory.</li>
     (implies (force (x86p x86))
              (x86p (mv-nth 2 (rml08 lin-addr r-x x86)))))
 
+  (local
+   (defthm rml08-value-when-error-helper
+     (implies (and (xr :app-view 0 x86)
+                   (mv-nth 0 (rb-1 1 addr r-x x86)))
+              (equal (mv-nth 1 (rb-1 1 addr r-x x86))
+                     0))
+     :hints (("Goal" :expand ((rb-1 1 addr r-x x86))))))
+
   (defthm rml08-value-when-error
     (implies (mv-nth 0 (rml08 addr r-x x86))
              (equal (mv-nth 1 (rml08 addr r-x x86)) 0))
-    :hints (("Goal" :in-theory (e/d (rvm08) (force (force))))))
+    :hints (("Goal"
+             :cases ((app-view x86))
+             :in-theory (e/d () (force (force))))))
 
   (defthm rml08-does-not-affect-state-in-app-view
     (implies (app-view x86)
@@ -1880,8 +1459,8 @@ memory.</li>
 
   (defthm rml08-xw-system-mode-rflags-not-ac
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (and (equal (mv-nth 0 (rml08 addr r-x (xw :rflags 0 value x86)))
                          (mv-nth 0 (rml08 addr r-x x86)))
                   (equal (mv-nth 1 (rml08 addr r-x (xw :rflags 0 value x86)))
@@ -1910,8 +1489,8 @@ memory.</li>
     :disable rml08))
 
 (define riml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-               (r-x    :type (member  :r :x))
-               (x86))
+                (r-x    :type (member  :r :x))
+                (x86))
 
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -1922,7 +1501,7 @@ memory.</li>
   ///
 
   (defthm-sb i08p-mv-nth-1-riml08
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 8
     :concl (mv-nth 1 (riml08 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -1943,22 +1522,18 @@ memory.</li>
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal" :in-theory (e/d* (wvm08) ())))
 
-  (if (mbt (canonical-address-p lin-addr))
-
-      (mbe
-       :logic (wb 1 lin-addr :w val x86)
-       :exec
-       (if (app-view x86)
-           (wvm08 lin-addr val x86)
-         (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
-               (la-to-pa lin-addr :w x86))
-              ((when flag)
-               (mv flag x86))
-              (byte (mbe :logic (n08 val) :exec val))
-              (x86 (!memi p-addr byte x86)))
-           (mv nil x86))))
-
-    (mv 'wml08 x86))
+  (mbe
+   :logic (wb 1 lin-addr :w val x86)
+   :exec
+   (if (app-view x86)
+       (wvm08 lin-addr val x86)
+     (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr) x86)
+           (la-to-pa lin-addr :w x86))
+          ((when flag)
+           (mv flag x86))
+          (byte (mbe :logic (n08 val) :exec val))
+          (x86 (!memi p-addr byte x86)))
+       (mv nil x86))))
 
   ///
 
@@ -2017,8 +1592,8 @@ memory.</li>
 
   (defthm wml08-xw-system-mode-rflags-not-ac
     (implies (and (not (app-view x86))
-                  (equal (rflags-slice :ac value)
-                         (rflags-slice :ac (rflags x86))))
+                  (equal (rflagsBits->ac value)
+                         (rflagsBits->ac (rflags x86))))
              (and (equal (mv-nth 0 (wml08 addr val (xw :rflags 0 value x86)))
                          (mv-nth 0 (wml08 addr val x86)))
                   (equal (mv-nth 1 (wml08 addr val (xw :rflags 0 value x86)))
@@ -2026,8 +1601,8 @@ memory.</li>
     :hints (("Goal" :in-theory (e/d* () (force (force)))))))
 
 (define wiml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
-               (val      :type (signed-byte 8))
-               (x86))
+                (val      :type (signed-byte 8))
+                (x86))
 
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
@@ -2061,54 +1636,50 @@ memory.</li>
               :in-theory (e/d (rml08 rvm08 rvm16)
                               (force (force)))))))
 
-  (if (mbt (canonical-address-p lin-addr))
-
-      (let* ((1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                              (1+ (the (signed-byte #.*max-linear-address-size*)
-                                       lin-addr)))))
+  (let* ((1+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
+                       (1+ (the (signed-byte #.*max-linear-address-size*)
+                             lin-addr)))))
 
 
-        (if (mbe :logic (canonical-address-p 1+lin-addr)
-                 :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                               1+lin-addr)
-                          #.*2^47*))
+    (if (mbe :logic (canonical-address-p 1+lin-addr)
+             :exec (< (the (signed-byte #.*max-linear-address-size+1*)
+                        1+lin-addr)
+                      #.*2^47*))
 
-            (mbe :logic
-                 (rb 2 lin-addr r-x x86)
-                 :exec
-                 (if (app-view x86)
+        (mbe :logic
+             (rb 2 lin-addr r-x x86)
+             :exec
+             (if (app-view x86)
 
-                     (rvm16 lin-addr x86)
+                 (rvm16 lin-addr x86)
 
-                   (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
-                         (la-to-pa lin-addr r-x x86))
-                        ((when flag) (mv flag 0 x86))
+               (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
+                     (la-to-pa lin-addr r-x x86))
+                    ((when flag) (mv flag 0 x86))
 
-                        (1+lin-addr
-                         (the (signed-byte #.*max-linear-address-size+1*)
-                              (1+ (the (signed-byte #.*max-linear-address-size*)
-                                       lin-addr))))
-                        ((mv flag (the (unsigned-byte #.*physical-address-size*) ?p-addr1) x86)
-                         (la-to-pa 1+lin-addr r-x x86))
-                        ((when flag) (mv flag 0 x86))
+                    (1+lin-addr
+                     (the (signed-byte #.*max-linear-address-size+1*)
+                       (1+ (the (signed-byte #.*max-linear-address-size*)
+                             lin-addr))))
+                    ((mv flag (the (unsigned-byte #.*physical-address-size*) ?p-addr1) x86)
+                     (la-to-pa 1+lin-addr r-x x86))
+                    ((when flag) (mv flag 0 x86))
 
-                        (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
-                        (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
+                    (byte0 (the (unsigned-byte 8) (memi p-addr0 x86)))
+                    (byte1 (the (unsigned-byte 8) (memi p-addr1 x86)))
 
-                        (word (the (unsigned-byte 16)
-                                   (logior (the (unsigned-byte 16) (ash byte1 8))
-                                           byte0))))
+                    (word (the (unsigned-byte 16)
+                            (logior (the (unsigned-byte 16) (ash byte1 8))
+                                    byte0))))
 
-                     (mv nil word x86))))
+                 (mv nil word x86))))
 
-          (mv 'rml16 0 x86)))
-
-    (mv 'rml16 0 x86))
+      (mv 'rml16 0 x86)))
 
   ///
 
   (defthm-usb n16p-mv-nth-1-rml16
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 16
     :concl (mv-nth 1 (rml16 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -2135,7 +1706,7 @@ memory.</li>
   ///
 
   (defthm-sb i16p-mv-nth-1-riml16
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 16
     :concl (mv-nth 1 (riml16 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -2332,7 +1903,7 @@ memory.</li>
   ///
 
   (defthm-usb n32p-mv-nth-1-rml32
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 32
     :concl (mv-nth 1 (rml32 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -2359,7 +1930,7 @@ memory.</li>
   ///
 
   (defthm-sb i32p-mv-nth-1-riml32
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 32
     :concl (mv-nth 1 (riml32 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -2627,7 +2198,7 @@ memory.</li>
   ///
 
   (defthm-usb n48p-mv-nth-1-rml48
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 48
     :concl (mv-nth 1 (rml48 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
@@ -2674,13 +2245,13 @@ memory.</li>
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((5+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                              (+ 5 (the (signed-byte #.*max-linear-address-size*)
-                                        lin-addr)))))
+                           (+ 5 (the (signed-byte #.*max-linear-address-size*)
+                                  lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 5+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                               5+lin-addr)
+                            5+lin-addr)
                           #.*2^47*))
 
             (mbe
@@ -2702,29 +2273,29 @@ memory.</li>
                     ((when flag) (mv flag x86))
 
                     (2+lin-addr (the (signed-byte #.*max-linear-address-size+2*)
-                                     (+ 2 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
+                                  (+ 2 (the (signed-byte #.*max-linear-address-size*)
+                                         lin-addr))))
                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr2) x86)
                      (la-to-pa 2+lin-addr :w x86))
                     ((when flag) (mv flag x86))
 
                     (3+lin-addr (the (signed-byte #.*max-linear-address-size+3*)
-                                     (+ 3 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
+                                  (+ 3 (the (signed-byte #.*max-linear-address-size*)
+                                         lin-addr))))
                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr3) x86)
                      (la-to-pa 3+lin-addr :w x86))
                     ((when flag) (mv flag x86))
 
                     (4+lin-addr (the (signed-byte #.*max-linear-address-size+4*)
-                                     (+ 4 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
+                                  (+ 4 (the (signed-byte #.*max-linear-address-size*)
+                                         lin-addr))))
                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr4) x86)
                      (la-to-pa 4+lin-addr :w x86))
                     ((when flag) (mv flag x86))
 
                     (5+lin-addr (the (signed-byte #.*max-linear-address-size+5*)
-                                     (+ 5 (the (signed-byte #.*max-linear-address-size*)
-                                               lin-addr))))
+                                  (+ 5 (the (signed-byte #.*max-linear-address-size*)
+                                         lin-addr))))
                     ((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr5) x86)
                      (la-to-pa 5+lin-addr :w x86))
                     ((when flag) (mv flag x86))
@@ -2735,23 +2306,23 @@ memory.</li>
                     (byte1 (mbe
                             :logic (part-select val :low 8 :width 8)
                             :exec  (the (unsigned-byte 8)
-                                        (logand #xff (ash val -8)))))
+                                     (logand #xff (ash val -8)))))
                     (byte2 (mbe
                             :logic (part-select val :low 16 :width 8)
                             :exec (the (unsigned-byte 8)
-                                       (logand #xff (ash val -16)))))
+                                    (logand #xff (ash val -16)))))
                     (byte3 (mbe
                             :logic (part-select val :low 24 :width 8)
                             :exec (the (unsigned-byte 8)
-                                       (logand #xff (ash val -24)))))
+                                    (logand #xff (ash val -24)))))
                     (byte4 (mbe
                             :logic (part-select val :low 32 :width 8)
                             :exec (the (unsigned-byte 8)
-                                       (logand #xff (ash val -32)))))
+                                    (logand #xff (ash val -32)))))
                     (byte5 (mbe
                             :logic (part-select val :low 40 :width 8)
                             :exec (the (unsigned-byte 8)
-                                       (logand #xff (ash val -40)))))
+                                    (logand #xff (ash val -40)))))
 
                     (x86 (!memi p-addr0 byte0 x86))
                     (x86 (!memi p-addr1 byte1 x86))
@@ -2959,7 +2530,7 @@ memory.</li>
   ///
 
   (defthm-usb n64p-mv-nth-1-rml64
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 64
     :concl (mv-nth 1 (rml64 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
@@ -2987,7 +2558,7 @@ memory.</li>
   ///
 
   (defthm-sb i64p-mv-nth-1-riml64
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 64
     :concl (mv-nth 1 (riml64 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
@@ -3321,7 +2892,7 @@ memory.</li>
   ///
 
   (defthm-usb n80p-mv-nth-1-rml80
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 80
     :concl (mv-nth 1 (rml80 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d (rb) (signed-byte-p ash-monotone-2))))
@@ -3604,13 +3175,13 @@ memory.</li>
   (if (mbt (canonical-address-p lin-addr))
 
       (let* ((15+lin-addr (the (signed-byte #.*max-linear-address-size+1*)
-                               (+ 15 (the (signed-byte #.*max-linear-address-size*)
-                                          lin-addr)))))
+                            (+ 15 (the (signed-byte #.*max-linear-address-size*)
+                                    lin-addr)))))
 
 
         (if (mbe :logic (canonical-address-p 15+lin-addr)
                  :exec (< (the (signed-byte #.*max-linear-address-size+1*)
-                               15+lin-addr)
+                            15+lin-addr)
                           #.*2^47*))
 
             (if (app-view x86)
@@ -3715,11 +3286,11 @@ memory.</li>
 
                    (oword
                     (the (unsigned-byte 128)
-                         (bitops::merge-16-u8s
-                          byte15 byte14 byte13 byte12
-                          byte11 byte10 byte9  byte8
-                          byte7  byte6  byte5  byte4
-                          byte3  byte2  byte1  byte0))))
+                      (bitops::merge-16-u8s
+                       byte15 byte14 byte13 byte12
+                       byte11 byte10 byte9  byte8
+                       byte7  byte6  byte5  byte4
+                       byte3  byte2  byte1  byte0))))
 
                 (mv nil oword x86)))
 
@@ -3730,10 +3301,10 @@ memory.</li>
   ///
 
   (defthm-usb n128p-mv-nth-1-rml128
-    :hyp (force (x86p x86))
+    :hyp t
     :bound 128
     :concl (mv-nth 1 (rml128 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (signed-byte-p ash-monotone-2))))
+    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p ash-monotone-2))))
     :otf-flg t
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (ash-monotone-2 rb))))

@@ -210,26 +210,26 @@
 
 ;; Flags:
 
-(make-event
- (cons
-  'progn
-  (x86-fn-untranslate
-   '(flgi)
-   '(?x)
-   '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
-          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
+;; (make-event
+;;  (cons
+;;   'progn
+;;   (x86-fn-untranslate
+;;    '(flgi)
+;;    '(?x)
+;;    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
+;;    '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+;;           *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 
-(make-event
- (cons
-  'progn
-  (x86-fn-untranslate
-   '(!flgi)
-   '(?v ?x)
-   '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
-          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
+;; (make-event
+;;  (cons
+;;   'progn
+;;   (x86-fn-untranslate
+;;    '(!flgi)
+;;    '(?v ?x)
+;;    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
+;;    '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+;;           *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 (acl2::optimize-untranslate-patterns)
 

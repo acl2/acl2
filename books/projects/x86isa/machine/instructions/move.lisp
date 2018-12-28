@@ -64,8 +64,7 @@
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -138,8 +137,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-mov-Op/En-RM)
@@ -191,8 +189,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (select-address-size
 					 segment-base-and-bounds
@@ -286,8 +283,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (rme-size riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -338,8 +334,7 @@
 					 riml32
 					 rme-size) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -438,8 +433,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -501,8 +495,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movsx)
@@ -590,8 +583,7 @@
 					       n64-to-i64)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movsxd)
@@ -688,8 +680,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movzx)
@@ -780,8 +771,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -819,12 +809,12 @@
 		    rex-byte
 		    x86))
        ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*zf* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 

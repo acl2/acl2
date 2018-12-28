@@ -52,33 +52,7 @@
 
 (defsection utils
   :parents (x86isa)
-  :short "The books in this directory provide some supporting events
-  for the rest of the books in @('X86ISA')."
-
-  :long "<p>Include Order:</p>
-<table>
-
-<tr>
-<th> Book/Directory </th>
-<th> Corresponding Documentation Topic </th>
-</tr>
-
-<tr>
-<td> utilities.lisp </td>
-<td> @(see utilities) </td>
-</tr>
-
-<tr>
-<td> constants.lisp </td>
-<td> @(see x86-constants) </td>
-</tr>
-
-<tr>
-<td> records-0.lisp </td>
-<td> Doc topic coming soon! </td>
-</tr>
-
-</table>"
+  :short "Utilities for rest of the @('X86ISA') books"
   )
 
 (defsection utilities
@@ -765,145 +739,6 @@ constants and functions; it also proves some associated lemmas.</p>"
 
 ;; =============================================================================
 
-(defsection slicing-operations
-  :parents (utilities)
-  :short "Definitions of @('slice') and @('!slice')"
-
-  :long "<p>Slicing functions @('slice') and @('!slice') open up to an
-@('MBE').  The @(':logic') part is defined using @(see part-select) or
-@(see part-install) and the @(':exec') is heavily type-declared for
-the sake of efficiency.</p>"
-
-  )
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic/top-with-meta" :dir :system))
-
- (define layout-constant-alistp (alst position max-size)
-   :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
-   :guard (and (natp position)
-               (natp max-size))
-   :enabled t
-   :parents (slicing-operations)
-   (if (atom alst)
-       (null alst)
-     (let ((entry (car alst)))
-       (and (consp entry)
-            (consp (cdr entry))
-            (consp (cddr entry))
-            (null (cdddr entry))
-            (let ((key (car entry))
-                  (pos (cadr entry))
-                  (width (caddr entry)))
-              (and (or (keywordp key)
-                       (and (natp key)
-                            (or (= key 0)
-                                (= key 1))))
-                   (natp pos)
-                   (natp width)
-                   (= position pos)
-                   (<= (+ pos width) max-size)
-                   (layout-constant-alistp (cdr alst)
-                                           (+ pos width)
-                                           max-size)))))))
-
- (local
-  (defthm sanity-check-of-layout-constant-alistp
-    (layout-constant-alistp
-     ;; Example of a layout constant
-     '((0          0  3) ;; 0
-       (:cr3-pwt   3  1) ;; Page-Level Writes Tranparent
-       (:cr3-pcd   4  1) ;; Page-Level Cache Disable
-       (0          5  7) ;; 0
-       (:cr3-pdb  12 40) ;; Page Directory Base
-       (0         52 12) ;; Reserved (must be zero)
-       )
-     0 64)
-    :rule-classes nil))
-
- (define field-pos-width (flg layout-constant)
-   :parents (slicing-operations)
-   :enabled t
-   :short "Returns the position and width of @('flg'), given
-    @('layout-constant')"
-   (declare (xargs :guard (symbolp flg)))
-   (if (atom layout-constant)
-       (mv 0 (or (cw "field-pos-width:  Unknown flag:   ~p0.~%" flg) 0))
-     (let ((entry (car layout-constant)))
-       (if (not (and (consp entry)
-                     (consp (cdr entry))
-                     (consp (cddr entry))
-                     (null (cdddr entry))
-                     (or (symbolp (car entry))
-                         (natp    (car entry)))
-                     (natp (cadr entry))
-                     (natp (caddr entry))))
-           (mv 0 (or (cw "field-pos-width:  Entry malformed:   ~p0.~%" entry) 0))
-         (let ((name (car entry))
-               (pos  (cadr entry))
-               (width (caddr entry)))
-           (if (eq name flg)
-               (mv pos width)
-             (field-pos-width flg (cdr layout-constant))))))))
-
- (define slice (flg reg reg-width layout-constant)
-   :enabled t
-   :parents (slicing-operations)
-   :short "Used to define efficient bit-slice accessor forms for
-    reasoning and execution"
-   :guard (and (symbolp flg)
-               (natp reg-width)
-               (layout-constant-alistp layout-constant 0 reg-width))
-   :guard-hints (("Goal" :do-not '(preprocess simplify)))
-   (mv-let (pos size)
-           (field-pos-width flg layout-constant)
-           (let* ((pos (if (natp pos) pos 0))
-                  (size (if (natp size) size 0))
-                  (mask (1- (expt 2 size)))
-                  (reg-width-pos (- reg-width pos)))
-             `(mbe :logic (part-select ,reg :low ,pos :width ,size)
-                   :exec
-                   (the (unsigned-byte ,size)
-                     (logand (the (unsigned-byte ,size) ,mask)
-                             (the (unsigned-byte ,reg-width-pos)
-                               (ash
-                                (the (unsigned-byte ,reg-width) ,reg)
-                                (- ,pos)))))))))
-
- (define !slice (flg val reg reg-size layout-constant)
-   :guard (and (symbolp flg)
-               (natp reg-size))
-   :parents (slicing-operations)
-   :short "Used to define efficient bit-slice updater forms for
-    reasoning and execution"
-   (mv-let (pos size)
-           (field-pos-width flg layout-constant)
-           (let* ((mask (lognot (ash (logmask size) pos)))
-                  (size+pos (+ pos size))
-                  (mask-size (+ 1 size+pos)))
-             `(let ((reg-for-!slice-do-not-use
-                     (the (unsigned-byte ,reg-size) ,reg)))
-                (declare (type (unsigned-byte ,reg-size)
-                               reg-for-!slice-do-not-use))
-                (mbe :logic (part-install ,val reg-for-!slice-do-not-use
-                                          :low ,pos :width ,size)
-                     :exec (the (unsigned-byte ,reg-size)
-                             (logior
-                              (the (unsigned-byte ,reg-size)
-                                (logand
-                                 (the (unsigned-byte ,reg-size)
-                                   reg-for-!slice-do-not-use)
-                                 (the (signed-byte ,mask-size) ,mask)))
-                              (the (unsigned-byte ,size+pos)
-                                (ash (the (unsigned-byte ,size) ,val)
-                                     ,pos)))))))))
-
- ) ;; End of encapsulate
-
-;; ======================================================================
-
 (defsection globally-disabled-events
   :parents (utilities)
 
@@ -986,8 +821,149 @@ disabledp) recursively on the events in
   (defmacro show-globally-disabled-events-status ()
     `(disabledp-lst (show-globally-disabled-events-ruleset) 0 state))
 
-  (globally-disable '(logior logand logxor floor mod ash))
-
-  )
+  (globally-disable '(logior logand logxor floor mod ash)))
 
 ;; ======================================================================
+
+;; [Shilpi] slicing-operations are not needed anymore --- the :exec parts of
+;; the accessor and updater macros have been incorporated in the
+;; accessor/updater functions defined by centaur/fty/bitstruct.lisp.  So we now
+;; use bitstructs to define bitvector structures (previously referred to as
+;; "layout constants" in these books).
+
+;; (defsection slicing-operations
+;;   :parents (utilities)
+;;   :short "Definitions of @('slice') and @('!slice')"
+
+;;   :long "<p>Slicing functions @('slice') and @('!slice') open up to an
+;; @('MBE').  The @(':logic') part is defined using @(see part-select) or
+;; @(see part-install) and the @(':exec') is heavily type-declared for
+;; the sake of efficiency.</p>"
+
+;;   )
+
+;; (encapsulate
+;;  ()
+
+;;  (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+;;  (define layout-constant-alistp (alst position max-size)
+;;    :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
+;;    :guard (and (natp position)
+;;                (natp max-size))
+;;    :enabled t
+;;    :parents (slicing-operations)
+;;    (if (atom alst)
+;;        (null alst)
+;;      (let ((entry (car alst)))
+;;        (and (consp entry)
+;;             (consp (cdr entry))
+;;             (consp (cddr entry))
+;;             (null (cdddr entry))
+;;             (let ((key (car entry))
+;;                   (pos (cadr entry))
+;;                   (width (caddr entry)))
+;;               (and (or (keywordp key)
+;;                        (and (natp key)
+;;                             (or (= key 0)
+;;                                 (= key 1))))
+;;                    (natp pos)
+;;                    (natp width)
+;;                    (= position pos)
+;;                    (<= (+ pos width) max-size)
+;;                    (layout-constant-alistp (cdr alst)
+;;                                            (+ pos width)
+;;                                            max-size)))))))
+
+;;  (local
+;;   (defthm sanity-check-of-layout-constant-alistp
+;;     (layout-constant-alistp
+;;      ;; Example of a layout constant
+;;      '((0          0  3) ;; 0
+;;        (:cr3-pwt   3  1) ;; Page-Level Writes Tranparent
+;;        (:cr3-pcd   4  1) ;; Page-Level Cache Disable
+;;        (0          5  7) ;; 0
+;;        (:cr3-pdb  12 40) ;; Page Directory Base
+;;        (0         52 12) ;; Reserved (must be zero)
+;;        )
+;;      0 64)
+;;     :rule-classes nil))
+
+;;  (define field-pos-width (flg layout-constant)
+;;    :parents (slicing-operations)
+;;    :enabled t
+;;    :short "Returns the position and width of @('flg'), given
+;;     @('layout-constant')"
+;;    (declare (xargs :guard (symbolp flg)))
+;;    (if (atom layout-constant)
+;;        (mv 0 (or (cw "field-pos-width:  Unknown flag:   ~p0.~%" flg) 0))
+;;      (let ((entry (car layout-constant)))
+;;        (if (not (and (consp entry)
+;;                      (consp (cdr entry))
+;;                      (consp (cddr entry))
+;;                      (null (cdddr entry))
+;;                      (or (symbolp (car entry))
+;;                          (natp    (car entry)))
+;;                      (natp (cadr entry))
+;;                      (natp (caddr entry))))
+;;            (mv 0 (or (cw "field-pos-width:  Entry malformed:   ~p0.~%" entry) 0))
+;;          (let ((name (car entry))
+;;                (pos  (cadr entry))
+;;                (width (caddr entry)))
+;;            (if (eq name flg)
+;;                (mv pos width)
+;;              (field-pos-width flg (cdr layout-constant))))))))
+
+;;  (define slice (flg reg reg-width layout-constant)
+;;    :enabled t
+;;    :parents (slicing-operations)
+;;    :short "Used to define efficient bit-slice accessor forms for
+;;     reasoning and execution"
+;;    :guard (and (symbolp flg)
+;;                (natp reg-width)
+;;                (layout-constant-alistp layout-constant 0 reg-width))
+;;    :guard-hints (("Goal" :do-not '(preprocess simplify)))
+;;    (mv-let (pos size)
+;;            (field-pos-width flg layout-constant)
+;;            (let* ((pos (if (natp pos) pos 0))
+;;                   (size (if (natp size) size 0))
+;;                   (mask (1- (expt 2 size)))
+;;                   (reg-width-pos (- reg-width pos)))
+;;              `(mbe :logic (part-select ,reg :low ,pos :width ,size)
+;;                    :exec
+;;                    (the (unsigned-byte ,size)
+;;                      (logand (the (unsigned-byte ,size) ,mask)
+;;                              (the (unsigned-byte ,reg-width-pos)
+;;                                (ash
+;;                                 (the (unsigned-byte ,reg-width) ,reg)
+;;                                 (- ,pos)))))))))
+
+;;  (define !slice (flg val reg reg-size layout-constant)
+;;    :guard (and (symbolp flg)
+;;                (natp reg-size))
+;;    :parents (slicing-operations)
+;;    :short "Used to define efficient bit-slice updater forms for
+;;     reasoning and execution"
+;;    (mv-let (pos size)
+;;            (field-pos-width flg layout-constant)
+;;            (let* ((mask (lognot (ash (logmask size) pos)))
+;;                   (size+pos (+ pos size))
+;;                   (mask-size (+ 1 size+pos)))
+;;              `(let ((reg-for-!slice-do-not-use
+;;                      (the (unsigned-byte ,reg-size) ,reg)))
+;;                 (declare (type (unsigned-byte ,reg-size)
+;;                                reg-for-!slice-do-not-use))
+;;                 (mbe :logic (part-install ,val reg-for-!slice-do-not-use
+;;                                           :low ,pos :width ,size)
+;;                      :exec (the (unsigned-byte ,reg-size)
+;;                              (logior
+;;                               (the (unsigned-byte ,reg-size)
+;;                                 (logand
+;;                                  (the (unsigned-byte ,reg-size)
+;;                                    reg-for-!slice-do-not-use)
+;;                                  (the (signed-byte ,mask-size) ,mask)))
+;;                               (the (unsigned-byte ,size+pos)
+;;                                 (ash (the (unsigned-byte ,size) ,val)
+;;                                      ,pos)))))))))
+
+;;  ) ;; End of encapsulate

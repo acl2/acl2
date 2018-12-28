@@ -170,7 +170,7 @@ memory.</p>" )
     :hints (("Goal" :in-theory (e/d () (force (force))))))
 
   (defthm-usb n08p-mv-nth-1-rvm08
-    :hyp (x86p x86)
+    :hyp t
     :bound 8
     :concl (mv-nth 1 (rvm08 addr x86))
     :gen-linear t
@@ -239,7 +239,7 @@ memory.</p>" )
 
 
   (defthm-usb n16p-mv-nth-1-rvm16
-    :hyp (x86p x86)
+    :hyp t
     :bound 16
     :concl (mv-nth 1 (rvm16 addr x86))
     :gen-linear t
@@ -330,7 +330,7 @@ memory.</p>" )
 		     8))))
 
   (defthm-usb n32p-mv-nth-1-rvm32
-    :hyp (x86p x86)
+    :hyp t
     :bound 32
     :concl (mv-nth 1 (rvm32 addr x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
@@ -411,7 +411,7 @@ memory.</p>" )
      :concl (logior word (ash dword 16))))
 
   (defthm-usb n48p-mv-nth-1-rvm48
-    :hyp (x86p x86)
+    :hyp t
     :bound 48
     :concl (mv-nth 1 (rvm48 addr x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
@@ -492,7 +492,7 @@ memory.</p>" )
      :concl (logior dword0 (ash dword1 32))))
 
   (defthm-usb n64p-mv-nth-1-rvm64
-    :hyp (x86p x86)
+    :hyp t
     :bound 64
     :concl (mv-nth 1 (rvm64 addr x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
@@ -573,7 +573,7 @@ memory.</p>" )
      :concl (logior word (ash qword 16))))
 
   (defthm-usb n80p-mv-nth-1-rvm80
-    :hyp (x86p x86)
+    :hyp t
     :bound 80
     :concl (mv-nth 1 (rvm80 addr x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
@@ -654,7 +654,7 @@ memory.</p>" )
      :concl (logior qword1 (ash qword0 64))))
 
   (defthm-usb n128p-mv-nth-1-rvm128
-    :hyp (x86p x86)
+    :hyp t
     :bound 128
     :concl (mv-nth 1 (rvm128 addr x86))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p force (force) rvm64))))

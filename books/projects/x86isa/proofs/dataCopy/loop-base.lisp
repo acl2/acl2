@@ -50,11 +50,7 @@
                          rme-size
                          wime-size
                          wme-size)
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+                        (las-to-pas
                          xr-fault-wb-in-system-level-marking-view
                          xr-fault-wb-in-sys-view))))
 
@@ -89,14 +85,15 @@
                  :W
                  (MV-NTH 1 (RB 4 (XR :RGF *RDI* X86) :R X86))
                  (!FLGI
-                  *CF* 1
-                  (!FLGI *PF* 1
-                         (!FLGI *AF* 1
-                                (!FLGI *ZF* 1
-                                       (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))))))
+                  :CF 1
+                  (!FLGI :PF 1
+                         (!FLGI :AF 1
+                                (!FLGI :ZF 1
+                                       (!FLGI :SF 0 (!FLGI :OF 0 X86)))))))))))))))
   :hints (("Goal"
            :do-not '(preprocess)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-and-spec-4
                              gpr-add-spec-8
@@ -133,12 +130,12 @@
                              x86-effective-addr-32/64
                              subset-p
                              signed-byte-p)
-                            (mv-nth-1-wb-and-!flgi-commute
-                             default-+-2
+                            (default-+-2
                              get-prefixes-opener-lemma-group-4-prefix
                              get-prefixes-opener-lemma-group-3-prefix
                              get-prefixes-opener-lemma-group-2-prefix
-                             get-prefixes-opener-lemma-group-1-prefix)))))
+                             get-prefixes-opener-lemma-group-1-prefix
+                             acl2::bfix-when-not-1)))))
 
 (defthm effects-copyData-loop-base-destination-address-projection-original
   ;; dst[(+ -k dst-addr) to dst-addr] in (x86-run (loop-clk-base) x86) =
@@ -150,7 +147,6 @@
   :hints (("Goal" :use ((:instance effects-copydata-loop-base))
            :in-theory (e/d* ()
                             (separate-smaller-regions
-                             mv-nth-1-wb-and-!flgi-commute
                              loop-clk-base
                              (loop-clk-base)
                              force (force))))))
@@ -223,7 +219,6 @@
            :in-theory (e/d* ()
                             (loop-clk-base
                              (loop-clk-base)
-                             mv-nth-1-wb-and-!flgi-commute
                              loop-clk-base
                              (loop-clk-base)
                              force (force))))))
@@ -289,7 +284,8 @@
                   (alignment-checking-enabled-p x86)))
   :hints (("Goal"
            :use ((:instance effects-copydata-loop-base))
-           :in-theory (e/d* (alignment-checking-enabled-p)
+           :in-theory (e/d* (alignment-checking-enabled-p
+                             rflag-RoWs-enables)
                             (separate-smaller-regions
                              loop-clk-base
                              (loop-clk-base)

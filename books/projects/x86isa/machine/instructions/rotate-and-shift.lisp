@@ -72,8 +72,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory
                          (e/d ()
                               (trunc

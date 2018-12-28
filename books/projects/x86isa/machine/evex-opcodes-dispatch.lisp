@@ -79,8 +79,8 @@
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
                              "@('temp-rip') points to the byte following the
                               opcode byte")
-     (prefixes               :type (unsigned-byte #.*prefixes-width*))
-     (rex-byte               :type (unsigned-byte 8))
+     (prefixes               :type  (unsigned-byte #.*prefixes-width*))
+     (rex-byte               :type  (unsigned-byte 8))
      (evex-prefixes           :type (unsigned-byte #.*evex-width*)
                               "Completely populated when this function is
                               called")
@@ -94,7 +94,8 @@
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the two-byte opcode map"
-    :guard (and (modr/m-p modr/m)
+    :guard (and (evex-prefixes-p evex-prefixes)
+                (modr/m-p modr/m)
                 (sib-p sib))
     :guard-hints (("Goal"
                    :do-not '(preprocess)
@@ -104,8 +105,7 @@
                                     (:forward-chaining acl2::unsigned-byte-p-forward)
                                     ash
                                     (tau-system)))))
-    :returns (x86 x86p :hyp (and (canonical-address-p temp-rip)
-                                 (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
                   :hints (("Goal" :in-theory (e/d () ((tau-system)
                                                       signed-byte-p)))))
 
@@ -137,7 +137,8 @@
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the first
     three-byte opcode map"
-    :guard (and (modr/m-p modr/m)
+    :guard (and (evex-prefixes-p evex-prefixes)
+                (modr/m-p modr/m)
                 (sib-p sib))
     :guard-hints (("Goal"
                    :do-not '(preprocess)
@@ -148,8 +149,7 @@
                                     ash
                                     (tau-system)))))
 
-    :returns (x86 x86p :hyp (and (canonical-address-p temp-rip)
-                                 (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
                   :hints (("Goal" :in-theory (e/d () ((tau-system)
                                                       signed-byte-p)))))
 
@@ -181,7 +181,8 @@
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the second
     three-byte opcode map"
-    :guard (and (modr/m-p modr/m)
+    :guard (and (evex-prefixes-p evex-prefixes)
+                (modr/m-p modr/m)
                 (sib-p sib))
     :guard-hints (("Goal"
                    :do-not '(preprocess)
@@ -192,8 +193,7 @@
                                     ash
                                     (tau-system)))))
 
-    :returns (x86 x86p :hyp (and (canonical-address-p temp-rip)
-                                 (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86)
                   :hints (("Goal" :in-theory (e/d () ((tau-system)
                                                       signed-byte-p)))))
 
@@ -219,7 +219,8 @@
 
   :ignore-ok t
 
-  :guard (prefixes-p prefixes)
+  :guard (and (evex-prefixes-p evex-prefixes)
+              (prefixes-p prefixes))
 
   :guard-hints
   (("Goal"
@@ -254,15 +255,15 @@
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :66-prefix))
 
        ;; EVEX Byte 1:
-       (evex-byte1 (evex-prefixes-slice :byte1 evex-prefixes))
+       (evex-byte1 (evex-prefixes->byte1 evex-prefixes))
        ;; EVEX Byte 1 #UD Checks
        ;; Reference: Intel Vol. 2, Section 2.6.11.2 (Opcode Independent #UD)
-       ((when (not (equal (evex-byte1-slice :res evex-byte1) 0)))
+       ((when (not (equal (evex-byte1->res evex-byte1) 0)))
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :byte1-reserved-bits))
        ((mv evex-0F-map? evex-0F38-map? evex-0F3A-map?)
-        (mv (equal (evex-byte1-slice :mm evex-byte1) #.*v0F*)
-            (equal (evex-byte1-slice :mm evex-byte1) #.*v0F38*)
-            (equal (evex-byte1-slice :mm evex-byte1) #.*v0F3A*)))
+        (mv (equal (evex-byte1->mm evex-byte1) #.*v0F*)
+            (equal (evex-byte1->mm evex-byte1) #.*v0F38*)
+            (equal (evex-byte1->mm evex-byte1) #.*v0F3A*)))
        ((when (not (or evex-0F-map? evex-0F38-map? evex-0F3A-map?)))
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :mm evex-byte1))
 
@@ -276,10 +277,10 @@
        ((when flg1)
         (!!ms-fresh :increment-error flg1))
        (evex-prefixes
-        (!evex-prefixes-slice :byte2 evex-byte2 evex-prefixes))
+        (!evex-prefixes->byte2 evex-byte2 evex-prefixes))
        ;; EVEX Byte 2 #UD Check
        ;; Reference: Intel Vol. 2, Section 2.6.11.2 (Opcode Independent #UD)
-       ((when (not (equal (evex-byte2-slice :res evex-byte2) 1)))
+       ((when (not (equal (evex-byte2->res evex-byte2) 1)))
         (!!fault-fresh :ud :evex-prefixes evex-prefixes :byte2-reserved-bit))
 
        ;; EVEX Byte 3:
@@ -333,11 +334,14 @@
 
     (cond
      (evex-0F-map?
-      (evex-0F-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
+      (evex-0F-execute
+       proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (evex-0F38-map?
-      (evex-0F38-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
+      (evex-0F38-execute
+       proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (evex-0F3A-map?
-      (evex-0F3A-execute proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
+      (evex-0F3A-execute
+       proc-mode start-rip temp-rip prefixes rex-byte evex-prefixes opcode modr/m sib x86))
      (t
       ;; Unreachable.
       (!!ms-fresh :illegal-value-of-EVEX-mm))))
@@ -345,13 +349,11 @@
   ///
 
   (defthm x86p-evex-decode-and-execute
-    (implies (and (x86p x86)
-                  (canonical-address-p temp-rip))
+    (implies (x86p x86)
              (x86p
               (evex-decode-and-execute
                proc-mode
                start-rip temp-rip prefixes rex-byte evex-prefixes x86)))
-    :hints (("Goal" :in-theory (e/d (add-to-*ip add-to-*ip-is-i48p-rewrite-rule)
-                                    ((tau-system)))))))
+    :hints (("Goal" :in-theory (e/d () ((tau-system)))))))
 
 ;; ----------------------------------------------------------------------

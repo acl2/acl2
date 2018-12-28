@@ -69,7 +69,9 @@
             t))
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception
-                                    page-present)
+                                    page-present
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
                                    ()))))
 
 (defthm gather-all-paging-structure-qword-addresses-paging-entry-no-page-fault-p
@@ -130,14 +132,9 @@
                              (:t n01p-page-present)
                              (:t n01p-page-read-write)
                              acl2::loghead-identity
-                             unsigned-byte-p-of-logtail))
-           :use ((:instance xlate-equiv-entries-and-page-size
-                            (e-1 (loghead 64 e-1))
-                            (e-2 (loghead 64 e-2)))
-                 (:instance xlate-equiv-entries-and-page-execute-disable
-                            (e-1 (loghead 64 e-1))
-                            (e-2 (loghead 64 e-2)))
-                 (:instance xlate-equiv-entries-and-logtail
+                             unsigned-byte-p-of-logtail
+                             (tau-system)))
+           :use ((:instance xlate-equiv-entries-and-logtail
                             (e-1 (loghead 64 e-1))
                             (e-2 (loghead 64 e-2))
                             (n 52))
@@ -162,13 +159,7 @@
                            wp smep smap ac nxe r-w-x cpl
                            x86 ignored))))
   :hints (("Goal"
-           :use ((:instance xlate-equiv-entries-and-page-size
-                            (e-1 (loghead 64 e-1))
-                            (e-2 (loghead 64 e-2)))
-                 (:instance xlate-equiv-entries-and-page-execute-disable
-                            (e-1 (loghead 64 e-1))
-                            (e-2 (loghead 64 e-2)))
-                 (:instance xlate-equiv-entries-and-logtail
+           :use ((:instance xlate-equiv-entries-and-logtail
                             (e-1 (loghead 64 e-1))
                             (e-2 (loghead 64 e-2))
                             (n 52))
@@ -225,7 +216,7 @@
   :hints (("Goal" :in-theory (e/d* (paging-entry-no-page-fault-p
                                     page-fault-exception
                                     xlate-equiv-structures)
-                                   ()))))
+                                   ((tau-system))))))
 
 ;; ======================================================================
 
@@ -297,6 +288,27 @@
                    lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe r-w-x cpl x86)
                   (mv t 0 x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-table) ()))))
+
+(defthm xlate-equiv-entries-and-ia32e-pte-4k-pagebits->page
+  (implies (xlate-equiv-entries e-1 e-2)
+           (equal (ia32e-pte-4k-pagebits->page e-1)
+                  (ia32e-pte-4k-pagebits->page e-2)))
+  :hints (("goal" :in-theory (e/d* (ia32e-pte-4k-pagebits->page
+                                    ia32e-pte-4k-pagebits-fix
+                                    xlate-equiv-entries
+                                    ia32e-page-tablesbits->xd
+                                    ia32e-page-tablesbits->res2
+                                    ia32e-page-tablesbits->reference-addr
+                                    ia32e-page-tablesbits->res1
+                                    ia32e-page-tablesbits->ps
+                                    ia32e-page-tablesbits->pcd
+                                    ia32e-page-tablesbits->pwt
+                                    ia32e-page-tablesbits->u/s
+                                    ia32e-page-tablesbits->r/w
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
+                                   ())))
+  :rule-classes :congruence)
 
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa-page-table
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
@@ -611,6 +623,5 @@
                             (y (mv-nth 2 (ia32e-la-to-pa-page-table
                                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                           wp smep smap ac nxe r-w-x cpl x86))))))))
-
 
 ;; ======================================================================

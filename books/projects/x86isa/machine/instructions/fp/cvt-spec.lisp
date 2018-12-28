@@ -120,8 +120,8 @@
         (sse-cvt-fp-to-int-special kind nbytes))
 
        ;; Check invalid operation
-       (mxcsr (if invalid (!mxcsr-slice :ie 1 mxcsr) mxcsr))
-       (im (equal (mxcsr-slice :im mxcsr) 1))
+       (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
+       (im (equal (mxcsrBits->im mxcsr) 1))
        ((when (and invalid (not im)))
         (mv 'invalid-operand-exception-is-not-masked 0 mxcsr)))
 
@@ -141,7 +141,7 @@
            (out-of-range (or (< rat-to-int min-signed-int)
                              (> rat-to-int max-signed-int)))
            ;; If the converted integer is out-of-range, set IE flag.
-           (mxcsr (if out-of-range (!mxcsr-slice :ie 1 mxcsr) mxcsr))
+           (mxcsr (if out-of-range (!mxcsrBits->ie 1 mxcsr) mxcsr))
            ((when (and out-of-range (not im)))
             (mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
            ;; If out-of-range and IM is masked, return integer indefinite.
@@ -150,8 +150,8 @@
 
            ;; Check precision
            (pe (not (= rat-to-int rat)))
-           (mxcsr (if pe (!mxcsr-slice :pe 1 mxcsr) mxcsr))
-           (pm (equal (mxcsr-slice :pm mxcsr) 1))
+           (mxcsr (if pe (!mxcsrBits->pe 1 mxcsr) mxcsr))
+           (pm (equal (mxcsrBits->pm mxcsr) 1))
            ((when (and pe (not pm)))
             (mv 'precision-exception-is-not-masked 0 mxcsr)))
 
@@ -196,8 +196,8 @@
 
        ;; Check precision
        (pe (not (= op int-to-rat)))
-       (mxcsr (if pe (!mxcsr-slice :pe 1 mxcsr) mxcsr))
-       (pm (equal (mxcsr-slice :pm mxcsr) 1))
+       (mxcsr (if pe (!mxcsrBits->pe 1 mxcsr) mxcsr))
+       (pm (equal (mxcsrBits->pm mxcsr) 1))
        ((when (and pe (not pm)))
         (mv 'precision-exception-is-not-masked 0 mxcsr))
 
@@ -327,14 +327,14 @@
          (sse-cvt-fp1-to-fp2-special kind sign implicit frac frac-width1
                                      exp-width2 frac-width2))
         ;; Check invalid operation
-        (mxcsr (if invalid (!mxcsr-slice :ie 1 mxcsr) mxcsr))
-        (im (equal (mxcsr-slice :im mxcsr) 1))
+        (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
+        (im (equal (mxcsrBits->im mxcsr) 1))
         ((when (and invalid (not im)))
          (mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
         ;; Check denormal operand
         (de (eq kind 'denormal))
-        (mxcsr (if de (!mxcsr-slice :de 1 mxcsr) mxcsr))
-        (dm (equal (mxcsr-slice :dm mxcsr) 1))
+        (mxcsr (if de (!mxcsrBits->de 1 mxcsr) mxcsr))
+        (dm (equal (mxcsrBits->dm mxcsr) 1))
         ((when (and de (not dm)))
          (mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))
 
@@ -353,17 +353,17 @@
 
             ;; Post-computation Exceptions
             ;; Check overflow
-            (overflowp (equal (mxcsr-slice :oe mxcsr) 1))
+            (overflowp (equal (mxcsrBits->oe mxcsr) 1))
             ((when (and overflowp
-                        (equal (mxcsr-slice :om mxcsr) 0)))
+                        (equal (mxcsrBits->om mxcsr) 0)))
              (mv 'overflow-exception-is-not-masked result mxcsr))
             ;; Check underflow
-            ((when (and (equal (mxcsr-slice :ue mxcsr) 1)
-                        (equal (mxcsr-slice :um mxcsr) 0)))
+            ((when (and (equal (mxcsrBits->ue mxcsr) 1)
+                        (equal (mxcsrBits->um mxcsr) 0)))
              (mv 'underflow-exception-is-not-masked result mxcsr))
             ;; Check precision
-            ((when (and (equal (mxcsr-slice :pe mxcsr) 1)
-                        (equal (mxcsr-slice :pm mxcsr) 0)))
+            ((when (and (equal (mxcsrBits->pe mxcsr) 1)
+                        (equal (mxcsrBits->pm mxcsr) 0)))
              (mv 'precision-exception-is-not-masked result mxcsr))
 
             (rc
@@ -375,8 +375,8 @@
             (denormalp (denormalp rat rounded-expo bias2))
 
             (flush (and denormalp
-                        (equal (mxcsr-slice :um mxcsr) 1)
-                        (equal (mxcsr-slice :fz mxcsr) 1)))
+                        (equal (mxcsrBits->um mxcsr) 1)
+                        (equal (mxcsrBits->fz mxcsr) 1)))
             (fp-result
              (rat-to-fp rounded-rat sign overflowp
                         denormalp flush rc exp-width2 frac-width2)))

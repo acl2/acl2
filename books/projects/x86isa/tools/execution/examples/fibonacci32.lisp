@@ -304,7 +304,7 @@ int main (int argc, char *argv[], char *env[]) {
 	 ;; seg-hidden attr
 	 (acons
 	  #.*cs*
-	  (!code-segment-descriptor-attributes-layout-slice :d 1 0) ;; op size = 4
+	  (!code-segment-descriptor-attributesBits->d 1 0) ;; op size = 4
 	  nil)
 	 ;; Initial value of the Rflags Register
 	 #x282

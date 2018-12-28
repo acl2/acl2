@@ -48,19 +48,25 @@
 ;; ======================================================================
 
 (defthmd wm-low-32-and-rm-low-32-writing-the-read-simple
-  (implies (x86p x86)
+  (implies (and (x86p x86)
+                ;; [Shilpi] added addr-related hyps. after bitstruct edit.
+                (natp addr)
+                (< (+ 3 addr) *mem-size-in-bytes*))
            (equal (wm-low-32 addr (rm-low-32 addr x86) x86)
                   x86))
   :hints (("Goal" :in-theory (e/d* (wm-low-32
                                     rm-low-32
-                                    xw-xr
+                                    xw-xr-mem
+                                    ;; xr-after-writing-the-read
                                     unsigned-byte-p)
                                    ()))))
 
 (defthmd wm-low-32-and-rm-low-32-writing-the-read
   (implies (and (equal (rm-low-32 addr x86-2)
                        (rm-low-32 addr x86-1))
-                (x86p x86-1)
+                ;; [Shilpi] added addr-related hyps. after bitstruct edit.
+                (natp addr)
+                (< (+ 3 addr) *mem-size-in-bytes*)
                 (x86p x86-2))
            (equal (wm-low-32 addr (rm-low-32 addr x86-1) x86-2)
                   x86-2))
@@ -68,18 +74,25 @@
                                    ()))))
 
 (defthmd wm-low-64-and-rm-low-64-writing-the-read-simple
-  (implies (x86p x86)
+  (implies (and (x86p x86)
+                ;; [Shilpi] added addr-related hyps. after bitstruct edit.
+                (natp addr)
+                (< (+ 7 addr) *mem-size-in-bytes*))
            (equal (wm-low-64 addr (rm-low-64 addr x86) x86)
                   x86))
-  :hints (("Goal" :in-theory (e/d* (wm-low-64
-                                    rm-low-64
-                                    wm-low-32-and-rm-low-32-writing-the-read)
-                                   ()))))
+  :hints (("Goal"
+           :cases ((not (app-view x86)))
+           :in-theory (e/d* (wm-low-64
+                             rm-low-64
+                             wm-low-32-and-rm-low-32-writing-the-read)
+                            ()))))
 
 (defthmd wm-low-64-and-rm-low-64-writing-the-read
   (implies (and (equal (rm-low-64 addr x86-2)
                        (rm-low-64 addr x86-1))
-                (x86p x86-1)
+                ;; [Shilpi] added addr-related hyps. after bitstruct edit.
+                (natp addr)
+                (< (+ 7 addr) *mem-size-in-bytes*)
                 (x86p x86-2))
            (equal (wm-low-64 addr (rm-low-64 addr x86-1) x86-2)
                   x86-2))
@@ -266,7 +279,7 @@
 
        ;; 4K pages:
        (page-table-base-addr
-        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry) 12))
+        (ash (ia32e-pde-pg-tableBits->pt page-directory-entry) 12))
        (page-table-address
         (xlate-governing-qword-addresses-for-page-table
          lin-addr page-table-base-addr x86)))
@@ -328,7 +341,7 @@
 
        ;; 2M or 4K pages:
 
-       (page-directory-base-addr (ash (ia32e-pdpte-pg-dir-slice :pdpte-pd page-dir-ptr-table-entry) 12))
+       (page-directory-base-addr (ash (ia32e-pdpte-pg-dirBits->pd page-dir-ptr-table-entry) 12))
        (page-directory-addresses
         (xlate-governing-qword-addresses-for-page-directory
          lin-addr page-directory-base-addr x86)))
@@ -391,7 +404,7 @@
 
        ;; Page Directory Pointer Table:
        (ptr-table-base-addr
-        (ash (ia32e-pml4e-slice :pml4e-pdpt pml4-entry) 12))
+        (ash (ia32e-pml4eBits->pdpt pml4-entry) 12))
 
        (ptr-table-addresses
         (xlate-governing-qword-addresses-for-page-dir-ptr-table
@@ -472,7 +485,7 @@
   (if (mbt (not (app-view x86)))
       (b* ((cr3       (ctri *cr3* x86))
            ;; PML4 Table:
-           (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
+           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12)))
 
         (xlate-governing-qword-addresses-for-pml4-table
          lin-addr pml4-base-addr x86))
@@ -845,7 +858,8 @@
             :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
                               wm-low-64-and-rm-low-64-writing-the-read
                               xlate-governing-qword-addresses-for-page-dir-ptr-table
-                              xlate-governing-qword-addresses-for-page-directory)
+                              xlate-governing-qword-addresses-for-page-directory
+                              ia32e-pdpte-pg-dirbits->pd)
                              (bitops::logand-with-negated-bitmask
                               accessed-bit
                               dirty-bit))))))
@@ -1053,7 +1067,8 @@
             :in-theory (e/d* (ia32e-la-to-pa-pml4-table
                               wm-low-64-and-rm-low-64-writing-the-read
                               xlate-governing-qword-addresses-for-pml4-table
-                              xlate-governing-qword-addresses-for-page-dir-ptr-table)
+                              xlate-governing-qword-addresses-for-page-dir-ptr-table
+                              ia32e-pml4ebits->pdpt)
                              (bitops::logand-with-negated-bitmask
                               accessed-bit
                               dirty-bit
@@ -1121,7 +1136,9 @@
                               wm-low-64-and-rm-low-64-writing-the-read
                               xlate-governing-qword-addresses-for-pml4-table
                               xlate-governing-qword-addresses-for-page-dir-ptr-table
-                              xlate-governing-qword-addresses-for-page-directory)
+                              xlate-governing-qword-addresses-for-page-directory
+                              ia32e-pdpte-pg-dirbits->pd
+                              ia32e-pml4ebits->pdpt)
                              (bitops::logand-with-negated-bitmask
                               accessed-bit
                               dirty-bit

@@ -38,6 +38,7 @@
 
 (in-package "X86ISA")
 (include-book "rflags-spec")
+(include-book "fp-structures" :dir :utils)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 ; Instruction to cert.pl for dependency tracking.
 ; (depends-on "register-readers-and-writers-raw.lsp")
@@ -307,6 +308,7 @@ are used to write natural numbers into the GPRs.</p>"
     to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
     registers to undefined values.</p>"
 
+
     (cond ((or (not (eql rex 0))
                (< reg 4))
            (let ((qword (the (signed-byte 64) (rgfi reg x86))))
@@ -319,13 +321,13 @@ are used to write natural numbers into the GPRs.</p>"
                            :low 0 :width 8)
                           :exec
                           (the (unsigned-byte 64)
-                               (logior (the (unsigned-byte 64)
-                                            (logand #xffffffffffffff00 qword))
-                                       byte))))
+                            (logior (the (unsigned-byte 64)
+                                      (logand #xffffffffffffff00 qword))
+                                    byte))))
                     x86)))
           (t ;; no rex and reg is at least 4 -- then write to AH, etc.
            (let* ((index (the (unsigned-byte 4)
-                              (- (the (unsigned-byte 4) reg) 4)))
+                           (- (the (unsigned-byte 4) reg) 4)))
                   (qword (the (signed-byte 64) (rgfi index x86))))
              (!rgfi index
                     (n64-to-i64
@@ -336,16 +338,15 @@ are used to write natural numbers into the GPRs.</p>"
                            :low 8 :width 8)
                           :exec
                           (the (unsigned-byte 64)
-                               (logior (the (unsigned-byte 64)
-                                            (logand #xffffffffffff00ff qword))
-                                       (the (unsigned-byte 16) (ash byte 8))))))
+                            (logior (the (unsigned-byte 64)
+                                      (logand #xffffffffffff00ff qword))
+                                    (the (unsigned-byte 16) (ash byte 8))))))
                     x86))))
 
     ///
 
     (defthm x86p-wr08
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wr08 reg rex byte x86)))))
 
   (encapsulate
@@ -363,10 +364,8 @@ are used to write natural numbers into the GPRs.</p>"
                     ())))))
 
   (defthm rr08-wr08-same
-    (implies (n08p byte)
-             (equal (rr08 reg rex
-                          (wr08 reg rex byte x86))
-                    byte))
+    (equal (rr08 reg rex (wr08 reg rex byte x86))
+           (loghead 8 byte))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64
                               rr08 wr08)
@@ -374,10 +373,8 @@ are used to write natural numbers into the GPRs.</p>"
                               (force) force)))))
 
   (defthm rr08-wr08-different
-    (implies (and (n08p byte)
-                  (not (equal reg1 reg2)))
-             (equal (rr08 reg1 rex1
-                          (wr08 reg2 rex2 byte x86))
+    (implies (not (equal reg1 reg2))
+             (equal (rr08 reg1 rex1 (wr08 reg2 rex2 byte x86))
                     (rr08 reg1 rex1 x86)))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64 rr08 wr08)
@@ -434,30 +431,27 @@ are used to write natural numbers into the GPRs.</p>"
                     :low 0 :width 16)
                    :exec
                    (the (unsigned-byte 64)
-                        (logior (the (unsigned-byte 64)
-                                     (logand qword #xffffffffffff0000))
-                                val))))
+                     (logior (the (unsigned-byte 64)
+                               (logand qword #xffffffffffff0000))
+                             val))))
              x86))
 
     ///
 
     (defthm x86p-wr16
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wr16 reg val x86)))))
 
   (defthm rr16-wr16-same
-    (implies (n16p val)
-             (equal (rr16 reg (wr16 reg val x86))
-                    val))
+    (equal (rr16 reg (wr16 reg val x86))
+           (loghead 16 val))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64
                               rr16 wr16)
                              (unsigned-byte-p force (force))))))
 
   (defthm rr16-wr16-different
-    (implies (and (n16p val)
-                  (not (equal reg1 reg2)))
+    (implies (not (equal reg1 reg2))
              (equal (rr16 reg1 (wr16 reg2 val x86))
                     (rr16 reg1 x86)))
     :hints (("Goal"
@@ -511,22 +505,19 @@ are used to write natural numbers into the GPRs.</p>"
     ///
 
     (defthm x86p-wr32
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wr32 reg val x86)))))
 
   (defthm rr32-wr32-same
-    (implies (n32p val)
-             (equal (rr32 reg (wr32 reg val x86))
-                    val))
+    (equal (rr32 reg (wr32 reg val x86))
+           (loghead 32 val))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64
                               rr32 wr32)
                              (unsigned-byte-p)))))
 
   (defthm rr32-wr32-different
-    (implies (and (n32p val)
-                  (not (equal reg1 reg2)))
+    (implies (not (equal reg1 reg2))
              (equal (rr32 reg1 (wr32 reg2 val x86))
                     (rr32 reg1 x86)))
     :hints (("Goal"
@@ -551,22 +542,19 @@ are used to write natural numbers into the GPRs.</p>"
 
     ///
     (defthm x86p-wr64
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wr64 reg val x86)))))
 
   (defthm rr64-wr64-same
-    (implies (n64p val)
-             (equal (rr64 reg (wr64 reg val x86))
-                    val))
+    (equal (rr64 reg (wr64 reg val x86))
+           (loghead 64 val))
     :hints (("Goal"
              :in-theory (e/d (n64-to-i64
                               rr64 wr64)
                              (unsigned-byte-p)))))
 
   (defthm rr64-wr64-different
-    (implies (and (n64p val)
-                  (not (equal reg1 reg2)))
+    (implies (not (equal reg1 reg2))
              (equal (rr64 reg1 (wr64 reg2 val x86))
                     (rr64 reg1 x86)))
     :hints (("Goal"
@@ -608,7 +596,7 @@ are used to write natural numbers into the GPRs.</p>"
     :guard (and (reg-indexp index rex)
                 (member nbytes '(1 2 4 8))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
+    :returns (x86 x86p :hyp (x86p x86))
     :inline t
     :no-function t
     :short "Write to byte, word, doubleword, or quadword
@@ -714,12 +702,9 @@ pointer, or opcode registers\).</em></p>"
     ///
 
     (defthm x86p-!mmx
-      (implies (and (x86p x86)
-                    (n64p v)
-                    (integerp i))
+      (implies (x86p x86)
                (x86p (!mmx i v x86)))
-      :hints (("Goal" :in-theory (e/d ()
-                                      (force (force)))))))
+      :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
   (define mmx-instruction-updates (x86)
     :inline t
@@ -732,7 +717,7 @@ pointer, or opcode registers\).</em></p>"
 
     (b* ((x86 (!fp-tag 0 x86))
          (fp-status (fp-status x86))
-         (x86 (!fp-status (!fp-status-slice :fp-top 0 fp-status) x86)))
+         (x86 (!fp-status (!fp-statusBits->top 0 fp-status) x86)))
         x86)
 
     ///
@@ -920,14 +905,12 @@ pointer, or opcode registers\).</em></p>"
     (local (in-theory (e/d () (force (force)))))
 
     (defthm x86p-wz32
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wz32 reg val x86 :regtype access)))))
 
   (defthm rz32-wz32-same
-    (implies (n32p val)
-             (equal (rz32 reg (wz32 reg val x86 :regtype access))
-                    val))
+    (equal (rz32 reg (wz32 reg val x86 :regtype access))
+           (loghead 32 val))
     :hints (("Goal"
              :in-theory (e/d (rz32 wz32)
                              (unsigned-byte-p
@@ -978,14 +961,12 @@ pointer, or opcode registers\).</em></p>"
     (local (in-theory (e/d () (force (force)))))
 
     (defthm x86p-wz64
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wz64 reg val x86 :regtype access)))))
 
   (defthm rz64-wz64-same
-    (implies (n64p val)
-             (equal (rz64 reg (wz64 reg val x86 :regtype access))
-                    val))
+    (equal (rz64 reg (wz64 reg val x86 :regtype access))
+           (loghead 64 val))
     :hints (("Goal"
              :in-theory (e/d (rz64 wz64)
                              (unsigned-byte-p
@@ -1037,14 +1018,12 @@ pointer, or opcode registers\).</em></p>"
     (local (in-theory (e/d () (force (force)))))
 
     (defthm x86p-wz128
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wz128 reg val x86 :regtype access)))))
 
   (defthm rz128-wz128-same
-    (implies (n128p val)
-             (equal (rz128 reg (wz128 reg val x86 :regtype access))
-                    val))
+    (equal (rz128 reg (wz128 reg val x86 :regtype access))
+           (loghead 128 val))
     :hints (("Goal"
              :in-theory (e/d (rz128 wz128)
                              (unsigned-byte-p
@@ -1093,14 +1072,12 @@ pointer, or opcode registers\).</em></p>"
     (local (in-theory (e/d () (force (force)))))
 
     (defthm x86p-wz256
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wz256 reg val x86 :regtype access)))))
 
   (defthm rz256-wz256-same
-    (implies (n256p val)
-             (equal (rz256 reg (wz256 reg val x86 :regtype access))
-                    val))
+    (equal (rz256 reg (wz256 reg val x86 :regtype access))
+           (loghead 256 val))
     :hints (("Goal"
              :in-theory (e/d (rz256 wz256)
                              (unsigned-byte-p
@@ -1135,14 +1112,12 @@ pointer, or opcode registers\).</em></p>"
     (local (in-theory (e/d () (force (force)))))
 
     (defthm x86p-wz512
-      (implies (and (x86p x86)
-                    (natp reg))
+      (implies (x86p x86)
                (x86p (wz512 reg val x86)))))
 
   (defthm rz512-wz512-same
-    (implies (n512p val)
-             (equal (rz512 reg (wz512 reg val x86))
-                    val))
+    (equal (rz512 reg (wz512 reg val x86))
+           (loghead 512 val))
     :hints (("Goal"
              :in-theory (e/d (rz512 wz512)
                              (unsigned-byte-p
@@ -1190,7 +1165,7 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (and (member nbytes '(4 8 16 32 64))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
+    :returns (x86 x86p :hyp (x86p x86))
     :inline t
     :no-function t
     (case nbytes
@@ -1324,7 +1299,7 @@ pointer, or opcode registers\).</em></p>"
     :enabled t
     :guard (and (member nbytes '(4 8 16))
                 (unsigned-byte-p (ash nbytes 3) val))
-    :returns (x86 x86p :hyp (and (x86p x86) (natp index)))
+    :returns (x86 x86p :hyp (x86p x86))
     :inline t
     :no-function t
     (case nbytes
@@ -1430,7 +1405,7 @@ values.</p>"
 
   :non-executable t
   :enabled t
-  :returns (x86 x86p :hyp :guard)
+  :returns (x86 x86p :hyp (x86p x86))
   :parents (undef-read)
   (!undef v x86))
 
@@ -1448,7 +1423,7 @@ values.</p>"
 (define undef-read (x86)
   ;; TO-DO@Shilpi: I'll need to add more args to this function if I
   ;; need the corresponding raw Lisp function to have more info.
-  :inline nil  
+  :inline nil
   :enabled t
   :returns (mv (unknown natp :rule-classes :type-prescription)
                (x86     x86p :hyp (x86p x86)))
@@ -1479,327 +1454,249 @@ values.</p>"
   :parents (rflag-specifications register-readers-and-writers)
   :short "Reading from and writing to the @('rflags') register in the @('x86') state"
 
-  :long "<p>We define @(see flgi) to read a flag's value, and @(see
-  !flgi) to write a flag's value into the @('rflags') field in the
-  @('x86') state.</p>"
+  :long "<p>We define convenient macros @(tsee flgi) and @(tsee !flgi) to read
+   a flag's value and to write a flag's value into the @('rflags') field in the
+   @('x86') state, respectively.  Additionally, @(tsee !flgi-undefined) can be
+   used to write an undefined value into a particular flag.</p>"
 
   (local (xdoc::set-default-parents rflags-Reads-and-Writes))
 
-  (define flgi
-    ((flg :type (integer 0 32))
+  ;; Tips for doing flg RoW proofs:
+  ;; (thm (equal (RFLAGSBITS->CF (!rflagsbits->df df rflags))
+  ;;             (RFLAGSBITS->CF rflags))
+  ;;      ;; Need to enable the following rule for the flag being updated so that
+  ;;      ;; the same kind of rule for the other one (RFLAGSBITS->CF-OF-RFLAGSBITS
+  ;;      ;; here) can fire.
+  ;;      :hints (("Goal" :in-theory (e/d (!RFLAGSBITS->DF-IS-RFLAGSBITS)
+  ;;                                      ()))))
+
+  ;; The following works out of the box.
+  ;; (thm (equal (RFLAGSBITS->CF (!rflagsbits->cf cf rflags))
+  ;;             (bfix cf)))
+
+  (defmacro flgi (flg x86)
+    (declare (xargs :guard (keywordp flg)))
+    `(b* ((rflags (the (unsigned-byte 32) (rflags ,x86))))
+       (case ,flg
+         (:cf (rflagsBits->cf rflags))
+         (:pf (rflagsBits->pf rflags))
+         (:af (rflagsBits->af rflags))
+         (:zf (rflagsBits->zf rflags))
+         (:sf (rflagsBits->sf rflags))
+         (:tf (rflagsBits->tf rflags))
+         (:if (rflagsBits->intf rflags))
+         (:df (rflagsBits->df rflags))
+         (:of (rflagsBits->of rflags))
+         (:iopl (rflagsBits->iopl rflags))
+         (:nt (rflagsBits->nt rflags))
+         (:rf (rflagsBits->rf rflags))
+         (:vm (rflagsBits->vm rflags))
+         (:ac (rflagsBits->ac rflags))
+         (:vif (rflagsBits->vif rflags))
+         (:vip (rflagsBits->vip rflags))
+         (:id (rflagsBits->id rflags))
+         (otherwise
+          (er hard 'flgi "~%FLGI: illegal flg keyword: ~x0.~%" ,flg)))))
+
+  (defmacro !flgi (flg val x86)
+    (declare (xargs :guard (keywordp flg)))
+    `(b* ((rflags (the (unsigned-byte 32) (rflags ,x86)))
+          (new-rflags
+           (the (unsigned-byte 32)
+             (case ,flg
+               (:cf   (!rflagsBits->cf ,val rflags))
+               (:pf   (!rflagsBits->pf ,val rflags))
+               (:af   (!rflagsBits->af ,val rflags))
+               (:zf   (!rflagsBits->zf ,val rflags))
+               (:sf   (!rflagsBits->sf ,val rflags))
+               (:tf   (!rflagsBits->tf ,val rflags))
+               (:if   (!rflagsBits->intf ,val rflags))
+               (:df   (!rflagsBits->df ,val rflags))
+               (:of   (!rflagsBits->of ,val rflags))
+               (:iopl (!rflagsBits->iopl ,val rflags))
+               (:nt   (!rflagsBits->nt ,val rflags))
+               (:rf   (!rflagsBits->rf ,val rflags))
+               (:vm   (!rflagsBits->vm ,val rflags))
+               (:ac   (!rflagsBits->ac ,val rflags))
+               (:vif  (!rflagsBits->vif ,val rflags))
+               (:vip  (!rflagsBits->vip ,val rflags))
+               (:id   (!rflagsBits->id ,val rflags))
+               (otherwise
+                (er hard '!flgi "~%!FLGI: illegal flg keyword: ~x0.~%" ,flg))))))
+       (!rflags new-rflags ,x86)))
+
+  (define undef-flg-logic (x86)
+    :enabled t
+    :prepwork ((local (in-theory (e/d* () (undef-read)))))
+    :returns (mv (unknown natp :rule-classes :type-prescription)
+                 (x86     x86p :hyp (x86p x86)))
+    (undef-read x86))
+
+  (define undef-flg (x86)
+    ;; I have smashed this function under the hood.  This is a tad more
+    ;; efficient than smashing just undef-read when flags are assigned
+    ;; undefined values because it helps us avoid calling n01 while
+    ;; execution.  This saves one call to the builtin LOGAND that might
+    ;; create bignums, potentially.
+    :inline nil
+    :enabled t
+    :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))
+    :returns (mv (unknown-bit bitp :rule-classes :type-prescription)
+                 (x86         x86p :hyp (x86p x86)))
+    (b* (((mv val x86)
+          (undef-flg-logic x86)))
+      (mv (n01 val) x86)))
+
+  (defmacro !flgi-undefined (flg x86)
+    (declare (xargs :guard (keywordp flg)))
+    `(b* ((rflags (the (unsigned-byte 32) (rflags ,x86)))
+          ((mv val x86) (undef-flg ,x86))
+          (new-rflags
+           (the (unsigned-byte 32)
+             (case ,flg
+               (:cf   (!rflagsBits->cf val rflags))
+               (:pf   (!rflagsBits->pf val rflags))
+               (:af   (!rflagsBits->af val rflags))
+               (:zf   (!rflagsBits->zf val rflags))
+               (:sf   (!rflagsBits->sf val rflags))
+               (:tf   (!rflagsBits->tf val rflags))
+               (:if   (!rflagsBits->intf val rflags))
+               (:df   (!rflagsBits->df val rflags))
+               (:of   (!rflagsBits->of val rflags))
+               (:iopl (!rflagsBits->iopl val rflags))
+               (:nt   (!rflagsBits->nt val rflags))
+               (:rf   (!rflagsBits->rf val rflags))
+               (:vm   (!rflagsBits->vm val rflags))
+               (:ac   (!rflagsBits->ac val rflags))
+               (:vif  (!rflagsBits->vif val rflags))
+               (:vip  (!rflagsBits->vip val rflags))
+               (:id   (!rflagsBits->id val rflags))
+               (otherwise
+                (er hard '!flgi "~%!FLGI-UNDEFINED: illegal flg keyword: ~x0.~%" ,flg))))))
+       (!rflags new-rflags ,x86)))
+
+  (define write-user-rflags
+    ((user-flags-vector :type (unsigned-byte 32))
+     (undefined-mask    :type (unsigned-byte 32))
      x86)
-    :guard (member flg *flg-names*)
-    :parents (rflags-Reads-and-Writes)
 
-    (b* ((rflags (the (unsigned-byte 32) (rflags x86))))
-      (mbe :logic
-           (part-select rflags :low flg
-                        :width (if (equal flg *iopl*)
-                                   2 1))
-           :exec
-           (the (unsigned-byte 2)
-             (logand (if (equal flg #.*iopl*) 3 1)
-                     (the (unsigned-byte 32)
-                       (ash (the (unsigned-byte 32) rflags)
-                            (the (integer -32 0)
-                              (- (the (integer 0 32) flg)))))))))
+    :inline t
+    :no-function t
 
-
-    ///
-
-    (defthm-usb n01p-flgi-except-iopl
-      :hyp (and (force (x86p x86))
-                (not (equal flg *iopl*)))
-      :bound 1
-      :concl (flgi flg x86)
-      :gen-type t
-      :gen-linear t)
-
-    (defthm-usb n02p-flgi-iopl
-      :hyp (force (x86p x86))
-      :bound 2
-      :concl (flgi *iopl* x86)
-      :gen-type t
-      :gen-linear t)
-
-    (defthm flgi-xw
-      (equal (flgi flg (xw field index value x86))
-             (if (equal field :rflags)
-                 (if (not (equal flg *iopl*))
-                     (logbit flg value)
-                   (loghead 2 (logtail *iopl* value)))
-               (flgi flg x86)))))
-
-  (define !flgi
-    ((flg :type (integer 0 32))
-     (val :type (unsigned-byte 2))
-     x86)
-    :parents (rflags-Reads-and-Writes)
-    :guard (and (member flg *flg-names*)
-                (if (equal flg *iopl*)
-                    (unsigned-byte-p 2 val)
-                  (unsigned-byte-p 1 val)))
-    :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-    :prepwork ((local (in-theory (e/d () (bitops::logand-with-negated-bitmask)))))
-
-    (b* ((rflags (the (unsigned-byte 32) (rflags x86)))
-         (new-rflags
-          (mbe
-           :logic
-           (part-install val rflags :low flg
-                         :width (if (equal flg *iopl*)
-                                    2 1))
-           :exec
-           (let* ((mask (the (unsigned-byte 32)
-                          (logand #.*2^32-1*
-                                  (lognot
-                                   (the (unsigned-byte 32)
-                                     (ash (if (equal flg #.*iopl*)
-                                              3 1)
-                                          (the (integer 0 21)
-                                            flg))))))))
-
-             (the (unsigned-byte 32)
-               (logior
-                (the (unsigned-byte 32) (logand rflags mask))
-                (the (unsigned-byte 32) (ash val flg))))))))
-      (!rflags (mbe :logic (n32 new-rflags)
-                    :exec new-rflags)
-               x86))
-
-    ///
-
-    (defthm x86p-!flgi
-      (implies (x86p x86)
-               (x86p (!flgi flg val x86))))
-
-    (defthm xr-!flgi
-      (implies (not (equal field :rflags))
-               (equal (xr field index (!flgi flg val x86))
-                      (xr field index x86)))
-      :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-    (defthm !flgi-xw
-      ;; Keep !flgi inside all other nests of updates.
-      (implies (not (equal field :rflags))
-               (equal (!flgi flg val (xw field index value x86))
-                      (xw field index value (!flgi flg val x86))))
-      :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
-
-    (defthm rflags-!flgi
-      (implies (and (member flg *flg-names*)
-                    (x86p x86))
-               (equal (xr :rflags index (!flgi flg val x86))
-                      (part-install val
-                                    (xr :rflags 0 x86)
-                                    :low flg
-                                    :width (if (equal flg *iopl*) 2 1)))))
-
-
-    (defthmd !flgi-open-to-xw-rflags
-      ;; Rewriting (!flgi ...) to (xw :rflags ...) so that rules like
-      ;; ia32e-la-to-pa-xw-rflags-not-ac can be applied when trying to
-      ;; prove ia32e-la-to-pa-values-and-!flgi.
-      (implies (x86p x86)
-               (equal (!flgi index value x86)
-                      (if (equal index *iopl*)
-                          (xw :rflags 0
-                              (logior (ash (loghead 2 value) 12)
-                                      (logand 4294955007 (xr :rflags 0 x86)))
-                              x86)
-                        (if (not (equal index *ac*))
-                            (xw :rflags 0
-                                (logior (loghead 32 (ash (loghead 1 value) (nfix index)))
-                                        (logand (xr :rflags 0 x86)
-                                                (loghead 32 (lognot (expt 2 (nfix index))))))
-                                x86)
-                          (!flgi index value x86)))))
-      :hints (("Goal" :in-theory (e/d* (!flgi) ()))))))
-
-(define undef-flg-logic (x86)
-  :enabled t
-  :prepwork ((local (in-theory (e/d* () (undef-read)))))
-  :parents (!flgi-undefined)
-  :returns (mv (unknown natp :rule-classes :type-prescription)
-               (x86     x86p :hyp (x86p x86)))
-  (undef-read x86))
-
-(define undef-flg (x86)
-  ;; I have smashed this function under the hood.  This is a tad more
-  ;; efficient than smashing just undef-read when flags are assigned
-  ;; undefined values because it helps us avoid calling n01 while
-  ;; execution.  This saves one call to the builtin LOGAND that might
-  ;; create bignums, potentially.
-  :inline nil
-  :enabled t
-  :prepwork ((local (in-theory (e/d* () (undef-flg-logic)))))
-  :returns (mv (unknown-bit bitp :rule-classes :type-prescription)
-               (x86         x86p :hyp (x86p x86)))
-  :parents (!flgi-undefined)
-  (b* (((mv val x86)
-        (undef-flg-logic x86)))
-    (mv (n01 val) x86)))
-
-(define !flgi-undefined
-  ((flg :type (member #.*cf* #.*pf* #.*af* #.*zf* #.*sf* #.*of*))
-   x86)
-
-  :prepwork ((local (in-theory (e/d* () (undef-flg)))))
-  :inline t
-  :no-function t
-  :parents (register-readers-and-writers characterizing-undefined-behavior)
-
-  :short "Setting the rflag @('flg') in the x86 state to @('undefined')"
-
-  :long "<p>Rflag @('flg') is set to the value returned by an oracle,
-using the @(see undef-read) function.</p>"
-
-  :returns (x86 x86p :hyp :guard)
-
-  (b* (((mv (the (unsigned-byte 1) val) x86)
-        (undef-flg x86))
-       (x86 (!flgi flg val x86)))
-    x86))
-
-(local (include-book "centaur/gl/gl" :dir :system))
-
-(local
- (def-gl-thm write-user-rflags-mbe-proof
-   :hyp (and (n32p user-flags-vector)
-             (n32p rflags))
-   :concl (equal (logior
-                  (ash (loghead 1 (bool->bit (logbitp 11 user-flags-vector))) 11)
-                  (logand
-                   4294965247
-                   (logior
-                    (ash (loghead 1 (bool->bit (logbitp 7 user-flags-vector))) 7)
-                    (logand
-                     4294967167
-                     (logior
-                      (ash (loghead 1 (bool->bit (logbitp 6 user-flags-vector))) 6)
-                      (logand
-                       4294967231
-                       (logior
-                        (ash (loghead 1 (bool->bit (logbitp 4 user-flags-vector))) 4)
-                        (logand
-                         4294967279
-                         (logior (ash (loghead 1 (bool->bit (logbitp 2 user-flags-vector))) 2)
-                                 (logand 4294967291
-                                         (logior (loghead 1 user-flags-vector)
-                                                 (logand 4294967294 rflags))))))))))))
-                 (logior (logand 2261 user-flags-vector)
-                         (logand 4294965034 rflags)))
-
-   :g-bindings (gl::auto-bindings
-                (:nat user-flags-vector 32)
-                (:nat rflags 32))))
-
-(define write-user-rflags
-  ((user-flags-vector :type (unsigned-byte 32))
-   (undefined-mask    :type (unsigned-byte 32))
-   x86)
-
-  :inline t
-  :no-function t
-  :parents (register-readers-and-writers)
-
-  :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
+    :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
   including undefined ones, to the x86 state"
 
-  :long "<p>We set the undefined flags, which are indicated by
+    :long "<p>We set the undefined flags, which are indicated by
   @('mask'), to the value returned by @(see undef-read).</p>"
 
-  :guard-hints (("Goal" :in-theory (e/d (!flgi) 
-                                        (unsigned-byte-p))))
-  :prepwork ((local (in-theory (e/d () 
-                                    (bitops::logand-with-negated-bitmask
-                                     fty::unsigned-byte-p-1-when-bitp)))))
+    :guard-hints (("Goal" :in-theory (e/d (rflagsBits->cf
+                                           rflagsBits->pf
+                                           rflagsBits->af
+                                           rflagsBits->zf
+                                           rflagsBits->sf
+                                           rflagsBits->of
+                                           rflagsbits-fix)
+                                          (unsigned-byte-p
+                                           not
+                                           (tau-system)))))
+    :prepwork ((local (in-theory (e/d ()
+                                      (bitops::logand-with-negated-bitmask
+                                       fty::unsigned-byte-p-1-when-bitp)))))
 
-  :returns (x86 x86p :hyp (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86))
 
-  (b* ((user-flags-vector
-        (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
-       (undefined-mask
-        (mbe :logic (n32 undefined-mask) :exec undefined-mask))
-       ((the (unsigned-byte 32) input-rflags)
-        (mbe :logic (n32 (rflags x86)) :exec (rflags x86)))
-       (x86
-        (mbe :logic (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
-                         (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
-                         (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
-                         (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
-                         (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
-                         (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
-                      x86)
-             :exec (b* ((user-flags-layout
-                         ;; (!rflags-slice
-                         ;;  :cf 1
-                         ;;  (!rflags-slice
-                         ;;   :pf 1
-                         ;;   (!rflags-slice
-                         ;;    :af 1
-                         ;;    (!rflags-slice
-                         ;;     :zf 1
-                         ;;     (!rflags-slice
-                         ;;      :sf 1
-                         ;;      (!rflags-slice
-                         ;;       :of 1 0))))))
-                         #x8D5)
-                        (flags-without-undefined-values
-                         (logior (logand (logxor user-flags-layout #.*2^32-1*) input-rflags)
-                                 (logand user-flags-layout user-flags-vector))))
-                     (!rflags flags-without-undefined-values x86)))))
+    (b* ((user-flags-vector
+          (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
+         (undefined-mask
+          (mbe :logic (n32 undefined-mask) :exec undefined-mask))
+         ((the (unsigned-byte 32) input-rflags)
+          (mbe :logic (n32 (rflags x86)) :exec (rflags x86))))
+    
+      (mbe 
+       :logic     
+       (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
+                     (!flgi-undefined :cf x86)
+                   (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
+            (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
+                     (!flgi-undefined :pf x86)
+                   (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
+            (x86 (if (equal (rflagsBits->af undefined-mask) 1)
+                     (!flgi-undefined :af x86)
+                   (!flgi :af (rflagsBits->af user-flags-vector) x86)))
+            (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
+                     (!flgi-undefined :zf x86)
+                   (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
+            (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
+                     (!flgi-undefined :sf x86)
+                   (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
+            (x86 (if (equal (rflagsBits->of undefined-mask) 1)
+                     (!flgi-undefined :of x86)
+                   (!flgi :of (rflagsBits->of user-flags-vector) x86))))
+         x86)
+       :exec
+       (if (eql undefined-mask 0)
+           (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
+                (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
+                (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
+                (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
+                (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
+                (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
+             x86)
+         (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
+                       (!flgi-undefined :cf x86)
+                     (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
+              (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
+                       (!flgi-undefined :pf x86)
+                     (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
+              (x86 (if (equal (rflagsBits->af undefined-mask) 1)
+                       (!flgi-undefined :af x86)
+                     (!flgi :af (rflagsBits->af user-flags-vector) x86)))
+              (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
+                       (!flgi-undefined :zf x86)
+                     (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
+              (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
+                       (!flgi-undefined :sf x86)
+                     (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
+              (x86 (if (equal (rflagsBits->of undefined-mask) 1)
+                       (!flgi-undefined :of x86)
+                     (!flgi :of (rflagsBits->of user-flags-vector) x86))))
+           x86))))
 
-    (if (equal undefined-mask 0)
-        x86
-      (b* ((x86 (if (equal (rflags-slice :cf undefined-mask) 1)
-                    (!flgi-undefined #.*cf* x86)
-                  x86))
-           (x86 (if (equal (rflags-slice :pf undefined-mask) 1)
-                    (!flgi-undefined #.*pf* x86)
-                  x86))
-           (x86 (if (equal (rflags-slice :af undefined-mask) 1)
-                    (!flgi-undefined #.*af* x86)
-                  x86))
-           (x86 (if (equal (rflags-slice :zf undefined-mask) 1)
-                    (!flgi-undefined #.*zf* x86)
-                  x86))
-           (x86 (if (equal (rflags-slice :sf undefined-mask) 1)
-                    (!flgi-undefined #.*sf* x86)
-                  x86))
-           (x86 (if (equal (rflags-slice :of undefined-mask) 1)
-                    (!flgi-undefined #.*of* x86)
-                  x86)))
-        x86)))
+    ///
 
-  ///
+    (local (in-theory (e/d (undef-read) ())))
 
-  (local (in-theory (e/d (undef-read) ())))
+    (defthm xr-write-user-rflags
+      (implies (and (not (equal fld :rflags))
+                    (not (equal fld :undef)))
+               (equal (xr fld index (write-user-rflags flags mask x86))
+                      (xr fld index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm xr-write-user-rflags
-    (implies (and (not (equal fld :rflags))
-                  (not (equal fld :undef)))
-             (equal (xr fld index (write-user-rflags flags mask x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
+    (defthm xr-write-user-rflags-no-mask
+      ;; Do we need this?
+      (implies (not (equal fld :rflags))
+               (equal (xr fld index (write-user-rflags flags 0 x86))
+                      (xr fld index x86)))
+      :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-  (defthm xr-write-user-rflags-no-mask
-    ;; Do we need this?
-    (implies (not (equal fld :rflags))
-             (equal (xr fld index (write-user-rflags flags 0 x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (force (force))))))
-
-  (defthm rflags-and-write-user-rflags-no-mask
-    (equal (write-user-rflags user-flags-vector 0 x86)
-           (b* ((x86 (!flgi #.*cf* (rflags-slice :cf user-flags-vector) x86))
-                (x86 (!flgi #.*pf* (rflags-slice :pf user-flags-vector) x86))
-                (x86 (!flgi #.*af* (rflags-slice :af user-flags-vector) x86))
-                (x86 (!flgi #.*zf* (rflags-slice :zf user-flags-vector) x86))
-                (x86 (!flgi #.*sf* (rflags-slice :sf user-flags-vector) x86))
-                (x86 (!flgi #.*of* (rflags-slice :of user-flags-vector) x86)))
-             x86))
-    :hints (("Goal" :in-theory (e/d* (flgi !flgi !flgi-undefined) (force (force)))))))
+    (defthm rflags-and-write-user-rflags-no-mask
+      (equal (write-user-rflags user-flags-vector 0 x86)
+             (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
+                  (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
+                  (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
+                  (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
+                  (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
+                  (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
+               x86))
+      :hints (("Goal" :in-theory (e/d* (rflagsBits->cf
+                                        rflagsBits->pf
+                                        rflagsBits->af
+                                        rflagsBits->zf
+                                        rflagsBits->sf
+                                        rflagsBits->of
+                                        rflagsbits-fix)
+                                       (force (force))))))))
 
 
 ;; ======================================================================

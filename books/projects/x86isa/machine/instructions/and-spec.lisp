@@ -89,22 +89,19 @@
 	      (of 0)
 
 	      (output-rflags (the (unsigned-byte 32)
-			       (!rflags-slice
+			       (change-rflagsBits
+                                input-rflags
 				:cf cf
-				(!rflags-slice
-				 :pf pf
-				 (!rflags-slice
-				  :zf zf
-				  (!rflags-slice
-				   :sf sf
-				   (!rflags-slice
-				    :of of input-rflags)))))))
+                                :pf pf
+                                :zf zf
+                                :sf sf
+                                :of of)))
 
 	      (output-rflags (mbe :logic (n32 output-rflags)
 				  :exec output-rflags))
 
 	      ;; AF is undefined.
-	      (undefined-flags (!rflags-slice :af 1 0)))
+	      (undefined-flags (!rflagsBits->af 1 0)))
 
 	     (mv result output-rflags undefined-flags))
 

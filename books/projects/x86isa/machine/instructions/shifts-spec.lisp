@@ -153,21 +153,17 @@
                                                            ,neg-size-1)))))))
 
                        (output-rflags (the (unsigned-byte 32)
-                                        (!rflags-slice
+                                        (change-rflagsBits
+                                         input-rflags
                                          :cf cf
-                                         (!rflags-slice
-                                          :pf pf
-                                          (!rflags-slice
-                                           :zf zf
-                                           (!rflags-slice
-                                            :sf sf
-                                            (!rflags-slice
-                                             :of of
-                                             input-rflags)))))))
+                                         :pf pf
+                                         :zf zf
+                                         :sf sf
+                                         :of of)))
 
-                       (undefined-flags (!rflags-slice :af 1 0)))
+                       (undefined-flags (!rflagsBits->af 1 0)))
 
-                      (mv output-rflags undefined-flags)))
+                    (mv output-rflags undefined-flags)))
 
                  (otherwise
                   (if (<= ,size src)
@@ -183,21 +179,18 @@
                            ;; OF is undefined.
 
                            (output-rflags (the (unsigned-byte 32)
-                                            (!rflags-slice
+                                            (change-rflagsBits
+                                             input-rflags
                                              :pf pf
-                                             (!rflags-slice
-                                              :zf zf
-                                              (!rflags-slice
-                                               :sf sf
-                                               input-rflags)))))
+                                             :zf zf
+                                             :sf sf)))
 
-                           (undefined-flags (!rflags-slice
+                           (undefined-flags (change-rflagsBits
+                                             0
                                              :cf 1
-                                             (!rflags-slice
-                                              :af 1
-                                              (!rflags-slice
-                                               :of 1 0)))))
-                          (mv output-rflags undefined-flags))
+                                             :af 1
+                                             :of 1)))
+                        (mv output-rflags undefined-flags))
 
                     ;; OF and AF are undefined. Other flags are affected as
                     ;; usual.
@@ -212,21 +205,18 @@
                          ;; OF is undefined.
 
                          (output-rflags (the (unsigned-byte 32)
-                                          (!rflags-slice
+                                          (change-rflagsBits
+                                           input-rflags
                                            :cf cf
-                                           (!rflags-slice
-                                            :pf pf
-                                            (!rflags-slice
-                                             :zf zf
-                                             (!rflags-slice
-                                              :sf sf
-                                              input-rflags))))))
+                                           :pf pf
+                                           :zf zf
+                                           :sf sf)))
 
-                         (undefined-flags (!rflags-slice
+                         (undefined-flags (change-rflagsBits
+                                           0
                                            :af 1
-                                           (!rflags-slice
-                                            :of 1 0))))
-                        (mv output-rflags undefined-flags))))))
+                                           :of 1)))
+                      (mv output-rflags undefined-flags))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))
@@ -256,9 +246,7 @@
            :bound 32
            :concl (mv-nth 2 (,fn-name dst src input-rflags))
            :gen-type t
-           :gen-linear t))
-
-      ))
+           :gen-linear t))))
 
 (make-event (sal/shl-spec-gen  8))
 (make-event (sal/shl-spec-gen 16))
@@ -378,18 +366,15 @@ otherwise, it is set to 1.</p>"
                                            ,neg-size-1))))
 
                     (output-rflags (the (unsigned-byte 32)
-                                     (!rflags-slice
+                                     (change-rflagsBits
+                                      input-rflags
                                       :cf cf
-                                      (!rflags-slice
-                                       :pf pf
-                                       (!rflags-slice
-                                        :zf zf
-                                        (!rflags-slice
-                                         :sf sf
-                                         (!rflags-slice
-                                          :of of input-rflags)))))))
+                                      :pf pf
+                                      :zf zf
+                                      :sf sf
+                                      :of of)))
                     (undefined-flags (the (unsigned-byte 32)
-                                       (!rflags-slice :of 1 0))))
+                                       (!rflagsBits->of 1 0))))
                    (mv output-rflags undefined-flags)))
 
                  (otherwise
@@ -402,21 +387,18 @@ otherwise, it is set to 1.</p>"
                            (sf (general-sf-spec ,size result))
                            ;; OF is undefined.
                            (output-rflags (the (unsigned-byte 32)
-                                            (!rflags-slice
+                                            (change-rflagsBits
+                                             input-rflags
                                              :pf pf
-                                             (!rflags-slice
-                                              :zf zf
-                                              (!rflags-slice
-                                               :sf sf
-                                               input-rflags)))))
+                                             :zf zf
+                                             :sf sf)))
 
                            (undefined-flags (the (unsigned-byte 32)
-                                              (!rflags-slice
+                                              (change-rflagsBits
+                                               0
                                                :cf 1
-                                               (!rflags-slice
-                                                :af 1
-                                                (!rflags-slice
-                                                 :of 1 0))))))
+                                               :af 1
+                                               :of 1))))
 
                           (mv output-rflags undefined-flags))
 
@@ -439,21 +421,18 @@ otherwise, it is set to 1.</p>"
                          ;; OF is undefined.
 
                          (output-rflags (the (unsigned-byte 32)
-                                          (!rflags-slice
+                                          (change-rflagsBits
+                                           input-rflags
                                            :cf cf
-                                           (!rflags-slice
-                                            :pf pf
-                                            (!rflags-slice
-                                             :zf zf
-                                             (!rflags-slice
-                                              :sf sf
-                                              input-rflags))))))
+                                           :pf pf
+                                           :zf zf
+                                           :sf sf)))
 
                          (undefined-flags (the (unsigned-byte 32)
-                                            (!rflags-slice
+                                            (change-rflagsBits
+                                             0
                                              :af 1
-                                             (!rflags-slice
-                                              :of 1 0)))))
+                                             :of 1))))
                         (mv output-rflags undefined-flags))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
@@ -484,9 +463,7 @@ otherwise, it is set to 1.</p>"
            :bound 32
            :concl (mv-nth 2 (,fn-name dst src input-rflags))
            :gen-type t
-           :gen-linear t))
-
-      ))
+           :gen-linear t))))
 
 (local
  (defthm logand-1-and-logtail-thm
@@ -633,21 +610,17 @@ set to the most-significant bit of the original operand.</p>"
                     (of 0)
 
                     (output-rflags (the (unsigned-byte 32)
-                                     (!rflags-slice
+                                     (change-rflagsBits
+                                      input-rflags
                                       :cf cf
-                                      (!rflags-slice
-                                       :pf pf
-                                       (!rflags-slice
-                                        :zf zf
-                                        (!rflags-slice
-                                         :sf sf
-                                         (!rflags-slice
-                                          :of of
-                                          input-rflags)))))))
+                                      :pf pf
+                                      :zf zf
+                                      :sf sf
+                                      :of of)))
 
                     (undefined-flags
                      (the (unsigned-byte 32)
-                       (!rflags-slice :af 1 0))))
+                       (!rflagsBits->af 1 0))))
                    (mv output-rflags undefined-flags)))
 
                  (otherwise
@@ -660,21 +633,18 @@ set to the most-significant bit of the original operand.</p>"
                            (sf (general-sf-spec ,size result))
                            ;; OF is undefined.
                            (output-rflags (the (unsigned-byte 32)
-                                            (!rflags-slice
+                                            (change-rflagsBits
+                                             input-rflags
                                              :pf pf
-                                             (!rflags-slice
-                                              :zf zf
-                                              (!rflags-slice
-                                               :sf sf
-                                               input-rflags)))))
+                                             :zf zf
+                                             :sf sf)))
 
-                           (undefined-flags (!rflags-slice
+                           (undefined-flags (change-rflagsBits
+                                             0
                                              :cf 1
-                                             (!rflags-slice
-                                              :af 1
-                                              (!rflags-slice
-                                               :of 1 0)))))
-                          (mv output-rflags undefined-flags))
+                                             :af 1
+                                             :of 1)))
+                        (mv output-rflags undefined-flags))
 
                     (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
                                   :exec (let* ((shft
@@ -695,20 +665,17 @@ set to the most-significant bit of the original operand.</p>"
                          ;; OF is undefined.
 
                          (output-rflags (the (unsigned-byte 32)
-                                          (!rflags-slice
+                                          (change-rflagsBits
+                                           input-rflags
                                            :cf cf
-                                           (!rflags-slice
-                                            :pf pf
-                                            (!rflags-slice
-                                             :zf zf
-                                             (!rflags-slice
-                                              :sf sf
-                                              input-rflags))))))
+                                           :pf pf
+                                           :zf zf
+                                           :sf sf)))
 
-                         (undefined-flags (!rflags-slice
+                         (undefined-flags (change-rflagsBits
+                                           0
                                            :af 1
-                                           (!rflags-slice
-                                            :of 1 0))))
+                                           :of 1)))
                         (mv output-rflags undefined-flags))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
@@ -739,9 +706,7 @@ set to the most-significant bit of the original operand.</p>"
            :bound 32
            :concl (mv-nth 2 (,fn-name dst src input-rflags))
            :gen-type t
-           :gen-linear t)
-
-         )))
+           :gen-linear t))))
 
 (make-event (sar-spec-gen  8))
 (make-event (sar-spec-gen 16))

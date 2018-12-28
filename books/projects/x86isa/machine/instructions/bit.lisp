@@ -68,8 +68,7 @@
   ;;      8          -2^63 to 2^63-1
 
   :parents (two-byte-opcodes)
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
 					())))
@@ -176,13 +175,13 @@
        ;; Update the x86 state:
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
        (x86
-	(let* ((x86 (!flgi #.*cf*
+	(let* ((x86 (!flgi :cf
 			   (the (unsigned-byte 1) (acl2::logbit bitOffset bitBase))
 			   x86))
-	       (x86 (!flgi-undefined #.*pf* x86))
-	       (x86 (!flgi-undefined #.*af* x86))
-	       (x86 (!flgi-undefined #.*sf* x86))
-	       (x86 (!flgi-undefined #.*of* x86)))
+	       (x86 (!flgi-undefined :pf x86))
+	       (x86 (!flgi-undefined :af x86))
+	       (x86 (!flgi-undefined :sf x86))
+	       (x86 (!flgi-undefined :of x86)))
 	  x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
@@ -198,8 +197,7 @@
 
   :parents (two-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08)))
 
@@ -258,14 +256,14 @@
        ;; Update the x86 state:
        ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
        (x86
-	(let* ((x86 (!flgi #.*cf*
+	(let* ((x86 (!flgi :cf
 			   (the (unsigned-byte 1)
 				(acl2::logbit bitOffset bitBase))
 			   x86))
-	       (x86 (!flgi-undefined #.*pf* x86))
-	       (x86 (!flgi-undefined #.*af* x86))
-	       (x86 (!flgi-undefined #.*sf* x86))
-	       (x86 (!flgi-undefined #.*of* x86)))
+	       (x86 (!flgi-undefined :pf x86))
+	       (x86 (!flgi-undefined :af x86))
+	       (x86 (!flgi-undefined :sf x86))
+	       (x86 (!flgi-undefined :of x86)))
 	  x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))

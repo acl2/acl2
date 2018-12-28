@@ -399,6 +399,7 @@
   :hints (("Goal"
            :induct (loop-all-induction n a loop-addr x86)
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
                              x86-operation-mode
                              imul-spec             ;; IMUL
                              imul-spec-32          ;; IMUL
@@ -413,7 +414,6 @@
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-user-rflags
-                             !flgi-undefined
                              riml-size
                              riml08
                              rml08
@@ -422,8 +422,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Registers:
                              rr32
@@ -462,6 +460,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
@@ -471,7 +470,6 @@
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-user-rflags
-                             !flgi-undefined
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
@@ -479,8 +477,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Spec functions:
                              gpr-and-spec-4
@@ -506,6 +502,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
@@ -515,7 +512,6 @@
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-user-rflags
-                             !flgi-undefined
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
@@ -523,8 +519,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Spec functions:
                              gpr-and-spec-4
@@ -557,6 +551,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
@@ -566,7 +561,6 @@
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-user-rflags
-                             !flgi-undefined
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
@@ -574,8 +568,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Spec functions:
                              gpr-and-spec-4
@@ -603,6 +595,7 @@
 
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
@@ -611,7 +604,6 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              write-user-rflags
-                             !flgi-undefined
                              rme-size
                              rime-size
                              riml-size
@@ -621,8 +613,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Spec functions:
                              gpr-and-spec-4
@@ -663,7 +653,6 @@
                              x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              write-user-rflags
-                             !flgi-undefined
                              riml-size
                              riml08
                              two-byte-opcode-decode-and-execute
@@ -671,8 +660,6 @@
                              x86-effective-addr-32/64
                              n32-to-i32
                              ;; Flags:
-                             flgi
-                             !flgi
                              zf-spec
                              ;; Spec functions:
                              gpr-and-spec-4
@@ -705,21 +692,24 @@
 ;; (6) Put the two steps together to get correctness, i.e., program
 ;; satisfies its specification f.
 
-(defthm factorial-halted
+(defthmd factorial-halted
   (implies (and (ok-inputs n x86)
                 (fact-init-x86-state n addr x86)
                 (equal (rip x86) addr)
                 (equal x86-fact (x86-run (clk n 1) x86)))
            (equal (rip x86-fact)
-                  (+ #x18 addr)))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d ()
+                  (+ 24 (rip x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance factorial-effects))
+           :in-theory (e/d (fact-init-x86-state)
                            (f
                             factorial-effects
                             x86-run-opener-not-ms-not-zp-n
                             x86-run-plus-1
-                            x86-run-plus))
-           :use ((:instance factorial-effects)))))
+                            x86-run-plus
+                            clk (clk)
+                            loop-all-induction)))))
 
 (defthmd rgfi-rax-loop-all-induction-fluff
   (implies
@@ -742,35 +732,27 @@
                        (fact-algorithm n 1))
                 (equal (rip x86-fact)
                        (+ #x18 addr))))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d
-                       (rml08)
-                       (f
-                        program-at
-                        factorial-effects
-                        x86-run-opener-not-ms-not-zp-n
-                        x86-run-plus-1
-                        x86-run-plus
-                        canonical-address-p
-                        factorial-preamble-n=0-rip-fluff))
-           :use ((:instance factorial-effects)))
-          ("Subgoal 2"
-           :in-theory (e/d
-                       (fact-init-x86-state
-                        rml08)
-                       (f
-                        program-at
-                        factorial-effects
-                        x86-run-opener-not-ms-not-zp-n
-                        x86-run-plus-1
-                        x86-run-plus
-                        canonical-address-p
-                        factorial-preamble-n=0-rip-fluff))
-           :use ((:instance rgfi-rax-loop-all-induction-fluff
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance factorial-effects)
+                 (:instance factorial-halted)
+                 (:instance rgfi-rax-loop-all-induction-fluff
                             (addr (+ #x10 (rip x86)))
                             (a 1)
                             (n n)
-                            (x86 (x86-run (fact-preamble-n!=0) x86)))))))
+                            (x86 (x86-run (fact-preamble-n!=0) x86))))
+           :in-theory (e/d
+                       (rml08
+                        fact-init-x86-state)
+                       (f
+                        program-at
+                        factorial-effects
+                        x86-run-opener-not-ms-not-zp-n
+                        x86-run-plus-1
+                        x86-run-plus
+                        canonical-address-p
+                        factorial-preamble-n=0-rip-fluff
+                        (clk) clk)))))
 
 (defthm factorial-correct
   (implies (and (ok-inputs n x86)

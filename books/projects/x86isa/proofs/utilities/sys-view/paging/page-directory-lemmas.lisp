@@ -42,8 +42,11 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local (in-theory (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
-                       (unsigned-byte-p signed-byte-p))))
+(local
+ (in-theory
+  (e/d
+   (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
+   (unsigned-byte-p signed-byte-p))))
 
 ;; ======================================================================
 
@@ -142,6 +145,29 @@
                   (mv t 0 x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory) ()))))
 
+(defthm xlate-equiv-entries-and-ia32e-pte-2MB-pagebits->page
+  (implies (xlate-equiv-entries e-1 e-2)
+           (equal (ia32e-pde-2mb-pagebits->page e-1)
+                  (ia32e-pde-2mb-pagebits->page e-2)))
+  :hints (("goal" :in-theory (e/d* (ia32e-pde-2mb-pagebits->page
+                                    ia32e-pde-2mb-pagebits-fix
+                                    xlate-equiv-entries
+                                    ia32e-page-tablesbits->xd
+                                    ia32e-page-tablesbits->res2
+                                    ia32e-page-tablesbits->reference-addr
+                                    ia32e-page-tablesbits->res1
+                                    ia32e-page-tablesbits->ps
+                                    ia32e-page-tablesbits->pcd
+                                    ia32e-page-tablesbits->pwt
+                                    ia32e-page-tablesbits->u/s
+                                    ia32e-page-tablesbits->r/w
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
+                                   ())
+           :use ((:instance xlate-equiv-entries-and-logtail
+                            (n 21)))))
+  :rule-classes :congruence)
+
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa-page-directory-2M-pages
   (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
                 (equal
@@ -195,6 +221,27 @@
                             (bitops::logand-with-negated-bitmask
                              bitops::logior-equal-0
                              not)))))
+
+(defthm xlate-equiv-entries-and-ia32e-pde-pg-tablebits->pt
+  (implies (xlate-equiv-entries e-1 e-2)
+           (equal (ia32e-pde-pg-tablebits->pt e-1)
+                  (ia32e-pde-pg-tablebits->pt e-2)))
+  :hints (("goal" :in-theory (e/d* (ia32e-pde-pg-tablebits->pt
+                                    ia32e-pde-pg-tablebits-fix
+                                    xlate-equiv-entries
+                                    ia32e-page-tablesbits->xd
+                                    ia32e-page-tablesbits->res2
+                                    ia32e-page-tablesbits->reference-addr
+                                    ia32e-page-tablesbits->res1
+                                    ia32e-page-tablesbits->ps
+                                    ia32e-page-tablesbits->pcd
+                                    ia32e-page-tablesbits->pwt
+                                    ia32e-page-tablesbits->u/s
+                                    ia32e-page-tablesbits->r/w
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
+                                   ())))
+  :rule-classes :congruence)
 
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa-page-directory-4K-pages
   (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
@@ -357,35 +404,40 @@
 
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-directory
   (implies
-   (and (member-p (page-directory-entry-addr (logext 48 lin-addr)
-                                             (logand 18446744073709547520 (loghead 52 base-addr)))
-                  (gather-all-paging-structure-qword-addresses x86))
-        (if (equal (page-size (rm-low-64 (page-directory-entry-addr
-                                          (logext 48 lin-addr)
-                                          (logand 18446744073709547520 (loghead 52 base-addr)))
-                                         x86))
-                   0)
-            (member-p
-             (page-table-entry-addr
-              (logext 48 lin-addr)
-              (ash
-               (loghead
-                40
-                (logtail
-                 12
-                 (rm-low-64 (page-directory-entry-addr
-                             (logext 48 lin-addr)
-                             (logand 18446744073709547520 (loghead 52 base-addr)))
-                            x86)))
-               12))
-             (gather-all-paging-structure-qword-addresses x86))
-          t))
+   (and
+    (member-p 
+     (page-directory-entry-addr
+      (logext 48 lin-addr)
+      (logand 18446744073709547520 (loghead 52 base-addr)))
+     (gather-all-paging-structure-qword-addresses x86))
+    (if (equal (page-size
+                (rm-low-64 (page-directory-entry-addr
+                            (logext 48 lin-addr)
+                            (logand 18446744073709547520 (loghead 52 base-addr)))
+                           x86))
+               0)
+        (member-p
+         (page-table-entry-addr
+          (logext 48 lin-addr)
+          (ash
+           (loghead
+            40
+            (logtail
+             12
+             (rm-low-64 (page-directory-entry-addr
+                         (logext 48 lin-addr)
+                         (logand 18446744073709547520 (loghead 52 base-addr)))
+                        x86)))
+           12))
+         (gather-all-paging-structure-qword-addresses x86))
+      t))
    (all-mem-except-paging-structures-equal
     (mv-nth 2 (ia32e-la-to-pa-page-directory
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
                wp smep smap ac nxe r-w-x cpl x86))
     (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory)
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-directory
+                                    ia32e-pde-pg-tablebits->pt)
                                    (bitops::logand-with-negated-bitmask
                                     accessed-bit
                                     dirty-bit
@@ -545,7 +597,8 @@
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
                wp smep smap ac nxe r-w-x cpl x86-2))))
   ;; add the following after adding 64-bit mode hyp to previous theorem:
-  :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
+  :hints (("Goal" :in-theory (e/d (xlate-equiv-memory)
+                                  (xlate-equiv-structures-and-xlate-equiv-entries-rm-low-64-with-page-directory-entry-addr)))))
 
 (defthm two-page-directory-walks-ia32e-la-to-pa-page-directory
   (implies

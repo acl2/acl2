@@ -167,7 +167,7 @@
         (fp-decode op1 exp-width frac-width))
        ((mv kind2 sign2 exp2 ?implicit2 frac2)
         (fp-decode op2 exp-width frac-width))
-       (daz (equal (mxcsr-slice :daz mxcsr) 1))
+       (daz (equal (mxcsrBits->daz mxcsr) 1))
        ((mv kind1 exp1 frac1)
         (sse-daz kind1 exp1 frac1 daz))
        ((mv kind2 exp2 frac2)
@@ -177,15 +177,15 @@
                          exp-width frac-width operation))
 
        ;; Check invalid operation
-       (mxcsr (if invalid (!mxcsr-slice :ie 1 mxcsr) mxcsr))
-       (im (equal (mxcsr-slice :im mxcsr) 1))
+       (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
+       (im (equal (mxcsrBits->im mxcsr) 1))
        ((when (and invalid (not im)))
         (mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
 
        ;; Check denormal operand
        (de (denormal-exception kind1 kind2))
-       (mxcsr (if de (!mxcsr-slice :de 1 mxcsr) mxcsr))
-       (dm (equal (mxcsr-slice :dm mxcsr) 1))
+       (mxcsr (if de (!mxcsrBits->de 1 mxcsr) mxcsr))
+       (dm (equal (mxcsrBits->dm mxcsr) 1))
        ((when (and de (not dm)))
         (mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))
 

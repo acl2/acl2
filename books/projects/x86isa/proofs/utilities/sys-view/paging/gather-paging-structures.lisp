@@ -393,13 +393,49 @@
   :long "<p>Two paging structure entries are @('xlate-equiv-entries')
   if they are equal for all bits except the accessed and dirty
   bits (bits 5 and 6, respectively).</p>"
-  (and (equal (part-select e-1 :low 0 :high 4)
-              (part-select e-2 :low 0 :high 4))
-       ;; Bits 5 (accessed bit) and 6 (dirty bit) missing here.
-       (equal (part-select e-1 :low 7 :high 63)
-              (part-select e-2 :low 7 :high 63)))
+  ;; (and (equal (part-select e-1 :low 0 :high 4)
+  ;;             (part-select e-2 :low 0 :high 4))
+  ;;      ;; Bits 5 (accessed bit) and 6 (dirty bit) missing here.
+  ;;      (equal (part-select e-1 :low 7 :high 63)
+  ;;             (part-select e-2 :low 7 :high 63)))
+  (and (equal (ia32e-page-tablesBits->p e-1)
+              (ia32e-page-tablesBits->p e-2))
+       (equal (ia32e-page-tablesBits->r/w e-1)
+              (ia32e-page-tablesBits->r/w e-2))
+       (equal (ia32e-page-tablesBits->u/s e-1)
+              (ia32e-page-tablesBits->u/s e-2))
+       (equal (ia32e-page-tablesBits->pwt e-1)
+              (ia32e-page-tablesBits->pwt e-2))
+       (equal (ia32e-page-tablesBits->pcd e-1)
+              (ia32e-page-tablesBits->pcd e-2))
+       ;; A and D bits missing here.
+       (equal (ia32e-page-tablesBits->ps e-1)
+              (ia32e-page-tablesBits->ps e-2))
+       (equal (ia32e-page-tablesBits->res1 e-1)
+              (ia32e-page-tablesBits->res1 e-2))
+       (equal (ia32e-page-tablesBits->reference-addr e-1)
+              (ia32e-page-tablesBits->reference-addr e-2))
+       (equal (ia32e-page-tablesBits->res2 e-1)
+              (ia32e-page-tablesBits->res2 e-2))
+       (equal (ia32e-page-tablesBits->xd e-1)
+              (ia32e-page-tablesBits->xd e-2)))
+
+
   ///
+  
   (defequiv xlate-equiv-entries)
+
+  (def-ruleset xlate-equiv-entries-enables
+    '(!ia32e-page-tablesBits->p-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->r/w-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->u/s-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->pwt-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->pcd-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->ps-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->res1-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->reference-addr-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->res2-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->xd-is-ia32e-page-tablesbits))
 
   (defthm xlate-equiv-entries-self-set-accessed-bit
     (and (xlate-equiv-entries e (set-accessed-bit (double-rewrite e)))
@@ -492,21 +528,10 @@
                                       set-dirty-bit)
                                      ()))))
 
-  (defthmd xlate-equiv-entries-and-loghead
-    (implies (and (xlate-equiv-entries e-1 e-2)
-                  (syntaxp (quotep n))
-                  (natp n)
-                  (<= n 5))
-             (equal (loghead n e-1) (loghead n e-2)))
-    :hints (("Goal" :use ((:instance loghead-smaller-equality
-                                     (x e-1) (y e-2) (n 5) (m n))))))
-
   (defthm xlate-equiv-entries-and-page-present-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-present e-1) (page-present e-2)))
     :hints (("Goal"
-             :use ((:instance xlate-equiv-entries-and-loghead
-                              (e-1 e-1) (e-2 e-2) (n 1)))
              :in-theory (e/d* (page-present) ())))
     :rule-classes :congruence)
 
@@ -514,8 +539,6 @@
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-read-write e-1) (page-read-write e-2)))
     :hints (("Goal"
-             :use ((:instance loghead-smaller-and-logbitp
-                              (e-1 e-1) (e-2 e-2) (m 1) (n 5)))
              :in-theory (e/d* (page-read-write) ())))
     :rule-classes :congruence)
 
@@ -523,46 +546,141 @@
     (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-user-supervisor e-1) (page-user-supervisor e-2)))
     :hints (("Goal"
-             :use ((:instance loghead-smaller-and-logbitp
-                              (e-1 e-1) (e-2 e-2) (m 2) (n 5)))
              :in-theory (e/d* (page-user-supervisor) ())))
     :rule-classes :congruence)
 
-  (defthmd xlate-equiv-entries-and-logtail
-    (implies (and (xlate-equiv-entries e-1 e-2)
-                  (unsigned-byte-p 64 e-1)
-                  (unsigned-byte-p 64 e-2)
-                  (syntaxp (quotep n))
-                  (natp n)
-                  (<= 7 n)
-                  (< n 64))
-             (equal (logtail n e-1) (logtail n e-2)))
-    :hints (("Goal" :use ((:instance logtail-bigger (n n) (m 7))))))
+  (defthm xlate-equiv-entries-and-reference-addr
+    (implies (xlate-equiv-entries e-1 e-2)
+             (equal (ia32e-page-tablesbits->reference-addr e-1)
+                    (ia32e-page-tablesbits->reference-addr e-2)))
+    :rule-classes :congruence)
 
-  (defthmd xlate-equiv-entries-and-page-size
-    (implies (and (xlate-equiv-entries e-1 e-2)
-                  (unsigned-byte-p 64 e-1)
-                  (unsigned-byte-p 64 e-2))
+  (defthm xlate-equiv-entries-and-page-size
+    (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-size e-1) (page-size e-2)))
-    :hints (("Goal"
-             :use ((:instance logtail-bigger-and-logbitp
-                              (e-1 e-1) (e-2 e-2) (m 7) (n 7)))
-             :in-theory (e/d* (page-size) ()))))
+    :hints (("Goal" :in-theory (e/d* (page-size) ())))
+    :rule-classes :congruence)
 
-  (defthmd xlate-equiv-entries-and-page-execute-disable
-    (implies (and (xlate-equiv-entries e-1 e-2)
-                  (unsigned-byte-p 64 e-1)
-                  (unsigned-byte-p 64 e-2))
+  (defthm xlate-equiv-entries-and-page-execute-disable
+    (implies (xlate-equiv-entries e-1 e-2)
              (equal (page-execute-disable e-1) (page-execute-disable e-2)))
     :hints (("Goal"
-             :use ((:instance logtail-bigger-and-logbitp
-                              (e-1 e-1) (e-2 e-2) (m 7) (n 63)))
-             :in-theory (e/d* (page-execute-disable) ()))))
+             :in-theory (e/d* (page-execute-disable) ())))
+    :rule-classes :congruence)
+
+  (defthm xlate-equiv-entries-with-loghead-64-1
+    (equal (xlate-equiv-entries (loghead 64 e-1) e-2)
+           (xlate-equiv-entries e-1 e-2))
+    :hints (("Goal" :in-theory (e/d (xlate-equiv-entries
+                                     ia32e-page-tablesbits->xd
+                                     ia32e-page-tablesbits->res2
+                                     ia32e-page-tablesbits->reference-addr
+                                     ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->ps
+                                     ia32e-page-tablesbits->pcd
+                                     ia32e-page-tablesbits->pwt
+                                     ia32e-page-tablesbits->u/s
+                                     ia32e-page-tablesbits->r/w
+                                     ia32e-page-tablesbits->p
+                                     ia32e-page-tablesbits-fix)
+                                    ()))))
+
+  (defthm xlate-equiv-entries-with-loghead-64-2
+    (equal (xlate-equiv-entries e-1 (loghead 64 e-2))
+           (xlate-equiv-entries e-1 e-2))
+    :hints (("Goal" :in-theory (e/d (xlate-equiv-entries
+                                     ia32e-page-tablesbits->xd
+                                     ia32e-page-tablesbits->res2
+                                     ia32e-page-tablesbits->reference-addr
+                                     ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->ps
+                                     ia32e-page-tablesbits->pcd
+                                     ia32e-page-tablesbits->pwt
+                                     ia32e-page-tablesbits->u/s
+                                     ia32e-page-tablesbits->r/w
+                                     ia32e-page-tablesbits->p
+                                     ia32e-page-tablesbits-fix)
+                                    ()))))
 
   (defthm xlate-equiv-entries-with-loghead-64-cong
     (implies (xlate-equiv-entries e-1 e-2)
              (xlate-equiv-entries (loghead 64 e-1) (loghead 64 e-2)))
-    :rule-classes :congruence))
+    :hints (("Goal" :in-theory (e/d (ia32e-page-tablesbits->xd
+                                     ia32e-page-tablesbits->res2
+                                     ia32e-page-tablesbits->reference-addr
+                                     ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->ps
+                                     ia32e-page-tablesbits->pcd
+                                     ia32e-page-tablesbits->pwt
+                                     ia32e-page-tablesbits->u/s
+                                     ia32e-page-tablesbits->r/w
+                                     ia32e-page-tablesbits->p
+                                     ia32e-page-tablesbits-fix)
+                                    ())))
+    :rule-classes :congruence)
+
+  (local (include-book "centaur/gl/gl" :dir :system))
+
+  (local
+   (def-gl-thm xlate-equiv-entries-and-loghead-gl
+     :hyp (and (xlate-equiv-entries e-1 e-2)
+               (unsigned-byte-p 64 e-1)
+               (unsigned-byte-p 64 e-2)
+               (natp n)
+               (<= n 5)
+               (<= n 64))
+     :concl (equal (loghead n e-1) (loghead n e-2))
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat e-1 65)
+            (:nat e-2 65)
+            (:nat n   65)))))
+
+  (defthmd xlate-equiv-entries-and-loghead
+    (implies (and (xlate-equiv-entries e-1 e-2)
+                  (syntaxp (quotep n))
+                  (natp n)
+                  (<= n 5))
+             (equal (loghead n e-1) (loghead n e-2)))
+    :hints (("Goal" :in-theory (e/d (xlate-equiv-entries-with-loghead-64-1
+                                     xlate-equiv-entries-with-loghead-64-2)
+                                    (xlate-equiv-entries-and-loghead-gl))
+             :use ((:instance xlate-equiv-entries-and-loghead-gl
+                              (e-1 (loghead 64 e-1))
+                              (e-2 (loghead 64 e-2)))))))
+
+  (local
+   (def-gl-thm xlate-equiv-entries-and-logtail-gl
+     :hyp (and (xlate-equiv-entries e-1 e-2)
+               (unsigned-byte-p 64 e-1)
+               (unsigned-byte-p 64 e-2)
+               (natp n)
+               (<= 7 n)
+               (<= n 64))
+     :concl (equal (logtail n e-1) (logtail n e-2))
+     :g-bindings
+     (gl::auto-bindings
+      (:mix (:nat e-1 65)
+            (:nat e-2 65)
+            (:nat n   65)))))
+
+  (defthmd xlate-equiv-entries-and-logtail
+    (implies (and (xlate-equiv-entries e-1 e-2)
+                  (syntaxp (quotep n))
+                  (natp n)
+                  (<= 7 n)
+                  (<= n 64))
+             (equal (logtail n (loghead 64 e-1))
+                    (logtail n (loghead 64 e-2))))
+    :hints (("Goal" :in-theory (e/d (xlate-equiv-entries-with-loghead-64-1
+                                     xlate-equiv-entries-with-loghead-64-2)
+                                    (xlate-equiv-entries-and-logtail-gl
+                                     xlate-equiv-entries
+                                     xlate-equiv-entries-with-loghead-64-cong))
+             :use ((:instance xlate-equiv-entries-and-logtail-gl
+                              (e-1 (loghead 64 e-1))
+                              (e-2 (loghead 64 e-2)))
+                   (:instance xlate-equiv-entries-with-loghead-64-cong))))))
 
 ;; ======================================================================
 
@@ -577,7 +695,7 @@
        ;; PML4 Table, all 4096 bytes of it, will always fit into the
        ;; physical memory; pml4-table-base-addr is 52-bit wide, with
        ;; low 12 bits = 0.
-       (pml4-table-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
+       (pml4-table-base-addr (ash (cr3Bits->pdb cr3) 12)))
     (create-qword-address-list 512 pml4-table-base-addr))
   ///
   (std::more-returns (list-of-addresses true-listp))
@@ -636,15 +754,13 @@
 
   (b* ((superior-structure-entry (rm-low-64 superior-structure-paddr x86)))
     (if (and
-         ;; (equal (page-present  superior-structure-entry) 1)
          (equal (page-size superior-structure-entry) 0))
         ;; Gather the qword addresses of a paging structure only if a
         ;; superior structure points to it, i.e., the
         ;; superior-structure-entry should be present (P=1) and it
         ;; should reference an inferior structure (PS=0).
         (b* ((this-structure-base-addr
-              (ash (ia32e-page-tables-slice
-                    :reference-addr superior-structure-entry) 12))
+              (ash (ia32e-page-tablesBits->reference-addr superior-structure-entry) 12))
              ;; The inferior table will always fit into the physical
              ;; memory.
              )
@@ -704,17 +820,7 @@
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
     :hints (("Goal"
              :in-theory (e/d* (member-p)
-                              (xlate-equiv-entries))
-             :use ((:instance xlate-equiv-entries-and-page-present-cong
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-page-size
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86))
-                              (n 12))))))
+                              (xlate-equiv-entries)))))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-with-different-x86-entries
     (implies (xlate-equiv-entries (rm-low-64 addr x86-equiv)
@@ -722,17 +828,7 @@
              (equal (gather-qword-addresses-corresponding-to-1-entry addr x86-equiv)
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
     :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                                     (unsigned-byte-p))
-             :use ((:instance xlate-equiv-entries-and-page-size
-                              (e-1 (rm-low-64 addr x86-equiv))
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-page-present-cong
-                              (e-1 (rm-low-64 addr x86-equiv))
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e-1 (rm-low-64 addr x86-equiv))
-                              (e-2 (rm-low-64 addr x86))
-                              (n 12))))))
+                                     (unsigned-byte-p)))))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-wm-low-64-with-different-x86-disjoint
     (implies (and (disjoint-p (addr-range 8 index) (addr-range 8 addr))
@@ -767,17 +863,7 @@
                      addr (wm-low-64 addr val x86-equiv))
                     (gather-qword-addresses-corresponding-to-1-entry addr x86)))
     :hints (("Goal" :in-theory (e/d* (gather-qword-addresses-corresponding-to-1-entry)
-                                     ())
-             :use ((:instance xlate-equiv-entries-and-page-size
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-page-present-cong
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86)))
-                   (:instance xlate-equiv-entries-and-logtail
-                              (e-1 val)
-                              (e-2 (rm-low-64 addr x86))
-                              (n 12))))))
+                                     ()))))
 
   (defthm gather-qword-addresses-corresponding-to-1-entry-subset-p-with-wm-low-64
     (implies (and (equal (page-size value) 1)
@@ -1251,11 +1337,6 @@
     (acl2::formals 'gather-all-paging-structure-qword-addresses (w state))
     :double-rewrite? t))
 
-  (defthm gather-all-paging-structure-qword-addresses-!flgi
-    (equal (gather-all-paging-structure-qword-addresses (!flgi index val x86))
-           (gather-all-paging-structure-qword-addresses (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* (!flgi) (force (force))))))
-
   (defthm gather-all-paging-structure-qword-addresses-xw-fld=ctr
     (implies (not (equal index *cr3*))
              (equal (gather-all-paging-structure-qword-addresses
@@ -1643,7 +1724,7 @@
     (b* ((outer-fn (car x86-term))
          ((when (and (not (equal outer-fn 'MV-NTH))
                      (not (equal outer-fn 'WM-LOW-64))
-                     (not (equal outer-fn '!FLGI))
+                     ;; (not (equal outer-fn '!FLGI))
                      (not (and (equal outer-fn 'XW)
                                (equal (second x86-term) '':MEM)))))
           ;; (cw "~%~p0: Unexpected x86-term encountered:~p1~%" thm-name x86-term)
@@ -1681,10 +1762,10 @@
                sub-x86))
             ((or (equal outer-fn 'WM-LOW-64)
                  (equal outer-fn 'XW)
-                 (equal outer-fn '!FLGI))
+                 ;; (equal outer-fn '!FLGI)
+                 )
              ;; We expect x86-term to be of the form (wm-low-64 index
-             ;; val sub-x86) or (xw :mem val index) or (!flgi index
-             ;; val x86).
+             ;; val sub-x86) or (xw :mem val index).
              (b* ((sub-x86 (first (last x86-term))))
                sub-x86))))))
 
@@ -2003,20 +2084,20 @@
              (paging-qword-addresses-2
               (gather-all-paging-structure-qword-addresses x86-2)))
 
-        (and (equal (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-1))
-                    (seg-sel-layout-slice :rpl (seg-visiblei *cs* x86-2)))
-             (equal (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-1)))
-                    (cr0-slice :cr0-wp (n32 (ctri *cr0* x86-2))))
-             (equal (cr3-slice :cr3-pdb (ctri *cr3* x86-1))
-                    (cr3-slice :cr3-pdb (ctri *cr3* x86-2)))
-             (equal (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-1)))
-                    (cr4-slice :cr4-smep (loghead 22 (ctri *cr4* x86-2))))
-             (equal (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-1)))
-                    (cr4-slice :cr4-smap (loghead 22 (ctri *cr4* x86-2))))
-             (equal (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-1)))
-                    (ia32_efer-slice :ia32_efer-nxe (n12 (msri *ia32_efer-idx* x86-2))))
-             (equal (rflags-slice :ac (rflags x86-1))
-                    (rflags-slice :ac (rflags x86-2)))
+        (and (equal (segment-selectorBits->rpl (seg-visiblei *cs* x86-1))
+                    (segment-selectorBits->rpl (seg-visiblei *cs* x86-2)))
+             (equal (cr0Bits->wp (n32 (ctri *cr0* x86-1)))
+                    (cr0Bits->wp (n32 (ctri *cr0* x86-2))))
+             (equal (cr3Bits->pdb (ctri *cr3* x86-1))
+                    (cr3Bits->pdb (ctri *cr3* x86-2)))
+             (equal (cr4Bits->smep (loghead 22 (ctri *cr4* x86-1)))
+                    (cr4Bits->smep (loghead 22 (ctri *cr4* x86-2))))
+             (equal (cr4Bits->smap (loghead 22 (ctri *cr4* x86-1)))
+                    (cr4Bits->smap (loghead 22 (ctri *cr4* x86-2))))
+             (equal (ia32_eferBits->nxe (n12 (msri *ia32_efer-idx* x86-1)))
+                    (ia32_eferBits->nxe (n12 (msri *ia32_efer-idx* x86-2))))
+             (equal (rflagsBits->ac (rflags x86-1))
+                    (rflagsBits->ac (rflags x86-2)))
              (equal (xr :marking-view 0 x86-1)
                     (xr :marking-view 0 x86-2))
              (equal paging-qword-addresses-1 paging-qword-addresses-2)
@@ -2237,13 +2318,13 @@
 
 ;; Some misc. lemmas:
 
-(defthmd xlate-equiv-entries-open
-  (implies (and (xlate-equiv-entries e-1 e-2)
-                (unsigned-byte-p 64 e-1)
-                (unsigned-byte-p 64 e-2))
-           (and (equal (loghead 5 e-1) (loghead 5 e-2))
-                (equal (logtail 7 e-1) (logtail 7 e-2))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries) ()))))
+;; (defthmd xlate-equiv-entries-open
+;;   (implies (and (xlate-equiv-entries e-1 e-2)
+;;                 (unsigned-byte-p 64 e-1)
+;;                 (unsigned-byte-p 64 e-2))
+;;            (and (equal (loghead 5 e-1) (loghead 5 e-2))
+;;                 (equal (logtail 7 e-1) (logtail 7 e-2))))
+;;   :hints (("Goal" :in-theory (e/d* (xlate-equiv-entries) ()))))
 
 (defthm xlate-equiv-structures-and-xlate-equiv-entries-at-qword-addresses
   (implies (and (equal addrs (gather-all-paging-structure-qword-addresses x86))

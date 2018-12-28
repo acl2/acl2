@@ -42,7 +42,7 @@
 ;; (david@russinoff.com).
 
 (in-package "X86ISA")
-(include-book "constants" :dir :utils)
+(include-book "fp-structures" :dir :utils)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 

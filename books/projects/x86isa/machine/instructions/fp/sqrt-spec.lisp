@@ -42,7 +42,7 @@
 ;; (david@russinoff.com).
 
 (in-package "X86ISA")
-(include-book "constants" :dir :utils)
+(include-book "fp-structures" :dir :utils)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 
@@ -85,17 +85,17 @@
         (mxcsr (loghead 32 (ifix mxcsr)))
         ;; Pre-computation Exceptions
         ;; Check invalid operation
-        ((when (and (equal (mxcsr-slice :ie mxcsr) 1)
-                    (equal (mxcsr-slice :im mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->ie mxcsr) 1)
+                    (equal (mxcsrBits->im mxcsr) 0)))
          (mv 'invalid-operand-exception-is-not-masked result mxcsr))
         ;; Check denormal operand
-        ((when (and (equal (mxcsr-slice :de mxcsr) 1)
-                    (equal (mxcsr-slice :dm mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->de mxcsr) 1)
+                    (equal (mxcsrBits->dm mxcsr) 0)))
          (mv 'denormal-operand-exception-is-not-masked result mxcsr))
         ;; Post-computation Exceptions
         ;; Check precision
-        ((when (and (equal (mxcsr-slice :pe mxcsr) 1)
-                    (equal (mxcsr-slice :pm mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->pe mxcsr) 1)
+                    (equal (mxcsrBits->pm mxcsr) 0)))
          (mv 'precision-exception-is-not-masked result mxcsr)))
      (mv nil result mxcsr))))
 

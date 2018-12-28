@@ -39,6 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "abstract-state")
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 ;; ======================================================================
 
@@ -129,61 +130,64 @@ re-arrange these nests of updates.</p>
 
 (assert-event
  (and (subsetp (append *x86-simple-fields-as-keywords*
-		       *x86-array-fields-as-keywords*)
-	       *x86-field-names-as-keywords*)
+                       *x86-array-fields-as-keywords*)
+               *x86-field-names-as-keywords*)
       (subsetp *x86-field-names-as-keywords*
-	       (append *x86-simple-fields-as-keywords*
-		       *x86-array-fields-as-keywords*))))
+               (append *x86-simple-fields-as-keywords*
+                       *x86-array-fields-as-keywords*))))
 
 (local
  (defthm update-nth-thm-1
    (equal (update-nth i v2 (update-nth i v1 x))
-	  (update-nth i v2 x))))
+          (update-nth i v2 x))))
 
 (local
  (defthm update-nth-thm-2
    (implies (and (integerp i1)
-		 (<= 0 i1)
-		 (integerp i2)
-		 (<= 0 i2)
-		 (not (equal i1 i2)))
-	    (equal (update-nth i2 v2 (update-nth i1 v1 x))
-		   (update-nth i1 v1 (update-nth i2 v2 x))))))
+                 (<= 0 i1)
+                 (integerp i2)
+                 (<= 0 i2)
+                 (not (equal i1 i2)))
+            (equal (update-nth i2 v2 (update-nth i1 v1 x))
+                   (update-nth i1 v1 (update-nth i2 v2 x))))))
 
 (local
  (defthm update-nth-thm-3
    (implies (and (integerp n)
-		 (<= 0 n)
-		 (< n (len x86))
-		 (integerp i)
-		 (<= 0 i)
-		 (< i (len (nth n x86))))
-	    (equal (update-nth n
-			       (update-nth i (nth i (nth n x86))
-					   (nth n x86))
-			       x86)
-		   x86))))
+                 (<= 0 n)
+                 (< n (len x86))
+                 (integerp i)
+                 (<= 0 i)
+                 (< i (len (nth n x86))))
+            (equal (update-nth n
+                               (update-nth i (nth i (nth n x86))
+                                           (nth n x86))
+                               x86)
+                   x86))))
 
 (local
  (defthm update-nth-thm-4
    (implies (and (integerp i)
-		 (<= 0 i)
-		 (< i (len x86)))
-	    (equal (update-nth i (nth i x86) x86)
-		   x86))))
+                 (<= 0 i)
+                 (< i (len x86)))
+            (equal (update-nth i (nth i x86) x86)
+                   x86))))
 
 (local
  (defthm update-nth-thm-5
    (implies (and (equal (nth n x) e)
-		 (natp n)
-		 (< n (len x)))
-	    (equal (update-nth n e x) x))))
+                 (natp n)
+                 (< n (len x)))
+            (equal (update-nth n e x) x))))
 
 (local (in-theory (e/d () (nth update-nth))))
 
 (defsection x86-Preservation-Theorems
 
+  ;; Also includes Writing-the-Read Theorems.
+
   :parents (state-field-theorems)
+
 
   ;; Types of readers in terms of XR:
 
@@ -194,112 +198,200 @@ re-arrange these nests of updates.</p>
     ;; same syntax as that for a field in a defstobj definition.
 
     (b* ((name (car x86-model-field))
-	 (end (search "$C" (symbol-name name)))
-	 (name (subseq (symbol-name name) 0 end))
-	 (keyword (intern name "KEYWORD"))
-	 (type (caddr x86-model-field)))
+         (end (search "$C" (symbol-name name)))
+         (name (subseq (symbol-name name) 0 end))
+         (keyword (intern name "KEYWORD"))
+         (type (caddr x86-model-field)))
 
       (cond
 
        ((and (consp type)
-	     (equal (car type) 'array)
-	     (consp (cadr type)))
-	(b* ((predicate (mk-name name "P"))
-	     (namei     (mk-name name "I"))
-	     (constant (mk-name "*" name "I*"))
-	     (getter    namei)
-	     (size      (cadr (cadr type))))
-	  `(
-	    ;; Field type theorem:
-	    ,(if (equal (car (cadr type)) 'unsigned-byte)
-		 `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
-		    :hyp (FORCE (X86P X86))
-		    :bound ,size
-		    :concl (XR ,keyword I X86)
-		    :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
-			     :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
-					      (I I)
-					      (X (NTH ,constant X86))))))
-		    :gen-linear t
-		    :gen-type t)
+             (equal (car type) 'array)
+             (consp (cadr type)))
+        (b* ((predicate (mk-name name "P"))
+             (namei     (mk-name name "I"))
+             (constant (mk-name "*" name "I*"))
+             (getter    namei)
+             (size      (cadr (cadr type)))
+             (length (caaddr (caddr x86-model-field))))
+          `(
+            ;; Field type theorem:
+            ,(if (equal (car (cadr type)) 'unsigned-byte)
+                 `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
+                    :hyp t
+                    :bound ,size
+                    :concl (XR ,keyword I X86)
+                    :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
+                             :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
+                                              (I I)
+                                              (X (NTH ,constant X86))))))
+                    :gen-linear t
+                    :gen-type t)
 
-	       `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
-		  :hyp (FORCE (X86P X86))
-		  :bound ,size
-		  :concl (XR ,keyword I X86)
-		  :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
-			   :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
-					    (I I)
-					    (X (NTH ,constant X86))))))
-		  :gen-type t
-		  :gen-linear t)))))
+               `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+                  :hyp t
+                  :bound ,size
+                  :concl (XR ,keyword I X86)
+                  :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())
+                           :USE ((:INSTANCE ,(mk-name predicate "-AUX-NECC")
+                                            (I I)
+                                            (X (NTH ,constant X86))))))
+                  :gen-type t
+                  :gen-linear t))
 
-       ((and (consp type)
-	     (equal (car type) 'unsigned-byte))
-	(b* ((getter  (mk-name name))
-	     (size    (cadr type)))
-	  `( ;; Field Type Theorem:
-	    (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
-	      :hyp (FORCE (X86P X86))
-	      :bound ,size
-	      :concl (XR ,keyword I X86)
-	      :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
-	      :gen-type t
-	      :gen-linear t))))
-
-       ((and (consp type)
-	     (equal (car type) 'signed-byte))
-	(b* ((getter  (mk-name name))
-	     (size    (cadr type)))
-	  `( ;; Field Type Theorems:
-	    (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
-	      :hyp (FORCE (X86P X86))
-	      :bound ,size
-	      :concl (XR ,keyword I X86)
-	      :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
-	      :gen-linear t
-	      :gen-type t))))
+            (defthmd ,(mk-name "XW-XR-" name)
+              ;; Writing-the-read theorem
+              ;; Needed to add the case hyp. after adding fixing to the abstract
+              ;; accessors/updaters.  But this isn't worth thinking about removing: this
+              ;; theorem is used very rarely, if at all.
+              (implies (and
+                        (equal v (xr ,keyword i x86))
+                        (natp i)
+                        (< i ,length)
+                        (x86p x86))
+                       (equal (xw ,keyword i v x86) x86))
+              :hints (("Goal" :in-theory (e/d ()
+                                              (unsigned-byte-p
+                                               signed-byte-p
+                                               (tau-system)
+                                               ,(mk-name predicate "-AUX-NECC")))
+                       :use ((:instance ,(mk-name predicate "-AUX-NECC")
+                                        (x (nth ,constant x86))))))))))
 
        ((and (consp type)
-	     (equal (car type) 'integer))
-	(b* ((predicate (mk-name name "P"))
-	     (getter  (mk-name name))
-	     (size    (caddr type)))
-	  `( ;; Field Type Theorem:
+             (equal (car type) 'unsigned-byte))
+        (b* ((getter  (mk-name name))
+             (size    (cadr type)))
+          `( ;; Field Type Theorem:
+            (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
+              :hyp t
+              :bound ,size
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
+              :gen-type t
+              :gen-linear t)
 
-	    (DEFTHM-NATP ,(mk-name "NATP-" getter)
-	      :hyp (FORCE (X86P X86))
-	      :concl (XR ,keyword I X86)
-	      :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
-
-	    (DEFTHM ,(mk-name getter "-LESS-THAN-" size)
-	      (IMPLIES (FORCE (X86P X86))
-		       (<= (XR ,keyword I X86) ,size))
-	      :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate)))
-	      :RULE-CLASSES :LINEAR))))
+            (defthmd ,(mk-name "XW-XR-" name)
+              ;; Writing-the-read theorem
+              ;; Needed to add the case hyp. after adding fixing to the abstract
+              ;; accessors/updaters.  But this isn't worth thinking about removing: this
+              ;; theorem is used very rarely, if at all.
+              (implies (and
+                        (equal v (xr ,keyword i x86))
+                        (x86p x86))
+                       (equal (xw ,keyword i v x86) x86))
+              :hints (("Goal" :in-theory (e/d ()
+                                              (unsigned-byte-p
+                                               signed-byte-p
+                                               (tau-system)))))))))
 
        ((and (consp type)
-	     (equal (car type) 'satisfies))
-	;; Env field is dealt with in this case.
-	(b* ((predicate (cadr type)))
-	  `( ;; Field Type Theorem:
-	    (DEFTHM ,(mk-name predicate "-" name)
-	      (IMPLIES (FORCE (X86P X86))
-		       (,predicate (XR ,keyword I X86)))))))
+             (equal (car type) 'signed-byte))
+        (b* ((getter  (mk-name name))
+             (size    (cadr type)))
+          `( ;; Field Type Theorems:
+            (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+              :hyp t
+              :bound ,size
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (E/D (,getter X86P) ())))
+              :gen-linear t
+              :gen-type t)
+
+            (defthmd ,(mk-name "XW-XR-" name)
+              ;; Writing-the-read theorem
+              ;; Needed to add the case hyp. after adding fixing to the abstract
+              ;; accessors/updaters.  But this isn't worth thinking about removing: this
+              ;; theorem is used very rarely, if at all.
+              (implies (and
+                        (equal v (xr ,keyword i x86))
+                        (x86p x86))
+                       (equal (xw ,keyword i v x86) x86))
+              :hints (("Goal" :in-theory (e/d ()
+                                              (unsigned-byte-p
+                                               signed-byte-p
+                                               (tau-system)))))))))
+
+       ((and (consp type)
+             (equal (car type) 'integer))
+        (b* ((predicate (mk-name name "P"))
+             (getter  (mk-name name))
+             (size    (caddr type)))
+          `( ;; Field Type Theorem:
+
+            (DEFTHM-NATP ,(mk-name "NATP-" getter)
+              :hyp t
+              :concl (XR ,keyword I X86)
+              :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
+
+            (DEFTHM ,(mk-name getter "-LESS-THAN-" size)
+              (IMPLIES t
+                       (<= (XR ,keyword I X86) ,size))
+              :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate)))
+              :RULE-CLASSES :LINEAR)
+
+            (defthmd ,(mk-name "XW-XR-" name)
+              ;; Writing-the-read theorem
+              ;; Needed to add the case hyp. after adding fixing to the abstract
+              ;; accessors/updaters.  But this isn't worth thinking about removing: this
+              ;; theorem is used very rarely, if at all.
+              (implies (and
+                        (equal v (xr ,keyword i x86))
+                        (x86p x86))
+                       (equal (xw ,keyword i v x86) x86))
+              :hints (("Goal" :in-theory (e/d ()
+                                              (unsigned-byte-p
+                                               signed-byte-p
+                                               (tau-system)))))))))
+
+       ((and (consp type)
+             (equal (car type) 'satisfies))
+        ;; Env field is dealt with in this case.
+        (b* ((predicate (cadr type)))
+          `( ;; Field Type Theorem:
+            (DEFTHM ,(mk-name predicate "-" name)
+              (IMPLIES t
+                       (,predicate (XR ,keyword I X86))))
+
+            (defthmd ,(mk-name "XW-XR-" name)
+              ;; Writing-the-read theorem
+              ;; Needed to add the case hyp. after adding fixing to the abstract
+              ;; accessors/updaters.  But this isn't worth thinking about removing: this
+              ;; theorem is used very rarely, if at all.
+              (implies (and
+                        (equal v (xr ,keyword i x86))
+                        (x86p x86))
+                       (equal (xw ,keyword i v x86) x86))
+              :hints (("Goal" :in-theory (e/d ()
+                                              (unsigned-byte-p
+                                               signed-byte-p
+                                               (tau-system)))))))))
 
        (t
-	;; type is presumably 'T (like MS and FAULT fields)
-	`(
-	  ;; No Field Type Theorem
+        ;; type is presumably 'T (like MS and FAULT fields)
+        `(
+          ;; No Field Type Theorem
 
-	  )))))
+          (defthmd ,(mk-name "XW-XR-" name)
+            ;; Writing-the-read theorem
+            ;; Needed to add the case hyp. after adding fixing to the abstract
+            ;; accessors/updaters.  But this isn't worth thinking about removing: this
+            ;; theorem is used very rarely, if at all.
+            (implies (and
+                      (equal v (xr ,keyword i x86))
+                      (x86p x86))
+                     (equal (xw ,keyword i v x86) x86))
+            :hints (("Goal" :in-theory (e/d ()
+                                            (unsigned-byte-p
+                                             signed-byte-p
+                                             (tau-system)))))))))))
 
   (defun x86-stobj-field-thms-fn (x86-model)
     (cond ((endp x86-model)
-	   '())
-	  (t
-	   `(,@(x86-stobj-field-thms-fn-1 (car x86-model))
-	     ,@(x86-stobj-field-thms-fn (cdr x86-model))))))
+           '())
+          (t
+           `(,@(x86-stobj-field-thms-fn-1 (car x86-model))
+             ,@(x86-stobj-field-thms-fn (cdr x86-model))))))
 
   (make-event
    `(PROGN
@@ -307,125 +399,88 @@ re-arrange these nests of updates.</p>
 
   (defthm booleanp-app-view-type
     (implies (force (x86p x86))
-	     (booleanp (xr :app-view i x86)))
+             (booleanp (xr :app-view i x86)))
     :rule-classes :type-prescription)
 
   (defthm booleanp-marking-view-type
     (implies (force (x86p x86))
-	     (booleanp (xr :marking-view i x86)))
+             (booleanp (xr :marking-view i x86)))
     :rule-classes :type-prescription)
 
   ;; Type of writers in terms of XW:
 
   (defthm x86p-xw
-    (implies (forced-and (member fld *x86-field-names-as-keywords*)
-			 (case fld
-			   (:rgf          (and (integerp index)
-					       (signed-byte-p 64 value)))
-			   (:rip          (signed-byte-p 48 value))
-			   (:rflags       (unsigned-byte-p 32 value))
-			   (:seg-visible  (and (integerp index)
-					       (unsigned-byte-p 16 value)))
-			   (:seg-hidden-base (and (integerp index)
-						  (unsigned-byte-p 64 value)))
-			   (:seg-hidden-limit (and (integerp index)
-						   (unsigned-byte-p 32 value)))
-			   (:seg-hidden-attr (and (integerp index)
-						  (unsigned-byte-p 16 value)))
-			   (:str          (and (integerp index)
-					       (unsigned-byte-p 80 value)))
-			   (:ssr-visible  (and (integerp index)
-					       (unsigned-byte-p 16 value)))
-			   (:ssr-hidden-base (and (integerp index)
-						  (unsigned-byte-p 64 value)))
-			   (:ssr-hidden-limit (and (integerp index)
-						   (unsigned-byte-p 32 value)))
-			   (:ssr-hidden-attr (and (integerp index)
-						  (unsigned-byte-p 16 value)))
-			   (:ctr          (and (integerp index)
-					       (unsigned-byte-p 64 value)))
-			   (:dbg          (and (integerp index)
-					       (unsigned-byte-p 64 value)))
-			   (:fp-data      (and (integerp index)
-					       (unsigned-byte-p 80 value)))
-			   (:fp-ctrl      (unsigned-byte-p 16 value))
-			   (:fp-status    (unsigned-byte-p 16 value))
-			   (:fp-tag       (unsigned-byte-p 16 value))
-			   (:fp-last-inst (unsigned-byte-p 48 value))
-			   (:fp-last-data (unsigned-byte-p 48 value))
-			   (:fp-opcode    (unsigned-byte-p 11 value))
-			   (:zmm          (and (integerp index)
-					       (unsigned-byte-p 512 value)))
-			   (:mxcsr        (unsigned-byte-p 32 value))
-			   (:msr          (and (integerp index)
-					       (unsigned-byte-p 64 value)))
-			   (:env          (env-alistp value))
-			   (:app-view (booleanp value))
-			   (:marking-view (booleanp value))
-			   (:os-info      (keywordp value))
-			   (:mem          (and (integerp index)
-					       (unsigned-byte-p 8 value)))
-			   (otherwise     (equal index 0)))
-			 (x86p x86))
-	     (x86p (xw fld index value x86)))
-    :hints (("Goal"
-	     :in-theory (e/d*
-			 (rgfp
-			  ripp rflagsp seg-visiblep seg-hidden-basep
-			  seg-hidden-limitp seg-hidden-attrp strp
-			  ssr-visiblep ssr-hidden-basep ssr-hidden-limitp
-			  ssr-hidden-attrp ctrp msrp dbgp fp-datap
-			  fp-ctrlp fp-statusp fp-tagp fp-last-instp
-			  fp-last-datap fp-opcodep zmmp mxcsrp msrp msp
-			  faultp env-alistp undefp booleanp memp)
-			 ()))))
+    (implies (force (x86p x86))
+             (x86p (xw fld index value x86))))
 
   (defthmd xr-irrelevant-index-for-simple-fields
     (implies (and (syntaxp (not (and (consp index)
-				     (eq (car index) ''0))))
-		  (member fld *x86-simple-fields-as-keywords*))
-	     (equal (xr fld index x86)
-		    (xr fld 0 x86))))
+                                     (eq (car index) ''0))))
+                  (member fld *x86-simple-fields-as-keywords*))
+             (equal (xr fld index x86)
+                    (xr fld 0 x86))))
 
   (defthmd xw-irrelevant-index-for-simple-fields
     (implies (and (syntaxp (not (and (consp index)
-				     (eq (car index) ''0))))
-		  (member fld *x86-simple-fields-as-keywords*))
-	     (equal (xw fld index value x86)
-		    (xw fld 0     value x86)))))
+                                     (eq (car index) ''0))))
+                  (member fld *x86-simple-fields-as-keywords*))
+             (equal (xw fld index value x86)
+                    (xw fld 0     value x86)))))
 
-(defsection x86-Writing-the-Read-Theorem
-
-  :parents (state-field-theorems)
-
-  (defthmd xw-xr
-    (implies (and (equal v (xr fld i x86))
-		  (x86p x86))
-	     (equal (xw fld i v x86) x86))))
 
 (defsection x86-RoW-Theorems
 
   :parents (state-field-theorems)
 
-  ;; [Shilpi]: Maybe I should write a single RoW theorem with meta
-  ;; rules that weeds out all the independent writes.
-
   (defthm xr-xw-intra-array-field
     (implies (member fld *x86-array-fields-as-keywords*)
-	     (equal (xr fld i (xw fld j v x86))
-		    (if (equal i j)
-			v
-		      (xr fld i x86)))))
+             (equal (xr fld i (xw fld j v x86))
+                    (if (equal i j)
+                        (case fld
+                          (:rgf                (logext   64 v))
+                          (:seg-visible        (loghead  16 v))
+                          (:seg-hidden-base    (loghead  64 v))
+                          (:seg-hidden-attr    (loghead  16 v))
+                          (:seg-hidden-limit   (loghead  32 v))
+                          (:str                (loghead  80 v))
+                          (:ssr-visible        (loghead  16 v))
+                          (:ssr-hidden-base    (loghead  64 v))
+                          (:ssr-hidden-limit   (loghead  32 v))
+                          (:ssr-hidden-attr    (loghead  16 v))
+                          (:ctr                (loghead  64 v))
+                          (:dbg                (loghead  64 v))
+                          (:fp-data            (loghead  80 v))
+                          (:zmm                (loghead 512 v))
+                          (:msr                (loghead  64 v))
+                          (:mem                (loghead   8 v)))
+                      (xr fld i x86)))))
 
   (defthm xr-xw-intra-simple-field
     (implies (member fld *x86-simple-fields-as-keywords*)
-	     (equal (xr fld i (xw fld j v x86))
-		    v)))
+             (equal (xr fld i (xw fld j v x86))
+                    (case fld
+                      (:rip          (logext  48 v))
+                      (:rflags       (loghead 32 v))
+                      (:fp-ctrl      (loghead 16 v))
+                      (:fp-status    (loghead 16 v))
+                      (:fp-tag       (loghead 16 v))
+                      (:fp-last-inst (loghead 48 v))
+                      (:fp-last-data (loghead 48 v))
+                      (:fp-opcode    (loghead 11 v))
+                      (:mxcsr        (loghead 32 v))
+                      (:ms           v)
+                      (:fault        v)
+                      (:env          (if (env-alistp v) v 'nil))
+                      (:undef        v)
+                      (:app-view     (if (booleanp v) v 't))
+                      (:marking-view (if (booleanp v) v 't))
+                      (:os-info      (if (keywordp v) v ':linux))))))
 
   (defthm xr-xw-inter-field
     (implies (case-split (not (equal fld1 fld2)))
-	     (equal (xr fld2 i2 (xw fld1 i1 v x86))
-		    (xr fld2 i2 x86)))))
+             (equal (xr fld2 i2 (xw fld1 i1 v x86))
+                    (xr fld2 i2 x86)))
+    :hints (("Goal" :in-theory (e/d () ((tau-system)))))))
 
 (defsection x86-WoW-Theorems
 
@@ -433,25 +488,26 @@ re-arrange these nests of updates.</p>
 
   (defthm xw-xw-intra-array-field-shadow-writes
     (implies (member fld *x86-array-fields-as-keywords*)
-	     (equal (xw fld i v2 (xw fld i v1 x86))
-		    (xw fld i v2 x86))))
+             (equal (xw fld i v2 (xw fld i v1 x86))
+                    (xw fld i v2 x86))))
 
   (defthm xw-xw-intra-simple-field-shadow-writes
     (implies (member fld *x86-simple-fields-as-keywords*)
-	     (equal (xw fld i v2 (xw fld j v1 x86))
-		    (xw fld i v2 x86))))
+             (equal (xw fld i v2 (xw fld j v1 x86))
+                    (xw fld i v2 x86))))
 
   (defthm xw-xw-intra-field-arrange-writes
     (implies (and (member fld *x86-array-fields-as-keywords*)
-		  (not (equal i1 i2)))
-	     (equal (xw fld i2 v2 (xw fld i1 v1 x86))
-		    (xw fld i1 v1 (xw fld i2 v2 x86))))
+                  (not (equal i1 i2)))
+             (equal (xw fld i2 v2 (xw fld i1 v1 x86))
+                    (xw fld i1 v1 (xw fld i2 v2 x86))))
     :rule-classes ((:rewrite :loop-stopper ((i2 i1)))))
 
   (defthm xw-xw-inter-field-arrange-writes
     (implies (not (equal fld1 fld2))
-	     (equal (xw fld2 i2 v2 (xw fld1 i1 v1 x86))
-		    (xw fld1 i1 v1 (xw fld2 i2 v2 x86))))
+             (equal (xw fld2 i2 v2 (xw fld1 i1 v1 x86))
+                    (xw fld1 i1 v1 (xw fld2 i2 v2 x86))))
+    :hints (("Goal" :in-theory (e/d () ((tau-system)))))
     :rule-classes ((:rewrite :loop-stopper ((fld2 fld1))))))
 
 ;; ======================================================================

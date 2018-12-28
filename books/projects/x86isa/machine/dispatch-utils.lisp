@@ -967,16 +967,16 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
-        ((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
-        ((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
-        ((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
-        ((:no-prefix)     `((equal (vex-pp-slice vex-prefixes) 0)))
-        ((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
-        ((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+        (:UNUSED-VVVV     `((equal (vex->vvvv vex-prefixes) #b1111)))
+        ((:NDS :NDD :DDS) `((not (equal (vex->vvvv vex-prefixes) #b1111))))
+        ((:128 :LZ :L0)   `((equal (vex->l vex-prefixes) 0)))
+        ((:256 :L1)       `((equal (vex->l vex-prefixes) 1)))
+        ((:no-prefix)     `((equal (vex->pp vex-prefixes) 0)))
+        ((:66)            `((equal (vex->pp vex-prefixes) #.*v66*)))
+        ((:F3)            `((equal (vex->pp vex-prefixes) #.*vF3*)))
+        ((:F2)            `((equal (vex->pp vex-prefixes) #.*vF2*)))
+        ((:W0)            `((equal (vex->w vex-prefixes) 0)))
+        ((:W1)            `((equal (vex->w vex-prefixes) 1)))
         ;; I don't need :0F, :0F38, and :0F3A below because the
         ;; vex-decode-and-execute function deals with this already.
         ;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
@@ -998,20 +998,20 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                 (equal (evex-v-prime-slice evex-prefixes) #b1))))
+        (:UNUSED-VVVV     `((and (equal (evex->vvvv evex-prefixes) #b1111)
+                                 (equal (evex->v-prime evex-prefixes) #b1))))
         ((:NDS :NDD :DDS) `((not
-                             (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
-        ((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
-        ((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
-        (:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
-        ((:no-prefix)     `((equal (evex-pp-slice evex-prefixes) 0)))
-        ((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
-        ((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
+                             (and (equal (evex->vvvv evex-prefixes) #b1111)
+                                  (equal (evex->v-prime evex-prefixes) #b1)))))
+        ((:128 :LZ :L0)   `((equal (evex->vl/rc evex-prefixes) 0)))
+        ((:256 :L1)       `((equal (evex->vl/rc evex-prefixes) 1)))
+        (:512             `((equal (evex->vl/rc evex-prefixes) 2)))
+        ((:no-prefix)     `((equal (evex->pp evex-prefixes) 0)))
+        ((:66)            `((equal (evex->pp evex-prefixes) #.*v66*)))
+        ((:F3)            `((equal (evex->pp evex-prefixes) #.*vF3*)))
+        ((:F2)            `((equal (evex->pp evex-prefixes) #.*vF2*)))
+        ((:W0)            `((equal (evex->w evex-prefixes) 0)))
+        ((:W1)            `((equal (evex->w evex-prefixes) 1)))
         ;; I don't need to account for :0F, :0F38, and :0F3A because the
         ;; evex-decode-and-execute function deals with this already.
         (otherwise

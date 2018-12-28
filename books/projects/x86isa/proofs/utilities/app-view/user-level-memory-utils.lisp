@@ -44,7 +44,6 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
-;; (local (include-book "std/lists/take" :dir :system))
 
 ;; ======================================================================
 ;; ----------------------------------------------------------------------
@@ -73,10 +72,9 @@
 
 (defthm |(rvm08 addr2 (wvm08 addr1 val x86)) --- same addr|
   (implies (and (equal addr1 addr2)
-                (n08p val)
                 (canonical-address-p addr1))
            (equal (rvm08 addr2 (mv-nth 1 (wvm08 addr1 val x86)))
-                  (mv nil val (mv-nth 1 (wvm08 addr1 val x86))))))
+                  (mv nil (loghead 8 val) (mv-nth 1 (wvm08 addr1 val x86))))))
 
 (defthm |(rvm08 addr2 (wvm08 addr1 val x86)) --- disjoint addr|
   (implies (not (equal addr1 addr2))
@@ -107,44 +105,6 @@
 
 ;; Lemmas about rb, wb, and other state accessors/updaters:
 
-(defthm rb-!flgi-in-app-view
-  (implies (app-view x86)
-           (equal (mv-nth 1 (rb n addr r-x (!flgi flg val x86)))
-                  (mv-nth 1 (rb n addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d* (!flgi) (rb force (force))))))
-
-(defthm !flgi-and-wb-in-app-view
-  (implies (app-view x86)
-           (equal (!flgi flg val (mv-nth 1 (wb n addr w val x86)))
-                  (mv-nth 1 (wb n addr w val (!flgi flg val x86)))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (!flgi) (force (force))))))
-
-(defthm program-at-!flgi
-  (implies (app-view x86)
-           (equal (program-at prog-addr bytes (!flgi flg val x86))
-                  (program-at prog-addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (program-at !flgi) (force (force) rb)))))
-
-(defthm rb-!flgi-undefined-in-app-view
-  (implies (app-view x86)
-           (equal (mv-nth 1 (rb n addr r-x (!flgi-undefined flg x86)))
-                  (mv-nth 1 (rb n addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (rb force (force))))))
-
-(defthm !flgi-undefined-and-wb-in-app-view
-  (implies (app-view x86)
-           (equal (!flgi-undefined flg (mv-nth 1 (wb n addr w val x86)))
-                  (mv-nth 1 (wb n addr w val (!flgi-undefined flg x86)))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d* (!flgi-undefined !flgi) (force (force))))))
-
-(defthm program-at-!flgi-undefined
-  (implies (app-view x86)
-           (equal (program-at prog-addr bytes (!flgi-undefined flg x86))
-                  (program-at prog-addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (program-at !flgi-undefined) (program-at)))))
-
 (defthm rb-write-user-rflags-in-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (rb n addr r-x (write-user-rflags flags mask x86)))
@@ -156,15 +116,9 @@
            (equal (write-user-rflags flags mask (mv-nth 1 (wb n addr w val x86)))
                   (mv-nth 1 (wb n addr w val (write-user-rflags flags mask x86)))))
   :hints (("Goal" :do-not '(preprocess) :do-not-induct t
-           :in-theory (e/d* (write-user-rflags !flgi-undefined)
+           :in-theory (e/d* (write-user-rflags)
                             (acl2::loghead-identity
-                             wb !flgi force (force))))))
-
-(defthm flgi-wb-in-app-view
-  (implies (app-view x86)
-           (equal (flgi flg (mv-nth 1 (wb n addr w val x86)))
-                  (flgi flg x86)))
-  :hints (("Goal" :in-theory (e/d* (flgi) (wb)))))
+                             wb force (force))))))
 
 (defthm alignment-checking-enabled-p-and-wb-in-app-view
   (implies (app-view x86)
@@ -560,7 +514,7 @@
   (implies (app-view x86)
            (equal (program-at addr bytes (write-user-rflags flags mask x86))
                   (program-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d (write-user-rflags !flgi-undefined)
+  :hints (("Goal" :in-theory (e/d (write-user-rflags)
                                   (force (force))))))
 
 ;; ======================================================================
@@ -709,11 +663,7 @@
              rme08 rime08 wme08 wime08)
             ;; We disable some expensive and irrelevant lemmas in
             ;; the application-level view.
-            (mv-nth-1-wb-and-!flgi-commute
-             ia32e-la-to-pa-values-and-!flgi
-             las-to-pas
-             las-to-pas-values-and-!flgi
-             mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+            (las-to-pas
              xr-fault-wb-in-system-level-marking-view
              xr-fault-wb-in-sys-view)))
 

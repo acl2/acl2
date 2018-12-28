@@ -281,8 +281,7 @@ recommend using these functions at the top-level.</p>")
   ///
 
   (defthm x86p-wm-low-32
-    (implies (and (x86p x86)
-                  (integerp addr))
+    (implies (x86p x86)
              (x86p (wm-low-32 addr val x86)))
     :rule-classes (:rewrite :type-prescription))
 
@@ -323,8 +322,7 @@ recommend using these functions at the top-level.</p>")
     x86)
   ///
   (defthm x86p-wm-low-64
-    (implies (and (x86p x86)
-                  (integerp addr))
+    (implies (x86p x86)
              (x86p (wm-low-64 addr val x86)))
     :rule-classes (:rewrite :type-prescription))
 

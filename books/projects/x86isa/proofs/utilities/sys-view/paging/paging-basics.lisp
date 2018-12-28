@@ -41,6 +41,7 @@
 (include-book "../gl-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 ;; ======================================================================
 
@@ -109,7 +110,7 @@
 ;; Page table base address functions:
 
 (defun-nx pml4-table-base-addr (x86)
-  (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
+  (ash (cr3Bits->pdb (ctri *cr3* x86)) 12))
 
 (defthm-usb n52p-of-pml4-table-base-addr
   :hyp (x86p x86)
@@ -173,18 +174,26 @@
                 (natp n)
                 (not (equal n 5)))
            (equal (logbitp n (set-accessed-bit entry))
-                  (logbitp n entry)))
-  :hints (("Goal" :in-theory (e/d* (set-accessed-bit not)
-                                   ()))))
+                  (logbitp n (loghead 64 entry)))) ;; ia32e-page-tablesbits-fix?
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit
+                                    not
+                                    !ia32e-page-tablesbits->a
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm logbitp-n-of-set-dirty-bit
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (not (equal n 6)))
            (equal (logbitp n (set-dirty-bit entry))
-                  (logbitp n entry)))
-  :hints (("Goal" :in-theory (e/d* (set-dirty-bit not)
-                                   ()))))
+                  (logbitp n (loghead 64 entry)))) ;; ia32e-page-tablesbits-fix?
+  :hints (("Goal" :in-theory (e/d* (set-dirty-bit
+                                    not
+                                    !ia32e-page-tablesbits->d
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm logbitp-n-of-set-dirty-and-accessed-bits
   (implies (and (syntaxp (quotep n))
@@ -192,36 +201,44 @@
                 (not (equal n 5))
                 (not (equal n 6)))
            (equal (logbitp n (set-dirty-bit (set-accessed-bit entry)))
-                  (logbitp n entry)))
-  :hints (("Goal" :in-theory (e/d* (set-dirty-bit
-                                    set-accessed-bit
-                                    not)
-                                   ()))))
+                  (logbitp n (loghead 64 entry)))) ;; ia32e-page-tablesbits-fix?
+  :hints (("Goal" :in-theory (e/d* ()
+                                   (logbitp-n-of-set-accessed-bit
+                                    logbitp-n-of-set-dirty-bit))
+           :use ((:instance logbitp-n-of-set-accessed-bit)
+                 (:instance logbitp-n-of-set-dirty-bit
+                            (entry (set-accessed-bit entry)))))))
 
 (defthm logtail-n-of-set-accessed-bit
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (< 5 n))
            (equal (logtail n (set-accessed-bit entry))
-                  (logtail n entry)))
-  :hints ((logbitp-reasoning)
-          ("Goal" :in-theory (e/d* (set-accessed-bit) ()))))
+                  (logtail n (loghead 64 entry))))
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit
+                                    !ia32e-page-tablesbits->a
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm logtail-n-of-set-dirty-bit
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (< 6 n))
            (equal (logtail n (set-dirty-bit entry))
-                  (logtail n entry)))
-  :hints ((logbitp-reasoning)
-          ("Goal" :in-theory (e/d* (set-dirty-bit) ()))))
+                  (logtail n (loghead 64 entry))))
+  :hints (("Goal" :in-theory (e/d* (set-dirty-bit
+                                    !ia32e-page-tablesbits->d
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm logtail-n-of-set-dirty-and-accessed-bits
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (< 6 n))
            (equal (logtail n (set-dirty-bit (set-accessed-bit entry)))
-                  (logtail n entry)))
+                  (logtail n (loghead 64 entry))))
   :hints (("Goal" :in-theory (e/d* ()
                                    (logtail-n-of-set-dirty-bit
                                     logtail-n-of-set-accessed-bit))
@@ -237,25 +254,33 @@
                 (natp n)
                 (<= n 5))
            (equal (loghead n (set-accessed-bit entry))
-                  (loghead n entry)))
-  :hints ((logbitp-reasoning)
-          ("Goal" :in-theory (e/d* (set-accessed-bit) ()))))
+                  (loghead n (loghead 64 entry))))
+  :hints (("Goal" :in-theory (e/d* (set-accessed-bit
+                                    not
+                                    !ia32e-page-tablesbits->a
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm loghead-n-of-set-dirty-bit
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (<= n 6))
            (equal (loghead n (set-dirty-bit entry))
-                  (loghead n entry)))
-  :hints ((logbitp-reasoning)
-          ("Goal" :in-theory (e/d* (set-dirty-bit) ()))))
+                  (loghead n (loghead 64 entry))))
+  :hints (("Goal" :in-theory (e/d* (set-dirty-bit
+                                    not
+                                    !ia32e-page-tablesbits->d
+                                    ia32e-page-tablesbits-fix)
+                                   ()))
+          (bitops::logbitp-reasoning)))
 
 (defthm loghead-n-of-set-dirty-and-accessed-bits
   (implies (and (syntaxp (quotep n))
                 (natp n)
                 (<= n 5))
            (equal (loghead n (set-dirty-bit (set-accessed-bit entry)))
-                  (loghead n entry)))
+                  (loghead n (loghead 64 entry))))
   :hints (("Goal" :in-theory (e/d* ()
                                    (loghead-n-of-set-dirty-bit
                                     loghead-n-of-set-accessed-bit))

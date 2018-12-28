@@ -165,7 +165,7 @@ the @('fault') field instead.</li>
 	(#.*compatibility-mode*
 	 (b* (((the (unsigned-byte 16) cs-attr)
 	       (xr :seg-hidden-attr #.*cs* x86))
-	      (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+	      (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
 	   (if (= cs.d 1)
 	       (n32 *ip)
 	     (n16 *ip))))
@@ -337,7 +337,7 @@ the @('fault') field instead.</li>
 		     (*ip       :type (signed-byte #.*max-linear-address-size*))
 		     x86)
     :returns (x86-new x86p
-		      :hyp (and (i48p *ip) (x86p x86))
+		      :hyp (x86p x86)
 		      :hints (("Goal" :in-theory (e/d () (force (force))))))
 
     :guard (if (equal proc-mode #.*64-bit-mode*)
@@ -347,7 +347,7 @@ the @('fault') field instead.</li>
 	     ;; (b* (((the (unsigned-byte 16) cs-attr)
 	     ;;       (xr :seg-hidden-attr #.*cs* x86))
 	     ;;      (cs.d
-	     ;;       (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+	     ;;       (code-segment-descriptor-attributesBits->d cs-attr)))
 	     ;;   (case cs.d
 	     ;;     (0 (unsigned-byte-p 16 *ip))
 	     ;;     (otherwise (unsigned-byte-p 32 *ip))))
@@ -454,7 +454,7 @@ the @('fault') field instead.</li>
 
       (#.*compatibility-mode* ;; Maybe *protected-mode* too?
        (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
-	    (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+	    (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
 	 (if (= cs.d 1)
 	     (mbe :logic (!rip (n32 *ip) x86)
 		  :exec (!rip (the (unsigned-byte 32) *ip) x86))
@@ -522,8 +522,7 @@ the @('fault') field instead.</li>
 	 *sp)
 	(#.*compatibility-mode*
 	 (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
-	      (ss.b (data-segment-descriptor-attributes-layout-slice
-		     :d/b ss-attr)))
+	      (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
 	   (if (= ss.b 1)
 	       (n32 *sp)
 	     (n16 *sp))))
@@ -609,10 +608,8 @@ the @('fault') field instead.</li>
 	       (xr :seg-hidden-limit #.*ss* x86))
 	      ((the (unsigned-byte 16) ss-attr)
 	       (xr :seg-hidden-attr #.*ss* x86))
-	      (ss.b (data-segment-descriptor-attributes-layout-slice
-		     :d/b ss-attr))
-	      (ss.e (data-segment-descriptor-attributes-layout-slice
-		     :e ss-attr))
+	      (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr))
+	      (ss.e (data-segment-descriptor-attributesBits->e ss-attr))
 	      (ss-lower (if (= ss.e 1) (1+ ss.limit) 0))
 	      (ss-upper (if (= ss.e 1)
 			    (if (= ss.b 1)
@@ -664,7 +661,7 @@ the @('fault') field instead.</li>
   (define write-*sp ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
 		     (*sp :type (signed-byte 64))
 		     x86)
-    :returns (x86-new x86p :hyp (and (i64p *sp) (x86p x86)))
+    :returns (x86-new x86p :hyp (x86p x86))
     :parents (stack-pointer-operations)
 
     :guard (if (equal proc-mode #.*64-bit-mode*)
@@ -674,8 +671,7 @@ the @('fault') field instead.</li>
 	     ;; (b* (((the (unsigned-byte 16) ss-attr)
 	     ;;       (xr :seg-hidden-attr #.*ss* x86))
 	     ;;      (ss.d
-	     ;;       (data-segment-descriptor-attributes-layout-slice
-	     ;;        :d/b ss-attr)))
+	     ;;       (data-segment-descriptor-attributesBits->d/b ss-attr)))
 	     ;;   (case ss.d
 	     ;;     (0 (unsigned-byte-p 16 *sp))
 	     ;;     (otherwise (unsigned-byte-p 32 *sp))))
@@ -754,8 +750,7 @@ the @('fault') field instead.</li>
        (!rgfi #.*rsp* *sp x86))
       (#.*compatibility-mode*
        (b* (((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
-	    (ss.b (data-segment-descriptor-attributes-layout-slice
-		   :d/b ss-attr)))
+	    (ss.b (data-segment-descriptor-attributesBits->d/b ss-attr)))
 	 (if (= ss.b 1)
 	     (mbe :logic (!rgfi #.*rsp* (n32 *sp) x86)
 		  :exec (!rgfi #.*rsp* (the (unsigned-byte 32) *sp) x86))
@@ -816,7 +811,7 @@ the @('fault') field instead.</li>
     (#.*64-bit-mode* (if p4? 4 8))
     (otherwise ;; #.*compatibility-mode* or #.*protected-mode*
      (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-	  (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+	  (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
        (if (= cs.d 1) (if p4? 2 4) (if p4? 4 2)))))
   ///
 
@@ -987,7 +982,7 @@ the @('fault') field instead.</li>
      (temp-rip  :type (signed-byte   #.*max-linear-address-size*) )
      (mod       :type (unsigned-byte 2) "mod field of ModR/M byte")
      x86)
-    :guard (modr/m-mod-p mod)
+    :guard (2bitsp-p mod)
     :returns (mv flg
 		 (disp i16p
 		       :hyp (x86p x86)
@@ -1052,8 +1047,8 @@ the @('fault') field instead.</li>
      (r/m       :type (unsigned-byte 3) "r/m field of ModR/M byte")
      (mod       :type (unsigned-byte 2) "mod field of ModR/M byte")
      x86)
-    :guard (and (modr/m-mod-p mod)
-		(modr/m-r/m-p r/m))
+    :guard (and (2bitsp-p mod)
+		(3bitsp-p r/m))
     :returns (mv flg
 		 (address n16p)
 		 (increment-rip-by natp)
@@ -1163,8 +1158,8 @@ the @('fault') field instead.</li>
 		      that follow the sib (or displacement bytes, if any).")
      x86)
 
-    :guard (and (modr/m-mod-p mod)
-		(modr/m-r/m-p r/m)
+    :guard (and (2bitsp-p mod)
+		(3bitsp-p r/m)
 		(sib-p sib))
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
 
@@ -1377,8 +1372,8 @@ the @('fault') field instead.</li>
      x86)
 
 
-    :guard (and (modr/m-mod-p mod)
-		(modr/m-r/m-p r/m)
+    :guard (and (2bitsp-p mod)
+		(3bitsp-p r/m)
 		(sib-p sib))
 
     ;; Returns the flag, the effective address (taking the SIB and
@@ -1473,7 +1468,7 @@ the @('fault') field instead.</li>
   (local (xdoc::set-default-parents read-operands-and-write-results))
 
   (define alignment-checking-enabled-p (x86)
-    :prepwork ((local (in-theory (e/d* (flgi) ()))))
+    :prepwork ((local (in-theory (e/d* () ()))))
     :returns (enabled booleanp :rule-classes :type-prescription)
     :short "Checking if alignment is enabled"
     :long "<p> Source: Intel Manuals, Volume 3, Section 6.15, Exception
@@ -1512,9 +1507,8 @@ generate alignment-check exceptions, even when caused by a memory
 reference made from privilege level 3.</blockquote>"
 
     (b* ((cr0 (the (unsigned-byte 32) (n32 (ctri #.*cr0* x86))))
-	 (AM  (cr0-slice :cr0-am cr0))
-	 (AC (mbe :logic (flgi #.*ac* x86)
-		  :exec (rflags-slice :ac (the (unsigned-byte 32) (rflags x86)))))
+	 (AM  (cr0Bits->am cr0))
+	 (AC (flgi :ac x86))
 	 (CPL (cpl x86)))
       (and (equal AM 1)
 	   (equal AC 1)
@@ -1527,34 +1521,41 @@ reference made from privilege level 3.</blockquote>"
 		    (not (equal fld :seg-visible))
 		    (not (equal fld :rflags)))
 	       (equal (alignment-checking-enabled-p (xw fld index val x86))
-		      (alignment-checking-enabled-p x86))))
+		      (alignment-checking-enabled-p x86))))    
 
     (defthm alignment-checking-enabled-p-and-xw-ctr
-      (implies (case-split (or (not (equal index *cr0*))
-			       (and (equal index *cr0*)
-				    (equal (cr0-slice :cr0-am val)
-					   (cr0-slice :cr0-am (xr :ctr *cr0* x86))))))
-	       (equal (alignment-checking-enabled-p (xw :ctr index val x86))
-		      (alignment-checking-enabled-p x86))))
+      (implies (case-split (or (not (equal (nfix index) *cr0*))
+                               (and (equal (nfix index) *cr0*)
+                                    (equal (cr0Bits->am (loghead 32 val))
+                                           (cr0Bits->am (xr :ctr *cr0* x86))))))
+               (equal (alignment-checking-enabled-p (xw :ctr index val x86))
+                      (alignment-checking-enabled-p x86)))
+      :hints (("Goal" :in-theory (e/d (cr0bits->am cr0bits-fix)
+                                      ()))))
 
     (defthm alignment-checking-enabled-p-and-xw-rflags
-      (implies (equal (rflags-slice :ac val)
-		      (rflags-slice :ac (xr :rflags 0 x86)))
+      (implies (equal (rflagsBits->ac val)
+		      (rflagsBits->ac (xr :rflags 0 x86)))
 	       (equal (alignment-checking-enabled-p (xw :rflags 0 val x86))
-		      (alignment-checking-enabled-p x86))))
+		      (alignment-checking-enabled-p x86)))
+      :hints (("Goal" :in-theory (e/d (rflagsBits->ac rflagsBits-fix) ()))))
 
     (defthm alignment-checking-enabled-p-and-xw-seg-visible
-      (implies (case-split (or (not (equal index #.*cs*))
-			       (and (equal index #.*cs*)
-				    (equal (seg-sel-layout-slice :rpl val)
-					   (seg-sel-layout-slice :rpl (seg-visiblei #.*cs* x86))))))
+      (implies (case-split
+                 (or (not (equal index #.*cs*))
+                     (and (equal index #.*cs*)
+                          (equal (segment-selectorBits->rpl val)
+                                 (segment-selectorBits->rpl
+                                  (seg-visiblei #.*cs* x86))))))
 	       (equal (alignment-checking-enabled-p (xw :seg-visible index val x86))
-		      (alignment-checking-enabled-p x86))))
+		      (alignment-checking-enabled-p x86)))
+      :hints (("Goal" :in-theory (e/d (segment-selectorbits->rpl segment-selectorbits-fix)
+                                      ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-1-wb
       (equal (alignment-checking-enabled-p (mv-nth 1 (wb n addr w val x86)))
 	     (alignment-checking-enabled-p x86))
-      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory flgi) ()))))
+      :hints (("Goal" :in-theory (e/d* (wb write-to-physical-memory) ()))))
 
     (defthm alignment-checking-enabled-p-and-mv-nth-2-rb
       (equal (alignment-checking-enabled-p (mv-nth 2 (rb n addr r-x x86)))
@@ -2370,7 +2371,7 @@ reference made from privilege level 3.</blockquote>"
 	    ))
       ;; 32-bit mode or Compatibility Mode:
       (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-	   (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+	   (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
 	   (p3? (eql #.*operand-size-override*
 		     (the (unsigned-byte 8) (prefixes->opr prefixes)))))
 	(if (= cs.d 1)

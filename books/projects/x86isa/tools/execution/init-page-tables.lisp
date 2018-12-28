@@ -241,7 +241,9 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   :hints (("Goal" :in-theory (e/d*
                               (acl2::ihsext-inductions
                                acl2::ihsext-recursive-redefs)
-                              ()))))
+                              (bitmaskp**
+                               unsigned-byte-p**
+                               fty::bitp-when-unsigned-byte-p-1)))))
 
 ;; (defthm logand-ash
 ;;   (implies (and (integerp x)
@@ -264,25 +266,31 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   (b* ((64-bit-entry
         ;; Physical address of 4K-aligned PDPT referenced by this
         ;; entry
-        (!ia32e-pml4e-slice :pml4e-pdpt pdpt-base-addr 0))
+        (!ia32e-pml4eBits->pdpt pdpt-base-addr 0))
        (64-bit-entry
         ;; Page present
-        (!ia32e-pml4e-slice :pml4e-p 1 64-bit-entry))
+        (!ia32e-pml4eBits->p 1 64-bit-entry))
        (64-bit-entry
         ;; Writes allowed to the 512 GB region controlled by this
         ;; entry
-        (!ia32e-pml4e-slice :pml4e-r/w 1 64-bit-entry))
+        (!ia32e-pml4eBits->r/w 1 64-bit-entry))
        (64-bit-entry
         ;; User mode accesses allowed in the 512 GB region controlled
         ;; by this entry
-        (!ia32e-pml4e-slice :pml4e-u/s 1 64-bit-entry)))
+        (!ia32e-pml4eBits->u/s 1 64-bit-entry)))
 
     64-bit-entry)
 
   ///
 
+  (local (in-theory (e/d (!ia32e-pml4ebits->u/s
+                          !ia32e-pml4ebits->r/w
+                          !ia32e-pml4ebits->p
+                          !ia32e-pml4ebits->pdpt)
+                         ())))
+
   (defthm-usb n64p-add-pml4-entry
-    :hyp (unsigned-byte-p 40 pdpt-base-addr)
+    :hyp t 
     :bound 64
     :concl (add-pml4-entry pdpt-base-addr)
     :gen-linear t
@@ -372,28 +380,28 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   (b* ((64-bit-entry
         ;; Physical address of 4K-aligned page directory referenced by
         ;; this entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-page page-base-addr 0))
+        (!ia32e-pdpte-1GB-pageBits->page page-base-addr 0))
        (64-bit-entry
         ;; Page present
-        (!ia32e-pdpte-1GB-page-slice :pdpte-p 1 64-bit-entry))
+        (!ia32e-pdpte-1GB-pageBits->p 1 64-bit-entry))
        (64-bit-entry
         ;; Writes allowed to the 512 GB region controlled by this
         ;; entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-r/w 1 64-bit-entry))
+        (!ia32e-pdpte-1GB-pageBits->r/w 1 64-bit-entry))
        (64-bit-entry
         ;; User mode accesses allowed in the 512 GB region controlled
         ;; by this entry
-        (!ia32e-pdpte-1GB-page-slice :pdpte-u/s 1 64-bit-entry))
+        (!ia32e-pdpte-1GB-pageBits->u/s 1 64-bit-entry))
        (64-bit-entry
         ;; Page size = 1: this PDP entry maps a 1 GB page.
-        (!ia32e-pdpte-1GB-page-slice :pdpte-ps 1 64-bit-entry)))
+        (!ia32e-pdpte-1GB-pageBits->ps 1 64-bit-entry)))
 
       64-bit-entry)
 
   ///
 
   (defthm-usb n64p-add-pdp-entry
-    :hyp (unsigned-byte-p 22 page-base-addr)
+    :hyp t
     :bound 64
     :concl (add-pdp-entry page-base-addr)
     :gen-linear t
@@ -570,9 +578,9 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
            (cr4        (ctri *cr4*       x86))
            (ia32e-efer (msri *ia32_efer-idx* x86))
 
-           (cr0        (!cr0-slice       :cr0-pg        1 cr0))
-           (cr4        (!cr4-slice       :cr4-pae       1 cr4))
-           (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
+           (cr0        (!cr0Bits->pg        1 cr0))
+           (cr4        (!cr4Bits->pae       1 cr4))
+           (ia32e-efer (!ia32_eferBits->lme 1 ia32e-efer))
 
            (x86 (!ctri *cr0*           cr0        x86))
            (x86 (!ctri *cr4*           cr4        x86))

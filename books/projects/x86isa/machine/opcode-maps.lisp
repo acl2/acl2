@@ -1143,8 +1143,7 @@
                         (:fn . (x86-syscall-both-views))
                         (:ud  . ((ud-Lock-used)
                                  (equal
-                                   (ia32_efer-slice
-                                    :ia32_efer-sce
+                                   (ia32_eferBits->sce
                                     (n12 (ia32_efer)))
                                    0)))))
                (:i64 . (:none
@@ -1156,8 +1155,7 @@
                         (:fn . (x86-sysret))
                         (:ud  . ((ud-Lock-used)
                                  (equal
-                                   (ia32_efer-slice
-                                    :ia32_efer-sce
+                                   (ia32_eferBits->sce
                                     (n12 (ia32_efer)))
                                    0)))
                         (:gp  . ((gp-cpl-not-0)))))
@@ -1312,7 +1310,7 @@
                (:gp  . ((gp-cpl-not-0))))
               ("MOV" 2 (R d) (D d)
                (:ud  . ((ud-Lock-used)
-                        (and (equal (cr4-slice :cr4-de (cr4)) 1)
+                        (and (equal (cr4Bits->de (cr4)) 1)
                              (or (equal (modr/m->reg modr/m) #.*dr4*)
                                  (equal (modr/m->reg modr/m) #.*dr5*)))))
                (:gp  . ((gp-cpl-not-0))))
@@ -1329,7 +1327,7 @@
                (:gp  . ((gp-cpl-not-0))))
               ("MOV" 2 (D d) (R d)
                (:ud  . ((ud-Lock-used)
-                        (and (equal (cr4-slice :cr4-de (cr4)) 1)
+                        (and (equal (cr4Bits->de (cr4)) 1)
                              (or (equal (modr/m->reg modr/m) #.*dr4*)
                                  (equal (modr/m->reg modr/m) #.*dr5*)))))
                (:gp  . ((gp-cpl-not-0))))
@@ -1831,7 +1829,7 @@
 
               ((:no-prefix . ("EMMS"        0
                               (:ud . ((ud-Lock-used)
-                                      (equal (cr0-slice :cr0-em (cr0)) 1)))))
+                                      (equal (cr0Bits->em (cr0)) 1)))))
                (:v         . ("VZEROUPPER/VZEROALL"  0
                               (:ex . ((chk-exc :type-8 (:avx)))))))
 
@@ -2175,15 +2173,15 @@
             ((:66        . ("MOVQ"     2 (W q)   (V q)
                             (:ex . ((chk-exc :type-4 (:sse2))))))
              (:F3        . ("MOVQ2DQ"   2 (V dq)  (N q)
-                            (:ud . ((equal (cr0-slice :cr0-ts (cr0)) 1)
-                                    (equal (cr0-slice :cr0-em (cr0)) 1)
-                                    (equal (cr4-slice :cr4-osfxsr (cr4)) 0)
+                            (:ud . ((equal (cr0Bits->ts (cr0)) 1)
+                                    (equal (cr0Bits->em (cr0)) 1)
+                                    (equal (cr4Bits->osfxsr (cr4)) 0)
                                     (equal (feature-flag-macro :sse2) 0)
                                     (ud-Lock-used)))))
              (:F2        . ("MOVDQ2Q"   2 (P q)   (U q)
-                            (:ud . ((equal (cr0-slice :cr0-ts (cr0)) 1)
-                                    (equal (cr0-slice :cr0-em (cr0)) 1)
-                                    (equal (cr4-slice :cr4-osfxsr (cr4)) 0)
+                            (:ud . ((equal (cr0Bits->ts (cr0)) 1)
+                                    (equal (cr0Bits->em (cr0)) 1)
+                                    (equal (cr4Bits->osfxsr (cr4)) 0)
                                     (equal (feature-flag-macro :sse2) 0)
                                     (ud-Lock-used))))))
 
@@ -4842,7 +4840,7 @@
                   (:ud  . ((ud-Lock-used)
                            (equal
                             ;; CR4.OSXSAVE[bit 18]
-                            (cr4-slice :cr4-osxsave (cr4))
+                            (cr4Bits->osxsave (cr4))
                             0)
                            (equal
                             ;; CPUID.01H:ECX.XSAVE[bit 26]
@@ -4859,7 +4857,7 @@
                   (:ud  . ((ud-Lock-used)
                            (equal
                             ;; CR4.OSXSAVE[bit 18]
-                            (cr4-slice :cr4-osxsave (cr4))
+                            (cr4Bits->osxsave (cr4))
                             0)
                            (equal
                             ;; CPUID.01H:ECX.XSAVE[bit 26]
@@ -5428,7 +5426,7 @@
                   (:mode   . :o64)) .
                   ("RDFSBASE" 1 (R y) :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
+                            (equal (cr4Bits->fsgsbase (cr4)) 0)
                             (equal
                              ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
                              (cpuid-flag
@@ -5459,7 +5457,7 @@
                   (:mode   . :o64)) .
                   ("RDGSBASE" 1 (R y) :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
+                            (equal (cr4Bits->fsgsbase (cr4)) 0)
                             (equal
                              ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
                              (cpuid-flag
@@ -5482,7 +5480,7 @@
                   (:mode   . :o64)) .
                   ("WRFSBASE" 1 (R y) :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
+                            (equal (cr4Bits->fsgsbase (cr4)) 0)
                             (equal
                              ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
                              (cpuid-flag
@@ -5505,7 +5503,7 @@
                   (:mode   . :o64)) .
                   ("WRGSBASE" 1 (R y) :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-fsgsbase (cr4)) 0)
+                            (equal (cr4Bits->fsgsbase (cr4)) 0)
                             (equal
                              ;; CPUID.07H.0H:EBX.FSGSBASE[bit 0]
                              (cpuid-flag
@@ -5520,7 +5518,7 @@
                   (:reg    . #b100)) .
                   ("XSAVE" 0 :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-osxsave (cr4)) 0)
+                            (equal (cr4Bits->osxsave (cr4)) 0)
                             (equal
                              ;; CPUID.01H:ECX.XSAVE[bit 26]
                              (cpuid-flag
@@ -5536,7 +5534,7 @@
                   (:reg    . #b101)) .
                   ("XRSTOR" 0 :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-osxsave (cr4)) 0)
+                            (equal (cr4Bits->osxsave (cr4)) 0)
                             (equal
                              ;; CPUID.01H:ECX.XSAVE[bit 26]
                              (cpuid-flag
@@ -5565,7 +5563,7 @@
                   (:reg    . #b110)) .
                   ("XSAVEOPT" 0 :1a
                    (:ud  . ((ud-Lock-used)
-                            (equal (cr4-slice :cr4-osxsave (cr4)) 0)
+                            (equal (cr4Bits->osxsave (cr4)) 0)
                             (or
                              (equal
                               ;; CPUID.01H:ECX.XSAVE[bit 26]

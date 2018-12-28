@@ -83,8 +83,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
@@ -172,8 +171,7 @@
 
   :operation t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
@@ -316,8 +314,7 @@
 
   :operation t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
@@ -439,8 +436,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-sqrts?-Op/En-RM)
@@ -525,8 +521,7 @@
   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
   0F 51: SQRTPS xmm1, xmm2/m128<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-sqrtps-Op/En-RM)
@@ -658,8 +653,7 @@
   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
   66 0F 51: SQRTPD xmm1, xmm2/m128<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-sqrtpd-Op/En-RM)

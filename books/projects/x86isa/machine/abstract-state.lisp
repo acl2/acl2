@@ -80,7 +80,9 @@
 (defconst *pruned-x86-model-modified-mem*
   (append *pruned-x86-model*
           '((MEM$C :TYPE (ARRAY (UNSIGNED-BYTE 8)
-                                (#.*MEM-SIZE-IN-BYTES*))))))
+                                (#.*MEM-SIZE-IN-BYTES*))
+                   :INITIALLY 0
+                   :RESIZABLE NIL))))
 
 (defun get-x86-field-names (x86-model)
   (if (endp x86-model)
@@ -157,21 +159,61 @@
                                                               name)))))
                     (recognizer (mk-name name "P"))
                     (recognizer-aux (mk-name name "P-AUX"))
-                    (size      (cadr (cadr type)))
-                    (size (symbol-name (if (< size 10)
-                                           (acl2::packn (list 0 size))
-                                         (acl2::packn (list size))))))
+                    (size-num      (cadr (cadr type)))
+                    (size (symbol-name (if (< size-num 10)
+                                           (acl2::packn (list 0 size-num))
+                                         (acl2::packn (list size-num)))))
+                    ;; Assuming that there are no resizable arrays...
+                    (length (caaddr (caddr x86-model-field)))
+                    (unsigned? (equal (car (cadr type)) 'unsigned-byte))
+                    (byte-p (if unsigned? 'UNSIGNED-BYTE-P 'SIGNED-BYTE-P))
+                    (logfn (if unsigned? 'LOGHEAD 'LOGEXT)))
 
                `((DEFUN-SK ,recognizer-aux (X)
                    (FORALL I
-                           (,(if (equal (car (cadr type))
-                                        'unsigned-byte)
-                                 (mk-name "N" size "P")
-                               (mk-name "I" size "P"))
-                            (GZ  I X))))
+                           (implies (and (natp i)
+                                         (< i ,length))
+                                    (,(if unsigned?
+                                          (mk-name "N" size "P")
+                                        (mk-name "I" size "P"))
+                                     (GZ I X)))))
                  (DEFN ,recognizer (X)
-                   (AND (GOOD-ALISTP X)
-                        (EC-CALL (,recognizer-aux X)))))))
+                   (EC-CALL (,recognizer-aux X)))
+
+                 (DEFTHM ,(mk-name "INTEGERP-OF-GZ-OF-" recognizer-aux)
+                   (implies (and (,recognizer-aux x)
+                                 (natp i)
+                                 (< i ,length))
+                            (integerp (gz i x)))
+                   :hints (("Goal"
+                            :in-theory (disable
+                                        unsigned-byte-p
+                                        signed-byte-p
+                                        ,(mk-name recognizer-aux "-NECC"))
+                            :use ((:instance ,(mk-name recognizer-aux "-NECC"))))))
+
+                 (LOCAL
+                  (DEFTHM ,(mk-name recognizer-aux "-OF-SZ-HELPER")
+                    (IMPLIES (AND (NATP J)
+                                  (< J ,length)
+                                  (,recognizer-aux X))
+                             (,byte-p ,size-num (GZ J (SZ I (,logfn ,size-num V) X))))
+                    :HINTS (("GOAL"
+                             :CASES ((EQUAL I J))
+                             :IN-THEORY (E/D ()
+                                             (,(mk-name recognizer-aux "-NECC")
+                                              UNSIGNED-BYTE-P
+                                              SIGNED-BYTE-P))
+                             :USE ((:INSTANCE ,(mk-name recognizer-aux "-NECC")
+                                              (I J)))))))
+
+                 (DEFTHM ,(mk-name recognizer-aux "-OF-SZ")
+                   (IMPLIES (,recognizer-aux X)
+                            (,recognizer-aux (SZ I (,logfn ,size-num V) X)))
+                   :HINTS (("GOAL" :IN-THEORY (E/D (,recognizer-aux)
+                                                   (,(mk-name recognizer-aux "-NECC")
+                                                    UNSIGNED-BYTE-P
+                                                    SIGNED-BYTE-P))))))))
 
             ((and (consp type)
                   (or (equal (car type) 'unsigned-byte)
@@ -231,6 +273,8 @@
     (cons 'progn
           (x86$a-recognizers-2 *pruned-x86-model-modified-mem*)))
 
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
   (x86$a-recognizers)
 
   ;; Since we never want to execute these predicates, we disable their
@@ -274,22 +318,14 @@
                                             (search "$C" (symbol-name name)))))
                     (constant (mk-name "*" stripped-name "I*"))
                     (predicate (mk-name stripped-name "P")))
-               `((,predicate
-                  (NTH
-                   ,constant
-                   X)))))
+               `((,predicate (NTH ,constant X)))))
             (t
              (let* ((stripped-name (mk-name
                                     (subseq (symbol-name name) 0
                                             (search "$C" (symbol-name name)))))
                     (constant (mk-name "*" stripped-name "*"))
                     (predicate (mk-name stripped-name "P")))
-               `((,predicate
-                  (NTH
-                   ,constant
-                   X
-                   )))
-               )))))
+               `((,predicate (NTH ,constant X))))))))
 
   (defun create-x86-abs-stobj-recognizer-2 (x86-model)
     (cond ((endp x86-model)
@@ -339,6 +375,14 @@
   :short "Definition of @('create-x86$a')"
 
   (make-event (define-abstract-stobj-indices))
+
+  ;; (defun abstract-stobj-field-defaults (x86-model)
+  ;;   (if (endp x86-model)
+  ;;       nil
+  ;;     (b* ((x86-model-field (car x86-model))
+  ;;          (initial (second (member :initially x86-model-field))))
+  ;;       (cons initial
+  ;;             (abstract-stobj-field-defaults (cdr x86-model))))))
 
   ;; When adding a "field" to the abstract stobj, remember the order;
   ;; see the function define-abstract-stobj-indices for this order.
@@ -418,13 +462,17 @@
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (NATP I)
                                           (< I ,length))))
-              (GZ  I (NTH ,constant x86)))
+              (LOGHEAD ,size
+                       (GZ I (NTH ,constant x86))))
             (DEFUN ,(mk-name setter) (I V x86)
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (NATP I)
                                           (< I ,length)
                                           (UNSIGNED-BYTE-P ,size V))))
-              (UPDATE-NTH ,constant (SZ I V (NTH ,constant x86)) x86)))))
+              (UPDATE-NTH ,constant
+                          (SZ I
+                              (LOGHEAD ,size V)
+                              (NTH ,constant x86)) x86)))))
 
        ((and (consp type)
              (equal (car type) 'array)
@@ -442,13 +490,17 @@
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (NATP I)
                                           (< I ,length))))
-              (GZ  I (NTH ,constant x86)))
+              (LOGEXT ,size
+                      (GZ I (NTH ,constant x86))))
             (DEFUN ,(mk-name setter) (I V x86)
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (NATP I)
                                           (< I ,length)
                                           (SIGNED-BYTE-P ,size V))))
-              (UPDATE-NTH ,constant (SZ I V (NTH ,constant x86)) x86)))))
+              (UPDATE-NTH ,constant
+                          (SZ I
+                              (LOGEXT ,size V)
+                              (NTH ,constant x86)) x86)))))
 
        ((and (consp type)
              (equal (car type) 'unsigned-byte))
@@ -461,11 +513,11 @@
                (size      (cadr type)))
           `((DEFUN ,getter (x86)
               (DECLARE (XARGS :GUARD (x86$AP x86)))
-              (NTH ,constant x86))
+              (LOGHEAD ,size (NTH ,constant x86)))
             (DEFUN ,setter (V x86)
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (UNSIGNED-BYTE-P ,size V))))
-              (UPDATE-NTH ,constant V x86)))))
+              (UPDATE-NTH ,constant (LOGHEAD ,size V) x86)))))
 
        ((and (consp type)
              (equal (car type) 'signed-byte))
@@ -478,49 +530,69 @@
                (size      (cadr type)))
           `((DEFUN ,getter (x86)
               (DECLARE (XARGS :GUARD (x86$AP x86)))
-              (NTH ,constant x86))
+              (LOGEXT ,size (NTH ,constant x86)))
             (DEFUN ,setter (V x86)
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (SIGNED-BYTE-P ,size V))))
-              (UPDATE-NTH ,constant V x86)))))
+              (UPDATE-NTH ,constant (LOGEXT ,size V) x86)))))
 
        ((and (consp type)
              (equal (car type) 'integer))
         (let* ((name      (mk-name (subseq (symbol-name name) 0
                                            (search "$C" (symbol-name
                                                          name)))))
-               (constant  (mk-name "*" name "*"))
-               (getter    (mk-name name "$A"))
-               (setter    (mk-name "!" name "$A"))
-               (min      (cadr type))
-               (max      (caddr type)))
+               (constant    (mk-name "*" name "*"))
+               (getter      (mk-name name "$A"))
+               (setter      (mk-name "!" name "$A"))
+               (default-val (second (member :initially x86-model-field)))
+               (min         (cadr type))
+               (max         (caddr type)))
           `((DEFUN ,getter (x86)
               (DECLARE (XARGS :GUARD (x86$AP x86)))
-              (NTH ,constant x86))
+              (let ((RAW-VAL (NTH ,constant x86)))
+                (if (AND (INTEGERP RAW-VAL)
+                         (<= ,min RAW-VAL)
+                         (<= RAW-VAL ,max))
+                    RAW-VAL
+                  ,default-val)))
             (DEFUN ,setter (V x86)
               (DECLARE (XARGS :GUARD (AND (x86$AP x86)
                                           (INTEGERP V)
                                           (<= ,min V)
                                           (<= V ,max))))
-              (UPDATE-NTH ,constant V x86)))))
+              (UPDATE-NTH ,constant
+                          (if (AND (INTEGERP V)
+                                   (<= ,min V)
+                                   (<= V ,max))
+                              V
+                            ,default-val)
+                          x86)))))
 
        ((and (consp type)
              (equal (car type) 'satisfies))
         ;; env field
-        (let* ((name      (mk-name (subseq (symbol-name name) 0
-                                           (search "$C" (symbol-name
-                                                         name)))))
-               (predicate (cadr type))
-               (constant  (mk-name "*" name "*"))
-               (getter    (mk-name name "$A"))
-               (setter    (mk-name "!" name "$A")))
+        (let* ((name        (mk-name (subseq (symbol-name name) 0
+                                             (search "$C" (symbol-name
+                                                           name)))))
+               (predicate   (cadr type))
+               (constant    (mk-name "*" name "*"))
+               (getter      (mk-name name "$A"))
+               (setter      (mk-name "!" name "$A"))
+               (default-val (second (member :initially x86-model-field))))
           `((DEFUN ,getter (x86)
               (DECLARE (XARGS :GUARD (X86$AP X86)))
-              (NTH ,constant X86))
+              (let ((RAW-VAL (NTH ,constant X86)))
+                (if (,predicate RAW-VAL)
+                    RAW-VAL
+                  ,default-val)))
             (DEFUN ,setter (V X86)
               (DECLARE (XARGS :GUARD (AND (X86$AP X86)
                                           (,predicate V))))
-              (UPDATE-NTH ,constant V X86)))))
+              (UPDATE-NTH ,constant
+                          (if (,predicate V)
+                              V
+                            ,default-val)
+                          X86)))))
 
        (t
         ;; type is T
@@ -535,8 +607,7 @@
               (NTH ,constant x86))
             (DEFUN ,setter (V x86)
               (DECLARE (XARGS :GUARD (x86$AP x86)))
-              (UPDATE-NTH ,constant V x86)))
-          )))))
+              (UPDATE-NTH ,constant V x86))))))))
 
   (defun x86$a-accessors-and-updaters-2 (pruned-x86-model)
     (cond ((endp pruned-x86-model)
@@ -551,6 +622,7 @@
           (x86$a-accessors-and-updaters-2 *pruned-x86-model-modified-mem*)))
 
   (x86$a-accessors-and-updaters))
+
 
 ;; ======================================================================
 ;; Correspondence predicate
@@ -1251,6 +1323,8 @@
     (cons 'progn
           (create-updater-correspondence-lemmas-2 *pruned-x86-model*)))
 
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
   (create-updater-correspondence-lemmas)
 
   (local (in-theory (disable update-nth)))
@@ -1268,10 +1342,10 @@
                   (consp type)
                   (equal (car type) 'array))
              (let* ((length (caaddr (caddr x86-model-field)))
-                    (size (cadr (cadr  type)))
-                    (size (symbol-name (if (< size 10)
-                                           (acl2::packn (list 0 size))
-                                         (acl2::packn (list size)))))
+                    (size-num (cadr (cadr  type)))
+                    (size (symbol-name (if (< size-num 10)
+                                           (acl2::packn (list 0 size-num))
+                                         (acl2::packn (list size-num)))))
                     (stripped-name (mk-name
                                     (subseq (symbol-name name) 0
                                             (search "$C"
@@ -1332,7 +1406,9 @@
                  (DEFTHM ,(mk-name a-getter "-" a-setter)
                    (EQUAL (,a-getter I (,a-setter J V X86))
                           (IF (EQUAL I J)
-                              V
+                              ,(if (equal (car (cadr type)) 'unsigned-byte)
+                                   `(loghead ,size-num V)
+                                 `(logext ,size-num V))
                               (,a-getter I X86)))
                    :HINTS (("GOAL" :IN-THEORY (E/D (,a-getter ,a-setter) ()))))
 
@@ -1391,10 +1467,10 @@
                   (consp type)
                   (equal (car type) 'array))
              (let* ((length (caaddr (caddr x86-model-field)))
-                    (size (cadr (cadr  type)))
-                    (size (symbol-name (if (< size 10)
-                                           (acl2::packn (list 0 size))
-                                         (acl2::packn (list size)))))
+                    (size-num (cadr (cadr  type)))
+                    (size (symbol-name (if (< size-num 10)
+                                           (acl2::packn (list 0 size-num))
+                                         (acl2::packn (list size-num)))))
                     (stripped-name (mk-name
                                     (subseq (symbol-name name) 0
                                             (search "$C"
@@ -1455,7 +1531,9 @@
                  (DEFTHM ,(mk-name a-getter "-" a-setter)
                    (EQUAL (,a-getter I (,a-setter J V X86))
                           (IF (EQUAL I J)
-                              V
+                              ,(if (equal (car (cadr type)) 'unsigned-byte)
+                                   `(loghead ,size-num V)
+                                 `(logext ,size-num V))
                               (,a-getter I X86)))
                    :HINTS (("GOAL" :IN-THEORY (E/D (,a-getter ,a-setter) ()))))
 
@@ -1522,7 +1600,8 @@
          (e/d (,accessor$c
                ,updater$c ,recognizer$c
                X86$CP X86$CP-PRE GOOD-MEMP)
-              ())
+              (,@(and (equal field-type 'array)
+                      `(,corr-update-thm-name))))
          :use (,@(and (equal field-type 'array)
                       `((:instance ,corr-update-thm-name)))
                ,@(and (not (eq field-name 'RGF))
@@ -2842,12 +2921,66 @@
 
     (defthm corr-mem-necc-rewrite
       (implies (and (corr-mem x86$c field)
+                    (x86$cp x86$c)
                     (force (integerp i))
                     (force (<= 0 i))
                     (force (< i *2^52*)))
                (equal (mem$ci i x86$c)
-                      (gz i field)))
-      :hints (("Goal" :use corr-mem-necc)))
+                      (loghead 8 (gz i field))))
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (corr-mem-necc
+                                n08p-mem$ci))
+               :use ((:instance corr-mem-necc)
+                     (:instance n08p-mem$ci
+                                (addr i))))))
+
+    (local
+     (defthmd corr-mem-necc-rewrite-simple
+       (implies (and (corr-mem x86$c field)
+                     (force (integerp i))
+                     (force (<= 0 i))
+                     (force (< i *2^52*)))
+                (equal (mem$ci i x86$c)
+                       (gz i field)))
+       :hints (("Goal"
+                :in-theory (e/d ()
+                                (corr-mem-necc))
+                :use ((:instance corr-mem-necc))))))
+
+
+    (defthm !memi{correspondence}-1
+      (implies (and (x86$cp-pre x86$c)
+                    (good-memp x86$c)
+                    (corr-mem x86$c
+                              (nth *memi* x86))
+                    (natp i)
+                    (< i 4503599627370496)
+                    (n08p v))
+               (corr-mem (!mem$ci i v x86$c)
+                         (sz i v (nth *memi* x86))))
+      :hints (("Goal"
+               :in-theory (e/d (x86$cp
+                                corr-mem-necc-rewrite-simple)
+                               (memp mem-table-length mem-array-length
+                                     good-memp good-mem-arrayp
+                                     unsigned-byte-p))
+               :expand ((corr-mem (!mem$ci i v x86$c)
+                                  (sz i v (nth *memi* x86)))))))
+
+    (defthm !memi{correspondence}-2
+      (implies (and (corr x86$c x86)
+                    (x86$ap x86)
+                    (natp i)
+                    (< i 4503599627370496)
+                    (n08p v))
+               (corr-mem (!mem$ci i v x86$c)
+                         (nth *memi* (!mem$ai i v x86))))
+      :hints (("Goal"
+               :in-theory
+               (e/d (x86$cp corr-mem-necc-rewrite-simple)
+                    (memp mem-table-length mem-array-length good-memp
+                          good-mem-arrayp)))))
 
     ) ;; End of encapsulate
 
@@ -2892,37 +3025,6 @@
                   (N08P V))
              (X86$AP (!MEM$AI I V x86)))
     :hints (("Goal" :in-theory (e/d (memp)))))
-
-  (defthm !memi{correspondence}-1
-    (implies (and (x86$cp-pre x86$c)
-                  (good-memp x86$c)
-                  (corr-mem x86$c
-                            (nth *memi* x86)) ;; 11
-                  (natp i)
-                  (< i 4503599627370496)
-                  (n08p v))
-             (corr-mem (!mem$ci i v x86$c)
-                       (sz i v (nth *memi* x86))))
-    :hints (("Goal"
-             :in-theory (e/d (x86$cp)
-                             (memp mem-table-length mem-array-length
-                                   good-memp good-mem-arrayp))
-             :expand ((corr-mem (!mem$ci i v x86$c)
-                                (sz i v (nth *memi* x86)))))))
-
-  (defthm !memi{correspondence}-2
-    (implies (and (corr x86$c x86)
-                  (x86$ap x86)
-                  (natp i)
-                  (< i 4503599627370496)
-                  (n08p v))
-             (corr-mem (!mem$ci i v x86$c)
-                       (nth *memi* (!mem$ai i v x86))))
-    :hints (("Goal"
-             :in-theory
-             (e/d (x86$cp)
-                  (memp mem-table-length mem-array-length good-memp
-                        good-mem-arrayp)))))
 
   (defun create-mem-correspondence-corr-lemmas-1 (x86-model-field)
     (let* ((name (car x86-model-field))
@@ -3166,8 +3268,8 @@
       (:fault                       (fault* x86))
       (:env                         (env* x86))
       (:undef                       (undef* x86))
-      (:app-view       (app-view* x86))
-      (:marking-view (marking-view* x86))
+      (:app-view                    (app-view* x86))
+      (:marking-view                (marking-view* x86))
       (:os-info                     (os-info* x86))
       (:mem                         (memi* index x86))
       (otherwise                    nil)))
@@ -3303,8 +3405,8 @@
       (:fault                       (!fault* value x86))
       (:env                         (!env* value x86))
       (:undef                       (!undef* value x86))
-      (:app-view       (!app-view* value x86))
-      (:marking-view (!marking-view* value x86))
+      (:app-view                    (!app-view* value x86))
+      (:marking-view                (!marking-view* value x86))
       (:os-info                     (!os-info* value x86))
       (:mem                         (!memi* index value x86))
       (otherwise                    x86)))

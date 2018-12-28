@@ -165,14 +165,14 @@
 			     operation))
 
        ;; Check invalid operation
-       (mxcsr (if invalid (!mxcsr-slice :ie 1 mxcsr) mxcsr))
+       (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
        (im (logbitp #.*mxcsr-im* mxcsr))
        ((when (and invalid (not im)))
 	(mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
 
        ;; Check denormal operand
        (de (denormal-exception kind1 kind2))
-       (mxcsr (if de (!mxcsr-slice :de 1 mxcsr) mxcsr))
+       (mxcsr (if de (!mxcsrBits->de 1 mxcsr) mxcsr))
        (dm (logbitp #.*mxcsr-dm* mxcsr))
        ((when (and de (not dm)))
 	(mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))

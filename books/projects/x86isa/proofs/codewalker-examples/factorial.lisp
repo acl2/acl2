@@ -82,9 +82,7 @@
  :updater-drivers (((XW FLD I :VALUE :BASE)
                     (XR FLD I :BASE))
                    ((WB N ADDR R-W-X :VALUE :BASE)
-                    (RB N ADDR R-W-X :BASE))
-                   ((!FLGI I :VALUE :BASE)
-                    (FLGI I :BASE)))
+                    (RB N ADDR R-W-X :BASE)))
  :constructor-drivers nil
  :state-comps-and-types
  (((XR :RGF *RDI* X86) (natp (XR :RGF *RDI* X86)))
@@ -101,12 +99,12 @@
 ; how to generate variable names from state comps
  :var-names (((XR :RGF *RDI* X86) "N")
              ((XR :RGF *RAX* X86) "ACC")
-             ((XR :RIP 0 X86)      "PC"))
- )
+             ((XR :RIP 0 X86)      "PC")))
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         rflag-RoWs-enables
                          x86-operation-mode
-                         
+
                          shr-spec
                          shr-spec-32
                          gpr-and-spec-4
@@ -150,11 +148,9 @@
                          subset-p
                          ;; Flags
                          write-user-rflags
-                         !flgi-undefined
                          zf-spec)
 
                         (unsigned-byte-p
-                         las-to-pas-values-and-!flgi
                          las-to-pas
                          default-+-2
                          get-prefixes-opener-lemma-group-1-prefix
@@ -240,24 +236,24 @@
           (XW
            :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
            (!FLGI
-            *CF*
+            :CF
             (LOGHEAD 1
                      (BOOL->BIT (< (LOGHEAD 32 (XR :RGF *RDI* X86)) 1)))
             (!FLGI
-             *PF*
+             :PF
              (PF-SPEC32 (LOGHEAD 32
                                  (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86)))))
              (!FLGI
-              *AF*
+              :AF
               (SUB-AF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86))
                              1)
               (!FLGI
-               *ZF* 0
+               :ZF 0
                (!FLGI
-                *SF*
+                :SF
                 (SF-SPEC32 (LOGHEAD 32
                                     (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86)))))
-                (!FLGI *OF*
+                (!FLGI :OF
                        (OF-SPEC32 (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86))))
                        X86)))))))))))))
     0))
@@ -280,17 +276,17 @@
          (XW
           :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
           (!FLGI
-           *CF* 0
+           :CF 0
            (!FLGI
-            *PF*
+            :PF
             (PF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
-            (!FLGI *AF*
+            (!FLGI :AF
                    (LOGHEAD 1
                             (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                   (!FLGI *ZF* 0
-                          (!FLGI *SF*
+                   (!FLGI :ZF 0
+                          (!FLGI :SF
                                  (SF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
-                                 (!FLGI *OF* 0 X86))))))))))))
+                                 (!FLGI :OF 0 X86))))))))))))
     0))
 
  (defun-nx
@@ -318,19 +314,19 @@
         (XW
          :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
          (!FLGI
-          *CF*
+          :CF
           (LOGHEAD 1
                    (BOOL->BIT (< (LOGHEAD 32 (XR :RGF *RDI* X86)) 1)))
           (!FLGI
-           *PF* 1
+           :PF 1
            (!FLGI
-            *AF*
+            :AF
             (SUB-AF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86))
                            1)
             (!FLGI
-             *ZF* 1
-             (!FLGI *SF* 0
-                    (!FLGI *OF*
+             :ZF 1
+             (!FLGI :SF 0
+                    (!FLGI :OF
                            (OF-SPEC32 (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86))))
                            X86))))))))))
      (SEM-16
@@ -348,24 +344,24 @@
          (XW
           :UNDEF 0 (+ 4 (NFIX (XR :UNDEF 0 X86)))
           (!FLGI
-           *CF*
+           :CF
            (LOGHEAD 1
                     (BOOL->BIT (< (LOGHEAD 32 (XR :RGF *RDI* X86)) 1)))
            (!FLGI
-            *PF*
+            :PF
             (PF-SPEC32 (LOGHEAD 32
                                 (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86)))))
             (!FLGI
-             *AF*
+             :AF
              (SUB-AF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86))
                             1)
              (!FLGI
-              *ZF* 0
+              :ZF 0
               (!FLGI
-               *SF*
+               :SF
                (SF-SPEC32 (LOGHEAD 32
                                    (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86)))))
-               (!FLGI *OF*
+               (!FLGI :OF
                       (OF-SPEC32 (+ -1 (LOGEXT 32 (XR :RGF *RDI* X86))))
                       X86))))))))))))
     X86))
@@ -384,13 +380,13 @@
       :RIP 0 24
       (XW
        :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
-       (!FLGI *CF* 0
-              (!FLGI *PF* 1
-                     (!FLGI *AF*
+       (!FLGI :CF 0
+              (!FLGI :PF 1
+                     (!FLGI :AF
                             (LOGHEAD 1
                                      (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                            (!FLGI *ZF* 1
-                                   (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))
+                            (!FLGI :ZF 1
+                                   (!FLGI :SF 0 (!FLGI :OF 0 X86)))))))))
     (SEM-16
      (XW
       :RGF *RAX* 1
@@ -399,17 +395,17 @@
        (XW
         :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
         (!FLGI
-         *CF* 0
+         :CF 0
          (!FLGI
-          *PF*
+          :PF
           (PF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
-          (!FLGI *AF*
+          (!FLGI :AF
                  (LOGHEAD 1
                           (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
-                 (!FLGI *ZF* 0
-                        (!FLGI *SF*
+                 (!FLGI :ZF 0
+                        (!FLGI :SF
                                (SF-SPEC32 (LOGHEAD 32 (XR :RGF *RDI* X86)))
-                               (!FLGI *OF* 0 X86)))))))))))
+                               (!FLGI :OF 0 X86)))))))))))
    X86))
 
  ;; (acl2::why x86-run-opener-not-ms-not-zp-n)

@@ -160,13 +160,13 @@
        ;; Update the x86 state:
        (x86 (write-*ip proc-mode temp-rip x86))
        (zf (if (int= reg/mem 0) 1 0))
-       (x86 (!flgi #.*zf* zf x86))
+       (x86 (!flgi :zf zf x86))
        ;; [Shilpi:] CF, OF, SF, AF, PF are always undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :pf x86))
 
        ;; [Shilpi:] DEST (register rgf-index) should be undefined if
        ;; reg/mem = 0.
