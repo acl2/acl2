@@ -71,7 +71,7 @@ re-arrange these nests of updates.</p>
   the @(':RGF') field in a well-formed x86 state gives a well-formed
   x86 state.</li>
 
-<li>@(see x86-Writing-the-Read-Theorem): <p>Informally, this kind of a
+<li>@('x86-Writing-the-Read-Theorem'): <p>Informally, this kind of a
   theorem states that a write operation that writes the same value to
   a field that was already there, is superfluous, and can be
   eliminated.</p></li>

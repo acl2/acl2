@@ -1454,9 +1454,9 @@ values.</p>"
   :parents (rflag-specifications register-readers-and-writers)
   :short "Reading from and writing to the @('rflags') register in the @('x86') state"
 
-  :long "<p>We define convenient macros @(tsee flgi) and @(tsee !flgi) to read
-   a flag's value and to write a flag's value into the @('rflags') field in the
-   @('x86') state, respectively.  Additionally, @(tsee !flgi-undefined) can be
+  :long "<p>We define convenient macros @('flgi') and @('!flgi') to read a
+   flag's value and to write a flag's value into the @('rflags') field in the
+   @('x86') state, respectively.  Additionally, @('!flgi-undefined') can be
    used to write an undefined value into a particular flag.</p>"
 
   (local (xdoc::set-default-parents rflags-Reads-and-Writes))
