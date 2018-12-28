@@ -177,6 +177,12 @@
   (met ((hints vals) (extract-hints vals))
     `(acl2::progn ,@(signature-fn fname args vals hints))))
 
+(defmacro def::signatured (name &rest args)
+  `(progn
+     (def::signature ,name ,@args)
+     (in-theory (disable ,name))
+     ))
+
 (defmacro def::congruence (fname argspec &rest vals)
   (let ((args (symbol-fns::item-to-numbered-symbol-list 'acl2::x (len argspec))))
     (met ((hints vals) (defun::extract-hints vals))
