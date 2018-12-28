@@ -373,7 +373,7 @@
      :concl (equal (equal (loghead 32 (+ -1 (logext 32 rdi))) 0)
                    nil)
      :g-bindings
-     `((rdi   (:g-number ,(gl-int 0 2 33))))))
+     `((rdi   (:g-number ,(increasing-list 0 2 33))))))
 
   (defthm loop-effects-helper
     (implies (and (not (equal rdi 1))

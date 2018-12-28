@@ -5,6 +5,7 @@
 (local (in-theory (acl2::enable-arith5)))
 
 (local (include-book "basic"))
+(local (include-book "log"))
 (include-book "definitions")
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system)
 
@@ -650,6 +651,33 @@
 			(* (sig x) (sig y))
 		      (* 1/2 (sig x) (sig y)))))
   :enable sigm-prod)
+
+(defthmd expo-fl
+  (implies (and (rationalp x)
+                (>= x 1))
+	   (equal (expo (fl x)) (expo x)))
+  :hints (("Goal" :use (expo-lower-bound
+                        (:instance expo-monotone (x (fl x)) (y x))
+                        (:instance expo>= (n 0))
+                        (:instance expo>= (x (fl x)) (n (expo x)))))))
+
+(defthmd expo-logior
+  (implies (and (natp x)
+                (natp y)
+		(<= (expo x) (expo y)))
+	   (equal (expo (logior x y))
+	          (expo y)))
+  :hints (("Goal" :in-theory (enable bvecp)
+                  :nonlinearp t
+                  :use (expo-upper-bound
+		        (:instance expo-upper-bound (x y))
+		        (:instance expo-lower-bound (x y))
+                        (:instance logior-bvecp (n (1+ (expo y))))
+			(:instance expo<= (x (logior x y)) (n (expo y)))
+			(:instance expo>= (x (logior x y)) (n (expo y)))))))
+
+
+
 
 ;;;**********************************************************************
 ;;;                 Integer Significand with its corresponding Exponent

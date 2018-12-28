@@ -390,7 +390,7 @@
   :hyp (unsigned-byte-p 16 y)
   :concl (equal (logand -79228162495817593519834398721 (ash y 96))
                 (ash y 96))
-  :g-bindings `((y (:g-number ,(gl-int 0 1 17))))
+  :g-bindings `((y (:g-number ,(increasing-list 0 1 17))))
   :rule-classes (:rewrite :linear))
 
 (def-gl-export x86-lldt-guard-helper-2

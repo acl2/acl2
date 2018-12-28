@@ -323,7 +323,7 @@
                 (equal (ms x86) `((x86-fetch-decode-execute-halt
                                    :rip ,halt-address)))))
   :g-bindings
-  `((n    (:g-number ,(gl-int 0 1 33))))
+  `((n    (:g-number ,(increasing-list 0 1 33))))
   :n-counterexamples 0
   :abort-indeterminate t
   :exec-ctrex nil
@@ -356,7 +356,7 @@
                 (equal (ms x86) `((x86-fetch-decode-execute-halt
                                    :rip ,halt-address)))))
   :g-bindings
-  `((n   (:g-number ,(gl-int 0 1 65))))
+  `((n   (:g-number ,(increasing-list 0 1 65))))
   :n-counterexamples 1
   :abort-indeterminate t
   :exec-ctrex nil
@@ -480,7 +480,7 @@
                  (equal (ms x86) `((x86-fetch-decode-execute-halt
                                     :rip ,halt-address)))))
    :g-bindings
-   `((n    (:g-number ,(gl-int 0 1 33))))
+   `((n    (:g-number ,(increasing-list 0 1 33))))
    :n-counterexamples 3
    :abort-indeterminate t
    :exec-ctrex nil))
@@ -542,7 +542,7 @@
                 (equal (ms x86) `((x86-fetch-decode-execute-halt
                                    :rip ,halt-address)))))
   :g-bindings
-  `((n    (:g-number ,(gl-int 0 1 33))))
+  `((n    (:g-number ,(increasing-list 0 1 33))))
   :n-counterexamples 3
   :abort-indeterminate t
   :exec-ctrex nil)

@@ -135,7 +135,7 @@
                  ;; And here we can add congruence proofs ..
                  ,@(process-congruence-arguments name args cong-hints cong-specs induction-defun)
 
-                 ,@(and disable `((in-theory (disable ,name))))
+                 ,@(and disable `((in-theory (disable ,name ,@(and (null args) `((,name)))))))
 
                  )))))))))
 
@@ -176,6 +176,12 @@
 (defmacro def::signature (fname args &rest vals)
   (met ((hints vals) (extract-hints vals))
     `(acl2::progn ,@(signature-fn fname args vals hints))))
+
+(defmacro def::signatured (name &rest args)
+  `(progn
+     (def::signature ,name ,@args)
+     (in-theory (disable ,name))
+     ))
 
 (defmacro def::congruence (fname argspec &rest vals)
   (let ((args (symbol-fns::item-to-numbered-symbol-list 'acl2::x (len argspec))))

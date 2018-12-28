@@ -632,7 +632,8 @@
         (v-adder c a (v-not b))))
 
 (defthm bvp-serial-sub$op
-  (bvp (serial-sub$op c a b)))
+  (bvp (serial-sub$op c a b))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm len-serial-sub$op
   (equal (len (serial-sub$op c a b))
@@ -679,11 +680,11 @@
        (b.valid-d (if (fullp b.s) b.d nil))
        (c (if (fullp ci.s) (car ci.d) (car co.d)))
        (s.valid-d (if (fullp s.s) s.d nil))
-       (sipo0.valid-data (piso2-sreg$extract0 piso2))
-       (sipo1.valid-data (piso2-sreg$extract1 piso2))
+       (piso0.valid-data (piso2-sreg$extract0 piso2))
+       (piso1.valid-data (piso2-sreg$extract1 piso2))
        (sipo.valid-data (sipo-sreg$extract sipo)))
     (cond
-     ((equal (+ (len (append a.valid-d sipo0.valid-data))
+     ((equal (+ (len (append a.valid-d piso0.valid-data))
                 (len (append sipo.valid-data s.valid-d)))
              (* 2 data-width))
       (cond
@@ -691,8 +692,8 @@
            data-width)
         (list
          (serial-sub$op t
-                        sipo0.valid-data
-                        sipo1.valid-data)
+                        piso0.valid-data
+                        piso1.valid-data)
          (append
           sipo.valid-data
           s.valid-d
@@ -701,24 +702,24 @@
                data-width)
         (list
          (serial-sub$op t
-                        (append a.valid-d sipo0.valid-data)
-                        (append b.valid-d sipo1.valid-data))
+                        (append a.valid-d piso0.valid-data)
+                        (append b.valid-d piso1.valid-data))
          (append sipo.valid-data s.valid-d)))
        (t (list
            (append s.valid-d
                    (serial-sub$op c
-                                  (append a.valid-d sipo0.valid-data)
-                                  (append b.valid-d sipo1.valid-data)))
+                                  (append a.valid-d piso0.valid-data)
+                                  (append b.valid-d piso1.valid-data)))
            sipo.valid-data))))
-     ((equal (+ (len (append a.valid-d sipo0.valid-data))
+     ((equal (+ (len (append a.valid-d piso0.valid-data))
                 (len (append sipo.valid-data s.valid-d)))
              data-width)
       (cond
        ((equal (len (append sipo.valid-data s.valid-d))
                0)
         (list (serial-sub$op t
-                             (append a.valid-d sipo0.valid-data)
-                             (append b.valid-d sipo1.valid-data))))
+                             (append a.valid-d piso0.valid-data)
+                             (append b.valid-d piso1.valid-data))))
        ((< (len (append sipo.valid-data s.valid-d))
            data-width)
         (list
@@ -726,8 +727,8 @@
           sipo.valid-data
           s.valid-d
           (serial-sub$op c
-                         (append a.valid-d sipo0.valid-data)
-                         (append b.valid-d sipo1.valid-data)))))
+                         (append a.valid-d piso0.valid-data)
+                         (append b.valid-d piso1.valid-data)))))
        (t (list (append sipo.valid-data s.valid-d)))))
      (t nil))))
 
@@ -759,8 +760,8 @@
          (a.valid-d (if (fullp a.s) a.d nil))
          (b.valid-d (if (fullp b.s) b.d nil))
          (s.valid-d (if (fullp s.s) s.d nil))
-         (sipo0.valid-data (piso2-sreg$extract0 piso2))
-         (sipo1.valid-data (piso2-sreg$extract1 piso2))
+         (piso0.valid-data (piso2-sreg$extract0 piso2))
+         (piso1.valid-data (piso2-sreg$extract1 piso2))
          (sipo.valid-data (sipo-sreg$extract sipo)))
       (and (not (equal ci.s co.s))
            (or (emptyp ci.s) (emptyp done.s))
@@ -769,9 +770,9 @@
            (or (emptyp s.s) (fullp co.s))
            (not (and (fullp s.s) (fullp done.s)))
            (or (emptyp ci.s)
-               (and (not (equal (len (append a.valid-d sipo0.valid-data))
+               (and (not (equal (len (append a.valid-d piso0.valid-data))
                                 0))
-                    (not (equal (len (append a.valid-d sipo0.valid-data))
+                    (not (equal (len (append a.valid-d piso0.valid-data))
                                 data-width)))
                (car ci.d))
            (or (emptyp done.s)
@@ -780,15 +781,15 @@
                                  0)
                           (equal (len sipo.valid-data)
                                  data-width))))
-           (equal (len (append a.valid-d sipo0.valid-data))
-                  (len (append b.valid-d sipo1.valid-data)))
-           (or (equal (+ (len (append a.valid-d sipo0.valid-data))
+           (equal (len (append a.valid-d piso0.valid-data))
+                  (len (append b.valid-d piso1.valid-data)))
+           (or (equal (+ (len (append a.valid-d piso0.valid-data))
                          (len (append sipo.valid-data s.valid-d)))
                       0)
-               (equal (+ (len (append a.valid-d sipo0.valid-data))
+               (equal (+ (len (append a.valid-d piso0.valid-data))
                          (len (append sipo.valid-data s.valid-d)))
                       data-width)
-               (equal (+ (len (append a.valid-d sipo0.valid-data))
+               (equal (+ (len (append a.valid-d piso0.valid-data))
                          (len (append sipo.valid-data s.valid-d)))
                       (* 2 data-width)))
            (piso2-sreg$inv piso2)

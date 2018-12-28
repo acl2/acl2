@@ -1566,10 +1566,7 @@
 	          (mod (+ (fl (* (expt 2 (* 6 (n))) (/ (x) (d)))) (inc)) (expt 2 (* 6 (n))))))
   :hints (("Goal" :use (quot-17 quot-31))))
 
-(local-defthmd ash-rewrite
-  (equal (ash i c)
-         (fl (* (IFIX I) (EXPT 2 C))))
-  :hints (("Goal" :in-theory (enable floor fl ash))))
+(local (in-theory (disable ash-rewrite)))
 
 (defthmd qtrunc-rewrite
   (implies (and (not (specialp))

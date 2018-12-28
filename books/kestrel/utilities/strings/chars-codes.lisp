@@ -5,7 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Main Author: Alessandro Coglio (coglio@kestrel.edu)
-; Contributing Author: Mihir Mehta <mihir@cs.utexas.edu>
+; Contributing Author: Mihir Mehta (mihir@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +162,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection nats<=>chars-inversion-theorems
+(defsection nats<=>chars-inverses-theorems
   :parents (nats=>chars chars=>nats)
   :short "@(tsee nats=>chars) and @(tsee chars=>nats)
           are mutual inverses."

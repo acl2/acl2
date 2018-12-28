@@ -451,22 +451,6 @@
 
 ;; 3. Single-Step-Update Property
 
-;; The operation of Q10-COMP-GCD3 over a data sequence
-
-(defun q10-comp-gcd3$op-map (x)
-  (if (atom x)
-      nil
-    (cons (comp-gcd3$op (car x))
-          (q10-comp-gcd3$op-map (cdr x)))))
-
-(defthm len-of-q10-comp-gcd3$op-map
-  (equal (len (q10-comp-gcd3$op-map x))
-         (len x)))
-
-(defthm q10-comp-gcd3$op-map-of-append
-  (equal (q10-comp-gcd3$op-map (append x y))
-         (append (q10-comp-gcd3$op-map x) (q10-comp-gcd3$op-map y))))
-
 ;; The extraction function for Q10-COMP-GCD3 that extracts the future output
 ;; sequence from the current state.
 
@@ -475,7 +459,7 @@
        (q10  (get-field *q10-comp-gcd3$q10* st))
        (comp-gcd3 (get-field *q10-comp-gcd3$comp-gcd3* st)))
     (append
-     (q10-comp-gcd3$op-map
+     (gcd$op-map
       (append (queue10$extract q10)
               (extract-valid-data (list l))))
      (comp-gcd3$extract comp-gcd3))))
@@ -516,7 +500,7 @@
 ;; function avoids exploring the internal computation of Q10-COMP-GCD3.
 
 (defund q10-comp-gcd3$extracted-step (inputs st data-width)
-  (b* ((data (comp-gcd3$op (q10-comp-gcd3$data-in inputs data-width)))
+  (b* ((data (gcd$op (q10-comp-gcd3$data-in inputs data-width)))
        (extracted-st (q10-comp-gcd3$extract st))
        (n (1- (len extracted-st))))
     (cond
@@ -588,10 +572,10 @@
                                         comp-gcd3$data-in)))))
 
   (local
-   (defthm q10-comp-gcd3$op-map-of-append-instance
-     (equal (q10-comp-gcd3$op-map (append x (list (strip-cars d))))
-            (append (q10-comp-gcd3$op-map x)
-                    (q10-comp-gcd3$op-map (list (strip-cars d)))))))
+   (defthm gcd$op-map-of-append-instance
+     (equal (gcd$op-map (append x (list (strip-cars d))))
+            (append (gcd$op-map x)
+                    (gcd$op-map (list (strip-cars d)))))))
 
   (defthm q10-comp-gcd3$extracted-step-correct
     (b* ((next-st (q10-comp-gcd3$step inputs st data-width)))
@@ -620,7 +604,7 @@
                        q10-comp-gcd3$extract)
                       (q10-comp-gcd3$input-format=>q10$input-format
                        q10-comp-gcd3$input-format=>comp-gcd3$input-format
-                       q10-comp-gcd3$op-map-of-append
+                       gcd$op-map-of-append
                        nfix)))))
   )
 
@@ -676,5 +660,5 @@
 
 ;; The multi-step input-output relationship
 
-(in-out-stream-lemma q10-comp-gcd3 :op t :inv t)
+(in-out-stream-lemma q10-comp-gcd3 :op gcd$op :inv t)
 

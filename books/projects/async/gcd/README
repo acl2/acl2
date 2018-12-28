@@ -16,7 +16,9 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-gcd-alg.lisp: the correctness proof of the GCD algorithm.
+gcd-alg.lisp: a GCD algorithm and its correctness theorems.
+
+gcd-spec.lisp: a GCD specification at the bit-vector level.
 
 gcd.lisp: a circuit family, gcd, computing the Greatest Common Divisor
 (GCD) of two natural numbers.

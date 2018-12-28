@@ -97,4 +97,9 @@
       whose test and ``then'' branch are the same.
       Accordingly, ATJ has been extended
       to recognize translated terms of the form @('(if a a b)')
-      and to generate Java code to represent them as @('(or a b)')."))))
+      and to generate Java code to represent them as @('(or a b)').")
+    (xdoc::li
+     "ATJ has been extended with a facility to generate Java code
+      to execute tests that compare
+      results obtained via evaluation in ACL2
+      with results obtained via evaluation in AIJ."))))

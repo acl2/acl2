@@ -60,6 +60,13 @@
 					(logand y z)))))))
   :rule-classes ())
 
+(defthmd lutz-lemma
+   (implies (and (natp x) (natp y) (natp n))
+            (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+                      (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
+                 (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
+                      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n)))))))
+
 (defun rc-carry (x y k)
   (if (zp k)
       0
@@ -338,6 +345,15 @@
            (and (>= (w0 a b n) 2)
                 (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
                     (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))))
+  :rule-classes ())
+
+(defthm lza-cor
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+                (> (+ a b) (expt 2 n)))
+           (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
+               (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
   :rule-classes ())
 )
 

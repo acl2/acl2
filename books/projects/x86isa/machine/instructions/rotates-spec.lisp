@@ -75,7 +75,9 @@
              "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)
+                                               unsigned-byte-p))))
        :parents (rcl-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
@@ -125,11 +127,17 @@
                                                             result)
                                                           ,neg-size-1))))))
 
-                     (output-rflags (the (unsigned-byte 32)
-                                      (change-rflagsBits
-                                       input-rflags
-                                       :cf cf
-                                       :of of))))
+                     (output-rflags (mbe :logic (change-rflagsBits
+                                                 input-rflags
+                                                 :cf cf
+                                                 :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->of
+                                             of
+                                             input-rflags))))))
                   (mv output-rflags 0)))
                (otherwise
                 ;; CF is affected, OF is undefined.
@@ -251,7 +259,9 @@ the most-significant bit of the result.</p>"
                 "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)
+                                               unsigned-byte-p))))
        :parents (rol-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
@@ -294,11 +304,18 @@ the most-significant bit of the result.</p>"
                                                             result)
                                                           ,neg-size-1))))))
 
-                     (output-rflags (the (unsigned-byte 32)
-                                      (change-rflagsBits
-                                       input-rflags
-                                       :cf cf
-                                       :of of))))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->of
+                                             of
+                                             input-rflags))))))
                   (mv output-rflags 0)))
 
                (otherwise
@@ -424,7 +441,9 @@ most-significant bit of the result.</p>"
                 "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)
+                                               unsigned-byte-p))))
        :parents (rcr-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
@@ -482,11 +501,18 @@ most-significant bit of the result.</p>"
                                                          result)
                                                        ,neg-size-2))))))
 
-                     (output-rflags (the (unsigned-byte 32)
-                                      (change-rflagsBits
-                                       input-rflags
-                                       :cf cf
-                                       :of of))))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->of
+                                             of
+                                             input-rflags))))))
                   (mv output-rflags 0)))
 
                (otherwise
@@ -609,7 +635,9 @@ the result.</p>"
                 "We assume @('src') has been masked appropriately by the decoding part of the rotate instructions.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)
+                                               unsigned-byte-p))))
        :parents (ror-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
@@ -661,11 +689,18 @@ the result.</p>"
                                                   (ash (the (unsigned-byte ,size)
                                                          result)
                                                        ,neg-size-2))))))
-                     (output-rflags (the (unsigned-byte 32)
-                                      (change-rflagsBits
-                                       input-rflags
-                                       :cf cf
-                                       :of of))))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->of
+                                             of
+                                             input-rflags))))))
                   (mv output-rflags 0)))
 
                (otherwise

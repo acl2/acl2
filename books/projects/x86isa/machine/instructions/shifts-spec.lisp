@@ -94,159 +94,209 @@
        (fn-name (mk-name "SAL/SHL-SPEC-" size))
        (?str-nbits (if (eql size 8) "08" size)))
 
-      `(define ,fn-name
-         ((dst :type (unsigned-byte ,size))
-          (src :type (unsigned-byte 6)
-               "We assume @('src') has been masked appropriately by the decoding part of the shift instructions.")
-          (input-rflags :type (unsigned-byte 32)))
+    `(define ,fn-name
+       ((dst :type (unsigned-byte ,size))
+        (src :type (unsigned-byte 6)
+             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions.")
+        (input-rflags :type (unsigned-byte 32)))
 
-         :parents (sal/shl-spec)
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
+       :parents (sal/shl-spec)
 
-         (b* ((dst (mbe :logic (n-size ,size dst)
-                        :exec dst))
-              (src (mbe :logic (n-size 6 src)
-                        :exec src))
-              (input-rflags (mbe :logic (n32 input-rflags)
-                                 :exec input-rflags))
+       (b* ((dst (mbe :logic (n-size ,size dst)
+                      :exec dst))
+            (src (mbe :logic (n-size 6 src)
+                      :exec src))
+            (input-rflags (mbe :logic (n32 input-rflags)
+                               :exec input-rflags))
 
-              (raw-result (ash dst src))
-              (result (the (unsigned-byte ,size) (n-size ,size raw-result)))
+            (raw-result (ash dst src))
+            (result (the (unsigned-byte ,size) (n-size ,size raw-result)))
 
-              ((mv (the (unsigned-byte 32) output-rflags)
-                   (the (unsigned-byte 32) undefined-flags))
+            ((mv (the (unsigned-byte 32) output-rflags)
+                 (the (unsigned-byte 32) undefined-flags))
 
-               (case src
-                 (0
-                  ;; No flags affected.
-                  (mv input-rflags 0))
+             (case src
+               (0
+                ;; No flags affected.
+                (mv input-rflags 0))
 
-                 (1
-                  ;; All flags, but AF, are changed accordingly. AF is
-                  ;; undefined.
-                  (b* ((cf
-                        ;; CF contains the last bit shifted out of the operand.
-                        (mbe
-                         :logic (part-select
-                                 dst
-                                 :low ,size-1 ;; (- ,size src)
-                                 :width 1)
-                         :exec
-                         (the (unsigned-byte 1)
-                           (logand 1
-                                   (the (unsigned-byte ,size)
-                                     (ash (the (unsigned-byte ,size) dst)
-                                          ,neg-size-1))))))
-                       (pf (general-pf-spec ,size result))
-                       ;; AF is undefined.
-                       (zf (zf-spec result))
-                       (sf (general-sf-spec ,size result))
-                       (of
-                        ;; OF is set when the top two bits of the original
-                        ;; operand are the same.
-                        (b-xor cf
-                               (mbe :logic (logbit ,size-1 result)
-                                    :exec (the (unsigned-byte 1)
-                                            (logand 1
-                                                    (the (unsigned-byte 1)
-                                                      (ash (the (unsigned-byte ,size)
-                                                             result)
-                                                           ,neg-size-1)))))))
+               (1
+                ;; All flags, but AF, are changed accordingly. AF is
+                ;; undefined.
+                (b* ((cf
+                      ;; CF contains the last bit shifted out of the operand.
+                      (mbe
+                       :logic (part-select
+                               dst
+                               :low ,size-1 ;; (- ,size src)
+                               :width 1)
+                       :exec
+                       (the (unsigned-byte 1)
+                         (logand 1
+                                 (the (unsigned-byte ,size)
+                                   (ash (the (unsigned-byte ,size) dst)
+                                        ,neg-size-1))))))
+                     (pf (general-pf-spec ,size result))
+                     ;; AF is undefined.
+                     (zf (zf-spec result))
+                     (sf (general-sf-spec ,size result))
+                     (of
+                      ;; OF is set when the top two bits of the original
+                      ;; operand are the same.
+                      (b-xor cf
+                             (mbe :logic (logbit ,size-1 result)
+                                  :exec (the (unsigned-byte 1)
+                                          (logand 1
+                                                  (the (unsigned-byte 1)
+                                                    (ash (the (unsigned-byte ,size)
+                                                           result)
+                                                         ,neg-size-1)))))))
 
-                       (output-rflags (the (unsigned-byte 32)
-                                        (change-rflagsBits
-                                         input-rflags
-                                         :cf cf
-                                         :pf pf
-                                         :zf zf
-                                         :sf sf
-                                         :of of)))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :pf pf
+                                          :zf zf
+                                          :sf sf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->pf
+                                             pf
+                                             (!rflagsBits->zf
+                                              zf
+                                              (!rflagsBits->sf
+                                               sf
+                                               (!rflagsBits->of
+                                                of
+                                                input-rflags))))))))
 
-                       (undefined-flags (!rflagsBits->af 1 0)))
+                     (undefined-flags (!rflagsBits->af 1 0)))
 
-                    (mv output-rflags undefined-flags)))
+                  (mv output-rflags undefined-flags)))
 
-                 (otherwise
-                  (if (<= ,size src)
-                      ;; CF is undefined for SHL and SHR where the src
-                      ;; is >= the width of the destination operand. OF and
-                      ;; AF are also undefined.  Other flags are affected as
-                      ;; usual.
-                      (b* ( ;; CF is undefined.
-                           (pf (general-pf-spec ,size result))
-                           ;; AF is undefined.
-                           (zf (zf-spec result))
-                           (sf (general-sf-spec ,size result))
-                           ;; OF is undefined.
-
-                           (output-rflags (the (unsigned-byte 32)
-                                            (change-rflagsBits
-                                             input-rflags
-                                             :pf pf
-                                             :zf zf
-                                             :sf sf)))
-
-                           (undefined-flags (change-rflagsBits
-                                             0
-                                             :cf 1
-                                             :af 1
-                                             :of 1)))
-                        (mv output-rflags undefined-flags))
-
-                    ;; OF and AF are undefined. Other flags are affected as
+               (otherwise
+                (if (<= ,size src)
+                    ;; CF is undefined for SHL and SHR where the src
+                    ;; is >= the width of the destination operand. OF and
+                    ;; AF are also undefined.  Other flags are affected as
                     ;; usual.
-                    (b* ((cf
-                          ;; CF contains the last bit shifted out
-                          ;; of the operand.
-                          (part-select dst :low (- ,size src) :width 1))
+                    (b* ( ;; CF is undefined.
                          (pf (general-pf-spec ,size result))
                          ;; AF is undefined.
                          (zf (zf-spec result))
                          (sf (general-sf-spec ,size result))
                          ;; OF is undefined.
 
-                         (output-rflags (the (unsigned-byte 32)
-                                          (change-rflagsBits
-                                           input-rflags
-                                           :cf cf
-                                           :pf pf
-                                           :zf zf
-                                           :sf sf)))
+                         (output-rflags (mbe :logic
+                                             (change-rflagsBits
+                                              input-rflags
+                                              :pf pf
+                                              :zf zf
+                                              :sf sf)
+                                             :exec
+                                             (the (unsigned-byte 32)
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  input-rflags))))))
 
-                         (undefined-flags (change-rflagsBits
-                                           0
-                                           :af 1
-                                           :of 1)))
-                      (mv output-rflags undefined-flags))))))
+                         (undefined-flags (mbe :logic
+                                               (change-rflagsBits
+                                                0
+                                                :cf 1
+                                                :af 1
+                                                :of 1)
+                                               :exec
+                                               (!rflagsBits->cf 
+                                                1
+                                                (!rflagsBits->af 
+                                                 1
+                                                 (!rflagsBits->of 
+                                                  1 0))))))
+                      (mv output-rflags undefined-flags))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+                  ;; OF and AF are undefined. Other flags are affected as
+                  ;; usual.
+                  (b* ((cf
+                        ;; CF contains the last bit shifted out
+                        ;; of the operand.
+                        (part-select dst :low (- ,size src) :width 1))
+                       (pf (general-pf-spec ,size result))
+                       ;; AF is undefined.
+                       (zf (zf-spec result))
+                       (sf (general-sf-spec ,size result))
+                       ;; OF is undefined.
 
-              (undefined-flags (mbe :logic (n32 undefined-flags)
-                                    :exec undefined-flags)))
+                       (output-rflags (mbe :logic
+                                           (change-rflagsBits
+                                            input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :zf zf
+                                            :sf sf)
+                                           :exec
+                                           (the (unsigned-byte 32)
+                                             (!rflagsBits->cf
+                                              cf
+                                              (!rflagsBits->pf
+                                               pf
+                                               (!rflagsBits->zf
+                                                zf
+                                                (!rflagsBits->sf
+                                                 sf
+                                                 input-rflags)))))))
 
-             (mv result output-rflags undefined-flags))
+                       (undefined-flags (mbe :logic
+                                             (change-rflagsBits
+                                              0
+                                              :af 1
+                                              :of 1)
+                                             :exec
+                                             (!rflagsBits->af 
+                                              1
+                                              (!rflagsBits->of
+                                               1
+                                               0)))))
+                    (mv output-rflags undefined-flags))))))
 
-         ///
+            (output-rflags (mbe :logic (n32 output-rflags)
+                                :exec output-rflags))
 
-         (local (in-theory (e/d () (unsigned-byte-p))))
+            (undefined-flags (mbe :logic (n32 undefined-flags)
+                                  :exec undefined-flags)))
 
-         (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
-           :bound ,size
-           :concl (mv-nth 0 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+         (mv result output-rflags undefined-flags))
 
-         (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
-           :bound 32
-           :concl (mv-nth 1 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       ///
 
-         (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
-           :bound 32
-           :concl (mv-nth 2 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t))))
+       (local (in-theory (e/d () (unsigned-byte-p))))
+
+       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+         :bound ,size
+         :concl (mv-nth 0 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+         :bound 32
+         :concl (mv-nth 1 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+         :bound 32
+         :concl (mv-nth 2 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t))))
 
 (make-event (sal/shl-spec-gen  8))
 (make-event (sal/shl-spec-gen 16))
@@ -320,150 +370,199 @@ otherwise, it is set to 1.</p>"
        (fn-name (mk-name "SHR-SPEC-" size))
        (?str-nbits (if (eql size 8) "08" size)))
 
-      `(define ,fn-name
-         ((dst :type (unsigned-byte ,size))
-          (src :type (unsigned-byte 6)
-               "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
-          (input-rflags :type (unsigned-byte 32)))
+    `(define ,fn-name
+       ((dst :type (unsigned-byte ,size))
+        (src :type (unsigned-byte 6)
+             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
+        (input-rflags :type (unsigned-byte 32)))
 
-         :parents (shr-spec)
+       :parents (shr-spec)
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
 
-         (b* ((dst (mbe :logic (n-size ,size dst)
-                        :exec dst))
-              (src (mbe :logic (n-size 6 src)
-                        :exec src))
-              (input-rflags (mbe :logic (n32 input-rflags)
-                                 :exec input-rflags))
+       (b* ((dst (mbe :logic (n-size ,size dst)
+                      :exec dst))
+            (src (mbe :logic (n-size 6 src)
+                      :exec src))
+            (input-rflags (mbe :logic (n32 input-rflags)
+                               :exec input-rflags))
 
-              (neg-src (the (signed-byte ,size+1) (- src)))
-              (raw-result (the (unsigned-byte ,size)
-                            (ash
-                             (the (unsigned-byte ,size) dst)
-                             (the (signed-byte ,size+1) neg-src))))
-              (result (the (unsigned-byte ,size) (n-size ,size raw-result)))
+            (neg-src (the (signed-byte ,size+1) (- src)))
+            (raw-result (the (unsigned-byte ,size)
+                          (ash
+                           (the (unsigned-byte ,size) dst)
+                           (the (signed-byte ,size+1) neg-src))))
+            (result (the (unsigned-byte ,size) (n-size ,size raw-result)))
 
-              ((mv (the (unsigned-byte 32) output-rflags)
-                   (the (unsigned-byte 32) undefined-flags))
+            ((mv (the (unsigned-byte 32) output-rflags)
+                 (the (unsigned-byte 32) undefined-flags))
 
-               (case src
-                 (0
-                  ;; No flags affected.
-                  (mv input-rflags 0))
+             (case src
+               (0
+                ;; No flags affected.
+                (mv input-rflags 0))
 
-                 (1
-                  (b*
-                   ((cf (mbe :logic (part-select dst :low 0 :width 1)
-                             :exec (the (unsigned-byte 1)
-                                     (logand 1 (the (unsigned-byte ,size)
-                                                 dst)))))
-                    (pf (general-pf-spec ,size result))
-                    ;; AF is undefined.
-                    (zf (zf-spec result))
-                    (sf (general-sf-spec ,size result))
-                    (of (mbe :logic (part-select dst :low ,size-1 :width 1)
-                             :exec  (the (unsigned-byte 1)
-                                      (ash (the (unsigned-byte ,size) dst)
-                                           ,neg-size-1))))
+               (1
+                (b*
+                    ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                              :exec (the (unsigned-byte 1)
+                                      (logand 1 (the (unsigned-byte ,size)
+                                                  dst)))))
+                     (pf (general-pf-spec ,size result))
+                     ;; AF is undefined.
+                     (zf (zf-spec result))
+                     (sf (general-sf-spec ,size result))
+                     (of (mbe :logic (part-select dst :low ,size-1 :width 1)
+                              :exec  (the (unsigned-byte 1)
+                                       (ash (the (unsigned-byte ,size) dst)
+                                            ,neg-size-1))))
 
-                    (output-rflags (the (unsigned-byte 32)
-                                     (change-rflagsBits
-                                      input-rflags
-                                      :cf cf
-                                      :pf pf
-                                      :zf zf
-                                      :sf sf
-                                      :of of)))
-                    (undefined-flags (the (unsigned-byte 32)
-                                       (!rflagsBits->of 1 0))))
-                   (mv output-rflags undefined-flags)))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :pf pf
+                                          :zf zf
+                                          :sf sf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->pf
+                                             pf
+                                             (!rflagsBits->zf
+                                              zf
+                                              (!rflagsBits->sf
+                                               sf
+                                               (!rflagsBits->of
+                                                of
+                                                input-rflags))))))))
+                     (undefined-flags (the (unsigned-byte 32)
+                                        (!rflagsBits->of 1 0))))
+                  (mv output-rflags undefined-flags)))
 
-                 (otherwise
-                  (if (<= ,size src)
-                      (b* (
-                           ;; CF is undefined.
-                           (pf (general-pf-spec ,size result))
-                           ;; AF is undefined.
-                           (zf (zf-spec result))
-                           (sf (general-sf-spec ,size result))
-                           ;; OF is undefined.
-                           (output-rflags (the (unsigned-byte 32)
-                                            (change-rflagsBits
-                                             input-rflags
-                                             :pf pf
-                                             :zf zf
-                                             :sf sf)))
-
-                           (undefined-flags (the (unsigned-byte 32)
-                                              (change-rflagsBits
-                                               0
-                                               :cf 1
-                                               :af 1
-                                               :of 1))))
-
-                          (mv output-rflags undefined-flags))
-
-                    (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
-                                  :exec (let* ((shft
-                                                (the (signed-byte ,size)
-                                                  (- 1
-                                                     (the (unsigned-byte ,size) src)))))
-                                          (the (unsigned-byte 1)
-                                            (logand
-                                             1
-                                             (the (unsigned-byte ,size)
-                                               (ash
-                                                (the (unsigned-byte ,size) dst)
-                                                (the (signed-byte ,size) shft))))))))
+               (otherwise
+                (if (<= ,size src)
+                    (b* (
+                         ;; CF is undefined.
                          (pf (general-pf-spec ,size result))
                          ;; AF is undefined.
                          (zf (zf-spec result))
                          (sf (general-sf-spec ,size result))
                          ;; OF is undefined.
+                         (output-rflags (mbe :logic
+                                             (change-rflagsBits
+                                              input-rflags
+                                              :pf pf
+                                              :zf zf
+                                              :sf sf)
+                                             :exec
+                                             (the (unsigned-byte 32)
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  input-rflags))))))
 
-                         (output-rflags (the (unsigned-byte 32)
-                                          (change-rflagsBits
-                                           input-rflags
-                                           :cf cf
-                                           :pf pf
-                                           :zf zf
-                                           :sf sf)))
+                         (undefined-flags (mbe :logic
+                                               (change-rflagsBits
+                                                0
+                                                :cf 1
+                                                :af 1
+                                                :of 1)
+                                               :exec
+                                               (the (unsigned-byte 32)
+                                                 (!rflagsBits->cf
+                                                  1
+                                                  (!rflagsBits->af
+                                                   1
+                                                   (!rflagsBits->of
+                                                    1
+                                                    0)))))))
 
-                         (undefined-flags (the (unsigned-byte 32)
-                                            (change-rflagsBits
-                                             0
-                                             :af 1
-                                             :of 1))))
-                        (mv output-rflags undefined-flags))))))
+                      (mv output-rflags undefined-flags))
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+                  (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
+                                :exec (let* ((shft
+                                              (the (signed-byte ,size)
+                                                (- 1
+                                                   (the (unsigned-byte ,size) src)))))
+                                        (the (unsigned-byte 1)
+                                          (logand
+                                           1
+                                           (the (unsigned-byte ,size)
+                                             (ash
+                                              (the (unsigned-byte ,size) dst)
+                                              (the (signed-byte ,size) shft))))))))
+                       (pf (general-pf-spec ,size result))
+                       ;; AF is undefined.
+                       (zf (zf-spec result))
+                       (sf (general-sf-spec ,size result))
+                       ;; OF is undefined.
 
-              (undefined-flags (mbe :logic (n32 undefined-flags)
-                                    :exec undefined-flags)))
+                       (output-rflags (mbe :logic 
+                                           (change-rflagsBits
+                                            input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :zf zf
+                                            :sf sf)
+                                           :exec
+                                           (the (unsigned-byte 32)
+                                             (!rflagsBits->cf
+                                              cf
+                                              (!rflagsBits->pf
+                                               pf
+                                               (!rflagsBits->zf
+                                                zf
+                                                (!rflagsBits->sf
+                                                 sf
+                                                 input-rflags)))))))
 
-             (mv result output-rflags undefined-flags))
+                       (undefined-flags (mbe :logic
+                                             (change-rflagsBits
+                                              0
+                                              :af 1
+                                              :of 1)
+                                             :exec
+                                             (!rflagsBits->af 
+                                              1
+                                              (!rflagsBits->of 
+                                               1 0)))))
+                    (mv output-rflags undefined-flags))))))
 
-         ///
+            (output-rflags (mbe :logic (n32 output-rflags)
+                                :exec output-rflags))
 
-         (local (in-theory (e/d () (unsigned-byte-p))))
+            (undefined-flags (mbe :logic (n32 undefined-flags)
+                                  :exec undefined-flags)))
 
-         (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
-           :bound ,size
-           :concl (mv-nth 0 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+         (mv result output-rflags undefined-flags))
 
-         (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
-           :bound 32
-           :concl (mv-nth 1 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       ///
 
-         (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
-           :bound 32
-           :concl (mv-nth 2 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t))))
+       (local (in-theory (e/d () (unsigned-byte-p))))
+
+       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+         :bound ,size
+         :concl (mv-nth 0 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+         :bound 32
+         :concl (mv-nth 1 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+         :bound 32
+         :concl (mv-nth 2 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t))))
 
 (local
  (defthm logand-1-and-logtail-thm
@@ -550,163 +649,214 @@ set to the most-significant bit of the original operand.</p>"
        (fn-name (mk-name "SAR-SPEC-" size))
        (?str-nbits (if (eql size 8) "08" size)))
 
-      `(define ,fn-name
-         ((dst :type (unsigned-byte ,size))
-          (src :type (unsigned-byte 6)
-               "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
-          (input-rflags :type (unsigned-byte 32)))
+    `(define ,fn-name
+       ((dst :type (unsigned-byte ,size))
+        (src :type (unsigned-byte 6)
+             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
+        (input-rflags :type (unsigned-byte 32)))
 
-         :parents (sar-spec)
+       :parents (sar-spec)
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
 
-         (b* ((dst (mbe :logic (n-size ,size dst)
-                        :exec dst))
-              (src (mbe :logic (n-size 6 src)
-                        :exec src))
-              (input-rflags (mbe :logic (n32 input-rflags)
-                                 :exec input-rflags))
+       (b* ((dst (mbe :logic (n-size ,size dst)
+                      :exec dst))
+            (src (mbe :logic (n-size 6 src)
+                      :exec src))
+            (input-rflags (mbe :logic (n32 input-rflags)
+                               :exec input-rflags))
 
-              (neg-src (the (signed-byte ,size+1) (- src)))
-              (raw-result-not-sign-extended
-               (the (unsigned-byte ,size)
-                 (ash
-                  (the (unsigned-byte ,size) dst)
-                  (the (signed-byte ,size+1) neg-src))))
-              (raw-result
-               (if (eql (mbe :logic (logbit ,size-1 dst)
-                             :exec (logand 1
-                                           (the (unsigned-byte 1)
-                                             (ash (the (unsigned-byte ,size)
-                                                    dst)
-                                                  ,neg-size-1))))
-                        1)
-                   (loghead ,size
-                            (ash
-                             (logext ,size dst)
-                             neg-src))
+            (neg-src (the (signed-byte ,size+1) (- src)))
+            (raw-result-not-sign-extended
+             (the (unsigned-byte ,size)
+               (ash
+                (the (unsigned-byte ,size) dst)
+                (the (signed-byte ,size+1) neg-src))))
+            (raw-result
+             (if (eql (mbe :logic (logbit ,size-1 dst)
+                           :exec (logand 1
+                                         (the (unsigned-byte 1)
+                                           (ash (the (unsigned-byte ,size)
+                                                  dst)
+                                                ,neg-size-1))))
+                      1)
+                 (loghead ,size
+                          (ash
+                           (logext ,size dst)
+                           neg-src))
 ;                   (the (unsigned-byte ,size)
 ;                     (logior ,size-mask raw-result-not-sign-extended))
-                 raw-result-not-sign-extended))
-              (result (mbe :logic (n-size ,size raw-result)
-                           :exec raw-result))
+               raw-result-not-sign-extended))
+            (result (mbe :logic (n-size ,size raw-result)
+                         :exec raw-result))
 
-              ((mv (the (unsigned-byte 32) output-rflags)
-                   (the (unsigned-byte 32) undefined-flags))
+            ((mv (the (unsigned-byte 32) output-rflags)
+                 (the (unsigned-byte 32) undefined-flags))
 
-               (case src
-                 (0
-                  ;; No flags affected.
-                  (mv input-rflags 0))
+             (case src
+               (0
+                ;; No flags affected.
+                (mv input-rflags 0))
 
-                 (1
-                  (b*
-                   ((cf (mbe :logic (part-select dst :low 0 :width 1)
-                             :exec (the (unsigned-byte 1)
-                                     (logand 1 (the (unsigned-byte ,size)
-                                                 dst)))))
-                    (pf (general-pf-spec ,size result))
-                    ;; AF is undefined.
-                    (zf (zf-spec result))
-                    (sf (general-sf-spec ,size result))
-                    (of 0)
+               (1
+                (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                              :exec (the (unsigned-byte 1)
+                                      (logand 1 (the (unsigned-byte ,size)
+                                                  dst)))))
+                     (pf (general-pf-spec ,size result))
+                     ;; AF is undefined.
+                     (zf (zf-spec result))
+                     (sf (general-sf-spec ,size result))
+                     (of 0)
 
-                    (output-rflags (the (unsigned-byte 32)
-                                     (change-rflagsBits
-                                      input-rflags
-                                      :cf cf
-                                      :pf pf
-                                      :zf zf
-                                      :sf sf
-                                      :of of)))
+                     (output-rflags (mbe :logic
+                                         (change-rflagsBits
+                                          input-rflags
+                                          :cf cf
+                                          :pf pf
+                                          :zf zf
+                                          :sf sf
+                                          :of of)
+                                         :exec
+                                         (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->pf
+                                             pf
+                                             (!rflagsBits->zf
+                                              zf
+                                              (!rflagsBits->sf
+                                               sf
+                                               (!rflagsBits->of
+                                                of
+                                                input-rflags))))))))
 
-                    (undefined-flags
-                     (the (unsigned-byte 32)
-                       (!rflagsBits->af 1 0))))
-                   (mv output-rflags undefined-flags)))
+                     (undefined-flags
+                      (the (unsigned-byte 32)
+                        (!rflagsBits->af 1 0))))
+                  (mv output-rflags undefined-flags)))
 
-                 (otherwise
-                  (if (<= ,size src)
-                      (b* (
-                           ;; CF is undefined.
-                           (pf (general-pf-spec ,size result))
-                           ;; AF is undefined.
-                           (zf (zf-spec result))
-                           (sf (general-sf-spec ,size result))
-                           ;; OF is undefined.
-                           (output-rflags (the (unsigned-byte 32)
-                                            (change-rflagsBits
-                                             input-rflags
-                                             :pf pf
-                                             :zf zf
-                                             :sf sf)))
-
-                           (undefined-flags (change-rflagsBits
-                                             0
-                                             :cf 1
-                                             :af 1
-                                             :of 1)))
-                        (mv output-rflags undefined-flags))
-
-                    (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
-                                  :exec (let* ((shft
-                                                (the (signed-byte ,size)
-                                                  (- 1
-                                                     (the (unsigned-byte ,size) src)))))
-                                          (the (unsigned-byte 1)
-                                            (logand
-                                             1
-                                             (the (unsigned-byte ,size)
-                                               (ash
-                                                (the (unsigned-byte ,size) dst)
-                                                (the (signed-byte ,size) shft))))))))
+               (otherwise
+                (if (<= ,size src)
+                    (b* (
+                         ;; CF is undefined.
                          (pf (general-pf-spec ,size result))
                          ;; AF is undefined.
                          (zf (zf-spec result))
                          (sf (general-sf-spec ,size result))
                          ;; OF is undefined.
+                         (output-rflags (mbe :logic
+                                             (change-rflagsBits
+                                              input-rflags
+                                              :pf pf
+                                              :zf zf
+                                              :sf sf)
+                                             :exec
+                                             (the (unsigned-byte 32)
+                                               (!rflagsBits->pf
+                                                pf
+                                                (!rflagsBits->zf
+                                                 zf
+                                                 (!rflagsBits->sf
+                                                  sf
+                                                  input-rflags))))))
 
-                         (output-rflags (the (unsigned-byte 32)
-                                          (change-rflagsBits
-                                           input-rflags
-                                           :cf cf
-                                           :pf pf
-                                           :zf zf
-                                           :sf sf)))
+                         (undefined-flags (mbe :logic
+                                               (change-rflagsBits
+                                                0
+                                                :cf 1
+                                                :af 1
+                                                :of 1)
+                                               :exec
+                                               (the (unsigned-byte 32)
+                                                 (!rflagsBits->cf
+                                                  1
+                                                  (!rflagsBits->af
+                                                   1
+                                                   (!rflagsBits->of
+                                                    1
+                                                    0)))))))
+                      (mv output-rflags undefined-flags))
 
-                         (undefined-flags (change-rflagsBits
-                                           0
-                                           :af 1
-                                           :of 1)))
-                        (mv output-rflags undefined-flags))))))
+                  (b* ((cf (mbe :logic (part-select dst :low (1- src) :width 1)
+                                :exec (let* ((shft
+                                              (the (signed-byte ,size)
+                                                (- 1
+                                                   (the (unsigned-byte ,size) src)))))
+                                        (the (unsigned-byte 1)
+                                          (logand
+                                           1
+                                           (the (unsigned-byte ,size)
+                                             (ash
+                                              (the (unsigned-byte ,size) dst)
+                                              (the (signed-byte ,size) shft))))))))
+                       (pf (general-pf-spec ,size result))
+                       ;; AF is undefined.
+                       (zf (zf-spec result))
+                       (sf (general-sf-spec ,size result))
+                       ;; OF is undefined.
 
-              (output-rflags (mbe :logic (n32 output-rflags)
-                                  :exec output-rflags))
+                       (output-rflags (mbe :logic
+                                           (change-rflagsBits
+                                            input-rflags
+                                            :cf cf
+                                            :pf pf
+                                            :zf zf
+                                            :sf sf)
+                                           :exec
+                                           (the (unsigned-byte 32)
+                                             (!rflagsBits->cf
+                                              cf
+                                              (!rflagsBits->pf
+                                               pf
+                                               (!rflagsBits->zf
+                                                zf
+                                                (!rflagsBits->sf
+                                                 sf
+                                                 input-rflags)))))))
 
-              (undefined-flags (mbe :logic (n32 undefined-flags)
-                                    :exec undefined-flags)))
+                       (undefined-flags (mbe 
+                                         :logic
+                                         (change-rflagsBits
+                                          0
+                                          :af 1
+                                          :of 1)
+                                         :exec
+                                         (!rflagsBits->af 
+                                          1
+                                          (!rflagsBits->of
+                                           1 0)))))
+                    (mv output-rflags undefined-flags))))))
 
-             (mv result output-rflags undefined-flags))
+            (output-rflags (mbe :logic (n32 output-rflags)
+                                :exec output-rflags))
 
-         ///
+            (undefined-flags (mbe :logic (n32 undefined-flags)
+                                  :exec undefined-flags)))
 
-         (local (in-theory (e/d () (unsigned-byte-p))))
+         (mv result output-rflags undefined-flags))
 
-         (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
-           :bound ,size
-           :concl (mv-nth 0 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       ///
 
-         (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
-           :bound 32
-           :concl (mv-nth 1 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t)
+       (local (in-theory (e/d () (unsigned-byte-p))))
 
-         (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
-           :bound 32
-           :concl (mv-nth 2 (,fn-name dst src input-rflags))
-           :gen-type t
-           :gen-linear t))))
+       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+         :bound ,size
+         :concl (mv-nth 0 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+         :bound 32
+         :concl (mv-nth 1 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+         :bound 32
+         :concl (mv-nth 2 (,fn-name dst src input-rflags))
+         :gen-type t
+         :gen-linear t))))
 
 (make-event (sar-spec-gen  8))
 (make-event (sar-spec-gen 16))

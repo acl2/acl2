@@ -4498,7 +4498,7 @@
                (hyps-type-alist w)
                (pprogn
                 (fms0 "~|Current type-alist, including forward chaining:~%")
-                (prog2$ (print-type-alist hyps-type-alist w)
+                (prog2$ (print-type-alist hyps-type-alist w nil)
                         state))))))))))
 
 (define-pc-macro print-main ()
@@ -4759,7 +4759,7 @@
   (value `(print (show-geneqv
                   (geneqv-at-subterm-top (conc)
                                          (current-addr)
-                                         (pc-ens)
+                                         (make-pc-ens (pc-ens) state)
                                          (w state))
                   ',with-runes-p))))
 

@@ -70,6 +70,8 @@
           (input-rflags   :type (unsigned-byte 32)))
          :inline t
          :no-function t
+         :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                                ((tau-system)))))
 
          :parents (,(mk-name "gpr-arith/logic-spec-" operand-size))
 
@@ -100,15 +102,30 @@
               (sf (the (unsigned-byte 1) (,sf-spec-fn result)))
               (of (the (unsigned-byte 1) (,of-spec-fn signed-raw-result)))
 
-              (output-rflags (the (unsigned-byte 32)
-                               (change-rflagsBits
-                                input-rflags
-                                :cf cf
-                                :pf pf
-                                :af af
-                                :zf zf
-                                :sf sf
-                                :of of)))
+              (output-rflags (mbe :logic 
+                                  (change-rflagsBits
+                                   input-rflags
+                                   :cf cf
+                                   :pf pf
+                                   :af af
+                                   :zf zf
+                                   :sf sf
+                                   :of of)
+                                  :exec
+                                  (the (unsigned-byte 32)
+                                    (!rflagsBits->cf
+                                     cf
+                                     (!rflagsBits->pf
+                                      pf
+                                      (!rflagsBits->af
+                                       af
+                                       (!rflagsBits->zf
+                                        zf
+                                        (!rflagsBits->sf
+                                         sf
+                                         (!rflagsBits->of
+                                          of
+                                          input-rflags)))))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))
@@ -167,6 +184,8 @@
           (input-rflags  :type (unsigned-byte 32)))
 
          :parents (,(mk-name "gpr-arith/logic-spec-" operand-size))
+         :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
          :inline t
          :no-function t
 
@@ -203,15 +222,30 @@
               (sf (the (unsigned-byte 1) (,sf-spec-fn result)))
               (of (the (unsigned-byte 1) (,of-spec-fn signed-raw-result)))
 
-              (output-rflags (the (unsigned-byte 32)
-                               (change-rflagsBits
-                                 input-rflags
-                                :cf cf
-                                :pf pf
-                                :af af
-                                :zf zf
-                                :sf sf
-                                :of of)))
+              (output-rflags (mbe :logic
+                                  (change-rflagsBits
+                                   input-rflags
+                                   :cf cf
+                                   :pf pf
+                                   :af af
+                                   :zf zf
+                                   :sf sf
+                                   :of of)
+                                  :exec
+                                  (the (unsigned-byte 32)
+                                    (!rflagsBits->cf
+                                     cf
+                                     (!rflagsBits->pf
+                                      pf
+                                      (!rflagsBits->af
+                                       af
+                                       (!rflagsBits->zf
+                                        zf
+                                        (!rflagsBits->sf
+                                         sf
+                                         (!rflagsBits->of
+                                          of
+                                          input-rflags)))))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))

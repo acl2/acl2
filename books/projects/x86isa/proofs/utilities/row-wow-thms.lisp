@@ -229,34 +229,6 @@
 
 ;; Some rules about flags:
 
-;; Enable the following for RoW proofs involving rflags (bitstruct accessor and
-;; updater functions):
-
-(def-ruleset rflag-RoWs-enables
-  '(!rflagsBits->cf-is-rflagsBits
-    !rflagsBits->res1-is-rflagsBits
-    !rflagsBits->pf-is-rflagsBits
-    !rflagsBits->res2-is-rflagsBits
-    !rflagsBits->af-is-rflagsBits
-    !rflagsBits->res3-is-rflagsBits
-    !rflagsBits->zf-is-rflagsBits
-    !rflagsBits->sf-is-rflagsBits
-    !rflagsBits->tf-is-rflagsBits
-    !rflagsBits->intf-is-rflagsBits
-    !rflagsBits->df-is-rflagsBits
-    !rflagsBits->of-is-rflagsBits
-    !rflagsBits->iopl-is-rflagsBits
-    !rflagsBits->nt-is-rflagsBits
-    !rflagsBits->res4-is-rflagsBits
-    !rflagsBits->rf-is-rflagsBits
-    !rflagsBits->vm-is-rflagsBits
-    !rflagsBits->ac-is-rflagsBits
-    !rflagsBits->vif-is-rflagsBits
-    !rflagsBits->vip-is-rflagsBits
-    !rflagsBits->id-is-rflagsBits
-    !rflagsBits->res5-is-rflagsBits))
-
-
 (defthm read-x86-file-des-write-user-rflags
   (equal (read-x86-file-des i (write-user-rflags flags mask x86))
          (read-x86-file-des i x86))

@@ -162,7 +162,7 @@
     (implies (posp n)
              (equal (+ -8 (ash n 3))
                     (ash (+ -1 n) 3)))
-    :hints (("Goal" :in-theory (e/d* (ash) ()))))  
+    :hints (("Goal" :in-theory (e/d* (ash) ()))))
 
   (defthm ash-n-3-bound
     (implies (and (integerp n)
@@ -378,8 +378,8 @@
                      :low 0 :width 64))
                    (+ x y))
      :g-bindings
-     `((x   (:g-number ,(gl-int 0 2 64)))
-       (y   (:g-number ,(gl-int 1 2 64))))))
+     `((x   (:g-number ,(increasing-list 0 2 64)))
+       (y   (:g-number ,(increasing-list 1 2 64))))))
 
   (defthm canonical-address-p-+-signed-byte-p-16-with-loghead-and-n64-to-i64
     (implies (and (canonical-address-p y)

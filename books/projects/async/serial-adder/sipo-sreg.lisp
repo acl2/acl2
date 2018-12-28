@@ -994,21 +994,16 @@
       nil
     (b* ((inputs (car inputs-seq))
          (out-act (sipo-sreg$out-act inputs st))
-         (data (sipo-sreg$data-out st)))
+         (data (sipo-sreg$data-out st))
+         (seq (sipo-sreg$out-seq
+               (cdr inputs-seq)
+               (sipo-sreg$step inputs st data-width cnt-width)
+               data-width
+               cnt-width
+               (1- n))))
       (if (equal out-act t)
-          (append (sipo-sreg$out-seq
-                   (cdr inputs-seq)
-                   (sipo-sreg$step inputs st data-width cnt-width)
-                   data-width
-                   cnt-width
-                   (1- n))
-                  (list data))
-        (sipo-sreg$out-seq
-         (cdr inputs-seq)
-         (sipo-sreg$step inputs st data-width cnt-width)
-         data-width
-         cnt-width
-         (1- n))))))
+          (append seq (list data))
+        seq))))
 
 (defun sipo-sreg$netlist-out-seq
     (inputs-seq st netlist data-width n)
@@ -1019,23 +1014,17 @@
          (outputs (se (si 'sipo-sreg data-width)
                       inputs st netlist))
          (out-act (nth 1 outputs))
-         (data (take data-width (nthcdr 3 outputs))))
+         (data (take data-width (nthcdr 3 outputs)))
+         (seq (sipo-sreg$netlist-out-seq
+               (cdr inputs-seq)
+               (de (si 'sipo-sreg data-width)
+                   inputs st netlist)
+               netlist
+               data-width
+               (1- n))))
       (if (equal out-act t)
-          (append (sipo-sreg$netlist-out-seq
-                   (cdr inputs-seq)
-                   (de (si 'sipo-sreg data-width)
-                       inputs st netlist)
-                   netlist
-                   data-width
-                   (1- n))
-                  (list data))
-        (sipo-sreg$netlist-out-seq
-         (cdr inputs-seq)
-         (de (si 'sipo-sreg data-width)
-             inputs st netlist)
-         netlist
-         data-width
-         (1- n))))))
+          (append seq (list data))
+        seq))))
 
 (defthm sipo-sreg$out-seq-lemma
   (implies (and (sipo-sreg& netlist data-width cnt-width)

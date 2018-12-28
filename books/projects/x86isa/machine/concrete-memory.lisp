@@ -133,7 +133,7 @@
  (defthm logior-expt-to-plus-quotep
    (implies (and (bind-free (and (quotep k)
                                  (let* ((k0 (acl2::unquote k))
-                                        (n (power-of-2 k0 0)))
+                                        (n (log-2 k0 0)))
                                    (and (eql k0 (expt 2 n))
                                         (list (cons 'n (kwote n)))))))
                  (natp n)
@@ -146,7 +146,7 @@
  (defthm constant-upper-bound-of-logior-for-naturals
    (implies (and (bind-free (and (quotep k)
                                  (let* ((k0 (acl2::unquote k))
-                                        (n (power-of-2 k0 0)))
+                                        (n (log-2 k0 0)))
                                    (and (eql k0 (expt 2 n))
                                         (list (cons 'n (kwote n)))))))
                  (eql k (expt 2 n))

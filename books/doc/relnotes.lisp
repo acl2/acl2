@@ -234,6 +234,26 @@
 
  <p>Added some theorems about functions on lists.</p>
 
+ <h4>Profiling</h4>
+
+ <p>Attempts to run @(tsee profile-acl2) or @(tsee profile-all) had failed, for
+ ACL2 built on SBCL, with an obscure SBCL error message.  Now, the error
+ message gives instructions for how to avoid the error by rebuilding SBCL from
+ sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
+ the appropriate SBCL source code line.</p>
+
+ <h4>RAC: Restricted Algorithmic C</h4>
+
+ <p>Minor modifications of @('projects/rac/') include a bug fix in the parser
+ and a rewrite of @('examples/hello.cpp')
+ (hat-tip to D. Hardin).</p>
+
+ <h4>@(csee rtl)</h4>
+
+ <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
+ required in the verification of an Arm FPU currently under development.  This
+ in turn required some minor modifications of @('projects/arm/*/').</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
@@ -280,7 +300,11 @@
  execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
  MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
  SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
- SQRTPS, SQRTPD, and BSF.</p>
+ SQRTPS, SQRTPD, CVTSS2SI, CVTSD2SI, CVTTSS2SI, CVTTSD2SI, CVTSI2SS, CVTSI2SD,
+ CVTSS2SD, CVTSD2SS, CVTPS2PD, CVTPD2PS, ANDPS, ANDPD, ANDNPS, ANDNPD, ORPS,
+ ORPD, XORPS, XORPD, PAND, PANDN, POR, PXOR, CMPSS, CMPSD, CMPPS, CMPPD,
+ COMISS, COMISD, UCOMISS, UCOMISD, MOVSS, MOVSD, MOVAPS, MOVAPD, MOVUPS,
+ MOVUPD, MOVDQU, MOVLPS, MOVLPD, MOVHPS, MOVHPD, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
@@ -293,6 +317,15 @@
  <p>Improved incrementing and decrementing of the stack pointer to be modular:
  64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
  current stack segment.</p>
+
+ <p>Modified the logical definitions of the x86 state (i.e., the abstract
+ stobj).  Now, the x86 state accessor functions unconditionally return
+ well-formed values and the x86 state updater functions return a well-formed
+ state, provided that the initial state was well-formed; thus, constraints on
+ the index (in case of array fields) and value being written have been
+ eliminated.</p>
+
+ <p>Improved and extended some documentation.</p>
 
  <h3>Licensing Changes</h3>
 

@@ -124,6 +124,8 @@
                         (:instance expo<= (x (w1p)) (n 127)))
 	          :in-theory (enable w1p))))
 
+(local-in-theory (disable ash-rewrite))
+
 (local-defthm expo-s0p-7
   (implies (>= (w1p) 2)
            (<= (expo (bits (ash (w1p) (- 1)) 127 0))
@@ -349,7 +351,7 @@
 (local-defthm bitn-fw-fwp-low
   (implies (and (not (zp k)) (< k 128))
            (equal (bitn (fwp) k) (bitn (fw) k)))
-  :hints (("Goal" :in-theory (enable fw fwp bitn-w1-w1p bitn-bits)
+  :hints (("Goal" :in-theory (enable ash-rewrite fw fwp bitn-w1-w1p bitn-bits)
                   :use ((:instance bitn-rec-pos (x (w1)) (n (1+ k)))
 		        (:instance bitn-rec-pos (x (w1p)) (n (1+ k)))))))
 
@@ -435,7 +437,7 @@
                   (1+ (expo (bits (ash (w1) (- 1)) 127 0)))))
   :hints (("Goal" :nonlinearp t
                   :use (w1-bound (:instance bits-bounds (x (LOGNOT (LOGXOR (P1) (* 2 (K1))))) (i 127) (j 0)))
-                  :in-theory (enable w1 bvecp))))
+                  :in-theory (enable ash-rewrite w1 bvecp))))
 
 (local-defthmd expo-fw-fwp
   (implies (and (= (mulovfl) 0) (= (far) 0) (> (exps) 0))

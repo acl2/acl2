@@ -250,6 +250,6 @@
   :concl (equal (popcount-result-fn n)
                 (logcount n))
   :g-bindings
-  `((n    (:g-number ,(gl-int 0 1 33)))))
+  `((n    (:g-number ,(increasing-list 0 1 33)))))
 
 ;; ----------------------------------------------------------------------

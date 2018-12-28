@@ -227,7 +227,7 @@
     (logcount rdi))
 
    :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 33))))))
+   `((rdi    (:g-number ,(increasing-list 0 1 33))))))
 
 (local
  (def-gl-thm x86-popcount-32-symbolic-simulation-helper-1
@@ -236,7 +236,7 @@
    (equal (loghead 32 (logcount rdi))
           (logcount rdi))
    :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 33))))))
+   `((rdi    (:g-number ,(increasing-list 0 1 33))))))
 
 (local
  (def-gl-thm x86-popcount-32-symbolic-simulation-helper-2
@@ -245,7 +245,7 @@
    (equal (logext 64 (logcount rdi))
           (logcount rdi))
    :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 33))))))
+   `((rdi    (:g-number ,(increasing-list 0 1 33))))))
 
 (defthm x86-popcount-32-symbolic-simulation
   (implies (and (x86p x86)
@@ -617,7 +617,7 @@
     (logcount (loghead 64 rdi)))
 
    :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 65))))))
+   `((rdi    (:g-number ,(increasing-list 0 1 65))))))
 
 (local
  (def-gl-thm x86-popcount-64-symbolic-simulation-helper-2
@@ -627,7 +627,7 @@
           (logcount (loghead 64 rdi)))
 
    :g-bindings
-   `((rdi    (:g-number ,(gl-int 0 1 65))))))
+   `((rdi    (:g-number ,(increasing-list 0 1 65))))))
 
 
 ;;  1 mov %edi,%edx

@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 (include-book "std/util/defconsts" :dir :system)
@@ -43,8 +46,10 @@
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-; Measure for power-of-2 below.
-(defun power-of-2-measure (x)
+; Some functions, used in this file and elsewhere in the formal model:
+
+; Measure for log-2 below.
+(defun log-2-measure (x)
   (cond ((or (not (natp x))
              (<= x 1))
          0)
@@ -52,25 +57,32 @@
 
 ; On powers of 2, this function is a base 2 logarithm:
 ; it maps 2^n to n+count -- count is the accumulator.
-(defun power-of-2 (x count)
-  (declare (xargs :measure (power-of-2-measure x)
+(defun log-2 (x count)
+  (declare (xargs :measure (log-2-measure x)
                   :guard (natp count)))
   (if (natp x)
       (if (<= x 1)
           count
-        (power-of-2 (* 1/2 x) (1+ count)))
+        (log-2 (* 1/2 x) (1+ count)))
     count))
 
 ; This function returns the list
 ; (start (+ by start) (+ (* 2 by) start) ... (+ (* (1- count) by) start)).
-(defun gl-int (start by count)
+(defun increasing-list (start by count)
   (declare (xargs :guard (and (natp start)
                               (natp by)
                               (natp count))))
   (if (zp count)
       nil
     (cons start
-          (gl-int (+ by start) by (1- count)))))
+          (increasing-list (+ by start) by (1- count)))))
+
+; Maximum of a list of numbers (NIL if the list is empty).
+(defun max-list (l)
+  (if (or (endp l)
+          (equal (len l) 1))
+      (car l)
+    (max (car l) (max-list (cdr l)))))
 
 ;; ======================================================================
 ;; Some expt constants:
@@ -207,7 +219,7 @@
 ;; ======================================================================
 
 ;; Identifiers of some arithmetic and logical instructions: (note: different
-;; from the opcode)
+;; from the opcode; specific to the formal model)
 
 ;; Even IDs: Arithmetic Instructions
 
@@ -301,15 +313,6 @@
   (list *cf* *pf* *af* *zf* *sf* *tf* *if* *df*
         *of* *iopl* *nt* *rf* *vm* *ac* *vif* *vip* *id*))
 
-; Maximum of a list of numbers (NIL if the list is empty).
-(defun max-list (l)
-  (if (or (endp l)
-          (equal (len l) 1))
-      (car l)
-    (if (> (car l) (max-list (cdr l)))
-        (car l)
-      (max-list (cdr l)))))
-
 (defconst *max-flg-index*
   (max-list *flg-names*))
 
@@ -356,18 +359,18 @@
 (defconst *mxcsr-um*       11) ;; Underflow Mask
 (defconst *mxcsr-pm*       12) ;; Precision Mask
 (defconst *mxcsr-rc*       13) ;; Rounding Control
-(defconst *mxcsr-fz*       15) ;; Flush to Zero
+(defconst *mxcsr-ftz*      15) ;; Flush to Zero
 (defconst *mxcsr-reserved* 16) ;; Reserved
 
 
 (defconst *mxcsr-names*
   (list *mxcsr-ie* *mxcsr-de* *mxcsr-ze* *mxcsr-oe* *mxcsr-ue*
         *mxcsr-pe* *mxcsr-daz* *mxcsr-im* *mxcsr-dm* *mxcsr-zm*
-        *mxcsr-om* *mxcsr-um* *mxcsr-pm* *mxcsr-rc* *mxcsr-fz*
+        *mxcsr-om* *mxcsr-um* *mxcsr-pm* *mxcsr-rc* *mxcsr-ftz*
         *mxcsr-reserved*))
 
 
-;; Access GPR, XMM, YMM, or ZMM:
+;; Access GPR, XMM, YMM, or ZMM (specific to the formal model):
 
 (defconst *gpr-access*     0)
 (defconst *xmm-access*     1) ;; Non-VEX Encoded SIMD Instructions
@@ -383,7 +386,7 @@
 (defconst *rc-rz*             3)
 
 ;; Constants for (unordered) compare scalar floating-point
-;; instructions (COMISS,  UCOMISS, etc.):
+;; instructions (COMISS,  UCOMISS, etc.) (specific to the formal model):
 
 (defconst *unordered*    0)
 (defconst *greater_than* 1)
@@ -415,7 +418,6 @@
 
 (defconst *ia32_efer-names*
   (list *ia32_efer-sce* *ia32_efer-lme* *ia32_efer-lma* *ia32_efer-nxe*))
-
 
 ;; ======================================================================
 
@@ -546,7 +548,7 @@
          *pseudo-page-size-in-bytes*))
 
 (defconst *mem-table-size-bits*
-  (power-of-2 *mem-table-size* 0))
+  (log-2 *mem-table-size* 0))
 
 (defconst *mem-table-size-bits+1*
   (+ 1 *mem-table-size-bits*))
@@ -563,7 +565,7 @@
 
 ;; ======================================================================
 
-;; Constants related to Flags:
+;; Constants related to Flags (specific to the formal model):
 
 (defconst *unchanged* 2)
 (defconst *undefined* 3)
@@ -572,7 +574,7 @@
 
 ;; Instruction Sets:
 
-;; Floating-Point:
+;; Floating-Point (specific to the formal model):
 (defconst *fpu*    0)
 (defconst *mmx*    1)
 (defconst *sse*    2)
@@ -584,7 +586,8 @@
 
 ;; ======================================================================
 
-;; Constants related to modes of operation of an x86 processor:
+;; Constants related to modes of operation of an x86 processor
+;; (specific to the formal model):
 
 ;; IA-32e Mode, introduced by Intel 64(R) Architecture, has the following two
 ;; sub-modes:
@@ -625,6 +628,9 @@
 
 (defconst *#BR*     5)  ;    BOUND Range Exceeded
                         ;    BOUND instruction.
+
+(defconst *#UD*     6)  ;    Invalid Opcode (UnDefined Opcode)
+                        ;    UD instruction or reserved opcode.
 
 (defconst *#NM*     7)  ;    Device Not Available (No Math Coprocessor)
                         ;    Floating-point or WAIT/FWAIT instruction.
@@ -692,46 +698,57 @@
 
 (defun define-general-purpose-registers ()
 
+  ;; These indices are from Tables 2-1, 2-2, and 2-3 (addressing modes) of
+  ;; Intel manual, May'18, Volume 2:
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
                      *R8* *R9* *R10* *R11* *R12* *R13* *R14* *R15*
                      *64-bit-general-purpose-registers-len*)
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
 (defun define-32-bit-general-purpose-registers ()
 
+  ;; These are the same as *RAX* etc. above:
   `(defconsts (*EAX* *ECX* *EDX* *EBX* *ESP* *EBP* *ESI* *EDI*
                      *R8d* *R9d* *R10d* *R11d* *R12d* *R13d* *R14d* *R15d*)
-     ,(b* ((lst (gl-int 0 1 15))
+     ,(b* ((lst (increasing-list 0 1 15))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
 (defun define-segment-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg> ('MOV ..., CS'
+  ;; is disallowed, but the only index not used for the other segment registers
+  ;; is 1:
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
                     *segment-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 6))
+     ,(b* ((lst (increasing-list 0 1 6))
            (len  (len lst)))
-          (cons 'mv (append lst (list len))))))
+        (cons 'mv (append lst (list len))))))
 
 (defun define-gdtr/idtr-registers ()
 
+  ;; Specific to the formal model:
   `(defconsts (*GDTR* *IDTR* *gdtr-idtr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
+     ,(b* ((lst (increasing-list 0 1 2))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
 (defun define-ldtr/tr-registers ()
 
+  ;; Specific to the formal model:
   `(defconsts (*LDTR* *TR* *ldtr-tr-names-len*)
-     ,(b* ((lst (gl-int 0 1 2))
+     ,(b* ((lst (increasing-list 0 1 2))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
 ;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
 (defun define-control-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions MOV from/to control registers:
   `(defconsts (*CR0* ;; cr0 controls operating mode and states of
                      ;; processor
                *CR1* ;; cr1 is reserved
@@ -748,14 +765,16 @@
                      ;; bit mode
                ;; cr9 thru cr15 are not implemented in our model yet.
                *CR9* *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
-               *XCR0*
+               *XCR0* ; TODO: separate this from the *CR...*s
                *control-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 17))
+     ,(b* ((lst (increasing-list 0 1 17))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
 (defun define-debug-registers ()
 
+  ;; These indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions MOV from/to debug registers:
   `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
                *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
                *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
@@ -765,7 +784,7 @@
                *DR6* ;; dr6
                *DR7* ;; dr7
                *debug-register-names-len*)
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -779,7 +798,7 @@
   `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
                      *fp-data-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -792,7 +811,7 @@
   `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
                      *mmx-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 8))
+     ,(b* ((lst (increasing-list 0 1 8))
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
@@ -804,7 +823,7 @@
                       *XMM12* *XMM13* *XMM14* *XMM15*
                       *xmm-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -816,7 +835,7 @@
                       *YMM12* *YMM13* *YMM14* *YMM15*
                       *ymm-register-names-len*)
 
-     ,(b* ((lst (gl-int 0 1 16))
+     ,(b* ((lst (increasing-list 0 1 16))
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
@@ -835,7 +854,7 @@
                         *ZMM26* *ZMM27* *ZMM28* *ZMM29* *ZMM30*
                         *ZMM31*)
 
-       ,(b* ((lst (gl-int 0 1 31))
+       ,(b* ((lst (increasing-list 0 1 31))
              (len  (len lst)))
           (cons 'mv (append lst (list len)))))))
 
@@ -851,6 +870,10 @@
   ;; The constants ending with IDX are used to index into the STOBJ
   ;; field for model-specific registers.
 
+  ;; Note that *ia32_efer-idx* and *ia32_efer* (as well as the other pairs) are
+  ;; different.  The latter is the "address" of the register on the real
+  ;; machine and the former is the index of the register in the x86 stobj.  So
+  ;; the *...-IDX* values are specific to the formal model.
 
   `(defconsts (
                ;; extended features enables --- If
