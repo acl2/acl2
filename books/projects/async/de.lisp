@@ -439,18 +439,14 @@
   :hints (("Goal" :in-theory (enable occ-fn)))
   :rule-classes (:rewrite :linear))
 
-(defun sts-okp-guard (fn sts netlist)
+(defun sts-okp-guard (fn sts)
   (declare (xargs :guard t))
    (and (symbolp fn)
-        (true-listp sts)
-        (net-syntax-okp netlist)
-        (net-arity-okp  netlist)))
+        (true-listp sts)))
 
 (defun sts-occs-okp-guard (occs sts-alist netlist)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (net-syntax-okp netlist)))
   (and (symbol-alistp sts-alist)
-       (net-syntax-okp netlist)
-       (net-arity-okp netlist)
        (occs-syntax-okp occs)
        (occs-arity-okp occs netlist)
        (no-duplicatesp-eq (strip-cars occs))
@@ -466,7 +462,9 @@
 
  (defun sts-okp (fn sts netlist)
    (declare (xargs :measure (se-measure fn netlist)
-                   :guard (sts-okp-guard fn sts netlist)
+                   :guard (and (net-syntax-okp netlist)
+                               (net-arity-okp netlist)
+                               (sts-okp-guard fn sts))
                    :guard-hints
                    (("Goal"
                      :use net-syntax-okp->module-syntax-okp
@@ -488,7 +486,9 @@
 
  (defun sts-occs-okp (occs sts-alist netlist)
    (declare (xargs :measure (se-measure occs netlist)
-                   :guard (sts-occs-okp-guard occs sts-alist netlist)))
+                   :guard (and (net-syntax-okp netlist)
+                               (net-arity-okp netlist)
+                               (sts-occs-okp-guard occs sts-alist netlist))))
    (if (atom occs)
        t
      (let* ((occur    (car occs))
@@ -536,14 +536,12 @@
 
 
 (defun se-ins-guard (fn ins netlist)
-  (declare (xargs :guard t
+  (declare (xargs :guard (net-syntax-okp netlist)
                   :guard-hints
                   (("Goal" :in-theory (e/d (consp-assoc-eq-fn-of-non-empty-netlist)
-                                            (md-occs md-sts))))))
+                                           (md-occs md-sts))))))
   (and (symbolp fn)
        (true-listp ins)
-       (net-syntax-okp netlist)
-       (net-arity-okp netlist)
        ;; Check form of top-level INS argument
        (if (primp fn)
            (equal (primp-ins fn) (len ins))
@@ -554,13 +552,17 @@
 
 (defun se-guard (fn ins sts netlist)
   (declare (xargs :guard t))
-  (and (se-ins-guard fn ins netlist)
-       (sts-okp-guard fn sts netlist)
-       (sts-okp fn sts netlist)))
+  (and (net-syntax-okp netlist)
+       (net-arity-okp netlist)
+       (sts-okp-guard fn sts)
+       (sts-okp fn sts netlist)
+       (se-ins-guard fn ins netlist)))
 
 (defun se-occ-guard (occs wire-alist sts-alist netlist)
   (declare (xargs :guard t))
-  (and (sts-occs-okp-guard occs sts-alist netlist)
+  (and (net-syntax-okp netlist)
+       (net-arity-okp netlist)
+       (sts-occs-okp-guard occs sts-alist netlist)
        (sts-occs-okp occs sts-alist netlist)
        ;; Check form of WIRE-ALIST
        (symbol-alistp wire-alist)
@@ -1133,7 +1135,9 @@
 
 (defun well-formed-sts (fn sts netlist)
   (declare (xargs :guard t))
-  (and (sts-okp-guard fn sts netlist)
+  (and (net-syntax-okp netlist)
+       (net-arity-okp netlist)
+       (sts-okp-guard fn sts)
        (sts-okp fn sts netlist)))
 
 (defthm se-guard=>well-formed-sts
@@ -1143,7 +1147,9 @@
 
 (defun well-formed-sts-occs (occs sts-alist netlist)
   (declare (xargs :guard t))
-  (and (sts-occs-okp-guard occs sts-alist netlist)
+  (and (net-syntax-okp netlist)
+       (net-arity-okp netlist)
+       (sts-occs-okp-guard occs sts-alist netlist)
        (sts-occs-okp occs sts-alist netlist)))
 
 (defthm se-occ-guard=>well-formed-sts-occs
@@ -1156,8 +1162,6 @@
    (IMPLIES (AND (PRIMP FN)
                  (SYMBOLP FN)
                  (TRUE-LISTP STS)
-                 (NET-SYNTAX-OKP NETLIST)
-                 (NET-ARITY-OKP NETLIST)
                  (EQUAL (PRIMP-STS FN) (LEN STS))
                  (NOT (EQUAL FN 'FD1))
                  (NOT (EQUAL FN 'LATCH))
@@ -1213,15 +1217,15 @@
 ;; Simulation functions
 
 (defun de-sim-guard (fn inputs-seq netlist)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (net-syntax-okp netlist)))
   (if (atom inputs-seq)
       t
     (and (se-ins-guard fn (car inputs-seq) netlist)
          (de-sim-guard fn (cdr inputs-seq) netlist))))
 
 (defun de-sim (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
-                              (well-formed-sts fn sts netlist))
+  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+                              (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
       sts
@@ -1245,8 +1249,8 @@
 (in-theory (disable de-sim))
 
 (defun de-sim-trace (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
-                              (well-formed-sts fn sts netlist))
+  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+                              (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
       (list sts)
@@ -1257,8 +1261,8 @@
                         netlist))))
 
 (defun simulate (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
-                              (well-formed-sts fn sts netlist))
+  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+                              (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
       nil
@@ -1268,8 +1272,8 @@
             (simulate fn (cdr inputs-seq) new-sts netlist)))))
 
 (defun de-n (fn inputs-seq sts netlist n)
-  (declare (xargs :guard (and (de-sim-guard fn inputs-seq netlist)
-                              (well-formed-sts fn sts netlist)
+  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+                              (de-sim-guard fn inputs-seq netlist)
                               (equal (len inputs-seq) n)
                               (natp n))
                   :verify-guards nil))
@@ -1308,30 +1312,17 @@
 
 (in-theory (disable de-n))
 
-(verify-guards
- de-sim
- ;;:guard-debug t
- :hints
- (("Goal"
-   :in-theory (disable de sts-okp))))
+(verify-guards de-sim
+ :hints (("Goal" :in-theory (disable de sts-okp))))
 
-(verify-guards
- de-sim-trace
- :hints
- (("Goal"
-   :in-theory (disable de sts-okp))))
+(verify-guards de-sim-trace
+ :hints (("Goal" :in-theory (disable de sts-okp))))
 
-(verify-guards
- simulate
- :hints
- (("Goal"
-   :in-theory (disable se de sts-okp))))
+(verify-guards simulate
+ :hints (("Goal" :in-theory (disable se de sts-okp))))
 
-(verify-guards
- de-n
- :hints
- (("Goal"
-   :in-theory (disable de sts-okp))))
+(verify-guards de-n
+ :hints (("Goal" :in-theory (disable de sts-okp))))
 
 (in-theory (disable se-guard se-occ-guard
                     well-formed-sts well-formed-sts-occs))
