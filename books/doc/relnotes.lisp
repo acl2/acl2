@@ -297,14 +297,14 @@
 
  <p>Finished adding support for 32-bit application-level execution for
  non-floating-point instructions.  Added support for 32-bit application-level
- execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
+ execution of the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
  MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
  SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
  SQRTPS, SQRTPD, CVTSS2SI, CVTSD2SI, CVTTSS2SI, CVTTSD2SI, CVTSI2SS, CVTSI2SD,
  CVTSS2SD, CVTSD2SS, CVTPS2PD, CVTPD2PS, ANDPS, ANDPD, ANDNPS, ANDNPD, ORPS,
  ORPD, XORPS, XORPD, PAND, PANDN, POR, PXOR, CMPSS, CMPSD, CMPPS, CMPPD,
  COMISS, COMISD, UCOMISS, UCOMISD, MOVSS, MOVSD, MOVAPS, MOVAPD, MOVUPS,
- MOVUPD, MOVDQU, MOVLPS, MOVLPD, MOVHPS, MOVHPD, and BSF.</p>
+ MOVUPD, MOVDQU, MOVLPS, MOVLPD, MOVHPS, MOVHPD, LDMXCSR, STMXCSR, and BSF.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
