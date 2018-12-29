@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -37,6 +38,8 @@
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ; Matt Kaufmann       <kaufmann@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -364,12 +367,6 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
       nil)))
 
 ;; Misc.:
-
-(defmacro defthml (&rest args)
-  `(local (defthm ,@args)))
-
-(defmacro defthmld (&rest args)
-  `(local (defthmd ,@args)))
 
 (defmacro def-gl-export
   (name &key hyp concl g-bindings rule-classes)

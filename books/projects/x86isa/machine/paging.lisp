@@ -2909,7 +2909,7 @@ accesses.</p>
             0))
   :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
 
-(defthml ia32e-la-to-pa-lower-12-bits-alt
+(defrulel ia32e-la-to-pa-lower-12-bits-alt
   ;; This local rule helps in the proof of
   ;; ia32e-la-to-pa-<-*mem-size-in-bytes-1*-when-low-12-bits-!=-all-ones
   ;; Note the very general LHS --- this generality is the reason why

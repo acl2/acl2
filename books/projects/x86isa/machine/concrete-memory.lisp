@@ -551,7 +551,7 @@
                               (k *mem-table-size*)))))
     :rule-classes :linear)
 
-  (defthml natp-mem-array-next-addr
+  (defrulel natp-mem-array-next-addr
     (implies (x86$cp-pre x86$c)
              (and (integerp (nth *mem-array-next-addr* x86$c))
                   (<= 0 (nth *mem-array-next-addr* x86$c))))
@@ -699,7 +699,7 @@
                 (+ 1 array-next-addr)
                 (update-nth index addr mem-table))))
 
-    (defthml good-mem-table-entriesp-logic-preserved-lemma
+    (defrulel good-mem-table-entriesp-logic-preserved-lemma
       (implies (and (good-mem-table-entriesp-logic lower upper1 array-bound
                                                    x86$c)
                     (natp upper2)
@@ -719,7 +719,7 @@
                (good-mem-table-entriesp-logic lower2 upper2 array-bound x86$c)))
     ))
 
-  (defthml good-mem-arrayp-1-logic-update-nth
+  (defrulel good-mem-arrayp-1-logic-update-nth
     (implies (and (n08p v)
                   (natp addr)
                   (< addr ash-mem-array-next-addr)
@@ -731,14 +731,14 @@
                                       (update-nth addr v mem-array)))
     :hints (("Goal" :in-theory (e/d (x86$cp) (force (force))))))
 
-  (defthml good-mem-arrayp-1-logic-preserved-upward
+  (defrulel good-mem-arrayp-1-logic-preserved-upward
     (implies (and (good-mem-arrayp-1-logic index1 len mem-array)
                   (natp index1)
                   (natp index2)
                   (<= index1 index2))
              (good-mem-arrayp-1-logic index2 len mem-array)))
 
-  (defthml x86$cp-pre-update-nth-mem-arrayi
+  (defrulel x86$cp-pre-update-nth-mem-arrayi
     (implies (forced-and (x86$cp-pre x86$c)
                          (n08p v)
                          (natp addr)
@@ -749,7 +749,7 @@
                           x86$c)))
     :hints (("Goal" :in-theory (enable x86$cp-pre))))
 
-  (defthml x86$cp-update-nth-mem-arrayi-generic
+  (defrulel x86$cp-update-nth-mem-arrayi-generic
     (implies (and (x86$cp x86$c)
                   (n08p v)
                   (natp addr)
@@ -875,7 +875,7 @@
     :hints (("Goal" :in-theory (e/d (ash floor ifix) ()))))
 
 
-  (defthmld x86$cp-pre-!mem$ci-new-page-no-resize-helper
+  (defruledl x86$cp-pre-!mem$ci-new-page-no-resize-helper
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *physical-address-size* i)
                   (n08p v)
@@ -1150,7 +1150,7 @@
 
     )) ;; End of encapsulate
 
-  (defthmld dumb-x86$cp-!mem$ci-new-page-no-resize-helper
+  (defruledl dumb-x86$cp-!mem$ci-new-page-no-resize-helper
     ;; Just a dumb checkpoint from the proof
     ;; x86$cp-!mem$ci-new-page-no-resize --- I'm proving this
     ;; separately to avoid giving tedious subgoal hints.
@@ -1188,7 +1188,7 @@
                               (next-addr (nth *mem-array-next-addr* x86$c)))))))
 
 
-  (defthml x86$cp-!mem$ci-new-page-no-resize
+  (defrulel x86$cp-!mem$ci-new-page-no-resize
     ;; Basically, needs x86$cp-pre-!mem$ci-new-page-no-resize-helper and
     ;; good-mem-table-no-dupsp-logic-update-nth.  This is a checkpoint
     ;; during the proof of x86$cp-!mem$ci.
@@ -1236,7 +1236,7 @@
                    (:instance dumb-x86$cp-!mem$ci-new-page-no-resize-helper)))))
 
 
-  (defthml mem-arrayp-resize-list
+  (defrulel mem-arrayp-resize-list
     (implies (and (mem-arrayp lst)
                   (unsigned-byte-p 8 default-value))
              (mem-arrayp (resize-list lst new-len default-value))))
@@ -1251,7 +1251,7 @@
                                     default-value)
        nil)))
 
-  (defthml nth-resize-list
+  (defrulel nth-resize-list
     (implies (and (natp i)
                   (natp n)
                   (<= (len lst) n)
@@ -1263,7 +1263,7 @@
     :hints (("Goal" :in-theory (enable resize-list nth)
              :induct (nth-resize-list-induction i lst n default-value))))
 
-  (defthml good-mem-arrayp-1-logic-resize-list
+  (defrulel good-mem-arrayp-1-logic-resize-list
     (implies (and (natp next-addr)
                   (natp new-len)
                   (<= (len mem-array) new-len)
@@ -1277,7 +1277,7 @@
     ;; does not!
     :instructions ((then induct prove)))
 
-  (defthml x86$cp-pre-resize-mem-array
+  (defrulel x86$cp-pre-resize-mem-array
     (implies
      (and (x86$cp x86$c)
           (natp new-len)
@@ -1290,7 +1290,7 @@
                              x86$c)))
     :hints (("Goal" :in-theory (enable x86$cp x86$cp-pre))))
 
-  (defthmld x86$cp-!mem$ci-new-page-resize-pre
+  (defruledl x86$cp-!mem$ci-new-page-resize-pre
     (implies
      (and (x86$cp x86$c)
           (unsigned-byte-p *physical-address-size* i)
@@ -1335,7 +1335,7 @@
   (encapsulate
    ()
 
-   (defthml |(loghead n x) = 0 ==> (loghead n (ash x 1)) = 0|
+   (defrulel |(loghead n x) = 0 ==> (loghead n (ash x 1)) = 0|
      (implies (and (natp n)
                    (natp m)
                    (equal (loghead n x) 0))
@@ -1344,7 +1344,7 @@
      (("Goal" :in-theory
        (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs)))))
 
-   (defthml ash-and-*-2
+   (defrulel ash-and-*-2
      (implies (integerp x)
               (equal (* 2 x)
                      (ash x 1)))
@@ -1359,7 +1359,7 @@
               (equal (loghead *2^x-byte-pseudo-page* (* 2 a)) 0)))
    )
 
-  (defthmld x86$cp-!mem$ci-new-page-resize-within-*mem-size-in-bytes*
+  (defruledl x86$cp-!mem$ci-new-page-resize-within-*mem-size-in-bytes*
     ;; This is a checkpoint during the proof of x86$cp-!mem$ci.
     (implies
      (and (x86$cp x86$c)
@@ -1397,7 +1397,7 @@
             (:instance x86$cp-!mem$ci-new-page-resize-helper
                        (a (len (nth *mem-arrayi* x86$c))))))))
 
-  (defthmld x86$cp-!mem$ci-new-page-resize-attempt-beyond-*mem-size-in-bytes*
+  (defruledl x86$cp-!mem$ci-new-page-resize-attempt-beyond-*mem-size-in-bytes*
     ;; This is a checkpoint during the proof of x86$cp-!mem$ci.
     (implies
      (and (x86$cp x86$c)
@@ -1473,7 +1473,7 @@
    (encapsulate
     ()
 
-    (defthml member-mem-table-entries-logic-lema-1
+    (defrulel member-mem-table-entries-logic-lema-1
       (implies (and (syntaxp (equal i 'i))
                     (integerp i)
                     (natp lower)
@@ -1484,7 +1484,7 @@
                (equal (logtail 1 (nth i mem-table))
                       (logtail 1 (nth lower mem-table)))))
 
-    (defthml member-mem-table-entries-logic-lema-2
+    (defrulel member-mem-table-entries-logic-lema-2
       (implies (and (equal (nth lower mem-table) 1)
                     (equal (nth lower (cdr mem-table)) 1)
                     (integerp i)
@@ -1493,7 +1493,7 @@
                     (<= i (+ 1 lower)))
                (equal (nth i mem-table) 1)))
 
-    (defthml member-mem-table-entries-logic-lema-3
+    (defrulel member-mem-table-entries-logic-lema-3
       (implies (and (syntaxp (equal i 'i))
                     (equal (nth lower (cdr mem-table)) 1)
                     (integerp i)
@@ -1504,7 +1504,7 @@
                (equal (logtail 1 (nth i mem-table))
                       (logtail 1 (nth lower mem-table)))))
 
-    (defthml member-mem-table-entries-logic-lemma-4
+    (defrulel member-mem-table-entries-logic-lemma-4
       (implies (and (syntaxp (equal i 'i))
                     (equal (nth lower mem-table) 1)
                     (integerp i)
@@ -1544,7 +1544,7 @@
              (sortedp (cdr x) parity))
             (t nil))))
 
-   (defthml sortedp-revappend
+   (defrulel sortedp-revappend
      (iff (and (sortedp x (not parity))
                (sortedp y parity)
                (or (atom x)
@@ -1564,7 +1564,7 @@
                                          (<= (car x) (car y))
                                        (>= (car x) (car y)))))))))
 
-   (defthml sortedp-merge-<-into->
+   (defrulel sortedp-merge-<-into->
      (implies (and (sortedp x t)
                    (sortedp y t)
                    (sortedp z nil)
@@ -1573,7 +1573,7 @@
               (sortedp (merge-<-into-> x y z) nil))
      :hints (("Goal" :in-theory (enable merge-<-into->))))
 
-   (defthml sortedp-merge->-into-<
+   (defrulel sortedp-merge->-into-<
      (implies (and (sortedp x nil)
                    (sortedp y nil)
                    (sortedp z t)
@@ -1582,7 +1582,7 @@
               (sortedp (merge->-into-< x y z) t))
      :hints (("Goal" :in-theory (enable merge->-into-<))))
 
-   (defthml no-duplicatesp-sorted-revappend
+   (defrulel no-duplicatesp-sorted-revappend
      (equal (no-duplicatesp-sorted (revappend x y))
             (and (no-duplicatesp-sorted x)
                  (no-duplicatesp-sorted y)
@@ -1591,12 +1591,12 @@
                      (not (equal (car x) (car y))))))
      :hints (("Goal" :in-theory (enable no-duplicatesp-sorted acl2::rev))))
 
-   (defthml not-member-sortedp-t
+   (defrulel not-member-sortedp-t
      (implies (and (sortedp x t)
                    (< a (car x)))
               (not (member a x))))
 
-   (defthml member-sortedp-t
+   (defrulel member-sortedp-t
      (implies (and (sortedp x t)
                    (consp x)
                    (<= a (car x))
@@ -1605,7 +1605,7 @@
                    (equal a (car x))))
      :hints (("Goal" :induct t)))
 
-   (defthml member-of-both-implies-not-no-duplicatesp-sorted-merge-<-into->
+   (defrulel member-of-both-implies-not-no-duplicatesp-sorted-merge-<-into->
      (implies (and (rational-listp x)
                    (rational-listp y)
                    (member a x)
@@ -1624,12 +1624,12 @@
                                        (cdr y)
                                        (cons (car x) z))))))
 
-   (defthml not-member-sortedp-nil
+   (defrulel not-member-sortedp-nil
      (implies (and (sortedp x nil)
                    (> a (car x)))
               (not (member a x))))
 
-   (defthml member-sortedp-nil
+   (defrulel member-sortedp-nil
      (implies (and (sortedp x nil)
                    (consp x)
                    (>= a (car x))
@@ -1638,7 +1638,7 @@
                    (equal a (car x))))
      :hints (("Goal" :induct t)))
 
-   (defthml member-of-both-implies-not-no-duplicatesp-sorted-merge->-into-<
+   (defrulel member-of-both-implies-not-no-duplicatesp-sorted-merge->-into-<
      (implies (and (rational-listp x)
                    (rational-listp y)
                    (member a x)
@@ -1668,7 +1668,7 @@
               :induct (mem-table-entries-logic lower upper mem-table parity))))
 
 
-   (defthml natp-nth-mem-table
+   (defrulel natp-nth-mem-table
      (implies (and (mem-tablep x)
                    (natp n)
                    (< n (len x)))
@@ -1694,7 +1694,7 @@
        (e/d* (acl2::ihsext-inductions acl2::ihsext-recursive-redefs))))
      :rule-classes :forward-chaining)
 
-   (defthml sortedp-mem-table-entries-logic
+   (defrulel sortedp-mem-table-entries-logic
      (implies (and
                (rational-listp mem-table)
                (mem-tablep mem-table)
@@ -1708,7 +1708,7 @@
               :induct (mem-table-entries-logic lower upper mem-table
                                                parity))))
 
-   (defthmld mem-table-is-one-to-one-lemma-helper-1
+   (defruledl mem-table-is-one-to-one-lemma-helper-1
      (implies
       (and
        (implies
@@ -1761,7 +1761,7 @@
      :instructions ((:dive 1) :s :top :prove))
 
 
-   (defthml mem-table-is-one-to-one-lemma-helper-2
+   (defrulel mem-table-is-one-to-one-lemma-helper-2
      (implies
       (and (integerp lower)
            (<= 0 lower)
@@ -1788,7 +1788,7 @@
      :hints (("Goal" :use mem-table-is-one-to-one-lemma-helper-1)))
 
 
-   (defthml mem-table-is-one-to-one-lemma-helper-3
+   (defrulel mem-table-is-one-to-one-lemma-helper-3
      (implies
       (and
        (implies
@@ -1866,7 +1866,7 @@
              nil))))
      :hints (("Goal" :use mem-table-is-one-to-one-lemma-helper-3)))
 
-   (defthml mem-table-is-one-to-one-lemma
+   (defrulel mem-table-is-one-to-one-lemma
      (implies (and (rational-listp mem-table)
                    (mem-tablep mem-table)
                    (natp lower)
@@ -1898,7 +1898,7 @@
      :rule-classes nil)
 
 
-   (defthml mem-table-is-one-to-one-helper
+   (defrulel mem-table-is-one-to-one-helper
      (implies (and (x86$cp x86$c)
                    (integerp i)
                    (<= 0 i)
@@ -1970,7 +1970,7 @@
              :in-theory (e/d (mem$ci !mem$ci) ())))
     :rule-classes nil)
 
-  (defthmld lsb-of-mem-table
+  (defruledl lsb-of-mem-table
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *mem-table-size-bits* i)
                   (not (equal (nth i (nth *mem-tablei* x86$c)) 1)))
@@ -1978,7 +1978,7 @@
     :hints (("Goal" :in-theory (e/d (x86$cp good-memp ash-less-than-constant)
                                     ()))))
 
-  (defthml mem-table-is-one-to-one-logtail
+  (defrulel mem-table-is-one-to-one-logtail
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *mem-table-size-bits* i)
                   (unsigned-byte-p *mem-table-size-bits* j)
@@ -1993,7 +1993,7 @@
                    (:instance lsb-of-mem-table (i j))
                    (:instance mem-table-is-one-to-one)))))
 
-  (defthml read-write-different-helper-lemma-1
+  (defrulel read-write-different-helper-lemma-1
     ;; This is a checkpoint during the proof of read-write-different.
     (implies
      (and (x86$cp x86$c)
@@ -2037,7 +2037,7 @@
                        (i i)
                        (j j))))))
 
-  (defthml read-write-different-helper-lemma-2
+  (defrulel read-write-different-helper-lemma-2
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *physical-address-size* i)
                   (unsigned-byte-p *physical-address-size* j)
@@ -2072,7 +2072,7 @@
                          (i i)
                          (j j))))))
 
-  (defthml read-write-different-helper-lemma-3
+  (defrulel read-write-different-helper-lemma-3
     (implies (and (x86$cp x86$c)
                   (unsigned-byte-p *physical-address-size* i)
                   (unsigned-byte-p *physical-address-size* j)
@@ -2104,7 +2104,7 @@
                          (i i)
                          (j j))))))
 
-  (defthml good-mem-arrayp-thm-1-helper
+  (defrulel good-mem-arrayp-thm-1-helper
     (implies (and (good-mem-arrayp-1-logic start len mem-array)
                   (integerp start)
                   (<= 0 start)
@@ -2129,7 +2129,7 @@
   ;;   :hints (("Goal" :in-theory (e/d (x86$cp good-memp good-mem-arrayp)
   ;;                                   (force (force))))))
 
-  (defthml good-mem-arrayp-thm-2
+  (defrulel good-mem-arrayp-thm-2
     (implies (and (x86$cp x86$c)
 
                   ;; [Shilpi]: Eliminate the following two hypotheses

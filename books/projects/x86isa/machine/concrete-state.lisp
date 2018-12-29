@@ -139,7 +139,7 @@
                (alistp x))
       :rule-classes :forward-chaining)
 
-    (defthml nth-and-assoc-equal-check
+    (defrulel nth-and-assoc-equal-check
       (implies (and (alistp x)
                     (not (equal (car (nth 0 x)) :oracle))
                     (equal (car (nth 1 x)) :oracle))
@@ -545,7 +545,7 @@
                     (good-mem-table-entriesp-weak (1+ i) table-bound x86$c))))
           (t nil)))
 
-  (defthml rational-listp-revappend
+  (defrulel rational-listp-revappend
     (implies (rational-listp x)
              (equal (rational-listp (revappend x y))
                     (rational-listp y))))
@@ -669,7 +669,7 @@
 
     )
 
-  (defthml good-mem-table-entriesp-weak-preserved-lemma
+  (defrulel good-mem-table-entriesp-weak-preserved-lemma
     (implies (and (good-mem-table-entriesp-weak lower upper1 x86$c)
                   (natp upper2)
                   (<= lower upper2)
@@ -738,7 +738,7 @@
            nil)
           (t (no-duplicatesp-sorted (cdr lst)))))
 
-  (defthml rational-listp-implies-eqlable-listp
+  (defrulel rational-listp-implies-eqlable-listp
     (implies (rational-listp x)
              (eqlable-listp x))
     :rule-classes (:rewrite :type-prescription))
@@ -979,7 +979,7 @@
                   (<= 0 (nth i (nth *mem-tablei* x86$c)))))
     :rule-classes (:rewrite :type-prescription))
 
-  (defthml nth-of-mem-table-<=-*2^mem-table-size-bits+1*
+  (defrulel nth-of-mem-table-<=-*2^mem-table-size-bits+1*
     (implies (and (mem-tablep x)
                   (integerp i)
                   (<= 0 i)
@@ -1077,7 +1077,7 @@
                    :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
                    (IMPLIES (,predicate X)
                             (NAT-LISTP X))
-                   :RULE-CLASSES :FORWARD-CHAINING)                 
+                   :RULE-CLASSES :FORWARD-CHAINING)
                  ,@(if (or (equal name 'MEM-ARRAY)
                           (equal name 'MEM-TABLE))
                       `()
@@ -1166,7 +1166,7 @@
 
   ;; Some additional theorems about mem-array:
 
-  (defthml nth-of-mem-arrayp
+  (defrulel nth-of-mem-arrayp
     (implies (and (mem-arrayp x)
                   (integerp i)
                   (<= 0 i)

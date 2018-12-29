@@ -1009,7 +1009,7 @@
     (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
     (local (include-book "arithmetic/top" :dir :system))
 
-    (defthml onesp-mem-table-implies-mem$ci-is-0-lemma
+    (defrulel onesp-mem-table-implies-mem$ci-is-0-lemma
       (implies (and (onesp-mem-table k mem-table)
                     (integerp i)
                     (<= 0 i)
@@ -1018,7 +1018,7 @@
                (equal (nth (logtail *2^x-byte-pseudo-page* i) mem-table)
                       1)))
 
-    (defthml onesp-mem-table-implies-mem$ci-is-0
+    (defrulel onesp-mem-table-implies-mem$ci-is-0
       (implies (and (onesp-mem-table k (nth *mem-tablei* x86$c))
                     (integerp i)
                     (<= 0 i)
@@ -1048,7 +1048,7 @@
                             (t (nth (- k n) ac)))))
       :hints (("Goal" :in-theory (enable nth make-list-ac))))
 
-    (defthml ash-monotone-2-lemma
+    (defrulel ash-monotone-2-lemma
       (implies (<= x y)
                (<= (* x (expt 2 z)) (* y (expt 2 z))))
       :rule-classes :linear)
@@ -1074,7 +1074,7 @@
     (corr-mem (create-x86$c) 0)
     :rule-classes nil)
 
-  (DEFTHML CREATE-X86{CORRESPONDENCE}
+  (DEFRULEL CREATE-X86{CORRESPONDENCE}
     (CORR (CREATE-X86$C)
           (CREATE-X86$A))
     :hints (("Goal"
@@ -1097,7 +1097,7 @@
                    corr-zmm-init)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML CREATE-X86{PRESERVED}
+  (DEFRULEL CREATE-X86{PRESERVED}
     (X86$AP (CREATE-X86$A))
     ;; Note that we disable the executable counterpart of x86$ap.
     :hints (("Goal" :in-theory (disable (x86$ap))))
@@ -1412,7 +1412,7 @@
                               (,a-getter I X86)))
                    :HINTS (("GOAL" :IN-THEORY (E/D (,a-getter ,a-setter) ()))))
 
-                 (DEFTHMLD ,(mk-name corr-name "-UPDATE-" stripped-name "-1")
+                 (DEFRULEDL ,(mk-name corr-name "-UPDATE-" stripped-name "-1")
                    (IMPLIES (AND (,corr-name-aux J X86$C (NTH ,new-constant X86))
                                  (NATP J)
                                  (NATP I))
@@ -1422,7 +1422,7 @@
                             :INDUCT (,corr-name-aux J X86$C (NTH ,new-constant X86))
                             :IN-THEORY (e/d () (X86$AP)))))
 
-                 (DEFTHMLD ,(mk-name corr-name "-UPDATE-" stripped-name "-2")
+                 (DEFRULEDL ,(mk-name corr-name "-UPDATE-" stripped-name "-2")
                    (IMPLIES (AND (,corr-name-aux J X86$C (NTH ,new-constant X86))
                                  (NATP J)
                                  (NATP I))
@@ -1442,7 +1442,7 @@
                                                        stripped-name "-1"))
                                   ))))
 
-                 (DEFTHML ,(mk-name corr-name "-UPDATE-" stripped-name)
+                 (DEFRULEL ,(mk-name corr-name "-UPDATE-" stripped-name)
                    (IMPLIES (AND (,corr-name X86$C (NTH ,new-constant X86))
                                  (NATP I))
                             (,corr-name
@@ -1537,7 +1537,7 @@
                               (,a-getter I X86)))
                    :HINTS (("GOAL" :IN-THEORY (E/D (,a-getter ,a-setter) ()))))
 
-                 (DEFTHML ,(mk-name corr-name "-UPDATE-" stripped-name)
+                 (DEFRULEL ,(mk-name corr-name "-UPDATE-" stripped-name)
                    (IMPLIES (AND (,corr-name X86$C (NTH ,new-constant X86))
                                  (NATP I)
                                  (,(if (equal (car (cadr type)) 'signed-byte)
@@ -1695,7 +1695,7 @@
                                    (x86 X86$C)
                                    (field (nth *zmmi* x86))))))))))
 
-  (DEFTHML RGFI*{CORRESPONDENCE}
+  (DEFRULEL RGFI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1708,7 +1708,7 @@
              :in-theory (e/d (corr-rgf) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML RGFI*{GUARD-THM}
+  (DEFRULEL RGFI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1719,7 +1719,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !RGFI*{CORRESPONDENCE}
+   `(DEFRULEL !RGFI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -1732,7 +1732,7 @@
 
   (local (in-theory (e/d () (corr-rgf-update-rgf))))
 
-  (DEFTHML !RGFI*{GUARD-THM}
+  (DEFRULEL !RGFI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1744,7 +1744,7 @@
                   (SIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !RGFI*{PRESERVED}
+  (DEFRULEL !RGFI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *64-bit-general-purpose-registers-len*)
@@ -1752,14 +1752,14 @@
              (X86$AP (!RGF$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML RIP*{CORRESPONDENCE}
+  (DEFRULEL RIP*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (RIP$C X86$C) (RIP$A X86)))
     :hints (("Goal" :in-theory (e/d (rip$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !RIP*{CORRESPONDENCE}
+   `(DEFRULEL !RIP*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (SIGNED-BYTE-P 48 V))
@@ -1767,7 +1767,7 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'RIP 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !RIP*{PRESERVED}
+  (DEFRULEL !RIP*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (SIGNED-BYTE-P 48 V))
              (X86$AP (!RIP$A V X86)))
     :RULE-CLASSES NIL)
@@ -1794,7 +1794,7 @@
              (X86$AP (!RFLAGS$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-VISIBLEI*{CORRESPONDENCE}
+  (DEFRULEL SEG-VISIBLEI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1806,7 +1806,7 @@
              :in-theory (e/d (x86$ap corr-seg-visible) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-VISIBLEI*{GUARD-THM}
+  (DEFRULEL SEG-VISIBLEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1817,7 +1817,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SEG-VISIBLEI*{CORRESPONDENCE}
+   `(DEFRULEL !SEG-VISIBLEI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -1830,7 +1830,7 @@
 
   (local (in-theory (e/d () (corr-seg-visible-update-seg-visible))))
 
-  (DEFTHML !SEG-VISIBLEI*{GUARD-THM}
+  (DEFRULEL !SEG-VISIBLEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1842,7 +1842,7 @@
                   (UNSIGNED-BYTE-P 16 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SEG-VISIBLEI*{PRESERVED}
+  (DEFRULEL !SEG-VISIBLEI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *segment-register-names-len*)
@@ -1850,7 +1850,7 @@
              (X86$AP (!SEG-VISIBLE$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-BASEI*{CORRESPONDENCE}
+  (DEFRULEL SEG-HIDDEN-BASEI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1862,7 +1862,7 @@
              :in-theory (e/d (x86$ap corr-seg-hidden-base) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-BASEI*{GUARD-THM}
+  (DEFRULEL SEG-HIDDEN-BASEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1873,7 +1873,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SEG-HIDDEN-BASEI*{CORRESPONDENCE}
+   `(DEFRULEL !SEG-HIDDEN-BASEI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -1886,7 +1886,7 @@
 
   (local (in-theory (e/d () (corr-seg-hidden-base-update-seg-hidden-base))))
 
-  (DEFTHML !SEG-HIDDEN-BASEI*{GUARD-THM}
+  (DEFRULEL !SEG-HIDDEN-BASEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1898,7 +1898,7 @@
                   (UNSIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SEG-HIDDEN-BASEI*{PRESERVED}
+  (DEFRULEL !SEG-HIDDEN-BASEI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *segment-register-names-len*)
@@ -1906,7 +1906,7 @@
              (X86$AP (!SEG-HIDDEN-BASE$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-LIMITI*{CORRESPONDENCE}
+  (DEFRULEL SEG-HIDDEN-LIMITI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1918,7 +1918,7 @@
              :in-theory (e/d (x86$ap corr-seg-hidden-limit) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-LIMITI*{GUARD-THM}
+  (DEFRULEL SEG-HIDDEN-LIMITI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1929,7 +1929,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SEG-HIDDEN-LIMITI*{CORRESPONDENCE}
+   `(DEFRULEL !SEG-HIDDEN-LIMITI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -1942,7 +1942,7 @@
 
   (local (in-theory (e/d () (corr-seg-hidden-limit-update-seg-hidden-limit))))
 
-  (DEFTHML !SEG-HIDDEN-LIMITI*{GUARD-THM}
+  (DEFRULEL !SEG-HIDDEN-LIMITI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1954,7 +1954,7 @@
                   (UNSIGNED-BYTE-P 32 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SEG-HIDDEN-LIMITI*{PRESERVED}
+  (DEFRULEL !SEG-HIDDEN-LIMITI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *segment-register-names-len*)
@@ -1962,7 +1962,7 @@
              (X86$AP (!SEG-HIDDEN-LIMIT$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-ATTRI*{CORRESPONDENCE}
+  (DEFRULEL SEG-HIDDEN-ATTRI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1974,7 +1974,7 @@
              :in-theory (e/d (x86$ap corr-seg-hidden-attr) ())))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SEG-HIDDEN-ATTRI*{GUARD-THM}
+  (DEFRULEL SEG-HIDDEN-ATTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -1985,7 +1985,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SEG-HIDDEN-ATTRI*{CORRESPONDENCE}
+   `(DEFRULEL !SEG-HIDDEN-ATTRI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -1998,7 +1998,7 @@
 
   (local (in-theory (e/d () (corr-seg-hidden-attr-update-seg-hidden-attr))))
 
-  (DEFTHML !SEG-HIDDEN-ATTRI*{GUARD-THM}
+  (DEFRULEL !SEG-HIDDEN-ATTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2010,7 +2010,7 @@
                   (UNSIGNED-BYTE-P 16 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SEG-HIDDEN-ATTRI*{PRESERVED}
+  (DEFRULEL !SEG-HIDDEN-ATTRI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *segment-register-names-len*)
@@ -2018,7 +2018,7 @@
              (X86$AP (!SEG-HIDDEN-ATTR$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML STRI*{CORRESPONDENCE}
+  (DEFRULEL STRI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR x86$C x86)
                   (x86$AP x86)
                   (NATP I)
@@ -2031,7 +2031,7 @@
              :in-theory (e/d (corr-str) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML STRI*{GUARD-THM}
+  (DEFRULEL STRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2042,7 +2042,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !STRI*{CORRESPONDENCE}
+   `(DEFRULEL !STRI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2055,7 +2055,7 @@
 
   (local (in-theory (e/d () (corr-str-update-str))))
 
-  (DEFTHML !STRI*{GUARD-THM}
+  (DEFRULEL !STRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2067,7 +2067,7 @@
                   (UNSIGNED-BYTE-P 80 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !STRI*{PRESERVED}
+  (DEFRULEL !STRI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *gdtr-idtr-names-len*)
@@ -2075,7 +2075,7 @@
              (X86$AP (!STR$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-VISIBLEI*{CORRESPONDENCE}
+  (DEFRULEL SSR-VISIBLEI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2088,7 +2088,7 @@
       :in-theory (e/d (corr-ssr-VISIBLE) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-VISIBLEI*{GUARD-THM}
+  (DEFRULEL SSR-VISIBLEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2099,7 +2099,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SSR-VISIBLEI*{CORRESPONDENCE}
+   `(DEFRULEL !SSR-VISIBLEI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2112,7 +2112,7 @@
 
   (local (in-theory (e/d () (corr-ssr-visible-update-ssr-visible))))
 
-  (DEFTHML !SSR-VISIBLEI*{GUARD-THM}
+  (DEFRULEL !SSR-VISIBLEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2124,7 +2124,7 @@
                   (UNSIGNED-BYTE-P 16 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SSR-VISIBLEI*{PRESERVED}
+  (DEFRULEL !SSR-VISIBLEI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *ldtr-tr-names-len*)
@@ -2132,7 +2132,7 @@
              (X86$AP (!SSR-VISIBLE$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-BASEI*{CORRESPONDENCE}
+  (DEFRULEL SSR-HIDDEN-BASEI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2145,7 +2145,7 @@
       :in-theory (e/d (corr-ssr-HIDDEN-BASE) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-BASEI*{GUARD-THM}
+  (DEFRULEL SSR-HIDDEN-BASEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2156,7 +2156,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SSR-HIDDEN-BASEI*{CORRESPONDENCE}
+   `(DEFRULEL !SSR-HIDDEN-BASEI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2169,7 +2169,7 @@
 
   (local (in-theory (e/d () (corr-ssr-hidden-base-update-ssr-hidden-base))))
 
-  (DEFTHML !SSR-HIDDEN-BASEI*{GUARD-THM}
+  (DEFRULEL !SSR-HIDDEN-BASEI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2181,7 +2181,7 @@
                   (UNSIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SSR-HIDDEN-BASEI*{PRESERVED}
+  (DEFRULEL !SSR-HIDDEN-BASEI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *ldtr-tr-names-len*)
@@ -2189,7 +2189,7 @@
              (X86$AP (!SSR-HIDDEN-BASE$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-LIMITI*{CORRESPONDENCE}
+  (DEFRULEL SSR-HIDDEN-LIMITI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2202,7 +2202,7 @@
       :in-theory (e/d (corr-ssr-HIDDEN-LIMIT) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-LIMITI*{GUARD-THM}
+  (DEFRULEL SSR-HIDDEN-LIMITI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2213,7 +2213,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SSR-HIDDEN-LIMITI*{CORRESPONDENCE}
+   `(DEFRULEL !SSR-HIDDEN-LIMITI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2226,7 +2226,7 @@
 
   (local (in-theory (e/d () (corr-ssr-hidden-limit-update-ssr-hidden-limit))))
 
-  (DEFTHML !SSR-HIDDEN-LIMITI*{GUARD-THM}
+  (DEFRULEL !SSR-HIDDEN-LIMITI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2238,7 +2238,7 @@
                   (UNSIGNED-BYTE-P 32 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SSR-HIDDEN-LIMITI*{PRESERVED}
+  (DEFRULEL !SSR-HIDDEN-LIMITI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *ldtr-tr-names-len*)
@@ -2246,7 +2246,7 @@
              (X86$AP (!SSR-HIDDEN-LIMIT$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-ATTRI*{CORRESPONDENCE}
+  (DEFRULEL SSR-HIDDEN-ATTRI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2259,7 +2259,7 @@
       :in-theory (e/d (corr-ssr-HIDDEN-ATTR) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML SSR-HIDDEN-ATTRI*{GUARD-THM}
+  (DEFRULEL SSR-HIDDEN-ATTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2270,7 +2270,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !SSR-HIDDEN-ATTRI*{CORRESPONDENCE}
+   `(DEFRULEL !SSR-HIDDEN-ATTRI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2283,7 +2283,7 @@
 
   (local (in-theory (e/d () (corr-ssr-hidden-attr-update-ssr-hidden-attr))))
 
-  (DEFTHML !SSR-HIDDEN-ATTRI*{GUARD-THM}
+  (DEFRULEL !SSR-HIDDEN-ATTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2295,7 +2295,7 @@
                   (UNSIGNED-BYTE-P 16 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !SSR-HIDDEN-ATTRI*{PRESERVED}
+  (DEFRULEL !SSR-HIDDEN-ATTRI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *ldtr-tr-names-len*)
@@ -2303,7 +2303,7 @@
              (X86$AP (!SSR-HIDDEN-ATTR$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML CTRI*{CORRESPONDENCE}
+  (DEFRULEL CTRI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2316,7 +2316,7 @@
       :in-theory (e/d (corr-ctr) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML CTRI*{GUARD-THM}
+  (DEFRULEL CTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2327,7 +2327,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !CTRI*{CORRESPONDENCE}
+   `(DEFRULEL !CTRI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2340,7 +2340,7 @@
 
   (local (in-theory (e/d () (corr-ctr-update-ctr))))
 
-  (DEFTHML !CTRI*{GUARD-THM}
+  (DEFRULEL !CTRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2352,7 +2352,7 @@
                   (UNSIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !CTRI*{PRESERVED}
+  (DEFRULEL !CTRI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *control-register-names-len*)
@@ -2360,7 +2360,7 @@
              (X86$AP (!CTR$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML DBGI*{CORRESPONDENCE}
+  (DEFRULEL DBGI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2373,7 +2373,7 @@
       :in-theory (e/d (corr-dbg) (x86$ap corr-dbg-aux))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML DBGI*{GUARD-THM}
+  (DEFRULEL DBGI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2384,7 +2384,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !DBGI*{CORRESPONDENCE}
+   `(DEFRULEL !DBGI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2397,7 +2397,7 @@
 
   (local (in-theory (e/d () (corr-dbg-update-dbg))))
 
-  (DEFTHML !DBGI*{GUARD-THM}
+  (DEFRULEL !DBGI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2409,7 +2409,7 @@
                   (UNSIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !DBGI*{PRESERVED}
+  (DEFRULEL !DBGI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *debug-register-names-len*)
@@ -2417,7 +2417,7 @@
              (X86$AP (!DBG$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-DATAI*{CORRESPONDENCE}
+  (DEFRULEL FP-DATAI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2431,7 +2431,7 @@
              :in-theory (e/d (corr-fp-data) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-DATAI*{GUARD-THM}
+  (DEFRULEL FP-DATAI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2443,7 +2443,7 @@
 
 
   (make-event
-   `(DEFTHML !FP-DATAI*{CORRESPONDENCE}
+   `(DEFRULEL !FP-DATAI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2456,7 +2456,7 @@
 
   (local (in-theory (e/d () (corr-fp-data-update-fp-data))))
 
-  (DEFTHML !FP-DATAI*{GUARD-THM}
+  (DEFRULEL !FP-DATAI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2468,7 +2468,7 @@
                   (UNSIGNED-BYTE-P 80 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !FP-DATAI*{PRESERVED}
+  (DEFRULEL !FP-DATAI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I 8)
@@ -2476,7 +2476,7 @@
              (X86$AP (!FP-DATA$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-CTRL*{CORRESPONDENCE}
+  (DEFRULEL FP-CTRL*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-CTRL$C X86$C)
                     (FP-CTRL$A X86)))
@@ -2484,7 +2484,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-CTRL*{CORRESPONDENCE}
+   `(DEFRULEL !FP-CTRL*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 16 V))
@@ -2493,13 +2493,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-CTRL 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-CTRL*{PRESERVED}
+  (DEFRULEL !FP-CTRL*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 16 V))
              (X86$AP (!FP-CTRL$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-STATUS*{CORRESPONDENCE}
+  (DEFRULEL FP-STATUS*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-STATUS$C X86$C)
                     (FP-STATUS$A X86)))
@@ -2507,7 +2507,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-STATUS*{CORRESPONDENCE}
+   `(DEFRULEL !FP-STATUS*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 16 V))
@@ -2516,20 +2516,20 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-STATUS 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-STATUS*{PRESERVED}
+  (DEFRULEL !FP-STATUS*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 16 V))
              (X86$AP (!FP-STATUS$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-TAG*{CORRESPONDENCE}
+  (DEFRULEL FP-TAG*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-TAG$C X86$C) (FP-TAG$A X86)))
     :hints (("Goal" :in-theory (e/d (fp-tag$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-TAG*{CORRESPONDENCE}
+   `(DEFRULEL !FP-TAG*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 16 V))
@@ -2538,13 +2538,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-TAG 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-TAG*{PRESERVED}
+  (DEFRULEL !FP-TAG*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 16 V))
              (X86$AP (!FP-TAG$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-LAST-INST*{CORRESPONDENCE}
+  (DEFRULEL FP-LAST-INST*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-LAST-INST$C X86$C)
                     (FP-LAST-INST$A X86)))
@@ -2552,7 +2552,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-LAST-INST*{CORRESPONDENCE}
+   `(DEFRULEL !FP-LAST-INST*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 48 V))
@@ -2561,13 +2561,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-LAST-INST 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-LAST-INST*{PRESERVED}
+  (DEFRULEL !FP-LAST-INST*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 48 V))
              (X86$AP (!FP-LAST-INST$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-LAST-DATA*{CORRESPONDENCE}
+  (DEFRULEL FP-LAST-DATA*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-LAST-DATA$C X86$C)
                     (FP-LAST-DATA$A X86)))
@@ -2575,7 +2575,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-LAST-DATA*{CORRESPONDENCE}
+   `(DEFRULEL !FP-LAST-DATA*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 48 V))
@@ -2584,13 +2584,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-LAST-DATA 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-LAST-DATA*{PRESERVED}
+  (DEFRULEL !FP-LAST-DATA*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 48 V))
              (X86$AP (!FP-LAST-DATA$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FP-OPCODE*{CORRESPONDENCE}
+  (DEFRULEL FP-OPCODE*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FP-OPCODE$C X86$C)
                     (FP-OPCODE$A X86)))
@@ -2598,7 +2598,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FP-OPCODE*{CORRESPONDENCE}
+   `(DEFRULEL !FP-OPCODE*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 11 V))
@@ -2607,13 +2607,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'FP-OPCODE 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FP-OPCODE*{PRESERVED}
+  (DEFRULEL !FP-OPCODE*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 11 V))
              (X86$AP (!FP-OPCODE$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML ZMMI*{CORRESPONDENCE}
+  (DEFRULEL ZMMI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2623,7 +2623,7 @@
              :in-theory (e/d (corr-zmm) (x86$ap))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML ZMMI*{GUARD-THM}
+  (DEFRULEL ZMMI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2634,7 +2634,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !ZMMI*{CORRESPONDENCE}
+   `(DEFRULEL !ZMMI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2647,7 +2647,7 @@
 
   (local (in-theory (e/d () (corr-zmm-update-zmm))))
 
-  (DEFTHML !ZMMI*{GUARD-THM}
+  (DEFRULEL !ZMMI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2659,7 +2659,7 @@
                   (UNSIGNED-BYTE-P 512 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !ZMMI*{PRESERVED}
+  (DEFRULEL !ZMMI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I 32)
@@ -2667,14 +2667,14 @@
              (X86$AP (!ZMM$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML MXCSR*{CORRESPONDENCE}
+  (DEFRULEL MXCSR*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (MXCSR$C X86$C) (MXCSR$A X86)))
     :hints (("Goal" :in-theory (e/d (mxcsr$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !MXCSR*{CORRESPONDENCE}
+   `(DEFRULEL !MXCSR*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (UNSIGNED-BYTE-P 32 V))
@@ -2683,13 +2683,13 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'MXCSR 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !MXCSR*{PRESERVED}
+  (DEFRULEL !MXCSR*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (UNSIGNED-BYTE-P 32 V))
              (X86$AP (!MXCSR$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML MSRI*{CORRESPONDENCE}
+  (DEFRULEL MSRI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2702,7 +2702,7 @@
       :in-theory (e/d (corr-msr) (x86$ap corr-msr-aux))))
     :RULE-CLASSES NIL)
 
-  (DEFTHML MSRI*{GUARD-THM}
+  (DEFRULEL MSRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2713,7 +2713,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !MSRI*{CORRESPONDENCE}
+   `(DEFRULEL !MSRI*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (NATP I)
@@ -2726,7 +2726,7 @@
 
   (local (in-theory (e/d () (corr-msr-update-msr))))
 
-  (DEFTHML !MSRI*{GUARD-THM}
+  (DEFRULEL !MSRI*{GUARD-THM}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -2738,7 +2738,7 @@
                   (UNSIGNED-BYTE-P 64 V)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !MSRI*{PRESERVED}
+  (DEFRULEL !MSRI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I *model-specific-register-names-len*)
@@ -2746,44 +2746,44 @@
              (X86$AP (!MSR$AI I V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML MS*{CORRESPONDENCE}
+  (DEFRULEL MS*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (MS$C X86$C) (MS$A X86)))
     :hints (("Goal" :in-theory (e/d (ms$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !MS*{CORRESPONDENCE}
+   `(DEFRULEL !MS*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
                (CORR (!MS$C V X86$C) (!MS$A V X86)))
       :hints ,(hints-for-updater-correspondence-lemmas 'MS 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !MS*{PRESERVED}
+  (DEFRULEL !MS*{PRESERVED}
     (IMPLIES (X86$AP X86)
              (X86$AP (!MS$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML FAULT*{CORRESPONDENCE}
+  (DEFRULEL FAULT*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (FAULT$C X86$C) (FAULT$A X86)))
     :hints (("Goal" :in-theory (e/d (fault$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !FAULT*{CORRESPONDENCE}
+   `(DEFRULEL !FAULT*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
                (CORR (!FAULT$C V X86$C)
                      (!FAULT$A V X86)))
       :hints ,(hints-for-updater-correspondence-lemmas 'FAULT 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !FAULT*{PRESERVED}
+  (DEFRULEL !FAULT*{PRESERVED}
     (IMPLIES (X86$AP X86)
              (X86$AP (!FAULT$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML ENV*{CORRESPONDENCE}
+  (DEFRULEL ENV*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (ENV$C X86$C)
                     (ENV$A X86)))
@@ -2791,7 +2791,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !ENV*{CORRESPONDENCE}
+   `(DEFRULEL !ENV*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (ENV-ALISTP V))
@@ -2800,32 +2800,32 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'ENV 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !ENV*{PRESERVED}
+  (DEFRULEL !ENV*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (ENV-ALISTP V))
              (X86$AP (!ENV$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML UNDEF*{CORRESPONDENCE}
+  (DEFRULEL UNDEF*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (UNDEF$C X86$C) (UNDEF$A X86)))
     :hints (("Goal" :in-theory (e/d (undef$c) ())))
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !UNDEF*{CORRESPONDENCE}
+   `(DEFRULEL !UNDEF*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
                (CORR (!UNDEF$C V X86$C)
                      (!UNDEF$A V X86)))
       :hints ,(hints-for-updater-correspondence-lemmas 'UNDEF 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !UNDEF*{PRESERVED}
+  (DEFRULEL !UNDEF*{PRESERVED}
     (IMPLIES (X86$AP X86)
              (X86$AP (!UNDEF$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML APP-VIEW*{CORRESPONDENCE}
+  (DEFRULEL APP-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (APP-VIEW$C X86$C)
                     (APP-VIEW$A X86)))
@@ -2833,7 +2833,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !APP-VIEW*{CORRESPONDENCE}
+   `(DEFRULEL !APP-VIEW*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (BOOLEANP V))
@@ -2842,12 +2842,12 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'APP-VIEW 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !APP-VIEW*{PRESERVED}
+  (DEFRULEL !APP-VIEW*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (BOOLEANP V))
              (X86$AP (!APP-VIEW$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML MARKING-VIEW*{CORRESPONDENCE}
+  (DEFRULEL MARKING-VIEW*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (MARKING-VIEW$C X86$C)
                     (MARKING-VIEW$A X86)))
@@ -2855,7 +2855,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !MARKING-VIEW*{CORRESPONDENCE}
+   `(DEFRULEL !MARKING-VIEW*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (BOOLEANP V))
@@ -2864,12 +2864,12 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'MARKING-VIEW 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !MARKING-VIEW*{PRESERVED}
+  (DEFRULEL !MARKING-VIEW*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (BOOLEANP V))
              (X86$AP (!MARKING-VIEW$A V X86)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML OS-INFO*{CORRESPONDENCE}
+  (DEFRULEL OS-INFO*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86) (X86$AP X86))
              (EQUAL (OS-INFO$C X86$C)
                     (OS-INFO$A X86)))
@@ -2877,7 +2877,7 @@
     :RULE-CLASSES NIL)
 
   (make-event
-   `(DEFTHML !OS-INFO*{CORRESPONDENCE}
+   `(DEFRULEL !OS-INFO*{CORRESPONDENCE}
       (IMPLIES (AND (CORR X86$C X86)
                     (X86$AP X86)
                     (KEYWORDP V))
@@ -2886,7 +2886,7 @@
       :hints ,(hints-for-updater-correspondence-lemmas 'OS-INFO 'simple)
       :RULE-CLASSES NIL))
 
-  (DEFTHML !OS-INFO*{PRESERVED}
+  (DEFRULEL !OS-INFO*{PRESERVED}
     (IMPLIES (AND (X86$AP X86) (KEYWORDP V))
              (X86$AP (!OS-INFO$A V X86)))
     :RULE-CLASSES NIL)
@@ -2984,7 +2984,7 @@
 
     ) ;; End of encapsulate
 
-  (DEFTHML MEMI*{CORRESPONDENCE}
+  (DEFRULEL MEMI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR X86$C X86)
                   (X86$AP X86)
                   (NATP I)
@@ -3017,7 +3017,7 @@
                               (x mem)))
              :expand ((memp-aux (sz i v mem))))))
 
-  (DEFTHML x86$ap-!mem$ai
+  (DEFRULEL x86$ap-!mem$ai
     (IMPLIES (AND (CORR x86$C x86)
                   (x86$AP x86)
                   (NATP I)
@@ -3071,7 +3071,7 @@
                                                     (X86$AP))
                              :INDUCT (,corr-name-aux J X86$C (NTH ,constant X86))))))
 
-                 (DEFTHML ,(mk-name corr-name "-!MEMI")
+                 (DEFRULEL ,(mk-name corr-name "-!MEMI")
                    (IMPLIES (AND (,corr-name X86$C (NTH ,constant X86))
                                  (X86$CP X86$C)
                                  (X86$AP X86)
@@ -3105,7 +3105,7 @@
 
   (create-mem-correspondence-corr-lemmas)
 
-  (DEFTHML !MEMI*{CORRESPONDENCE}
+  (DEFRULEL !MEMI*{CORRESPONDENCE}
     (IMPLIES (AND (CORR x86$C x86)
                   (x86$AP x86)
                   (NATP I)
@@ -3145,7 +3145,7 @@
                   (X86$CP X86$C)))
     :RULE-CLASSES NIL)
 
-  (DEFTHML !MEMI*{PRESERVED}
+  (DEFRULEL !MEMI*{PRESERVED}
     (IMPLIES (AND (X86$AP X86)
                   (NATP I)
                   (< I 4503599627370496)
