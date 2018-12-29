@@ -100,29 +100,17 @@ library."
                     (:instance lemma2)
                     (:instance lemma3))))))
 
-  (encapsulate
-    ()
-    (local (defthmd l0
-             (implies (< (nfix n) (len x))
-                      (consp (nthcdr n x)))
-             :hints(("Goal" :induct (nthcdr n x)))))
-
-    (local (defthmd l1
-             (implies (not (< (nfix n) (len x)))
-                      (not (consp (nthcdr n x))))
-             :hints(("goal" :induct (nthcdr n x)))))
-
-    (defthm consp-of-nthcdr
-      (equal (consp (nthcdr n x))
-             (< (nfix n) (len x)))
-      :hints(("Goal" :use ((:instance l0)
-                           (:instance l1))))))
-
-
   (defthm len-of-nthcdr
     (equal (len (nthcdr n l))
            (nfix (- (len l) (nfix n))))
     :hints (("Goal" :in-theory (enable nthcdr))))
+
+  (defthm consp-of-nthcdr
+    (equal (consp (nthcdr n x))
+           (< (nfix n) (len x)))
+    :hints(("Goal" :in-theory (disable len-of-nthcdr)
+            :use ((:instance len-of-nthcdr (l x)))
+            :expand (len (nthcdr n x)))))
 
   (defthm open-small-nthcdr
     (implies (syntaxp (and (quotep n)
