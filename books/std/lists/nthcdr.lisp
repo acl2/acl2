@@ -67,20 +67,10 @@ library."
 
   (encapsulate
     ()
-    (local (defthmd lemma1
-             (implies (true-listp x)
-                      (true-listp (nthcdr n x)))
-             :hints(("Goal" :in-theory (enable nthcdr)))))
-
-    (local (defthmd lemma2
-             (implies (< (len x) (nfix n))
-                      (true-listp (nthcdr n x)))
-             :hints(("Goal" :in-theory (enable nthcdr)))))
-
-    (local (defthmd lemma3
-             (implies (and (not (true-listp x))
-                           (not (< (len x) (nfix n))))
-                      (not (true-listp (nthcdr n x))))
+    (local (defthm lemma
+             (iff (true-listp (nthcdr n x))
+                    (or (true-listp x)
+                        (< (len x) (nfix n))))
              :hints(("Goal" :in-theory (enable nthcdr)))))
 
     (defthm true-listp-of-nthcdr
@@ -93,12 +83,7 @@ library."
 ;                    (:type-prescription :corollary (implies (true-listp x)
 ;                                                            (true-listp
 ;                                                             (nthcdr n x))))
-                     )
-      :hints(("Goal"
-              :in-theory (disable nthcdr)
-              :use ((:instance lemma1)
-                    (:instance lemma2)
-                    (:instance lemma3))))))
+                     )))
 
   (defthm len-of-nthcdr
     (equal (len (nthcdr n l))
