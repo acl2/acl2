@@ -415,6 +415,10 @@
     (equal (nat=>lendian* base 0)
            nil))
 
+  (defrule len-0-of-nat=>lendian*
+    (equal (equal (len (nat=>lendian* base x)) 0)
+           (zp x)))
+
   (defrule expt-of-len-of-nat=>lendian*-is-upper-bound
     (implies (and (natp nat)
                   (dab-basep base))
@@ -676,6 +680,10 @@
   (defrule nat=>bendian*-of-0
     (equal (nat=>bendian* base 0)
            nil))
+
+  (defrule len-0-of-nat=>bendian*
+    (equal (equal (len (nat=>bendian* base x)) 0)
+           (zp x)))
 
   (defrule expt-of-len-of-nat=>bendian*-is-upper-bound
     (implies (and (natp nat)
