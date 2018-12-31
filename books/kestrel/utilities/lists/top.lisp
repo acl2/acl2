@@ -18,6 +18,7 @@
 (include-book "intersectp-theorems")
 (include-book "last-theorems")
 (include-book "len-const-theorems")
+(include-book "nthcdr-theorems")
 (include-book "primitive-theorems")
 (include-book "rev-theorems")
 (include-book "set-difference-theorems")
