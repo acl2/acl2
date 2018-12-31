@@ -682,7 +682,8 @@ set to the most-significant bit of the original operand.</p>"
                       1)
                  (loghead ,size
                           (ash
-                           (logext ,size dst)
+                           (mbe :logic (logext ,size dst)
+                                :exec (bitops::fast-logext ,size dst))
                            neg-src))
 ;                   (the (unsigned-byte ,size)
 ;                     (logior ,size-mask raw-result-not-sign-extended))

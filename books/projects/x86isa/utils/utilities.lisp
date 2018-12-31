@@ -47,6 +47,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
+(include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
@@ -569,7 +570,8 @@ constants and functions; it also proves some associated lemmas.</p>"
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        (logext ,n x))
+        (mbe :logic (logext ,n x)
+             :exec (bitops::fast-logext ,n x)))
 
      `(define ,ntoi
         :inline t
