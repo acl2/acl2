@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 (include-book "add-to-set-theorems")
+(include-book "append-theorems")
 (include-book "index-of-theorems")
 (include-book "intersection-theorems")
 (include-book "intersectp-theorems")
