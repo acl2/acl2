@@ -178,9 +178,12 @@
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  Some files have been refactored into smaller files.  The macro
- to generate additional return types for conversions from natural numbers to
- digits has been generalized and renamed.</p>
+ and renamed.  Some files have been refactored into smaller files.</p>
+
+ <p>Some theorems have been added.</p>
+
+ <p>The macro to generate additional return types for conversions from natural
+ numbers to digits has been generalized and renamed.</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
