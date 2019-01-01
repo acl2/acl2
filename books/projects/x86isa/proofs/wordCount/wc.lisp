@@ -569,7 +569,7 @@
 
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr32
@@ -579,7 +579,7 @@
                              wml32
                              wml64
                              rr32
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              riml-size
                              riml32
@@ -1145,7 +1145,7 @@
 
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr32
@@ -1156,7 +1156,7 @@
                              wml64
                              write-canonical-address-to-memory
                              rr32
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              riml-size
                              riml32
@@ -1405,13 +1405,13 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              riml-size
                              riml08
@@ -1938,13 +1938,13 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              riml-size
                              riml08
@@ -2330,14 +2330,14 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              select-segment-register
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
@@ -2819,13 +2819,13 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
@@ -3289,13 +3289,13 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
@@ -3857,14 +3857,14 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              select-segment-register
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
@@ -4686,13 +4686,13 @@
                              gpr-add-spec-4
                              jcc/cmovcc/setcc-spec
                              !rgfi-size
-                             x86-operand-to-reg/mem$
+                             x86-operand-to-reg/mem
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory

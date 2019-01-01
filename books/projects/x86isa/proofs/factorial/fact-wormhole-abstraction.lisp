@@ -408,8 +408,8 @@
                              one-byte-opcode-execute
                              two-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-user-rflags
                              riml-size
@@ -462,8 +462,8 @@
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-user-rflags
                              riml-size
@@ -502,8 +502,8 @@
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-user-rflags
                              riml-size
@@ -549,8 +549,8 @@
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              check-instruction-length
                              write-user-rflags
                              riml-size
@@ -591,8 +591,8 @@
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              rme-size
                              rime-size
@@ -638,8 +638,8 @@
                              x86-operation-mode
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem$
-                             x86-operand-from-modr/m-and-sib-bytes$
+                             x86-operand-to-reg/mem
+                             x86-operand-from-modr/m-and-sib-bytes
                              write-user-rflags
                              riml-size
                              riml08

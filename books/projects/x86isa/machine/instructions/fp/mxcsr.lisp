@@ -86,7 +86,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*gpr-access*
                                                 4
                                                 inst-ac?
@@ -119,7 +119,7 @@
           (3 ;; STMXCSR
            (b* ((mxcsr (the (unsigned-byte 32) (mxcsr x86)))
                 ((mv flg1 x86)
-                 (x86-operand-to-reg/mem$ proc-mode
+                 (x86-operand-to-reg/mem proc-mode
                                           4
                                           inst-ac?
                                           nil ;; Not a memory pointer operand

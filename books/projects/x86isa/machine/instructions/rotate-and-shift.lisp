@@ -159,7 +159,7 @@
 
        (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -244,7 +244,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ proc-mode reg/mem-size
+        (x86-operand-to-reg/mem proc-mode reg/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  ;; TO-DO@Shilpi: Remove this trunc.

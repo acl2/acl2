@@ -107,7 +107,7 @@
 	    x86)
 	(if (equal (ash opcode -4) 9) ;; #x90+rw/rd
 	    (mv nil (rgfi-size reg/mem-size *rax* rex-byte x86) 0 0 x86)
-	  (x86-operand-from-modr/m-and-sib-bytes$
+	  (x86-operand-from-modr/m-and-sib-bytes
 	   proc-mode #.*gpr-access* reg/mem-size inst-ac?
 	   nil ;; Not a memory pointer operand
 	   seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -145,7 +145,7 @@
 	(if (equal (ash opcode -4) 9)
 	    (let ((x86 (!rgfi-size reg/mem-size *rax* val2 rex-byte x86)))
 	      (mv nil x86))
-	  (x86-operand-to-reg/mem$ proc-mode reg/mem-size
+	  (x86-operand-to-reg/mem proc-mode reg/mem-size
 				   inst-ac?
 				   nil ;; Not a memory pointer operand
 				   val2
@@ -215,7 +215,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* reg/mem-size inst-ac?
 	 nil ;; Not a memory pointer operand
 	 seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -248,7 +248,7 @@
 	    (let ((register (rgfi-size reg/mem-size
 				       (reg-index reg rex-byte #.*r*) rex-byte
 				       x86)))
-	      (x86-operand-to-reg/mem$ proc-mode reg/mem-size
+	      (x86-operand-to-reg/mem proc-mode reg/mem-size
 				       inst-ac?
 				       nil ;; Not a memory pointer operand
 				       register

@@ -1567,7 +1567,7 @@ reference made from privilege level 3.</blockquote>"
 	      (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
 	     (alignment-checking-enabled-p x86))))
 
-  (define x86-operand-from-modr/m-and-sib-bytes$
+  (define x86-operand-from-modr/m-and-sib-bytes
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
      (reg-type      :type (unsigned-byte  1)
        "@('reg-type') is @('*gpr-access*') for GPRs, and
@@ -1624,7 +1624,7 @@ reference made from privilege level 3.</blockquote>"
    This is useful for instructions that modify the operand after reading it
    (e.g. the source/destination operand of ADD),
    which pass the effective address calculated by this function
-   to @(tsee x86-operand-to-reg/mem$) (which writes the result to memory).
+   to @(tsee x86-operand-to-reg/mem) (which writes the result to memory).
    </p>"
 
     (b* (((mv ?flg0
@@ -1668,12 +1668,12 @@ reference made from privilege level 3.</blockquote>"
 
     ///
 
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (member operand-size '(1 2 4 8 16))
                 (equal bound (ash operand-size 3))
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
                         proc-mode reg-type operand-size inst-ac? memory-ptr?
                         seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
                         x86))
@@ -1681,31 +1681,31 @@ reference made from privilege level 3.</blockquote>"
       :gen-type t
       :hints (("Goal" :in-theory (enable rme-size))))
 
-    (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+    (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (member operand-size '(1 2 4 8 16))
                 (<= (ash operand-size 3) bound)
                 (integerp bound)
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
                         proc-mode reg-type operand-size inst-ac? memory-ptr?
                         seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
                         x86))
       :hints (("Goal" :in-theory (e/d ()
-                                      (x86-operand-from-modr/m-and-sib-bytes$
+                                      (x86-operand-from-modr/m-and-sib-bytes
                                        unsigned-byte-p)))))
 
     (in-theory
      (disable
-      bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand))
+      bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand))
 
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
+    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
       :hyp (and (member operand-size '(6 10))
                 (equal bound (ash operand-size 3))
                 (not (equal mod #b11))
                 (x86p x86))
       :bound bound
-      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
                         proc-mode reg-type operand-size inst-ac? memory-ptr?
                         seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
                         x86))
@@ -1713,49 +1713,49 @@ reference made from privilege level 3.</blockquote>"
       :gen-type t
       :hints (("Goal" :in-theory (enable rme-size))))
 
-    (defthm integerp-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-type-prescription
+    (defthm integerp-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-type-prescription
       (implies (force (x86p x86))
                (natp (mv-nth
                       2
-                      (x86-operand-from-modr/m-and-sib-bytes$
+                      (x86-operand-from-modr/m-and-sib-bytes
                        proc-mode reg-type
                        operand-size inst-ac? memory-ptr? seg-reg p4 temp-RIP
                        rex-byte r/m mod sib num-imm-bytes x86))))
       :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :type-prescription)
 
-    (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-linear<=4
+    (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
       (implies (x86p x86)
                (<= (mv-nth
                     2
-                    (x86-operand-from-modr/m-and-sib-bytes$
+                    (x86-operand-from-modr/m-and-sib-bytes
                      proc-mode reg-type operand-size inst-ac? memory-ptr?
                      seg-reg p4 temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
                    4))
       :hints (("Goal" :in-theory (e/d (rml-size) ())))
       :rule-classes :linear)
 
-    (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes$
+    (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
       ;; For guard proofs obligations originating from calls to add-to-*ip:
       :hyp (forced-and (x86p x86))
       :bound 48
-      :concl (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+      :concl (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
                         proc-mode reg-type operand-size inst-ac? memory-ptr?
                         seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
       :hints (("Goal" :in-theory (e/d (signed-byte-p) ())))
       :gen-linear t
       :gen-type t)
 
-    (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
+    (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes
       :hyp (forced-and (x86p x86))
       :bound 64
-      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes$
+      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes
                         proc-mode reg-type operand-size inst-ac? memory-ptr?
                         seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
       :gen-linear t
       :gen-type t))
 
-  (define x86-operand-to-reg/mem$
+  (define x86-operand-to-reg/mem
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (operand-size :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
@@ -1781,7 +1781,7 @@ reference made from privilege level 3.</blockquote>"
    the operand is written to either a register or memory.
    The address argument of this function is often
    the effective address calculated and returned by
-   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   @(tsee x86-operand-from-modr/m-and-sib-bytes).
    </p>"
 
     :guard (and (unsigned-byte-p (ash operand-size 3) operand)
@@ -1803,17 +1803,17 @@ reference made from privilege level 3.</blockquote>"
 
     ///
 
-    (defthm x86p-x86-operand-to-reg/mem$
+    (defthm x86p-x86-operand-to-reg/mem
       (implies (force (x86p x86))
                (x86p
                 (mv-nth
                  1
-                 (x86-operand-to-reg/mem$
+                 (x86-operand-to-reg/mem
                   proc-mode operand-size inst-ac?
                   memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
-  (define x86-operand-to-xmm/mem$
+  (define x86-operand-to-xmm/mem
     ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
      (operand-size  :type (member 4 8 16))
      (inst-ac?      booleanp
@@ -1837,7 +1837,7 @@ reference made from privilege level 3.</blockquote>"
    the operand is written to either a register or memory.
    The address argument of this function is often
    the effective address calculated and returned by
-   @(tsee x86-operand-from-modr/m-and-sib-bytes$).
+   @(tsee x86-operand-from-modr/m-and-sib-bytes).
    </p>"
 
     :guard (unsigned-byte-p (ash operand-size 3) operand)
@@ -1857,12 +1857,12 @@ reference made from privilege level 3.</blockquote>"
 
     ///
 
-    (defthm x86p-x86-operand-to-xmm/mem$
+    (defthm x86p-x86-operand-to-xmm/mem
       (implies (force (x86p x86))
                (x86p
                 (mv-nth
                  1
-                 (x86-operand-to-xmm/mem$
+                 (x86-operand-to-xmm/mem
                   proc-mode operand-size inst-ac? operand
                   seg-reg addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))

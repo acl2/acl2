@@ -485,7 +485,7 @@
                         one-byte-opcode-execute
                         two-byte-opcode-execute
                         !rgfi-size
-                        x86-operand-to-reg/mem$
+                        x86-operand-to-reg/mem
                         check-instruction-length
                         wr64
                         wr32
@@ -494,7 +494,7 @@
                         rml32
                         rml64
                         wml32
-                        x86-operand-from-modr/m-and-sib-bytes$
+                        x86-operand-from-modr/m-and-sib-bytes
                         riml-size
                         riml32
                         riml08
@@ -539,7 +539,7 @@
 
                         one-byte-opcode-execute
                         !rgfi-size
-                        x86-operand-to-reg/mem$
+                        x86-operand-to-reg/mem
                         wr64
                         wr32
                         rr32
@@ -547,7 +547,7 @@
                         rml32
                         rml64
                         wml32
-                        x86-operand-from-modr/m-and-sib-bytes$
+                        x86-operand-from-modr/m-and-sib-bytes
                         check-instruction-length
                         riml-size
                         riml32
@@ -598,7 +598,7 @@
 
              one-byte-opcode-execute
              !rgfi-size
-             x86-operand-to-reg/mem$
+             x86-operand-to-reg/mem
              wr64
              wr32
              rr32
@@ -608,7 +608,7 @@
              rml32
              rml64
              wml32
-             x86-operand-from-modr/m-and-sib-bytes$
+             x86-operand-from-modr/m-and-sib-bytes
              check-instruction-length
              riml-size
              riml32

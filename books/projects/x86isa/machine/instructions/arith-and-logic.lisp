@@ -230,7 +230,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						operand-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -272,7 +272,7 @@
 		(eql operation #.*OP-TEST*))
 	    ;; CMP and TEST modify just the flags.
 	    (mv nil x86)
-	  (x86-operand-to-reg/mem$ proc-mode operand-size
+	  (x86-operand-to-reg/mem proc-mode operand-size
 				   inst-ac?
 				   nil ;; Not a memory pointer operand
 				   result
@@ -353,7 +353,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						operand-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -492,7 +492,7 @@
 	    increment-RIP-by
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						E-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -566,7 +566,7 @@
 		(eql operation #.*OP-TEST*))
 	    ;; CMP and TEST modify just the flags.
 	    (mv nil x86)
-	  (x86-operand-to-reg/mem$ proc-mode E-size
+	  (x86-operand-to-reg/mem proc-mode E-size
 				   inst-ac?
 				   nil ;; Not a memory pointer operand
 				   result
@@ -731,7 +731,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						r/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -775,7 +775,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg1 x86)
-	(x86-operand-to-reg/mem$ proc-mode r/mem-size
+	(x86-operand-to-reg/mem proc-mode r/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 result
@@ -879,7 +879,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						r/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -929,7 +929,7 @@
 	      x86)
 	  x86))
        ((mv flg1 x86)
-	(x86-operand-to-reg/mem$ proc-mode r/mem-size
+	(x86-operand-to-reg/mem proc-mode r/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 result
