@@ -1521,7 +1521,7 @@ reference made from privilege level 3.</blockquote>"
 		    (not (equal fld :seg-visible))
 		    (not (equal fld :rflags)))
 	       (equal (alignment-checking-enabled-p (xw fld index val x86))
-		      (alignment-checking-enabled-p x86))))    
+		      (alignment-checking-enabled-p x86))))
 
     (defthm alignment-checking-enabled-p-and-xw-ctr
       (implies (case-split (or (not (equal (nfix index) *cr0*))
@@ -1567,22 +1567,23 @@ reference made from privilege level 3.</blockquote>"
 	      (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
 	     (alignment-checking-enabled-p x86))))
 
-  (define x86-operand-from-modr/m-and-sib-bytes
+  (define x86-operand-from-modr/m-and-sib-bytes$
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
      (reg-type      :type (unsigned-byte  1)
-		    "@('reg-type') is @('*gpr-access*') for GPRs, and
-		    @('*xmm-access*') for XMMs.")
+       "@('reg-type') is @('*gpr-access*') for GPRs, and
+		   @('*xmm-access*') for XMMs.")
      (operand-size  :type (member 1 2 4 6 8 10 16))
      (inst-ac?      booleanp
-		    "@('t') if instruction does alignment checking,
-		    @('nil') otherwise.")
+                    "@('t') if instruction does alignment checking,
+		   @('nil') otherwise.")
      (memory-ptr?   booleanp
-		    "@('t') if the operand is a memory operand of the
-		    form m16:16, m16:32, or m16:64")
-     (p2            :type (unsigned-byte  8)
-		    "Segment Override Prefix")
+                    "@('t') if the operand is a memory operand of the
+		   form m16:16, m16:32, or m16:64")
+     (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                    "Register of the segment to read the operand from
+		   (when reading the operand from memory).")
      (p4?           :type (or t nil)
-		    "Address-Size Override Prefix Present?")
+       "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -1591,339 +1592,29 @@ reference made from privilege level 3.</blockquote>"
      (num-imm-bytes :type (unsigned-byte 3))
      x86)
 
-    :prepwork ((local (in-theory (e/d* () (unsigned-byte-p signed-byte-p not)))))
     :guard (if (equal mod #b11)
-	       (cond
-		((equal reg-type #.*gpr-access*)
-		 (member operand-size '(1 2 4 8)))
-		(t (member operand-size '(4 8 16))))
-	     (member operand-size '(member 1 2 4 6 8 10 16)))
-    :guard-hints (("Goal" :in-theory (e/d* ()
-					   (las-to-pas
-					    unsigned-byte-p
-					    signed-byte-p))))
+               (cond
+                ((equal reg-type #.*gpr-access*)
+                 (member operand-size '(1 2 4 8)))
+                (t (member operand-size '(4 8 16))))
+             (member operand-size '(member 1 2 4 6 8 10 16)))
+    ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
+    :guard-hints (("Goal" :in-theory (e/d* (segment-base-and-bounds)
+                                           (las-to-pas
+                                            unsigned-byte-p
+                                            signed-byte-p))))
 
     :returns
     (mv flg
-	operand
-	increment-RIP-by
-	v-addr
-	(x86 x86p :hyp (force (x86p x86))))
+        operand
+        increment-RIP-by
+        addr
+        (x86 x86p :hyp (force (x86p x86))))
 
-    (b* (((mv ?flg0
-	      (the (signed-byte 64) v-addr0)
-	      (the (integer 0 4) increment-RIP-by)
-	      x86)
-	  (if (equal mod #b11)
-	      (mv nil 0 0 x86)
-	    (x86-effective-addr
-	     proc-mode p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
-	 ((when flg0)
-	  (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
+    :short "Read an operand from memory or a register."
 
-	 ;; Since msri returns an n64p, we will convert it into an
-	 ;; i64p.  Moreover, FS and GS base addresses should always be
-	 ;; canonical.  Actually, if the values written to the FS and
-	 ;; GS base addresses aren't canonical, a #GP exception is
-	 ;; raised.  However, I'll do a canonical-address-p check on
-	 ;; FS and GS base here anyway.
-
-	 ;; Quoting from Intel Vol. 3, Section 3.4.4:
-
-	 ;; "The hidden descriptor register fields for FS.base and
-	 ;; GS.base are physically mapped to MSRs in order to load all
-	 ;; address bits supported by a 64-bit
-	 ;; implementation. Software with CPL = 0 (privileged
-	 ;; software) can load all supported linear-address bits into
-	 ;; FS.base or GS.base using WRMSR. Addresses written into the
-	 ;; 64-bit FS.base and GS.base registers must be in canonical
-	 ;; form. A WRMSR instruction that attempts to write a
-	 ;; non-canonical address to those registers causes a #GP
-	 ;; fault."
-
-
-	 ((mv flg1 v-addr)
-	  (if (equal mod #b11)
-	      (mv nil 0)
-	    (case p2
-	      ;; p2 is 0 when there is no segment override prefix
-	      ;; present. This first case below saves unnecessary
-	      ;; comparisons with *fs-override* and *gs-override* in
-	      ;; that case.
-	      (0 (mv nil v-addr0))
-	      (#.*fs-override*
-	       (let* ((nat-fs-base (msri #.*IA32_FS_BASE-IDX* x86))
-		      (fs-base (n64-to-i64 nat-fs-base)))
-		 (if (not (canonical-address-p fs-base))
-		     (mv 'Non-Canonical-FS-Base fs-base)
-		   (mv nil (+ fs-base v-addr0)))))
-	      (#.*gs-override*
-	       (let* ((nat-gs-base (msri #.*IA32_GS_BASE-IDX* x86))
-		      (gs-base (n64-to-i64 nat-gs-base)))
-		 (if (not (canonical-address-p gs-base))
-		     (mv 'Non-Canonical-GS-Base gs-base)
-		   (mv nil (+ gs-base v-addr0)))))
-	      (t
-	       ;; All other segments are considered to have base address
-	       ;; = 0 in 64-bit mode.
-	       (mv nil v-addr0)))))
-	 ((when flg1)
-	  (mv (cons 'Segment-Override-Error flg1) 0 0 0 x86))
-
-	 ((when (and (not (equal mod #b11))
-		     (not (canonical-address-p v-addr))))
-	  (mv 'x86-operand-from-modr/m-and-sib-bytes-Non-Canonical-Address-Encountered
-	      0 0 0 x86))
-
-	 ((when (and (not (equal mod #b11))
-		     inst-ac?
-		     (alignment-checking-enabled-p x86)
-		     (not (address-aligned-p v-addr operand-size memory-ptr?))))
-	  (mv 'x86-operand-from-modr/m-and-sib-bytes-memory-access-not-aligned
-	      0 0 0 x86))
-
-	 ((mv ?flg2 operand x86)
-	  (if (equal mod #b11)
-	      (if (int= reg-type #.*gpr-access*)
-		  (mv nil (rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
-				     rex-byte x86) x86)
-		(mv nil (xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
-				   x86) x86))
-	    ;; The operand is being fetched from the memory, not the
-	    ;; instruction stream. That's why we have :r instead of :x
-	    ;; below.
-	    (rml-size operand-size v-addr :r x86)))
-	 ((when flg2)
-	  (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
-
-      (mv nil operand increment-RIP-by v-addr x86))
-
-    ///
-
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
-      :hyp (and (member operand-size '(1 2 4 8 16))
-		(equal bound (ash operand-size 3))
-		(x86p x86))
-      :bound bound
-      :concl (mv-nth 1
-		     (x86-operand-from-modr/m-and-sib-bytes
-		      proc-mode reg-type operand-size inst-ac? memory-ptr? p2 p4?
-		      temp-RIP rex-byte r/m mod sib
-		      num-imm-bytes x86))
-      :gen-linear t
-      :gen-type t)
-
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
-      :hyp (and (member operand-size '(6 10))
-		(equal bound (ash operand-size 3))
-		(not (equal mod #b11))
-		(x86p x86))
-      :bound bound
-      :concl (mv-nth
-	      1
-	      (x86-operand-from-modr/m-and-sib-bytes
-	       proc-mode reg-type operand-size inst-ac? memory-ptr? p2 p4?
-	       temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
-      :gen-linear t
-      :gen-type t)
-
-    (defthm integerp-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-type-prescription
-      (implies (force (x86p x86))
-	       (natp (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-				proc-mode reg-type operand-size inst-ac?
-				memory-ptr? p2 p4 temp-RIP rex-byte
-				r/m mod sib num-imm-bytes x86))))
-      :hints (("Goal" :in-theory (e/d (rml-size) ())))
-      :rule-classes :type-prescription)
-
-    (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes-increment-RIP-by-linear<=4
-      (implies (x86p x86)
-	       (<= (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes
-			      proc-mode reg-type operand-size inst-ac?
-			      memory-ptr? p2 p4 temp-RIP rex-byte r/m
-			      mod sib num-imm-bytes x86)) 4))
-      :hints (("Goal" :in-theory (e/d (rml-size) ())))
-      :rule-classes :linear)
-
-    (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes
-      :hyp (forced-and (x86p x86))
-      :bound 48
-      :concl (mv-nth
-	      3
-	      (x86-operand-from-modr/m-and-sib-bytes
-	       proc-mode reg-type operand-size inst-ac? memory-ptr? p2 p4
-	       temp-rip rex-byte r/m mod sib num-imm-bytes
-	       x86))
-      :gen-linear t
-      :gen-type t)
-
-    (defthm canonical-address-p-x86-operand-from-modr/m-and-sib-bytes-v-addr
-      (implies (forced-and (x86p x86))
-	       (canonical-address-p
-		(mv-nth
-		 3
-		 (x86-operand-from-modr/m-and-sib-bytes
-		  proc-mode reg-type operand-size inst-ac? memory-ptr?
-		  p2 p4 temp-rip rex-byte r/m mod sib
-		  num-imm-bytes x86))))))
-
-
-  (define x86-operand-to-reg/mem
-    ((operand-size :type (member 1 2 4 6 8 10 16))
-     (inst-ac?      booleanp
-		    "@('t') if instruction does alignment checking, @('nil') otherwise")
-     (memory-ptr?   booleanp
-		    "@('t') if the operand is a memory operand of the form m16:16, m16:32, or m16:64")
-     (operand      :type (integer 0 *))
-     (v-addr       :type (signed-byte #.*max-linear-address-size*))
-     (rex-byte     :type (unsigned-byte 8))
-     (r/m          :type (unsigned-byte 3))
-     (mod          :type (unsigned-byte 2))
-     x86)
-
-    :long "<p>The reason why the type of v-addr here is i64p instead
-    of i49p is that the v-addr might be obtained from a 64-bit
-    register or be a 64-bit value in the memory.  Also note that this
-    v-addr includes the FS or GS-base if the appropriate prefix
-    overrides are present.</p>"
-
-    :guard (and (unsigned-byte-p (ash operand-size 3) operand)
-		(if (equal mod #b11)
-		    (member operand-size '(member 1 2 4 8))
-		  (member operand-size '(member 1 2 4 6 8 10 16))))
-
-    (b* (((when (equal mod #b11))
-	  (let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
-				  operand rex-byte x86)))
-	    (mv nil x86)))
-
-	 ((when (and inst-ac?
-		     (alignment-checking-enabled-p x86)
-		     (not (address-aligned-p v-addr operand-size memory-ptr?))))
-	  (mv t x86))
-
-	 ((mv flg x86)
-	  (wml-size operand-size v-addr operand x86)))
-      (mv flg x86))
-
-    ///
-
-    (defthm x86p-x86-operand-to-reg/mem
-      (implies (force (x86p x86))
-	       (x86p
-		(mv-nth
-		 1
-		 (x86-operand-to-reg/mem
-		  operand-size inst-ac?
-		  memory-ptr? operand v-addr rex-byte r/m mod x86))))
-      :hints (("Goal" :in-theory (e/d () (force (force)))))))
-
-  (define x86-operand-to-xmm/mem
-    ((operand-size  :type (member 4 8 16))
-     (inst-ac?      booleanp
-		    "@('t') if instruction does alignment checking,
-		    @('nil') otherwise")
-     (operand       :type (integer 0 *))
-     (v-addr        :type (signed-byte #.*max-linear-address-size*))
-     (rex-byte      :type (unsigned-byte 8))
-     (r/m           :type (unsigned-byte 3))
-     (mod           :type (unsigned-byte 2))
-     x86)
-
-    :long "<p> The reason why the type of v-addr here is i64p instead
-    of i49p is that the v-addr might be obtained from a 64-bit
-    register or be a 64-bit value in the memory.  Also note that this
-    v-addr includes the FS or GS-base if the appropriate prefix
-    overrides are present.</p>"
-
-    :guard (unsigned-byte-p (ash operand-size 3) operand)
-
-    (b* (((when (equal mod #b11))
-	  (let* ((x86 (!xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
-				  operand x86)))
-	    (mv nil x86)))
-
-	 ((when (and inst-ac?
-		     (alignment-checking-enabled-p x86)
-		     ;; operand is never an m16:16 memory pointer here
-		     (not (address-aligned-p v-addr operand-size nil))))
-	  (mv t x86))
-
-	 ((mv flg x86)
-	  (wml-size operand-size v-addr operand x86)))
-      (mv flg x86))
-
-    ///
-
-    (defthm x86p-x86-operand-to-xmm/mem
-      (implies (force (x86p x86))
-	       (x86p
-		(mv-nth
-		 1
-		 (x86-operand-to-xmm/mem
-		  operand-size inst-ac? operand v-addr rex-byte r/m mod x86))))
-      :hints (("Goal" :in-theory (e/d () (force (force))))))))
-
-;; ======================================================================
-
-;; The following are tentative extensions of
-;; X86-OPERAND-FROM-MODR/M-AND-SIB-BYTES, X86-OPERAND-TO-REG/MEM, and
-;; X86-OPERAND-TO-XMM/MEM to 32-bit mode. They are named like the existing ones
-;; but with a $ at the end. The extension to 32-bit mode requires a change of
-;; interface, because the extended functions traffic in effective addresses
-;; rather than linear addresses. These new functions are currently not called
-;; by any other function, but callers to the old functions can be progressively
-;; "redirected" to call the new functions, eventually eliminating the old
-;; functions and removing the ending $ from the names of the new functions.
-
-(define x86-operand-from-modr/m-and-sib-bytes$
-  ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-   (reg-type      :type (unsigned-byte  1)
-		  "@('reg-type') is @('*gpr-access*') for GPRs, and
-		   @('*xmm-access*') for XMMs.")
-   (operand-size  :type (member 1 2 4 6 8 10 16))
-   (inst-ac?      booleanp
-		  "@('t') if instruction does alignment checking,
-		   @('nil') otherwise.")
-   (memory-ptr?   booleanp
-		  "@('t') if the operand is a memory operand of the
-		   form m16:16, m16:32, or m16:64")
-   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
-		  "Register of the segment to read the operand from
-		   (when reading the operand from memory).")
-   (p4?           :type (or t nil)
-		  "Address-Size Override Prefix Present?")
-   (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
-   (rex-byte      :type (unsigned-byte 8))
-   (r/m           :type (unsigned-byte 3))
-   (mod           :type (unsigned-byte 2))
-   (sib           :type (unsigned-byte 8))
-   (num-imm-bytes :type (unsigned-byte 3))
-   x86)
-
-  :guard (if (equal mod #b11)
-	     (cond
-	      ((equal reg-type #.*gpr-access*)
-	       (member operand-size '(1 2 4 8)))
-	      (t (member operand-size '(4 8 16))))
-	   (member operand-size '(member 1 2 4 6 8 10 16)))
-  ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
-  :guard-hints (("Goal" :in-theory (e/d* (segment-base-and-bounds)
-					 (las-to-pas
-					  unsigned-byte-p
-					  signed-byte-p))))
-
-  :returns
-  (mv flg
-      operand
-      increment-RIP-by
-      addr
-      (x86 x86p :hyp (force (x86p x86))))
-
-  :short "Read an operand from memory or a register."
-
-  :long
-  "<p>
+    :long
+    "<p>
    Based on the ModR/M byte,
    the operand is read from either a register or memory.
    In the latter case, we calculate the effective address
@@ -1936,156 +1627,156 @@ reference made from privilege level 3.</blockquote>"
    to @(tsee x86-operand-to-reg/mem$) (which writes the result to memory).
    </p>"
 
-  (b* (((mv ?flg0
-	    (the (signed-byte 64) addr)
-	    (the (integer 0 4) increment-RIP-by)
-	    x86)
-	(if (equal mod #b11)
-	    (mv nil 0 0 x86)
-	  (x86-effective-addr
-	   proc-mode p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
-       ((when flg0)
-	(mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
+    (b* (((mv ?flg0
+              (the (signed-byte 64) addr)
+              (the (integer 0 4) increment-RIP-by)
+              x86)
+          (if (equal mod #b11)
+              (mv nil 0 0 x86)
+            (x86-effective-addr
+             proc-mode p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
+         ((when flg0)
+          (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
 
-       ((mv ?flg2 operand x86)
-	(if (equal mod #b11)
-	    (if (int= reg-type #.*gpr-access*)
-		(mv nil
-		    (rgfi-size operand-size
-			       (reg-index r/m rex-byte #.*b*)
-			       rex-byte
-			       x86)
-		    x86)
-	      (mv nil
-		  (xmmi-size operand-size
-			     (reg-index r/m rex-byte #.*b*)
-			     x86)
-		  x86))
-	  (b* ((check-alignment? (and inst-ac?
-				      (alignment-checking-enabled-p x86))))
-	    ;; The operand is being fetched from the memory, not the
-	    ;; instruction stream. That's why we have :r instead of :x
-	    ;; below.
-	    (rme-size-opt
-	     proc-mode operand-size addr seg-reg :r check-alignment? x86
-	     :mem-ptr? memory-ptr?
-	     :check-canonicity t))))
-       ((when flg2)
-	(mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
+         ((mv ?flg2 operand x86)
+          (if (equal mod #b11)
+              (if (int= reg-type #.*gpr-access*)
+                  (mv nil
+                      (rgfi-size operand-size
+                                 (reg-index r/m rex-byte #.*b*)
+                                 rex-byte
+                                 x86)
+                      x86)
+                (mv nil
+                    (xmmi-size operand-size
+                               (reg-index r/m rex-byte #.*b*)
+                               x86)
+                    x86))
+            (b* ((check-alignment? (and inst-ac?
+                                        (alignment-checking-enabled-p x86))))
+              ;; The operand is being fetched from the memory, not the
+              ;; instruction stream. That's why we have :r instead of :x
+              ;; below.
+              (rme-size-opt
+               proc-mode operand-size addr seg-reg :r check-alignment? x86
+               :mem-ptr? memory-ptr?
+               :check-canonicity t))))
+         ((when flg2)
+          (mv (cons 'Rm-Size-Error flg2) 0 0 0 x86)))
 
-    (mv nil operand increment-RIP-by addr x86))
+      (mv nil operand increment-RIP-by addr x86))
 
-  ///
+    ///
 
-  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
-    :hyp (and (member operand-size '(1 2 4 8 16))
-	      (equal bound (ash operand-size 3))
-	      (x86p x86))
-    :bound bound
-    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
-		      proc-mode reg-type operand-size inst-ac? memory-ptr?
-		      seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
-		      x86))
-    :gen-linear t
-    :gen-type t
-    :hints (("Goal" :in-theory (enable rme-size))))
+    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+      :hyp (and (member operand-size '(1 2 4 8 16))
+                (equal bound (ash operand-size 3))
+                (x86p x86))
+      :bound bound
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                        proc-mode reg-type operand-size inst-ac? memory-ptr?
+                        seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
+                        x86))
+      :gen-linear t
+      :gen-type t
+      :hints (("Goal" :in-theory (enable rme-size))))
 
-  (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
-    :hyp (and (member operand-size '(1 2 4 8 16))
-	      (<= (ash operand-size 3) bound)
-	      (integerp bound)
-	      (x86p x86))
-    :bound bound
-    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
-		      proc-mode reg-type operand-size inst-ac? memory-ptr?
-		      seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
-		      x86))
-    :hints (("Goal" :in-theory (e/d ()
-				    (x86-operand-from-modr/m-and-sib-bytes$
-				     unsigned-byte-p)))))
+    (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand
+      :hyp (and (member operand-size '(1 2 4 8 16))
+                (<= (ash operand-size 3) bound)
+                (integerp bound)
+                (x86p x86))
+      :bound bound
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                        proc-mode reg-type operand-size inst-ac? memory-ptr?
+                        seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
+                        x86))
+      :hints (("Goal" :in-theory (e/d ()
+                                      (x86-operand-from-modr/m-and-sib-bytes$
+                                       unsigned-byte-p)))))
 
-  (in-theory
-   (disable
-    bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand))
+    (in-theory
+     (disable
+      bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand))
 
-  (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
-    :hyp (and (member operand-size '(6 10))
-	      (equal bound (ash operand-size 3))
-	      (not (equal mod #b11))
-	      (x86p x86))
-    :bound bound
-    :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
-		      proc-mode reg-type operand-size inst-ac? memory-ptr?
-		      seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
-		      x86))
-    :gen-linear t
-    :gen-type t
-    :hints (("Goal" :in-theory (enable rme-size))))
+    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand-6-and-10-bytes-read
+      :hyp (and (member operand-size '(6 10))
+                (equal bound (ash operand-size 3))
+                (not (equal mod #b11))
+                (x86p x86))
+      :bound bound
+      :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes$
+                        proc-mode reg-type operand-size inst-ac? memory-ptr?
+                        seg-reg p4? temp-RIP rex-byte r/m mod sib num-imm-bytes
+                        x86))
+      :gen-linear t
+      :gen-type t
+      :hints (("Goal" :in-theory (enable rme-size))))
 
-  (defthm integerp-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-type-prescription
-    (implies (force (x86p x86))
-	     (natp (mv-nth
-		    2
-		    (x86-operand-from-modr/m-and-sib-bytes$
-		     proc-mode reg-type
-		     operand-size inst-ac? memory-ptr? seg-reg p4 temp-RIP
-		     rex-byte r/m mod sib num-imm-bytes x86))))
-    :hints (("Goal" :in-theory (e/d (rml-size) ())))
-    :rule-classes :type-prescription)
+    (defthm integerp-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-type-prescription
+      (implies (force (x86p x86))
+               (natp (mv-nth
+                      2
+                      (x86-operand-from-modr/m-and-sib-bytes$
+                       proc-mode reg-type
+                       operand-size inst-ac? memory-ptr? seg-reg p4 temp-RIP
+                       rex-byte r/m mod sib num-imm-bytes x86))))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
+      :rule-classes :type-prescription)
 
-  (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-linear<=4
-    (implies (x86p x86)
-	     (<= (mv-nth
-		  2
-		  (x86-operand-from-modr/m-and-sib-bytes$
-		   proc-mode reg-type operand-size inst-ac? memory-ptr?
-		   seg-reg p4 temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
-		 4))
-    :hints (("Goal" :in-theory (e/d (rml-size) ())))
-    :rule-classes :linear)
+    (defthm mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$-increment-RIP-by-linear<=4
+      (implies (x86p x86)
+               (<= (mv-nth
+                    2
+                    (x86-operand-from-modr/m-and-sib-bytes$
+                     proc-mode reg-type operand-size inst-ac? memory-ptr?
+                     seg-reg p4 temp-RIP rex-byte r/m mod sib num-imm-bytes x86))
+                   4))
+      :hints (("Goal" :in-theory (e/d (rml-size) ())))
+      :rule-classes :linear)
 
-  (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes$
-    ;; For guard proofs obligations originating from calls to add-to-*ip:
-    :hyp (forced-and (x86p x86))
-    :bound 48
-    :concl (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
-		      proc-mode reg-type operand-size inst-ac? memory-ptr?
-		      seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
-    :hints (("Goal" :in-theory (e/d (signed-byte-p) ())))
-    :gen-linear t
-    :gen-type t)
+    (defthm-sb i48p-x86-operand-from-modr/m-and-sib-bytes$
+      ;; For guard proofs obligations originating from calls to add-to-*ip:
+      :hyp (forced-and (x86p x86))
+      :bound 48
+      :concl (mv-nth 2 (x86-operand-from-modr/m-and-sib-bytes$
+                        proc-mode reg-type operand-size inst-ac? memory-ptr?
+                        seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+      :hints (("Goal" :in-theory (e/d (signed-byte-p) ())))
+      :gen-linear t
+      :gen-type t)
 
-  (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
-    :hyp (forced-and (x86p x86))
-    :bound 64
-    :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes$
-		      proc-mode reg-type operand-size inst-ac? memory-ptr?
-		      seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
-    :gen-linear t
-    :gen-type t))
+    (defthm-sb i64p-x86-operand-from-modr/m-and-sib-bytes$
+      :hyp (forced-and (x86p x86))
+      :bound 64
+      :concl (mv-nth 3 (x86-operand-from-modr/m-and-sib-bytes$
+                        proc-mode reg-type operand-size inst-ac? memory-ptr?
+                        seg-reg p4 temp-rip rex-byte r/m mod sib num-imm-bytes x86))
+      :gen-linear t
+      :gen-type t))
 
-(define x86-operand-to-reg/mem$
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (operand-size :type (member 1 2 4 6 8 10 16))
-   (inst-ac?      booleanp
-		  "@('t') if instruction does alignment checking, @('nil') otherwise")
-   (memory-ptr?   booleanp
-		  "@('t') if the operand is a memory operand
+  (define x86-operand-to-reg/mem$
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (operand-size :type (member 1 2 4 6 8 10 16))
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking, @('nil') otherwise")
+     (memory-ptr?   booleanp
+                    "@('t') if the operand is a memory operand
 		   of the form m16:16, m16:32, or m16:64")
-   (operand      :type (integer 0 *))
-   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
-		  "Register of the segment to read the operand from
+     (operand      :type (integer 0 *))
+     (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                    "Register of the segment to read the operand from
 		   (when reading the operand from memory).")
-   (addr         :type (signed-byte 64))
-   (rex-byte     :type (unsigned-byte 8))
-   (r/m          :type (unsigned-byte 3))
-   (mod          :type (unsigned-byte 2))
-   x86)
+     (addr         :type (signed-byte 64))
+     (rex-byte     :type (unsigned-byte 8))
+     (r/m          :type (unsigned-byte 3))
+     (mod          :type (unsigned-byte 2))
+     x86)
 
-  :short "Write an operand to memory or a general-purpose register."
+    :short "Write an operand to memory or a general-purpose register."
 
-  :long
-  "<p>
+    :long
+    "<p>
    Based on the ModR/M byte,
    the operand is written to either a register or memory.
    The address argument of this function is often
@@ -2093,55 +1784,55 @@ reference made from privilege level 3.</blockquote>"
    @(tsee x86-operand-from-modr/m-and-sib-bytes$).
    </p>"
 
-  :guard (and (unsigned-byte-p (ash operand-size 3) operand)
-	      (if (equal mod #b11)
-		  (member operand-size '(member 1 2 4 8))
-		(member operand-size '(member 1 2 4 6 8 10 16))))
+    :guard (and (unsigned-byte-p (ash operand-size 3) operand)
+                (if (equal mod #b11)
+                    (member operand-size '(member 1 2 4 8))
+                  (member operand-size '(member 1 2 4 6 8 10 16))))
 
-  (b* (((when (equal mod #b11))
-	(let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
-				operand rex-byte x86)))
-	  (mv nil x86)))
+    (b* (((when (equal mod #b11))
+          (let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                  operand rex-byte x86)))
+            (mv nil x86)))
 
-       (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
-       ((mv flg x86)
-	(wme-size
-	 proc-mode operand-size addr seg-reg operand check-alignment? x86
-	 :mem-ptr? memory-ptr?)))
-    (mv flg x86))
+         (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
+         ((mv flg x86)
+          (wme-size
+           proc-mode operand-size addr seg-reg operand check-alignment? x86
+           :mem-ptr? memory-ptr?)))
+      (mv flg x86))
 
-  ///
+    ///
 
-  (defthm x86p-x86-operand-to-reg/mem$
-    (implies (force (x86p x86))
-	     (x86p
-	      (mv-nth
-	       1
-	       (x86-operand-to-reg/mem$
-		proc-mode operand-size inst-ac?
-		memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+    (defthm x86p-x86-operand-to-reg/mem$
+      (implies (force (x86p x86))
+               (x86p
+                (mv-nth
+                 1
+                 (x86-operand-to-reg/mem$
+                  proc-mode operand-size inst-ac?
+                  memory-ptr? operand addr seg-reg rex-byte r/m mod x86))))
+      :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
-(define x86-operand-to-xmm/mem$
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (operand-size  :type (member 4 8 16))
-   (inst-ac?      booleanp
-		  "@('t') if instruction does alignment checking,
+  (define x86-operand-to-xmm/mem$
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (operand-size  :type (member 4 8 16))
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking,
 		   @('nil') otherwise")
-   (operand       :type (integer 0 *))
-   (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
-		  "Register of the segment to read the operand from
+     (operand       :type (integer 0 *))
+     (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                    "Register of the segment to read the operand from
 		   (when reading the operand from memory).")
-   (addr          :type (signed-byte 64))
-   (rex-byte      :type (unsigned-byte 8))
-   (r/m           :type (unsigned-byte 3))
-   (mod           :type (unsigned-byte 2))
-   x86)
+     (addr          :type (signed-byte 64))
+     (rex-byte      :type (unsigned-byte 8))
+     (r/m           :type (unsigned-byte 3))
+     (mod           :type (unsigned-byte 2))
+     x86)
 
-  :short "Write an operand to memory or an XMM register."
+    :short "Write an operand to memory or an XMM register."
 
-  :long
-  "<p>
+    :long
+    "<p>
    Based on the ModR/M byte,
    the operand is written to either a register or memory.
    The address argument of this function is often
@@ -2149,32 +1840,32 @@ reference made from privilege level 3.</blockquote>"
    @(tsee x86-operand-from-modr/m-and-sib-bytes$).
    </p>"
 
-  :guard (unsigned-byte-p (ash operand-size 3) operand)
+    :guard (unsigned-byte-p (ash operand-size 3) operand)
 
-  (b* (((when (equal mod #b11))
-	(let* ((x86 (!xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
-				operand x86)))
-	  (mv nil x86)))
+    (b* (((when (equal mod #b11))
+          (let* ((x86 (!xmmi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                  operand x86)))
+            (mv nil x86)))
 
-       (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
+         (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
 
-       ((mv flg x86)
-	;; operand is never an m16:16 memory pointer here
-	(wme-size proc-mode operand-size addr seg-reg operand
-		  check-alignment? x86 :mem-ptr? nil)))
-    (mv flg x86))
+         ((mv flg x86)
+          ;; operand is never an m16:16 memory pointer here
+          (wme-size proc-mode operand-size addr seg-reg operand
+                    check-alignment? x86 :mem-ptr? nil)))
+      (mv flg x86))
 
-  ///
+    ///
 
-  (defthm x86p-x86-operand-to-xmm/mem$
-    (implies (force (x86p x86))
-	     (x86p
-	      (mv-nth
-	       1
-	       (x86-operand-to-xmm/mem$
-		proc-mode operand-size inst-ac? operand
-		seg-reg addr rex-byte r/m mod x86))))
-    :hints (("Goal" :in-theory (e/d () (force (force)))))))
+    (defthm x86p-x86-operand-to-xmm/mem$
+      (implies (force (x86p x86))
+               (x86p
+                (mv-nth
+                 1
+                 (x86-operand-to-xmm/mem$
+                  proc-mode operand-size inst-ac? operand
+                  seg-reg addr rex-byte r/m mod x86))))
+      :hints (("Goal" :in-theory (e/d () (force (force))))))))
 
 ;; ======================================================================
 

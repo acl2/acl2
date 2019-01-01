@@ -569,7 +569,6 @@
 
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
@@ -580,7 +579,6 @@
                              wml32
                              wml64
                              rr32
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
@@ -1147,7 +1145,6 @@
 
                              one-byte-opcode-execute
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
@@ -1159,7 +1156,6 @@
                              wml64
                              write-canonical-address-to-memory
                              rr32
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
@@ -1409,14 +1405,12 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
@@ -1944,14 +1938,12 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
@@ -2338,7 +2330,6 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              select-segment-register
                              wr64
@@ -2346,7 +2337,6 @@
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-canonical-address-to-memory
@@ -2452,7 +2442,7 @@
   ;;  addl $0x1,-0x10(%rbp)
   ;;  callq <gc>
 
-  (implies 
+  (implies
    (and (loop-preconditions addr x86)
         (equal (get-char (offset x86) (input x86)) *newline*))
    (equal
@@ -2561,7 +2551,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
            (equal (xr :rip 0 (x86-run (gc-clk-newline) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d (loop-preconditions) 
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
                                   (effects-newline-encountered))
            :use ((:instance effects-newline-encountered)
                  (:instance effects-eof-not-encountered-prelim-rip-projection)))))
@@ -2829,14 +2819,12 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
@@ -3038,7 +3026,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (equal (xr :rip 0 (x86-run (gc-clk-space) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d (loop-preconditions) 
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
                                   (effects-space-encountered))
            :use ((:instance effects-space-encountered)
                  (:instance effects-eof-not-encountered-prelim-rip-projection)))))
@@ -3301,14 +3289,12 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
@@ -3504,7 +3490,7 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
            (equal (xr :rip 0 (x86-run (gc-clk-tab) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d (loop-preconditions) 
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
                                   (effects-tab-encountered))
            :use ((:instance effects-tab-encountered)
                  (:instance effects-eof-not-encountered-prelim-rip-projection)))))
@@ -3871,7 +3857,6 @@
 
                              write-user-rflags
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              select-segment-register
                              wr64
@@ -3879,7 +3864,6 @@
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-canonical-address-to-memory
@@ -4253,7 +4237,7 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) *out*))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d (loop-preconditions) 
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
                                   (effects-other-char-encountered-state-out
                                    word-state))
            :use ((:instance effects-other-char-encountered-state-out)
@@ -4702,14 +4686,12 @@
                              gpr-add-spec-4
                              jcc/cmovcc/setcc-spec
                              !rgfi-size
-                             x86-operand-to-reg/mem
                              x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
-                             x86-operand-from-modr/m-and-sib-bytes
                              x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
@@ -5010,7 +4992,7 @@
                 (not (equal (word-state x86 x86) *out*)))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-in) x86))
                   (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d (loop-preconditions) 
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
                                   (effects-other-char-encountered-state-in
                                    word-state))
            :use ((:instance effects-other-char-encountered-state-in)

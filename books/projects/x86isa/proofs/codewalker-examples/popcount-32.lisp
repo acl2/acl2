@@ -185,7 +185,6 @@
 
                          one-byte-opcode-execute
                          !rgfi-size
-                         x86-operand-to-reg/mem
                          x86-operand-to-reg/mem$
                          wr64
                          wr32
@@ -197,7 +196,6 @@
                          wml32
                          wml64
                          rr32
-                         x86-operand-from-modr/m-and-sib-bytes
                          x86-operand-from-modr/m-and-sib-bytes$
                          rime-size
                          rme-size
