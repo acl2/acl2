@@ -232,7 +232,7 @@
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* operand-size
 	 t   ; do alignment checking
 	 nil ;; Not a memory pointer operand
@@ -655,7 +655,7 @@
        (x86 (write-*sp proc-mode new-rsp x86))
 
        ((mv flg3 x86)
-	(x86-operand-to-reg/mem$ proc-mode operand-size
+	(x86-operand-to-reg/mem proc-mode operand-size
 				 check-alignment?
 				 nil ;; Not a memory pointer operand
 				 val

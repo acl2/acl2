@@ -182,7 +182,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* operand-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -243,13 +243,13 @@
    (unsigned-byte-p 1 (bool->bit x))))
 
 (local
- (defthm unsigned-byte-p-3-mv-nth-2-x86-operand-from-modr/m-and-sib-bytes$
+ (defthm unsigned-byte-p-3-mv-nth-2-x86-operand-from-modr/m-and-sib-bytes
    (implies
     (x86p x86)
     (unsigned-byte-p
      3
      (mv-nth 2
-             (x86-operand-from-modr/m-and-sib-bytes$
+             (x86-operand-from-modr/m-and-sib-bytes
               proc-mode reg-type
               operand-size inst-ac? memory-ptr?
               seg-reg p4? temp-rip rex-byte
@@ -272,7 +272,7 @@
              (xr
               :str #.*gdtr*
               (mv-nth 4
-                      (x86-operand-from-modr/m-and-sib-bytes$
+                      (x86-operand-from-modr/m-and-sib-bytes
                        proc-mode reg-type
                        operand-size inst-ac? memory-ptr?
                        seg-reg p4? temp-rip rex-byte
@@ -342,7 +342,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers
-                            bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes$-operand)
+                            bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand)
                            (unsigned-byte-p
                             member-equal
                             acl2::logtail-identity
@@ -390,7 +390,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access*
          ;; offset-size is the number of bytes of the
          ;; offset.  We need two more bytes for the selector.

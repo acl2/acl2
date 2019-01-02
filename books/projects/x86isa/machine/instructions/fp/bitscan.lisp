@@ -132,7 +132,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*gpr-access*
                                                 operand-size
                                                 inst-ac?

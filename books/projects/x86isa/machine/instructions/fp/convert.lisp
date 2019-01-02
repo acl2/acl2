@@ -114,7 +114,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 xmm/mem-size
                                                 inst-ac?
@@ -206,7 +206,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*gpr-access*
                                                 reg/mem-size
                                                 inst-ac?
@@ -300,7 +300,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 xmm/mem-size
                                                 inst-ac?
@@ -381,7 +381,7 @@
             (the (unsigned-byte 64) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 8
                                                 inst-ac?
@@ -485,7 +485,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?

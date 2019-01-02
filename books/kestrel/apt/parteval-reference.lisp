@@ -19,7 +19,8 @@
   :parents (reference)
 
   :short "APT partial evaluation transformation:
-          specialize a function by making one or more arguments constant."
+          specialize a function by setting one or more parameters
+          to specified constant values."
 
   :long
 
@@ -38,11 +39,16 @@
 
     (xdoc::p
      "This partial evaluation transformation specializes an ACL2 function
-      by making some of its arguments constant,
-      and eliminating them from the list of formal arguments.
-      This transformation is related to @(tsee restrict),
+      by setting some of its parameters to specified constant values,
+      and eliminating such parameters from the function.
+      In partial evaluation terminology,
+      the parameters that are set to constant values are <i>static</i>,
+      while the remaining parameters are <i>dynamic</i>.")
+
+    (xdoc::p
+     "This transformation is related to @(tsee restrict),
       which also specializes a function,
-      but does not change its formal arguments."))
+      but does not change its parameters."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +56,7 @@
 
     (xdoc::code
      "(parteval old"
-     "          args"
+     "          static"
      "          &key"
      "          :new-name        ; default :auto"
      "          :new-enable      ; default :auto"
@@ -79,7 +85,7 @@
      (xdoc::ul
       (xdoc::li
        "Let @('x1'), ..., @('xn'), @('y1'), ..., @('ym') be
-        the formal arguments of @('old'),
+        the formal parameters of @('old'),
         where @('n') @($\\geq$) 0 and @('m') &gt; 0.")
       (xdoc::li
        "Let @('old-guard<x1,...,xn,y1,...,ym>') be the guard term of @('old').")
@@ -87,13 +93,13 @@
        "Let @('old-body<x1,...,xn,y1,...,ym>') be the body of @('old').")))
 
     (xdoc::desc
-     "@('args')"
+     "@('static')"
      (xdoc::p
-      "Specifies the formal arguments of @('old') to make constant,
-       along with the constant values to use.")
+      "Specifies the static parameters of @('old'),
+       along with the constant values to assign to these parameters.")
      (xdoc::p
       "It must be a non-empty list of doublets @('((y1 c1) ... (ym cm))').
-       Each @('yj') must be a formal argument of @('old').
+       Each @('yj') must be a parameter of @('old').
        The @('y1'), ..., @('ym') must be all distinct.
        Each @('cj') must be a ground term
        that only calls logic-mode functions,
@@ -110,10 +116,10 @@
        by setting each @('yj') to the value of the term @('cj').")
      (xdoc::p
       "In this documentation page, for expository convenience,
-       the formal arguments @('y1'), ..., @('ym') to make constant
-       come after the other formal arguments @('x1'), ..., @('xn').
+       the static parameters @('y1'), ..., @('ym')
+       come after the dynamic parameters @('x1'), ..., @('xn').
        However, this is not required:
-       the two groups of formal arguments can be intermixed in any way."))
+       static and dynamic parameters can be intermixed in any way."))
 
     (xdoc::desc-apt-input-new-name)
 

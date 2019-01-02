@@ -96,7 +96,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 operand-size
                                                 inst-ac?
@@ -194,7 +194,7 @@
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem$ proc-mode
+        (x86-operand-to-xmm/mem proc-mode
                                  operand-size
                                  inst-ac?
                                  xmm
@@ -245,7 +245,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?
@@ -331,7 +331,7 @@
        (inst-ac? ;; Exceptions Type 1
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem$ proc-mode
+        (x86-operand-to-xmm/mem proc-mode
                                  16
                                  inst-ac?
                                  xmm
@@ -392,7 +392,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?
@@ -480,7 +480,7 @@
         ;; varies. For now, we do alignment checking.
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem$ proc-mode
+        (x86-operand-to-xmm/mem proc-mode
                                  16
                                  inst-ac?
                                  xmm
@@ -535,7 +535,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 8
                                                 inst-ac?
@@ -621,7 +621,7 @@
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem$ proc-mode
+        (x86-operand-to-xmm/mem proc-mode
                                  8
                                  inst-ac?
                                  xmm
@@ -675,7 +675,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?v-addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 8
                                                 inst-ac?
@@ -768,7 +768,7 @@
        (inst-ac? ;; Exceptions Type 5
         t)
        ((mv flg1 x86)
-        (x86-operand-to-xmm/mem$ proc-mode
+        (x86-operand-to-xmm/mem proc-mode
                                  8
                                  inst-ac?
                                  high-qword

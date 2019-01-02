@@ -129,7 +129,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?
@@ -233,7 +233,7 @@
             (the (unsigned-byte 128) xmm/mem)
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr) x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?
@@ -345,7 +345,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?
@@ -470,7 +470,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*xmm-access*
                                                 16
                                                 inst-ac?

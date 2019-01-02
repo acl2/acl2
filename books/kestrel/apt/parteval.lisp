@@ -26,7 +26,7 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "The implementation functions have formal parameters
+    "The implementation functions have parameters
      consistently named as follows:")
    (xdoc::ul
     (xdoc::li
@@ -37,7 +37,7 @@
      "@('ctx') is the context used for errors.")
     (xdoc::li
      "@('old'),
-      @('args'),
+      @('static'),
       @('new-name'),
       @('new-enable'),
       @('thm-name'),
@@ -47,10 +47,10 @@
       @('show-only')
       are the homonymous inputs to @(tsee parteval),
       before being processed.
-      These formal parameters have no types because they may be any values.")
+      These parameters have no types because they may be any values.")
     (xdoc::li
      "@('old$'),
-      @('args$'),
+      @('static$'),
       @('new-name$'),
       @('new-enable$'),
       @('thm-name$'),
@@ -111,7 +111,7 @@
                  (value :this-is-irrelevant))))
     (value old$)))
 
-(define parteval-process-args-terms
+(define parteval-process-static-terms
   ((cj...cm true-listp "List @('(c1 ... cm)') initially,
                         then a tail of that in the recursive calls.")
    (yj...ym symbol-listp "List @('(y1 ... ym)') initially,
@@ -126,12 +126,12 @@
                (yj...ym$ "The @(tsee pseudo-term-listp) list
                           of terms @('cj...cm'), in translated form.")
                state)
-  :short "Process the @('c1'), ..., @('cm') parts of the @('args') input."
+  :short "Process the @('c1'), ..., @('cm') parts of the @('static') input."
   (b* (((when (endp cj...cm)) (value nil))
        (yj (car yj...ym))
        (cj (car cj...cm))
        (description
-        (msg "The term ~x0 assigned to the formal argument ~x1" cj yj))
+        (msg "The term ~x0 assigned to the static parameter ~x1" cj yj))
        ((er (list cj$ stobjs-out)) (ensure-term$ cj description t nil))
        ((er &) (ensure-term-ground$ cj$ description t nil))
        ((er &) (ensure-term-logic-mode$ cj$ description t nil))
@@ -151,27 +151,27 @@
        ((er &) (ensure-term-does-not-call$ cj$ old$ description t nil))
        (cj+1...cm (cdr cj...cm))
        (yj+1...ym (cdr yj...ym))
-       ((er cj+1...cm$) (parteval-process-args-terms
+       ((er cj+1...cm$) (parteval-process-static-terms
                          cj+1...cm yj+1...ym old$ verify-guards$ ctx state)))
     (value (cons cj$ cj+1...cm$))))
 
-(define parteval-process-args (args
-                               (old$ symbolp)
-                               (verify-guards$ booleanp)
-                               ctx
-                               state)
+(define parteval-process-static (static
+                                 (old$ symbolp)
+                                 (verify-guards$ booleanp)
+                                 ctx
+                                 state)
   :returns (mv erp
-               (args$ "A @(tsee symbol-alistp)
+               (static$ "A @(tsee symbol-alistp)
                        from @('y1'), ..., @('ym')
                        to the translated @('c1'), ..., @('cm').")
                state)
   :mode :program
-  :short "Process the @('args') input."
-  (b* (((er &) (ensure-doublet-list$ args "The second input" t nil))
-       (alist (doublets-to-alist args))
+  :short "Process the @('static') input."
+  (b* (((er &) (ensure-doublet-list$ static "The second input" t nil))
+       (alist (doublets-to-alist static))
        (y1...ym (strip-cars alist))
        (description
-        (msg "The list ~x0 of formal parameters to make constant" y1...ym))
+        (msg "The list ~x0 of static parameters" y1...ym))
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
        ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
@@ -179,11 +179,11 @@
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))
        (c1...cm (strip-cdrs alist))
-       ((er c1...cm$) (parteval-process-args-terms c1...cm y1...ym
-                                                   old$ verify-guards$
-                                                   ctx state))
-       (args$ (pairlis$ y1...ym c1...cm$)))
-    (value args$)))
+       ((er c1...cm$) (parteval-process-static-terms c1...cm y1...ym
+                                                     old$ verify-guards$
+                                                     ctx state))
+       (static$ (pairlis$ y1...ym c1...cm$)))
+    (value static$)))
 
 (define parteval-process-new-name (new-name
                                    (old$ symbolp)
@@ -245,7 +245,7 @@
     (value name)))
 
 (define parteval-process-inputs (old
-                                 args
+                                 static
                                  new-name
                                  new-enable
                                  thm-name
@@ -257,7 +257,7 @@
                                  state)
   :returns (mv erp
                (result "A tuple @('(old$
-                                    args$
+                                    static$
                                     new-name$
                                     new-enable$
                                     thm-name$
@@ -272,8 +272,8 @@
                                          result)'),
                         where @('old$') is
                         the result of @(tsee parteval-process-old),
-                        @('args$') is
-                        the result of @(tsee parteval-process-args),
+                        @('static$') is
+                        the result of @(tsee parteval-process-static),
                         @('new-name$') is
                         the result of @(tsee parteval-process-new-name),
                         @('new-enable$') indicates whether
@@ -289,9 +289,9 @@
   (xdoc::topp
    "The inputs are processed
     in the order in which they appear in the documentation,
-    except that @(':verify-guards') is processed just before @('args')
+    except that @(':verify-guards') is processed just before @('static')
     because the result of processing @(':verify-guards')
-    is used to process @('args').
+    is used to process @('static').
     @('old') is processed before @(':verify-guards')
     because the result of processing @('old')
     is used to process @(':verify-guards').
@@ -304,8 +304,8 @@
                              verify-guards
                              (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
-       ((er args$) (parteval-process-args
-                    args old$ verify-guards$ ctx state))
+       ((er static$) (parteval-process-static
+                      static old$ verify-guards$ ctx state))
        ((er new-name$) (parteval-process-new-name
                         new-name old$ ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
@@ -328,7 +328,7 @@
        ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
        ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
     (value (list old$
-                 args$
+                 static$
                  new-name$
                  new-enable$
                  thm-name$
@@ -351,7 +351,7 @@
   :default-parent t)
 
 (define parteval-gen-new-fn ((old$ symbolp)
-                             (args$ symbol-alistp)
+                             (static$ symbol-alistp)
                              (new-name$ symbolp)
                              (new-enable$ booleanp)
                              (verify-guards$ booleanp)
@@ -367,19 +367,19 @@
     "The macro used to introduce the new function is determined by
      whether the new function must be enabled or not.")
    (xdoc::p
-    "The formals of the new function are obtained by removing,
-     from the formals of the old function,
-     all the formals that are made constant by the transformation.
-     The formals of the new function are returned as one of the results.")
+    "The parameters of the new function are
+     the dynamic parameters of the old function,
+     obtained by removing the static parameters from the old function.
+     The parameters of the new function are returned as one of the results.")
    (xdoc::p
     "If the old function is not recursive,
      the body of the new function is obtained by replacing,
      in the body of the old function,
-     the formals to make constant with the corresponding ground terms.
+     the static parameters with the corresponding ground terms.
      Otherwise, if the old function is recursive,
      the body of the new function is obtained by replacing,
      in a generic call of the old function,
-     the formals to make constant with the corresponding ground terms.")
+     the static parameters with the corresponding ground terms.")
    (xdoc::p
     "The guard of the new function is obtained similarly,
      from the guard of the old function.")
@@ -390,21 +390,21 @@
     "Note that the new function is never recursive."))
   (b* ((macro (function-intro-macro new-enable$ nil))
        (old-formals (formals old$ wrld))
-       (new-formals (set-difference-eq old-formals (strip-cars args$)))
+       (new-formals (set-difference-eq old-formals (strip-cars static$)))
        (old-call-or-body (if (acl2::irecursivep old$ wrld)
                              `(,old$ ,@old-formals)
                            (ubody old$ wrld)))
-       (new-body (acl2::fsublis-var args$ old-call-or-body))
+       (new-body (acl2::fsublis-var static$ old-call-or-body))
        (new-body (untranslate new-body nil wrld))
        (old-guard (uguard old$ wrld))
-       (new-guard (acl2::fsublis-var args$ old-guard))
+       (new-guard (acl2::fsublis-var static$ old-guard))
        (new-guard (untranslate new-guard nil wrld))
        (new-guard-hints `(("Goal"
                            :in-theory nil
                            :use (:instance
                                  (:guard-theorem ,old$)
                                  :extra-bindings-ok
-                                 ,@(alist-to-doublets args$)))))
+                                 ,@(alist-to-doublets static$)))))
        (local-event
         `(local
           (,macro ,new-name$ (,@new-formals)
@@ -420,21 +420,21 @@
                  ,new-body)))
     (mv local-event exported-event new-formals)))
 
-(define parteval-gen-args-equalities ((args$ symbol-alistp))
+(define parteval-gen-static-equalities ((static$ symbol-alistp))
   :returns (equalities "A @(tsee pseudo-term-listp).")
   :short "Generate the equalities whose conjunction forms
           the antecedent of the theorem relating old and new function."
   :long
   (xdoc::topp
    "Each equality has the form @('(equal yj cj)').")
-  (b* (((when (endp args$)) nil)
-       ((cons arg$ args$) args$)
+  (b* (((when (endp static$)) nil)
+       ((cons arg$ static$) static$)
        (equality `(equal ,(car arg$) ,(cdr arg$)))
-       (equalities (parteval-gen-args-equalities args$)))
+       (equalities (parteval-gen-static-equalities static$)))
     (cons equality equalities)))
 
 (define parteval-gen-old-to-new-thm ((old$ symbolp)
-                                     (args$ symbol-alistp)
+                                     (static$ symbol-alistp)
                                      (new-name$ symbolp)
                                      (thm-name$ symbolp)
                                      (thm-enable$ booleanp)
@@ -463,7 +463,7 @@
      in the former case, only the definition of the new function is used;
      in the latter case, also the definitino of the old function is used."))
   (b* ((macro (theorem-intro-macro thm-enable$))
-       (equalities (parteval-gen-args-equalities args$))
+       (equalities (parteval-gen-static-equalities static$))
        (antecedent (conjoin equalities))
        (consequent `(equal (,old$ ,@(formals old$ wrld))
                            (,new-name$ ,@new-formals)))
@@ -478,7 +478,7 @@
     (mv local-event exported-event)))
 
 (define parteval-gen-everything ((old$ symbolp)
-                                 (args$ symbol-alistp)
+                                 (static$ symbol-alistp)
                                  (new-name$ symbolp)
                                  (new-enable$ booleanp)
                                  (thm-name$ symbolp)
@@ -540,7 +540,7 @@
   (b* (((mv new-fn-local-event
             new-fn-exported-event
             new-formals) (parteval-gen-new-fn old$
-                                              args$
+                                              static$
                                               new-name$
                                               new-enable$
                                               verify-guards$
@@ -548,7 +548,7 @@
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (parteval-gen-old-to-new-thm
                                             old$
-                                            args$
+                                            static$
                                             new-name$
                                             thm-name$
                                             thm-enable$
@@ -589,7 +589,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-fn (old
-                     args
+                     static
                      new-name
                      new-enable
                      thm-name
@@ -620,13 +620,13 @@
           (cw "~%The transformation ~x0 is redundant.~%" call)
           (value '(value-triple :invisible))))
        ((er (list old$
-                  args$
+                  static$
                   new-name$
                   new-enable$
                   thm-name$
                   verify-guards$)) (parteval-process-inputs
                                     old
-                                    args
+                                    static
                                     new-name
                                     new-enable
                                     thm-name
@@ -636,7 +636,7 @@
                                     show-only
                                     ctx state))
        (event (parteval-gen-everything old$
-                                       args$
+                                       static$
                                        new-name$
                                        new-enable$
                                        thm-name$
@@ -660,7 +660,7 @@
                       call
                       ;; mandatory inputs:
                       old
-                      args
+                      static
                       ;; optional inputs:
                       &key
                       (new-name ':auto)
@@ -671,7 +671,7 @@
                       (print ':result)
                       (show-only 'nil))
     `(make-event-terse (parteval-fn ',old
-                                    ',args
+                                    ',static
                                     ',new-name
                                     ',new-enable
                                     ',thm-name

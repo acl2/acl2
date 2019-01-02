@@ -316,7 +316,7 @@
 
 (must-succeed*
 
- (test-title "Test the ARGS input.")
+ (test-title "Test the STATIC input.")
 
  (defund f (x y) (declare (xargs :guard t)) (list x y))
 

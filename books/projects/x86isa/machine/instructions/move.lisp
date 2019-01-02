@@ -109,7 +109,7 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg2 x86)
-	(x86-operand-to-reg/mem$ proc-mode operand-size
+	(x86-operand-to-reg/mem proc-mode operand-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 register
@@ -158,7 +158,7 @@
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* operand-size inst-ac?
 	 nil ;; Not a memory pointer operand
 	 seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -402,7 +402,7 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg3 x86)
-	(x86-operand-to-reg/mem$ proc-mode reg/mem-size
+	(x86-operand-to-reg/mem proc-mode reg/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 imm
@@ -519,7 +519,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode
 						#.*gpr-access*
 						reg/mem-size
 						inst-ac?
@@ -606,7 +606,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode
 						#.*gpr-access*
 						reg/mem-size
 						inst-ac?
@@ -702,7 +702,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						reg/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand

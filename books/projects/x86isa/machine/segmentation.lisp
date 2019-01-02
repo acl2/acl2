@@ -284,16 +284,34 @@
    and @('eff-addr + nbytes - 1') (the end of the chunk)
    is checked against the upper bound of the segment.
    In 64-bit mode, these checks are skipped.
-   The calculation @('eff-addr + nbytes - 1') should be modular,
-   but if it wraps around then there are effectively two chunks of bytes
-   to check for containment in the segment.
-   For now we make a stricter check
+   It is not clear from the Intel and AMD manuals
+   whether the calculation @('eff-addr + nbytes - 1') should be modular.
+   If it were, the wrap-around would give rise to
+   two separate chunks of bytes to be checked for containment in the segment.
+   According to the article at
+   <a href=\"https://www.embedded.com/electronics-blogs/significant-bits/4024943/Taming-the-x86-beast\">@('https://www.embedded.com/electronics-blogs/significant-bits/4024943/Taming-the-x86-beast')</a>,
+   the calculation does not wrap around.
+   This is a paragraph from the article:
+   <blockquote>
+   <i>
+   You also can't ``wrap around'' the end of segment like before.
+   Earlier x86 chips with their 64KB segments allowed pointers
+   to roll over from FFFF to 0000 automatically.
+   Programs that accidentally (or purposely) ran off the end of a segment
+   started over at the beginning.
+   Programs that run off the end of a segment
+   now are greeted with a segmentation fault.
+   </i>
+   </blockquote>
+   So for now we make the stricter check
    by calculating @('eff-addr + nbytes - 1') non-modularly
    and therefore always having one chunk to check.
    Note that operations like @(tsee rme-size) always access one contiguous chunk
    because they forward the translated addresses
    to operations like @(tsee rml-size);
-   so improvements may need to be made
+   so if it turned out that @('eff-addr + nbytes - 1') can wrap around
+   (contrary to what the aforementioned article states),
+   changes may need to be made
    in @(tsee rme-size) and similar operations as well.
    </p>
    <p>

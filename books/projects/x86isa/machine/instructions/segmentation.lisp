@@ -110,7 +110,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode 0
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode 0
                                                 base-size+2
                                                 inst-ac?
                                                 t ;; Memory pointer operand
@@ -229,7 +229,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode 0
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode 0
                                                 base-size+2
                                                 inst-ac?
                                                 t ;; Memory pointer operand
@@ -355,7 +355,7 @@ a non-canonical form, raise the SS exception.</p>"
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 0
                                                 2
                                                 inst-ac?
