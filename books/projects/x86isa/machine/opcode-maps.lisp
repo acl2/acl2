@@ -4687,17 +4687,27 @@
 
     (:Group-6 . ;; Covers opcode 0F 00.
               ((((:opcode . #ux0F_00)
-                 (:reg    . #b000)) .
-                 (:ALT
-                  (("SLDT" 1 (R v) :1a)
-                   ("SLDT" 1 (M w) :1a))
+                 (:reg    . #b000)
+                 (:mod    . :mem)) .
+                 ("SLDT" 1 (M w) :1a
                   (:ud  . ((ud-Lock-used)))
                   (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
                (((:opcode . #ux0F_00)
-                 (:reg    . #b001)) .
-                 (:ALT
-                  (("STR" 1 (R v) :1a)
-                   ("STR" 1 (M w) :1a))
+                 (:reg    . #b000)
+                 (:mod    . #b11)) .
+                 ("SLDT" 1 (R v) :1a
+                  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
+               (((:opcode . #ux0F_00)
+                 (:reg    . #b001)
+                 (:mod    . :mem)) .
+                 ("STR" 1 (M w) :1a
+                  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
+               (((:opcode . #ux0F_00)
+                 (:reg    . #b001)
+                 (:mod    . #b11)) .
+                 ("STR" 1 (R v) :1a
                   (:ud  . ((ud-Lock-used)))
                   (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
                (((:opcode . #ux0F_00)
@@ -4914,10 +4924,15 @@
                  ("ENCLU" 0 :1a
                   (:nm . ((nm-cr0-ts-is-1)))))
                (((:opcode . #ux0F_01)
-                 (:reg    . #b100)) .
-                 (:ALT
-                  (("SMSW" 1 (M w) :1a)
-                   ("SMSW" 1 (R v) :1a))
+                 (:reg    . #b100)
+                 (:mod    . :mem)) .
+                 ("SMSW" 1 (M w) :1a
+                  (:ud  . ((ud-Lock-used)))
+                  (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
+               (((:opcode . #ux0F_01)
+                 (:reg    . #b100)
+                 (:mod    . #b11)) .
+                 ("SMSW" 1 (R v) :1a
                   (:ud  . ((ud-Lock-used)))
                   (:gp  . ((and (gp-cpl-not-0) (gp-cr4-umip-is-1))))))
                (((:opcode . #ux0F_01)
@@ -5006,10 +5021,20 @@
                (((:opcode . #ux0F_C7)
                  (:prefix . :no-prefix)
                  (:mod    . :mem)
-                 (:reg    . #b001)) .
-                 (:ALT
-                  (("CMPXCH8B" 1 (M q) :1a)
-                   ("CMPXCHG16B" 1 (M dq) :1a))
+                 (:reg    . #b001)
+                 ;; This opcode is obviously not encodable in non 64-bit modes,
+                 ;; but I won't bother to include that here --- REX bytes
+                 ;; shouldn't even be detected in that mode.
+                 (:rex    . :w)) .
+                 ("CMPXCHG16B" 1 (M dq) :1a
+                  (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
+               (((:opcode . #ux0F_C7)
+                 (:prefix . :no-prefix)
+                 (:mod    . :mem)
+                 (:reg    . #b001)
+                 ;; :not-w also includes the case where the rex byte is absent.
+                 (:rex    . :not-w)) .
+                 ("CMPXCH8B" 1 (M q) :1a
                   (:ud  . ((ud-ModR/M.Mod-indicates-Register)))))
                (((:opcode . #ux0F_C7)
                  (:mod    . #b11)
@@ -5110,10 +5135,23 @@
                             0)))))
                (((:opcode . #ux0F_C7)
                  (:prefix . :F3)
-                 (:reg    . #b111)) .
-                 (:ALT
-                  (("RDPID" 1 (R d) :1a)
-                   ("RDPID" 1 (R q) :1a))
+                 (:reg    . #b111)
+                 (:mode   . :o64)) .
+                 ("RDPID" 1 (R q) :1a
+                  (:ud  . ((ud-Lock-used)
+                           (equal
+                            ;; CPUID.7H.0:ECX.RDPID[bit 22]
+                            (cpuid-flag
+                             #ux_07
+                             :ecx #ux_0
+                             :reg #.*ecx*
+                             :bit 22)
+                            0)))))
+               (((:opcode . #ux0F_C7)
+                 (:prefix . :F3)
+                 (:reg    . #b111)
+                 (:mode   . :i64)) .
+                 ("RDPID" 1 (R d) :1a
                   (:ud  . ((ud-Lock-used)
                            (equal
                             ;; CPUID.7H.0:ECX.RDPID[bit 22]
@@ -5712,10 +5750,28 @@
 
                 (((:opcode . #ux0F_1A)
                   (:prefix . :66)
-                  (:feat   . (:mpx))) .
-                  (:ALT
-                   (("BNDMOV"    2 (rB) (mB))
-                    ("BNDMOV"    2 (rB) (M)))
+                  (:feat   . (:mpx))
+                  (:mod    . :mem)) .
+                  ("BNDMOV"    2 (rB) (M)
+                   (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
+                            ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                            ;;   Intel MPX is enabled.
+                            (<= 4 (reg-index (modr/m->r/m ModR/M) rex-byte #.*b*))
+                            ;; In Compatibility/Protected Mode:
+                            ;; - If 67H prefix is used and CS.D=1.
+                            ;; - If 67H prefix is not used and CS.D=0.
+                            (if (and (not (eql proc-mode #.*64-bit-mode*))
+                                     (eql (prefixes->adr prefixes)
+                                          #.*addr-size-override*))
+                                ;; cs.d = 1
+                                (eql (cs.d) 1)
+                              ;; cs.d = 0
+                              (eql (cs.d) 0))))))
+                (((:opcode . #ux0F_1A)
+                  (:prefix . :66)
+                  (:feat   . (:mpx))
+                  (:mod    . #b11)) .
+                  ("BNDMOV"    2 (rB) (mB)
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -5830,10 +5886,28 @@
 
                 (((:opcode . #ux0F_1B)
                   (:prefix .  :66)
-                  (:feat   . (:mpx))) .
-                  (:ALT
-                   (("BNDMOV"    2 (mB) (rB))
-                    ("BNDMOV"    2 (M) (rB)))
+                  (:feat   . (:mpx))
+                  (:mod    . :mem)) .
+                  ("BNDMOV"    2 (M) (rB)
+                   (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
+                            ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                            ;;   Intel MPX is enabled.
+                            (<= 4 (reg-index (modr/m->r/m ModR/M) rex-byte #.*b*))
+                            ;; In Compatibility/Protected Mode:
+                            ;; - If 67H prefix is used and CS.D=1.
+                            ;; - If 67H prefix is not used and CS.D=0.
+                            (if (and (not (eql proc-mode #.*64-bit-mode*))
+                                     (eql (prefixes->adr prefixes)
+                                          #.*addr-size-override*))
+                                ;; cs.d = 1
+                                (eql (cs.d) 1)
+                              ;; cs.d = 0
+                              (eql (cs.d) 0))))))
+                (((:opcode . #ux0F_1B)
+                  (:prefix .  :66)
+                  (:feat   . (:mpx))
+                  (:mod    . #b11)) .
+                  ("BNDMOV"    2 (mB) (rB)
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -12444,19 +12518,7 @@
 
 (defconst *simple-cells-legal-keywords*
   (append
-   ;; Semantics of :ALT:
-   ;; Consider the following:
-   ;; (:66 . (:ALT
-   ;;         (("VPEXTRB"    3 (R d)  (V dq)  (I b))
-   ;;          ("VPEXTRB"    3 (M b)  (V dq)  (I b)))))
-   ;; This corresponds to the following cell in the Intel manuals:
-   ;; vpextrb Rd/Mb, Vdq, Ib
-   ;; What that means is that vpextrb can have a first operand that is
-   ;; either an Rd or an Mb.  The opcode bytes (and prefixes,
-   ;; extensions, etc.) are the same for both these cases, and the
-   ;; ModR/M byte's mod and r/m fields are used to distinguish between
-   ;; these two forms of the same instruction.
-   (list :EXT :ALT)
+   (list :EXT)
    *group-numbers*
    *simple-cells-standalone-legal-keywords*))
 
@@ -12627,32 +12689,8 @@
                   (true-list-listp cell)))
     :rule-classes :forward-chaining))
 
-(define simple-cell-aux-p (cell)
-  (or (basic-simple-cell-p cell)
-      (b* (((unless (true-listp cell)) nil)
-           (first (car cell))
-           (rest (cdr cell))
-           (exception-info (get-exception-info rest))
-           (semantic-info (get-semantic-function-info rest))
-           (new-rest (remove-exception-info rest))
-           (new-rest (remove-semantic-function-info new-rest)))
-        (cond ((equal first :ALT)
-               (and
-                (consp new-rest)
-                ;; (true-listp new-rest)
-                (basic-simple-cells-p (car new-rest))
-                (equal (cdr new-rest) nil)
-                (semantic-function-info-p semantic-info)
-                (exception-info-p exception-info)))
-              (t nil))))
-  ///
-  (defthm simple-cell-aux-p-implies-true-listp
-    (implies (simple-cell-aux-p cell)
-             (true-listp cell))
-    :rule-classes :forward-chaining))
-
 (defconst *opcode-descriptor-legal-keys*
-  '(:opcode :reg :prefix :mod :r/m :vex :mode :feat))
+  '(:opcode :reg :prefix :mod :r/m :vex :mode :feat :rex))
 
 (define opcode-descriptor-p (opcode-descriptor)
   (if (consp opcode-descriptor)
@@ -12665,7 +12703,7 @@
                      *opcode-descriptor-legal-keys*))
             (cw "~%Keys ~p0 ill-formed!~%" keys))
            (opcode-cell (cdr opcode-descriptor))
-           ((unless (simple-cell-aux-p opcode-cell))
+           ((unless (basic-simple-cell-p opcode-cell))
             (cw "~%Cell ~p0 ill-formed!~%" opcode-cell)))
         t)
     (cw "~%Opcode-descriptor ~p0 not a consp!~%"
@@ -12689,7 +12727,7 @@
     :hints (("Goal" :in-theory (e/d (opcode-descriptor-p) ())))))
 
 (define simple-cell-p (cell)
-  (or (simple-cell-aux-p cell)
+  (or (basic-simple-cell-p cell)
       (b* (((unless (true-listp cell)) nil)
            (first (car cell))
            (rest (cdr cell)))
@@ -12915,9 +12953,9 @@
             (remove-cpuid-flag-info (cdr opcode-desc))))))
 
 (define avx-opcode-desc-okp (opcode-desc-lst)
-  ;; Note that AVX maps don't have :ALT or :EXT keywords (because they don't
-  ;; need to --- we can differentiate between the instructions on the basis of
-  ;; the stuff satisfying avx-cases-okp).
+  ;; Note that AVX maps don't have the :EXT keyword --- they don't need to.  We
+  ;; can differentiate between the instructions on the basis of the stuff
+  ;; satisfying avx-cases-okp).
   (and
    (true-list-listp opcode-desc-lst)
    (true-listp (car opcode-desc-lst))
@@ -12969,7 +13007,7 @@
 
   (defthm avx-opcode-cases-okp-implies-true-listp
     (implies (avx-opcode-cases-okp variants vex?)
-             (true-listp variants)))  
+             (true-listp variants)))
 
   (defthm avx-opcode-cases-okp-implies-alistp
     (implies (avx-opcode-cases-okp variants vex?)
