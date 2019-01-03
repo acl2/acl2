@@ -1,4 +1,4 @@
-; Ethereum Library -- Recursive Length Prefix (RLP)
+; Ethereum Library -- RLP Encoding
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,122 +11,32 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
-(include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 
-(local (include-book "std/lists/top" :dir :system))
-
-(include-book "basics")
+(include-book "big-endian")
+(include-book "trees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ rlp
-  :parents (ethereum)
-  :short "Recursive Length Prefix (RLP)."
+(defxdoc+ rlp-encoding
+  :parents (rlp)
+  :short "RLP encoding."
   :long
-  (xdoc::topp
-   "RLP is a serialization (encoding) method for Ethereum,
-    described in [YP:B] and in
-    <a href=\"https://github.com/ethereum/wiki/wiki/RLP\">Page `RLP'
-    of [Wiki]</a>;
-    we reference that page of [Wiki] as `[Wiki:RLP]').")
+  (xdoc::topapp
+   (xdoc::p
+    "We specify RLP encoding via functions
+     from byte arrays, trees, and scalars
+     to byte arrays.
+     These functions closely correspond to the ones in [YP:B].
+     They are both executable and high-level.")
+   (xdoc::p
+    "We also define valid RLP encodings as images of the encoding functions.
+     These are declaratively defined, non-executable predicates."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection rlp-big-endian-representations
-  :parents (rlp)
-  :short "Big-endian representation of scalars in RLP."
-  :long
-  (xdoc::topapp
-   (xdoc::p
-    "The library function @(tsee nat=>bendian*),
-     when the @('base') argument is 256,
-     corresponds to @($\\mathtt{BE}$) [YP:(181)].
-     Note that no leading 0 is allowed, even for representing 0,
-     which is thus represented by the empty list of digits.")
-   (xdoc::p
-    "Digits in base 256 are bytes.
-     We introduce return type theorems for @(tsee nat=>bendian*)
-     (and for the other number-to-digit conversions,
-     even though we do not use them here)."))
-
-  (defruled dab-digit-listp-of-256-is-byte-listp
-    (equal (acl2::dab-digit-listp 256 digits)
-           (byte-listp digits))
-    :enable (acl2::dab-digit-listp acl2::dab-digitp byte-listp bytep))
-
-  (acl2::defthm-dab-return-types
-   dab-digit-listp-of-256-is-byte-listp
-   byte-listp-of))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftypes rlp-trees
-
-  (fty::deftagsum rlp-tree
-    :parents (rlp)
-    :short "RLP trees."
-    :long
-    "<p>
-     An RLP tree has
-     a <see topic='@(url byte-arrays)'>byte array</see> at each leaf.
-     A non-leaf node of the tree carries no additional information
-     besides the structure implied by
-     the sequence of its (zero or more) subtrees.
-     </p>
-     <p>
-     The definition of type @('rlp-tree')
-     corresponds to @($\\mathbb{T}$) [YP:(176)].
-     The definition of type @('rlp-tree-list')
-     corresponds to @($\\mathbb{L}$) [YP:(177)];
-     we use true lists to model sequences of subtrees.
-     </p>
-     <p>
-     These trees are called `items' in [Wiki:RLP];
-     we prefer the term `tree', because it seems clearer.
-     The byte sequences at the leaves are called
-     `byte arrays' in [YP:B] and [Wiki:RLP], and also `strings' in [Wiki:RLP];
-     we use the former term in preference to the latter,
-     because it seems clearer.
-     </p>
-     <p>
-     It may be unclear, at first,
-     whether the empty sequence in @($\\mathbb{L}$) [YP:(177)]
-     is distinct from
-     the empty sequence in @($\\mathbb{B}$) [YP:(178)],
-     and whether @($\\mathbb{T}$) [YP:(176)],
-     which is defined as a non-disjoint union,
-     contains a single empty sequence or two distinct ones.
-     According to [YP:(180)] (see @(tsee rlp-encode-bytes)),
-     the empty sequence from @($\\mathbb{B}$)
-     is encoded as the singleton byte array containing 128.
-     According to [YP:(183)] (see @(tsee rlp-encode-tree)),
-     the empty sequence from @($\\mathbb{L}$)
-     is encoded as the singleton byte array containing 192.
-     Given these two different encodings, it seems reasonable to assume
-     that the two empty sequences from the two sets are distinct.
-     Accordingly, in our model of RLP trees,
-     the leaf tree with the empty byte array is distinct from
-     the non-leaf tree with no subtrees.
-     This disambiguation is also supported by the fact that
-     the code in [Wiki:RLP] treats those two empty sequences differently
-     (one is a string, the other one is a list).
-     </p>"
-    (:leaf ((bytes byte-list)))
-    (:nonleaf ((subtrees rlp-tree-list)))
-    :pred rlp-treep)
-
-  (fty::deflist rlp-tree-list
-    :parents (rlp-tree)
-    :short "True lists of RLP trees."
-    :elt-type rlp-tree
-    :true-listp t
-    :pred rlp-tree-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define rlp-encode-bytes ((bytes byte-listp))
-  :parents (rlp)
+  :parents (rlp-encoding)
   :returns (mv (error? booleanp)
                (encoding byte-listp
                          :hints (("Goal"
@@ -181,7 +91,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines rlp-encode-tree
-  :parents (rlp)
+  :parents (rlp-encoding)
   :short "RLP encoding of a tree."
   :long
   (xdoc::topapp
@@ -281,7 +191,7 @@
 (define rlp-encode-scalar ((nat natp))
   :returns (mv (error? booleanp)
                (encoding byte-listp))
-  :parents (rlp)
+  :parents (rlp-encoding)
   :short "RLP encoding of a scalar."
   :long
   (xdoc::topapp
@@ -299,7 +209,7 @@
 
 (define-sk rlp-tree-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
-  :parents (rlp)
+  :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a tree."
   :long
   (xdoc::topp
@@ -327,73 +237,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-tree ((encoding byte-listp))
-  :returns
-  (mv (error? booleanp)
-      (tree rlp-treep
-            :hints (("Goal"
-                     :in-theory
-                     (e/d
-                      (rlp-tree-encoding-p)
-                      (rlp-tree-encoding-p-of-byte-list-fix-encoding))))))
-  :parents (rlp)
-  :short "RLP decoding of a tree."
-  :long
-  (xdoc::topapp
-   (xdoc::p
-    "If the byte array encodes some tree, we return that tree,
-     along with a @('nil') error flag.
-     Otherwise, we return a @('t') error flag,
-     and an irrelevant tree as second result.")
-   (xdoc::p
-    "This is a declarative, non-executable definition,
-     which says that decoding is the inverse of encoding.
-     This is the intention of [YP:B], which only specifies encoding,
-     leaving decoding implicit.")
-   (xdoc::p
-    "More precisely, we define decoding as the right inverse of encoding
-     (with respect to byte arrays that are valid encodings of trees),
-     as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').
-     To prove that decoding is left inverse of encoding
-     (with respect to trees that can be encoded),
-     we need to show that encoding is injective over trees that can be encoded.
-     We conjecture that the proof of this property
-     may be a by-product of deriving an executable implementation of decoding
-     via stepwise refinement
-     (e.g. using <see topic='@(url apt::apt)'>APT</see>):
-     if there were two different trees whose encodings are equal,
-     an executable implementation of decoding, which returns a unique tree,
-     could not be shown to be equal to @('rlp-tree-endoding-witness'),
-     which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
-     and therefore could be either tree.
-     Thus, we defer the injectivity and left inverse proofs for now.")
-   (xdoc::p
-    "The decoding code in [Wiki:RLP] provides a reference implementation.
-     Note that it is considerably more complicated than the encoding code.
-     Thus, our high-level specification of decoding seems appropriate."))
-  (b* ((encoding (byte-list-fix encoding)))
-    (if (rlp-tree-encoding-p encoding)
-        (mv nil (rlp-tree-encoding-witness encoding))
-      (mv t (rlp-tree-leaf nil))))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule rlp-encode-tree-of-rlp-decode-tree
-    (implies (and (byte-listp encoding)
-                  (rlp-tree-encoding-p encoding))
-             (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
-                  ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
-               (and (not d-error?)
-                    (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-tree-encoding-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk rlp-bytes-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
-  :parents (rlp)
+  :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a byte array."
   :long
   (xdoc::topapp
@@ -430,53 +276,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rlp-decode-bytes ((encoding byte-listp))
-  :returns
-  (mv (error? booleanp)
-      (bytes byte-listp
-             :hints (("Goal"
-                      :in-theory
-                      (e/d (rlp-bytes-encoding-p)
-                           (rlp-bytes-encoding-p-of-byte-list-fix-encoding))))))
-  :parents (rlp)
-  :short "RLP decoding of a byte array."
-  :long
-  (xdoc::topapp
-   (xdoc::p
-    "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.
-     If the returned error flag is @('t'),
-     we return @('nil') as the (irrelevant) second result.")
-   (xdoc::p
-    "The encoding of a leaf tree via @(tsee rlp-encode-tree) is the same as
-     the encoding of the byte array at the leaf via @(tsee rlp-encode-bytes).
-     To show the corresponding relationship about the decoding functions,
-     we need the injectivity of encoding;
-     otherwise, the two witness functions could yield ``incompatible'' values.
-     Thus, we defer the proof of this relationship for now."))
-  (b* ((encoding (byte-list-fix encoding)))
-    (if (rlp-bytes-encoding-p encoding)
-        (mv nil (rlp-bytes-encoding-witness encoding))
-      (mv t nil)))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule rlp-encode-bytes-of-rlp-decode-bytes
-    (implies (and (byte-listp encoding)
-                  (rlp-bytes-encoding-p encoding))
-             (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
-                  ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
-               (and (not d-error?)
-                    (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-bytes-encoding-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk rlp-scalar-encoding-p ((encoding byte-listp))
   :returns (yes/no booleanp)
-  :parents (rlp)
+  :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a scalar."
   :long
   (xdoc::topp
@@ -499,48 +301,3 @@
                    (:instance rlp-scalar-encoding-p-suff
                     (nat (rlp-scalar-encoding-witness encoding))
                     (encoding (byte-list-fix encoding))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define rlp-decode-scalar ((encoding byte-listp))
-  :returns
-  (mv (error? booleanp)
-      (scalar natp
-              :hints (("Goal"
-                       :in-theory
-                       (e/d
-                        (rlp-scalar-encoding-p)
-                        (rlp-scalar-encoding-p-of-byte-list-fix-encoding))))))
-  :parents (rlp)
-  :short "RLP decoding of a scalar."
-  :long
-  (xdoc::topapp
-   (xdoc::p
-    "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.
-     If the returned error flag is @('t'),
-     we return 0 as the (irrelevant) second result.")
-   (xdoc::p
-    "The encoding of a scalar via @(tsee rlp-encode-scalar) is the same as
-     the encoding of the big-endian byte array via @(tsee rlp-encode-bytes).
-     To show the corresponding relationship about the decoding functions,
-     we need the injectivity of encoding;
-     otherwise, the two witness functions could yield ``incompatible'' values.
-     Thus, we defer the proof of this relationship for now."))
-  (b* ((encoding (byte-list-fix encoding)))
-    (if (rlp-scalar-encoding-p encoding)
-        (mv nil (rlp-scalar-encoding-witness encoding))
-      (mv t 0)))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule rlp-encode-scalar-of-rlp-decode-scalar
-    (implies (and (byte-listp encoding)
-                  (rlp-scalar-encoding-p encoding))
-             (b* (((mv d-error? d-scalar) (rlp-decode-scalar encoding))
-                  ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
-               (and (not d-error?)
-                    (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-scalar-encoding-p))
