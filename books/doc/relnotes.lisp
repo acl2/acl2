@@ -195,8 +195,6 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved the documentation.</p>
-
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
@@ -208,7 +206,9 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
- <p>Added several theorems.</p>
+ <p>Added several theorems.  Improved some theorems.</p>
+
+ <p>Improved some documentation.</p>
 
  <h4>Filesystem Books</h4>
 

@@ -88,14 +88,25 @@
   ///
 
   (defrule rlp-encode-tree-of-rlp-decode-tree
-    (implies (and (byte-listp encoding)
-                  (rlp-tree-encoding-p encoding))
+    (implies (rlp-tree-encoding-p encoding)
              (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
                   ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-tree-encoding-p))
+                    (equal e-encoding
+                           (byte-list-fix encoding)))))
+    :use (:instance lemma (encoding (byte-list-fix encoding)))
+
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (byte-listp encoding)
+                     (rlp-tree-encoding-p encoding))
+                (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
+                     ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
+                  (and (not d-error?)
+                       (not e-error?)
+                       (equal e-encoding encoding))))
+       :enable rlp-tree-encoding-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,14 +143,25 @@
   ///
 
   (defrule rlp-encode-bytes-of-rlp-decode-bytes
-    (implies (and (byte-listp encoding)
-                  (rlp-bytes-encoding-p encoding))
+    (implies (rlp-bytes-encoding-p encoding)
              (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
                   ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-bytes-encoding-p))
+                    (equal e-encoding
+                           (byte-list-fix encoding)))))
+    :use (:instance lemma (encoding (byte-list-fix encoding)))
+
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (byte-listp encoding)
+                     (rlp-bytes-encoding-p encoding))
+                (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
+                     ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
+                  (and (not d-error?)
+                       (not e-error?)
+                       (equal e-encoding encoding))))
+       :enable rlp-bytes-encoding-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,11 +199,22 @@
   ///
 
   (defrule rlp-encode-scalar-of-rlp-decode-scalar
-    (implies (and (byte-listp encoding)
-                  (rlp-scalar-encoding-p encoding))
+    (implies (rlp-scalar-encoding-p encoding)
              (b* (((mv d-error? d-scalar) (rlp-decode-scalar encoding))
                   ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding encoding))))
-    :enable rlp-scalar-encoding-p))
+                    (equal e-encoding
+                           (byte-list-fix encoding)))))
+    :use (:instance lemma (encoding (byte-list-fix encoding)))
+
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (byte-listp encoding)
+                     (rlp-scalar-encoding-p encoding))
+                (b* (((mv d-error? d-scalar) (rlp-decode-scalar encoding))
+                     ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
+                  (and (not d-error?)
+                       (not e-error?)
+                       (equal e-encoding encoding))))
+       :enable rlp-scalar-encoding-p))))
