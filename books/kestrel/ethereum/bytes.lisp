@@ -57,3 +57,15 @@
 (fty::defbytelist byte
   :pred byte-listp
   :parents (byte-arrays))
+
+(defsection byte-list-fix-ext
+  :extension byte-list-fix
+
+  (defrule car-of-byte-list-fix
+    (implies (consp x)
+             (equal (car (byte-list-fix x))
+                    (byte-fix (car x)))))
+
+  (defrule cdr-of-byte-list-fix
+    (equal (cdr (byte-list-fix x))
+           (byte-list-fix (cdr x)))))
