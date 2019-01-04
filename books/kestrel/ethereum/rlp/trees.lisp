@@ -12,6 +12,8 @@
 
 (include-book "../basics")
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes rlp-trees
@@ -67,7 +69,32 @@
      </p>"
     (:leaf ((bytes byte-list)))
     (:nonleaf ((subtrees rlp-tree-list)))
-    :pred rlp-treep)
+    :pred rlp-treep
+
+    ///
+
+    (defrule rlp-tree-leaf->bytes-injective
+      (implies (and (rlp-tree-case x :leaf)
+                    (rlp-tree-case y :leaf))
+               (equal (equal (rlp-tree-leaf->bytes x)
+                             (rlp-tree-leaf->bytes y))
+                      (equal (rlp-tree-fix x)
+                             (rlp-tree-fix y))))
+      :enable (rlp-treep
+               rlp-tree-kind
+               rlp-tree-leaf->bytes
+               rlp-tree-fix
+               acl2::equal-len-const))
+
+    (defrule rlp-tree-nonleaf->subtrees-injective
+      (implies (and (rlp-tree-case x :nonleaf)
+                    (rlp-tree-case y :nonleaf))
+               (equal (equal (rlp-tree-nonleaf->subtrees x)
+                             (rlp-tree-nonleaf->subtrees y))
+                      (equal (rlp-tree-fix x)
+                             (rlp-tree-fix y))))
+      :enable (rlp-tree-nonleaf->subtrees
+               rlp-tree-fix)))
 
   (fty::deflist rlp-tree-list
     :parents (rlp-tree)
