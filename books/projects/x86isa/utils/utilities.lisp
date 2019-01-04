@@ -167,6 +167,13 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
 
   })
 
+<p>If @(':hints-t') is not supplied, hints to prove the type prescription
+corollary are generated automatically.  In this case, the hypotheses for the
+type prescription corollary must trivially subsume the ones for the main
+theorem specified by @(':hyp'); in particular, they may have additional
+conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
+@(':hints-l').</p>
+
 </li>
 
 <li><p>Use the macro @('defthm-sb') to prove
@@ -243,9 +250,6 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
              :hints (("Goal" :in-theory '(natp))))))
       nil))
 
-  ;; since corollaries must just follow from their theorems,
-  ;; it may be possible to generate simpler hints for the corollaries below
-
   (defmacro defthm-usb
       (name &key hyp bound concl
             gen-type gen-linear
@@ -255,8 +259,30 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
             otf-flg)
 
     (if (and concl bound)
-        (let ((hints-t (or hints-t hints))
-              (hints-l (or hints-l hints))
+        (let ((hints-t (or hints-t
+                           ;; If :HINTS-T is not supplied, the following hints,
+                           ;; given the definitions of UNSIGNED-BYTE-P,
+                           ;; INTEGER-RANGE-P, and NATP, should suffice to
+                           ;; prove the corollary from the main theorem,
+                           ;; assuming that :HYP-T is a superset of :HYP, or
+                           ;; perhaps has some extra calls to FORCE.
+                           '(("Goal" :in-theory '(unsigned-byte-p
+                                                  integer-range-p
+                                                  natp)))))
+              (hints-l (or hints-l
+                           ;; If :HINTS-L is not supplied, the following hints,
+                           ;; given the definitions of UNSIGNED-BYTE-P and
+                           ;; INTEGER-RANGE-P, should suffice to prove the
+                           ;; corollary from the main theorem, assuming that
+                           ;; :HYP-L is a superset of :HYP, or perhaps has some
+                           ;; extra calls to FORCE. The (:E EXPT) is motivated
+                           ;; by the fact that, if :BOUND is a number, the
+                           ;; generated linear rule involves not a call of EXPT
+                           ;; but directly the value of such a call (see
+                           ;; 2^BOUND below).
+                           '(("Goal" :in-theory '(unsigned-byte-p
+                                                  integer-range-p
+                                                  (:e expt))))))
               (2^bound (if (natp bound)
                            (expt 2 bound)
                          `(expt 2 ,bound))))
@@ -289,6 +315,9 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
                         ,@(and hints-l `(:hints ,hints-l))))))))
       nil))
   ;; no need to generate a (>= ... 0) linear rule so far
+
+  ;; since corollaries must just follow from their theorems,
+  ;; it may be possible to generate simpler hints for the corollaries below
 
   (defmacro defthm-sb
       (name &key hyp bound concl
