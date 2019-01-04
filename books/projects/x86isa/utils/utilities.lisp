@@ -70,41 +70,11 @@
   :parents (utilities)
   :short "Macro that can be used to create event names by
   concatenating strings, symbols, and numbers."
-  :long "@(def mk-name)
-
-@(def string-concatenate)"
-
-  (defun string-cat (lst)
-    (declare (xargs :verify-guards nil))
-    (cond ((atom lst)
-           "")
-          ((stringp (car lst))
-           (string-append (str::upcase-string (car lst))
-                          (string-cat (cdr lst))))
-          ((symbolp (car lst))
-           (string-append (symbol-name (car lst))
-                          (string-cat (cdr lst))))
-          ((natp (car lst))
-           (string-append
-            (coerce (explode-nonnegative-integer (car lst) 10 '())
-                    'string)
-            (string-cat (cdr lst))))
-          (t
-           (string-cat (cdr lst)))))
-
-  (defmacro string-concatenate (&rest x)
-    `(string-cat (list ,@x)))
+  :long "@(def mk-name)"
 
   (defmacro mk-name (&rest x)
     ;; Note that the package is X86ISA here.
-    `(intern$ (string-concatenate ,@x) "X86ISA"))
-
-  (defmacro acl2-mk-name (&rest x)
-    ;; Note that intern, unlike the regular Lisp reader, is sensitive to
-    ;; case.
-    `(intern (string-concatenate ,@x) "ACL2"))
-
-  )
+    `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
 
 ;; ======================================================================
 
