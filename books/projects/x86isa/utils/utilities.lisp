@@ -113,7 +113,7 @@ returns a value greater than or equal to zero.</p>
       :corollary
       (implies <hypotheses>
                (<= 0 <conclusion>))
-      :hints <usual ACL2 hints>)))
+      :hints ((\"Goal\" :in-theory '(natp))))))
 
   })
 
@@ -223,9 +223,6 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 
 </ul>"
 
-  ;; since corollaries must just follow from their theorems,
-  ;; it may be possible to generate simpler hints for the corollaries below
-
   (defmacro defthm-natp (name &key hyp concl hints)
     (if concl
         `(defthm ,name
@@ -240,8 +237,14 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
              ,(if (atom hyp)
                   `(<= 0 ,concl)
                 `(implies ,hyp (<= 0 ,concl)))
-             ,@(and hints `(:hints ,hints)))))
+             ;; Given the definition of NATP, the following hints should always
+             ;; reliably and quickly prove that the corollary follows from the
+             ;; main theorem.
+             :hints (("Goal" :in-theory '(natp))))))
       nil))
+
+  ;; since corollaries must just follow from their theorems,
+  ;; it may be possible to generate simpler hints for the corollaries below
 
   (defmacro defthm-usb
       (name &key hyp bound concl
