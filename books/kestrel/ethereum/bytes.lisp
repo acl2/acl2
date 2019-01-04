@@ -58,6 +58,13 @@
   :pred byte-listp
   :parents (byte-arrays))
 
+(defsection byte-listp-ext
+  :extension byte-listp
+
+  (defrule nat-listp-when-byte-listp
+    (implies (byte-listp bytes)
+             (nat-listp bytes))))
+
 (defsection byte-list-fix-ext
   :extension byte-list-fix
 
