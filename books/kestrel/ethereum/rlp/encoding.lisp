@@ -72,7 +72,27 @@
    (xdoc::p
     "The first result of this function is an error flag,
      which is @('t') if the argument byte array cannot be encoded;
-     in this case, @('nil') is returned as the (irrelevant) second result."))
+     in this case, @('nil') is returned as the (irrelevant) second result.")
+   (xdoc::p
+    "Encodings are never empty,
+     i.e. they always consist of at least one byte:
+     see theorem @('consp-of-rlp-encode-bytes-when-no-error').")
+   (xdoc::p
+    "The first byte of an encoding is always below 192:
+     see theorem @('car-of-rlp-encode-bytes-bound-when-no-error').")
+   (xdoc::p
+    "The total length of an encoding can be determined
+     from the first few bytes (i.e. a prefix) of the encoding:
+     see theorem @('len-of-rlp-encode-bytes-from-prefix').
+     This rewrite rule is disabled by default,
+     because it turns the left-hand side into a more complex right-hand side;
+     however, it can be usefully enabled for certain proofs.")
+   (xdoc::p
+    "The total length of an encoding that uses a ``long'' length field
+     (i.e. when the initial byte is followed by the length of the length,
+     and the actual length consists of one or more bytes)
+     is larger than the length field itself:
+     see theorem @('len-of-rlp-encode-bytes-lower-bound-when-len-len')."))
   (b* ((bytes (byte-list-fix bytes)))
     (cond ((and (= (len bytes) 1)
                 (< (car bytes) 128)) (mv nil bytes))
@@ -86,7 +106,43 @@
                              (mv nil encoding)))
           (t (mv t nil))))
   :no-function t
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule consp-of-rlp-encode-bytes-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-bytes bytes)))
+             (consp (mv-nth 1 (rlp-encode-bytes bytes))))
+    :rule-classes :type-prescription)
+
+  (defrule car-of-rlp-encode-bytes-upper-bound-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-bytes bytes)))
+             (<= (car (mv-nth 1 (rlp-encode-bytes bytes)))
+                 191))
+    :rule-classes :linear
+    :use (:instance acl2::len-of-nat=>bendian*-leq-width
+          (nat (len bytes))
+          (base 256)
+          (width 8)))
+
+  (defruled len-of-rlp-encode-bytes-from-prefix
+    (b* (((mv error? encoding) (rlp-encode-bytes bytes)))
+      (implies
+       (not error?)
+       (equal (len encoding)
+              (cond ((< (car encoding) 128) 1)
+                    ((< (car encoding) (+ 128 56)) (1+ (- (car encoding) 128)))
+                    (t (b* ((lenlen (- (car encoding) 183)))
+                         (+ 1
+                            lenlen
+                            (bendian=>nat 256 (take lenlen
+                                                    (cdr encoding)))))))))))
+
+  (defrule len-of-rlp-encode-bytes-lower-bound-when-len-len
+    (b* (((mv error? encoding) (rlp-encode-bytes bytes)))
+      (implies (and (not error?)
+                    (>= (car encoding) (+ 128 56)))
+               (> (len encoding) (- (car encoding) 183))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +186,31 @@
     "The first result of this function is an error flag,
      which is @('t') if the argument tree cannot be encoded;
      in this case, @('nil') is returned as the (irrelevant) second result.")
+   (xdoc::p
+    "Encodings are never empty,
+     i.e. they always consist of at least one byte:
+     see theorem @('consp-of-rlp-encode-tree-when-no-error').")
+   (xdoc::p
+    "The first byte of the encoding of a leaf tree is always below 192:
+     see theorems @('car-of-rlp-encode-tree-leaf-upper-bound-when-no-error')
+     and @('rlp-encode-tree-car-ineq-to-tree-leaf').
+     The first byte of the encoding of a non-leaf tree is always at least 192:
+     see theorems @('car-of-rlp-encode-tree-leaf-upper-bound-when-no-error')
+     and @('rlp-encode-tree-car-ineq-to-tree-nonleaf').")
+   (xdoc::p
+    "The total length of an encoding can be determined
+     from the first few bytes (i.e. a prefix) of the encoding:
+     see theorem @('len-of-rlp-encode-tree-from-prefix').
+     This rewrite rule is disabled by default,
+     because it turns the left-hand side into a more complex right-hand side;
+     however, it can be usefully enabled for certain proofs.")
+   (xdoc::p
+    "The total length of an encoding that uses a ``long'' length field
+     (i.e. when the initial byte is followed by the length of the length,
+     and the actual length consists of one or more bytes)
+     is larger than the length field itself:
+     see theorems @('len-of-rlp-encode-tree-lower-bound-when-len-len-1')
+     and @('len-of-rlp-encode-tree-lower-bound-when-len-len-2').")
    (xdoc::def "rlp-encode-tree")
    (xdoc::def "rlp-encode-tree-list"))
   :verify-guards nil ; done below
@@ -184,7 +265,84 @@
     :hints (("Goal"
              :in-theory (enable true-listp-when-byte-listp-rewrite))))
 
-  (fty::deffixequiv-mutual rlp-encode-tree))
+  (fty::deffixequiv-mutual rlp-encode-tree)
+
+  (defrule consp-of-rlp-encode-tree-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-tree tree)))
+             (consp (mv-nth 1 (rlp-encode-tree tree))))
+    :rule-classes :type-prescription
+    :expand (rlp-encode-tree tree))
+
+  (defrule car-of-rlp-encode-tree-leaf-upper-bound-when-no-error
+    (implies (and (not (mv-nth 0 (rlp-encode-tree tree)))
+                  (rlp-tree-case tree :leaf))
+             (<= (car (mv-nth 1 (rlp-encode-tree tree)))
+                 191))
+    :rule-classes :linear)
+
+  (defrule car-of-rlp-encode-tree-nonleaf-upper-bound-when-no-error
+    (implies (and (not (mv-nth 0 (rlp-encode-tree tree)))
+                  (rlp-tree-case tree :nonleaf))
+             (>= (car (mv-nth 1 (rlp-encode-tree tree)))
+                 192))
+    :rule-classes :linear
+    :expand (rlp-encode-tree tree))
+
+  (defrule rlp-encode-tree-car-ineq-to-tree-leaf
+    (implies (not (mv-nth 0 (rlp-encode-tree tree)))
+             (equal (<= (car (mv-nth 1 (rlp-encode-tree tree)))
+                        191)
+                    (rlp-tree-case tree :leaf))))
+
+  (defrule rlp-encode-tree-car-ineq-to-tree-nonleaf
+    (implies (not (mv-nth 0 (rlp-encode-tree tree)))
+             (equal (>= (car (mv-nth 1 (rlp-encode-tree tree)))
+                        192)
+                    (rlp-tree-case tree :nonleaf))))
+
+  (defruled len-of-rlp-encode-tree-from-prefix
+    (b* (((mv error? encoding) (rlp-encode-tree tree)))
+      (implies
+       (not error?)
+       (equal (len encoding)
+              (cond ((< (car encoding) 128) 1)
+                    ((< (car encoding) (+ 128 56)) (1+ (- (car encoding) 128)))
+                    ((< (car encoding) 192)
+                     (b* ((lenlen (- (car encoding) 183)))
+                       (+ 1
+                          lenlen
+                          (bendian=>nat 256 (take lenlen (cdr encoding))))))
+                    ((< (car encoding) (+ 192 56)) (1+ (- (car encoding) 192)))
+                    (t (b* ((lenlen (- (car encoding) 247)))
+                         (+ 1
+                            lenlen
+                            (bendian=>nat 256 (take lenlen
+                                                    (cdr encoding))))))))))
+    :expand (rlp-encode-tree tree)
+    :enable len-of-rlp-encode-bytes-from-prefix)
+
+  (defrule len-of-rlp-encode-tree-lower-bound-when-len-len-1
+    (b* (((mv error? encoding) (rlp-encode-tree tree)))
+      (implies (and (not error?)
+                    (>= (car encoding) (+ 128 56))
+                    (< (car encoding) 192))
+               (> (len encoding) (- (car encoding) 183))))
+    :rule-classes :linear
+    :expand (rlp-encode-tree tree))
+
+  (defrule len-of-rlp-encode-tree-lower-bound-when-len-len-2
+    (b* (((mv error? encoding) (rlp-encode-tree tree)))
+      (implies (and (not error?)
+                    (>= (car encoding) (+ 192 56)))
+               (> (len encoding) (- (car encoding) 247))))
+    :rule-classes :linear
+    :expand (rlp-encode-tree tree))
+
+  (defrule consp-of-rlp-encode-tree-list-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-tree-list trees)))
+             (equal (consp (mv-nth 1 (rlp-encode-tree-list trees)))
+                    (consp trees)))
+    :expand (rlp-encode-tree-list trees)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
