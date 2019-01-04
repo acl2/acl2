@@ -214,17 +214,32 @@ writes the final value of the instruction pointer into RIP.</p>")
   :body
 
   (b* ((?ctx 'x86-sahf)
-       ((the (unsigned-byte 16) ax)
-        (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
-             :exec (rr16 *rax* x86)))
+       ((the (unsigned-byte 16) ax) (rr16 #.*rax* x86))
        ((the (unsigned-byte 8) ah) (ash ax -8))
+       ((the (unsigned-byte 32) rflags) (rflags x86))
        ;; Bits 1, 3, and 5 of eflags are unaffected, with the values remaining
        ;; 1, 0, and 0, respectively.
-       ((the (unsigned-byte 8) ah) (logand #b11010111 (logior #b10 ah)))
+       (cf (rflagsBits->cf ah))
+       (pf (rflagsBits->pf ah))
+       (af (rflagsBits->af ah))
+       (zf (rflagsBits->zf ah))
+       (sf (rflagsBits->sf ah))
+       ((the (unsigned-byte 32) new-rflags)
+        (!rflagsBits->cf
+         cf
+         (!rflagsBits->pf
+          pf
+          (!rflagsBits->af
+           af
+           (!rflagsBits->zf
+            zf
+            (!rflagsBits->sf
+             sf
+             rflags))))))
        ;; Update the x86 state:
-       (x86 (!rflags ah x86))
+       (x86 (!rflags new-rflags x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LAHF
@@ -235,23 +250,59 @@ writes the final value of the instruction pointer into RIP.</p>")
   ;; Opcode: #x9F
 
   :parents (one-byte-opcodes)
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables
+                                          riml08 riml32)
+                                         ((tau-system)))))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :prepwork
+  ((local
+    (defthm unsigned-byte-p-8-of-rflagsBits-for-lahf
+      (< (rflagsbits cf 1 pf 0 af 0 zf sf 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+         256)
+      :hints (("Goal" :in-theory (e/d* (rflagsbits
+                                        bitops::ihsext-inductions
+                                        bitops::ihsext-recursive-redefs)
+                                       ()))))))
+
   :body
 
   (b* ((?ctx 'x86-lahf)
-       ((the (unsigned-byte 8) ah)
-        (logand #xff (the (unsigned-byte 32) (rflags x86))))
-       ((the (unsigned-byte 16) ax)
-        (mbe :logic (rgfi-size 2 *rax* rex-byte x86)
-             :exec (rr16 *rax* x86)))
-       ((the (unsigned-byte 16) ax) (logior (logand #xff00 ax) ah))
+       ((the (unsigned-byte 32) rflags) (rflags x86))
+       (cf (rflagsBits->cf rflags))
+       (pf (rflagsBits->pf rflags))
+       (af (rflagsBits->af rflags))
+       (zf (rflagsBits->zf rflags))
+       (sf (rflagsBits->sf rflags))
+
+       ((the (unsigned-byte 8) new-ah)
+        (!rflagsBits->cf
+         cf
+         (!rflagsBits->res1
+          1
+          (!rflagsBits->pf
+           pf
+           (!rflagsBits->res2
+            0
+            (!rflagsBits->af
+             af
+             (!rflagsBits->res3
+              0
+              (!rflagsBits->zf
+               zf
+               (!rflagsBits->sf
+                sf
+                0)))))))))
+
+       ((the (unsigned-byte 16) ax) (rr16 #.*rax* x86))
+       ((the (unsigned-byte 16) new-ax)
+        (logior (logand #xFF ax) (ash new-ah 8)))
        ;; Update the x86 state:
-       (x86 (mbe :logic (!rgfi-size 2 *rax* ax rex-byte x86)
-                 :exec (wr16 *rax* ax x86)))
+       (x86 (mbe :logic (!rgfi-size 2 #.*rax* new-ax rex-byte x86)
+                 :exec (wr16 #.*rax* new-ax x86)))
        (x86 (write-*ip proc-mode temp-rip x86)))
-      x86))
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: RDRAND

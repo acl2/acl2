@@ -982,7 +982,7 @@ the @('fault') field instead.</li>
      (temp-rip  :type (signed-byte   #.*max-linear-address-size*) )
      (mod       :type (unsigned-byte 2) "mod field of ModR/M byte")
      x86)
-    :guard (2bitsp-p mod)
+    :guard (2bits-p mod)
     :returns (mv flg
 		 (disp i16p
 		       :hyp (x86p x86)
@@ -1047,8 +1047,8 @@ the @('fault') field instead.</li>
      (r/m       :type (unsigned-byte 3) "r/m field of ModR/M byte")
      (mod       :type (unsigned-byte 2) "mod field of ModR/M byte")
      x86)
-    :guard (and (2bitsp-p mod)
-		(3bitsp-p r/m))
+    :guard (and (2bits-p mod)
+		(3bits-p r/m))
     :returns (mv flg
 		 (address n16p)
 		 (increment-rip-by natp)
@@ -1158,8 +1158,8 @@ the @('fault') field instead.</li>
 		      that follow the sib (or displacement bytes, if any).")
      x86)
 
-    :guard (and (2bitsp-p mod)
-		(3bitsp-p r/m)
+    :guard (and (2bits-p mod)
+		(3bits-p r/m)
 		(sib-p sib))
     :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 rime-size) ())))
 
@@ -1372,8 +1372,8 @@ the @('fault') field instead.</li>
      x86)
 
 
-    :guard (and (2bitsp-p mod)
-		(3bitsp-p r/m)
+    :guard (and (2bits-p mod)
+		(3bits-p r/m)
 		(sib-p sib))
 
     ;; Returns the flag, the effective address (taking the SIB and

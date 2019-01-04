@@ -73,7 +73,7 @@
      top
 
      ;; TOOLS
-     defprod
+     fty::defprod
      fty::defbitstruct
      def-ruleset
      def-ruleset!
