@@ -29,6 +29,19 @@
   :parents (bytes)
   :description "bytes")
 
+(defsection byte-fix-ext
+  :extension byte-fix
+
+  (defrule natp-of-byte-fix
+    (natp (byte-fix x))
+    :rule-classes :type-prescription
+    :enable byte-fix)
+
+  (defrule byte-fix-upper-bound
+    (< (byte-fix x) 256)
+    :rule-classes :linear
+    :enable (byte-fix bytep)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc byte-arrays

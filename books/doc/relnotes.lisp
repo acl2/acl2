@@ -200,13 +200,15 @@
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
- <p>Added a formalization of Modified Merkle Patricia trees.</p>
-
  <p>Mofified the formalizations of RLP encoding and decoding to return an
  explicit error flag.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
+
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Added several theorems.</p>
 
  <h4>Filesystem Books</h4>
 
