@@ -213,6 +213,7 @@
      and @('len-of-rlp-encode-tree-lower-bound-when-len-len-2').")
    (xdoc::def "rlp-encode-tree")
    (xdoc::def "rlp-encode-tree-list"))
+  :flag-local nil
   :verify-guards nil ; done below
 
   (define rlp-encode-tree ((tree rlp-treep))
