@@ -322,6 +322,9 @@
  the index (in case of array fields) and value being written have been
  eliminated.</p>
 
+ <p>Improved the @('defthm-natp'), @('defthm-usb'), and @('defthm-sb')
+ utilities to generate minimal and reliable hints for corollaries.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h3>Licensing Changes</h3>
