@@ -21423,28 +21423,34 @@
     (and stobjs-out
          (length stobjs-out))))
 
-(defun first-trace-printing-column (state)
+#-acl2-loop-only
+(defvar *trace-level* 0)
+
+#-acl2-loop-only
+(defun first-trace-printing-column ()
 
 ; This returns the first column after the trace prompt ("n> " or "<n ").
 
 ; Warning: Keep this in sync with custom-trace-ppr.
 
-  (cond ((< (f-get-global 'trace-level state) 10)
-         (1+ (* 2 (f-get-global 'trace-level state))))
-        ((< (f-get-global 'trace-level state) 100)
-         22)
-        ((< (f-get-global 'trace-level state) 1000)
-         23)
-        ((< (f-get-global 'trace-level state) 10000)
-         24)
-        (t 25)))
+  (let ((trace-level *trace-level*))
+    (cond ((< trace-level 10)
+           (1+ (* 2 trace-level)))
+          ((< trace-level 100)
+           22)
+          ((< trace-level 1000)
+           23)
+          ((< trace-level 10000)
+           24)
+          (t 25))))
 
+#-acl2-loop-only
 (defun trace-ppr (x trace-evisc-tuple msgp state)
   (fmt1 (if msgp "~@0~|" "~y0~|")
         (list (cons #\0 x))
         (if (eq msgp :fmt!)
             0
-          (first-trace-printing-column state))
+          (first-trace-printing-column))
         (f-get-global 'trace-co state)
         state
         trace-evisc-tuple))
@@ -21453,23 +21459,17 @@
 (defvar *inside-trace$* nil)
 
 #-acl2-loop-only
-(defun increment-trace-level ()
-  (f-put-global 'trace-level
-                (1+f (f-get-global 'trace-level *the-live-state*))
-                *the-live-state*))
-
-#-acl2-loop-only
 (defun custom-trace-ppr (direction x &optional evisc-tuple msgp)
 
-; NOTE: The caller for direction :in should first increment state global
-; 'trace-level.  This function, however, takes care of decrementing that state
-; global if direction is not :in.
+; NOTE: The caller for direction :in should first increment *trace-level*.
+; This function, however, takes care of decrementing that state global if
+; direction is not :in.
 
 ; We need to provide all the output that one expects when using a trace
 ; facility.  Hence the cond clause and the first argument.
 
-; We will keep state global 'trace-level appropriate for printing in both
-; directions (:in and :out).
+; We will keep *trace-level* appropriate for printing in both directions (:in
+; and :out).
 
 ; Warning: Keep this in sync with first-trace-printing-column.
 
@@ -21477,8 +21477,8 @@
     (return-from custom-trace-ppr nil))
   (let ((*inside-trace$* t))
     (when (eq direction :in)
-      (increment-trace-level))
-    (let ((trace-level (f-get-global 'trace-level *the-live-state*)))
+      (incf *trace-level*))
+    (let ((trace-level *trace-level*))
       (when (not (eq msgp :fmt!))
         (cond
          ((eq direction :in)
@@ -21515,9 +21515,7 @@
              (format *trace-output* "~s~%" x))
             (t (trace-ppr x evisc-tuple msgp *the-live-state*)))
       (when (not (eq direction :in))
-        (f-put-global 'trace-level
-                      (1-f trace-level)
-                      *the-live-state*))
+        (decf *trace-level*))
       (finish-output *trace-output*))))
 
 (defun *1*defp (trace-spec wrld)
@@ -21589,9 +21587,10 @@
                         (all-vars term)
                         (append (case kwd
                                   ((:entry :cond)
-                                   '(traced-fn arglist state))
+                                   '(traced-fn trace-level arglist state))
                                   (:exit
-                                   '(traced-fn arglist value values state))
+                                   '(traced-fn trace-level arglist value values
+                                               state))
                                   (:hide
                                    nil)
                                   (otherwise
@@ -21964,14 +21963,17 @@
                     `((,gevisc-tuple ,evisc-tuple))))
          (let ,(and gcond
                     `((,gcond (let ((arglist ,garglist)
-                                    (traced-fn ',fn))
-                                (declare (ignorable traced-fn arglist))
+                                    (traced-fn ',fn)
+                                    (trace-level ,*trace-level*))
+                                (declare
+                                 (ignorable traced-fn trace-level arglist))
                                 ,cond))))
            ,(trace$-when-gcond
              gcond
              `(let ((arglist ,garglist)
-                    (traced-fn ',fn))
-                (declare (ignorable traced-fn arglist))
+                    (traced-fn ',fn)
+                    (trace-level *trace-level*))
+                (declare (ignorable traced-fn trace-level arglist))
                 (custom-trace-ppr :in
                                   ,(if hide
                                        `(trace-hide-world-and-state ,entry)
@@ -21985,11 +21987,11 @@
 ; custom-trace-ppr below.  It is unnecessary for user-defined ACL2 functions,
 ; but is presumably harmless.
 
-; Also note that it is important that ARGLIST and TRACED-FN be bound in the
-; right order.  For example, if we bind ARGLIST before VALUES but ARGLIST is a
-; formal, then the a reference to ARGLIST in new-body will be a reference to
-; the entire arglist instead of what it should be: a reference to the formal
-; parameter, ARGLIST.
+; Also note that it is important that ARGLIST, TRACED-FN, and TRACE-LEVEL be
+; bound in the right order.  For example, if we bind ARGLIST before VALUES but
+; ARGLIST is a formal, then a reference to ARGLIST in new-body will be a
+; reference to the entire arglist instead of what it should be: a reference to
+; the formal parameter, ARGLIST.
 
                    #+acl2-mv-as-values
                    (multiple-value-list ,new-body)
@@ -22006,8 +22008,9 @@
                               '(car values)
                             'values))
                   (arglist ,garglist)
-                  (traced-fn ',fn))
-             (declare (ignorable value values traced-fn arglist))
+                  (traced-fn ',fn)
+                  (trace-level *trace-level*))
+             (declare (ignorable value values traced-fn trace-level arglist))
              ,(trace$-when-gcond
                gcond
                `(custom-trace-ppr :out
