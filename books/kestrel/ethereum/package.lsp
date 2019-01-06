@@ -23,4 +23,5 @@
                              nat=>bendian
                              nat
                              nat=>bendian*
+                             prefixp
                              std::define-sk)))
