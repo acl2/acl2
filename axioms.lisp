@@ -1242,10 +1242,48 @@
 ; whether we add the redundant one or not.
 
   (cond ((null *wormhole-cleanup-form*)
-         (interface-er
-          "push-wormhole-undo-formi was called with an empty ~
-           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is ~
-           only called when *wormholep* is non-nil and, supposedly, when ~
+
+; Originally we used interface-er here.  However, that could get us into an
+; infinite loop in Version_8.0, for example as follows.
+
+;   (accumulated-persistence t)
+;   (trace$ pop-accp-fn)
+;   (mini-proveall)
+
+; The essence of the problem in the example just above is that pop-accp-fn is
+; called inside wormhole-eval (see pop-accp), which doesn't seem to accommodate
+; state modification; indeed, as documented, wormhole1 should be used in that
+; case.  Yet state global trace-level is modified during tracing, during the
+; call of function increment-trace-level by custom-trace-ppr.  The following
+; example, derived from the one above, makes this more clear.
+
+;   (defn foo (n) n)
+;   (value :q)
+;   ; Derived from (trace$ foo):
+;   (CCL:ADVISE foo
+;               (PROGN (SETQ *TRACE-ARGLIST* CCL:ARGLIST)
+;                      (CUSTOM-TRACE-PPR
+;                       :IN
+;                       (CONS 'FOO
+;                             (TRACE-HIDE-WORLD-AND-STATE
+;                              *TRACE-ARGLIST*))))
+;               :WHEN
+;               :BEFORE)
+;   (lp)
+;   (wormhole-eval 'demo
+;                  '(lambda (whs) (set-wormhole-data whs (foo 6)))
+;                  nil)
+
+; So now we avoid interface-er.  At some point we may arrange that trace-level
+; is no longer a state global, using a special variable instead, though that
+; will remove support for the use of (@ trace-level), as described in :doc
+; trace.  But for now we will at least avoid the infinite loop, whether due to
+; trace-level or due to some other state global not yet revealed.
+
+         (error
+          "push-wormhole-undo-formi was called with an empty~%~
+           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is~%~
+           only called when *wormholep* is non-nil and, supposedly, when~%~
            *wormholep* is non-nil, the *wormhole-cleanup-form* is too.")))
   (let ((qarg1 (list 'quote arg1))
         (undo-forms-and-last-two (cddr *wormhole-cleanup-form*)))
@@ -1347,7 +1385,10 @@
                          *the-live-state*)
                        (cddr *wormhole-cleanup-form*)))))
       (otherwise
-       (interface-er "Unrecognized op in push-wormhole-undo-formi,~x0." op)))))
+
+; See the comment above describing why we avoid interface-er.
+
+       (error "Unrecognized op in push-wormhole-undo-formi, ~s." op)))))
 
 ; The following symbol is the property under which we store Common
 ; Lisp streams on the property lists of channels.

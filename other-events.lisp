@@ -21453,6 +21453,12 @@
 (defvar *inside-trace$* nil)
 
 #-acl2-loop-only
+(defun increment-trace-level ()
+  (f-put-global 'trace-level
+                (1+f (f-get-global 'trace-level *the-live-state*))
+                *the-live-state*))
+
+#-acl2-loop-only
 (defun custom-trace-ppr (direction x &optional evisc-tuple msgp)
 
 ; NOTE: The caller for direction :in should first increment state global
@@ -21842,12 +21848,6 @@
                    "Raw-Lisp untracing ~x0."
                    fn))
     nil))
-
-#-acl2-loop-only
-(defun increment-trace-level ()
-  (f-put-global 'trace-level
-                (1+f (f-get-global 'trace-level *the-live-state*))
-                *the-live-state*))
 
 #-acl2-loop-only
 (defun trace$-def (arglist def trace-options predefined multiplicity ctx)
