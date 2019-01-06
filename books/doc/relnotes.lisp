@@ -198,8 +198,11 @@
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
- <p>Mofified the formalizations of RLP encoding and decoding to return an
+ <p>Modified the formalizations of RLP encoding and decoding to return an
  explicit error flag.</p>
+
+ <p>Added theorems showing that RLP encodings are decodable: RLP encoding is
+ injective, and no valid encoding is a strict prefix of another one.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
