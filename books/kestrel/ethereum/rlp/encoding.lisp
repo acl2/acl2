@@ -343,6 +343,12 @@
     (implies (not (mv-nth 0 (rlp-encode-tree-list trees)))
              (equal (consp (mv-nth 1 (rlp-encode-tree-list trees)))
                     (consp trees)))
+    :expand (rlp-encode-tree-list trees))
+
+  (defrule nonnil-rlp-encode-tree-list-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-tree-list trees)))
+             (iff (mv-nth 1 (rlp-encode-tree-list trees))
+                  (consp trees)))
     :expand (rlp-encode-tree-list trees)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
