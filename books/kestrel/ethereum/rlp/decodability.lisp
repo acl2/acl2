@@ -31,12 +31,12 @@
      then two or more distinct entities would be encoded identically.")
    (xdoc::p
     "We also prove the stronger property
-     that no valid encoding is a prefix of another valid encoding.
+     that no valid encoding is a strict prefix of another valid encoding.
      This means that it is possible to unambiguously decode valid encodings
      even when these encodings are not well-delimited segments of bytes,
      but they are read from a stream of bytes (e.g. over a network connection).
-     If some valid encoding were a (strict) prefix of another valid encoding,
-     then after reading the former we would know whether we are done
+     If some valid encoding were a strict prefix of another valid encoding,
+     then after reading the former we would not know whether we are done
      or whether we should continue reading the longer encoding."))
   :order-subtopics t)
 
@@ -49,7 +49,7 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "We prove, as a lemma, that
+    "We prove, as a preliminary lemma, that
      if two byte arrays are encodable
      (i.e. the error result of @(tsee rlp-encode-bytes) is @('nil') for both),
      and their encodings are the same
@@ -73,9 +73,10 @@
      to reduce the equality of the two encodings
      to the equality of the parts of the encodings after the lengths
      (these parts are the byte arrays being encoded);
-     the hypothesis of this rule is relieved,
+     the hypothesis of this rule,
      namely that the lengths of the two big endian lengths are the same,
-     from the equality of between the first byte of the two encodings."))
+     is relieved from the equality
+     between the first byte of the two encodings."))
 
   (defruledl rlp-encode-bytes-injective-lemma
     (implies (and (byte-listp x)
@@ -111,7 +112,9 @@
     "This is proved by induction.
      There are two theorems:
      one for @(tsee rlp-encode-tree)
-     and one for @(tsee rlp-encode-tree-list).")
+     and one for @(tsee rlp-encode-tree-list).
+     The theorems are formulated similarly to
+     the one for @(tsee rlp-encode-bytes).")
    (xdoc::p
     "Since the theorems involve two variables (two trees or two lists of trees),
      we locally define mutually recursive functions @('tree') and @('tree-list')
@@ -122,7 +125,7 @@
      only applies to one variable,
      leaving the other variable unchanged in the hypotheses and conclusions
      of the induction steps:
-     then the same unchanged variable cannot suitably be ``relate''
+     then the same unchanged variable cannot suitably ``relate''
      to the different instances of the changing variable
      in the hypotheses and conclusions.
      Submitting the injectivity theorems
@@ -136,7 +139,7 @@
      @('x') is a leaf tree and @('y') is a leaf tree.
      Commenting out this helper lemma from the hints of the induction theorem
      shows the two corresponding subgoals,
-     in which the fact @('x') or @('y') is a leaf tree
+     in which the hypothesis that @('x') or @('y') is a leaf tree
      causes @(tsee rlp-encode-tree) to expand on @('x') or @('y'),
      generating a call to @(tsee rlp-encode-bytes) on the subtrees.
      This motivates the formulation of the first helper lemma,
@@ -144,7 +147,7 @@
      and whose variable @('yx') stands for @('y') or @('x'),
      i.e. the other variable whose @(tsee rlp-encode-tree) in the subgoal
      is not expanded.
-     We use an expansion hint to expand that; and enable hint does not suffice.
+     We use an expansion hint to expand that; an enable hint does not suffice.
      If @('yx') is also a leaf tree,
      @(tsee rlp-encode-tree) reduces to @(tsee rlp-encode-bytes) on the subtrees
      and the injectivity theorem of @(tsee rlp-encode-bytes) applies.
@@ -176,7 +179,8 @@
      as expressed by the rule @('len-of-rlp-encode-tree-from-prefix'),
      which we therefore enable to prove @('car-encodings-same-len').
      This rule rewrites the two lengths to prove equal
-     in terms of the first (few) bytes of the encodings of the @(tsee car)s:
+     in terms of the first (few) bytes of the encodings
+     of the @(tsee car)s of @('xs') and @('ys'):
      if we knew that those encodings were equal, we would be done.
      But we only know (see hypothesis in @('car-encodings-same-len'))
      that the @(tsee append)s of the encodings of the @(tsee car)s
@@ -351,7 +355,8 @@
           over the encodable scalars."
   :long
   (xdoc::topp
-   "This readily follows from the injectivity of @(tsee rlp-encode-bytes).")
+   "This is also formulated similarly to the other injectivity theorems.
+    It readily follows from the injectivity of @(tsee rlp-encode-bytes).")
 
   (defrule rlp-encode-scalar-injective
     (implies (and (not (mv-nth 0 (rlp-encode-scalar x)))
@@ -367,21 +372,21 @@
 (defsection rlp-encode-bytes-prefix-unambiguity-proof
   :parents (rlp-decodability)
   :short "Property that no valid RLP byte array encoding
-          is a prefix of another one."
+          is a strict prefix of another one."
   :long
   (xdoc::topapp
    (xdoc::p
     "This actually subsumes the injectivity property,
      because every enconding is a prefix of itself.
      We do a case split on whether the two encodings have the same length
-     (in which case the inejctivity theorem applies),
+     (in which case the injectivity theorem applies),
      or not.
-     The the latter case,
+     In the latter case,
      we show that in fact the two encodings must have the same length
      (and therefore we get a contradiction),
      because the length of an encoding is determined
-     by its first byte or first few bytes:
-     we enable the rule @('len-of-rlp-encode-bytes-from-prefix').
+     by its first byte or few bytes:
+     we thus enable the rule @('len-of-rlp-encode-bytes-from-prefix').
      We use suitable instances of
      @('acl2::same-car-when-prefixp-and-consp') and
      @('acl2::same-take-when-prefixp-and-longer')
@@ -417,7 +422,7 @@
 (defsection rlp-encode-tree-prefix-unambiguity-proof
   :parents (rlp-decodability)
   :short "Property that no valid RLP tree encoding
-          is a prefix of another one."
+          is a strict prefix of another one."
   :long
   (xdoc::topapp
    (xdoc::p
@@ -425,11 +430,10 @@
    (xdoc::p
     "We cannot, and do not need to, prove a similar property
      for encodings of lists of trees,
-     because clearly a list of encoded trees
-     could be extended with another one.
-     The point is that, when we decode a list of trees,
+     because a list of encoded trees could be extended with another one.
+     However, when we decode a list of trees,
      we know the total length of their super-tree,
-     and at the top level we always start by decoding a tree,
+     because at the top level we always start by decoding a tree,
      never a list of trees."))
 
   (defrule rlp-encode-tree-umamb-prefix
@@ -466,11 +470,11 @@
 (defsection rlp-encode-scalar-prefix-unambiguity-proof
   :parents (rlp-decodability)
   :short "Property that no valid RLP scalar encoding
-          is a prefix of another one."
+          is a strict prefix of another one."
   :long
   (xdoc::topapp
    (xdoc::p
-    "This easily follows from the analogous property for trees."))
+    "This easily follows from the analogous property for byte arrays."))
 
   (defrule rlp-encode-scalar-no-prefix
     (implies (and (not (mv-nth 0 (rlp-encode-scalar x)))
