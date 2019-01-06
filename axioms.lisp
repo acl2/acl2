@@ -1244,18 +1244,18 @@
   (cond ((null *wormhole-cleanup-form*)
 
 ; Originally we used interface-er here.  However, that could get us into an
-; infinite loop in Version_8.0, for example as follows.
+; infinite loop in Version_8.1, for example as follows.
 
 ;   (accumulated-persistence t)
 ;   (trace$ pop-accp-fn)
 ;   (mini-proveall)
 
-; The essence of the problem in the example just above is that pop-accp-fn is
+; The essence of the problem in the example just above was that pop-accp-fn is
 ; called inside wormhole-eval (see pop-accp), which doesn't seem to accommodate
 ; state modification; indeed, as documented, wormhole1 should be used in that
-; case.  Yet state global trace-level is modified during tracing, during the
-; call of function increment-trace-level by custom-trace-ppr.  The following
-; example, derived from the one above, makes this more clear.
+; case.  Yet state global trace-level was modified during tracing, by
+; custom-trace-ppr.  (That is no longer the case, but was so in Version_8.1.)
+; The following example, derived from the one above, makes this more clear.
 
 ;   (defn foo (n) n)
 ;   (value :q)
@@ -1274,11 +1274,7 @@
 ;                  '(lambda (whs) (set-wormhole-data whs (foo 6)))
 ;                  nil)
 
-; So now we avoid interface-er.  At some point we may arrange that trace-level
-; is no longer a state global, using a special variable instead, though that
-; will remove support for the use of (@ trace-level), as described in :doc
-; trace.  But for now we will at least avoid the infinite loop, whether due to
-; trace-level or due to some other state global not yet revealed.
+; So now we use error instead of interface-er, to avoid the infinite loop.
 
          (error
           "push-wormhole-undo-formi was called with an empty~%~
@@ -14115,7 +14111,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
     (trace-co . acl2-output-channel::standard-character-output-0)
-    (trace-level . 0)
     (trace-specs . nil)
     (triple-print-prefix . " ")
     (ttags-allowed . :all)
@@ -21137,7 +21132,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic-fns-with-raw-code
     macros-with-raw-code
     dmrp
-    trace-level ; can change under the hood without logic explanation
     trace-specs
     retrace-p
     parallel-execution-enabled

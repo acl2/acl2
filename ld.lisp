@@ -1055,8 +1055,7 @@
 
   (pprogn
    (cond ((<= (f-get-global 'ld-level state) 1)
-          (pprogn (f-put-global 'trace-level 0 state)
-                  (print-deferred-ttag-notes-summary state)))
+          (print-deferred-ttag-notes-summary state))
          (t state))
    (f-put-global 'raw-guard-warningp t state)
    (mv-let
@@ -1203,6 +1202,7 @@
    (signal val state)
    #+acl2-loop-only (ld-read-eval-print state)
    #-acl2-loop-only (progn (acl2-unwind *ld-level* t)
+                           (setq *trace-level* 0)
                            (ld-read-eval-print state))
    (cond ((eq signal :continue)
           (ld-loop state))
