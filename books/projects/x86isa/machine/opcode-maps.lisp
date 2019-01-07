@@ -3349,7 +3349,7 @@
              (:F3           . ("ADOX"  2 (G y)  (E y)
                                (:ud . ((eql (feature-flag-macro :adx) 0)
                                        (ud-Lock-used)))))
-             (:vF2           . ("MULX"  3 (B y)  (G y)  (:rDX)  (E y)
+             (:vF2           . ("MULX"  4 (B y)  (G y)  (:rDX)  (E y)
                                 (:ex . ((chk-exc :type-vex-gpr (:bmi1))))))
              ;; ((:66 :F2)     . (:none (:fn . (:no-instruction))))
              )
@@ -5700,7 +5700,7 @@
                   (:prefix . :no-prefix)
                   (:mod    . :mem)
                   (:feat   . (:mpx))) .
-                  ("BNDLDX" 2 (rB) (M)
+                  ("BNDLDX" 2 (rB) (M) :1a
                    ;; Source: BNDLDX-Load Extended Bounds Using Address
                    ;; Translation, Intel Vol. 2 (May 2018 edition)
                    ;; "Any encoding of this instruction that does not specify
@@ -5752,7 +5752,7 @@
                   (:prefix . :66)
                   (:feat   . (:mpx))
                   (:mod    . :mem)) .
-                  ("BNDMOV"    2 (rB) (M)
+                  ("BNDMOV"    2 (rB) (M) :1a
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -5771,7 +5771,7 @@
                   (:prefix . :66)
                   (:feat   . (:mpx))
                   (:mod    . #b11)) .
-                  ("BNDMOV"    2 (rB) (mB)
+                  ("BNDMOV"    2 (rB) (mB)  :1a
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -5790,7 +5790,7 @@
                 (((:opcode . #ux0F_1A)
                   (:prefix . :F3)
                   (:feat   . (:mpx))) .
-                  ("BNDCL"    2 (rB) (E y)
+                  ("BNDCL"    2 (rB) (E y)  :1a
                    (:ud  . ((ud-Lock-used)
                             ;; [Shilpi] "ModRM.r/m" below is likely a typo in
                             ;; the Intel manuals.  It should be ModRM.reg,
@@ -5813,7 +5813,7 @@
                 (((:opcode . #ux0F_1A)
                   (:prefix . :F2)
                   (:feat   . (:mpx))) .
-                  ("BNDCU"    2 (rB) (E y)
+                  ("BNDCU"    2 (rB) (E y)  :1a
                    (:ud  . ((ud-Lock-used)
                             ;; [Shilpi] "ModRM.r/m" below is likely a typo in
                             ;; the Intel manuals.  It should be ModRM.reg,
@@ -5841,7 +5841,7 @@
                   (:prefix . :no-prefix)
                   (:mod    . :mem)
                   (:feat   . (:mpx))) .
-                  ("BNDSTX"    2 (M) (rB)
+                  ("BNDSTX"    2 (M) (rB)  :1a
                    ;; Source: BNDSTX-Load Extended Bounds Using Address
                    ;; Translation, Intel Vol. 2 (May 2018 edition)
                    ;; "Any encoding of this instruction that does not specify
@@ -5888,7 +5888,7 @@
                   (:prefix .  :66)
                   (:feat   . (:mpx))
                   (:mod    . :mem)) .
-                  ("BNDMOV"    2 (M) (rB)
+                  ("BNDMOV"    2 (M) (rB)  :1a
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -5907,7 +5907,7 @@
                   (:prefix .  :66)
                   (:feat   . (:mpx))
                   (:mod    . #b11)) .
-                  ("BNDMOV"    2 (mB) (rB)
+                  ("BNDMOV"    2 (mB) (rB)  :1a
                    (:ud  . ((ud-Lock-used-Dest-not-Memory-Op)
                             ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                             ;;   Intel MPX is enabled.
@@ -5927,7 +5927,7 @@
                   (:prefix .  :F3)
                   (:mod    . :mem)
                   (:feat   . (:mpx))) .
-                  ("BNDMK"    2 (rB) (M y)
+                  ("BNDMK"    2 (rB) (M y)  :1a
                    (:ud  . ((ud-Lock-used)
                             ;; [Shilpi] "ModRM.r/m" below is likely a typo in
                             ;; the Intel manuals.  It should be ModRM.reg,
@@ -5968,8 +5968,7 @@
                 (((:opcode . #ux0F_1B)
                   (:prefix .  :F2)
                   (:feat   . (:mpx))) .
-                  ("BNDCN"    2 (rB) (E y)
-                   2 (rB) (E y)
+                  ("BNDCN"    2 (rB) (E y) :1a
                    (:ud  . ((ud-Lock-used)
                             ;; [Shilpi] "ModRM.r/m" below is likely a typo in
                             ;; the Intel manuals.  It should be ModRM.reg,
@@ -8057,10 +8056,10 @@
            ("PEXT" 3 (G y) (B y) (E y)
             (:feat :BMI2))))
     (#xF6 ((:VEX :0F38 :NDD :LZ :F2 :W0)
-           ("MULX" 3 (B y) (G y) (:RDX) (E y)
+           ("MULX" 4 (B y) (G y) (:RDX) (E y)
             (:feat :BMI2)))
           ((:VEX :0F38 :NDD :LZ :F2 :W1)
-           ("MULX" 3 (B y) (G y) (:RDX) (E y)
+           ("MULX" 4 (B y) (G y) (:RDX) (E y)
             (:feat :BMI2))))
     (#xF7 ((:VEX :0F38 :NDS :LZ :W0)
            ("BEXTR" 3 (G y) (E y) (B y)
@@ -12601,7 +12600,7 @@
     (b* ((elem (car info))
          (rest (cdr info)))
       (if (and (consp elem)
-               (member (car elem) '(:UD :NM :GP)))
+               (member (car elem) '(:UD :NM :GP :EX)))
           (remove-exception-info rest)
         (cons elem (remove-exception-info rest)))))
 

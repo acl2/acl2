@@ -299,8 +299,7 @@ writes the final value of the instruction pointer into RIP.</p>")
        ((the (unsigned-byte 16) new-ax)
         (logior (logand #xFF ax) (ash new-ah 8)))
        ;; Update the x86 state:
-       (x86 (mbe :logic (!rgfi-size 2 #.*rax* new-ax rex-byte x86)
-                 :exec (wr16 #.*rax* new-ax x86)))
+       (x86 (wr16 #.*rax* new-ax x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 

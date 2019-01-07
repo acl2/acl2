@@ -74,8 +74,6 @@
 
 ;; ----------------------------------------------------------------------
 
-;; Addressing Info:
-
 (defconst *Z-addressing-method-info*
 
   ;; See Intel Vol. 2, Appendix A.2.1
