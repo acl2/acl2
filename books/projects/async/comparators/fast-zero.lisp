@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau (derived from the FM9001 verification work of Brock
-;; and Hunt)
-;; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; January 2019
 
 ;; A zero detector optimized for quick detection of the last 2 bits of the
 ;; input vector.  It should save a few nanoseconds in the FM9001.
