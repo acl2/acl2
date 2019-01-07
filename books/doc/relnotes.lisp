@@ -209,7 +209,7 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
- <p>Added several theorems.  Improved some theorems.</p>
+ <p>Added several other theorems.  Improved some existing theorems.</p>
 
  <p>Improved some documentation.</p>
 

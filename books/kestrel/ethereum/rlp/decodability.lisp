@@ -300,6 +300,7 @@
 
   (local
    (defthm-double-tree-induction-flag
+
      (defthm rlp-encode-tree-injective-lemma
        (implies (and (rlp-treep x)
                      (rlp-treep y)
@@ -309,6 +310,7 @@
                               (mv-nth 1 (rlp-encode-tree y)))
                        (equal x y)))
        :flag tree)
+
      (defthm rlp-encode-tree-list-injective-lemma
        (implies (and (rlp-tree-listp xs)
                      (rlp-tree-listp ys)
@@ -318,6 +320,7 @@
                               (mv-nth 1 (rlp-encode-tree-list ys)))
                        (equal xs ys)))
        :flag tree-list)
+
      :hints (("Goal"
               :in-theory (enable rlp-encode-tree
                                  rlp-encode-tree-list

@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "encoding")
+(include-book "decodability")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,12 +23,11 @@
     "We specify RLP decoding via functions
      from byte arrays
      to byte arrays, trees, and scalars.
-     These functions are declaratively defined as inverses of
-     the RLP encoding functions.
+     These functions are declaratively defined
+     as inverses of the RLP encoding functions.
      They are not executable.")
    (xdoc::p
-    "Note that [YP:B] only defines RLP encoding explicitly,
-     but not RLP decoding.
+    "Note that [YP:B] only defines RLP encoding explicitly, not RLP decoding.
      Clearly, the intention is that decoding is the inverse of encoding:
      this is the implicit specification of decoding in [YP:B]."))
   :order-subtopics t)
@@ -61,24 +60,27 @@
    (xdoc::p
     "More precisely, we define decoding as the right inverse of encoding
      (with respect to byte arrays that are valid encodings of trees),
-     as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').
-     To prove that decoding is left inverse of encoding
-     (with respect to trees that can be encoded),
-     we need to show that encoding is injective over trees that can be encoded.
-     We conjecture that the proof of this property
-     may be a by-product of deriving an executable implementation of decoding
-     via stepwise refinement
-     (e.g. using <see topic='@(url apt::apt)'>APT</see>):
-     if there were two different trees whose encodings are equal,
-     an executable implementation of decoding, which returns a unique tree,
-     could not be shown to be equal to @('rlp-tree-endoding-witness'),
-     which is introduced by a @(tsee defchoose) inside @(tsee defun-sk)
-     and therefore could be either tree.
-     Thus, we defer the injectivity and left inverse proofs for now.")
+     as explicated by the theorem @('rlp-encode-tree-of-rlp-decode-tree').")
+   (xdoc::p
+    "We use the injectivity of @(tsee rlp-encode-tree),
+     proved <see topic='@(url rlp-decodability)'>here</see>,
+     to prove that decoding is also the left inverse of encoding
+     (with respect to encodable trees),
+     as the theorem @('rlp-decode-tree-of-rlp-encode-tree').
+     Roughly speaking, the proof goes like this:
+     (1) instantiate the right identity theorem,
+     namely @('(encode (decode y)) = y'),
+     with @('y') replaced with @('(encode x)'),
+     obtaining @('(encode (decode (encode x))) = (encode x)');
+     (2) use the injectivity of @('encode')
+     to obtain @('(decode (encode x)) = x').
+     Note that we disable both the right inverse theorem
+     and the definition of @(tsee rlp-decode-tree),
+     which would otherwise sabotage this proof.")
    (xdoc::p
     "The decoding code in [Wiki:RLP] provides a reference implementation.
      Note that it is considerably more complicated than the encoding code.
-     Thus, our high-level specification of decoding seems appropriate."))
+     Our high-level specification of decoding is simpler."))
   (b* ((encoding (byte-list-fix encoding)))
     (if (rlp-tree-encoding-p encoding)
         (mv nil (rlp-tree-encoding-witness encoding))
@@ -89,24 +91,24 @@
 
   (defrule rlp-encode-tree-of-rlp-decode-tree
     (implies (rlp-tree-encoding-p encoding)
-             (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
-                  ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
+             (b* (((mv d-error? tree) (rlp-decode-tree encoding))
+                  ((mv e-error? encoding1) (rlp-encode-tree tree)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding
-                           (byte-list-fix encoding)))))
-    :use (:instance lemma (encoding (byte-list-fix encoding)))
+                    (equal encoding1
+                           (byte-list-fix encoding))))))
 
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (byte-listp encoding)
-                     (rlp-tree-encoding-p encoding))
-                (b* (((mv d-error? d-tree) (rlp-decode-tree encoding))
-                     ((mv e-error? e-encoding) (rlp-encode-tree d-tree)))
-                  (and (not d-error?)
-                       (not e-error?)
-                       (equal e-encoding encoding))))
-       :enable rlp-tree-encoding-p))))
+  (defrule rlp-decode-tree-of-rlp-encode-tree
+    (b* (((mv e-error? encoding) (rlp-encode-tree tree))
+         ((mv d-error? tree1) (rlp-decode-tree encoding)))
+      (implies (not e-error?)
+               (and (not d-error?)
+                    (equal tree1
+                           (rlp-tree-fix tree)))))
+    :use (:instance rlp-encode-tree-of-rlp-decode-tree
+          (encoding (mv-nth 1 (rlp-encode-tree tree))))
+    :disable (rlp-decode-tree
+              rlp-encode-tree-of-rlp-decode-tree)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,16 +126,36 @@
   (xdoc::topapp
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.
      If the returned error flag is @('t'),
      we return @('nil') as the (irrelevant) second result.")
    (xdoc::p
-    "The encoding of a leaf tree via @(tsee rlp-encode-tree) is the same as
-     the encoding of the byte array at the leaf via @(tsee rlp-encode-bytes).
-     To show the corresponding relationship about the decoding functions,
-     we need the injectivity of encoding;
-     otherwise, the two witness functions could yield ``incompatible'' values.
-     Thus, we defer the proof of this relationship for now."))
+    "As proved in @(tsee rlp-bytes-encoding-p),
+     the encoding of a byte array
+     is also the encoding of the leaf tree containing the byte array.
+     Because @(tsee rlp-encode-tree) is injective,
+     the two witnesses (decoders)
+     @('rlp-bytes-encoding-witness') and @('rlp-tree-encoding-witness')
+     are related accordingly.
+     Roughly speaking, the proof goes like this:
+     (1) start with the fact that @('rlp-bytes-encoding-witness')
+     is right inverse of @(tsee rlp-encode-bytes),
+     i.e. @('rlp-bytes-encode o rlp-bytes-encoding-witness = id'),
+     where @('o') is function composition and @('id') is the identity function;
+     (2) use the alternative definition of @(tsee rlp-encode-bytes)
+     in terms of @(tsee rlp-encode-tree) to obtain
+     @('rlp-encode-tree o rlp-tree-leaf o rlp-bytes-encoding-witness = id');
+     (3) use the fact that @('rlp-tree-encoding-witness')
+     is right inverse of @(tsee rlp-encode-tree),
+     i.e. @('rlp-tree-encode o rlp-tree-encoding-witness = id');
+     (4) from (2) and (3) and the injectivity of @(tsee rlp-tree-encode), derive
+     @('rlp-tree-encoding-witness =
+        rlp-tree-leaf o rlp-bytes-encoding-witness').
+     It is generally the case that
+     if an injective function has two right inverses, they are equal.")
+   (xdoc::p
+    "This relationship among these witnesses lets us prove a theorem
+     that provides an alternative definition of @(tsee rlp-decode-bytes)
+     in terms of @(tsee rlp-decode-tree)."))
   (b* ((encoding (byte-list-fix encoding)))
     (if (rlp-bytes-encoding-p encoding)
         (mv nil (rlp-bytes-encoding-witness encoding))
@@ -144,24 +166,61 @@
 
   (defrule rlp-encode-bytes-of-rlp-decode-bytes
     (implies (rlp-bytes-encoding-p encoding)
-             (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
-                  ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
+             (b* (((mv d-error? bytes) (rlp-decode-bytes encoding))
+                  ((mv e-error? encoding1) (rlp-encode-bytes bytes)))
                (and (not d-error?)
                     (not e-error?)
-                    (equal e-encoding
-                           (byte-list-fix encoding)))))
-    :use (:instance lemma (encoding (byte-list-fix encoding)))
+                    (equal encoding1
+                           (byte-list-fix encoding))))))
 
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (byte-listp encoding)
-                     (rlp-bytes-encoding-p encoding))
-                (b* (((mv d-error? d-bytes) (rlp-decode-bytes encoding))
-                     ((mv e-error? e-encoding) (rlp-encode-bytes d-bytes)))
-                  (and (not d-error?)
-                       (not e-error?)
-                       (equal e-encoding encoding))))
-       :enable rlp-bytes-encoding-p))))
+  (defrule rlp-decode-bytes-of-rlp-encode-bytes
+    (b* (((mv e-error? encoding) (rlp-encode-bytes bytes))
+         ((mv d-error? bytes1) (rlp-decode-bytes encoding)))
+      (implies (not e-error?)
+               (and (not d-error?)
+                    (equal bytes1
+                           (byte-list-fix bytes)))))
+    :use (:instance rlp-encode-bytes-of-rlp-decode-bytes
+          (encoding (mv-nth 1 (rlp-encode-bytes bytes))))
+    :disable (rlp-decode-bytes
+              rlp-encode-bytes-of-rlp-decode-bytes))
+
+  (defruled rlp-tree-encoding-witness-as-rlp-bytes-encoding-witness
+    (implies (rlp-bytes-encoding-p encoding)
+             (equal (rlp-tree-encoding-witness encoding)
+                    (rlp-tree-leaf (rlp-bytes-encoding-witness encoding))))
+    :use (rlp-encode-bytes-of-rlp-bytes-encoding-witness
+          rlp-encode-tree-of-rlp-tree-encoding-witness)
+    :disable (rlp-encode-bytes-of-rlp-bytes-encoding-witness
+              rlp-encode-tree-of-rlp-tree-encoding-witness)
+    :enable rlp-encode-bytes-alt-def)
+
+  (defruled rlp-bytes-encoding-witness-as-rlp-tree-encoding-witness
+    (implies (rlp-bytes-encoding-p encoding)
+             (equal (rlp-bytes-encoding-witness encoding)
+                    (rlp-tree-leaf->bytes (rlp-tree-encoding-witness encoding))))
+    :use (rlp-encode-bytes-of-rlp-bytes-encoding-witness
+          rlp-encode-tree-of-rlp-tree-encoding-witness)
+    :disable (rlp-encode-bytes-of-rlp-bytes-encoding-witness
+              rlp-encode-tree-of-rlp-tree-encoding-witness)
+    :enable rlp-encode-bytes-alt-def)
+
+  (theory-invariant
+   (incompatible
+    (:rewrite rlp-tree-encoding-witness-as-rlp-bytes-encoding-witness)
+    (:rewrite rlp-bytes-encoding-witness-as-rlp-tree-encoding-witness)))
+
+  (defruled rlp-decode-bytes-alt-def
+    (equal (rlp-decode-bytes encoding)
+           (b* (((mv error? tree) (rlp-decode-tree encoding))
+                ((when error?) (mv t nil))
+                ((unless (rlp-tree-case tree :leaf)) (mv t nil))
+                (bytes (rlp-tree-leaf->bytes tree)))
+             (mv nil bytes)))
+    :enable (rlp-decode-tree
+             rlp-tree-encoding-witness-as-rlp-bytes-encoding-witness)
+    :use ((:instance rlp-bytes-encoding-p-when-rlp-bytes-encoding-p-and-leaf
+           (encoding (byte-list-fix encoding))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,16 +239,16 @@
   (xdoc::topapp
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
-     An analogous remark about left inverse and injectivity applies here.
      If the returned error flag is @('t'),
      we return 0 as the (irrelevant) second result.")
    (xdoc::p
-    "The encoding of a scalar via @(tsee rlp-encode-scalar) is the same as
-     the encoding of the big-endian byte array via @(tsee rlp-encode-bytes).
-     To show the corresponding relationship about the decoding functions,
-     we need the injectivity of encoding;
-     otherwise, the two witness functions could yield ``incompatible'' values.
-     Thus, we defer the proof of this relationship for now."))
+    "Analogously to @(tsee rlp-decode-bytes),
+     we use the injectivity of @(tsee rlp-encode-bytes)
+     to prove a relationship between
+     @('rlp-scalar-encoding-witness') and @('rlp-bytes-encoding-witness'),
+     as well as a theorem that provides
+     an alternative definition of @(tsee rlp-decode-scalar)
+     in terms of @(tsee rlp-decode-bytes)."))
   (b* ((encoding (byte-list-fix encoding)))
     (if (rlp-scalar-encoding-p encoding)
         (mv nil (rlp-scalar-encoding-witness encoding))
@@ -205,16 +264,64 @@
                (and (not d-error?)
                     (not e-error?)
                     (equal e-encoding
-                           (byte-list-fix encoding)))))
-    :use (:instance lemma (encoding (byte-list-fix encoding)))
+                           (byte-list-fix encoding))))))
+
+  (defrule rlp-decode-scalar-of-rlp-encode-scalar
+    (b* (((mv e-error? encoding) (rlp-encode-scalar scalar))
+         ((mv d-error? scalar1) (rlp-decode-scalar encoding)))
+      (implies (not e-error?)
+               (and (not d-error?)
+                    (equal scalar1
+                           (nfix scalar)))))
+    :use (:instance rlp-encode-scalar-of-rlp-decode-scalar
+          (encoding (mv-nth 1 (rlp-encode-scalar scalar))))
+    :disable (rlp-decode-scalar
+              (:e rlp-decode-scalar) ; otherwise HIDE appears in the proof
+              rlp-encode-scalar-of-rlp-decode-scalar))
+
+  (defruled rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness
+    (implies (rlp-scalar-encoding-p encoding)
+             (equal (rlp-bytes-encoding-witness encoding)
+                    (nat=>bendian* 256 (rlp-scalar-encoding-witness encoding))))
+    :use (rlp-encode-scalar-of-rlp-scalar-encoding-witness
+          rlp-encode-bytes-of-rlp-bytes-encoding-witness)
+    :disable (rlp-encode-scalar-of-rlp-scalar-encoding-witness
+              rlp-encode-bytes-of-rlp-bytes-encoding-witness)
+    :enable (rlp-encode-scalar
+             rlp-bytes-encoding-p-when-rlp-scalar-encoding-p))
+
+  (defruled rlp-scalar-encoding-witness-as-rlp-bytes-encoding-witness
+    (implies (rlp-scalar-encoding-p encoding)
+             (equal (rlp-scalar-encoding-witness encoding)
+                    (bendian=>nat 256 (rlp-bytes-encoding-witness encoding))))
+    :use (rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness
+          (:instance lemma
+           (x (rlp-bytes-encoding-witness encoding))
+           (y (nat=>bendian* 256 (rlp-scalar-encoding-witness encoding)))))
 
     :prep-lemmas
-    ((defrule lemma
-       (implies (and (byte-listp encoding)
-                     (rlp-scalar-encoding-p encoding))
-                (b* (((mv d-error? d-scalar) (rlp-decode-scalar encoding))
-                     ((mv e-error? e-encoding) (rlp-encode-scalar d-scalar)))
-                  (and (not d-error?)
-                       (not e-error?)
-                       (equal e-encoding encoding))))
-       :enable rlp-scalar-encoding-p))))
+    ((defruled lemma
+       (implies (equal x y)
+                (equal (bendian=>nat 256 x)
+                       (bendian=>nat 256 y))))))
+
+  (theory-invariant
+   (incompatible
+    (:rewrite rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness)
+    (:rewrite rlp-scalar-encoding-witness-as-rlp-bytes-encoding-witness)))
+
+  (defruled rlp-decode-scalar-alt-def
+    (equal (rlp-decode-scalar encoding)
+           (b* (((mv error? bytes) (rlp-decode-bytes encoding))
+                ((when error?) (mv t 0))
+                ((unless (equal (trim-bendian* bytes) bytes)) (mv t 0))
+                (scalar (bendian=>nat 256 bytes)))
+             (mv nil scalar)))
+    :enable (rlp-decode-bytes
+             rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness)
+    :use ((:instance natp-of-rlp-scalar-encoding-witness
+           (encoding (byte-list-fix encoding)))
+          (:instance
+           rlp-scalar-encoding-p-when-rlp-bytes-encoding-p-and-no-leading-zeros
+           (encoding (byte-list-fix encoding))))
+    :disable natp-of-rlp-scalar-encoding-witness))
