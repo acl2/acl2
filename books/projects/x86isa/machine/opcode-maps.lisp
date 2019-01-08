@@ -3423,7 +3423,7 @@
    #| 08 |#  ((:no-prefix . (:none
                              (:fn . (:no-instruction))))
               (:66        . ("ROUNDPS" 3 (V x)  (W x)  (I b)
-                             (:ex . ((chk-exc :type-2 (:avx2)))))))
+                             (:ex . ((chk-exc :type-2 (:sse4.1)))))))
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
                (:66        . ("ROUNDPD" 3 (V x)  (W x)  (I b)
@@ -13566,10 +13566,11 @@
             ((:F3) :type-5)
             ((:F2) :type-5)))
     (#ux12 (((:F3) :type-4)
+            ;; Shilpi: Fixed
             ;; BOZO Rob -- fix with updated tables:
-            ;;            ((:no-prefix (:mod . #b11)) :type-5)
-            ;;            ((:no-prefix (:mod . :mem)) :type-7)
-            ((:no-prefix) :type-7)
+            ;; ((:no-prefix) :type-7)
+            ((:no-prefix (:mod . #b11)) :type-5)
+            ((:no-prefix (:mod . :mem)) :type-7)
             ((:66) :type-5)
             ((:F2) :type-5)))
     (#ux13 (((:no-prefix) :type-5)
@@ -13579,10 +13580,11 @@
     (#ux15 (((:no-prefix) :type-4)
             ((:66) :type-4)))
     (#ux16 (((:F3) :type-4)
-            ;; BOZO Rob -- fix with updated tables:
-            ;;            ((:no-prefix (:mod . #b11)) :type-5)
-            ;;            ((:no-prefix (:mod . :mem)) :type-7)
-            ((:no-prefix) :type-7)
+            ((:no-prefix (:mod . #b11)) :type-5)
+            ((:no-prefix (:mod . :mem)) :type-7)
+            ;; Shilpi: Fixed.
+            ;; BOZO Rob -- fix with updated tables:            
+            ;; ((:no-prefix) :type-7)
             ((:66) :type-5)))
     (#ux17 (((:no-prefix) :type-5)
             ((:66) :type-5)))
@@ -13932,10 +13934,11 @@
             ((:F3) :type-E10)
             ((:F2) :type-E10)))
     (#ux12 (((:F3) :type-E4NF.NB)
+            ;; Shilpi: Fixed.
             ;; BOZO Rob -- fix this:
-;;            ((:no-prefix (:mod . #b11)) :type-E9NF)
-            ;;            ((:no-prefix (:mod . :mem)) :type-E7NM)
-            ((:no-prefix) :type-E7NM)
+            ;; ((:no-prefix) :type-E7NM)
+            ((:no-prefix (:mod . #b11)) :type-E9NF)
+            ((:no-prefix (:mod . :mem)) :type-E7NM)
             ((:66) :type-E9NF)
             ((:F2) :type-E9NF)))
     (#ux13 (((:no-prefix) :type-E9NF)
@@ -13945,10 +13948,11 @@
     (#ux15 (((:no-prefix) :type-E4NF)
             ((:66) :type-E4NF)))
     (#ux16 (((:F3) :type-E4NF.NB)
+            ;; Shilpi: Fixed.
             ;; BOZO Rob -- fix this:
-;;            ((:no-prefix (:mod . #b11)) :type-E9NF)
-            ;;            ((:no-prefix (:mod . :mem)) :type-E7NM)
-            ((:no-prefix) :type-E7NM)
+            ;; ((:no-prefix) :type-E7NM)
+           ((:no-prefix (:mod . #b11)) :type-E9NF)
+           ((:no-prefix (:mod . :mem)) :type-E7NM)
             ((:66) :type-E9NF)))
     (#ux17 (((:no-prefix) :type-E9NF)
             ((:66) :type-E9NF)))

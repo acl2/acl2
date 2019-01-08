@@ -45,6 +45,7 @@
 
 (include-book "opcode-maps")
 (include-book "opcode-map-structs")
+(include-book "std/lists/all-equalp" :dir :system)
 
 (define remove-all ((x true-listp)
                     (y true-listp))
@@ -76,8 +77,8 @@
        (cell (cdr desc))
        (mnemonic (car cell))
        ((unless (stringp mnemonic))
-        (- (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
-               __function__ mnemonic))
+        ;; (- (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
+        ;;        __function__ mnemonic))
         ;; Ignore :none --- why pad the opcode maps unnecessarily?
         (convert-opcode-extensions opcode (cdr desc-list) insert-into-opcode))
        (semantic-info (get-semantic-function-info (cdr cell)))
@@ -163,8 +164,9 @@
              ',fn
              ',exception-info)))
       (if (equal first :NONE)
-          (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
-              __function__ first)
+          ;; (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
+          ;;     __function__ first)
+          nil
         (if (member-equal first
                           (remove-all
                            '(:NONE ;; Ignoring :NONE
@@ -333,9 +335,37 @@ cells in *opcode-extensions-by-group-number* instead.
         (remove-reg/mod-from-avx (cdr lst))
       (cons (car lst) (remove-reg/mod-from-avx (cdr lst))))))
 
+(define get-avx-exc-type (opcode
+                          cases
+                          (pfx (member-equal pfx '(:66 :F2 :F3 :NO-PREFIX)))
+                          mod reg
+                          (exc-cell avx-exc-type-cell-p)
+                          (ans true-listp))
+  :mode :program
+  :ignore-ok t
+  ;; Based off find-avx-exc-type.
+
+  (cond ((endp exc-cell)
+         (if (or (atom ans)
+                 (not (acl2::all-equalp (car ans) ans)))
+             (er hard? 'get-avx-exc-type
+                 "Something went wrong with the matches!~%~p0"
+                 (list :opcode (str::hexify opcode)
+                       :cases cases
+                       :prefix pfx
+                       :exc-cell exc-cell))
+           (car ans)))
+        ((and (member-equal pfx (caar exc-cell))
+              (or (if mod (member-equal `(:mod . ,mod) (caar exc-cell)) t)
+                  (if reg (member-equal `(:reg . ,reg) (caar exc-cell)) t)
+                  ;; Some EXC maps are not complete w.r.t. mod and reg.
+                  t))
+         (cons (cadar exc-cell) ans))
+        (t (get-avx-exc-type opcode cases pfx mod reg (cdr exc-cell) ans))))
 
 (define convert-avx-opcode (opcode
-                            (avx-opcode true-listp))
+                            (avx-opcode true-listp)
+                            (exc-cell avx-exc-type-cell-p))
   :mode :program
   :guard (equal (len avx-opcode) 2)
 
@@ -357,12 +387,11 @@ cells in *opcode-extensions-by-group-number* instead.
          (reg/mod (if mod
                       (append `(:mod ,mod) reg/mod)
                     reg/mod))
-         (- (cw "~% reg/mod: ~p0~%" reg/mod))
+         ;; (- (cw "~% reg/mod: ~p0~%" reg/mod))
          (avx-pre (remove-reg/mod-from-avx cases))
          (avx-pre (remove-equal :vex (remove-equal :evex avx-pre)))
-         (avx (if (member-equal :vex cases)
-                  `(:vex ',avx-pre)
-                `(:evex ',avx-pre)))
+         (vex? (member-equal :vex cases))
+         (avx (if vex? `(:vex ',avx-pre) `(:evex ',avx-pre)))
          (mnemonic (car desc))
          (arg (if (< 1 (len new-opcode-desc))
                   (b* ((num-ops (second new-opcode-desc))
@@ -380,50 +409,67 @@ cells in *opcode-extensions-by-group-number* instead.
                                    :op3 ',(nth 4 new-opcode-desc)
                                    :op4 ',(nth 5 new-opcode-desc))))))
                     arg)
-                nil)))
+                nil))
+         (pfx (cond ((member-eq :66 cases) :66)
+                    ((member-eq :F2 cases) :F2)
+                    ((member-eq :F3 cases) :F3)
+                    (t                     :NO-PREFIX)))
+         (exc-type (get-avx-exc-type opcode cases pfx mod reg exc-cell nil))
+         (exception `((:ex . ,exc-type))))
       `(inst
         ,mnemonic
         (op :op ,opcode ,@avx ,@feat ,@reg/mod)
         ,arg
-        nil nil ;; fn and exception info --- not implemented yet
+        nil ;; fn --- not implemented yet
+        ',exception
         ))))
 
 (define convert-avx-opcodes (opcode
-                             (avx-opcodes true-list-listp))
+                             (avx-opcodes true-list-listp)
+                             (exc-cell avx-exc-type-cell-p))
   :mode :program
   (if (endp avx-opcodes)
       nil
-    (cons (convert-avx-opcode opcode (car avx-opcodes))
-          (convert-avx-opcodes opcode (cdr avx-opcodes)))))
+    (cons (convert-avx-opcode opcode (car avx-opcodes) exc-cell)
+          (convert-avx-opcodes opcode (cdr avx-opcodes) exc-cell))))
 
 (define convert-cell ((opcode natp)
                       (cell opcode-cell-p))
   :mode :program
-  (b* ((vex? (cond ((8bits-p opcode) nil)
-                   ((16bits-p opcode)
-                    (assoc (loghead 8 opcode) *vex-0F-opcodes*))
-                   ((and (24bits-p opcode)
-                         (equal (logtail 8 opcode) #ux0F_38))
-                    (assoc (loghead 8 opcode) *vex-0F38-opcodes*))
-                   ((and (24bits-p opcode)
-                         (equal (logtail 8 opcode) #ux0F_3A))
-                    (assoc (loghead 8 opcode) *vex-0F3A-opcodes*))
-                   (t nil)))
-       (evex? (cond ((8bits-p opcode) nil)
-                    ((16bits-p opcode)
-                     (assoc (loghead 8 opcode) *evex-0F-opcodes*))
-                    ((and (24bits-p opcode)
-                          (equal (logtail 8 opcode) #ux0F_38))
-                     (assoc (loghead 8 opcode) *evex-0F38-opcodes*))
-                    ((and (24bits-p opcode)
-                          (equal (logtail 8 opcode) #ux0F_3A))
-                     (assoc (loghead 8 opcode) *evex-0F3A-opcodes*))
-                    (t nil)))
+  (b* (((mv vex? vex-exc-cell)
+        (cond ((8bits-p opcode)
+               (mv nil nil))
+              ((16bits-p opcode)
+               (mv (assoc (loghead 8 opcode) *vex-0F-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *vex-0F-exc-types*))))
+              ((and (24bits-p opcode)
+                    (equal (logtail 8 opcode) #ux0F_38))
+               (mv (assoc (loghead 8 opcode) *vex-0F38-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *vex-0F38-exc-types*))))
+              ((and (24bits-p opcode)
+                    (equal (logtail 8 opcode) #ux0F_3A))
+               (mv (assoc (loghead 8 opcode) *vex-0F3A-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *vex-0F3A-exc-types*))))
+              (t (mv nil nil))))
+       ((mv evex? evex-exc-cell)
+        (cond ((8bits-p opcode) (mv nil nil))
+              ((16bits-p opcode)
+               (mv (assoc (loghead 8 opcode) *evex-0F-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *evex-0F-exc-types*))))
+              ((and (24bits-p opcode)
+                    (equal (logtail 8 opcode) #ux0F_38))
+               (mv (assoc (loghead 8 opcode) *evex-0F38-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *evex-0F38-exc-types*))))
+              ((and (24bits-p opcode)
+                    (equal (logtail 8 opcode) #ux0F_3A))
+               (mv (assoc (loghead 8 opcode) *evex-0F3A-opcodes*)
+                   (cadr (assoc (loghead 8 opcode) *evex-0F3A-exc-types*))))
+              (t (mv nil nil))))
        (vex-opcodes (if vex?
-                        (convert-avx-opcodes opcode (cdr vex?))
+                        (convert-avx-opcodes opcode (cdr vex?) vex-exc-cell)
                       nil))
        (evex-opcodes (if evex?
-                         (convert-avx-opcodes opcode (cdr evex?))
+                         (convert-avx-opcodes opcode (cdr evex?) evex-exc-cell)
                        nil)))
     (append
      (if (compound-cell-p cell)
@@ -466,8 +512,9 @@ cells in *opcode-extensions-by-group-number* instead.
 
 ;; (acl2::set-print-base-radix 16 state)
 
-;; The following deal with vex and evex maps, in addition to the opcode
-;; extensions map.  All of that stuff is hard-coded.
+;; The following deal with vex and evex maps (along with their exception type
+;; info.), in addition to the opcode extensions map.  All of that stuff is
+;; hard-coded.
 (make-event
  `(progn
     (defconst *pre-one-byte-opcode-map*

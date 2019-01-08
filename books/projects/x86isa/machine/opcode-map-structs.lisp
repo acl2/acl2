@@ -85,22 +85,22 @@
    ;; register, index register, or scaling factor can be applied (for
    ;; example far JMP (EA)).
 
-   '(A (:modr/m? . nil) (:vex? . nil))
+   '(A (:modr/m? . nil))
 
    ;; B The VEX.vvvv field of the VEX prefix selects a general purpose
    ;; register.
 
-   '(B (:modr/m? . nil) (:vex? . t))
+   '(B (:modr/m? . nil))
 
    ;; C The reg field of the ModR/M byte selects a control register
    ;; (for example MOV (0F20, 0F22)).
 
-   '(C (:modr/m? . t) (:vex? . nil))
+   '(C (:modr/m? . t))
 
    ;; D The reg field of the ModR/M byte selects a debug register (for
    ;; example MOV (0F21,0F23)).
 
-   '(D (:modr/m? . t) (:vex? . nil))
+   '(D (:modr/m? . t))
 
    ;; E A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either a general-purpose register or a
@@ -109,33 +109,33 @@
    ;; values: a base register, an index register, a scaling factor, a
    ;; displacement.
 
-   '(E (:modr/m? . t) (:vex? . nil))
+   '(E (:modr/m? . t))
 
    ;; F EFLAGS/RFLAGS Register.
 
-   '(F (:modr/m? . nil) (:vex? . nil))
+   '(F (:modr/m? . nil))
 
    ;; G The reg field of the ModR/M byte selects a general register
    ;; (for example AX (000)).
 
-   '(G (:modr/m? . t) (:vex? . nil))
+   '(G (:modr/m? . t))
 
    ;; H The VEX.vvvv field of the VEX prefix selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand
    ;; type. For legacy SSE encodings this operand does not exist,
    ;; changing the instruction to destructive form.
 
-   '(H (:modr/m? . nil) (:vex? . t))
+   '(H (:modr/m? . nil))
 
    ;; I Immediate data: the operand value is encoded in subsequent
    ;; bytes of the instruction.
 
-   '(I (:modr/m? . nil) (:vex? . nil))
+   '(I (:modr/m? . nil))
 
    ;; J The instruction contains a relative offset to be added to the
    ;; instruction pointer register (for example JMP (0E9), LOOP).
 
-   '(J (:modr/m? . nil) (:vex? . nil))
+   '(J (:modr/m? . nil))
 
    ;; Important: Note that rB, mB are not listed as Z addressing methods in the
    ;; Intel manuals (May 2018 edition).  I borrowed them from the following:
@@ -144,12 +144,12 @@
    ;; rB: modr/m.reg is used to access bound registers (added as a part of the
    ;; Intel MPX Programming Environment).
 
-   '(rB (:modr/m? . t) (:vex? . nil))
+   '(rB (:modr/m? . t))
 
    ;; mB: modr/m.r/m is used to access bound registers (added as a part of the
    ;; Intel MPX Programming Environment).
 
-   '(mB (:modr/m? . t) (:vex? . nil))
+   '(mB (:modr/m? . t))
 
    ;; Important: Addressing info with "K-" prefix below does not appear in the
    ;; Intel Manuals (dated May, 2018).  The Intel manuals do not define a Z
@@ -162,7 +162,7 @@
    ;; K-reg: modr/m.reg is used to access opmask registers k0-k7 (common
    ;; usages: source).
 
-   '(K-reg (:modr/m? . t) (:vex? . nil))
+   '(K-reg (:modr/m? . t))
 
    ;; K-vex: VEX.vvvv is used to access opmask registers k0-k7 (common usages:
    ;; 2nd source).
@@ -172,7 +172,7 @@
    ;; K-r/m: modr/m.r/m is used to access opmask registers k0-k7 (common
    ;; usages: 1st source).
 
-   '(K-r/m (:modr/m? . t) (:vex? . nil))
+   '(K-r/m (:modr/m? . t))
 
    ;; K-evex: EVEX.aaa is used to access opmask registers k0-k4 (common usages:
    ;; Opmask).
@@ -183,17 +183,17 @@
    ;; register or a 256-bit YMM register determined by operand
    ;; type. (the MSB is ignored in 32-bit mode)
 
-   '(L (:modr/m? . nil) (:vex? . t))
+   '(L (:modr/m? . nil))
 
    ;; M The ModR/M byte may refer only to memory (for example BOUND,
    ;; LES, LDS, LSS, LFS, LGS, CMPXCHG8B).
 
-   '(M (:modr/m? . t) (:vex? . nil))
+   '(M (:modr/m? . t))
 
    ;; N The R/M field of the ModR/M byte selects a packed-quadword MMX
    ;; technology register.
 
-   '(N (:modr/m? . t) (:vex? . nil))
+   '(N (:modr/m? . t))
 
    ;; O The instruction has no ModR/M byte. The offset of the operand
    ;; is coded as a word or double word (depending on address size
@@ -205,7 +205,7 @@
    ;; P The reg field of the ModR/M byte selects a packed quadword MMX
    ;; technology register.
 
-   '(P (:modr/m? . t) (:vex? . nil))
+   '(P (:modr/m? . t))
 
    ;; Q A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either an MMX technology register or a
@@ -214,27 +214,27 @@
    ;; values: a base register, an index register, a scaling factor, and a
    ;; displacement.
 
-   '(Q (:modr/m? . t) (:vex? . nil))
+   '(Q (:modr/m? . t))
 
    ;; R The R/M field of the ModR/M byte may refer only to a general
    ;; register (for example MOV (0F20-0F23)).
 
-   '(R (:modr/m? . t) (:vex? . nil))
+   '(R (:modr/m? . t))
 
    ;; S The reg field of the ModR/M byte selects a segment register
    ;; (for example MOV (8C,8E)).
 
-   '(S (:modr/m? . t) (:vex? . nil))
+   '(S (:modr/m? . t))
 
    ;; U The R/M field of the ModR/M byte selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand type.
 
-   '(U (:modr/m? . t) (:vex? . t))
+   '(U (:modr/m? . t))
 
    ;; V The reg field of the ModR/M byte selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand type.
 
-   '(V (:modr/m? . t) (:vex? . t))
+   '(V (:modr/m? . t))
 
    ;; W A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either a 128-bit XMM register, a 256-bit
@@ -243,17 +243,17 @@
    ;; a segment register and any of the following values: a base
    ;; register, an index register, a scaling factor, and a displacement.
 
-   '(W (:modr/m? . t) (:vex? . t))
+   '(W (:modr/m? . t))
 
    ;; X Memory addressed by the DS:rSI register pair (for example MOVS,
    ;; CMPS, OUTS, or LODS).
 
-   '(X (:modr/m? . nil) (:vex? . nil))
+   '(X (:modr/m? . nil))
 
    ;; Y Memory addressed by the ES:rDI register pair (for example MOVS,
    ;; CMPS, INS, STOS, or SCAS).
 
-   '(Y (:modr/m? . nil) (:vex? . nil))
+   '(Y (:modr/m? . nil))
 
    ))
 
