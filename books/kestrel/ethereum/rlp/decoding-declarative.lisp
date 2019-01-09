@@ -139,15 +139,15 @@
      Roughly speaking, the proof goes like this:
      (1) start with the fact that @('rlp-bytes-encoding-witness')
      is right inverse of @(tsee rlp-encode-bytes),
-     i.e. @('rlp-bytes-encode o rlp-bytes-encoding-witness = id'),
+     i.e. @('rlp-encode-bytes o rlp-bytes-encoding-witness = id'),
      where @('o') is function composition and @('id') is the identity function;
      (2) use the alternative definition of @(tsee rlp-encode-bytes)
      in terms of @(tsee rlp-encode-tree) to obtain
      @('rlp-encode-tree o rlp-tree-leaf o rlp-bytes-encoding-witness = id');
      (3) use the fact that @('rlp-tree-encoding-witness')
      is right inverse of @(tsee rlp-encode-tree),
-     i.e. @('rlp-tree-encode o rlp-tree-encoding-witness = id');
-     (4) from (2) and (3) and the injectivity of @(tsee rlp-tree-encode), derive
+     i.e. @('rlp-encode-tree o rlp-tree-encoding-witness = id');
+     (4) from (2) and (3) and the injectivity of @(tsee rlp-encode-tree), derive
      @('rlp-tree-encoding-witness =
         rlp-tree-leaf o rlp-bytes-encoding-witness').
      It is generally the case that
