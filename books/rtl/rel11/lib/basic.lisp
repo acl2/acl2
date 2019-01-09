@@ -301,9 +301,7 @@
   :rule-classes ())
 
 (defthmd fl-mod
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
+  (implies (not (zp m))
 	   (equal (fl (/ (mod a (* m n)) n))
 	          (mod (fl (/ a n)) m))))
 
