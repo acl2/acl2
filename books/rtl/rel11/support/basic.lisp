@@ -373,6 +373,10 @@
   :rule-classes ())
 
 (defund congruent (a b n)
+  (declare (xargs :guard (and (real/rationalp a)
+                              (real/rationalp b)
+                              (real/rationalp n)
+                              (not (= n 0)))))
   (equal (mod a n) (mod b n)))
 
 (defthmd mod-mult
