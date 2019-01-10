@@ -17294,174 +17294,248 @@
   (declare (xargs :guard (symbolp name)))
   (add-suffix name "-DEFINITION"))
 
+(defmacro verify-guards? (guard-p &rest args)
+
+; The form (verify-guards? <flg> <fn> ...) causes guard verification of <fn> to
+; take place under the same conditions for it to take place when <fn> is
+; defined except for ignoring the :verify-guards xargs and where <flg> is t iff
+; there is a :guard xarg.  Thus, it is up to the caller to supply an
+; appropriate value for guard-p, which probably makes this macro not very
+; useful in general (hence it is not documented), though it is just what is
+; needed in defun-sk-fn.
+
+  (declare (xargs :guard (booleanp guard-p)))
+  (cond
+   (guard-p
+    `(make-event
+      (if (int= (default-verify-guards-eagerness (w state))
+                0)
+          '(value-triple :skipped)
+        '(verify-guards ,@args))
+      :expansion? ; Don't store expansion if eagerness is 1 (the default).
+      (verify-guards ,@args)))
+   (t
+    `(make-event
+      (if (int= (default-verify-guards-eagerness (w state))
+                2)
+          '(verify-guards ,@args)
+        '(value-triple :skipped))
+      :expansion? ; Don't store expansion if eagerness is 1 (the default).
+      (value-triple :skipped)))))
+
+(defun parse-defun-sk-dcls (dcls)
+
+; This function returns multiple values (mv erp guard-p verify-guards-p
+; non-exec-p guard-hints dcls), where if erp is non-nil then it is a message
+; suitable for a ~@ fmt directive, and otherwise:
+
+; - guard-p is t if dcls contains a type declaration or a :guard xarg, else is
+;   nil;
+; - verify-guards-p is t or nil if dcls uniquely associates xargs
+;  :verify-guards with t or nil, respectively, and otherwise is '?;
+; - non-exec-p is t if :non-executable is uniquely associated with t in dcls,
+;   else is nil;
+; - guard-hints is the unique supplied value of :guard-hints if any, else is
+;   nil; and
+; - dcls results from the input dcls by ensuring that :verify-guards has value
+;   nil.
+
+; Note that erp is non-nil if any of :verify-guards, :non-executable, or
+; :guard-hints is associated with two or more distinct values in dcls.
+
+  (let* ((guard-p (and (fetch-dcl-fields '(type :guard) dcls) t))
+         (verify-guards-fields (remove-duplicates-equal
+                                (fetch-dcl-field :verify-guards dcls)))
+         (verify-guards-p (cond ((equal verify-guards-fields '(t)) t)
+                                ((equal verify-guards-fields '(nil)) nil)
+                                ((equal verify-guards-fields nil) '?)
+                                (t 'error)))
+         (non-exec-p-fields (remove-duplicates-equal
+                             (fetch-dcl-field :non-executable dcls)))
+         (non-exec-p (cond ((cdr non-exec-p-fields) 'error)
+                           ((consp non-exec-p-fields)
+                            (car non-exec-p-fields))
+                           (t t)))
+         (guard-hints-fields (fetch-dcl-field :guard-hints dcls))
+         (guard-hints (cond ((cdr guard-hints-fields) 'error)
+                            (t (car guard-hints-fields))))
+         (dcls (cons '(declare (xargs :verify-guards nil))
+                     (if (eq verify-guards-p t)
+                         (strip-dcls '(:verify-guards) dcls)
+                       dcls))))
+    (cond ((or (eq verify-guards-p 'error)
+               (eq non-exec-p 'error)
+               (eq guard-hints 'error))
+           (mv (msg "There are at least two~#0~[~/ distinct~] values ~
+                     associated with XARGS declaration keyword ~x1.  See :DOC ~
+                     defun-sk."
+                    (if (eq guard-hints 'error) 0 1)
+                    (if (eq verify-guards-p 'error)
+                        :verify-guards
+                      (if (eq non-exec-p 'error)
+                          :non-executable
+                        :guard-hints)))
+               nil nil nil nil nil))
+          (t (mv nil guard-p verify-guards-p non-exec-p guard-hints dcls)))))
+
 (defun defun-sk-fn (form name args rest)
   (declare (xargs :mode :program))
-  (mv-let
-    (erp dcls-and-body keyword-alist)
-    (partition-rest-and-keyword-args rest *defun-sk-keywords*)
-    (cond
-     (erp
+  (let ((ctx `(defun-sk . ,name)))
+    (mv-let
+      (erp dcls-and-body keyword-alist)
+      (partition-rest-and-keyword-args rest *defun-sk-keywords*)
+      (cond
+       (erp
 
 ; If the defstobj has been admitted, this won't happen.
 
-      (er hard 'defun-sk
-          "The keyword arguments to the DEFUN-SK event must appear after the ~
-           body.  The allowed keyword arguments are ~&0, and these may not be ~
-           duplicated.  Thus, ~x1 is ill-formed."
-          *defun-sk-keywords*
-          form))
-     (t
-      (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
-             (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
-             (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
-             (constrained-pair (assoc-eq :constrain keyword-alist))
-             (constrained (cdr constrained-pair))
-             (def-name (cond ((eq constrained t)
-                              (definition-rule-name name))
-                             ((symbolp constrained)
-                              constrained)
-                             (t (er hard 'defun-sk
-                                    "The :constrain argument of DEFUN-SK ~
-                                     must be a symbol, but ~x0 is not."
-                                    constrained))))
-             (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
-             (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
-             #+:non-standard-analysis
-             (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
-             #+:non-standard-analysis
-             (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
-                           (if pair
-                               (cdr pair)
-                             t)))
-             (witness-dcls-pair (assoc-eq :witness-dcls keyword-alist))
-             (dcls0 (butlast dcls-and-body 1))
-             (witness-dcls (if (or dcls0 witness-dcls-pair)
-                               (cdr witness-dcls-pair)
-                             '((declare (xargs :non-executable t)))))
-             (dcls1 (append dcls0 witness-dcls))
-             (body (car (last dcls-and-body)))
-             (exists-p (and (true-listp body)
-                            (eq (car body) 'exists)))
-             (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
-                                             exists-p dcls0 witness-dcls)))
-        (if msg
-            `(er soft '(defun-sk . ,name)
-                 "~@0"
-                 ',msg)
-          (let* ((bound-vars (and (true-listp body)
-                                  (or (symbolp (cadr body))
-                                      (true-listp (cadr body)))
-                                  (cond ((atom (cadr body))
-                                         (list (cadr body)))
-                                        (t (cadr body)))))
-                 (body-guts (and (true-listp body) (caddr body)))
-                 (defchoose-body (if exists-p
-                                     body-guts
-                                   `(not ,body-guts)))
-                 (skolem-name
-                  (or skolem-name
-                      (add-suffix name "-WITNESS")))
-                 (defun-body
-                   (if (= (length bound-vars) 1)
-                       `(let ((,(car bound-vars) (,skolem-name ,@args)))
-                          ,body-guts)
-                     `(mv-let (,@bound-vars)
-                        (,skolem-name ,@args)
-                        ,body-guts)))
-                 (thm-name
-                  (or thm-name
-                      (add-suffix name
-                                  (if exists-p "-SUFF" "-NECC"))))
-                 (delayed-guard-p (and (fetch-dcl-fields '(type :guard) dcls1)
-                                       (not (fetch-dcl-field :verify-guards
-                                                             dcls1))))
-                 (dcls (if delayed-guard-p
-                           (cons '(declare (xargs :verify-guards nil))
-                                 dcls1)
-                         dcls1))
-                 (defun-form
-                   `(,(if (member-equal '(declare (xargs :non-executable t)) dcls)
-                          'defun-nx
-                        'defun)
-                     ,name ,args
-                     ,@(remove1-equal
-                        '(declare (xargs :non-executable t))
-                        dcls)
-                     ,defun-body))
-                 (defun-constraint
-                   (and constrained ; optimization
-                        `(defthm ,def-name
-                           (equal (,name ,@args)
-                                  ,defun-body)
-                           :rule-classes :definition)))
-                 (delayed-guard-hints
-                  (and delayed-guard-p
-                       (let ((hints-lst (fetch-dcl-field :guard-hints dcls1)))
-                         (and (consp hints-lst)
-                              (if (cdr hints-lst)
-                                  (er hard 'defun-sk
-                                      "The :guard-hints keyword may only be ~
-                                       supplied once in DEFUN-SK.  Thus, ~x0 ~
-                                       is ill-formed."
-                                      form)
-                                `(:hints ,(car hints-lst))))))))
-            `(encapsulate
-               ()
-               (logic)
-               (set-match-free-default :all)
-               (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
-               (encapsulate
-                 ((,skolem-name ,args
-                                ,(if (= (length bound-vars) 1)
-                                     (car bound-vars)
-                                   (cons 'mv bound-vars))
-                                #+:non-standard-analysis
-                                ,@(and classicalp-p
-                                       `(:classicalp ,classicalp)))
-                  ,@(and constrained
-                         `((,name ,args t
-                                  #+:non-standard-analysis
-                                  ,@(and classicalp-p
-                                         `(:classicalp ,classicalp))))))
-                 (local (in-theory '(implies)))
-                 (local
-                  (defchoose ,skolem-name ,bound-vars ,args
-                    ,defchoose-body
-                    ,@(and strengthen
-                           '(:strengthen t))))
-                 ,@(and strengthen
-                        `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
-                            ,(defchoose-constraint-extra skolem-name bound-vars args
-                               defchoose-body)
-                            :hints (("Goal"
-                                     :use ,skolem-name
-                                     :in-theory (theory 'minimal-theory)))
-                            :rule-classes nil)))
-                 ,@(cond (constrained
-                          `((local ,defun-form)
-                            ,defun-constraint
-                            (local (in-theory (disable (,name))))))
-                         (t
-                          `(,defun-form
-                             (in-theory (disable (,name))))))
-                 (defthm ,thm-name
-                   ,(cond (exists-p
-                           `(implies ,body-guts
-                                     (,name ,@args)))
-                          ((eq rewrite :direct)
-                           `(implies (,name ,@args)
-                                     ,body-guts))
-                          ((member-eq rewrite '(nil :default))
-                           `(implies (not ,body-guts)
-                                     (not (,name ,@args))))
-                          (t rewrite))
-                   :hints (("Goal"
-                            :use (,skolem-name ,name)
-                            :in-theory (theory 'minimal-theory)))))
-               (extend-pe-table ,name ,form)
-               ,@(and delayed-guard-p
-                      `((verify-guards ,name
-                          ,@delayed-guard-hints)))))))))))
+        (er hard ctx
+            "The keyword arguments to the DEFUN-SK event must appear after ~
+             the body.  The allowed keyword arguments are ~&0, and these may ~
+             not be duplicated.  Thus, ~x1 is ill-formed."
+            *defun-sk-keywords*
+            form))
+       (t
+        (let* ((quant-ok (cdr (assoc-eq :quant-ok keyword-alist)))
+               (skolem-name (cdr (assoc-eq :skolem-name keyword-alist)))
+               (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
+               (constrained-pair (assoc-eq :constrain keyword-alist))
+               (constrained (cdr constrained-pair))
+               (def-name (cond ((eq constrained t)
+                                (definition-rule-name name))
+                               ((symbolp constrained)
+                                constrained)
+                               (t (er hard ctx
+                                      "The :constrain argument of DEFUN-SK ~
+                                       must be a symbol, but ~x0 is not."
+                                      constrained))))
+               (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
+               (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
+               #+:non-standard-analysis
+               (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
+               #+:non-standard-analysis
+               (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
+                             (if pair
+                                 (cdr pair)
+                               t)))
+               (witness-dcls-pair (assoc-eq :witness-dcls keyword-alist))
+               (dcls0 (butlast dcls-and-body 1))
+               (witness-dcls (cdr witness-dcls-pair))
+               (dcls1 (append? dcls0 witness-dcls))
+               (body (car (last dcls-and-body)))
+               (exists-p (and (true-listp body)
+                              (eq (car body) 'exists)))
+               (msg (non-acceptable-defun-sk-p name args body quant-ok rewrite
+                                               exists-p dcls0 witness-dcls)))
+          (if msg
+              `(er soft ',ctx "~@0" ',msg)
+            (mv-let (erp guard-p verify-guards-p non-exec-p guard-hints dcls)
+              (parse-defun-sk-dcls dcls1)
+              (if erp ; a msgp
+                  `(er soft ',ctx "~@0" ',erp)
+                (let* ((bound-vars (and (true-listp body)
+                                        (or (symbolp (cadr body))
+                                            (true-listp (cadr body)))
+                                        (cond ((atom (cadr body))
+                                               (list (cadr body)))
+                                              (t (cadr body)))))
+                       (body-guts (and (true-listp body) (caddr body)))
+                       (defchoose-body (if exists-p
+                                           body-guts
+                                         `(not ,body-guts)))
+                       (skolem-name
+                        (or skolem-name
+                            (add-suffix name "-WITNESS")))
+                       (defun-body
+                         (if (= (length bound-vars) 1)
+                             `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                                ,body-guts)
+                           `(mv-let (,@bound-vars)
+                              (,skolem-name ,@args)
+                              ,body-guts)))
+                       (thm-name
+                        (or thm-name
+                            (add-suffix name
+                                        (if exists-p "-SUFF" "-NECC"))))
+                       (defun-form
+                         `(,(if non-exec-p 'defun-nx 'defun)
+                           ,name ,args ,@dcls ,defun-body))
+                       (defun-constraint
+                         (and constrained ; optimization
+                              `(defthm ,def-name
+                                 (equal (,name ,@args)
+                                        ,defun-body)
+                                 :rule-classes :definition))))
+                  `(encapsulate
+                     ()
+                     (logic)
+                     (set-match-free-default :all)
+                     (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
+                     (encapsulate
+                       ((,skolem-name ,args
+                                      ,(if (= (length bound-vars) 1)
+                                           (car bound-vars)
+                                         (cons 'mv bound-vars))
+                                      #+:non-standard-analysis
+                                      ,@(and classicalp-p
+                                             `(:classicalp ,classicalp)))
+                        ,@(and constrained
+                               `((,name ,args t
+                                        #+:non-standard-analysis
+                                        ,@(and classicalp-p
+                                               `(:classicalp ,classicalp))))))
+                       (local (in-theory '(implies)))
+                       (local
+                        (defchoose ,skolem-name ,bound-vars ,args
+                          ,defchoose-body
+                          ,@(and strengthen
+                                 '(:strengthen t))))
+                       ,@(and strengthen
+                              `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
+                                  ,(defchoose-constraint-extra
+                                     skolem-name bound-vars args
+                                     defchoose-body)
+                                  :hints (("Goal"
+                                           :use ,skolem-name
+                                           :in-theory (theory 'minimal-theory)))
+                                  :rule-classes nil)))
+                       ,@(cond (constrained
+                                `((local ,defun-form)
+                                  ,defun-constraint
+                                  (local (in-theory (disable (,name))))))
+                               (t
+                                `(,defun-form
+                                   (in-theory (disable (,name))))))
+                       (defthm ,thm-name
+                         ,(cond (exists-p
+                                 `(implies ,body-guts
+                                           (,name ,@args)))
+                                ((eq rewrite :direct)
+                                 `(implies (,name ,@args)
+                                           ,body-guts))
+                                ((member-eq rewrite '(nil :default))
+                                 `(implies (not ,body-guts)
+                                           (not (,name ,@args))))
+                                (t rewrite))
+                         :hints (("Goal"
+                                  :use (,skolem-name ,name)
+                                  :in-theory (theory 'minimal-theory)))))
+                     (extend-pe-table ,name ,form)
+                     ,@(and (not constrained)
+                            (case verify-guards-p
+                              ((t)
+                               `((verify-guards ,name
+                                   ,@(and guard-hints
+                                          (list :guard-hints guard-hints)))))
+                              ((nil)
+                               nil)
+                              (otherwise ; '?
+                               `((verify-guards?
+                                  ,guard-p
+                                  ,name
+                                  ,@(and guard-hints
+                                         (list :guard-hints
+                                               guard-hints))))))))))))))))))
 
 (defmacro defun-sk (&whole form name args &rest rest)
   (defun-sk-fn form name args rest))
@@ -29945,11 +30019,7 @@
 
 ; In the boot-strap, we prevent make-event from storing an expansion, since
 ; otherwise we get an error for (when-pass-2 ... (make-event ...) ...), because
-; make-event is not in an event context.  We are tempted to safeguard against
-; putting make-event inside an encapsulate or progn in the boot-strap.  That is
-; probably not necessary for progn, but if we avoid that check with encapsulate
-; then we fear that we may get the wrong event in the second pass.  So we
-; check.
+; make-event is not in an event context.
 
                                    (pprogn
                                     (if (in-encapsulatep

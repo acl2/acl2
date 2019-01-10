@@ -617,7 +617,8 @@
 
 #-acl2-devel ; because apply$ is in :program mode when #+acl2-devel
 (defun-sk apply$-equivalence (fn1 fn2)
-  (declare (xargs :guard t))
+  (declare (xargs :verify-guards t ; avoid make-event in boot-strap
+                  :guard t))
   (forall (args)
 
 ; We use ec-call to support guard verification in "make proofs".
