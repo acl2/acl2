@@ -20,6 +20,8 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "utilities")
 
+(include-book "std/strings/top" :dir :system)
+
 ; Pete 9/14/2018: I am enabling some of the functions that
 ; std/lists/top disables, since this causes problems where simple
 ; theorems do not getting proved.
@@ -203,3 +205,9 @@ PETE: See if there is a way to get rid of these rules.
   `(append ,@rst))
 
 (add-macro-fn app binary-append)
+
+(defmacro intp (x)
+  `(integerp ,x))
+
+(defmacro boolp (x)
+  `(booleanp ,x))
