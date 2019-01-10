@@ -204,6 +204,9 @@
  <p>Added theorems showing that RLP encodings are decodable: RLP encoding is
  injective, and no valid encoding is a strict prefix of another one.</p>
 
+ <p>Added executable RLP decoders and proved them correct with resepct to the
+ ones declaratively defined as inverses of the RLP encoders.</p>
+
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
 
