@@ -80,7 +80,7 @@
      and not as @('(129 10)').
      Note that @(tsee rlp-bytes-encoding-p) does not hold on @('(129 10)'),
      because that sequence of bytes
-     is not in the image of @(tsee rlp-bytes-tree).
+     is not in the image of @(tsee rlp-encode-bytes).
      (This example talks about encoded byte arrays,
      but leaf trees are encoded in the same way.)")
    (xdoc::p
@@ -429,7 +429,7 @@
      with the argument instantiated to the @('rlp-tree-encoding-witness')
      (i.e.
      @('encode o witness /= error ==> decode o encode o witness /= error')).
-     The @(tsee rlp-tree-enncoding-p) hypothesis establishes the antecedent,
+     The @(tsee rlp-tree-encoding-p) hypothesis establishes the antecedent,
      and the right inverse property of the witness reduces the consequent
      to just @('decode /= error').")
    (xdoc::p
