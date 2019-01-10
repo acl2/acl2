@@ -75,9 +75,9 @@
    (a bitp)                 ;; Accessed
    (d bitp)                 ;; Dirty
    (ps bitp)                ;; Page size
-   (res1 4bitsp)            ;; Ignored
-   (reference-addr 40bitsp) ;; Address of inferior paging table
-   (res2 11bitsp)           ;; Ignored and/or Reserved
+   (res1 4bits)            ;; Ignored
+   (reference-addr 40bits) ;; Address of inferior paging table
+   (res2 11bits)           ;; Ignored and/or Reserved
    (xd bitp))               ;; Execute Disable
   :msb-first nil
   :inline t)
@@ -97,9 +97,9 @@
    (a bitp)   ;; Accessed (whether this entry has been used for LA translation)
    (res1 bitp)    ;; Ignored
    (ps bitp)      ;; Page size (Must be zero)
-   (res2 4bitsp)  ;; Ignored
-   (pdpt 40bitsp) ;; Address of page-directory pointer table
-   (res3 11bitsp) ;; Ignored and/or Reserved
+   (res2 4bits)  ;; Ignored
+   (pdpt 40bits) ;; Address of page-directory pointer table
+   (res3 11bits) ;; Ignored and/or Reserved
    (xd bitp))     ;; If IA32_EFER.NXE = 1, Execute disable;
   ;; otherwise 0 (reserved)
   :msb-first nil
@@ -121,11 +121,11 @@
    (d bitp) ;; Dirty (whether s/w has written to the 1 GB page referenced by this entry)
    (ps bitp)      ;; Page size (Must be 1 for 1GB pages)
    (g bitp)       ;; Global translation
-   (res1 3bitsp)  ;; Ignored
+   (res1 3bits)  ;; Ignored
    (pat bitp)     ;; PAT
-   (res2 17bitsp) ;; Reserved
-   (page 22bitsp) ;; Address of 1 GB page
-   (res3 11bitsp) ;; Ignored and/or Reserved
+   (res2 17bits) ;; Reserved
+   (page 22bits) ;; Address of 1 GB page
+   (res3 11bits) ;; Ignored and/or Reserved
    (xd bitp))     ;; If IA32_EFER.NXE = 1, Execute disable;
   ;; otherwise 0 (reserved)
   :msb-first nil
@@ -147,9 +147,9 @@
    (a bitp)   ;; Accessed (whether this entry has been used for LA translation)
    (res1 bitp)    ;; Ignored
    (ps bitp)      ;; Page size (Must be 0)
-   (res2 4bitsp)  ;; Ignored
-   (pd 40bitsp)   ;; Physical addres of 4-K aligned PD referenced by this entry
-   (res3 11bitsp) ;; Ignored and/or Reserved
+   (res2 4bits)  ;; Ignored
+   (pd 40bits)   ;; Physical addres of 4-K aligned PD referenced by this entry
+   (res3 11bits) ;; Ignored and/or Reserved
    (xd bitp))     ;; If IA32_EFER.NXE = 1, Execute disable;
   ;; otherwise 0 (reserved)
 
@@ -172,11 +172,11 @@
    (d bitp)       ;; Dirty
    (ps bitp)      ;; Page size (Must be 1 for 2MB pages)
    (g bitp)       ;; Global translation
-   (res1 3bitsp)  ;; Ignored
+   (res1 3bits)  ;; Ignored
    (pat bitp)     ;; PAT
-   (res2 8bitsp)  ;; Reserved
-   (page 31bitsp) ;; Physical addres of the 2MB page referenced by this entry
-   (res3 11bitsp) ;; Ignored and/or Reserved
+   (res2 8bits)  ;; Reserved
+   (page 31bits) ;; Physical addres of the 2MB page referenced by this entry
+   (res3 11bits) ;; Ignored and/or Reserved
    (xd bitp) ;; If IA32_EFER.NXE = 1, Execute disable; otherwise 0 (reserved)
    )
   :msb-first nil
@@ -197,10 +197,10 @@
    (a bitp)        ;; Accessed
    (res1 bitp)    ;; Ignored
    (ps bitp)       ;; Page size (Must be 0)
-   (res2 4bitsp)  ;; Ignored
-   (pt 40bitsp)    ;; Physical addres of the 4K-aligned
+   (res2 4bits)  ;; Ignored
+   (pt 40bits)    ;; Physical addres of the 4K-aligned
    ;; page table referenced by this entry
-   (res3 11bitsp) ;; Ignored and/or Reserved
+   (res3 11bits) ;; Ignored and/or Reserved
    (xd bitp)       ;; If IA32_EFER.NXE = 1, Execute
    ;; disable; otherwise 0 (reserved)
    )
@@ -223,10 +223,10 @@
    (d bitp)        ;; Dirty
    (pat bitp)      ;; PAT
    (g bitp)        ;; Global translation
-   (res1 3bitsp)  ;; Ignored
-   (page 40bitsp)  ;; Physical address of the 4K page
+   (res1 3bits)  ;; Ignored
+   (page 40bits)  ;; Physical address of the 4K page
    ;; referenced by this entry
-   (res2 11bitsp) ;; Ignored
+   (res2 11bits) ;; Ignored
    (xd bitp)       ;; If IA32_EFER.NXE = 1, Execute
    ;; disable; otherwise 0 (reserved)
    )

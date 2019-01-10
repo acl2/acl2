@@ -400,8 +400,8 @@
 		       !prefixes->adr
 		       !prefixes->nxt
 		       prefixes-fix
-		       4bitsp-fix
-		       8bitsp-fix)
+		       4bits-fix
+		       8bits-fix)
 		      (bitops::logand-with-negated-bitmask))))
        :rule-classes :linear))
 

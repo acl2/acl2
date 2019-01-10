@@ -57,4 +57,11 @@
        ((defruled lemma-lemma
           (implies (equal x y)
                    (equal (nthcdr n x)
-                          (nthcdr n y)))))))))
+                          (nthcdr n y))))))))
+
+  (defrule append-when-not-consp-2
+    (implies (and (true-listp y)
+                  (not (consp y)))
+             (equal (append x y)
+                    (true-list-fix x)))
+    :enable append))

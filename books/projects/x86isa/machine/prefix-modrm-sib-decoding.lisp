@@ -3073,11 +3073,11 @@
 		       (unsigned-byte-p 8 mandatory-prefix)
 		       :hints
 		       (("goal"
-			 :use ((:instance 8bitsp-p-of-prefixes->opr (x prefixes))
-			       (:instance 8bitsp-p-of-prefixes->rep (x prefixes)))
-			 :in-theory (e/d (8bitsp-p)
-					 (8bitsp-p-of-prefixes->opr
-					  8bitsp-p-of-prefixes->rep))))))
+			 :use ((:instance 8bits-p-of-prefixes->opr (x prefixes))
+			       (:instance 8bits-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (8bits-p)
+					 (8bits-p-of-prefixes->opr
+					  8bits-p-of-prefixes->rep))))))
 
 	    (let ((rep-pfx (the (unsigned-byte 8)
 			     (prefixes->rep prefixes))))

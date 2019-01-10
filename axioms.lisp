@@ -1242,10 +1242,44 @@
 ; whether we add the redundant one or not.
 
   (cond ((null *wormhole-cleanup-form*)
-         (interface-er
-          "push-wormhole-undo-formi was called with an empty ~
-           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is ~
-           only called when *wormholep* is non-nil and, supposedly, when ~
+
+; Originally we used interface-er here.  However, that could get us into an
+; infinite loop in Version_8.1, for example as follows.
+
+;   (accumulated-persistence t)
+;   (trace$ pop-accp-fn)
+;   (mini-proveall)
+
+; The essence of the problem in the example just above was that pop-accp-fn is
+; called inside wormhole-eval (see pop-accp), which doesn't seem to accommodate
+; state modification; indeed, as documented, wormhole1 should be used in that
+; case.  Yet state global trace-level was modified during tracing, by
+; custom-trace-ppr.  (That is no longer the case, but was so in Version_8.1.)
+; The following example, derived from the one above, makes this more clear.
+
+;   (defn foo (n) n)
+;   (value :q)
+;   ; Derived from (trace$ foo):
+;   (CCL:ADVISE foo
+;               (PROGN (SETQ *TRACE-ARGLIST* CCL:ARGLIST)
+;                      (CUSTOM-TRACE-PPR
+;                       :IN
+;                       (CONS 'FOO
+;                             (TRACE-HIDE-WORLD-AND-STATE
+;                              *TRACE-ARGLIST*))))
+;               :WHEN
+;               :BEFORE)
+;   (lp)
+;   (wormhole-eval 'demo
+;                  '(lambda (whs) (set-wormhole-data whs (foo 6)))
+;                  nil)
+
+; So now we use error instead of interface-er, to avoid the infinite loop.
+
+         (error
+          "push-wormhole-undo-formi was called with an empty~%~
+           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is~%~
+           only called when *wormholep* is non-nil and, supposedly, when~%~
            *wormholep* is non-nil, the *wormhole-cleanup-form* is too.")))
   (let ((qarg1 (list 'quote arg1))
         (undo-forms-and-last-two (cddr *wormhole-cleanup-form*)))
@@ -1347,7 +1381,10 @@
                          *the-live-state*)
                        (cddr *wormhole-cleanup-form*)))))
       (otherwise
-       (interface-er "Unrecognized op in push-wormhole-undo-formi,~x0." op)))))
+
+; See the comment above describing why we avoid interface-er.
+
+       (error "Unrecognized op in push-wormhole-undo-formi, ~s." op)))))
 
 ; The following symbol is the property under which we store Common
 ; Lisp streams on the property lists of channels.
@@ -14074,7 +14111,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
     (trace-co . acl2-output-channel::standard-character-output-0)
-    (trace-level . 0)
     (trace-specs . nil)
     (triple-print-prefix . " ")
     (ttags-allowed . :all)
@@ -21096,7 +21132,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic-fns-with-raw-code
     macros-with-raw-code
     dmrp
-    trace-level ; can change under the hood without logic explanation
     trace-specs
     retrace-p
     parallel-execution-enabled

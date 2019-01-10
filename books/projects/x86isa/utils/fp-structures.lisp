@@ -63,7 +63,7 @@
    (c0 bitp)    ;; Condition Code
    (c1 bitp)    ;; Condition Code
    (c2 bitp)    ;; Condition Code
-   (top 3bitsp) ;; Top of stack pointer
+   (top 3bits) ;; Top of stack pointer
    (c3 bitp)    ;; Condition Code
    (b bitp)     ;; FPU Busy
    )
@@ -100,9 +100,9 @@
    (om bitp)          ;; Overflow Mask
    (um bitp)          ;; Underflow Mask
    (pm bitp)          ;; Precision Mask
-   (rc 2bitsp)        ;; Rounding Control
+   (rc 2bits)        ;; Rounding Control
    (fz bitp)          ;; Flush to Zero
-   (reserved 16bitsp) ;; Reserved bits
+   (reserved 16bits) ;; Reserved bits
    )
   :msb-first nil
   :inline t)

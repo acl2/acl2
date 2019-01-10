@@ -79,13 +79,13 @@
   get-prefixes) for details.</p>"
 
   (defbitstruct prefixes
-    ((num         4bitsp "Number of Prefix Bytes")
-     (lck         8bitsp "Lock Prefix")
-     (rep         8bitsp "Repeat Prefix")
-     (seg         8bitsp "Segment Override Prefix")
-     (opr         8bitsp "Operand-Size Override Prefix")
-     (adr         8bitsp "Address-Size Override Prefix")
-     (nxt         8bitsp "First non-prefix instruction byte"))
+    ((num         4bits "Number of Prefix Bytes")
+     (lck         8bits "Lock Prefix")
+     (rep         8bits "Repeat Prefix")
+     (seg         8bits "Segment Override Prefix")
+     (opr         8bits "Operand-Size Override Prefix")
+     (adr         8bits "Address-Size Override Prefix")
+     (nxt         8bits "First non-prefix instruction byte"))
     :inline t)
 
   (local
@@ -100,9 +100,9 @@
   instruction"
 
   (defbitstruct vex-prefixes
-    ((byte0  8bitsp "Can either be #xC4 or #xC5")
-     (byte1  8bitsp "Byte 1 of VEX prefixes")
-     (byte2  8bitsp "Relevant only for 3-byte VEX prefixes"))
+    ((byte0  8bits "Can either be #xC4 or #xC5")
+     (byte1  8bits "Byte 1 of VEX prefixes")
+     (byte2  8bits "Relevant only for 3-byte VEX prefixes"))
     :inline t)
 
   (local
@@ -144,14 +144,14 @@
   ;; the 3-byte VEX implies leading 0F, 0F 38, or 0F 3A bytes.
 
   (defbitstruct vex2-byte1
-    ((pp 2bitsp
+    ((pp 2bits
          "Opcode extension providing equivalent functionality of a SIMD
           prefix; <br/>
          @('#b00 - None; #b01 - #x66; #b10 - #xF3; #b11 - #xF2')")
      (l  bitp
          "Vector Length; <br/>
           @('0 - scalar or 128-bit vector; 1 - 256-bit vector')")
-     (vvvv 4bitsp
+     (vvvv 4bits
            "A register specifier (in 1's complement form) or @('1111') if
            unused.")
      (r    bitp
@@ -164,7 +164,7 @@
     :inline t)
 
   (defbitstruct vex3-byte1
-    ((m-mmmm 5bitsp
+    ((m-mmmm 5bits
              "@('00000'): Reserved for future use (will #UD) <br/>
               @('00001'): implied 0F leading opcode byte
               @('00010'): implied 0F 38 leading opcode bytes
@@ -191,7 +191,7 @@
     :inline t)
 
   (defbitstruct vex3-byte2
-    ((pp 2bitsp
+    ((pp 2bits
          "Opcode extension providing equivalent functionality of a SIMD
           prefix<br />
            @('#b00: None') <br />
@@ -204,7 +204,7 @@
           @('0: scalar or 128-bit vector') <br />
           @('1: 256-bit vector')")
 
-     (vvvv 4bitsp
+     (vvvv 4bits
            "A register specifier (in 1's complement form) or @('1111') if
              unused.")
 
@@ -316,10 +316,10 @@
   ;;            http://www.sandpile.org/x86/opc_enc.htm
 
   (defbitstruct evex-prefixes
-    ((byte0      8bitsp) ;; Should be #ux62
-     (byte1      8bitsp)
-     (byte2      8bitsp)
-     (byte3      8bitsp))
+    ((byte0      8bits) ;; Should be #ux62
+     (byte1      8bits)
+     (byte2      8bits)
+     (byte3      8bits))
     :inline t
     :msb-first nil)
 
@@ -330,9 +330,9 @@
      :rule-classes nil))
 
   (defbitstruct evex-byte1
-    ((mm 2bitsp
+    ((mm 2bits
          "Identical to low two bits of VEX.m-mmmm.")
-     (res 2bitsp
+     (res 2bits
           "Reserved; must be zero.")
      (r-prime bitp
               "High-16 register specifier modifier -- combine with EVEX.R and
@@ -352,12 +352,12 @@
     :xvar byte1)
 
   (defbitstruct evex-byte2
-    ((pp 2bitsp
+    ((pp 2bits
          "Compressed legacy escape -- identical to low two bits of VEX.pp.")
      (res bitp
           "Reserved; Must be one.")
      (vvvv
-      4bitsp
+      4bits
       "NDS register specifier --- same as VEX.vvvv.")
      (w bitp
         "Osize promotion/opcode extension"))
@@ -365,14 +365,14 @@
     :msb-first nil)
 
   (defbitstruct evex-byte3
-    ((aaa 3bitsp
+    ((aaa 3bits
           "Embedded opmask register specifier")
      (v-prime bitp
               "High-16 NDS/VIDX register specifier -- combine with EVEX.vvvv or
       when VSIB present")
      (b bitp
         "Broadcast/RC/SAE Context")
-     (vl/rc 2bitsp
+     (vl/rc 2bits
             "Vector length/RC (denoted as L'L in the Intel manuals")
      (z bitp
         "Zeroing/Merging"))
@@ -414,9 +414,9 @@
   (local (xdoc::set-default-parents ModR/M-structures))
 
   (defbitstruct modr/m
-    ((r/m 3bitsp)
-     (reg 3bitsp)
-     (mod 2bitsp))
+    ((r/m 3bits)
+     (reg 3bits)
+     (mod 2bits))
     :inline t
     :msb-first nil)
 
@@ -441,9 +441,9 @@
   :short "Bitstruct definitions to store a SIB byte and its fields"
 
   (defbitstruct sib
-    ((base  3bitsp)
-     (index 3bitsp)
-     (scale 2bitsp))
+    ((base  3bits)
+     (index 3bits)
+     (scale 2bits))
     :inline t
     :msb-first nil)
 
@@ -480,7 +480,7 @@
    (intf bitp)    ; interrupt-enable flag
    (df bitp)      ; direction flag
    (of bitp)      ; overflow flag
-   (iopl 2bitsp)  ; i/o privilege level
+   (iopl 2bits)  ; i/o privilege level
    (nt bitp)      ; nested task
    (res4 bitp)    ; 0 (reserved)
    (rf bitp)      ; resume flag
@@ -489,7 +489,7 @@
    (vif bitp)     ; virtual interrupt flag
    (vip bitp)     ; virtual interrupt pending
    (id bitp)      ; id flag
-   (res5 10bitsp) ; 0 (reserved)
+   (res5 10bits) ; 0 (reserved)
 ;   (reserved     32 32) ; reserved bits
    )
   :msb-first nil
@@ -540,11 +540,11 @@
    (ts bitp        "Task Switched")
    (et bitp        "Extension Type")
    (ne bitp        "Numeric Error")
-   (res1 10bitsp "0 (Reserved)")
+   (res1 10bits "0 (Reserved)")
    (wp bitp        "Write Protect")
    (res2 bitp     "0 (Reserved)")
    (am bitp        "Alignment Mask")
-   (res3 10bitsp  "0 (Reserved)")
+   (res3 10bits  "0 (Reserved)")
    (nw bitp        "Not Write-through")
    (cd bitp        "Cache Disable")
    (pg bitp        "Paging Bit"))
@@ -559,12 +559,12 @@
 
 (defbitstruct cr3Bits
   :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5</p>"
-  ((res1 3bitsp)  ;; 0
+  ((res1 3bits)  ;; 0
    (pwt bitp)      ;; Page-Level Writes Tranparent
    (pcd bitp)      ;; Page-Level Cache Disable
-   (res2 7bitsp)  ;; 0
-   (pdb 40bitsp)   ;; Page Directory Base
-   (res3 12bitsp) ;; Reserved (must be zero)
+   (res2 7bits)  ;; 0
+   (pdb 40bits)   ;; Page Directory Base
+   (res3 12bits) ;; Reserved (must be zero)
    )
   :msb-first nil
   :inline t)
@@ -630,7 +630,7 @@
    ;; bit mode. A value of 15 means all
    ;; interrupts will be disabled.
 
-   (cr8-trpl 4bitsp) ;; Task Priority Level
+   (cr8-trpl 4bits) ;; Task Priority Level
    ;;  (0                4 59) ;; 0 (Reserved)
 
    )
@@ -664,7 +664,7 @@
    (hi16_zmm-state bitp)
    (res1 bitp) ;; 0 (Reserved)
    (pkru-state bitp)
-   (res2 54bitsp) ;; 0 (Reserved)
+   (res2 54bits) ;; 0 (Reserved)
    )
   :msb-first nil
   :inline t)
@@ -683,7 +683,7 @@
 (defbitstruct ia32_eferBits
   :long "<p>Source: Intel Manual, Feb-14, Vol. 3A, Section 2.2.1</p>"
   ((sce bitp)    ;; Syscall Enable (R/W) (enables SYSCALL/SYSRET)
-   (res1 7bitsp) ;; Reserved?
+   (res1 7bits) ;; Reserved?
    (lme bitp)    ;; Long Mode Enabled (R/W)
    (res2 bitp)   ;; Reserved?
    (lma bitp)    ;; Long Mode Active (R)

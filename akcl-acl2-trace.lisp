@@ -104,11 +104,9 @@
 ; is a pretty innocuous value to print.
 
   (let ((*inside-trace$* t))
-    (declare (special *inside-trace$*))
+    (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in)
-           (f-put-global 'trace-level
-                         (1+f (f-get-global 'trace-level state))
-                         state)))
+           (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple))
           (x (trace-hide-world-and-state x)))
       (ppr (eviscerate-top x
@@ -119,14 +117,12 @@
                            (car (cddddr trace-evisc-tuple)) ;;; hiding-cars
                            state)
            (+ 2 ; GCL starts "1>" in column 2
-              (first-trace-printing-column state))
+              (first-trace-printing-column))
            (f-get-global 'trace-co state)
            state
            t))
     (cond ((eq direction :out)
-           (f-put-global 'trace-level
-                         (1-f (f-get-global 'trace-level state))
-                         state)))
+           (decf *trace-level*)))
     '>))
 
 (defun trace-fix-entry-raw (name l)

@@ -2460,8 +2460,8 @@
 
 (defun lmi-seed-lst (lmi-lst)
   (cond ((null lmi-lst) nil)
-        (t (add-to-set-eq (lmi-seed (car lmi-lst))
-                          (lmi-seed-lst (cdr lmi-lst))))))
+        (t (add-to-set-equal (lmi-seed (car lmi-lst))
+                             (lmi-seed-lst (cdr lmi-lst))))))
 
 (defun lmi-techs-lst (lmi-lst)
   (cond ((null lmi-lst) nil)
@@ -2525,37 +2525,125 @@
                      state))))))
 
 (defun use-names-in-ttree (ttree names-only)
+
+; Warning: This does not include use-names under :clause-processor tags.
+
   (let* ((objs (tagged-objects :USE ttree))
          (lmi-lst (append-lst (strip-cars (strip-cars objs))))
          (seeds (lmi-seed-lst lmi-lst)))
     (if names-only
-        (sort-symbol-listp (lmi-seeds-info t seeds))
-      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
+        (lmi-seeds-info t seeds)
+      (lmi-seeds-info 'hint-events seeds))))
 
 (defun by-names-in-ttree (ttree names-only)
+
+; Warning: This does not include by-names under :clause-processor tags.
+
   (let* ((objs (tagged-objects :BY ttree))
          (lmi-lst (append-lst (strip-cars objs)))
          (seeds (lmi-seed-lst lmi-lst)))
     (if names-only
-        (sort-symbol-listp (lmi-seeds-info t seeds))
-      (merge-sort-lexorder (lmi-seeds-info 'hint-events seeds)))))
+        (lmi-seeds-info t seeds)
+      (lmi-seeds-info 'hint-events seeds))))
 
 (defrec clause-processor-hint
   (term stobjs-out . verified-p)
   nil)
 
-(defun clause-processor-fns (cl-proc-hints)
-  (cond ((endp cl-proc-hints) nil)
-        (t (cons (ffn-symb (access clause-processor-hint
-                                   (car cl-proc-hints)
-                                   :term))
-                 (clause-processor-fns (cdr cl-proc-hints))))))
+(defun collect-non-hint-events (lst non-symbols-okp)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (let ((x (car lst)))
+             (cond
+              ((symbolp x)
+               (collect-non-hint-events (cdr lst) non-symbols-okp))
+              ((and non-symbols-okp
+                    (consp x)
+                    (consp (cdr x))
+                    (null (cddr x))
+                    (member-eq (car x)
+                               '(:termination-theorem :guard-theorem))
+                    (symbolp (cadr x)))
+               (collect-non-hint-events (cdr lst) non-symbols-okp))
+              (t (cons x
+                       (collect-non-hint-events (cdr lst)
+                                                non-symbols-okp))))))))
 
-(defun cl-proc-names-in-ttree (ttree)
-  (let* ((objs (tagged-objects :CLAUSE-PROCESSOR ttree))
-         (cl-proc-hints (strip-cars objs))
-         (cl-proc-fns (clause-processor-fns cl-proc-hints)))
-    (sort-symbol-listp cl-proc-fns)))
+(defun hint-events-symbols (lst)
+  (declare (xargs :guard (null (collect-non-hint-events lst t))))
+  (cond ((atom lst) nil)
+        ((symbolp (car lst))
+         (cons (car lst)
+               (hint-events-symbols (cdr lst))))
+        (t
+         (cons (cadr (car lst))
+               (hint-events-symbols (cdr lst))))))
+
+(defmacro get-summary-data (summary-data field &optional names-only)
+  (declare (xargs :guard (member-eq field '(:use-names
+                                            :by-names
+                                            :clause-processor-fns))))
+  (let ((val-expr `(access summary-data ,summary-data ,field)))
+    `(cond (,names-only (let ((lst ,val-expr))
+                          (if (symbol-listp lst) ; common case
+                              lst
+                            (hint-events-symbols lst))))
+           (t ,val-expr))))
+
+(defun cl-proc-data-in-ttree-1 (objs use-names by-names cl-proc-fns
+                                     names-only)
+
+; Each member of the list, objs, is of the form (cl-proc-hint summary-data
+; . new-clauses), as per the call of add-to-tag-tree! on tag :clause-processor
+; in the definition of apply-top-hints-clause.
+
+  (cond ((endp objs) (mv use-names by-names cl-proc-fns))
+        (t (let* ((obj (car objs))
+                  (cl-proc-hint (car obj))
+                  (cl-proc-fn (ffn-symb (access clause-processor-hint
+                                                cl-proc-hint
+                                                :term)))
+                  (new-cl-proc-fns
+
+; We want to present the proof-builder clause-processor as a built-in, the way
+; we present simplify-clause and the other waterfall clause-processors.  So we
+; avoid recording it here.
+
+                   (if (eq cl-proc-fn 'proof-builder-cl-proc)
+                       cl-proc-fns
+                     (cons cl-proc-fn cl-proc-fns)))
+                  (summary-data (cadr obj)))
+             (cond
+              ((null summary-data)
+               (cl-proc-data-in-ttree-1 (cdr objs) use-names by-names
+                                        new-cl-proc-fns
+                                        names-only))
+              (t (cl-proc-data-in-ttree-1
+                  (cdr objs)
+                  (append (get-summary-data summary-data :use-names names-only)
+                          use-names)
+                  (append (get-summary-data summary-data :by-names names-only)
+                          by-names)
+                  (append (access summary-data summary-data
+                                  :clause-processor-fns)
+                          new-cl-proc-fns)
+                  names-only)))))))
+
+(defun cl-proc-data-in-ttree (ttree names-only)
+  (cl-proc-data-in-ttree-1 (tagged-objects :CLAUSE-PROCESSOR ttree)
+                           nil nil nil
+                           names-only))
+
+(defun hint-event-names-in-ttree (ttree)
+  (mv-let (use-names by-names cl-proc-fns)
+    (cl-proc-data-in-ttree ttree nil)
+    (mv (merge-sort-lexorder (union-equal-removing-duplicates
+                              use-names
+                              (use-names-in-ttree ttree nil)))
+        (merge-sort-lexorder (union-equal-removing-duplicates
+                              by-names
+                              (by-names-in-ttree ttree nil)))
+        (sort-symbol-listp cl-proc-fns))))
 
 (defun print-hint-events-summary (ttree state)
   (flet ((make-rune-like-objs (kwd lst)
@@ -2563,23 +2651,22 @@
                                    (pairlis$ (make-list (length lst)
                                                         :INITIAL-ELEMENT kwd)
                                              (pairlis$ lst nil)))))
-    (let* ((use-lst (use-names-in-ttree ttree nil))
-           (by-lst (by-names-in-ttree ttree nil))
-           (cl-proc-lst (cl-proc-names-in-ttree ttree))
-           (lst (append (make-rune-like-objs :BY by-lst)
-                        (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
-                        (make-rune-like-objs :USE use-lst))))
-      (pprogn (put-event-data 'hint-events lst state)
-              (cond (lst (io? summary nil state
-                              (lst)
-                              (let ((channel (proofs-co state)))
-                                (mv-let (col state)
-                                  (fmt1 "Hint-events: ~y0~|"
-                                        (list (cons #\0 lst))
-                                        0 channel state nil)
-                                  (declare (ignore col))
-                                  state))))
-                    (t state))))))
+    (mv-let (use-lst by-lst cl-proc-fns)
+      (hint-event-names-in-ttree ttree)
+      (let ((lst (append (make-rune-like-objs :BY by-lst)
+                         (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-fns)
+                         (make-rune-like-objs :USE use-lst))))
+        (pprogn (put-event-data 'hint-events lst state)
+                (cond (lst (io? summary nil state
+                                (lst)
+                                (let ((channel (proofs-co state)))
+                                  (mv-let (col state)
+                                    (fmt1 "Hint-events: ~y0~|"
+                                          (list (cons #\0 lst))
+                                          0 channel state nil)
+                                    (declare (ignore col))
+                                    state))))
+                      (t state)))))))
 
 (defun print-splitter-rules-summary-1 (cl-id clauses
                                              case-split immed-forced if-intro
@@ -4595,33 +4682,36 @@
 ; :by, or :clause-processor.  However, if the list of events is empty, then we
 ; do not extend wrld.  See :DOC dead-events.
 
-  (let* ((use-lst (use-names-in-ttree ttree t))
-         (by-lst (by-names-in-ttree ttree t))
-         (cl-proc-lst (cl-proc-names-in-ttree ttree))
-         (runes (all-runes-in-ttree ttree nil))
-         (names (append use-lst by-lst cl-proc-lst
-                        (strip-non-nil-base-symbols runes nil)))
-         (sorted-names (and names ; optimization
-                            (sort-symbol-listp
-                             (cond ((symbolp namex)
-                                    (cond ((member-eq namex names)
+  (mv-let (use-names0 by-names0 cl-proc-fns0)
+    (cl-proc-data-in-ttree ttree t)
+    (let* ((runes (all-runes-in-ttree ttree nil))
+           (use-lst (use-names-in-ttree ttree t))
+           (by-lst (by-names-in-ttree ttree t))
+           (names (append by-names0 by-lst
+                          cl-proc-fns0
+                          use-names0 use-lst
+                          (strip-non-nil-base-symbols runes nil)))
+           (sorted-names (and names ; optimization
+                              (sort-symbol-listp
+                               (cond ((symbolp namex)
+                                      (cond ((member-eq namex names)
 
 ; For example, the :induction rune for namex, or a :use (or maybe even :by)
 ; hint specifying namex, can be used in the guard proof.
 
-                                           (remove-eq namex names))
-                                          (t names)))
-                                   ((intersectp-eq namex names)
-                                    (set-difference-eq names namex))
-                                   (t names))))))
-    (cond ((and (not (eql namex 0))
-                sorted-names)
-           (global-set 'proof-supporters-alist
-                       (acons namex
-                              sorted-names
-                              (global-val 'proof-supporters-alist wrld))
-                       wrld))
-          (t wrld))))
+                                             (remove-eq namex names))
+                                            (t names)))
+                                     ((intersectp-eq namex names)
+                                      (set-difference-eq names namex))
+                                     (t names))))))
+      (cond ((and (not (eql namex 0))
+                  sorted-names)
+             (global-set 'proof-supporters-alist
+                         (acons namex
+                                sorted-names
+                                (global-val 'proof-supporters-alist wrld))
+                         wrld))
+            (t wrld)))))
 
 (defmacro update-w (condition new-w &optional retract-p)
 
@@ -14079,9 +14169,10 @@
             (cadr stobjs-out))
         (msg "it is a function whose ~n0 output is a stobj"
              (list (if (car stobjs-out) 1 2))))
-       ((member-eq nil (cddr stobjs-out))
-        "it is a function symbol with a non-stobj output other than the first ~
-         or second output")
+       ((not (member-equal (member-eq nil (cddr stobjs-out))
+                           '(nil (nil))))
+        "it is a function symbol with a non-stobj output other than the ~
+         first, second, or last output")
        (t (list* sym 'CLAUSE (cdr stobjs-in))))))))
 
 (defun@par translate-clause-processor-hint (form ctx wrld state)
@@ -14107,7 +14198,7 @@
 ;    or any term macroexpanding to (cl-proc & &) with at most CLAUSE free
 
 ; For signature ((cl-proc cl hint stobj1 ... stobjk) =>
-;                (mv erp cl-list stobj1 ... stobjk)):
+;                (mv erp cl-list stobj1 ... stobjk &optional summary-data)):
 ; :CLAUSE-PROCESSOR (:FUNCTION cl-proc :HINT hint)
 ; :CLAUSE-PROCESSOR (cl-proc CLAUSE hint stobj1 ... stobjk):
 ;    or any term macroexpanding to (cl-proc & & stobj1 ... stobjk)
@@ -14151,8 +14242,7 @@
                             (list* cl-proc
                                    'clause
                                    hint
-                                   (cddr (stobjs-out cl-proc
-                                                     wrld))))))))
+                                   (cddr (stobjs-in cl-proc wrld))))))))
                     (t (er@par soft ctx "~@0" err-msg
                          "the :FUNCTION is an atom that is not a symbol"))))
              (& (value@par form)))))))

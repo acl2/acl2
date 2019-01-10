@@ -1619,12 +1619,11 @@
 ; was no value specified.
 
   (cond ((null lst) (value *unspecified-xarg-value*))
-        (t (er-let*
-               ((v (get-unambiguous-xargs-flg1 key (cdr lst) event-msg ctx
-                                               state))
-             (ans (get-unambiguous-xargs-flg1/edcls key v (fourth (car lst))
-                                                    event-msg ctx state)))
-            (value ans)))))
+        (t (er-let* ((v (get-unambiguous-xargs-flg1 key (cdr lst) event-msg ctx
+                                                    state))
+                     (ans (get-unambiguous-xargs-flg1/edcls
+                           key v (fourth (car lst)) event-msg ctx state)))
+             (value ans)))))
 
 (defun get-unambiguous-xargs-flg (key lst default ctx state)
 

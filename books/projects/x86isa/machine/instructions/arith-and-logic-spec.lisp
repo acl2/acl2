@@ -51,16 +51,16 @@
   (declare (type (member 1 2 4 8) operand-size)
            (xargs :verify-guards nil))
 
-  (b* ((fn-name          (mk-name "gpr-arith/logic-spec-" operand-size))
-       (gpr-add-spec-fn  (mk-name "gpr-add-spec-"   operand-size))
-       (gpr-adc-spec-fn  (mk-name "gpr-adc-spec-"   operand-size))
-       (?gpr-sub-spec-fn  (mk-name "gpr-sub-spec-"   operand-size))
-       (?gpr-sbb-spec-fn  (mk-name "gpr-sbb-spec-"   operand-size))
-       (?gpr-cmp-spec-fn  (mk-name "gpr-cmp-spec-"   operand-size))
-       (?gpr-or-spec-fn   (mk-name "gpr-or-spec-"    operand-size))
-       (?gpr-and-spec-fn  (mk-name "gpr-and-spec-"   operand-size))
-       (?gpr-xor-spec-fn  (mk-name "gpr-xor-spec-"   operand-size))
-       (?gpr-test-spec-fn (mk-name "gpr-test-spec-"  operand-size)))
+  (b* ((fn-name          (mk-name "GPR-ARITH/LOGIC-SPEC-" operand-size))
+       (gpr-add-spec-fn  (mk-name "GPR-ADD-SPEC-"   operand-size))
+       (gpr-adc-spec-fn  (mk-name "GPR-ADC-SPEC-"   operand-size))
+       (?gpr-sub-spec-fn  (mk-name "GPR-SUB-SPEC-"   operand-size))
+       (?gpr-sbb-spec-fn  (mk-name "GPR-SBB-SPEC-"   operand-size))
+       (?gpr-cmp-spec-fn  (mk-name "GPR-CMP-SPEC-"   operand-size))
+       (?gpr-or-spec-fn   (mk-name "GPR-OR-SPEC-"    operand-size))
+       (?gpr-and-spec-fn  (mk-name "GPR-AND-SPEC-"   operand-size))
+       (?gpr-xor-spec-fn  (mk-name "GPR-XOR-SPEC-"   operand-size))
+       (?gpr-test-spec-fn (mk-name "GPR-TEST-SPEC-"  operand-size)))
 
       `(define ,fn-name
          ((operation :type (member #.*OP-ADD* #.*OP-ADC* #.*OP-SUB*

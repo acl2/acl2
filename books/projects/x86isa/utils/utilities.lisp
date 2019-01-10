@@ -70,41 +70,11 @@
   :parents (utilities)
   :short "Macro that can be used to create event names by
   concatenating strings, symbols, and numbers."
-  :long "@(def mk-name)
-
-@(def string-concatenate)"
-
-  (defun string-cat (lst)
-    (declare (xargs :verify-guards nil))
-    (cond ((atom lst)
-           "")
-          ((stringp (car lst))
-           (string-append (str::upcase-string (car lst))
-                          (string-cat (cdr lst))))
-          ((symbolp (car lst))
-           (string-append (symbol-name (car lst))
-                          (string-cat (cdr lst))))
-          ((natp (car lst))
-           (string-append
-            (coerce (explode-nonnegative-integer (car lst) 10 '())
-                    'string)
-            (string-cat (cdr lst))))
-          (t
-           (string-cat (cdr lst)))))
-
-  (defmacro string-concatenate (&rest x)
-    `(string-cat (list ,@x)))
+  :long "@(def mk-name)"
 
   (defmacro mk-name (&rest x)
     ;; Note that the package is X86ISA here.
-    `(intern$ (string-concatenate ,@x) "X86ISA"))
-
-  (defmacro acl2-mk-name (&rest x)
-    ;; Note that intern, unlike the regular Lisp reader, is sensitive to
-    ;; case.
-    `(intern (string-concatenate ,@x) "ACL2"))
-
-  )
+    `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
 
 ;; ======================================================================
 
@@ -143,7 +113,7 @@ returns a value greater than or equal to zero.</p>
       :corollary
       (implies <hypotheses>
                (<= 0 <conclusion>))
-      :hints <usual ACL2 hints>)))
+      :hints ((\"Goal\" :in-theory '(natp))))))
 
   })
 
@@ -197,6 +167,13 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
 
   })
 
+<p>If @(':hints-t') is not supplied, hints to prove the type prescription
+corollary are generated automatically.  In this case, the hypotheses for the
+type prescription corollary must trivially subsume the ones for the main
+theorem specified by @(':hyp'); in particular, they may have additional
+conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
+@(':hints-l').</p>
+
 </li>
 
 <li><p>Use the macro @('defthm-sb') to prove
@@ -249,12 +226,16 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 
   })
 
+<p>If @(':hints-t') is not supplied, hints to prove the type prescription
+corollary are generated automatically.  In this case, the hypotheses for the
+type prescription corollary must trivially subsume the ones for the main
+theorem specified by @(':hyp'); in particular, they may have additional
+conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
+@(':hints-l').</p>
+
 </li>
 
 </ul>"
-
-  ;; since corollaries must just follow from their theorems,
-  ;; it may be possible to generate simpler hints for the corollaries below
 
   (defmacro defthm-natp (name &key hyp concl hints)
     (if concl
@@ -270,7 +251,10 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
              ,(if (atom hyp)
                   `(<= 0 ,concl)
                 `(implies ,hyp (<= 0 ,concl)))
-             ,@(and hints `(:hints ,hints)))))
+             ;; Given the definition of NATP, the following hints should always
+             ;; reliably and quickly prove that the corollary follows from the
+             ;; main theorem.
+             :hints (("Goal" :in-theory '(natp))))))
       nil))
 
   (defmacro defthm-usb
@@ -282,8 +266,30 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
             otf-flg)
 
     (if (and concl bound)
-        (let ((hints-t (or hints-t hints))
-              (hints-l (or hints-l hints))
+        (let ((hints-t (or hints-t
+                           ;; If :HINTS-T is not supplied, the following hints,
+                           ;; given the definitions of UNSIGNED-BYTE-P,
+                           ;; INTEGER-RANGE-P, and NATP, should suffice to
+                           ;; prove the corollary from the main theorem,
+                           ;; assuming that :HYP-T is a superset of :HYP, or
+                           ;; perhaps has some extra calls to FORCE.
+                           '(("Goal" :in-theory '(unsigned-byte-p
+                                                  integer-range-p
+                                                  natp)))))
+              (hints-l (or hints-l
+                           ;; If :HINTS-L is not supplied, the following hints,
+                           ;; given the definitions of UNSIGNED-BYTE-P and
+                           ;; INTEGER-RANGE-P, should suffice to prove the
+                           ;; corollary from the main theorem, assuming that
+                           ;; :HYP-L is a superset of :HYP, or perhaps has some
+                           ;; extra calls to FORCE. The (:E EXPT) is motivated
+                           ;; by the fact that, if :BOUND is a number, the
+                           ;; generated linear rule involves not a call of EXPT
+                           ;; but directly the value of such a call (see
+                           ;; 2^BOUND below).
+                           '(("Goal" :in-theory '(unsigned-byte-p
+                                                  integer-range-p
+                                                  (:e expt))))))
               (2^bound (if (natp bound)
                            (expt 2 bound)
                          `(expt 2 ,bound))))
@@ -326,8 +332,29 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
             otf-flg)
 
     (if (and concl bound)
-        (let* ((hints-t (or hints-t hints))
-               (hints-l (or hints-l hints))
+        (let* ((hints-t (or hints-t
+                           ;; If :HINTS-T is not supplied, the following hints,
+                           ;; given the definitions of SIGNED-BYTE-P and
+                           ;; INTEGER-RANGE-P, should suffice to prove the
+                           ;; corollary from the main theorem, assuming that
+                           ;; :HYP-T is a superset of :HYP, or perhaps has some
+                           ;; extra calls to FORCE.
+                           '(("Goal" :in-theory '(signed-byte-p
+                                                  integer-range-p)))))
+               (hints-l (or hints-l
+                           ;; If :HINTS-L is not supplied, the following hints,
+                           ;; given the definitions of UNSIGNED-BYTE-P and
+                           ;; INTEGER-RANGE-P, should suffice to prove the
+                           ;; corollary from the main theorem, assuming that
+                           ;; :HYP-L is a superset of :HYP, or perhaps has some
+                           ;; extra calls to FORCE. The (:E EXPT) is motivated
+                           ;; by the fact that, if :BOUND is a number, the
+                           ;; generated linear rule involves not calls of EXPT
+                           ;; but directly the value of such calls (see
+                           ;; 2^BOUND-1 and LOW-2^BOUND-1 below).
+                           '(("Goal" :in-theory '(signed-byte-p
+                                                  integer-range-p
+                                                  (:e expt))))))
                (2^bound-1 (if (natp bound)
                               (expt 2 (1- bound))
                             `(expt 2 (1- ,bound))))

@@ -2763,7 +2763,7 @@ accesses.</p>
                                   (unsigned-byte-p
                                    acl2::loghead-identity
                                    unsigned-byte-p-when-ia32_eferbits-p
-                                   unsigned-byte-p-when-12bitsp-p)))))
+                                   unsigned-byte-p-when-12bits-p)))))
 
 (defthm page-dir-ptr-table-lower-12-bits-error
   (implies (and (natp n)
@@ -2788,7 +2788,7 @@ accesses.</p>
                                   (unsigned-byte-p
                                    acl2::loghead-identity
                                    unsigned-byte-p-when-ia32_eferbits-p
-                                   unsigned-byte-p-when-12bitsp-p)))))
+                                   unsigned-byte-p-when-12bits-p)))))
 
 (defthm page-dir-ptr-table-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
@@ -2813,7 +2813,7 @@ accesses.</p>
                                   (unsigned-byte-p
                                    acl2::loghead-identity
                                    unsigned-byte-p-when-ia32_eferbits-p
-                                   unsigned-byte-p-when-12bitsp-p)))))
+                                   unsigned-byte-p-when-12bits-p)))))
 
 (defthm pml4-lower-12-bits
   (implies (and (natp n)

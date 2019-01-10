@@ -195,18 +195,26 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved the documentation.</p>
-
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
- <p>Added a formalization of Modified Merkle Patricia trees.</p>
-
- <p>Mofified the formalizations of RLP encoding and decoding to return an
+ <p>Modified the formalizations of RLP encoding and decoding to return an
  explicit error flag.</p>
+
+ <p>Added theorems showing that RLP encodings are decodable: RLP encoding is
+ injective, and no valid encoding is a strict prefix of another one.</p>
+
+ <p>Added executable RLP decoders and proved them correct with resepct to the
+ ones declaratively defined as inverses of the RLP encoders.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
+
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Added several other theorems.  Improved some existing theorems.</p>
+
+ <p>Improved some documentation.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -319,6 +327,9 @@
  state, provided that the initial state was well-formed; thus, constraints on
  the index (in case of array fields) and value being written have been
  eliminated.</p>
+
+ <p>Improved the @('defthm-natp'), @('defthm-usb'), and @('defthm-sb')
+ utilities to generate minimal and reliable hints for corollaries.</p>
 
  <p>Improved and extended some documentation.</p>
 

@@ -51,9 +51,9 @@
 
 (defbitstruct hidden-segment-registerBits
   :long "<p>Source: Intel manual, Mar'17, Vol. 3A, Figure 3-7</p>"
-  ((base-addr 64bitsp) ;; Segment Base Address
-   (limit 32bitsp)     ;; Segment Limit
-   (attr  16bitsp)     ;; Attributes
+  ((base-addr 64bits) ;; Segment Base Address
+   (limit 32bits)     ;; Segment Limit
+   (attr  16bits)     ;; Attributes
    )
   :inline t
   :msb-first nil)
@@ -76,9 +76,9 @@
 
 ; Intel manual, Mar'17, Vol. 3A, Figure 3-6
 (defbitstruct segment-selectorBits
-  ((rpl 2bitsp)    ;; Requestor Privilege Level (RPL)
+  ((rpl 2bits)    ;; Requestor Privilege Level (RPL)
    (ti bitp)       ;; Table Indicator (0 = GDT, 1 = LDT)
-   (index 13bitsp) ;; Index of descriptor in GDT or LDT
+   (index 13bits) ;; Index of descriptor in GDT or LDT
    )
   :inline t
   :msb-first nil)
@@ -90,19 +90,19 @@
    :rule-classes nil))
 
 (defbitstruct interrupt/trap-gate-descriptorBits
-  ((offset15-0 16bitsp)
-   (selector 16bitsp)
-   (ist 3bitsp)
-   (res1 5bitsp)
-   (type 4bitsp)
+  ((offset15-0 16bits)
+   (selector 16bits)
+   (ist 3bits)
+   (res1 5bits)
+   (type 4bits)
    (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (offset31-16 16bitsp)
-   (offset63-32 32bitsp)
-   (res2 8bitsp)
-   (all-zeros? 5bitsp) ;; Check whether these are all zeroes or not.
-   (res3 19bitsp)
+   (offset31-16 16bits)
+   (offset63-32 32bits)
+   (res2 8bits)
+   (all-zeros? 5bits) ;; Check whether these are all zeroes or not.
+   (res3 19bits)
    )
   :msb-first nil
   :inline t)
@@ -115,12 +115,12 @@
 
 (defbitstruct interrupt/trap-gate-descriptor-attributesBits
   :parents (segmentation-bitstructs)
-  ((ist 3bitsp)
-   (type 4bitsp)
+  ((ist 3bits)
+   (type 4bits)
    (s bitp)
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (unknownBits 5bitsp)) ;; TODO
+   (unknownBits 5bits)) ;; TODO
   :msb-first nil
   :inline t)
 
@@ -133,8 +133,8 @@
 (defbitstruct gdtr/idtrBits
   :parents (segmentation-bitstructs)
   :long "<p>Source: AMD manual, Apr'16, Vol. 2, Figure 4-8</p>"
-  ((base-addr 64bitsp) ;; Segment Base Address
-   (limit 16bitsp))    ;; Segment Limit
+  ((base-addr 64bits) ;; Segment Base Address
+   (limit 16bits))    ;; Segment Limit
   :msb-first nil
   :inline t)
 
@@ -146,17 +146,17 @@
 
 (defbitstruct code-segment-descriptorBits
   :parents (segmentation-bitstructs)
-  ((limit15-0 16bitsp) ;; Ignored in 64-bit mode
-   (base15-0 16bitsp)  ;; Ignored in 64-bit mode
-   (base23-16 8bitsp)  ;; Ignored in 64-bit mode
+  ((limit15-0 16bits) ;; Ignored in 64-bit mode
+   (base15-0 16bits)  ;; Ignored in 64-bit mode
+   (base23-16 8bits)  ;; Ignored in 64-bit mode
    (a bitp)            ;; Ignored in 64-bit mode
    (r bitp)            ;; Ignored in 64-bit mode
    (c bitp)
    (msb-of-type bitp) ;; must be 1
    (s bitp)           ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (limit19-16 4bitsp) ;; Ignored in 64-bit mode
+   (limit19-16 4bits) ;; Ignored in 64-bit mode
    (avl bitp)          ;; Ignored in 64-bit mode
    ;; As per AMD manuals, this is ignored
    ;; in 64-bit mode but the Intel manuals
@@ -169,7 +169,7 @@
    ;; in 64-bit mode but the Intel manuals
    ;; say it's not.  We're following the
    ;; Intel manuals.
-   (base31-24 8bitsp)) ;; Ignored in 64-bit mode
+   (base31-24 8bits)) ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
 
@@ -186,13 +186,13 @@
    (c bitp)
    (msb-of-type bitp) ;; must be 1
    (s bitp)           ;; S = 1 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
    (avl bitp)
    (l bitp)
    (d bitp)
    (g bitp)
-   (unknownBits 4bitsp))
+   (unknownBits 4bits))
   :msb-first nil
   :inline t)
 
@@ -204,22 +204,22 @@
 
 (defbitstruct data-segment-descriptorBits
   :parents (segmentation-bitstructs)
-  ((limit15-0 16bitsp) ;; Ignored in 64-bit mode
-   (base15-0 16bitsp)  ;; Ignored in 64-bit mode
-   (base23-16 8bitsp)  ;; Ignored in 64-bit mode
+  ((limit15-0 16bits) ;; Ignored in 64-bit mode
+   (base15-0 16bits)  ;; Ignored in 64-bit mode
+   (base23-16 8bits)  ;; Ignored in 64-bit mode
    (a bitp)            ;; Ignored in 64-bit mode
    (w bitp)            ;; Ignored in 64-bit mode
    (e bitp)            ;; Ignored in 64-bit mode
    (msb-of-type bitp)  ;; must be 0
    (s bitp)            ;; S = 1 in 64-bit mode (code/data segment)
-   (dpl 2bitsp)        ;; Ignored in 64-bit mode
+   (dpl 2bits)        ;; Ignored in 64-bit mode
    (p bitp)            ;; !! NOT IGNORED: Segment present bit !!
-   (limit19-16 4bitsp) ;; Ignored in 64-bit mode
+   (limit19-16 4bits) ;; Ignored in 64-bit mode
    (avl bitp)
    (l bitp)            ;; L = 1 in 64-bit mode
    (d/b bitp)          ;; Ignored in 64-bit mode
    (g bitp)            ;; Ignored in 64-bit mode
-   (base31-24 8bitsp)) ;; Ignored in 64-bit mode
+   (base31-24 8bits)) ;; Ignored in 64-bit mode
   :msb-first nil
   :inline t)
 
@@ -236,13 +236,13 @@
    (e bitp)
    (msb-of-type bitp) ;; must be 0
    (s bitp)           ;; S = 1 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
    (avl bitp)
    (l bitp)
    (d/b bitp)
    (g bitp)
-   (unknownBits 4bitsp))
+   (unknownBits 4bits))
   :msb-first nil
   :inline t)
 
@@ -258,22 +258,22 @@
 
 (defbitstruct system-segment-descriptorBits
   :parents (segmentation-bitstructs)
-  ((limit15-0 16bitsp)
-   (base15-0 16bitsp)
-   (base23-16 8bitsp)
-   (type 4bitsp)
+  ((limit15-0 16bits)
+   (base15-0 16bits)
+   (base23-16 8bits)
+   (type 4bits)
    (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (limit19-16 4bitsp)
+   (limit19-16 4bits)
    (avl bitp)
-   (res1 2bitsp) ;; L and D/B bits are ignored.
+   (res1 2bits) ;; L and D/B bits are ignored.
    (g bitp)
-   (base31-24 8bitsp)
-   (base63-32 32bitsp)
-   (res2 8bitsp)
-   (all-zeroes? 5bitsp) ;; Check whether these are all zeroes or not.
-   (res3 19bitsp))
+   (base31-24 8bits)
+   (base63-32 32bits)
+   (res2 8bits)
+   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (res3 19bits))
   :msb-first nil
   :inline t)
 
@@ -285,13 +285,13 @@
 
 (defbitstruct system-segment-descriptor-attributesBits
   :parents (segmentation-bitstructs)
-  ((type 4bitsp)
+  ((type 4bits)
    (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
    (avl bitp)
    (g bitp)
-   (unknownBits 6bitsp))
+   (unknownBits 6bits))
   :msb-first nil
   :inline t)
 
@@ -303,18 +303,18 @@
 
 (defbitstruct call-gate-descriptorBits
   :parents (segmentation-bitstructs)
-  ((offset15-0 16bitsp)
-   (selector 16bitsp)
-   (res1 8bitsp)
-   (type 4bitsp)
+  ((offset15-0 16bits)
+   (selector 16bits)
+   (res1 8bits)
+   (type 4bits)
    (s bitp) ;; S = 0 in 64-bit mode
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (offset31-16 16bitsp)
-   (offset63-32 32bitsp)
-   (res2 8bitsp)
-   (all-zeroes? 5bitsp) ;; Check whether these are all zeroes or not.
-   (res3 19bitsp))
+   (offset31-16 16bits)
+   (offset63-32 32bits)
+   (res2 8bits)
+   (all-zeroes? 5bits) ;; Check whether these are all zeroes or not.
+   (res3 19bits))
   :msb-first nil
   :inline t)
 
@@ -326,11 +326,11 @@
 
 (defbitstruct call-gate-descriptor-attributesBits
   :parents (segmentation-bitstructs)
-  ((type 4bitsp)
+  ((type 4bits)
    (s bitp)
-   (dpl 2bitsp)
+   (dpl 2bits)
    (p bitp)
-   (unknownBits 8bitsp))
+   (unknownBits 8bits))
   :msb-first nil
   :inline t)
 
