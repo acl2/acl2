@@ -17,6 +17,7 @@
 (include-book "encoding")
 (include-book "decodability")
 (include-book "decoding-declarative")
+(include-book "decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
