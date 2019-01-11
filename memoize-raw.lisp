@@ -478,7 +478,8 @@
 ; 2014) we don't expect much use of 32-bit CCL when doing memoization.
 
   (and (or (member :ccl *features*) ; most Lisps don't report bytes
-           (member :sbcl *features*))
+           (member :sbcl *features*)
+           (member :lispworks *features*))
        (> most-positive-fixnum (expt 2 32))))
 
 (defparameter *record-calls*
@@ -529,7 +530,7 @@
 ; heap, if this variable is not nil at that time and the host Lisp supports
 ; providing that information.
 
-  #+(or ccl sbcl) t #-(or ccl sbcl) nil)
+  #+(or ccl sbcl lispworks) t #-(or ccl sbcl lispworks) nil)
 
 (defv *report-calls*
 
@@ -622,8 +623,8 @@
 
 ; Options for the functions include the following.
 
-;    bytes-allocated [CCL and SBCL only]
-;    bytes-allocated/call [CCL and SBCL only]
+;    bytes-allocated [CCL, SBCL, and LispWorks only]
+;    bytes-allocated/call [CCL, SBCL, and LispWorks only]
 ;    execution-order
 ;    hits/calls
 ;    pons-calls
@@ -2861,7 +2862,7 @@
   ;; global lock, so we shouldn't need any locking inside here.  See
   ;; memoize-fn-def.
 
-  `(let (#+(or ccl sbcl)
+  `(let (#+(or ccl sbcl lispworks)
          ,@(and *record-bytes* ; performance counting
                 `((,*mf-start-bytes* (heap-bytes-allocated))))
          ,@(and *record-pons-calls* ; performance counting
@@ -2870,16 +2871,16 @@
                             '(internal-real-ticks)
                           '0)))
      (declare
-      (ignorable #+(or ccl sbcl)
+      (ignorable #+(or ccl sbcl lispworks)
                  ,@(and *record-bytes* `(,*mf-start-bytes*))
                  ,@(and *record-pons-calls* `(,*mf-start-pons*)))
       (type mfixnum
             ,start-ticks
             ,@(and *record-pons-calls* `(,*mf-start-pons*))
-            #+(or ccl sbcl)
+            #+(or ccl sbcl lispworks)
             ,@(and *record-bytes* `(,*mf-start-bytes*))))
      (,(cond ((or *record-pons-calls*
-                  #+(or ccl sbcl) *record-bytes*
+                  #+(or ccl sbcl lispworks) *record-bytes*
                   *record-time*
                   forget)
 
@@ -2924,7 +2925,7 @@
                 (aref ,*mf-ma*
                       ,(ma-index-from-col-base fn-col-base *ma-pons-index*))
                 (the-mfixnum (- *pons-call-counter* ,*mf-start-pons*)))))
-      #+(or ccl sbcl)
+      #+(or ccl sbcl lispworks)
       ,@(and *record-bytes* ; performance counting
              `((safe-incf
                 (aref ,*mf-ma*
@@ -4066,7 +4067,7 @@
   (aref *memoize-call-array*
         (ma-index x *ma-pons-index*)))
 
-#+(or ccl sbcl)
+#+(or ccl sbcl lispworks)
 (defun-one-output bytes-allocated (x)
 
 ; This function symbol can be included in *memoize-summary-order-list*.
@@ -4183,7 +4184,7 @@
 
          (float n)))))
 
-#+(or ccl sbcl)
+#+(or ccl sbcl lispworks)
 (defun-one-output bytes-allocated/call (x)
 
 ; This function symbol can be included in *memoize-summary-order-list*.
@@ -4349,7 +4350,7 @@
            (ma *memoize-call-array*)
            (len-orig-fn-pairs (len fn-pairs))
            (len-fn-pairs 0)      ; set below
-           #+(or ccl sbcl)
+           #+(or ccl sbcl lispworks)
            (global-bytes-allocated 0) ; set below
            (global-pons-calls 0)      ; set below
            )
@@ -4370,7 +4371,7 @@
                   len-fn-pairs
                   len-orig-fn-pairs
                   *memoize-summary-limit*)))
-      #+(or ccl sbcl)
+      #+(or ccl sbcl lispworks)
       (setq global-bytes-allocated
             (loop for pair in fn-pairs sum
                   (bytes-allocated (car pair))))
@@ -4401,7 +4402,7 @@
                    (pons-calls (the-mfixnum (pons-calls num)))
                    (no-hits (or (not *report-hits*)
                                 (null (memoize-condition fn))))
-                   #+(or ccl sbcl)
+                   #+(or ccl sbcl lispworks)
                    (bytes-allocated (bytes-allocated num))
                    (tt (max .000001
 
@@ -4417,7 +4418,7 @@
               (declare (type integer start-ticks)
                        (type mfixnum num nhits nmht ncalls
                              pons-calls
-                             #+(or ccl sbcl) bytes-allocated))
+                             #+(or ccl sbcl lispworks) bytes-allocated))
               (format t "~%(~s~%" fn)
               (mf-print-alist
                `(,@(when (or *report-calls* *report-hits*)
@@ -4466,7 +4467,7 @@
 ;                           (< t/c 1e-6))
 ;                  `((,(format nil " Doubtful timing info for ~a." fn)
 ;                     "Heisenberg effect.")))
-                 #+(or ccl sbcl)
+                 #+(or ccl sbcl lispworks)
                  ,@(when (and (> bytes-allocated 0) *report-bytes*)
                      (assert (> global-bytes-allocated 0))
                      `((" Heap bytes allocated"
@@ -4705,8 +4706,8 @@
 
 ; Typically each call of a memoized function, fn, is counted.  The elapsed time
 ; until an outermost function call of fn ends, the number of heap bytes
-; allocated in that period (CCL and SBCL only), and other 'charges' are
-; 'billed' to fn.  That is, quantities such as elapsed time and heap bytes
+; allocated in that period (CCL, SBCL, and LispWorks only), and other 'charges'
+; are 'billed' to fn.  That is, quantities such as elapsed time and heap bytes
 ; allocated are not charged to subsidiary recursive calls of fn while an
 ; outermost call of fn is running.  Recursive calls of fn, and memoized 'hits',
 ; are counted, unless fn was memoized with nil as the value of the :inline
@@ -4718,7 +4719,7 @@
 
 ;        Variable              type
 
-;        *record-bytes*       boolean    (available in CCL and SBCL only)
+;        *record-bytes*       boolean    (CCL, SBCL, and LispWorks only)
 ;        *record-calls*       boolean
 ;        *record-hits*        boolean
 ;        *record-mht-calls*   boolean
@@ -4728,7 +4729,7 @@
 ; The settings of the following determine, at the time that
 ; memoize-summary is called, what information is printed:
 
-;        *report-bytes*       boolean   (available in CCL and SBCL only)
+;        *report-bytes*       boolean    (CCL, SBCL, and LispWorks only)
 ;        *report-calls*       boolean
 ;        *report-calls-from*  boolean
 ;        *report-calls-to*    boolean

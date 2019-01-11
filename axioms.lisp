@@ -26336,7 +26336,8 @@ Lisp definition."
 (defmacro heap-bytes-allocated ()
   '(the-mfixnum #+ccl (ccl::total-bytes-allocated)
                 #+sbcl (sb-ext:get-bytes-consed)
-                #-(or ccl sbcl)
+                #+lispworks (hcl:total-allocation)
+                #-(or ccl sbcl lispworks)
                 (error "Heap-bytes-allocated is unknown for this host Lisp.")))
 
 #-acl2-loop-only
@@ -26348,7 +26349,7 @@ Lisp definition."
         (g-args (gensym))
         (g-start-real-time (gensym))
         (g-start-run-time (gensym))
-        #+(or ccl sbcl)
+        #+(or ccl sbcl lispworks)
         (g-start-alloc (gensym)))
     `(let ((,g-real-mintime ,real-mintime)
            (,g-run-mintime ,run-mintime)
@@ -26399,7 +26400,7 @@ Lisp definition."
                 (,g-start-run-time
                  #-gcl (get-internal-run-time)
                  #+gcl (multiple-value-list (get-internal-run-time)))
-                #+(or ccl sbcl)
+                #+(or ccl sbcl lispworks)
                 (,g-start-alloc (heap-bytes-allocated)))
            (our-multiple-value-prog1
             ,x
@@ -26408,7 +26409,7 @@ Lisp definition."
                        #-gcl (get-internal-run-time)
                        #+gcl (multiple-value-list (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
-                      #+(or ccl sbcl) ; evaluate before computations below:
+                      #+(or ccl sbcl lispworks) ; before computations below:
                       (allocated (- (heap-bytes-allocated)
                                     ,g-start-alloc))
                       (float-units-sec (float internal-time-units-per-second))
@@ -26437,7 +26438,7 @@ Lisp definition."
                                    (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
                                    (< run-elapsed (float ,g-run-mintime)))
-                              #+(or ccl sbcl)
+                              #+(or ccl sbcl lispworks)
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
                    (let* ((alist (list* (cons #\t (format nil "~,2F"
@@ -26457,9 +26458,9 @@ Lisp definition."
                                                         nil "~,2F"
                                                         child-sys-elapsed)))
                                         (cons #\a
-                                              #+(or ccl sbcl)
+                                              #+(or ccl sbcl lispworks)
                                               (format nil "~:D" allocated)
-                                              #-(or ccl sbcl)
+                                              #-(or ccl sbcl lispworks)
                                               "[unknown]")
                                         (cons #\f ',x)
                                         (cons #\e (evisc-tuple
@@ -26472,7 +26473,7 @@ Lisp definition."
                                                          #\5 #\6 #\7 #\8 #\9)
                                                        ,g-args))))
                           (,g-msg (or ,g-msg
-                                      #+(or ccl sbcl)
+                                      #+(or ccl sbcl lispworks)
                                       "; ~Xfe took ~|; ~st seconds realtime, ~
                                        ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"
@@ -26488,7 +26489,7 @@ Lisp definition."
                                         "; ~Xfe took ~|; ~st sec ~
                                          realtime, ~sc sec runtime, ~sC ~
                                          sec child runtime.~%"))
-                                      #-(or ccl gcl)
+                                      #-(or ccl sbcl lispworks gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
                      (state-free-global-let*
