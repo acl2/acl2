@@ -8391,18 +8391,6 @@
                                        nil
                                      '(brr-evisc-tuple state))))
                      (value :invisible))))
-         (final-ttree-fn ()
-                         '(lambda nil
-                            (let ((lemma (get-brr-local 'lemma state)))
-                              (cond
-                               ((eq (record-type lemma) 'linear-lemma)
-                                (er soft :FINAL-TTREE
-                                    ":FINAL-TTREE is not legal for a :LINEAR ~
-                                     rule."))
-                               (t (prog2$
-                                   (cw "~F0 has not yet been :EVALed.~%"
-                                       (get-rule-field lemma :rune))
-                                   (value :invisible)))))))
          (frame-fn (plusp)
                    `(lambda (n)
                       (let ((rgstack
