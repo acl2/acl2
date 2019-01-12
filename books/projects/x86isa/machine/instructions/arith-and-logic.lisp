@@ -222,7 +222,7 @@
 		       (reg-index reg rex-byte #.*r*))
 		     rex-byte x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -345,7 +345,7 @@
 		       (reg-index reg rex-byte #.*r*))
 		     rex-byte x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -484,7 +484,7 @@
        ((the (integer 1 4) imm-size)
 	(select-operand-size proc-mode imm-byte-operand? rex-byte t prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -723,7 +723,7 @@
        ((the (integer 1 8) r/mem-size)
 	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -871,7 +871,7 @@
        ((the (integer 0 8) r/mem-size)
 	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0

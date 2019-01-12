@@ -2077,6 +2077,7 @@ reference made from privilege level 3.</blockquote>"
    (p4? booleanp)
    (mod (unsigned-byte-p 2 mod))
    (r/m (unsigned-byte-p 3 r/m))
+   (sib (unsigned-byte-p 8 sib))
    (x86 x86p))
   :returns (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
   :inline t
@@ -2105,6 +2106,12 @@ reference made from privilege level 3.</blockquote>"
    this determination is made based on
    Intel manual, May'18, Volume 2, Table 2-1 if the address size is 16 bits,
    and Intel manual, May'18, Volume 2, Table 2-2 otherwise.
+   However, when Mod is not 11b and R/M is 100b,
+   the notation [--][--] in Table 2-2 indicates the use of a SIB byte:
+   according to Intel manual, May'18, Volume 2, Table 2-3,
+   when the Base field of the SIB byte is 100b,
+   the base register is rSP,
+   and thus in this case the default segment register is SS.
    </p>
    <p>
    Note that here we may recalculate the address size
@@ -2125,8 +2132,11 @@ reference made from privilege level 3.</blockquote>"
 		      (or (= r/m 2) (= r/m 3)))
 		 #.*ss*
 	       #.*ds*)
-	   (if (and (or (= mod 1) (= mod 2))
-		    (= r/m 5))
+	   (if (or (and (or (= mod 1) (= mod 2))
+                        (= r/m 5))
+                   (and (not (= mod 3))
+                        (= r/m 4)
+                        (= (sib->base sib) 4)))
 	       #.*ss*
 	     #.*ds*)))))
   ///

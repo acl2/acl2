@@ -106,7 +106,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((the (integer 1 8) operand-size)
 	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
@@ -217,7 +217,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0

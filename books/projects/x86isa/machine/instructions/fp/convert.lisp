@@ -105,7 +105,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -197,7 +197,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -291,7 +291,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -372,7 +372,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Note that VEX.256 version follows Exception Type 3
         ;; without #AC. We haven't implemented VEX.256 yet.
@@ -476,7 +476,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac?
         ;; Exceptions Type 2

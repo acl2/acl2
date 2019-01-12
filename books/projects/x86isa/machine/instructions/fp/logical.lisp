@@ -110,7 +110,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 4
         nil)
@@ -202,7 +202,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 3
         t)
@@ -295,7 +295,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 2
         nil)
@@ -453,7 +453,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 2
         nil)
@@ -592,7 +592,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 3
         t)

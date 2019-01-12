@@ -229,7 +229,7 @@
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
 	(x86-operand-from-modr/m-and-sib-bytes
@@ -636,7 +636,7 @@
        ((when flg1) ;; #SS exception?
 	(!!ms-fresh :x86-effective-addr-error flg1))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)

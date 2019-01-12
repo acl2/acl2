@@ -97,7 +97,7 @@
        ((when flg0)
 	(!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
@@ -154,7 +154,7 @@
        ((the (integer 1 8) operand-size)
 	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
@@ -257,7 +257,7 @@
        ((when badlength?)
 	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
 
        ;; Get data from offset in segment:
        (inst-ac? (alignment-checking-enabled-p x86))
@@ -374,7 +374,7 @@
        ((when flg0)
 	(!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
 	(add-to-*ip proc-mode temp-rip increment-RIP-by x86))
@@ -511,7 +511,7 @@
        ((the (integer 1 8) reg/mem-size)
 	(select-operand-size proc-mode nil rex-byte t prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -596,7 +596,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (reg/mem-size (if (equal opcode #xBE) 1 2))
 
@@ -692,7 +692,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (reg/mem-size (if (equal opcode #xB6) 1 2))
 
