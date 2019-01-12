@@ -199,13 +199,11 @@
  @('nibble') instead of @('ubyte4').</p>
 
  <p>Modified the formalizations of RLP encoding and decoding to return an
- explicit error flag.</p>
-
- <p>Added theorems showing that RLP encodings are decodable: RLP encoding is
- injective, and no valid encoding is a strict prefix of another one.</p>
-
- <p>Added executable RLP decoders and proved them correct with resepct to the
- ones declaratively defined as inverses of the RLP encoders.</p>
+ explicit error flag.  Added theorems showing that RLP encodings are decodable:
+ RLP encoding is injective, and no valid encoding is a strict prefix of another
+ one.  Added executable RLP decoders and proved them correct with respect to
+ the ones declaratively defined as inverses of the RLP encoders.  Added the RLP
+ tests from the Ethereum Wiki's page on RLP.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
