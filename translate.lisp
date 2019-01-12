@@ -8996,6 +8996,68 @@
 
 (mutual-recursion
 
+(defun quote-normal-form1 (form)
+
+; This variant of (sublis-var nil form) avoids looking inside HIDE calls.
+
+  (declare (xargs :guard (pseudo-termp form)))
+  (cond ((or (variablep form)
+             (fquotep form)
+             (eq (ffn-symb form) 'hide))
+         (mv nil form))
+        (t (mv-let (changedp lst)
+                   (quote-normal-form1-lst (fargs form))
+                   (let ((fn (ffn-symb form)))
+                     (cond (changedp (mv t (cons-term fn lst)))
+                           ((and (symbolp fn) ; optimization
+                                 (quote-listp lst))
+                            (cons-term1-mv2 fn lst form))
+                           (t (mv nil form))))))))
+
+(defun quote-normal-form1-lst (l)
+
+; This variant of (sublis-var1-lst nil form) avoids looking inside HIDE calls.
+
+  (declare (xargs :guard (pseudo-term-listp l)))
+  (cond ((endp l)
+         (mv nil l))
+        (t (mv-let (changedp1 term)
+                   (quote-normal-form1 (car l))
+                   (mv-let (changedp2 lst)
+                           (quote-normal-form1-lst (cdr l))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons term lst)))
+                                 (t (mv nil l))))))))
+)
+
+(defun quote-normal-form (form)
+
+; This variant of (sublis-var nil form) avoids looking inside HIDE calls.  It
+; is used for putting form into quote-normal form so that for example if form
+; is (cons '1 '2) then '(1 . 2) is returned.  The following two comments come
+; from the nqthm version of sublis-var.
+
+;     In REWRITE-WITH-LEMMAS we use this function with the nil alist
+;     to put form into quote normal form.  Do not optimize this
+;     function for the nil alist.
+
+;     This is the only function in the theorem prover that we
+;     sometimes call with a "term" that is not in quote normal form.
+;     However, even this function requires that form be at least a
+;     pseudo-termp.
+
+; We rely on quote-normal form for the return value, for example in calls of
+; sublis-var in rewrite-with-lemma.  Quote-normal form may also be useful in
+; processing :by hints.
+
+  (declare (xargs :guard (pseudo-termp form)))
+  (mv-let (changedp val)
+          (quote-normal-form1 form)
+          (declare (ignore changedp))
+          val))
+
+(mutual-recursion
+
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
                                     flet-alist ctx wrld state-vars)
   (cond ((endp fives)
@@ -9217,6 +9279,14 @@
 
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)
+
+; X is a form whose car is FLET.  When we checked in January 2019, only Allegro
+; CL and CMUCL complained upon compilation if a function bound by an FLET is
+; not called in the body: the former only with a warning, the latter with only
+; a note.  Both messages are suppressed inside the ACL2 loop.  Therefore, we do
+; not check that all bound functions are actually called in the body, and we do
+; not support (declare (ignore (function ...))).
+
   (cond
    ((< (length x) 3)
     (trans-er ctx
@@ -11599,13 +11669,13 @@
                                    flet-alist x ctx wrld state-vars)))
               (let ((quoted-vars (if (quotep vars0)
                                      vars0
-                                   (sublis-var nil vars0)))
+                                   (quote-normal-form vars0)))
                     (quoted-user-form (if (quotep user-form0)
                                           user-form0
-                                        (sublis-var nil user-form0)))
+                                        (quote-normal-form user-form0)))
                     (quoted-term (if (quotep term0)
                                      term0
-                                   (sublis-var nil term0))))
+                                   (quote-normal-form term0))))
                 (cond ((and (quotep quoted-vars)
                             (quotep quoted-user-form)
                             (quotep quoted-term))
