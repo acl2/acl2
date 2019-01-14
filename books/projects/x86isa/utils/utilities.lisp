@@ -256,21 +256,28 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 </ul>"
 
   (defmacro defthm-natp (name &key
-                              hyp concl
-                              gen-type gen-linear
+                              (hyp 't)
+                              concl
+                              gen-type
+                              gen-linear
                               hints
-                              hyp-t hyp-l
-                              hints-t hints-l
+                              hyp-t
+                              hyp-l
+                              hints-t
+                              hints-l
                               otf-flg)
     (if concl
-        (let ((hints-t (or hints-t
+        (let ((hyp-t (or hyp-t hyp))
+              (hyp-l (or hyp-l hyp))
+              (hints-t (or hints-t
                            '(("Goal" :in-theory nil))))
               (hints-l (or hints-l
                            '(("Goal" :in-theory '(natp))))))
           `(defthm ,name
-             ,(if (atom hyp)
+             ,(if (eq hyp t)
                   `(natp ,concl)
-                `(implies ,hyp (natp ,concl)))
+                `(implies ,hyp
+                          (natp ,concl)))
              ,@(and hints `(:hints ,hints))
              ,@(and otf-flg `(:otf-flg t))
              :rule-classes
@@ -278,10 +285,9 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
-                        ,(if (or (and (atom hyp-t) (atom hyp))
-                                 (equal hyp-t 't))
+                        ,(if (eq hyp-t t)
                              `(natp ,concl)
-                           `(implies ,(or hyp-t hyp) (natp ,concl)))
+                           `(implies ,hyp-t (natp ,concl)))
                         ;; If :HINTS-T is not supplied, the following hints,
                         ;; given that this corollary is identical to the main
                         ;; theorem, should suffice to prove the corollary from
@@ -291,10 +297,9 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
               ,@(and gen-linear
                      `((:linear
                         :corollary
-                        ,(if (or (and (atom hyp-l) (atom hyp))
-                                 (equal hyp-l 't))
+                        ,(if (eq hyp-l t)
                              `(<= 0 ,concl)
-                           `(implies ,(or hyp-l hyp) (<= 0 ,concl)))
+                           `(implies ,hyp-l (<= 0 ,concl)))
                         ;; If :HINTS-L is not supplied, the following hints,
                         ;; given the definition of NATP, should suffice to
                         ;; prove the corollary from the main theorem, assuming
@@ -303,16 +308,22 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                         :hints ,hints-l))))))
       nil))
 
-  (defmacro defthm-usb
-      (name &key hyp bound concl
-            gen-type gen-linear
-            hyp-t hyp-l
-            hints
-            hints-t hints-l
-            otf-flg)
-
+  (defmacro defthm-usb (name &key
+                             (hyp 't)
+                             bound
+                             concl
+                             gen-type
+                             gen-linear
+                             hyp-t
+                             hyp-l
+                             hints
+                             hints-t
+                             hints-l
+                             otf-flg)
     (if (and concl bound)
-        (let ((hints-t (or hints-t
+        (let ((hyp-t (or hyp-t hyp))
+              (hyp-l (or hyp-l hyp))
+              (hints-t (or hints-t
                            ;; If :HINTS-T is not supplied, the following hints,
                            ;; given the definitions of UNSIGNED-BYTE-P,
                            ;; INTEGER-RANGE-P, and NATP, should suffice to
@@ -340,7 +351,7 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                            (expt 2 bound)
                          `(expt 2 ,bound))))
           `(defthm ,name
-             ,(if (atom hyp)
+             ,(if (eq hyp t)
                   `(unsigned-byte-p ,bound ,concl)
                 `(implies ,hyp
                           (unsigned-byte-p ,bound ,concl)))
@@ -351,59 +362,63 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
-                        ,(if (or (and (atom hyp-t) (atom hyp))
-                                 (equal hyp-t 't))
+                        ,(if (eq hyp-t t)
                              `(natp ,concl)
-                           `(implies ,(or hyp-t hyp)
+                           `(implies ,hyp-t
                                      (natp ,concl)))
                         :hints ,hints-t)))
               ,@(and gen-linear
                      `((:linear
                         :corollary
-                        ,(if (or (and (atom hyp-l) (atom hyp))
-                                 (equal hyp-l 't))
+                        ,(if (eq hyp-l t)
                              `(and
                                (<= 0 ,concl)
                                (< ,concl ,2^bound))
-                           `(implies ,(or hyp-l hyp)
+                           `(implies ,hyp-l
                                      (and
                                       (<= 0 ,concl)
                                       (< ,concl ,2^bound))))
                         :hints ,hints-l))))))
       nil))
 
-  (defmacro defthm-sb
-      (name &key hyp bound concl
-            gen-type gen-linear
-            hyp-t hyp-l
-            hints
-            hints-t hints-l
-            otf-flg)
-
+  (defmacro defthm-sb (name &key
+                            (hyp 't)
+                            bound
+                            concl
+                            gen-type
+                            gen-linear
+                            hyp-t
+                            hyp-l
+                            hints
+                            hints-t
+                            hints-l
+                            otf-flg)
     (if (and concl bound)
-        (let* ((hints-t (or hints-t
-                           ;; If :HINTS-T is not supplied, the following hints,
-                           ;; given the definitions of SIGNED-BYTE-P and
-                           ;; INTEGER-RANGE-P, should suffice to prove the
-                           ;; corollary from the main theorem, assuming that
-                           ;; :HYP-T is a superset of :HYP, or perhaps has some
-                           ;; extra calls to FORCE.
-                           '(("Goal" :in-theory '(signed-byte-p
-                                                  integer-range-p)))))
+        (let* ((hyp-t (or hyp-t hyp))
+               (hyp-l (or hyp-l hyp))
+               (hints-t (or hints-t
+                            ;; If :HINTS-T is not supplied, the following hints,
+                            ;; given the definitions of SIGNED-BYTE-P and
+                            ;; INTEGER-RANGE-P, should suffice to prove the
+                            ;; corollary from the main theorem, assuming that
+                            ;; :HYP-T is a superset of :HYP, or perhaps has some
+                            ;; extra calls to FORCE.
+                            '(("Goal" :in-theory '(signed-byte-p
+                                                   integer-range-p)))))
                (hints-l (or hints-l
-                           ;; If :HINTS-L is not supplied, the following hints,
-                           ;; given the definitions of UNSIGNED-BYTE-P and
-                           ;; INTEGER-RANGE-P, should suffice to prove the
-                           ;; corollary from the main theorem, assuming that
-                           ;; :HYP-L is a superset of :HYP, or perhaps has some
-                           ;; extra calls to FORCE. The (:E EXPT) is motivated
-                           ;; by the fact that, if :BOUND is a number, the
-                           ;; generated linear rule involves not calls of EXPT
-                           ;; but directly the value of such calls (see
-                           ;; 2^BOUND-1 and LOW-2^BOUND-1 below).
-                           '(("Goal" :in-theory '(signed-byte-p
-                                                  integer-range-p
-                                                  (:e expt))))))
+                            ;; If :HINTS-L is not supplied, the following hints,
+                            ;; given the definitions of UNSIGNED-BYTE-P and
+                            ;; INTEGER-RANGE-P, should suffice to prove the
+                            ;; corollary from the main theorem, assuming that
+                            ;; :HYP-L is a superset of :HYP, or perhaps has some
+                            ;; extra calls to FORCE. The (:E EXPT) is motivated
+                            ;; by the fact that, if :BOUND is a number, the
+                            ;; generated linear rule involves not calls of EXPT
+                            ;; but directly the value of such calls (see
+                            ;; 2^BOUND-1 and LOW-2^BOUND-1 below).
+                            '(("Goal" :in-theory '(signed-byte-p
+                                                   integer-range-p
+                                                   (:e expt))))))
                (2^bound-1 (if (natp bound)
                               (expt 2 (1- bound))
                             `(expt 2 (1- ,bound))))
@@ -411,7 +426,7 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                                   (- 2^bound-1)
                                 `(- (expt 2 (1- ,bound))))))
           `(defthm ,name
-             ,(if (atom hyp)
+             ,(if (eq hyp t)
                   `(signed-byte-p ,bound ,concl)
                 `(implies ,hyp
                           (signed-byte-p ,bound ,concl)))
@@ -422,21 +437,19 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
               ,@(and gen-type
                      `((:type-prescription
                         :corollary
-                        ,(if (or (and (atom hyp-t) (atom hyp))
-                                 (equal hyp-t 't))
+                        ,(if (eq hyp-t t)
                              `(integerp ,concl)
-                           `(implies ,(or hyp-t hyp)
+                           `(implies ,hyp-t
                                      (integerp ,concl)))
                         :hints ,hints-t)))
               ,@(and gen-linear
                      `((:linear
                         :corollary
-                        ,(if (or (and (atom hyp-l) (atom hyp))
-                                 (equal hyp-l 't))
+                        ,(if (eq hyp-l t)
                              `(and
                                (<= ,low-2^bound-1 ,concl)
                                (< ,concl ,2^bound-1))
-                           `(implies ,(or hyp-l hyp)
+                           `(implies ,hyp-l
                                      (and
                                       (<= ,low-2^bound-1 ,concl)
                                       (< ,concl ,2^bound-1))))
