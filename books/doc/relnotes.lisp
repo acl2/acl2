@@ -331,9 +331,42 @@
 
  <p>Improved and extended some documentation.</p>
 
+ <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+
+ <p>The @('use-termhint') utility has been moved to its own book
+ @('std/util/termhints') from its former location at
+ @('clause-processors/use-by-hint').</p>
+
+ <p>Added a new utility, @(see function-termhint), for creating termhints from
+ existing function definitions containing @(see hintcontext) annotations.</p>
+
+ <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
+
+ <p>Used new ACL2 system features to fix the remaining known soundness bug and
+ remove a trust tag.</p>
+
+ <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
+
+ <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
+ inputs known to be equivalent or opposite to each other, not just to
+ constants.</p>
+ 
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
+
+ <p>Added a feature to @('books/GNUMakefile') that allows books to specify
+ dependencies on cert ACL2 system features, so that they will be automatically
+ be recertified when such features are changed.  See @(see
+ build::acl2-system-feature-dependencies).</p>
+
+ <p>Added utilities @(see ifdef-define) and @(see ifdef-undefine) in
+ @('books/build/ifdef.lisp') which set or unset environment variables while
+ allowing the build system to correctly track them for its support of @(see
+ ifdef) and @(see ifndef).</p>
+
+ <p>Cleaned up the Perl scripts implementing <see topic='@(url build::cert.pl)'>cert.pl</see>,
+ factoring them into several supporting libraries.</p>
 
  <h3>Testing</h3>
 

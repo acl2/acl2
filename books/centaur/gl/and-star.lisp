@@ -30,47 +30,6 @@
 
 (in-package "GL")
 
-(defun binary-and* (a b)
-  (declare (xargs :guard t))
-  (and a b))
+(include-book "centaur/misc/starlogic" :dir :system)
 
-(defun and*-macro (lst)
-  (if (atom lst)
-      t
-    (if (atom (cdr lst))
-        (car lst)
-      (list 'binary-and* (car lst)
-            (and*-macro (cdr lst))))))
-
-(defmacro and* (&rest lst)
-  (and*-macro lst))
-
-(add-binop and* binary-and*)
-
-(defcong iff equal (and* a b) 1)
-
-(defcong iff iff (and* a b) 2)
-
-(defthm and*-rem-first
-  (implies a
-           (equal (and* a b) b)))
-
-(defthm and*-rem-second
-  (implies b
-           (iff (and* a b) a)))
-
-(defthm and*-nil-first
-  (equal (and* nil b) nil))
-
-(defthm and*-nil-second
-  (equal (and* a nil) nil))
-
-(defthm and*-forward
-  (implies (and* a b) (and a b))
-  :rule-classes :forward-chaining)
-
-(defmacro and** (&rest lst)
-  `(mbe :logic (and* . ,lst)
-        :exec (and . ,lst)))
-
-(in-theory (disable and*))
+; cert_param (reloc_stub)
