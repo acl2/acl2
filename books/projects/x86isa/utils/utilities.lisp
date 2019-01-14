@@ -86,36 +86,56 @@
 
   :long "<ul>
 <li><p>Use the macro @('defthm-natp') to prove
-a @('type-prescription') rule saying that some function returns a @('natp'),
+a @('rewrite') rule saying that some function returns a @('natp'),
+a @('type-prescription') corollary saying that the function returns a @('natp'),
 and a @('linear') corollary saying that the function
 returns a value greater than or equal to zero.</p>
 
 <p>Usage:</p>
 
 @({
-
   (defthm-natp <theorem-name>
     :hyp <hypotheses>
     :concl <conclusion>
-    :hints <usual ACL2 hints>)
+    :hints <usual ACL2 hints for the main theorem>)
+    :gen-type <t or nil>    ;; Generate :type-prescription corollary
+    :gen-linear <t or nil>  ;; Generate :linear corollary
+    :hyp-t <hypotheses for the :type-prescription corollary>
+    :hyp-l <hypotheses for the :linear corollary>
+    :hints-t <usual ACL2 hints for the :type-prescription corollary>
+    :hints-l <usual ACL2 hints for the :linear corollary>
+    :otf-flg <t or nil>)
   })
 
-<p>The above form produces a theorem of the form:</p>
+<p>The above form produces a theorem of the form (if both
+@(':gen-type') and @(':gen-linear') are @('t')):</p>
 
 @({
   (defthm <theorem-name>
     (implies <hypotheses>
              (natp <conclusion>))
     :hints <usual ACL2 hints>
+    :otf-flg <t or nil>
     :rule-classes
-    (:type-prescription
+    (:rewrite
+     (:type-prescription
+      :corollary
+      (implies <hypotheses>
+               (natp <conclusion>))
+      :hints <usual ACL2 hints for the :type-prescription corollary>)
      (:linear
       :corollary
       (implies <hypotheses>
                (<= 0 <conclusion>))
-      :hints ((\"Goal\" :in-theory '(natp))))))
-
+      :hints <usual ACL2 hints for the :linear corollary>)))
   })
+
+<p>If @(':hints-t') is not supplied, hints to prove the type prescription
+corollary are generated automatically.  In this case, the hypotheses for the
+type prescription corollary must trivially subsume the ones for the main
+theorem specified by @(':hyp'); in particular, they may have additional
+conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
+@(':hints-l').</p>
 
 </li>
 
@@ -123,12 +143,11 @@ returns a value greater than or equal to zero.</p>
 a @('rewrite') rule saying that some function returns an @('unsigned-byte-p'),
 a @('type-prescription') corollary saying that the function returns a @('natp'),
 and a @('linear') corollary saying that the function
-returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
+returns a value less than <tt>(expt 2 bound)</tt>.</p>
 
 <p>Usage:</p>
 
 @({
-
   (defthm-usb <theorem-name>
     :hyp <hypotheses>
     :bound <n>
@@ -164,14 +183,13 @@ returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
       (implies <hypotheses for the :linear corollary>
                (< <conclusion> (expt 2 <n>)))
       :hints <usual ACL2 hints for the :linear corollary>)))
-
   })
 
 <p>If @(':hints-t') is not supplied, hints to prove the type prescription
 corollary are generated automatically.  In this case, the hypotheses for the
 type prescription corollary must trivially subsume the ones for the main
 theorem specified by @(':hyp'); in particular, they may have additional
-conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
+conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 @(':hints-l').</p>
 
 </li>
@@ -186,7 +204,6 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 <p>Usage:</p>
 
 @({
-
   (defthm-sb <theorem-name>
     :hyp <hypotheses>
     :bound <n>
@@ -223,38 +240,65 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
                (and (<= (- (expt 2 (1- <n>)) <conclusion>))
                (< <conclusion> (expt 2 (1- <n>)))))
       :hints <usual ACL2 hints for the :linear corollary>)))
-
   })
 
 <p>If @(':hints-t') is not supplied, hints to prove the type prescription
 corollary are generated automatically.  In this case, the hypotheses for the
 type prescription corollary must trivially subsume the ones for the main
 theorem specified by @(':hyp'); in particular, they may have additional
-conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
+conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 @(':hints-l').</p>
 
 </li>
 
 </ul>"
 
-  (defmacro defthm-natp (name &key hyp concl hints)
+  (defmacro defthm-natp (name &key
+                              hyp concl
+                              gen-type gen-linear
+                              hints
+                              hyp-t hyp-l
+                              hints-t hints-l
+                              otf-flg)
     (if concl
-        `(defthm ,name
-           ,(if (atom hyp)
-                `(natp ,concl)
-              `(implies ,hyp (natp ,concl)))
-           ,@(and hints `(:hints ,hints))
-           :rule-classes
-           (:type-prescription
-            (:linear
-             :corollary
+        (let ((hints-t (or hints-t
+                           '(("Goal" :in-theory nil))))
+              (hints-l (or hints-l
+                           '(("Goal" :in-theory '(natp))))))
+          `(defthm ,name
              ,(if (atom hyp)
-                  `(<= 0 ,concl)
-                `(implies ,hyp (<= 0 ,concl)))
-             ;; Given the definition of NATP, the following hints should always
-             ;; reliably and quickly prove that the corollary follows from the
-             ;; main theorem.
-             :hints (("Goal" :in-theory '(natp))))))
+                  `(natp ,concl)
+                `(implies ,hyp (natp ,concl)))
+             ,@(and hints `(:hints ,hints))
+             ,@(and otf-flg `(:otf-flg t))
+             :rule-classes
+             (:rewrite
+              ,@(and gen-type
+                     `((:type-prescription
+                        :corollary
+                        ,(if (or (and (atom hyp-t) (atom hyp))
+                                 (equal hyp-t 't))
+                             `(natp ,concl)
+                           `(implies ,(or hyp-t hyp) (natp ,concl)))
+                        ;; If :HINTS-T is not supplied, the following hints,
+                        ;; given that this corollary is identical to the main
+                        ;; theorem, should suffice to prove the corollary from
+                        ;; the main theorem, assuming that :HYP-T is a superset
+                        ;; of :HYP, or perhaps has some extra calls to FORCE.
+                        :hints ,hints-t)))
+              ,@(and gen-linear
+                     `((:linear
+                        :corollary
+                        ,(if (or (and (atom hyp-l) (atom hyp))
+                                 (equal hyp-l 't))
+                             `(<= 0 ,concl)
+                           `(implies ,(or hyp-l hyp) (<= 0 ,concl)))
+                        ;; If :HINTS-L is not supplied, the following hints,
+                        ;; given the definition of NATP, should suffice to
+                        ;; prove the corollary from the main theorem, assuming
+                        ;; that :HYP-T is a superset of :HYP, or perhaps has
+                        ;; some extra calls to FORCE.
+                        :hints ,hints-l))))))
       nil))
 
   (defmacro defthm-usb
@@ -310,7 +354,7 @@ conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
                              `(natp ,concl)
                            `(implies ,(or hyp-t hyp)
                                      (natp ,concl)))
-                        ,@(and hints-t `(:hints ,hints-t)))))
+                        :hints ,hints-t)))
               ,@(and gen-linear
                      `((:linear
                         :corollary
@@ -319,7 +363,7 @@ conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
                              `(< ,concl ,2^bound)
                            `(implies ,(or hyp-l hyp)
                                      (< ,concl ,2^bound)))
-                        ,@(and hints-l `(:hints ,hints-l))))))))
+                        :hints ,hints-l))))))
       nil))
   ;; no need to generate a (>= ... 0) linear rule so far
 
@@ -378,7 +422,7 @@ conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
                              `(integerp ,concl)
                            `(implies ,(or hyp-t hyp)
                                      (integerp ,concl)))
-                        ,@(and hints-t `(:hints ,hints-t)))))
+                        :hints ,hints-t)))
               ,@(and gen-linear
                      `((:linear
                         :corollary
@@ -391,7 +435,7 @@ conjuncts or additional calls to @(tsee force)f.  Analogous remarks apply to
                                      (and
                                       (<= ,low-2^bound-1 ,concl)
                                       (< ,concl ,2^bound-1))))
-                        ,@(and hints-l `(:hints ,hints-l))))))))
+                        :hints ,hints-l))))))
       nil)))
 
 ;; Misc.:

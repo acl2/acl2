@@ -322,6 +322,8 @@ re-arrange these nests of updates.</p>
             (DEFTHM-NATP ,(mk-name "NATP-" getter)
               :hyp t
               :concl (XR ,keyword I X86)
+              :gen-type t
+              :gen-linear t
               :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
 
             (DEFTHM ,(mk-name getter "-LESS-THAN-" size)

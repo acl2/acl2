@@ -327,7 +327,12 @@
  eliminated.</p>
 
  <p>Improved the @('defthm-natp'), @('defthm-usb'), and @('defthm-sb')
- utilities to generate minimal and reliable hints for corollaries.</p>
+ utilities to generate minimal and reliable hints for corollaries.  Improved
+ the @('defthm-natp') utility to also generate a rewrite rule.  Extended
+ @('defthm-natp') with the ability to turn on/off the generation of the type
+ and linear corollaries, to modify their hypotheses, to supply more specific
+ hints for the corollaries, and to specify @(':otf-flg'); these options are
+ like the ones provided by @('defthm-usb') and @('defthm-sb').</p>
 
  <p>Improved and extended some documentation.</p>
 
