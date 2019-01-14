@@ -1500,7 +1500,7 @@
     (mv flag (n08-to-i08 val) x86))
   ///
 
-  (defthm-sb i08p-mv-nth-1-riml08
+  (defthm-signed-byte-p i08p-mv-nth-1-riml08
     :hyp t
     :bound 8
     :concl (mv-nth 1 (riml08 lin-addr r-x x86))
@@ -1705,7 +1705,7 @@
     (mv flag (n16-to-i16 val) x86))
   ///
 
-  (defthm-sb i16p-mv-nth-1-riml16
+  (defthm-signed-byte-p i16p-mv-nth-1-riml16
     :hyp t
     :bound 16
     :concl (mv-nth 1 (riml16 lin-addr r-x x86))
@@ -1929,7 +1929,7 @@
     (mv flag (n32-to-i32 val) x86))
   ///
 
-  (defthm-sb i32p-mv-nth-1-riml32
+  (defthm-signed-byte-p i32p-mv-nth-1-riml32
     :hyp t
     :bound 32
     :concl (mv-nth 1 (riml32 lin-addr r-x x86))
@@ -2557,7 +2557,7 @@
     (mv flag (n64-to-i64 val) x86))
   ///
 
-  (defthm-sb i64p-mv-nth-1-riml64
+  (defthm-signed-byte-p i64p-mv-nth-1-riml64
     :hyp t
     :bound 64
     :concl (mv-nth 1 (riml64 lin-addr r-x x86))

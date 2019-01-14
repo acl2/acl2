@@ -79,7 +79,7 @@
                                      ifix)
                                     ()))))
 
- (defthm-sb signed-byte-p-of-rem
+ (defthm-signed-byte-p signed-byte-p-of-rem
    :hyp (and (signed-byte-p (* 2 n) x)
              (signed-byte-p n y)
              (not (equal y 0)))
@@ -95,7 +95,7 @@
    :hints (("Goal" :in-theory (e/d (rem) (force (force)))))
    :rule-classes :type-prescription)
 
- (defthm-sb signed-byte-p-of-truncate-when-y-is-positive
+ (defthm-signed-byte-p signed-byte-p-of-truncate-when-y-is-positive
    :hyp (and (signed-byte-p m x)
              (integerp y)
              (< 0 y))
@@ -104,7 +104,7 @@
    :gen-linear t
    :gen-type t)
 
- (defthm-sb signed-byte-p-of-truncate-when-y-is-negative
+ (defthm-signed-byte-p signed-byte-p-of-truncate-when-y-is-negative
    :hyp (and (signed-byte-p (1- m) x)
              (< 0 m)
              (integerp y)
@@ -114,7 +114,7 @@
    :gen-linear t
    :gen-type t)
 
- (defthm-sb signed-byte-p-of-truncate
+ (defthm-signed-byte-p signed-byte-p-of-truncate
    :hyp (and (signed-byte-p (1- m) x)
              (< 0 m)
              (integerp y)

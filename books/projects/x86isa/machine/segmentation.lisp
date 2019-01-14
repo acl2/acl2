@@ -391,14 +391,14 @@
   :no-function t
   ///
 
-  (defthm-sb ea-to-la-is-i64p
+  (defthm-signed-byte-p ea-to-la-is-i64p
     :hyp (i64p eff-addr)
     :bound 64
     :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-sb ea-to-la-is-i48p-when-no-error
+  (defthm-signed-byte-p ea-to-la-is-i48p-when-no-error
     :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
     :bound 48
     :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))

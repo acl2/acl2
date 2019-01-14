@@ -334,8 +334,9 @@
  hints for the corollaries, and to specify @(':otf-flg'); these options are
  like the ones provided by @('defthm-usb') and @('defthm-sb').  Improved the
  @('defthm-usb') utility to also generate a linear linear saying that the value
- is greater than or equal to 0.  Renamed @('defthm-usb') to
- @('defthm-unsigned-byte-p'), for consistency with @('defthm-natp').</p>
+ is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
+ @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
+ with @('defthm-natp').</p>
 
  <p>Improved and extended some documentation.</p>
 

@@ -196,7 +196,7 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 
 </li>
 
-<li><p>Use the macro @('defthm-sb') to prove
+<li><p>Use the macro @('defthm-signed-byte-p') to prove
 a @('rewrite') rule saying that some function returns a @('signed-byte-p'),
 a @('type-prescription') corollary saying that the function returns an
 @('integerp'), and a @('linear') corollary saying that the function
@@ -206,7 +206,7 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
 <p>Usage:</p>
 
 @({
-  (defthm-sb <theorem-name>
+  (defthm-signed-byte-p <theorem-name>
     :hyp <hypotheses>
     :bound <n>
     :concl <conclusion>
@@ -309,17 +309,17 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
       nil))
 
   (defmacro defthm-unsigned-byte-p (name &key
-                             (hyp 't)
-                             bound
-                             concl
-                             gen-type
-                             gen-linear
-                             hyp-t
-                             hyp-l
-                             hints
-                             hints-t
-                             hints-l
-                             otf-flg)
+                                         (hyp 't)
+                                         bound
+                                         concl
+                                         gen-type
+                                         gen-linear
+                                         hyp-t
+                                         hyp-l
+                                         hints
+                                         hints-t
+                                         hints-l
+                                         otf-flg)
     (if (and concl bound)
         (let ((hyp-t (or hyp-t hyp))
               (hyp-l (or hyp-l hyp))
@@ -381,18 +381,18 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                         :hints ,hints-l))))))
       nil))
 
-  (defmacro defthm-sb (name &key
-                            (hyp 't)
-                            bound
-                            concl
-                            gen-type
-                            gen-linear
-                            hyp-t
-                            hyp-l
-                            hints
-                            hints-t
-                            hints-l
-                            otf-flg)
+  (defmacro defthm-signed-byte-p (name &key
+                                       (hyp 't)
+                                       bound
+                                       concl
+                                       gen-type
+                                       gen-linear
+                                       hyp-t
+                                       hyp-l
+                                       hints
+                                       hints-t
+                                       hints-l
+                                       otf-flg)
     (if (and concl bound)
         (let* ((hyp-t (or hyp-t hyp))
                (hyp-l (or hyp-l hyp))

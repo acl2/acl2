@@ -228,7 +228,7 @@ re-arrange these nests of updates.</p>
                     :gen-linear t
                     :gen-type t)
 
-               `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+               `(DEFTHM-SIGNED-BYTE-P ,(mk-name getter "-IS-I" size "P")
                   :hyp t
                   :bound ,size
                   :concl (XR ,keyword I X86)
@@ -290,7 +290,7 @@ re-arrange these nests of updates.</p>
         (b* ((getter  (mk-name name))
              (size    (cadr type)))
           `( ;; Field Type Theorems:
-            (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+            (DEFTHM-SIGNED-BYTE-P ,(mk-name getter "-IS-I" size "P")
               :hyp t
               :bound ,size
               :concl (XR ,keyword I X86)

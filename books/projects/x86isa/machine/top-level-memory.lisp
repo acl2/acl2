@@ -191,7 +191,7 @@
          (,lin-mem-fn-name lin-addr r-x x86))
        ///
 
-       (,(if signed? 'defthm-sb 'defthm-unsigned-byte-p)
+       (,(if signed? 'defthm-signed-byte-p 'defthm-unsigned-byte-p)
         ,(mk-name (if signed? "I" "N") size-str "P-OF-MV-NTH-1-" fn)
         :hyp t
         :bound ,size
