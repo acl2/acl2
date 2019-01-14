@@ -332,7 +332,9 @@
  @('defthm-natp') with the ability to turn on/off the generation of the type
  and linear corollaries, to modify their hypotheses, to supply more specific
  hints for the corollaries, and to specify @(':otf-flg'); these options are
- like the ones provided by @('defthm-usb') and @('defthm-sb').</p>
+ like the ones provided by @('defthm-usb') and @('defthm-sb').  Improved the
+ @('defthm-usb') utility to also generate a linear linear saying that the value
+ is greater than or equal to 0.</p>
 
  <p>Improved and extended some documentation.</p>
 

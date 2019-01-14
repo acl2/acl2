@@ -143,7 +143,8 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 a @('rewrite') rule saying that some function returns an @('unsigned-byte-p'),
 a @('type-prescription') corollary saying that the function returns a @('natp'),
 and a @('linear') corollary saying that the function
-returns a value less than <tt>(expt 2 bound)</tt>.</p>
+returns a value greater than or equal to 0 and less than
+<tt>(expt 2 bound)</tt>.</p>
 
 <p>Usage:</p>
 
@@ -181,7 +182,8 @@ returns a value less than <tt>(expt 2 bound)</tt>.</p>
      (:linear
       :corollary
       (implies <hypotheses for the :linear corollary>
-               (< <conclusion> (expt 2 <n>)))
+               (and (<= 0 <conclusion>)
+                    (< <conclusion> (expt 2 <n>))))
       :hints <usual ACL2 hints for the :linear corollary>)))
   })
 
@@ -238,7 +240,7 @@ bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
       :corollary
       (implies <hypotheses for the :linear corollary>
                (and (<= (- (expt 2 (1- <n>)) <conclusion>))
-               (< <conclusion> (expt 2 (1- <n>)))))
+                    (< <conclusion> (expt 2 (1- <n>)))))
       :hints <usual ACL2 hints for the :linear corollary>)))
   })
 
@@ -360,12 +362,15 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                         :corollary
                         ,(if (or (and (atom hyp-l) (atom hyp))
                                  (equal hyp-l 't))
-                             `(< ,concl ,2^bound)
+                             `(and
+                               (<= 0 ,concl)
+                               (< ,concl ,2^bound))
                            `(implies ,(or hyp-l hyp)
-                                     (< ,concl ,2^bound)))
+                                     (and
+                                      (<= 0 ,concl)
+                                      (< ,concl ,2^bound))))
                         :hints ,hints-l))))))
       nil))
-  ;; no need to generate a (>= ... 0) linear rule so far
 
   (defmacro defthm-sb
       (name &key hyp bound concl
