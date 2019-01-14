@@ -116,7 +116,7 @@
 
      ///
 
-     (defthm-usb n32p-pcmpeqb32
+     (defthm-unsigned-byte-p n32p-pcmpeqb32
        :bound 32
        :concl (pcmpeqb32 xmm xmm/mem)
        :gen-type t
@@ -276,7 +276,7 @@
 
      ///
 
-     (defthm-usb n08p-pmovmskb8
+     (defthm-unsigned-byte-p n08p-pmovmskb8
        :bound 8
        :concl (pmovmskb8 xmm)
        :gen-type t

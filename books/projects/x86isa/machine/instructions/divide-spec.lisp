@@ -168,14 +168,14 @@
 
        (local (in-theory (e/d (loghead ifix) ())))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-1-" fn-name)
          :hyp (not (mv-nth 0 (,fn-name dst src)))
          :bound ,size
          :concl (mv-nth 1 (,fn-name dst src))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :hyp (and (unsigned-byte-p ,size src)
                    (< 0 src))
          :bound ,size
@@ -218,7 +218,7 @@
 
   ///
 
-  (defthm-usb mv-nth-1-div-spec
+  (defthm-unsigned-byte-p mv-nth-1-div-spec
     :hyp   (and (member size '(1 2 4 8))
                 (not (mv-nth 0 (div-spec size dst src))))
     :bound (ash size 3)
@@ -229,7 +229,7 @@
                 (not (mv-nth 0 (div-spec size dst src))))
     :gen-type t)
 
-  (defthm-usb mv-nth-2-div-spec
+  (defthm-unsigned-byte-p mv-nth-2-div-spec
     :hyp   (and (member size '(1 2 4 8))
                 (not (equal src 0))
                 (unsigned-byte-p (ash size 3) src))
@@ -307,14 +307,14 @@
 
          (local (in-theory (e/d (loghead ifix) ())))
 
-         (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-1-" fn-name)
+         (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-1-" fn-name)
            :hyp (not (mv-nth 0 (,fn-name dst src)))
            :bound ,size
            :concl (mv-nth 1 (,fn-name dst src))
            :gen-type t
            :gen-linear t)
 
-         (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+         (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
            :hyp (and (unsigned-byte-p ,size src)
                      (< 0 src))
            :bound ,size
@@ -360,7 +360,7 @@
 
   ///
 
-  (defthm-usb mv-nth-1-idiv-spec
+  (defthm-unsigned-byte-p mv-nth-1-idiv-spec
     :hyp   (and (member size '(1 2 4 8))
                 (not (mv-nth 0 (idiv-spec size dst src))))
     :bound (ash size 3)
@@ -371,7 +371,7 @@
                 (not (mv-nth 0 (idiv-spec size dst src))))
     :gen-type t)
 
-  (defthm-usb mv-nth-2-idiv-spec
+  (defthm-unsigned-byte-p mv-nth-2-idiv-spec
     :hyp   (and (member size '(1 2 4 8))
                 (not (equal src 0))
                 (unsigned-byte-p (ash size 3) src))

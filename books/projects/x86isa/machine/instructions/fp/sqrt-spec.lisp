@@ -121,13 +121,13 @@
 
   ///
 
-  (defthm-usb n32p-result-sp-sse-sqrt
+  (defthm-unsigned-byte-p n32p-result-sp-sse-sqrt
     :bound 32
     :concl (mv-nth 1 (sp-sse-sqrt x mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sp-sse-sqrt
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-sqrt
     :bound 32
     :concl (mv-nth 2 (sp-sse-sqrt x mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -141,13 +141,13 @@
   (sse-sqrt x mxcsr #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*)
 
   ///
-  (defthm-usb n64p-result-dp-sse-sqrt
+  (defthm-unsigned-byte-p n64p-result-dp-sse-sqrt
     :bound 64
     :concl (mv-nth 1 (dp-sse-sqrt x mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-dp-sse-sqrt
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-sqrt
     :bound 32
     :concl (mv-nth 2 (dp-sse-sqrt x mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))

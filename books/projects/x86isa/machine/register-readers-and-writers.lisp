@@ -117,7 +117,7 @@ prefix.</p>"
     (defthm reg-indexp-reg-index
       (reg-indexp (reg-index reg rex-byte name) rex-byte))
 
-    (defthm-usb n04p-reg-index
+    (defthm-unsigned-byte-p n04p-reg-index
       :hyp t
       :bound 4
       :concl (reg-index reg rex-byte name)
@@ -203,7 +203,7 @@ are used to write natural numbers into the GPRs.</p>"
 
     ///
 
-    (defthm-usb n08p-rr08
+    (defthm-unsigned-byte-p n08p-rr08
       :hyp t
       :bound 8
       :concl (rr08 reg rex x86)
@@ -221,7 +221,7 @@ are used to write natural numbers into the GPRs.</p>"
 
     ///
 
-    (defthm-usb n16p-rr16
+    (defthm-unsigned-byte-p n16p-rr16
       :hyp t
       :bound 16
       :concl (rr16 reg x86)
@@ -239,7 +239,7 @@ are used to write natural numbers into the GPRs.</p>"
 
     ///
 
-    (defthm-usb n32p-rr32
+    (defthm-unsigned-byte-p n32p-rr32
       :hyp t
       :bound 32
       :concl (rr32 reg x86)
@@ -258,7 +258,7 @@ are used to write natural numbers into the GPRs.</p>"
 
     ///
 
-    (defthm-usb n64p-rr64
+    (defthm-unsigned-byte-p n64p-rr64
       :hyp t
       :bound 64
       :concl (rr64 reg x86)
@@ -678,7 +678,7 @@ pointer, or opcode registers\).</em></p>"
 
     ///
 
-    (defthm-usb n64p-mmx
+    (defthm-unsigned-byte-p n64p-mmx
       :hyp t
       :bound 64
       :concl (mmx i x86)
@@ -782,7 +782,7 @@ pointer, or opcode registers\).</em></p>"
 
     ///
 
-    (defthm-usb n32p-rz32
+    (defthm-unsigned-byte-p n32p-rz32
       :hyp t
       :bound 32
       :concl (rz32 reg x86)
@@ -799,7 +799,7 @@ pointer, or opcode registers\).</em></p>"
 
     ///
 
-    (defthm-usb n64p-rz64
+    (defthm-unsigned-byte-p n64p-rz64
       :hyp t
       :bound 64
       :concl (rz64 reg x86)
@@ -816,7 +816,7 @@ pointer, or opcode registers\).</em></p>"
 
     ///
 
-    (defthm-usb n128p-rz128
+    (defthm-unsigned-byte-p n128p-rz128
       :hyp t
       :bound 128
       :concl (rz128 reg x86)
@@ -833,7 +833,7 @@ pointer, or opcode registers\).</em></p>"
 
     ///
 
-    (defthm-usb n256p-rz256
+    (defthm-unsigned-byte-p n256p-rz256
       :hyp t
       :bound 256
       :concl (rz256 reg x86)
@@ -852,7 +852,7 @@ pointer, or opcode registers\).</em></p>"
 
     (local (in-theory (e/d () (force (force)))))
 
-    (defthm-usb n512p-rz512
+    (defthm-unsigned-byte-p n512p-rz512
       :hyp t
       :bound 512
       :concl (rz512 reg x86)

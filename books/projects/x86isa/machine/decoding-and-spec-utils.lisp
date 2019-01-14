@@ -187,7 +187,7 @@ the @('fault') field instead.</li>
       (equal (read-*ip #.*64-bit-mode* x86)
 	     (rip x86)))
 
-    (defthm-usb read-*ip-when-not-64-bit-modep
+    (defthm-unsigned-byte-p read-*ip-when-not-64-bit-modep
       :hyp (not (equal proc-mode #.*64-bit-mode*))
       :bound 32
       :concl (read-*ip proc-mode x86)
@@ -322,7 +322,7 @@ the @('fault') field instead.</li>
 		 (+ *ip delta)
 	       0)))
 
-    (defthm-usb mv-nth-1-of-add-to-*ip-when-compatibility-modep
+    (defthm-unsigned-byte-p mv-nth-1-of-add-to-*ip-when-compatibility-modep
       :hyp (and (not (equal proc-mode #.*64-bit-mode*))
 		(integerp (+ *ip delta))
 		(not (mv-nth 0
@@ -543,7 +543,7 @@ the @('fault') field instead.</li>
     (defrule read-*sp-when-64-bit-modep
       (equal (read-*sp #.*64-bit-mode* x86) (rgfi *rsp* x86)))
 
-    (defthm-usb read-*sp-when-not-64-bit-modep
+    (defthm-unsigned-byte-p read-*sp-when-not-64-bit-modep
       :hyp (not (equal proc-mode #.*64-bit-mode*))
       :bound 32
       :concl (read-*sp proc-mode x86)
@@ -648,7 +648,7 @@ the @('fault') field instead.</li>
 		 (i64 (+ *sp delta))
 	       0)))
 
-    (defthm-usb mv-nth-1-of-add-to-*sp-when-compatibility-modep
+    (defthm-unsigned-byte-p mv-nth-1-of-add-to-*sp-when-compatibility-modep
       :hyp (and (not (equal proc-mode #.*64-bit-mode*))
 		(integerp (+ *sp delta))
 		(not (mv-nth 0 (add-to-*sp proc-mode *sp delta x86))))
@@ -1434,7 +1434,7 @@ the @('fault') field instead.</li>
 ;; ======================================================================
 
 (local
- (defthm-usb usb-80-of-16-and-64
+ (defthm-unsigned-byte-p usb-80-of-16-and-64
    :hyp (and (unsigned-byte-p 16 n16)
 	     (unsigned-byte-p 64 n64))
    :bound 80
@@ -1446,7 +1446,7 @@ the @('fault') field instead.</li>
 	      :in-theory (e/d () (unsigned-byte-p))))))
 
 (local
- (defthm-usb usb-48-of-16-and-32
+ (defthm-unsigned-byte-p usb-48-of-16-and-32
    :hyp (and (unsigned-byte-p 16 n16)
 	     (unsigned-byte-p 32 n32))
    :bound 48
@@ -1668,7 +1668,7 @@ reference made from privilege level 3.</blockquote>"
 
     ///
 
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
+    (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (member operand-size '(1 2 4 8 16))
                 (equal bound (ash operand-size 3))
                 (x86p x86))
@@ -1681,7 +1681,7 @@ reference made from privilege level 3.</blockquote>"
       :gen-type t
       :hints (("Goal" :in-theory (enable rme-size))))
 
-    (defthm-usb bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
+    (defthm-unsigned-byte-p bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (member operand-size '(1 2 4 8 16))
                 (<= (ash operand-size 3) bound)
                 (integerp bound)
@@ -1699,7 +1699,7 @@ reference made from privilege level 3.</blockquote>"
      (disable
       bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand))
 
-    (defthm-usb bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
+    (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
       :hyp (and (member operand-size '(6 10))
                 (equal bound (ash operand-size 3))
                 (not (equal mod #b11))

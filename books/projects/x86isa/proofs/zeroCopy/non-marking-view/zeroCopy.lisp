@@ -198,7 +198,7 @@
   (ash (cr3Bits->pdb (ctri *cr3* x86)) 12)
   ///
 
-  (defthm-usb n52p-of-pml4t-base-addr
+  (defthm-unsigned-byte-p n52p-of-pml4t-base-addr
     :hyp (x86p x86)
     :bound #.*physical-address-size*
     :concl (pml4t-base-addr x86))

@@ -139,7 +139,7 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
 
 </li>
 
-<li><p>Use the macro @('defthm-usb') to prove
+<li><p>Use the macro @('defthm-unsigned-byte-p') to prove
 a @('rewrite') rule saying that some function returns an @('unsigned-byte-p'),
 a @('type-prescription') corollary saying that the function returns a @('natp'),
 and a @('linear') corollary saying that the function
@@ -149,7 +149,7 @@ returns a value greater than or equal to 0 and less than
 <p>Usage:</p>
 
 @({
-  (defthm-usb <theorem-name>
+  (defthm-unsigned-byte-p <theorem-name>
     :hyp <hypotheses>
     :bound <n>
     :concl <conclusion>
@@ -308,7 +308,7 @@ conjuncts or additional calls to @(tsee force).  Analogous remarks apply to
                         :hints ,hints-l))))))
       nil))
 
-  (defmacro defthm-usb (name &key
+  (defmacro defthm-unsigned-byte-p (name &key
                              (hyp 't)
                              bound
                              concl

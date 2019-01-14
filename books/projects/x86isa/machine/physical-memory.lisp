@@ -169,7 +169,7 @@ recommend using these functions at the top-level.</p>")
     (implies (app-view x86)
              (equal (rm-low-32 p-addr x86) 0)))
 
-  (defthm-usb n32p-rm-low-32
+  (defthm-unsigned-byte-p n32p-rm-low-32
     :bound 32
     :concl (rm-low-32 addr x86)
     :hints (("Goal" :in-theory (e/d () (force (force)))))
@@ -216,7 +216,7 @@ recommend using these functions at the top-level.</p>")
     (implies (app-view x86)
              (equal (rm-low-64 p-addr x86) 0)))
 
-  (defthm-usb n64p-rm-low-64
+  (defthm-unsigned-byte-p n64p-rm-low-64
     :bound 64
     :concl (rm-low-64 addr x86)
     :hints (("Goal" :in-theory (e/d ()

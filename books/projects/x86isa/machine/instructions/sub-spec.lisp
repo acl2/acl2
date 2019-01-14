@@ -147,19 +147,19 @@
 
        ///
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,result-nbits
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t
@@ -264,19 +264,19 @@
 
        ///
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,result-nbits
          :concl (mv-nth 0 (,fn-name dst src cf))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t

@@ -306,7 +306,7 @@
   ;; logtail-96-of-usb-128, the guard proof succeeds if :guard-debug t
   ;; is provided.
   ((local
-    (defthm-usb logtail-96-of-usb-128
+    (defthm-unsigned-byte-p logtail-96-of-usb-128
       :hyp (unsigned-byte-p 128 x)
       :bound 32
       :concl (logtail 96 x)
@@ -431,7 +431,7 @@
   ;; x86-unpck?pd-Op/En-RM, the guard proof succeeds if :guard-debug t
   ;; is provided.
   ((local
-    (defthm-usb logtail-64-of-usb-128
+    (defthm-unsigned-byte-p logtail-64-of-usb-128
       :hyp (unsigned-byte-p 128 x)
       :bound 64
       :concl (logtail 64 x)

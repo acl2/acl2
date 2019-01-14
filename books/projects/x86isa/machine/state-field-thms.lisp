@@ -217,7 +217,7 @@ re-arrange these nests of updates.</p>
           `(
             ;; Field type theorem:
             ,(if (equal (car (cadr type)) 'unsigned-byte)
-                 `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
+                 `(DEFTHM-UNSIGNED-BYTE-P ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
                     :hyp t
                     :bound ,size
                     :concl (XR ,keyword I X86)
@@ -263,7 +263,7 @@ re-arrange these nests of updates.</p>
         (b* ((getter  (mk-name name))
              (size    (cadr type)))
           `( ;; Field Type Theorem:
-            (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
+            (DEFTHM-UNSIGNED-BYTE-P ,(mk-name getter "-IS-N" size "P")
               :hyp t
               :bound ,size
               :concl (XR ,keyword I X86)

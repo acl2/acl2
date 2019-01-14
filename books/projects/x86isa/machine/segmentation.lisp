@@ -201,20 +201,20 @@
   :no-function t
   ///
 
-  (defthm-usb segment-base-is-n64p
+  (defthm-unsigned-byte-p segment-base-is-n64p
     :hyp (x86p x86)
     :bound 64
     :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb segment-lower-bound-is-n33p
+  (defthm-unsigned-byte-p segment-lower-bound-is-n33p
     :bound 33
     :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb segment-upper-bound-is-n32p
+  (defthm-unsigned-byte-p segment-upper-bound-is-n32p
     :bound 32
     :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
@@ -736,7 +736,7 @@
 
   ///
 
-  (defthm-usb n16p-make-code-segment-attr
+  (defthm-unsigned-byte-p n16p-make-code-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-code-segment-attr-field descriptor)
@@ -791,7 +791,7 @@
 
   ///
 
-  (defthm-usb n16p-make-data-segment-attr
+  (defthm-unsigned-byte-p n16p-make-data-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-data-segment-attr-field descriptor)
@@ -832,7 +832,7 @@
 
   ///
 
-  (defthm-usb n16p-make-system-segment-attr
+  (defthm-unsigned-byte-p n16p-make-system-segment-attr
     :hyp (unsigned-byte-p 128 descriptor)
     :bound 16
     :concl (make-system-segment-attr-field descriptor)

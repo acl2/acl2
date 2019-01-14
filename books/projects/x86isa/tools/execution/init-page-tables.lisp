@@ -289,7 +289,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
                           !ia32e-pml4ebits->pdpt)
                          ())))
 
-  (defthm-usb n64p-add-pml4-entry
+  (defthm-unsigned-byte-p n64p-add-pml4-entry
     :hyp t 
     :bound 64
     :concl (add-pml4-entry pdpt-base-addr)
@@ -400,7 +400,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
 
   ///
 
-  (defthm-usb n64p-add-pdp-entry
+  (defthm-unsigned-byte-p n64p-add-pdp-entry
     :hyp t
     :bound 64
     :concl (add-pdp-entry page-base-addr)

@@ -68,7 +68,7 @@ arithmetic.</p>"
 
   ///
 
-  (defthm-usb n01p-general-cf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-cf-spec-fn
     :bound 1
     :concl (general-cf-spec-fn result-nbits raw-result)
     :gen-linear t
@@ -87,7 +87,7 @@ arithmetic.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-CF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-CF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "CF-SPEC" result-nbits) raw-result)
        :gen-linear t
@@ -131,7 +131,7 @@ complement) arithmetic.</p>"
 
   ///
 
-  (defthm-usb n01p-general-of-spec-fn
+  (defthm-unsigned-byte-p n01p-general-of-spec-fn
     :bound 1
     :concl (general-of-spec-fn result-nbits signed-raw-result)))
 
@@ -150,7 +150,7 @@ complement) arithmetic.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-OF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-OF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "OF-SPEC" result-nbits) signed-raw-result)
        :gen-type t
@@ -193,7 +193,7 @@ otherwise.</p>"
   (if (equal result 0) 1 0)
   ///
 
-  (defthm-usb n01p-zf-spec
+  (defthm-unsigned-byte-p n01p-zf-spec
     :bound 1
     :concl (zf-spec result)
     :gen-type t
@@ -348,7 +348,7 @@ otherwise.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-PF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-PF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "PF-SPEC" result-nbits) result)
        :gen-type t
@@ -387,7 +387,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 
   ///
 
-  (defthm-usb n01p-general-pf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-pf-spec-fn
     :bound 1
     :concl (general-pf-spec-fn result-nbits result)
     :gen-type t
@@ -427,7 +427,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-SF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "SF-SPEC" result-nbits) result)
        :gen-type t
@@ -467,7 +467,7 @@ positive value and 1 indicates a negative value.)</p>"
              (1- (the (integer 0 64) result-nbits))))))))
   ///
 
-  (defthm-usb n01p-general-sf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-sf-spec-fn
     :bound 1
     :concl (general-sf-spec-fn result-nbits result)
     :gen-type t
@@ -520,7 +520,7 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-ADD-AF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-ADD-AF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "ADD-AF-SPEC" result-nbits) dst src)
        :gen-linear t
@@ -570,7 +570,7 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-SUB-AF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SUB-AF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "SUB-AF-SPEC" result-nbits)
                 dst src)
@@ -624,7 +624,7 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-ADC-AF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-ADC-AF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "ADC-AF-SPEC" result-nbits)
                 dst src cf)
@@ -677,7 +677,7 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "N01P-SBB-AF-SPEC" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SBB-AF-SPEC" result-nbits)
        :bound 1
        :concl (,(mk-name "SBB-AF-SPEC" result-nbits)
                 dst src cf)
