@@ -396,7 +396,7 @@
              (EQUAL (APPEND X Y)
                     (IF (NOT X)
                         Y
-                        (CONS (CAR X) (APPEND (CDR X) Y))))))~/
+                        (CONS (CAR X) (APPEND (CDR X) Y))))))
 })
 
 <p>In general, the form</p>
