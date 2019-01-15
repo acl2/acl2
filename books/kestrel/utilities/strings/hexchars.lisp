@@ -33,7 +33,8 @@
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are upper case letters.
-    The result is the concatenation of all these digits.")
+    The result is the concatenation of all these digits.
+    The result has always an even length.")
   (mbe :logic (cond ((endp bytes) nil)
                     (t (b* ((byte (if (unsigned-byte-p 8 (car bytes))
                                       (car bytes)
@@ -67,4 +68,27 @@
              (equal (ubyte8s=>hexchars-aux bytes rev-chars)
                     (revappend rev-chars (ubyte8s=>hexchars bytes)))))
 
-  (verify-guards ubyte8s=>hexchars))
+  (verify-guards ubyte8s=>hexchars)
+
+  (defrule evenp-of-len-of-ubyte8s=>hexchars
+    (evenp (len (ubyte8s=>hexchars bytes)))
+
+    :prep-lemmas
+
+    ((defrule basic-natchars16-lemma
+       (implies (unsigned-byte-p 8 byte)
+                (<= (len (str::basic-natchars16 byte))
+                    2))
+       :rule-classes :linear
+       :enable str::basic-natchars16
+       :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+     (defrule natchars16-lemma
+       (implies (unsigned-byte-p 8 byte)
+                (and (<= 1
+                         (len (str::natchars16 byte)))
+                     (<= (len (str::natchars16 byte))
+                         2)))
+       :rule-classes :linear
+       :enable str::natchars16
+       :prep-books ((include-book "std/lists/len" :dir :system))))))
