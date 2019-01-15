@@ -163,6 +163,13 @@
 
  <p>Improved the documentation of the Bitcoin library.</p>
 
+ <h4>Bytes</h4>
+
+ <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
+ unsigned-byte-list-fix), and @(tsee signed-byte-list-fix) for @(tsee
+ unsigned-byte-p), @(tsee signed-byte-p), @(tsee unsigned-byte-listp), and
+ @(tsee signed-byte-listp).</p>
+
  <h4><see topic='@(url std::define)'>Define</see></h4>
 
  <p>Added support for configuration objects that can be used to specify some
@@ -359,7 +366,7 @@
  <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
  inputs known to be equivalent or opposite to each other, not just to
  constants.</p>
- 
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
