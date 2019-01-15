@@ -15428,7 +15428,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; definitions were kept similar to those that had been in the ihs library for
 ; some time.
 
-  (declare (xargs :guard (and (integerp lower) (integerp upper))))
+; We considered Alessandro Coglio's suggestion to fix the first two arguments,
+; specifically by changing the body to the following.
+
+;   (mbe :logic (and (integerp x)
+;                    (<= (ifix lower) x)
+;                    (< x (ifix upper)))
+;        :exec (and (integerp x)
+;                   (<= lower x)
+;                   (< x upper))))
+
+; However, that caused at least 19 regression failures, and we quickly found
+; one that looked awkward to fix.  So we are abandoning that idea, at least for
+; now.
+
+  (declare (type integer lower upper))
   (and (integerp x)
        (<= lower x)
        (< x upper)))
