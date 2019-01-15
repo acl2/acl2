@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 (include-book "std/strings/hex" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -36,9 +36,7 @@
     The result is the concatenation of all these digits.
     The result has always an even length.")
   (mbe :logic (cond ((endp bytes) nil)
-                    (t (b* ((byte (if (unsigned-byte-p 8 (car bytes))
-                                      (car bytes)
-                                    0)) ; fix if not 8-bit byte
+                    (t (b* ((byte (unsigned-byte-fix 8 (car bytes)))
                             (digits (str::natchars16 byte))
                             (digits (if (= (len digits) 2)
                                         digits
@@ -69,6 +67,10 @@
                     (revappend rev-chars (ubyte8s=>hexchars bytes)))))
 
   (verify-guards ubyte8s=>hexchars)
+
+  (defrule ubyte8s=>hexchars-of-unsigned-byte-list-fix
+    (equal (ubyte8s=>hexchars (unsigned-byte-list-fix 8 bytes))
+           (ubyte8s=>hexchars bytes)))
 
   (defrule evenp-of-len-of-ubyte8s=>hexchars
     (evenp (len (ubyte8s=>hexchars bytes)))

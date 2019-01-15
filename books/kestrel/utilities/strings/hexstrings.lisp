@@ -35,6 +35,10 @@
 
   ///
 
+  (defrule ubyte8s=>hexstring-of-unsigned-byte-list-fix
+    (equal (ubyte8s=>hexstring (unsigned-byte-list-fix 8 bytes))
+           (ubyte8s=>hexstring bytes)))
+
   (defrule evenp-of-length-of-ubyte8s=>hexstring
     (evenp (length (ubyte8s=>hexstring bytes)))
     :disable evenp))
