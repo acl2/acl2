@@ -1,4 +1,4 @@
-; Alist Utilities
+; Alist Utilities -- Theorems about REMOVE-ASSOC-EQUAL
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -12,17 +12,12 @@
 
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
-(include-book "alist-map-keys")
-(include-book "alist-map-vals")
-(include-book "remove-assoc-theorems")
-(include-book "remove-assocs")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc alist-utilities
-  :parents (kestrel-utilities alists)
-  :short "Some utilities for @(see alists)."
-  :long
-  (xdoc::topapp
-   (xdoc::p
-    "These utilities may be eventually integrated into @(see std/alists).")))
+(defsection remove-assoc-equal-theorems
+  :parents (alist-utilities remove-assoc)
+  :short "Some theorems about the built-in function @(tsee remove-assoc)."
+
+  (defthm alistp-of-remove-assoc-equal
+    (implies (alistp x)
+             (alistp (remove-assoc-equal key x)))))
