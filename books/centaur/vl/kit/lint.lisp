@@ -34,6 +34,7 @@
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
 (include-book "../mlib/hierarchy")
+(include-book "../lint/alwaysstyle")
 (include-book "../lint/drop-user-submodules")
 (include-book "../lint/suppress-warnings")
 (include-book "../lint/suppress-files")
@@ -743,6 +744,7 @@ shown.</p>"
 
        (design (xf-cwtime (vl-design-check-globalparams design config.global-packages)))
        (design (xf-cwtime (vl-design-duplicate-detect design)))
+       (design (xf-cwtime (vl-design-alwaysstyle design)))
 
        ;; Note: don't want to addnames before duplicate-detect, because it
        ;; would name unnamed duplicated blocks in different ways.
@@ -1176,6 +1178,8 @@ shown.</p>"
         :vl-warn-oddexpr
         :vl-warn-possible-typo
         :vl-warn-include-guard
+        :vl-warn-plain-always
+        :vl-warn-always-latch
         ))
 
 (defconst *smell-minor-warnings*
