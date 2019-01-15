@@ -35,14 +35,16 @@
     The hexadecimal digits above 9 are upper case letters.
     The result is the concatenation of all these digits.")
   (mbe :logic (cond ((endp bytes) nil)
-                    (t (b* ((digits (str::natchars16 (car bytes)))
+                    (t (b* ((byte (if (unsigned-byte-p 8 (car bytes))
+                                      (car bytes)
+                                    0)) ; fix if not 8-bit byte
+                            (digits (str::natchars16 byte))
                             (digits (if (= (len digits) 2)
                                         digits
                                       (cons #\0 digits))))
                          (append digits
                                  (ubyte8s=>hexchars (cdr bytes))))))
        :exec (ubyte8s=>hexchars-aux bytes nil))
-  :verify-guards nil ; done below
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
@@ -56,10 +58,13 @@
                                        (append (rev digits) rev-chars)))))
      :enabled t))
 
+  :verify-guards nil ; done below
+
   ///
 
   (defrulel verify-guards-lemma
-    (equal (ubyte8s=>hexchars-aux bytes rev-chars)
-           (revappend rev-chars (ubyte8s=>hexchars bytes))))
+    (implies (unsigned-byte-listp 8 bytes)
+             (equal (ubyte8s=>hexchars-aux bytes rev-chars)
+                    (revappend rev-chars (ubyte8s=>hexchars bytes)))))
 
   (verify-guards ubyte8s=>hexchars))
