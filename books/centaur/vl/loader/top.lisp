@@ -276,8 +276,8 @@ warning that maybe something is amiss with file loading.</p>")
   :returns (new-st (and (vl-loadstate-p new-st)
                         (equal (vl-loadstate->descs new-st)
                                (vl-loadstate->descs st))))
-  (b* (((vl-loadstate st) st)
-       (new-pstate (change-vl-parsestate st.pstate :warnings warnings)))
+  (b* ((?pstate    (vl-loadstate->pstate st))
+       (new-pstate (change-vl-parsestate pstate :warnings warnings)))
     (change-vl-loadstate st :pstate new-pstate)))
 
 (define vl-loadstate-pad ((st vl-loadstate-p))
@@ -597,9 +597,7 @@ descriptions.</li>
         ;; we want to add nothing but warnings to the parse state.  That means
         ;; unwinding and restoring the pstate-backup that we had.
         (b* ((new-warnings (vl-parsestate->warnings pstate))
-             (-            (vl-parsestate-free pstate))
-             (pstate       (vl-parsestate-restore pstate-backup))
-             (st           (change-vl-loadstate st :pstate pstate))
+             (st           (change-vl-loadstate st :pstate pstate-backup))
              (st           (vl-loadstate-set-warnings new-warnings))
              (st           (vl-loadstate-fatal :type :vl-parse-failed
                                                :msg "Parsing failed for ~s0."
@@ -1094,8 +1092,7 @@ will look for new modules.</p>"
                :args (list (len config.search-path))
                :mintime config.mintime))
 
-       (pstate (make-vl-parsestate :warnings warnings
-                                   :usertypes nil))
+       (pstate (make-vl-parsestate :warnings warnings))
 
        (st     (make-vl-loadstate :config     config
                                   :descs      nil
@@ -1136,7 +1133,6 @@ will look for new modules.</p>"
 
        (- (vl-free-dirlist-cache idcache))
        (- (vl-free-dirxlist-cache spcache))
-       (- (vl-parsestate-free st.pstate))
        (- (fast-alist-free st.descalist))
        (- (vl-iskips-report st.iskips))
        (state (vl-read-file-report state)))

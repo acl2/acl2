@@ -70,6 +70,7 @@ elab6.v -- hierarchical reference into generate block before wire declaration
 
 enum1.v -- enum tries to have member foo[0] (explicitly forbidden)
 enum2.v -- redeclaration of enum parameters
+enum3.v -- enum of foo_t type without foo_t declared
 
 fn1.v -- shadowing too hard in function
 fn2.v -- function input names duplicated (ansi syntax)
