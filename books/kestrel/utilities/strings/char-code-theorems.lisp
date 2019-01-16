@@ -37,7 +37,7 @@
   (xdoc::topp
    "Note that the injectivity of @(tsee char-code) over characters
     is expressed by the theorem
-    <see topic='@(url char-code-lemmas)'>@('equal-of-char-code')</see>.")
+    <see topic='@(url str::char-code-lemmas)'>@('equal-of-char-code')</see>.")
 
   (defrule equal-of-code-chars
     (equal (equal (code-char x)
