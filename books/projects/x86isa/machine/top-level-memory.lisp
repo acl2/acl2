@@ -155,9 +155,14 @@
        (long-doc-string
         (str::cat
          "<p>The effective address @('eff-addr') is translated to a canonical
-        linear address using @(see ea-to-la).  If this translation is
-        successful and no other errors (like alignment errors) occur, then
-        @(see " lin-mem-fn ") is called.</p>")))
+          linear address using @(see ea-to-la).  If this translation is
+          successful and no other errors (like alignment errors) occur, then
+          @(see " lin-mem-fn ") is called.</p>
+          <p>Prior to the effective address translation, we check whether read
+          access is allowed.  The only case in which it is not allowed is when a
+          read access is attempted on an execute-only code segment, in 32-bit
+          mode.  In 64-bit mode, the R bit of the code segment descriptor is
+          ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>")))
 
     `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                        (eff-addr  :type (signed-byte 64))
@@ -178,7 +183,15 @@
        :short ,short-doc-string
        :long ,long-doc-string
 
-       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+       (b* (((when (and
+                    (/= proc-mode #.*64-bit-mode*)
+                    (= seg-reg *cs*)
+                    (eq r-x :r)
+                    (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                         (r (code-segment-descriptor-attributesBits->r attr)))
+                      (= r 0))))
+             (mv (list :execute-only-code-segment eff-addr) 0 x86))
+            ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
             ((when flg) (mv flg 0 x86))
             ,@(and
                check-alignment?-var
@@ -500,8 +513,20 @@
   :long
   "<p>The effective address is translated to a canonical linear address using
    @(see ea-to-la). If this translation is successful and no other errors (like
-   alignment errors) occur, then @(see rml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+   alignment errors) occur, then @(see rml-size) is called.</p>
+   <p>Prior to the effective address translation, we check whether read
+   access is allowed.  The only case in which it is not allowed is when a
+   read access is attempted on an execute-only code segment, in 32-bit
+   mode.  In 64-bit mode, the R bit of the code segment descriptor is
+   ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
+  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                   (= seg-reg *cs*)
+                   (eq r-x :r)
+                   (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                        (r (code-segment-descriptor-attributesBits->r attr)))
+                     (= r 0))))
+        (mv (list :execute-only-code-segment eff-addr) 0 x86))
+       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg 0 x86))
        ((unless (or (not check-alignment?)
                     (address-aligned-p lin-addr nbytes mem-ptr?)))
@@ -637,8 +662,20 @@
   :long
   "<p>The effective address is translated to a canonical linear address using
    @(see ea-to-la). If this translation is successful and no other errors (like
-   alignment errors) occur, then @(see riml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+   alignment errors) occur, then @(see riml-size) is called.</p>
+   <p>Prior to the effective address translation, we check whether read
+   access is allowed.  The only case in which it is not allowed is when a
+   read access is attempted on an execute-only code segment, in 32-bit
+   mode.  In 64-bit mode, the R bit of the code segment descriptor is
+   ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
+  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                   (= seg-reg *cs*)
+                   (eq r-x :r)
+                   (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
+                        (r (code-segment-descriptor-attributesBits->r attr)))
+                     (= r 0))))
+        (mv (list :execute-only-code-segment eff-addr) 0 x86))
+       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg 0 x86))
        ((unless (or (not check-alignment?)
                     (address-aligned-p lin-addr nbytes mem-ptr?)))

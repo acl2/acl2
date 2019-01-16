@@ -345,6 +345,11 @@
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
  with @('defthm-natp').</p>
 
+ <p>Extended top-level memory reading functions to take into account the R bit
+ of the code segment descriptor, when they access for reading (not execution) a
+ code segment in 32-bit mode: in this case, if R = 0, the code segment is
+ execute-only and thus reading data from it is not allowed.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
