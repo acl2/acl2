@@ -305,7 +305,10 @@ int main (int argc, char *argv[], char *env[]) {
 	 (acons
 	  #.*cs*
 	  (!code-segment-descriptor-attributesBits->d 1 0) ;; op size = 4
-	  nil)
+	  (acons
+           #.*ss*
+           (!data-segment-descriptor-attributesBits->w 1 0) ;; writable stack segment
+           nil))
 	 ;; Initial value of the Rflags Register
 	 #x282
 	 ;; Initial memory image

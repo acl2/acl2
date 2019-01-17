@@ -346,9 +346,12 @@
  with @('defthm-natp').</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
- of the code segment descriptor, when they access for reading (not execution) a
+ of code segment descriptors, when they access for reading (not execution) a
  code segment in 32-bit mode: in this case, if R = 0, the code segment is
- execute-only and thus reading data from it is not allowed.</p>
+ execute-only and thus reading data from it is not allowed.  Extended top-level
+ memory functions to take into account the W bit of data segment descriptors,
+ in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
+ to it is not allowed; writing to a code segment is not allowed either.</p>
 
  <p>Improved and extended some documentation.</p>
 

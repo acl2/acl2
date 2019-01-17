@@ -162,7 +162,7 @@
           access is allowed.  The only case in which it is not allowed is when a
           read access is attempted on an execute-only code segment, in 32-bit
           mode.  In 64-bit mode, the R bit of the code segment descriptor is
-          ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>")))
+          ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1).</p>")))
 
     `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                        (eff-addr  :type (signed-byte 64))
@@ -799,9 +799,19 @@
        (long-doc-string
         (str::cat
          "<p>The effective address @('eff-addr') is translated to a canonical
-        linear address.  If this translation is successful and no other error
-        occurs (like alignment errors), then @(see " lin-mem-fn ") is
-        called.</p>")))
+          linear address.  If this translation is successful and no other error
+          occurs (like alignment errors), then @(see " lin-mem-fn ") is
+          called.</p>
+          <p>Prior to the effective address translation, we check whether write
+          access is allowed.  In 32-bit mode, write access is allowed in data
+          segments (DS, ES, FS, GS, and SS) if the W bit in the segment
+          descriptor is 1; write access is disallowed in code segments (this is
+          not explicitly mentioned in Intel manual, May'18, Volume 3, Section
+          3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
+          ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
+          analogy, we allow write access to the code segment as well.
+          These checks may be slightly optimized using the invariant that
+          SS.W must be 1 when SS is loaded.</p>")))
 
     `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                        (eff-addr  :type (signed-byte 64))
@@ -819,7 +829,15 @@
        :short ,short-doc-string
        :long ,long-doc-string
 
-       (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+       (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                        (or (= seg-reg *cs*)
+                            (b* ((attr (loghead
+                                        16 (xr :seg-hidden-attr seg-reg x86)))
+                                 (w (data-segment-descriptor-attributesBits->w
+                                     attr)))
+                              (= w 0)))))
+             (mv (list :non-writable-segment eff-addr seg-reg) x86))
+            ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
             ((when flg) (mv flg x86))
             ,@(and
                check-alignment?-var
@@ -980,8 +998,26 @@
   :long
   "<p>The effective address is translated to a canonical linear address.  If
    this translation is successful and no other errors occur (like alignment
-   errors), then @(see wml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+   errors), then @(see wml-size) is called.</p>
+   <p>Prior to the effective address translation, we check whether write
+   access is allowed.  In 32-bit mode, write access is allowed in data
+   segments (DS, ES, FS, GS, and SS) if the W bit in the segment
+   descriptor is 1; write access is disallowed in code segments (this is
+   not explicitly mentioned in Intel manual, May'18, Volume 3, Section
+   3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
+   ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
+   analogy, we allow write access to the code segment as well.
+   These checks may be slightly optimized using the invariant that
+   SS.W must be 1 when SS is loaded.</p>"
+  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                   (or (= seg-reg *cs*)
+                       (b* ((attr (loghead
+                                   16 (xr :seg-hidden-attr seg-reg x86)))
+                            (w (data-segment-descriptor-attributesBits->w
+                                attr)))
+                         (= w 0)))))
+        (mv (list :non-writable-segment eff-addr seg-reg) x86))
+       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg x86))
        ((unless (or (not check-alignment?)
                     (address-aligned-p lin-addr nbytes mem-ptr?)))
@@ -1078,8 +1114,26 @@
   :long
   "<p>The effective address is translated to a canonical linear address.  If
    this translation is successful and no other errors occur (like alignment
-   errors), then @(see wiml-size) is called.</p>"
-  (b* (((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+   errors), then @(see wiml-size) is called.</p>
+   <p>Prior to the effective address translation, we check whether write
+   access is allowed.  In 32-bit mode, write access is allowed in data
+   segments (DS, ES, FS, GS, and SS) if the W bit in the segment
+   descriptor is 1; write access is disallowed in code segments (this is
+   not explicitly mentioned in Intel manual, May'18, Volume 3, Section
+   3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
+   ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
+   analogy, we allow write access to the code segment as well.
+   These checks may be slightly optimized using the invariant that
+   SS.W must be 1 when SS is loaded.</p>"
+  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                   (or (= seg-reg *cs*)
+                       (b* ((attr (loghead
+                                   16 (xr :seg-hidden-attr seg-reg x86)))
+                            (w (data-segment-descriptor-attributesBits->w
+                                attr)))
+                         (= w 0)))))
+        (mv (list :non-writable-segment eff-addr seg-reg) x86))
+       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
        ((when flg) (mv flg x86))
        ((unless (or (not check-alignment?)
                     (address-aligned-p lin-addr nbytes mem-ptr?)))
