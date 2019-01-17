@@ -4374,20 +4374,22 @@
 ; ; However, in the interest of performance we have decided to avoid a full-blown
 ; ; call of type-set here.  You get what you pay for, perhaps.
 ;
-; However, then Rich Cohen observed that if we are trying to relieve a hypothesis
-; in a lemma and the hyp rewrites to an explicit cons expression we fail to
-; recognize that it is non-nil!  Here is a thm that fails for that reason:
-;
-;  (defstub foo (x a) t)
-;  (defaxiom lemma
-;   (implies (member x a) (equal (foo x a) x)))
-;  (thm (equal (foo x (cons x y)) x))
-;
 ; We have decided to revert to the use of type-set in rewrite-solidify, but
 ; only when we have an objective of t or nil.  Under this condition we use
 ; force-flg nil and dwp t.  We tried the div proofs with force-flg t here
 ; and found premature forcing killed us.
-;
+
+; On 1/17/2019, after Version_8.1, we tried modifying rewrite-solidify-rec to
+; call type-set unconditionally, not merely when (not (eq obj '?)).  There were
+; 46 failures in the "everything" regression, which we killed before it
+; completed since there were three very-long running certifications still in
+; progress (about 3 hours each).  Among those, we noticed
+; books/nonstd/workshops/2017/cayley/cayley1c.lisp, whose certification went
+; far enough for us to see the the proof of 8-COMPOSITION-LAW completed but
+; took 7560.97 seconds, far exceeding the 6.49 seconds taken in a recent run.
+; It thus seemed obvious that such a change would likely cause massive changes
+; to be necessary not only in the community books, but also in proprietary
+; books elsewhere.
 
 (defun rewrite-if11 (term type-alist geneqv wrld ttree)
   (mv-let (ts ts-ttree)
