@@ -46,6 +46,7 @@
 (in-package "X86ISA")
 (include-book "../utils/basic-structs")
 (include-book "std/util/defenum" :dir :system)
+(include-book "cpuid-constants")
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/lists/duplicity" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
@@ -404,24 +405,6 @@
     :equiv maybe-3bits-equiv
     :define t))
 
-(define esc-p (x)
-  (or (not x)
-      (and (16bits-p x)
-           (or (equal x #ux0F)
-               (equal x #ux0F_38)
-               (equal x #ux0F_3A))))
-  ///
-  (define esc-fix ((x esc-p))
-    :enabled t
-    (mbe :logic (if (esc-p x) x 'nil)
-         :exec x))
-
-  (fty::deffixtype esc
-    :pred esc-p
-    :fix esc-fix
-    :equiv esc-equiv
-    :define t))
-
 ;; I could've defined vex and evex using defprod too, but I don't want the
 ;; order of the vex/evex prefix cases to matter (so the defprod constructor is
 ;; out).  Nor do I want to use keywords like :vvvv to specify the classes of
@@ -570,9 +553,9 @@
     :define t))
 
 (defprod opcode
-  ((op            24bits-p)
-   (esc           esc-p
-                  :default 'nil)
+  ((op            24bits-p
+                  "Includes escape bytes of two- and three-byte opcodes as
+                  well")
    (mode          op-mode-p
                   :default 'nil)
    (reg           maybe-3bits-p
@@ -665,6 +648,25 @@
     :equiv exception-desc-equiv
     :define t))
 
+(define fn-desc-p (x)
+  (or (null x)
+      (and (true-listp x)
+           (symbolp (car x))
+           (eqlable-alistp (cdr x))))
+
+  ///
+
+  (define fn-desc-fix ((x fn-desc-p))
+    :enabled t
+    (mbe :logic (if (fn-desc-p x) x 'nil)
+         :exec x))
+
+  (fty::deffixtype fn-desc
+    :pred fn-desc-p
+    :fix fn-desc-fix
+    :equiv fn-desc-equiv
+    :define t))
+
 (define mnemonic-p (x)
   (or (stringp x)
       (keywordp x))
@@ -684,15 +686,55 @@
     :equiv mnemonic-equiv
     :define t))
 
+(define any-present-in ((xs true-listp)
+                        (ys true-listp))
+  :short "Is any element of @('xs') present in @('ys')?"
+  (if (endp xs)
+      nil
+    (if (member-equal (car xs) ys)
+        t
+      (any-present-in (cdr xs) ys))))
+
+(define strict-opcode-p (x)
+  (and (opcode-p x)
+       (b* (((opcode x))
+            ((when (and
+                    (any-present-in
+                     (append (list :avx :avx2 :bmi1 :bmi2)
+                             *avx512-feature-flags*)
+                     x.feat)
+                    (null x.vex)
+                    (null x.evex)))
+             nil))
+         t))
+  ///
+  (define strict-opcode-fix ((x strict-opcode-p))
+    :enabled t
+    (if (strict-opcode-p x)
+        x
+      ;; Wiping out :feat --- doesn't really matter what I put here.
+      (b* ((x (opcode-fix x))
+           (x (change-opcode x :feat nil)))
+        x)))
+
+  (defthm strict-opcode-p-of-strict-opcode-fix
+    (strict-opcode-p (strict-opcode-fix x)))
+
+  (fty::deffixtype strict-opcode
+    :pred strict-opcode-p
+    :fix strict-opcode-fix
+    :equiv strict-opcode-equiv
+    :define t))
+
 (defprod inst
   ((mnemonic     mnemonic-p)
-   (opcode       opcode-p
+   (opcode       strict-opcode-p
                  "Opcode descriptor.")
    (operands     maybe-operands-p
                  "Description of operands; can be left empty if there are zero
                   operands."
                  :default 'nil)
-   (fn           true-listp
+   (fn           fn-desc-p
                  "Partial call of the semantic function that implements this
                   opcode."
                  :default 'nil)

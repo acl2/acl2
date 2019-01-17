@@ -1,3 +1,11 @@
+; ----------     (ALMOST)   DEPRECATED               ---------- 
+; ----------     SUPERSEDED BY INST-LISTING.LISP     ----------
+; CONVERT-MAPS.LISP shows how we obtained structures in inst-listing
+; from the old lists in this book.
+; This is still used in prefix-modrm-sib-decoding.lisp to precompute some
+; decoding information.
+
+
 ; X86ISA Library
 
 ; Note: The license below is based on the template at:
@@ -1212,11 +1220,13 @@
 
               ((:no-prefix . (:EXT
                               (((:opcode . #ux0F_12)
+                                (:prefix . :no-prefix)
                                 (:mod    . :mem)) .
                                 ("MOVLPS"    3 (V q)  (H q)  (M q)
                                  (:fn . (x86-movlps/movlpd-Op/En-RM))
                                  (:ex . ((chk-exc :type-5 (:sse))))))
                               (((:opcode . #ux0F_12)
+                                (:prefix . :no-prefix)
                                 (:mod    . #b11)) .
                                 ("MOVHLPS"    3 (V q)  (H q)  (U q)
                                  (:ex . ((chk-exc :type-7 (:sse))))))))
@@ -1261,11 +1271,13 @@
 
               ((:no-prefix . (:EXT
                               (((:opcode . #ux0F_16)
+                                (:prefix . :no-prefix)
                                 (:mod    . :mem)) .
                                 ("MOVHPS"    3 (V dq)  (H q)  (M q) :v1
                                  (:fn . (x86-movhps/movhpd-Op/En-RM))
                                  (:ex . ((chk-exc :type-5 (:sse))))))
                               (((:opcode . #ux0F_16)
+                                (:prefix . :no-prefix)
                                 (:mod    . #b11)) .
                                 ("MOVLHPS"   3 (V dq)  (H q)  (U q)
                                  (:ex . ((chk-exc :type-7 (:sse))))))))
@@ -2090,10 +2102,12 @@
 
               ((:no-prefix . (:EXT
                               (((:opcode . #ux0F_C4)
+                                (:prefix . :no-prefix)
                                 (:mod    . #b11)) .
                                 ("PINSRW"     3 (P q)   (R y)  (I b)
                                  (:ex . ((chk-exc :type-5 (:sse))))))
                               (((:opcode . #ux0F_C4)
+                                (:prefix . :no-prefix)
                                 (:mod    . :mem)) .
                                 ("PINSRW"    3 (P q)   (M w)  (I b)
                                  (:ex . ((chk-exc :type-5 (:sse))))))))
@@ -13583,7 +13597,7 @@
             ((:no-prefix (:mod . #b11)) :type-5)
             ((:no-prefix (:mod . :mem)) :type-7)
             ;; Shilpi: Fixed.
-            ;; BOZO Rob -- fix with updated tables:            
+            ;; BOZO Rob -- fix with updated tables:
             ;; ((:no-prefix) :type-7)
             ((:66) :type-5)))
     (#ux17 (((:no-prefix) :type-5)

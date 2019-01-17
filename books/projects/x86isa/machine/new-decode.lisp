@@ -45,7 +45,7 @@
 (include-book "decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "std/util/defenum" :dir :system)
-(include-book "opcode-map-structs")
+(include-book "inst-structs")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))

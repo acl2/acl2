@@ -104,8 +104,7 @@
 
   :guard-hints (("Goal" :in-theory (enable reg-index)))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-bsf-Op/En-RM)

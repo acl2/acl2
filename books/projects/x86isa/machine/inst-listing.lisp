@@ -43,520 +43,11 @@
 
 (in-package "X86ISA")
 
-(include-book "opcode-maps")
 (include-book "inst-structs")
-(include-book "std/lists/all-equalp" :dir :system)
 
-(define remove-all ((x true-listp)
-                    (y true-listp))
-  :short "Remove all elements in @('x') from @('y')"
-  :enabled t
-  (if (endp x)
-      y
-    (remove-all (cdr x) (remove-equal (car x) y))))
-
-(define get-feat-from-exception-info ((exception-info exception-info-p))
-  :guard-hints (("Goal" :in-theory (e/d (exception-info-p) ())))
-  (b* ((ex (cdr (assoc :ex exception-info)))
-       ((when (null ex)) nil)
-       (double-flattened-ex
-        ;; We're left with just the features list.
-        (acl2::flatten (acl2::flatten ex))))
-    double-flattened-ex))
-
-(define convert-opcode-extensions ((opcode natp)
-                                   (desc-list opcode-descriptor-list-p)
-                                   (insert-into-opcode true-listp))
-  :mode :program
-  :verify-guards nil
-  (b* (((when (endp desc-list)) nil)
-       (desc (car desc-list))
-       (opcode-identifier (car desc))
-       ((unless (equal (cdr (assoc-equal :opcode opcode-identifier)) opcode))
-        (convert-opcode-extensions opcode (cdr desc-list) insert-into-opcode))
-       ;; *opcode-descriptor-legal-keys*
-       (reg (cdr (assoc-equal :reg opcode-identifier)))
-       (mod (cdr (assoc-equal :mod opcode-identifier)))
-       (r/m (cdr (assoc-equal :r/m opcode-identifier)))
-       (prefix (cdr (assoc-equal :prefix opcode-identifier)))
-       ;; (vex (cdr (assoc-equal :vex opcode-identifier)))
-       (mode (cdr (assoc-equal :mode opcode-identifier)))
-       (feat (cdr (assoc-equal :feat opcode-identifier)))
-       (rex (cdr (assoc-equal :rex opcode-identifier)))
-       (cell (cdr desc))
-       (mnemonic (car cell))
-       ((unless (stringp mnemonic))
-        ;; (- (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
-        ;;        __function__ mnemonic))
-        ;; Ignore :none --- why pad the opcode maps unnecessarily?
-        (convert-opcode-extensions opcode (cdr desc-list) insert-into-opcode))
-       (semantic-info (get-semantic-function-info (cdr cell)))
-       (exception-info (get-exception-info (cdr cell)))
-       (more-feat (get-feat-from-exception-info exception-info))
-       (final-feat (remove-duplicates (append feat more-feat)))
-       (num-ops (nth 1 cell))
-       (arg
-        (case num-ops
-          (0 nil)
-          (1 `(arg :op1 ',(nth 2 cell)))
-          (2 `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)))
-          (3 `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)
-                   :op3 ',(nth 4 cell)))
-          (t `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)
-                   :op3 ',(nth 4 cell) :op4 ',(nth 5 cell)))))
-       (new-rest (remove-exception-info cell))
-       (new-rest (remove-semantic-function-info new-rest))
-       (superscripts (nthcdr (+ 2 ;; For mnemonic and num-ops
-                                num-ops)
-                             new-rest))
-       (others
-        `(,@(and reg `(:reg ,reg))
-          ,@(and mod `(:mod ,mod))
-          ,@(and r/m `(:r/m ,r/m))
-          ,@(and prefix `(:pfx ,prefix))
-          ;; ,@(and vex `(:vex ,vex))
-          ,@(and mode `(:mode ,mode))
-          ,@(and feat `(:feat ',final-feat))
-          ,@(and rex `(:rex ,rex))
-          ,@(and  superscripts `(:superscripts ',superscripts))
-          ,@insert-into-opcode))
-       (fn (if (consp semantic-info)
-               (cdr semantic-info)
-             nil)))
-    (cons
-     `(inst
-       ,mnemonic
-       (op :op ,opcode ,@others)
-       ,arg
-       ',fn
-       ',exception-info)
-     (convert-opcode-extensions opcode (cdr desc-list) insert-into-opcode))))
-
-(define convert-basic-simple-cell ((opcode natp)
-                                   (cell basic-simple-cell-p)
-                                   (insert-into-opcode true-listp))
-  :mode :program
-  :verify-guards nil
-  (b* ((first (car cell))
-       (rest (cdr cell))
-       (exception-info (get-exception-info cell))
-       (feat-from-exc (get-feat-from-exception-info exception-info))
-       (semantic-info (get-semantic-function-info cell))
-       (new-rest (remove-exception-info cell))
-       (new-rest (remove-semantic-function-info new-rest))
-       ;; (- (cw "~% new-rest: ~p0 ~%" new-rest))
-       )
-    (if (stringp first)
-        (b* ((num-ops (nth 1 cell))
-             (superscripts (nthcdr (+ 2 ;; For mnemonic and num-ops
-                                      num-ops)
-                                   new-rest))
-             (arg
-              (case num-ops
-                (0 nil)
-                (1 `(arg :op1 ',(nth 2 cell)))
-                (2 `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)))
-                (3 `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)
-                         :op3 ',(nth 4 cell)))
-                (t `(arg :op1 ',(nth 2 cell) :op2 ',(nth 3 cell)
-                         :op3 ',(nth 4 cell) :op4 ',(nth 5 cell)))))
-             (fn (if (consp semantic-info)
-                     (cdr semantic-info)
-                   nil))
-             (op (if insert-into-opcode
-                     `(op :op ,opcode ,@insert-into-opcode
-                          ,@(and superscripts `(:superscripts ',superscripts))
-                          ,@(and feat-from-exc `(:feat ',feat-from-exc)))
-                   `(op :op ,opcode
-                        ,@(and superscripts `(:superscripts ',superscripts))
-                        ,@(and feat-from-exc `(:feat ',feat-from-exc))))))
-          (list
-           `(inst
-             ,first ;; mnemonic
-             ,op
-             ,arg
-             ',fn
-             ',exception-info)))
-      (if (equal first :NONE)
-          ;; (cw "~% ~p0: Ignoring non-string mnemonic: ~p1 ~%"
-          ;;     __function__ first)
-          nil
-        (if (member-equal first
-                          (remove-all
-                           '(:NONE ;; Ignoring :NONE
-                             :GROUP-1 :GROUP-1A
-                             :GROUP-2 :GROUP-3
-                             :GROUP-4 :GROUP-5
-                             :GROUP-6 :GROUP-7
-                             :GROUP-8 :GROUP-9
-                             :GROUP-10 :GROUP-11
-                             :GROUP-12 :GROUP-13
-                             :GROUP-14 :GROUP-15
-                             :GROUP-16 :GROUP-17)
-                           *simple-cells-legal-keywords*))
-            (b* ((superscripts (nthcdr 1 ;; For group ID
-                                       new-rest))
-                 (op (if insert-into-opcode
-                         `(op :op ,opcode ,@insert-into-opcode
-                              ,@(and superscripts `(:superscripts ',superscripts))
-                              ,@(and feat-from-exc `(:feat ',feat-from-exc)))
-                       `(op :op ,opcode
-                            ,@(and superscripts `(:superscripts ',superscripts))
-                            ,@(and feat-from-exc `(:feat ',feat-from-exc))))))
-              (list
-               `(inst ,first ,op
-                      'nil
-                      ',(if (consp semantic-info)
-                            (cdr semantic-info)
-                          nil)
-                      ',(get-exception-info rest))))
-          ;; Opcode Extensions
-          (convert-opcode-extensions
-           opcode
-           (cdr (assoc-equal first *opcode-extensions-by-group-number*))
-           insert-into-opcode))))))
-
-#||
-
-(convert-basic-simple-cell
- #x0
- '("ADD" 2 (E b)  (G b)
-   (:fn . (x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-           (operation . #.*OP-ADD*)))
-   (:ud . ((ud-Lock-used-Dest-not-Memory-Op))))
- nil)
-
-The :1a in :Group-xxx cells is ignored. These superscripts are taken from
-cells in *opcode-extensions-by-group-number* instead.
-
-(convert-basic-simple-cell #x80 '(:Group-1 :1a) nil)
-||#
-
-(define convert-simple-cell ((opcode natp)
-                             (cell simple-cell-p)
-                             (insert-into-opcode true-listp))
-  :mode :program
-  :verify-guards nil
-  (if (basic-simple-cell-p cell)
-      (convert-basic-simple-cell opcode cell insert-into-opcode)
-    ;; With :EXT:
-    (convert-opcode-extensions opcode (cdr cell) insert-into-opcode)))
-
-#||
-(convert-simple-cell #ux0F_12 '(:EXT
-                                (((:opcode . #ux0F_12)
-                                  (:mod    . :mem)) .
-                                  ("MOVLPS"    3 (V q)  (H q)  (M q)
-                                   (:fn . (x86-movlps/movlpd-Op/En-RM))
-                                   (:ex . ((chk-exc :type-5 (:sse))))))
-                                (((:opcode . #ux0F_12)
-                                  (:mod    . #b11)) .
-                                  ("MOVHLPS"    3 (V q)  (H q)  (U q)
-                                   (:ex . ((chk-exc :type-7 (:sse)))))))
-                     nil)
-||#
-
-(define convert-compound-cell ((opcode natp)
-                               (cell compound-cell-p))
-  :mode :program
-  :verify-guards nil
-  (if (endp cell)
-      nil
-    (b* ((pair (car cell))
-         (key (car pair))
-         (simple-cell (cdr pair))
-         ((when (or (eql key :i64)
-                    (eql key :o64)))
-          (append (convert-simple-cell
-                   opcode simple-cell
-                   ;; If the simple-cell has :EXT, then the opcode-desc will
-                   ;; also include the key in it, so we don't need to include
-                   ;; it in the insert-into-opcode argument.
-                   (if (basic-simple-cell-p simple-cell)
-                       `(:mode ,key)
-                     nil))
-                  (convert-compound-cell opcode (cdr cell))))
-         ((when
-              ;; op-pfx-p
-              (member-equal key '(:NO-PREFIX :66 :F3 :F2
-                                             ;; :v :v66 :vF3 :vF2 ;; vex separated out.
-                                             ;; :ev :ev66 :evF3 :evF2 ;; evex separated out.
-                                             )))
-          (append (convert-simple-cell
-                   opcode simple-cell
-                   ;; Same reasoning about :EXT as above...
-                   (if (basic-simple-cell-p simple-cell)
-                       `(:pfx ,key)
-                     nil))
-                  (convert-compound-cell opcode (cdr cell)))))
-      (convert-compound-cell opcode (cdr cell)))))
-
-#||
-(convert-compound-cell #ux06
-                       '((:i64 . ("PUSH ES" 0
-                                  (:fn . (x86-push-segment-register))
-                                  (:ud  . ((ud-Lock-used)))))
-                         (:o64 . ("#UD" 0
-                                  (:ud  . (t))
-                                  (:fn . (x86-illegal-instruction
-                                          (message .
-                                                   "PUSH ES is illegal in the 64-bit mode!")))))))
-
-(convert-compound-cell #ux0F_38_00
-                                 '((:no-prefix . ("PSHUFB"          2 (P q) (Q q)
-                                                  (:ex . ((chk-exc :type-4 (:sse3))))))
-                                   (:66        . ("PSHUFB"         3 (V x) (H x) (W x)
-                                                  (:ex . ((chk-exc :type-4 (:avx))))))))
-
-(convert-compound-cell #ux82
-                       '((:i64 . (:Group-1 :1a))
-                         (:o64 . ("#UD" 0
-                                  (:ud  . (t))
-                                  (:fn .
-                                       (x86-illegal-instruction
-                                        (message .
-                                                 "Opcode 0x82 is illegal in the 64-bit mode!")))))))
-
-(convert-compound-cell #ux0F_77
-                       '((:no-prefix . ("EMMS"        0
-                                        (:ud . ((ud-Lock-used)
-                                                (equal (cr0Bits->em (cr0)) 1)))))
-                         (:v         . ("VZEROUPPER/VZEROALL"  0
-                                        (:ex . ((chk-exc :type-8 (:avx))))))))
-||#
-
-;; (define convert-cell ((opcode natp)
-;;                       (cell opcode-cell-p))
-;;   :mode :program
-;;   (if (compound-cell-p cell)
-;;       (convert-compound-cell opcode cell)
-;;     (convert-simple-cell opcode cell nil)))
-
-(define get-cpuid-flag-info (opcode-desc)
-  :mode :program
-  (if (atom opcode-desc)
-      opcode-desc
-    (if (and (consp (car opcode-desc))
-             (eql (caar opcode-desc) :FEAT))
-        (car opcode-desc)
-      (get-cpuid-flag-info (cdr opcode-desc)))))
-
-(define get-reg-from-avx ((lst true-listp))
-  (if (endp lst)
-      nil
-    (if (and (consp (car lst))
-             (equal (caar lst) :REG))
-        (cdar lst)
-      (get-reg-from-avx (cdr lst)))))
-
-(define get-mod-from-avx ((lst true-listp))
-  (if (endp lst)
-      nil
-    (if (and (consp (car lst))
-             (equal (caar lst) :MOD))
-        (cdar lst)
-      (get-mod-from-avx (cdr lst)))))
-
-(define remove-reg/mod-from-avx ((lst true-listp))
-  (if (endp lst)
-      nil
-    (if (and (consp (car lst))
-             (or (equal (caar lst) :REG)
-                 (equal (caar lst) :MOD)))
-        (remove-reg/mod-from-avx (cdr lst))
-      (cons (car lst) (remove-reg/mod-from-avx (cdr lst))))))
-
-(define get-avx-exc-type (opcode
-                          cases
-                          (pfx (member-equal pfx '(:66 :F2 :F3 :NO-PREFIX)))
-                          mod reg
-                          (exc-cell avx-exc-type-cell-p)
-                          (ans true-listp))
-  :mode :program
-  :ignore-ok t
-  ;; Based off find-avx-exc-type.
-
-  (cond ((endp exc-cell)
-         (if (or (atom ans)
-                 (not (acl2::all-equalp (car ans) ans)))
-             (er hard? 'get-avx-exc-type
-                 "Something went wrong with the matches!~%~p0"
-                 (list :opcode (str::hexify opcode)
-                       :cases cases
-                       :prefix pfx
-                       :exc-cell exc-cell))
-           (car ans)))
-        ((and (member-equal pfx (caar exc-cell))
-              (or (if mod (member-equal `(:mod . ,mod) (caar exc-cell)) t)
-                  (if reg (member-equal `(:reg . ,reg) (caar exc-cell)) t)
-                  ;; Some EXC maps are not complete w.r.t. mod and reg.
-                  t))
-         (cons (cadar exc-cell) ans))
-        (t (get-avx-exc-type opcode cases pfx mod reg (cdr exc-cell) ans))))
-
-(define convert-avx-opcode (opcode
-                            (avx-opcode true-listp)
-                            (exc-cell avx-exc-type-cell-p))
-  :mode :program
-  :guard (equal (len avx-opcode) 2)
-
-  (if (atom avx-opcode)
-      nil
-    (b* ((cases (car avx-opcode))
-         (desc (cadr avx-opcode))
-         (new-opcode-desc (remove-cpuid-flag-info desc))
-         ;; (- (cw "~% cases: ~p0 desc: ~p1 new-opcode-desc: ~p2~%"
-         ;;        cases desc new-opcode-desc))
-         (feat-val (get-cpuid-flag-info desc))
-         (feat-val (if feat-val (cdr feat-val) nil))
-         (reg (get-reg-from-avx cases))
-         (mod (get-mod-from-avx cases))
-         (reg/mod (if reg
-                      `(:reg ,reg)
-                    nil))
-         (reg/mod (if mod
-                      (append `(:mod ,mod) reg/mod)
-                    reg/mod))
-         ;; (- (cw "~% reg/mod: ~p0~%" reg/mod))
-         (avx-pre (remove-reg/mod-from-avx cases))
-         (avx-pre (remove-equal :vex (remove-equal :evex avx-pre)))
-         (vex? (member-equal :vex cases))
-         (avx (if vex? `(:vex ',avx-pre) `(:evex ',avx-pre)))
-         (mnemonic (car desc))
-         (arg (if (< 1 (len new-opcode-desc))
-                  (b* ((num-ops (second new-opcode-desc))
-                       (arg
-                        (case num-ops
-                          (0 nil)
-                          (1 `(arg :op1 ',(nth 2 new-opcode-desc)))
-                          (2 `(arg :op1 ',(nth 2 new-opcode-desc)
-                                   :op2 ',(nth 3 new-opcode-desc)))
-                          (3 `(arg :op1 ',(nth 2 new-opcode-desc)
-                                   :op2 ',(nth 3 new-opcode-desc)
-                                   :op3 ',(nth 4 new-opcode-desc)))
-                          (t `(arg :op1 ',(nth 2 new-opcode-desc)
-                                   :op2 ',(nth 3 new-opcode-desc)
-                                   :op3 ',(nth 4 new-opcode-desc)
-                                   :op4 ',(nth 5 new-opcode-desc))))))
-                    arg)
-                nil))
-         (pfx (cond ((member-eq :66 cases) :66)
-                    ((member-eq :F2 cases) :F2)
-                    ((member-eq :F3 cases) :F3)
-                    (t                     :NO-PREFIX)))
-         (exc-type (get-avx-exc-type opcode cases pfx mod reg exc-cell nil))
-         (exc-type (if (consp exc-type)
-                       (if (eql (car exc-type) 'CHK-EXC)
-                           exc-type
-                         (if (and (equal (len exc-type) 1)
-                                  (keywordp (car exc-type)))
-                             ;; The exc info. came from the exc. maps.
-                             `((CHK-EXC ,@exc-type ,feat-val))
-                           exc-type))
-                     exc-type))
-         (exception `((:ex . ,exc-type)))
-         (feat (if feat-val `(:feat ',feat-val) nil)))
-      `(inst
-        ,mnemonic
-        (op :op ,opcode ,@avx ,@feat ,@reg/mod)
-        ,arg
-        nil ;; fn --- not implemented yet
-        ',exception
-        ))))
-
-(define convert-avx-opcodes (opcode
-                             (avx-opcodes true-list-listp)
-                             (exc-cell avx-exc-type-cell-p))
-  :mode :program
-  (if (endp avx-opcodes)
-      nil
-    (cons (convert-avx-opcode opcode (car avx-opcodes) exc-cell)
-          (convert-avx-opcodes opcode (cdr avx-opcodes) exc-cell))))
-
-(define convert-cell ((opcode natp)
-                      (cell opcode-cell-p))
-  :mode :program
-  (b* (((mv vex? vex-exc-cell)
-        (cond ((8bits-p opcode)
-               (mv nil nil))
-              ((16bits-p opcode)
-               (mv (assoc (loghead 8 opcode) *vex-0F-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *vex-0F-exc-types*))))
-              ((and (24bits-p opcode)
-                    (equal (logtail 8 opcode) #ux0F_38))
-               (mv (assoc (loghead 8 opcode) *vex-0F38-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *vex-0F38-exc-types*))))
-              ((and (24bits-p opcode)
-                    (equal (logtail 8 opcode) #ux0F_3A))
-               (mv (assoc (loghead 8 opcode) *vex-0F3A-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *vex-0F3A-exc-types*))))
-              (t (mv nil nil))))
-       ((mv evex? evex-exc-cell)
-        (cond ((8bits-p opcode) (mv nil nil))
-              ((16bits-p opcode)
-               (mv (assoc (loghead 8 opcode) *evex-0F-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *evex-0F-exc-types*))))
-              ((and (24bits-p opcode)
-                    (equal (logtail 8 opcode) #ux0F_38))
-               (mv (assoc (loghead 8 opcode) *evex-0F38-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *evex-0F38-exc-types*))))
-              ((and (24bits-p opcode)
-                    (equal (logtail 8 opcode) #ux0F_3A))
-               (mv (assoc (loghead 8 opcode) *evex-0F3A-opcodes*)
-                   (cadr (assoc (loghead 8 opcode) *evex-0F3A-exc-types*))))
-              (t (mv nil nil))))
-       (vex-opcodes (if vex?
-                        (convert-avx-opcodes opcode (cdr vex?) vex-exc-cell)
-                      nil))
-       (evex-opcodes (if evex?
-                         (convert-avx-opcodes opcode (cdr evex?) evex-exc-cell)
-                       nil)))
-    (append
-     (if (compound-cell-p cell)
-         (convert-compound-cell opcode cell)
-       (convert-simple-cell opcode cell nil))
-     vex-opcodes
-     evex-opcodes)))
-
-(define convert-row (opcode row)
-  :mode :program
-  (if (endp row)
-      nil
-    (append (convert-cell opcode (car row))
-            (convert-row (1+ opcode) (cdr row)))))
-
-(define convert-map (opcode map)
-  :mode :program
-  (if (endp map)
-      nil
-    (append (convert-row opcode (car map))
-            (convert-map (+ 16 opcode) (cdr map)))))
-
-;; ----------------------------------------------------------------------
-
-;; (acl2::set-print-base-radix 16 state)
-
-;; The following deal with vex and evex maps (along with their exception type
-;; info.), in addition to the opcode extensions map.  All of that stuff is
-;; hard-coded.
-(make-event
- `(progn
-    (defconst *pre-pre-one-byte-opcode-map*
-      ',(convert-map       #ux00 *one-byte-opcode-map-lst*))
-    (defconst *pre-pre-two-byte-opcode-map*
-      ',(convert-map    #ux0F_00 *two-byte-opcode-map-lst*))
-    (defconst *pre-pre-0F-38-three-byte-opcode-map*
-      ',(convert-map #ux0F_38_00 *0F-38-three-byte-opcode-map-lst*))
-    (defconst *pre-pre-0F-3A-three-byte-opcode-map*
-      ',(convert-map #ux0F_3A_00 *0F-3A-three-byte-opcode-map-lst*))))
-
-;; ----------------------------------------------------------------------
-
-;; Modifying (by hand) pre-pre-maps to get accurate and more complete pre-maps,
-;; that will eventually be converted into maps later in this book:
+(local (xdoc::set-default-parents 'opcode-maps))
 
 (defconst *pre-one-byte-opcode-map*
-  ;; No changes needed here.
   '((INST "ADD" (OP :OP #x0)
           (ARG :OP1 '(E B) :OP2 '(G B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP/TEST-E-G (OPERATION . #x0))
@@ -2472,14 +1963,7 @@ cells in *opcode-extensions-by-group-number* instead.
        '(X86-PUSH-EV)
        '((:UD (UD-LOCK-USED))))))
 
-(local
- (defthm pre-one-byte=one-byte-pre-pre
-   (equal *pre-one-byte-opcode-map*
-          *pre-pre-one-byte-opcode-map*)
-   :rule-classes nil))
-
 (defconst *pre-two-byte-opcode-map*
-  ;; Some hand-edits done here. Search for [SG] below.
   '((INST "SLDT"
           (OP :OP #xF00
               :REG #x0
@@ -2628,7 +2112,7 @@ cells in *opcode-extensions-by-group-number* instead.
               :MOD #x3
               :R/M #x2
               :SUPERSCRIPTS '(:1A)
-              :FEAT '(:SMAP)) ;; [SG] Hand-edited
+              :FEAT '(:SMAP))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (UD-CPL-IS-NOT-ZERO))))
@@ -3773,7 +3257,7 @@ cells in *opcode-extensions-by-group-number* instead.
                       (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                           (EQL (CS.D) #x1)
                           (EQL (CS.D) #x0))))))
-    ;; [SG] Hand-edited (non-mpx encoding will fall through.)
+    ;; Non-mpx encoding will fall through.
     ;; (INST "RESERVEDNOP" (OP :OP #xF1A)
     ;;       NIL 'NIL
     ;;       'NIL)
@@ -3882,7 +3366,7 @@ cells in *opcode-extensions-by-group-number* instead.
                       (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                           (EQL (CS.D) #x1)
                           (EQL (CS.D) #x0))))))
-    ;; [SG] Hand-edited (non-mpx encoding will fall through.)
+    ;; Non-mpx encoding will fall through.
     ;; (INST "RESERVEDNOP" (OP :OP #xF1B)
     ;;       NIL 'NIL
     ;;       'NIL)
@@ -10383,7 +9867,7 @@ cells in *opcode-extensions-by-group-number* instead.
        'NIL
        '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
  (INST "MOVQ2DQ"
-       (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2)) ;; [SG] Hand-edited
+       (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2))
        (ARG :OP1 '(V DQ) :OP2 '(N Q))
        'NIL
        '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
@@ -10391,7 +9875,7 @@ cells in *opcode-extensions-by-group-number* instead.
               (EQUAL (CR4BITS->OSFXSR (CR4)) #x0)
               (UD-LOCK-USED))))
  (INST "MOVDQ2Q"
-       (OP :OP #xFD6 :PFX :F2 :FEAT '(:SSE2)) ;; [SG] Hand-edited
+       (OP :OP #xFD6 :PFX :F2 :FEAT '(:SSE2))
        (ARG :OP1 '(P Q) :OP2 '(U Q))
        'NIL
        '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
@@ -12417,23 +11901,22 @@ cells in *opcode-extensions-by-group-number* instead.
        '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))))
 
 (defconst *pre-0F-38-three-byte-opcode-map*
-  ;; Some hand-edits done here. Search for [SG] below.
   '((INST "PSHUFB"
           (OP :OP #xF3800
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PSHUFB"
           (OP :OP #xF3800
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))));; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPSHUFB"
           (OP :OP #xF3800
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12471,19 +11954,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHADDW"
           (OP :OP #xF3801
               :PFX :NO-PREFIX
-              :FEAT '(:SSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHADDW"
           (OP :OP #xF3801
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHADDW"
           (OP :OP #xF3801
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12503,19 +11986,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHADDD"
           (OP :OP #xF3802
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHADDD"
           (OP :OP #xF3802
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHADDD"
           (OP :OP #xF3802
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12535,19 +12018,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHADDSW"
           (OP :OP #xF3803
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHADDSW"
           (OP :OP #xF3803
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHADDSW"
           (OP :OP #xF3803
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12567,19 +12050,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMADDUBSW"
           (OP :OP #xF3804
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PMADDUBSW"
           (OP :OP #xF3804
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPMADDUBSW"
           (OP :OP #xF3804
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12617,19 +12100,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHSUBW"
           (OP :OP #xF3805
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHSUBW"
           (OP :OP #xF3805
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHSUBW"
           (OP :OP #xF3805
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12649,19 +12132,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHSUBD"
           (OP :OP #xF3806
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHSUBD"
           (OP :OP #xF3806
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHSUBD"
           (OP :OP #xF3806
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12681,19 +12164,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHSUBSW"
           (OP :OP #xF3807
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PHSUBSW"
           (OP :OP #xF3807
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPHSUBSW"
           (OP :OP #xF3807
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12713,19 +12196,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PSIGNB"
           (OP :OP #xF3808
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PSIGNB"
           (OP :OP #xF3808
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPSIGNB"
           (OP :OP #xF3808
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12745,19 +12228,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PSIGNW"
           (OP :OP #xF3809
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PSIGNW"
           (OP :OP #xF3809
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPSIGNW"
           (OP :OP #xF3809
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12777,19 +12260,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PSIGND"
           (OP :OP #xF380A
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PSIGND"
           (OP :OP #xF380A
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPSIGND"
           (OP :OP #xF380A
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -12809,19 +12292,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMULHRSW"
           (OP :OP #xF380B
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PMULHRSW"
           (OP :OP #xF380B
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPMULHRSW"
           (OP :OP #xF380B
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -13066,21 +12549,21 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VCVTPH2PS"
           (OP :OP #xF3813
               :VEX '(:0F38 :128 :66 :W0)
-              :FEAT '(:F16C :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:F16C :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX)))))
     (INST "VCVTPH2PS"
           (OP :OP #xF3813
               :VEX '(:0F38 :256 :66 :W0)
-              :FEAT '(:F16C :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:F16C :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX)))))
     (INST "VPMOVUSDW"
           (OP :OP #xF3813
               :EVEX '(:0F38 :128 :F3 :W0)
@@ -13274,10 +12757,10 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PTEST"
           (OP :OP #xF3817
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPTEST"
           (OP :OP #xF3817
               :VEX '(:0F38 :128 :66 :WIG)
@@ -13420,17 +12903,17 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PABSB"
           (OP :OP #xF381C
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PABSB"
           (OP :OP #xF381C
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPABSB"
           (OP :OP #xF381C
               :VEX '(:0F38 :128 :66 :WIG)
@@ -13464,17 +12947,17 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PABSW"
           (OP :OP #xF381D
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PABSW"
           (OP :OP #xF381D
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPABSW"
           (OP :OP #xF381D
               :VEX '(:0F38 :128 :66 :WIG)
@@ -13508,17 +12991,17 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PABSD"
           (OP :OP #xF381E
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PABSD"
           (OP :OP #xF381E
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPABSD"
           (OP :OP #xF381E
               :VEX '(:0F38 :128 :66 :WIG)
@@ -14042,7 +13525,7 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMULDQ"
           (OP :OP #xF3828
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
@@ -14121,12 +13604,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPEQQ"
           (OP :OP #xF3829
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPCMPEQQ"
           (OP :OP #xF3829
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -14200,10 +13683,10 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "MOVNTDQA"
           (OP :OP #xF382A
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-1 (:SSE4.1))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-1 (:SSE4.1)))
             (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "VMOVNTDQA"
           (OP :OP #xF382A
@@ -14258,12 +13741,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PACKUSDW"
           (OP :OP #xF382B
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPACKUSDW"
           (OP :OP #xF382B
               :VEX '(:0F38 :NDS :128 :66)
@@ -14795,12 +14278,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPGTQ"
           (OP :OP #xF3837
               :PFX :66
-              :FEAT '(:SSE4.2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2)))))
     (INST "VPCMPGTQ"
           (OP :OP #xF3837
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -14838,12 +14321,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMINSB"
           (OP :OP #xF3838
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMINSB"
           (OP :OP #xF3838
               :VEX '(:0F38 :NDS :128 :66)
@@ -14917,12 +14400,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMINSD"
           (OP :OP #xF3839
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMINSD"
           (OP :OP #xF3839
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15014,12 +14497,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMINUW"
           (OP :OP #xF383A
               :PFX :66
-              :FEAT '(:SSE2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE2))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPMINUW"
           (OP :OP #xF383A
               :VEX '(:0F38 :NDS :128 :66)
@@ -15075,12 +14558,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMINUD"
           (OP :OP #xF383B
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMINUD"
           (OP :OP #xF383B
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15136,12 +14619,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMAXSB"
           (OP :OP #xF383C
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMAXSB"
           (OP :OP #xF383C
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15179,12 +14662,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMAXSD"
           (OP :OP #xF383D
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMAXSD"
           (OP :OP #xF383D
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15240,12 +14723,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMAXUW"
           (OP :OP #xF383E
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMAXUW"
           (OP :OP #xF383E
               :VEX '(:0F38 :NDS :128 :66)
@@ -15283,12 +14766,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMAXUD"
           (OP :OP #xF383F
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMAXUD"
           (OP :OP #xF383F
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15344,12 +14827,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PMULLD"
           (OP :OP #xF3840
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPMULLD"
           (OP :OP #xF3840
               :VEX '(:0F38 :NDS :128 :66 :WIG)
@@ -15405,10 +14888,10 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PHMINPOSUW"
           (OP :OP #xF3841
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPHMINPOSUW"
           (OP :OP #xF3841
               :VEX '(:0F38 :128 :66 :WIG)
@@ -16940,35 +16423,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADDSUB132PD"
           (OP :OP #xF3896
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB132PD"
           (OP :OP #xF3896
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB132PS"
           (OP :OP #xF3896
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB132PS"
           (OP :OP #xF3896
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB132PD"
           (OP :OP #xF3896
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -17008,35 +16491,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUBADD132PD"
           (OP :OP #xF3897
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD132PD"
           (OP :OP #xF3897
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD132PS"
           (OP :OP #xF3897
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD132PS"
           (OP :OP #xF3897
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD132PD"
           (OP :OP #xF3897
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -17076,35 +16559,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD132PD"
           (OP :OP #xF3898
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132PD"
           (OP :OP #xF3898
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132PS"
           (OP :OP #xF3898
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132PS"
           (OP :OP #xF3898
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132PD"
           (OP :OP #xF3898
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -17144,19 +16627,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD132SD"
           (OP :OP #xF3899
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132SS"
           (OP :OP #xF3899
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD132SD"
           (OP :OP #xF3899
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -17172,35 +16655,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB132PD"
           (OP :OP #xF389A
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB132PD"
           (OP :OP #xF389A
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB132PS"
           (OP :OP #xF389A
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB132PS"
           (OP :OP #xF389A
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "V4FMADDPS"
           (OP :OP #xF389A
               :EVEX '(:0F38 :DDS :512 :F2 :W0)
@@ -17246,19 +16729,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB132SD"
           (OP :OP #xF389B
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB132SS"
           (OP :OP #xF389B
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "V4FMADDSS"
           (OP :OP #xF389B
               :EVEX '(:0F38 :DDS :LIG :F2 :W0)
@@ -17280,35 +16763,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD132PD"
           (OP :OP #xF389C
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132PD"
           (OP :OP #xF389C
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132PS"
           (OP :OP #xF389C
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132PS"
           (OP :OP #xF389C
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132PD"
           (OP :OP #xF389C
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -17348,19 +16831,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD132SD"
           (OP :OP #xF389D
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132SS"
           (OP :OP #xF389D
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD132SD"
           (OP :OP #xF389D
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -17376,35 +16859,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB132PD"
           (OP :OP #xF389E
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132PD"
           (OP :OP #xF389E
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132PS"
           (OP :OP #xF389E
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132PS"
           (OP :OP #xF389E
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132PD"
           (OP :OP #xF389E
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -17444,19 +16927,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB132SD"
           (OP :OP #xF389F
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132SS"
           (OP :OP #xF389F
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB132SD"
           (OP :OP #xF389F
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -17616,35 +17099,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADDSUB213PD"
           (OP :OP #xF38A6
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB213PD"
           (OP :OP #xF38A6
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB213PS"
           (OP :OP #xF38A6
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB213PS"
           (OP :OP #xF38A6
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB213PD"
           (OP :OP #xF38A6
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -17684,35 +17167,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUBADD213PD"
           (OP :OP #xF38A7
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD213PD"
           (OP :OP #xF38A7
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD213PS"
           (OP :OP #xF38A7
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD213PS"
           (OP :OP #xF38A7
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD213PD"
           (OP :OP #xF38A7
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -17752,35 +17235,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD213PD"
           (OP :OP #xF38A8
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213PD"
           (OP :OP #xF38A8
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213PS"
           (OP :OP #xF38A8
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213PS"
           (OP :OP #xF38A8
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213PD"
           (OP :OP #xF38A8
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -17820,19 +17303,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD213SD"
           (OP :OP #xF38A9
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213SS"
           (OP :OP #xF38A9
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD213SD"
           (OP :OP #xF38A9
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -17848,35 +17331,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB213PD"
           (OP :OP #xF38AA
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB213PD"
           (OP :OP #xF38AA
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB213PS"
           (OP :OP #xF38AA
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB213PS"
           (OP :OP #xF38AA
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "V4FNMADDPS"
           (OP :OP #xF38AA
               :EVEX '(:0F38 :DDS :512 :F2 :W0)
@@ -17922,19 +17405,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB213SD"
           (OP :OP #xF38AB
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB213SS"
           (OP :OP #xF38AB
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "V4FNMADDSS"
           (OP :OP #xF38AB
               :EVEX '(:0F38 :DDS :LIG :F2 :W0)
@@ -17956,35 +17439,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD213PD"
           (OP :OP #xF38AC
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213PD"
           (OP :OP #xF38AC
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213PS"
           (OP :OP #xF38AC
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213PS"
           (OP :OP #xF38AC
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213PD"
           (OP :OP #xF38AC
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18024,19 +17507,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD213SD"
           (OP :OP #xF38AD
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213SS"
           (OP :OP #xF38AD
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD213SD"
           (OP :OP #xF38AD
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18052,35 +17535,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB213PD"
           (OP :OP #xF38AE
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213PD"
           (OP :OP #xF38AE
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213PS"
           (OP :OP #xF38AE
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213PS"
           (OP :OP #xF38AE
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213PD"
           (OP :OP #xF38AE
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18120,19 +17603,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB213SD"
           (OP :OP #xF38AF
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213SS"
           (OP :OP #xF38AF
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB213SD"
           (OP :OP #xF38AF
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18184,35 +17667,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADDSUB231PD"
           (OP :OP #xF38B6
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB231PD"
           (OP :OP #xF38B6
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB231PS"
           (OP :OP #xF38B6
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB231PS"
           (OP :OP #xF38B6
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADDSUB231PD"
           (OP :OP #xF38B6
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -18252,35 +17735,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUBADD231PD"
           (OP :OP #xF38B7
               :VEX '(:0F38 :DDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD231PD"
           (OP :OP #xF38B7
               :VEX '(:0F38 :DDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD231PS"
           (OP :OP #xF38B7
               :VEX '(:0F38 :DDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD231PS"
           (OP :OP #xF38B7
               :VEX '(:0F38 :DDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUBADD231PD"
           (OP :OP #xF38B7
               :EVEX '(:0F38 :DDS :128 :66 :W1)
@@ -18320,35 +17803,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD231PD"
           (OP :OP #xF38B8
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231PD"
           (OP :OP #xF38B8
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231PS"
           (OP :OP #xF38B8
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231PS"
           (OP :OP #xF38B8
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231PD"
           (OP :OP #xF38B8
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18388,19 +17871,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMADD231SD"
           (OP :OP #xF38B9
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231SS"
           (OP :OP #xF38B9
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMADD231SD"
           (OP :OP #xF38B9
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18416,35 +17899,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB231PD"
           (OP :OP #xF38BA
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231PD"
           (OP :OP #xF38BA
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231PS"
           (OP :OP #xF38BA
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231PS"
           (OP :OP #xF38BA
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231PD"
           (OP :OP #xF38BA
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18484,19 +17967,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFMSUB231SD"
           (OP :OP #xF38BB
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231SS"
           (OP :OP #xF38BB
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFMSUB231SD"
           (OP :OP #xF38BB
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18512,35 +17995,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD231PD"
           (OP :OP #xF38BC
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231PD"
           (OP :OP #xF38BC
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231PS"
           (OP :OP #xF38BC
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231PS"
           (OP :OP #xF38BC
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231PD"
           (OP :OP #xF38BC
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18580,19 +18063,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMADD231SD"
           (OP :OP #xF38BD
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231SS"
           (OP :OP #xF38BD
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMADD231SD"
           (OP :OP #xF38BD
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18608,35 +18091,35 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB231PD"
           (OP :OP #xF38BE
               :VEX '(:0F38 :NDS :128 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231PD"
           (OP :OP #xF38BE
               :VEX '(:0F38 :NDS :256 :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231PS"
           (OP :OP #xF38BE
               :VEX '(:0F38 :NDS :128 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231PS"
           (OP :OP #xF38BE
               :VEX '(:0F38 :NDS :256 :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231PD"
           (OP :OP #xF38BE
               :EVEX '(:0F38 :NDS :128 :66 :W1)
@@ -18676,19 +18159,19 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VFNMSUB231SD"
           (OP :OP #xF38BF
               :VEX '(:0F38 :DDS :LIG :66 :W1)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231SS"
           (OP :OP #xF38BF
               :VEX '(:0F38 :DDS :LIG :66 :W0)
-              :FEAT '(:FMA :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:FMA :AVX))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX))))) ;; [SG] Hand-edited
+          NIL '((:EX (CHK-EXC :TYPE-2 (:FMA :AVX)))))
     (INST "VFNMSUB231SD"
           (OP :OP #xF38BF
               :EVEX '(:0F38 :DDS :LIG :66 :W1)
@@ -18850,10 +18333,10 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E12NP (:AVX512PF)))))
     (INST "SHA1NEXTE"
-          (OP :OP #xF38C8 :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38C8 :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "VEXP2PD"
           (OP :OP #xF38C8
               :EVEX '(:0F38 :512 :66 :W1)
@@ -18867,15 +18350,15 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E2 (:AVX512ER)))))
     (INST "SHA1MSG1"
-          (OP :OP #xF38C9 :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38C9 :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "SHA1MSG2"
-          (OP :OP #xF38CA :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38CA :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "VRCP28PD"
           (OP :OP #xF38CA
               :EVEX '(:0F38 :512 :66 :W1)
@@ -18889,10 +18372,10 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E2 (:AVX512ER)))))
     (INST "SHA256RNDS2"
-          (OP :OP #xF38CB :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38CB :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "VRCP28SD"
           (OP :OP #xF38CB
               :EVEX '(:0F38 :NDS :LIG :66 :W1)
@@ -18906,10 +18389,10 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E3 (:AVX512ER)))))
     (INST "SHA256MSG1"
-          (OP :OP #xF38CC :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38CC :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "VRSQRT28PD"
           (OP :OP #xF38CC
               :EVEX '(:0F38 :512 :66 :W1)
@@ -18923,10 +18406,10 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E2 (:AVX512ER)))))
     (INST "SHA256MSG2"
-          (OP :OP #xF38CD :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF38CD :FEAT '(:SHA))
           (ARG :OP1 '(V DQ) :OP2 '(W DQ))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "VRSQRT28SD"
           (OP :OP #xF38CD
               :EVEX '(:0F38 :NDS :LIG :66 :W1)
@@ -19076,147 +18559,147 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W0)
-              :FEAT '(:BMI1 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W1)
-              :FEAT '(:BMI1 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSR"
           (OP :OP #xF38F3
               :REG #x1
               :SUPERSCRIPTS '(:V))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           'NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "BLSMSK"
           (OP :OP #xF38F3
               :REG #x2
               :SUPERSCRIPTS '(:V))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           'NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
-    ;; [SG] Hand-edited: BLSI is a VEX-only instruction.
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+    ;; BLSI is a VEX-only instruction.
     ;; (INST "BLSI"
     ;;       (OP :OP #xF38F3
     ;;           :REG #x3
     ;;           :SUPERSCRIPTS '(:V)
-    ;;           :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+    ;;           :FEAT '(:BMI2 :AVX))
     ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
     ;;       'NIL
     ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
-    ;; [SG] Hand-edited
+
     (INST "BLSR"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x1)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSR"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x1)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSMSK"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x2)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSMSK"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x2)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x3)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
-              :FEAT '(:BMI1 :AVX) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX)
               :REG #x3)
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "PDEP"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "PDEP"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "PEXT"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F3 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "PEXT"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F3 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "ADCX"
           (OP :OP #xF38F6
               :PFX :66
@@ -19234,99 +18717,97 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "MULX"
           (OP :OP #xF38F6
               :VEX '(:0F38 :NDD :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(B Y)
                :OP2 '(G Y)
                :OP3 '(:RDX)
                :OP4 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "MULX"
           (OP :OP #xF38F6
               :VEX '(:0F38 :NDD :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(B Y)
                :OP2 '(G Y)
                :OP3 '(:RDX)
                :OP4 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "BEXTR"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :W0)
-              :FEAT '(:BMI1 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "BEXTR"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :W1)
-              :FEAT '(:BMI1 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI1 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))) ;; [SG] Hand-edited
-  )
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))))
 
 (defconst *pre-0f-3a-three-byte-opcode-map*
-  ;; Some hand-edits done here. Search for [SG] below.
   '((INST "VPERMQ"
           (OP :OP #xF3A00
               :VEX '(:0F3A :256 :66 :W1)
@@ -19544,12 +19025,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "ROUNDPD"
           (OP :OP #xF3A09
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1)))))
     (INST "VROUNDPD"
           (OP :OP #xF3A09
               :VEX '(:0F3A :128 :66 :WIG)
@@ -19587,12 +19068,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "ROUNDSS"
           (OP :OP #xF3A0A
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V SS)
                :OP2 '(W SS)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-3 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-3 (:SSE4.1)))))
     (INST "VROUNDSS"
           (OP :OP #xF3A0A
               :VEX '(:0F3A :NDS :LIG :66 :WIG)
@@ -19610,12 +19091,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "ROUNDSD"
           (OP :OP #xF3A0B
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V SD)
                :OP2 '(W SD)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-3 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-3 (:SSE4.1)))))
     (INST "VROUNDSD"
           (OP :OP #xF3A0B
               :VEX '(:0F3A :NDS :LIG :66 :WIG)
@@ -19689,13 +19170,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PBLENDW"
           (OP :OP #xF3A0E
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VPBLENDW"
           (OP :OP #xF3A0E
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -19717,22 +19198,22 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PALIGNR"
           (OP :OP #xF3A0F
               :PFX :NO-PREFIX
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q)
                :OP2 '(Q Q)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "PALIGNR"
           (OP :OP #xF3A0F
               :PFX :66
-              :FEAT '(:SSSE3)) ;; [SG] Hand-edited
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSSE3))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
     (INST "VPALIGNR"
           (OP :OP #xF3A0F
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -19828,7 +19309,7 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PEXTRD/Q"
           (OP :OP #xF3A16
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(E Y)
                :OP2 '(V DQ)
                :OP3 '(I B))
@@ -19865,12 +19346,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "EXTRACTPS"
           (OP :OP #xF3A17
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(E D)
                :OP2 '(V DQ)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
     (INST "VEXTRACTPS"
           (OP :OP #xF3A17
               :VEX '(:0F3A :128 :66 :WIG)
@@ -19977,21 +19458,21 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "VCVTPS2PH"
           (OP :OP #xF3A1D
               :VEX '(:0F3A :128 :66 :W0)
-              :FEAT '(:F16C :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:F16C :AVX))
           (ARG :OP1 '(W X)
                :OP2 '(V X)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX)))))
     (INST "VCVTPS2PH"
           (OP :OP #xF3A1D
               :VEX '(:0F3A :256 :66 :W0)
-              :FEAT '(:F16C :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:F16C :AVX))
           (ARG :OP1 '(W X)
                :OP2 '(V X)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-11 (:F16C :AVX)))))
     (INST "VCVTPS2PH"
           (OP :OP #xF3A1D
               :EVEX '(:0F3A :128 :66 :W0)
@@ -20082,8 +19563,8 @@ cells in *opcode-extensions-by-group-number* instead.
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
-    ;; [SG] Hand-edited
-    (INST "PINSRB" 
+
+    (INST "PINSRB"
           (OP :OP #xF3A20
               :PFX :66
               :MOD #x3
@@ -20094,8 +19575,8 @@ cells in *opcode-extensions-by-group-number* instead.
                :OP4 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
-    ;; [SG] Hand-edited
-    (INST "PINSRB" 
+
+    (INST "PINSRB"
           (OP :OP #xF3A20
               :PFX :66
               :MOD :MEM
@@ -20121,7 +19602,7 @@ cells in *opcode-extensions-by-group-number* instead.
               :FEAT '(:AVX512BW))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
-    ;; [SG] Hand-edited
+
     (INST "INSERTPS"
           (OP :OP #xF3A21
               :PFX :66
@@ -20132,7 +19613,7 @@ cells in *opcode-extensions-by-group-number* instead.
                :OP3 '(M D)
                :OP4 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
-    ;; [SG] Hand-edited
+
     (INST "INSERTPS"
           (OP :OP #xF3A21
               :PFX :66
@@ -20172,13 +19653,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PINSRD/Q"
           (OP :OP #xF3A22
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V DQ)
                :OP2 '(H DQ)
                :OP3 '(E Y)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
     (INST "VPINSRD"
           (OP :OP #xF3A22
               :VEX '(:0F3A :NDS :128 :66 :W0)
@@ -20555,13 +20036,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "DPPS"
           (OP :OP #xF3A40
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1)))))
     (INST "VDPPS"
           (OP :OP #xF3A40
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -20583,13 +20064,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "DPPD"
           (OP :OP #xF3A41
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V DQ)
                :OP2 '(H DQ)
                :OP3 '(W DQ)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-2 (:SSE4.1)))))
     (INST "VDPPD"
           (OP :OP #xF3A41
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -20602,13 +20083,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "MPSADBW"
           (OP :OP #xF3A42
               :PFX :66
-              :FEAT '(:SSE4.1)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.1)))))
     (INST "VMPSADBW"
           (OP :OP #xF3A42
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -20672,13 +20153,13 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCLMULQDQ"
           (OP :OP #xF3A44
               :PFX :66
-              :FEAT '(:PCLMULQDQ)) ;; [SG] Hand-edited
+              :FEAT '(:PCLMULQDQ))
           (ARG :OP1 '(V DQ)
                :OP2 '(H DQ)
                :OP3 '(W DQ)
                :OP4 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:PCLMULQDQ))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:PCLMULQDQ)))))
     (INST "VPCLMULQDQ"
           (OP :OP #xF3A44
               :VEX '(:0F3A :NDS :128 :66 :WIG)
@@ -20899,12 +20380,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPESTRM"
           (OP :OP #xF3A60
               :PFX :66
-              :FEAT '(:SSE4.2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.2))
           (ARG :OP1 '(V DQ)
                :OP2 '(W DQ)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2)))))
     (INST "VPCMPESTRM"
           (OP :OP #xF3A60
               :VEX '(:0F3A :128 :66)
@@ -20916,12 +20397,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPESTRI"
           (OP :OP #xF3A61
               :PFX :66
-              :FEAT '(:SSE4.2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.2))
           (ARG :OP1 '(V DQ)
                :OP2 '(W DQ)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2)))))
     (INST "VPCMPESTRI"
           (OP :OP #xF3A61
               :VEX '(:0F3A :128 :66)
@@ -20933,12 +20414,12 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPISTRM"
           (OP :OP #xF3A62
               :PFX :66
-              :FEAT '(:SSE4.2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.2))
           (ARG :OP1 '(V DQ)
                :OP2 '(W DQ)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SSE4.2)))))
     (INST "VPCMPISTRM"
           (OP :OP #xF3A62
               :VEX '(:0F3A :128 :66 :WIG)
@@ -20950,7 +20431,7 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "PCMPISTRI"
           (OP :OP #xF3A63
               :PFX :66
-              :FEAT '(:SSE4.2)) ;; [SG] Hand-edited
+              :FEAT '(:SSE4.2))
           (ARG :OP1 '(V DQ)
                :OP2 '(W DQ)
                :OP3 '(I B))
@@ -21013,12 +20494,12 @@ cells in *opcode-extensions-by-group-number* instead.
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6 (:AVX512DQ)))))
     (INST "SHA1RNDS4"
-          (OP :OP #xF3ACC :FEAT '(:SHA)) ;; [SG] Hand-edited
+          (OP :OP #xF3ACC :FEAT '(:SHA))
           (ARG :OP1 '(V DQ)
                :OP2 '(W DQ)
                :OP3 '(I B))
           'NIL
-          '((:EX (CHK-EXC :TYPE-4 (:SHA))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-4 (:SHA)))))
     (INST "AESKEYGENASSIST"
           (OP :OP #xF3ADF
               :PFX :66
@@ -21040,40 +20521,39 @@ cells in *opcode-extensions-by-group-number* instead.
     (INST "RORX"
           (OP :OP #xF3AF0
               :VEX '(:0F3A :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX))))) ;; [SG] Hand-edited
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     (INST "RORX"
           (OP :OP #xF3AF0
               :VEX '(:0F3A :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX)) ;; [SG] Hand-edited
+              :FEAT '(:BMI2 :AVX))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))) ;; [SG] Hand-edited
-  )
+          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))))
 
 ;; ----------------------------------------------------------------------
 
 (define eval-pre-map (x state)
-  :mode :program
-  (if (atom x)
-      (mv nil x state)
-    (b* (((mv ?erp val state)
-          (acl2::trans-eval
-           (car x)
-           'eval-pre-map state t))
-         ;; (car val) is stobjs-out.
-         ;; (- (cw "~%~p0~%" (inst-p (cdr val))))
-         ((mv erp rest state)
-          (eval-pre-map (cdr x) state))
-         (all (cons (cdr val) rest))
-         (erp (or erp (if (inst-list-p all) nil t))))
-      (mv erp all state))))
+   :mode :program
+   (if (atom x)
+       (mv nil x state)
+     (b* (((mv ?erp val state)
+           (acl2::trans-eval
+            (car x)
+            'eval-pre-map state t))
+          ;; (car val) is stobjs-out.
+          ;; (- (cw "~%~p0~%" (inst-p (cdr val))))
+          ((mv erp rest state)
+           (eval-pre-map (cdr x) state))
+          (all (cons (cdr val) rest))
+          (erp (or erp (if (inst-list-p all) nil t))))
+       (mv erp all state))))
 
 (make-event
  (mv-let (one-byte-opcode-map

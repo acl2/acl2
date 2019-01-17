@@ -1,3 +1,6 @@
+; ----------                DEPRECATED                   ---------- 
+; ----------     SUPERSEDED BY DISPATCH-CREATOR.LISP     ----------
+
 ; X86ISA Library
 
 ; Note: The license below is based on the template at:

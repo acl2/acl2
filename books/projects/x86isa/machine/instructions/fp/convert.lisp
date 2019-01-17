@@ -81,8 +81,7 @@
                                            sp-sse-cvt-fp-to-int
                                            dp-sse-cvt-fp-to-int)))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cvts?2si/cvtts?2si-Op/En-RM)
@@ -173,8 +172,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cvtsi2s?-Op/En-RM)
@@ -267,8 +265,7 @@
 
   :dp-to-sp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cvts?2s?-Op/En-RM)
@@ -354,8 +351,7 @@
   "<h3>Op/En = RM: \[OP XMM, XMM/M\]</h3>
   0F 5A: CVTPS2PD xmm1, xmm2/m64<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cvtps2pd-Op/En-RM)
@@ -458,8 +454,7 @@
 
   :guard-hints (("Goal" :in-theory (enable merge-2-u32s)))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cvtpd2ps-Op/En-RM)

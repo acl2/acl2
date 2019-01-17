@@ -50,7 +50,7 @@
 (include-book "cpuid")
 (include-book "std/strings/hexify" :dir :system)
 
-(local (include-book "dispatch-utils"))
+(local (include-book "dispatch-creator"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
@@ -114,9 +114,8 @@
     :returns (x86 x86p :hyp (x86p x86))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F-opcodes*
-                      *vex-0F-exc-types*
-                      t state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_00 256 :vex-0F (w state)))))
 
 (make-event
  `(define vex-0F38-execute
@@ -149,9 +148,8 @@
     :returns (x86 x86p :hyp (x86p x86))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F38-opcodes*
-                      *vex-0F38-exc-types*
-                      t state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_38_00 256 :VEX-0F-38 (w state)))))
 
 (make-event
  `(define vex-0F3A-execute
@@ -184,9 +182,8 @@
     :returns (x86 x86p :hyp (x86p x86))
 
     (case opcode
-      ,@(avx-case-gen *vex-0F3A-opcodes*
-                      *vex-0F3A-exc-types*
-                      t state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_3A_00 256 :vex-0f-3a (w state)))))
 
 
 (define vex-decode-and-execute

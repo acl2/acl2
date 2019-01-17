@@ -50,7 +50,7 @@
 (include-book "cpuid")
 (include-book "std/strings/hexify" :dir :system)
 
-(local (include-book "dispatch-utils"))
+(local (include-book "dispatch-creator"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
@@ -110,9 +110,8 @@
                                                       signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F-opcodes*
-                      *evex-0F-exc-types*
-                      nil state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_00 256 :evex-0F (w state)))))
 
 (make-event
  `(define evex-0F38-execute
@@ -154,9 +153,8 @@
                                                       signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F38-opcodes*
-                      *evex-0F38-exc-types*
-                      nil state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_38_00 256 :evex-0F-38 (w state)))))
 
 (make-event
  `(define evex-0F3A-execute
@@ -198,9 +196,8 @@
                                                       signed-byte-p)))))
 
     (case opcode
-      ,@(avx-case-gen *evex-0F3A-opcodes*
-                      *evex-0F3A-exc-types*
-                      nil state))))
+      ,@(create-dispatch-for-opcodes
+         #ux0F_3A_00 256 :evex-0F-3A (w state)))))
 
 (define evex-decode-and-execute
   ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))

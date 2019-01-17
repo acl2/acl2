@@ -42,7 +42,7 @@
 (in-package "X86ISA")
 
 (include-book "../utils/structures")
-(include-book "opcode-maps")
+(include-book "opcode-maps") ;; TODO: replace by inst-listing
 (include-book "top-level-memory")
 (include-book "dispatch-macros")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -3517,8 +3517,8 @@
 		   :do-not-induct t))
     :returns (cond-stmt alistp)
 
-    ;; Borrowed heavily from create-case-dispatch-for-opcode-extensions-aux in
-    ;; dispatch-utils.lisp.  Keep these two in sync.
+    ;; Borrowed heavily from create-dispatch-for-one-opcode in
+    ;; dispatch-creator.lisp.  Keep these two in sync.
 
     (if (endp desc-list)
 	`((t 0))
