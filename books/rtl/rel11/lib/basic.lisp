@@ -301,9 +301,7 @@
   :rule-classes ())
 
 (defthmd fl-mod
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
+  (implies (not (zp m))
 	   (equal (fl (/ (mod a (* m n)) n))
 	          (mod (fl (/ a n)) m))))
 
@@ -342,6 +340,10 @@
   :rule-classes ())
 
 (defund congruent (a b n)
+  (declare (xargs :guard (and (real/rationalp a)
+                              (real/rationalp b)
+                              (real/rationalp n)
+                              (not (= n 0)))))
   (equal (mod a n) (mod b n)))
 
 (defthmd mod-mult

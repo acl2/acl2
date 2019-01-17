@@ -123,7 +123,7 @@
 
        ;; Also note that the Jan'13 Intel Manual says (Sec. 3.4.3.3,
        ;; V-1): "They (system flags, of which TF is one) should not be
-       ;; modified by application programs."       
+       ;; modified by application programs."
 
        (x86 (wr64 *r11* (!rflagsBits->tf 1 eflags) x86)) ;; SYSCALL
 
@@ -195,7 +195,7 @@
 
        ;; Clear RF, VM. Reserved bits retain their fixed values. Set
        ;; bit 2 (PF).
-       
+
        (eflags (!rflagsBits->rf 0 eflags))
        (eflags (!rflagsBits->vm 0 eflags)) ;; SYSRET
        (eflags (!rflagsBits->pf 1 eflags))
@@ -293,7 +293,7 @@
        ;; CS.Base   <- 0;       (* Flat segment *)
        ;; CS.Limit  <- FFFFFH;  (* With 4-KByte granularity, implies a 4-GByte limit *)
        (cs-hidden-base-addr 0)
-       (cs-hidden-limit #xfffff)
+       (cs-hidden-limit #xffffffff) ; this is 32 bits, not 20 bits
        ;; CS.A       <- 1;   (* Accessed. *)
        ;; CS.R       <- 1;   (* Execute/read code. *)
        ;; CS.C       <- 0;
@@ -343,7 +343,7 @@
        ;; SS.Base  <-  0;      (* Flat segment *)
        ;; SS.Limit <-  FFFFFH; (* With 4-KByte granularity, implies a 4-GByte limit *)
        (ss-hidden-base-addr 0)
-       (ss-hidden-limit #xfffff)
+       (ss-hidden-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
        ;; SS.A       <-  1;      (* Accessed. *)
        ;; SS.W       <-  1;      (* Read/write data. *)
@@ -500,7 +500,7 @@
        ;; CS.Base  <-  0;      (* Flat segment *)
        ;; CS.Limit <- FFFFFH;  (* With 4-KByte granularity, implies a 4-GByte limit *)
        (cs-base-addr 0)
-       (cs-limit #xfffff)
+       (cs-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
        ;; CS.A       <- 1;   (* Accessed. *)
        ;; CS.R       <- 1;   (* Execute/read code. *)
@@ -550,7 +550,7 @@
        ;; SS.Base  <- 0;           (* Flat segment *)
        ;; SS.Limit <- FFFFFH;      (* With 4-KByte granularity, implies a 4-GByte limit *)
        (ss-base-addr 0)
-       (ss-limit #xfffff)
+       (ss-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
        ;; SS.A       <-  1;      (* Accessed. *)
        ;; SS.W       <-  1;      (* Read/write data. *)

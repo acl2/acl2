@@ -241,7 +241,7 @@
 
   ///
 
-  (defthm-usb n01p-page-present
+  (defthm-unsigned-byte-p n01p-page-present
     :hyp t
     :bound 1
     :concl (page-present val)
@@ -256,7 +256,7 @@
 
   ///
 
-  (defthm-usb n01p-page-size
+  (defthm-unsigned-byte-p n01p-page-size
     :hyp t
     :bound 1
     :concl (page-size val)
@@ -271,7 +271,7 @@
 
   ///
 
-  (defthm-usb n01p-page-read-write
+  (defthm-unsigned-byte-p n01p-page-read-write
     :hyp t
     :bound 1
     :concl (page-read-write val)
@@ -286,7 +286,7 @@
 
   ///
 
-  (defthm-usb n01p-page-user-supervisor
+  (defthm-unsigned-byte-p n01p-page-user-supervisor
     :hyp t
     :bound 1
     :concl (page-user-supervisor val)
@@ -301,7 +301,7 @@
 
   ///
 
-  (defthm-usb n01p-page-execute-disable
+  (defthm-unsigned-byte-p n01p-page-execute-disable
     :hyp t
     :bound 1
     :concl (page-execute-disable val)
@@ -316,7 +316,7 @@
 
   ///
 
-  (defthm-usb n01p-accessed-bit
+  (defthm-unsigned-byte-p n01p-accessed-bit
     :hyp t
     :bound 1
     :concl (accessed-bit val)
@@ -331,7 +331,7 @@
 
   ///
 
-  (defthm-usb n01p-dirty-bit
+  (defthm-unsigned-byte-p n01p-dirty-bit
     :hyp t
     :bound 1
     :concl (dirty-bit val)
@@ -348,7 +348,7 @@
 
   (local (in-theory (e/d (!ia32e-page-tablesbits->a) ())))
 
-  (defthm-usb n64p-set-accessed-bit
+  (defthm-unsigned-byte-p n64p-set-accessed-bit
     :hyp t
     :bound 64
     :concl (set-accessed-bit val)
@@ -365,7 +365,7 @@
 
   (local (in-theory (e/d (!ia32e-page-tablesbits->d) ())))
 
-  (defthm-usb n64p-set-dirty-bit
+  (defthm-unsigned-byte-p n64p-set-dirty-bit
     :hyp t
     :bound 64
     :concl (set-dirty-bit val)
@@ -450,7 +450,7 @@
       (natp (page-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
-    (defthm-usb *physical-address-size*p-page-table-entry-addr
+    (defthm-unsigned-byte-p *physical-address-size*p-page-table-entry-addr
       :bound *physical-address-size*
       :concl (page-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -465,7 +465,7 @@
     (defthm page-table-entry-addr-is-a-multiple-of-8
       (equal (loghead 3 (page-table-entry-addr lin-addr base-addr)) 0))
 
-    (defthm-usb adding-7-to-page-table-entry-addr
+    (defthm-unsigned-byte-p adding-7-to-page-table-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (page-table-entry-addr lin-addr base-addr))
       :hints-l (("Goal" :in-theory (e/d ()
@@ -514,7 +514,7 @@
       (natp (page-directory-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
-    (defthm-usb *physical-address-size*p-page-directory-entry-addr
+    (defthm-unsigned-byte-p *physical-address-size*p-page-directory-entry-addr
       :bound *physical-address-size*
       :concl (page-directory-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -529,7 +529,7 @@
     (defthm page-directory-entry-addr-is-a-multiple-of-8
       (equal (loghead 3 (page-directory-entry-addr lin-addr base-addr)) 0))
 
-    (defthm-usb adding-7-to-page-directory-entry-addr
+    (defthm-unsigned-byte-p adding-7-to-page-directory-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (page-directory-entry-addr lin-addr base-addr))
       :gen-linear t
@@ -574,7 +574,7 @@
       (natp (page-dir-ptr-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
-    (defthm-usb *physical-address-size*p-page-dir-ptr-table-entry-addr
+    (defthm-unsigned-byte-p *physical-address-size*p-page-dir-ptr-table-entry-addr
       :bound *physical-address-size*
       :concl (page-dir-ptr-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -589,7 +589,7 @@
     (defthm page-dir-ptr-table-entry-addr-is-a-multiple-of-8
       (equal (loghead 3 (page-dir-ptr-table-entry-addr lin-addr base-addr)) 0))
 
-    (defthm-usb adding-7-to-page-dir-ptr-table-entry-addr
+    (defthm-unsigned-byte-p adding-7-to-page-dir-ptr-table-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr))
       :hints-l (("Goal" :in-theory (e/d ()
@@ -636,7 +636,7 @@
       (natp (pml4-table-entry-addr lin-addr base-addr))
       :rule-classes (:rewrite :type-prescription))
 
-    (defthm-usb *physical-address-size*p-pml4-table-entry-addr
+    (defthm-unsigned-byte-p *physical-address-size*p-pml4-table-entry-addr
       :bound *physical-address-size*
       :concl (pml4-table-entry-addr lin-addr base-addr)
       :hints (("Goal" :in-theory (e/d ()
@@ -651,7 +651,7 @@
     (defthm pml4-table-entry-addr-is-a-multiple-of-8
       (equal (loghead 3 (pml4-table-entry-addr lin-addr base-addr)) 0))
 
-    (defthm-usb adding-7-to-pml4-table-entry-addr
+    (defthm-unsigned-byte-p adding-7-to-pml4-table-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (pml4-table-entry-addr lin-addr base-addr))
       :gen-linear t
@@ -1329,7 +1329,7 @@ accesses.</p>
 
   ///
 
-  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-table
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-table
     :hyp t
     :bound *physical-address-size*
     :concl (mv-nth 1
@@ -1660,7 +1660,7 @@ accesses.</p>
 
   ///
 
-  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-directory
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-directory
     :hyp t
     :bound *physical-address-size*
     :concl (mv-nth 1
@@ -2002,7 +2002,7 @@ accesses.</p>
 
   ///
 
-  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table
     :hyp t
     :bound *physical-address-size*
     :concl (mv-nth 1
@@ -2261,7 +2261,7 @@ accesses.</p>
 
   ///
 
-  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa-pml4-table
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-pml4-table
     :hyp t
     :bound *physical-address-size*
     :concl (mv-nth 1
@@ -2455,7 +2455,7 @@ accesses.</p>
 
   ///
 
-  (defthm-usb n52p-mv-nth-1-ia32e-la-to-pa
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa
     :hyp t
     :bound *physical-address-size*
     :concl (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))

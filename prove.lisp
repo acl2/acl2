@@ -2268,6 +2268,99 @@
         (t (all-ffn-symbs-lst-lst (cdr lst)
                                   (all-ffn-symbs-lst (car lst) ans)))))
 
+(defun tilde-@-unknown-names-phrase (lst field wrld acc)
+
+; This function returns nil if every element of lst references a known name.
+; Otherwise, a message is returned suitable for printing after "..., because ".
+
+  (declare (xargs :guard (and (true-listp lst)
+                              (plist-worldp wrld)
+                              (null (collect-non-hint-events lst t)))))
+  (cond ((endp lst)
+         (and acc
+              (msg "its ~x0 field contains the following that ~#1~[does not ~
+                    name an event~/do not name events~]: ~&1"
+                   field acc)))
+        (t (let ((name (if (symbolp (car lst))
+                           (car lst)
+                         (cadr (car lst)))))
+             (cond ((getpropc name 'absolute-event-number nil wrld)
+                    (tilde-@-unknown-names-phrase (cdr lst) field wrld acc))
+                   (t (tilde-@-unknown-names-phrase (cdr lst)
+                                                    field
+                                                    wrld
+                                                    (cons name acc))))))))
+
+(defun tilde-@-illegal-hint-events-phrase (lst field wrld)
+
+; This function returns nil if lst is a true list of objects suitable for the
+; given summary field, all of whose elements reference a known name.
+; Otherwise, a message is returned suitable for printing after "..., because ".
+
+  (declare (xargs :guard (and (member-eq field '(:use-names
+                                                 :by-names
+                                                 :clause-processor-fns))
+                              (plist-worldp wrld))))
+  (cond
+   ((not (true-listp lst))
+    (msg "its ~x0 field, ~x1, is not a true-list"
+         field
+         lst))
+   (t (let* ((non-symbols-okp (member-eq field '(:use-names :by-names)))
+             (bad (collect-non-hint-events lst non-symbols-okp)))
+        (cond (bad (msg "its ~x0 field contains the following illegal ~
+                         object~#1~[/s~]: ~&1"
+                        field bad))
+              (t (tilde-@-unknown-names-phrase lst field wrld nil)))))))
+
+(defun collect-non-runes-from-summary-data (runes wrld)
+  (declare (xargs :mode :program
+                  :guard ; partial guard
+                  (and (true-listp runes)
+                       (plist-worldp wrld))))
+  (cond ((endp runes) nil)
+        ((let ((r (car runes)))
+           (and (consp r)
+                (consp (cdr r))
+                (or (null (cadr r)) ; fake rune
+                    (runep r wrld))))
+         (collect-non-runes-from-summary-data (cdr runes) wrld))
+        (t (cons (car runes)
+                 (collect-non-runes-from-summary-data (cdr runes) wrld)))))
+
+(defun tilde-@-illegal-summary-data-phrase (x wrld)
+
+; Returns a msg suitable for printing after "is not a valid summary-data
+; record: ", which should not include the closing period.
+
+  (declare (xargs :mode :program))
+  (and x ; nil is legal
+       (or (and (not (weak-summary-data-p x))
+                (msg "it is not a summary-data record.  Use ~x0 to ~
+                      create such a record (see :DOC make-summary-data)"
+                     'make-summary-data))
+           (let ((runes (access summary-data x :runes)))
+             (or (and (not (true-listp runes))
+                      (msg "its :runes field, ~x0, is not a true-list"
+                           runes))
+                 (let ((bad (collect-non-runes-from-summary-data runes wrld)))
+                   (and bad
+                        (msg "its :runes field contains the following list of ~
+                              unknown runes: ~x0"
+                             bad)))))
+           (tilde-@-illegal-hint-events-phrase (access summary-data x
+                                                       :use-names)
+                                               :use-names
+                                               wrld)
+           (tilde-@-illegal-hint-events-phrase (access summary-data x
+                                                       :by-names)
+                                               :by-names
+                                               wrld)
+           (tilde-@-illegal-hint-events-phrase (access summary-data x
+                                                       :clause-processor-fns)
+                                               :clause-processor-fns
+                                               wrld))))
+
 (defun eval-clause-processor (clause term stobjs-out verified-p pspv ctx state)
 
 ; Verified-p is either nil, t, or a well-formedness-guarantee of the form
@@ -2282,8 +2375,7 @@
    (let ((original-wrld (w state))
          (cl-term (subst-var (kwote clause) 'clause term)))
      (protect-system-state-globals
-      (pprogn
-       (mv-let
+      (mv-let
         (erp trans-result state)
         (ev-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
 
@@ -2327,7 +2419,7 @@
                      (set-w! original-wrld state)
                      (cond
                       ((equal val (list clause)) ; avoid checks below
-                       (value val))
+                       (value (cons val nil)))   ; no point to summary-data
                       (t
                        (let* ((user-says-skip-termp-checkp
                                (skip-meta-termp-checks
@@ -2335,7 +2427,7 @@
                               (well-formedness-guarantee
                                (if (consp verified-p)
                                    verified-p
-                                   nil))
+                                 nil))
                               (not-skipped
                                (and (not user-says-skip-termp-checkp)
                                     (not well-formedness-guarantee)))
@@ -2415,7 +2507,36 @@
                                          :forbidden-fns)))
                                nil
                                state))
-                          (t (value val)))))))))))))))))))
+                          (t
+                           (let* ((summary-data
+
+; Result is an object either of the form (eval-erp val st1 ... stn) or of the
+; form (eval-erp val st1 ... stn summary-data), where n could be 0.
+
+                                   (and (cddr stobjs-out)
+                                        (null (car (last stobjs-out)))
+                                        (car (last result))))
+                                  (msg (tilde-@-illegal-summary-data-phrase
+                                        summary-data
+                                        original-wrld)))
+                             (cond
+                              (msg
+                               (mv (msg
+                                    "The :CLAUSE-PROCESSOR ~
+                                     hint~|~%~Y01~%evaluated to multiple ~
+                                     values whose last value, ~X23, is not a ~
+                                     valid summary-data record, because ~@4.  ~
+                                     See :DOC clause-processor."
+                                    term
+                                    nil
+                                    summary-data
+                                    (term-evisc-tuple t state)
+                                    msg)
+                                   nil
+                                   state))
+                              (t (value
+                                  (cons val
+                                        summary-data))))))))))))))))))))))
 
 #+acl2-par
 (defun eval-clause-processor@par (clause term stobjs-out verified-p pspv ctx
@@ -2433,142 +2554,165 @@
 ; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
 ; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
 
-     (not (or (equal stobjs-out '(nil))
-              (equal stobjs-out '(nil nil))))
+     (not (all-nils stobjs-out))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table
                                       (w state))))))
     (mv (msg
-         "Clause-processors that do not return exactly one or two values are ~
-          not officially supported when waterfall parallelism is enabled.  If ~
-          you wish to use such a clause-processor anyway, you can call ~x0. ~
-          See :DOC set-waterfall-parallelism-hacks-enabled for more ~
-          information.  "
+         "Clause-processors that return one or more stobjs are not officially ~
+          supported when waterfall parallelism is enabled.  If you wish to ~
+          use such a clause-processor anyway, you can call ~x0. See :DOC ~
+          set-waterfall-parallelism-hacks-enabled for more information.  "
          '(set-waterfall-parallelism-hacks-enabled t))
         nil))
    (t
     (let ((original-wrld (w state))
           (cl-term (subst-var (kwote clause) 'clause term)))
-      (mv-let
-       (erp trans-result)
+      (mv-let (erp trans-result)
 
 ; Parallelism blemish: we could consider making an ev@par, which calls ev-w,
 ; and tests that the appropriate preconditions for ev-w are upheld (like state
 ; not being in the alist).
 
-       (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
+        (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
 
 ; See chk-evaluator-use-in-rule for a discussion of how we restrict the use of
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t here.
 
-                            t
-                            (f-get-global 'ld-user-stobjs-modified-warning
-                                          state))
-       (cond
-        (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
-                 nil))
-        (t
-         (assert$
-          (equal (car trans-result) stobjs-out)
-          (let* ((result (cdr trans-result))
-                 (eval-erp (and (cdr stobjs-out) (car result)))
-                 (val (if (cdr stobjs-out) (cadr result) result)))
-            (cond ((stringp eval-erp)
-                   (mv (msg "~s0" eval-erp) nil))
-                  ((tilde-@p eval-erp) ; a message
-                   (mv (msg "Error in clause-processor hint:~|~%  ~@0"
-                            eval-erp)
-                       nil))
-                  (eval-erp
-                   (mv (msg "Error in clause-processor hint:~|~%  ~Y01"
-                            term
-                            nil)
-                       nil))
-                  ((equal val (list clause)) ; avoid checks below
-                   (value@par val))
-                  (t
-                   (let* ((user-says-skip-termp-checkp
-                           (skip-meta-termp-checks
-                            (ffn-symb term) original-wrld))
-                          (well-formedness-guarantee
-                           (if (consp verified-p)
-                               verified-p
-                             nil))
-                          (not-skipped
-                           (and (not user-says-skip-termp-checkp)
-                                (not well-formedness-guarantee)))
-                          (bad-arity-info
-                           (if (and well-formedness-guarantee
-                                    (not user-says-skip-termp-checkp))
-                               (collect-bad-fn-arity-info
-                                (cdr well-formedness-guarantee)
-                                original-wrld nil nil)
-                             nil)))
-                     (cond
-                      (bad-arity-info
-                       (let ((name (nth 0 (car well-formedness-guarantee)))
-                             (fn (nth 1 (car well-formedness-guarantee)))
-                             (thm-name1 (nth 2 (car well-formedness-guarantee))))
-                         (mv (bad-arities-msg
-                              name
-                              :CLAUSE-PROCESSOR
-                              fn
-                              nil ; hyp-fn
-                              thm-name1
-                              nil ; wf-thm-name2
-                              bad-arity-info)
-                             nil)))
-                      ((and not-skipped
-                            (not (logic-term-list-listp val original-wrld)))
-                       (cond
-                        ((not (term-list-listp val original-wrld))
-                         (mv (msg
-                              "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
-                               evaluate to a list of clauses, but instead ~
-                               to~|~%  ~Y23~%~@4"
-                              term nil
-                              val nil
-                              (non-term-list-listp-msg
-                               val original-wrld))
-                             nil))
-                        (t
-                         (mv (msg
-                              "The :CLAUSE-PROCESSOR hint~|~%  ~
-                               ~Y01~%evaluated to a list of clauses,~%  ~
-                               ~Y23,~%which however has a call of the ~
-                               following :program mode ~
-                               function~#4~[~/s~]:~|~&4."
-                              term nil
-                              val nil
-                              (collect-programs
-                               (all-ffn-symbs-lst-lst val nil)
-                               original-wrld))
-                             nil))))
-                      ((and not-skipped
-                            (forbidden-fns-in-term-list-list
-                             val
-                             (access rewrite-constant
-                                     (access prove-spec-var pspv
-                                             :rewrite-constant)
-                                     :forbidden-fns)))
-                       (mv (msg
-                            "The :CLAUSE-PROCESSOR hint~|~%~Y01~%evaluated to ~
-                             a list of clauses~|~%~y2~%that contains a call ~
-                             of the function symbol~#3~[, ~&3, which is~/s ~
-                             ~&3, which are~] forbidden in that context.  See ~
-                             :DOC clause-processor and :DOC ~
-                             set-skip-meta-termp-checks and :DOC ~
-                             well-formedness-guarantee."
-                            term nil val
-                            (forbidden-fns-in-term-list-list
-                             val
-                             (access rewrite-constant
-                                     (access prove-spec-var pspv
-                                             :rewrite-constant)
-                                     :forbidden-fns)))
-                           nil))
-                      (t (value@par val)))))))))))))))
+                             t
+                             (f-get-global 'ld-user-stobjs-modified-warning
+                                           state))
+        (cond
+         (erp (mv (msg "Evaluation failed for the :clause-processor hint.")
+                  nil))
+         (t
+          (assert$
+           (equal (car trans-result) stobjs-out)
+           (let* ((result (cdr trans-result))
+                  (eval-erp (and (cdr stobjs-out) (car result)))
+                  (val (if (cdr stobjs-out) (cadr result) result)))
+             (cond ((stringp eval-erp)
+                    (mv (msg "~s0" eval-erp) nil))
+                   ((tilde-@p eval-erp) ; a message
+                    (mv (msg "Error in clause-processor hint:~|~%  ~@0"
+                             eval-erp)
+                        nil))
+                   (eval-erp
+                    (mv (msg "Error in clause-processor hint:~|~%  ~Y01"
+                             term
+                             nil)
+                        nil))
+                   ((equal val (list clause)) ; avoid checks below
+                    (value@par (cons val nil))) ; no point to summary-data
+                   (t
+                    (let* ((user-says-skip-termp-checkp
+                            (skip-meta-termp-checks
+                             (ffn-symb term) original-wrld))
+                           (well-formedness-guarantee
+                            (if (consp verified-p)
+                                verified-p
+                              nil))
+                           (not-skipped
+                            (and (not user-says-skip-termp-checkp)
+                                 (not well-formedness-guarantee)))
+                           (bad-arity-info
+                            (if (and well-formedness-guarantee
+                                     (not user-says-skip-termp-checkp))
+                                (collect-bad-fn-arity-info
+                                 (cdr well-formedness-guarantee)
+                                 original-wrld nil nil)
+                              nil)))
+                      (cond
+                       (bad-arity-info
+                        (let ((name (nth 0 (car well-formedness-guarantee)))
+                              (fn (nth 1 (car well-formedness-guarantee)))
+                              (thm-name1 (nth 2 (car well-formedness-guarantee))))
+                          (mv (bad-arities-msg
+                               name
+                               :CLAUSE-PROCESSOR
+                               fn
+                               nil ; hyp-fn
+                               thm-name1
+                               nil ; wf-thm-name2
+                               bad-arity-info)
+                              nil)))
+                       ((and not-skipped
+                             (not (logic-term-list-listp val original-wrld)))
+                        (cond
+                         ((not (term-list-listp val original-wrld))
+                          (mv (msg
+                               "The :CLAUSE-PROCESSOR hint~|~%  ~Y01~%did not ~
+                                evaluate to a list of clauses, but instead ~
+                                to~|~%  ~Y23~%~@4"
+                               term nil
+                               val nil
+                               (non-term-list-listp-msg
+                                val original-wrld))
+                              nil))
+                         (t
+                          (mv (msg
+                               "The :CLAUSE-PROCESSOR hint~|~%  ~
+                                ~Y01~%evaluated to a list of clauses,~%  ~
+                                ~Y23,~%which however has a call of the ~
+                                following :program mode ~
+                                function~#4~[~/s~]:~|~&4."
+                               term nil
+                               val nil
+                               (collect-programs
+                                (all-ffn-symbs-lst-lst val nil)
+                                original-wrld))
+                              nil))))
+                       ((and not-skipped
+                             (forbidden-fns-in-term-list-list
+                              val
+                              (access rewrite-constant
+                                      (access prove-spec-var pspv
+                                              :rewrite-constant)
+                                      :forbidden-fns)))
+                        (mv (msg
+                             "The :CLAUSE-PROCESSOR hint~|~%~Y01~%evaluated ~
+                              to a list of clauses~|~%~y2~%that contains a ~
+                              call of the function symbol~#3~[, ~&3, which ~
+                              is~/s ~&3, which are~] forbidden in that ~
+                              context.  See :DOC clause-processor and :DOC ~
+                              set-skip-meta-termp-checks and :DOC ~
+                              well-formedness-guarantee."
+                             term nil val
+                             (forbidden-fns-in-term-list-list
+                              val
+                              (access rewrite-constant
+                                      (access prove-spec-var pspv
+                                              :rewrite-constant)
+                                      :forbidden-fns)))
+                            nil))
+                       (t (let* ((summary-data
+
+; Result is an object either of the form (eval-erp val st1 ... stn) or of the
+; form (eval-erp val st1 ... stn summary-data), where n could be 0.
+
+                                  (and (cddr stobjs-out)
+                                       (null (car (last stobjs-out)))
+                                       (car (last result))))
+                                 (msg (tilde-@-illegal-summary-data-phrase
+                                       summary-data
+                                       original-wrld)))
+                            (cond
+                             (msg
+                              (mv (msg
+                                   "The :CLAUSE-PROCESSOR ~
+                                    hint~|~%~Y01~%evaluated to multiple ~
+                                    values whose last value, ~X23, is not a ~
+                                    valid summary-data record, because ~@4.  ~
+                                    See :DOC clause-processor."
+                                   term
+                                   nil
+                                   summary-data
+                                   (term-evisc-tuple t state)
+                                   msg)
+                                  nil))
+                             (t (value@par
+                                 (cons val summary-data)))))))))))))))))))
 
 (defun apply-top-hints-clause1 (temp cl-id cl pspv wrld state step-limit)
 
@@ -2916,7 +3060,7 @@
 ; translate-clause-processor-hint.
 
       (mv-let@par
-       (erp new-clauses state)
+       (erp new-clauses/summary-data state)
        (eval-clause-processor@par cl
                                   (access clause-processor-hint (cdr temp)
                                           :term)
@@ -2926,24 +3070,28 @@
                                           :verified-p)
                                   pspv ctx state)
        (cond (erp (mv@par step-limit 'error erp nil nil state))
-             (t (mv@par step-limit
-                        'hit
-                        new-clauses
-                        (cond ((and new-clauses
-                                    (null (cdr new-clauses))
-                                    (equal (car new-clauses) cl))
-                               (add-to-tag-tree! 'hidden-clause t nil))
-                              (t (add-to-tag-tree!
-                                  :clause-processor
-                                  (cons (cdr temp) new-clauses)
-                                  nil)))
-                        (change prove-spec-var pspv
-                                :hint-settings
-                                (remove1-equal temp
-                                               (access prove-spec-var
-                                                       pspv
-                                                       :hint-settings)))
-                        state)))))
+             (t (let ((new-clauses (car new-clauses/summary-data))
+                      (summary-data (cdr new-clauses/summary-data)))
+                  (mv@par step-limit
+                          'hit
+                          new-clauses
+                          (cond ((and new-clauses
+                                      (null (cdr new-clauses))
+                                      (equal (car new-clauses) cl))
+                                 (add-to-tag-tree! 'hidden-clause t nil))
+                                (t (add-to-tag-tree!
+                                    :clause-processor
+                                    (list* (cdr temp)
+                                           summary-data
+                                           new-clauses)
+                                    nil)))
+                          (change prove-spec-var pspv
+                                  :hint-settings
+                                  (remove1-equal temp
+                                                 (access prove-spec-var
+                                                         pspv
+                                                         :hint-settings)))
+                          state))))))
      (t (sl-let
          (signal clauses ttree new-pspv)
          (apply-top-hints-clause1 temp cl-id cl pspv wrld state step-limit)
@@ -3224,7 +3372,7 @@
                                                :verified-p)
                                        "verified")
                                       (t "trusted")))
-                (new-clauses (cdr clause-processor-obj))
+                (new-clauses (cddr clause-processor-obj))
                 (cl-proc-fn (ffn-symb (access clause-processor-hint
                                               (car clause-processor-obj)
                                               :term))))

@@ -186,7 +186,7 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 src x86)
         (rme-size-opt
@@ -439,7 +439,7 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 src x86)
         (rme-size-opt proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
@@ -609,7 +609,7 @@
                 :hints
                 (("Goal" :in-theory (e/d ()
                                          (trunc
-                                          rme-size 
+                                          rme-size
                                           !rgfi-size
                                           !rgfi-size
                                           unsigned-byte-p

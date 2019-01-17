@@ -1175,7 +1175,7 @@
     :hints (("Goal" :in-theory (e/d (nth) nil)))
     :rule-classes :linear)
 
-  (defthm-usb n08p-mem-arrayi
+  (defthm-unsigned-byte-p n08p-mem-arrayi
     :hyp (forced-and (x86$cp x86$c)
                      (integerp i)
                      (<= 0 i)

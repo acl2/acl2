@@ -6409,7 +6409,7 @@
 ; quote-normal form, both to facilitate matching when the rule is subsequently
 ; applied and to make the test robust below where we use subst-var-lst.
 
-             (sublis-var nil (cdar pairs))))
+             (quote-normal-form (cdar pairs))))
         (case-match
          hyp
          ((equiv1 xk yk)
@@ -7161,6 +7161,8 @@
 ; (cl-proc cl hint) => cl-list
 ; or
 ; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in)
+; or
+; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in d)
 
   (cond
    ((null (cdr stobjs-out)) ; first two signatures
@@ -7173,19 +7175,20 @@
           (t (msg "~x0 returns a single argument, but doesn't take exactly one ~
                    or two arguments, both not stobjs"
                   cl-proc))))
-   ((and ; the final (third) class of signatures above
-     (null (car stobjs-in))
-     (cdr stobjs-in)
-     (null (cadr stobjs-in))
-     (not (member-eq nil (cddr stobjs-in)))
-     (null (car stobjs-out))
-     (cdr stobjs-out)
-     (null (cadr stobjs-out))
-     (not (member-eq nil (cddr stobjs-out))))
+   ((and (null (car stobjs-in))
+         (cdr stobjs-in)
+         (null (cadr stobjs-in))
+         (not (member-eq nil (cddr stobjs-in)))
+         (null (car stobjs-out))
+         (cdr stobjs-out)
+         (null (cadr stobjs-out))
+         (member-equal (member-eq nil (cddr stobjs-out))
+                       '(nil (nil))))
     nil)
    (t
     (msg "both the arguments and results of ~x0 in this case are expected to ~
-          contain stobjs in exactly all positions other than the first two"
+          contain stobjs in exactly all positions other than the first two ~
+          and possibly the last"
          cl-proc))))
 
 (defun destructure-clause-processor-rule (term)
@@ -7195,7 +7198,7 @@
 ; (mv flg fn cl alist rest-args ev call xflg)
 ; where
 ; flg:   :error, if term is not the right shape
-;        t, if the clause processor function returns an error triple
+;        t, if the clause processor function returns (mv erp clauses ...)
 ;           and is thus to be accessed with CLAUSES-RESULT
 ;        nil, if the clause processor returns a set of clauses.
 ; fn:    the clause processor function (presumably a function symbol)
@@ -7903,8 +7906,8 @@
 ; In the case of a :meta fn, triple-flg is :error or nil and rest-args may be
 ; nil or something like (mfc state).  In the case of a :clause-processor,
 ; triple-flg may be :error, t, or nil and rest-args may be nil or (hint) or
-; (hint stobj1 stobj2 ... stobjk).  When hyp-fn is present, we know that it can
-; take the same arguments as fn.
+; (hint stobj1 stobj2 ...).  When hyp-fn is present, we know that it can take
+; the same arguments as fn.
 
 ; If triple-flg is :error then we know chk-acceptable-x-rule will cause an
 ; error.  Otherwise, we guarantee that fn is a function symbol, hyp-fn is nil

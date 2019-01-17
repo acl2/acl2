@@ -96,7 +96,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((the (integer 4 8) base-size)
         (if (64-bit-modep x86) 8 4))
@@ -215,7 +215,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((the (integer 4 8) base-size)
         (if (64-bit-modep x86) 8 4))
@@ -346,7 +346,7 @@ a non-canonical form, raise the SS exception.</p>"
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Fetch the memory operand:
        (inst-ac? nil)

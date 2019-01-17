@@ -10,10 +10,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
-(include-book "../characters")
 (include-book "event-forms")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

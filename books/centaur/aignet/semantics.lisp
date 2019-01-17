@@ -1301,9 +1301,9 @@
              (equal (eval-xor-of-lits y (aignet-lit-fix x aignet) invals regvals aignet2)
                     (eval-xor-of-lits y x invals regvals aignet))))
 
-  (in-theory (disable id-eval-of-aignet-lit-fix
-                      lit-eval-of-aignet-lit-fix
-                      lit-eval-of-aignet-lit-fix-extension
+  (in-theory (disable ;; id-eval-of-aignet-lit-fix
+                      ;; lit-eval-of-aignet-lit-fix
+                      ;; lit-eval-of-aignet-lit-fix-extension
                       eval-and-of-lits-of-aignet-lit-fix-1
                       eval-and-of-lits-of-aignet-lit-fix-1-extension
                       eval-and-of-lits-of-aignet-lit-fix-2

@@ -102,13 +102,7 @@ anywhere between @('name') and @('///').</p>
 
 <h3>Guard Related Features</h3>
 
-<p>Guard verification almost always fails for normal @('defun-sk') forms
-because the @('defun-sk') form enters a very restricted theory before
-submitting the function definition.  But @('define-sk') makes sure to submit
-the @(see verify-guards) command is done in your current theory, so this should
-not be a problem.</p>
-
-<p>Another common problem when trying to use guard verification with @(see
+<p>A common problem when trying to use guard verification with @(see
 defun-sk) is that @(see implies) isn't lazy, so you won't be able to assume
 that your hypotheses hold in your conclusion.  @('define-sk') tries to help
 with this by smartly handling @('implies') forms in your function body.  See

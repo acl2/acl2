@@ -174,7 +174,7 @@
                 (if p3? 2 4)
               (if p3? 4 2)))))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg
@@ -337,7 +337,7 @@ instruction at the offset specified in the call gate. No stack switch
 occurs. The target operand specifies the far address of the call gate
 indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
-  :returns (x86 x86p :hyp (x86p x86)                
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d* () (select-operand-size)))))
 
   :prepwork
@@ -382,7 +382,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        ((the (integer 2 8) offset-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg

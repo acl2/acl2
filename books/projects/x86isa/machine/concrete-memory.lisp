@@ -384,7 +384,7 @@
 
   ;; mem$ci:
 
-  (defthm-usb logtail-*2^x-byte-pseudo-page*-of-physical-address
+  (defthm-unsigned-byte-p logtail-*2^x-byte-pseudo-page*-of-physical-address
     :hyp (unsigned-byte-p #.*physical-address-size* i)
     :bound #.*mem-table-size-bits*
     :concl (logtail #.*2^x-byte-pseudo-page* i)
@@ -656,7 +656,7 @@
 
   :short "We prove that @('mem$ci') returns an @(see n08p)."
 
-  (defthm-usb n08p-mem$ci
+  (defthm-unsigned-byte-p n08p-mem$ci
 
     :hyp (and (x86$cp x86$c)
               (unsigned-byte-p *physical-address-size* addr))

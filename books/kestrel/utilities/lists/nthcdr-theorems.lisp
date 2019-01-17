@@ -23,12 +23,12 @@
   :short "Some theorems about the built-in function @(tsee nthcdr)."
   :long
   (xdoc::topp
-   "The theorems @('nthcdr-of-append-when-lt-len-first')
+   "The theorems @('nthcdr-of-append-when-leq-len-first')
     and @('nthcdr-of-append-when-gt-len-first') are disabled by default.
     They are special cases of @('nthcdr-of-append'),
     which is enabled by default and is perhaps more useful in general.")
 
-  (defruled nthcdr-of-append-when-lt-len-first
+  (defruled nthcdr-of-append-when-leq-len-first
     (implies (<= n (len a))
              (equal (nthcdr n (append a b))
                     (append (nthcdr n a) b))))
@@ -43,7 +43,7 @@
           (b (len a))
           (x (append a b)))
     :disable nthcdr-of-nthcdr
-    :enable nthcdr-of-append-when-lt-len-first)
+    :enable nthcdr-of-append-when-leq-len-first)
 
   (defrule nthcdr-of-append
     (implies (natp n)
@@ -51,7 +51,7 @@
                     (if (<= n (len a))
                         (append (nthcdr n a) b)
                       (nthcdr (- n (len a)) b))))
-    :enable (nthcdr-of-append-when-lt-len-first
+    :enable (nthcdr-of-append-when-leq-len-first
              nthcdr-of-append-when-gt-len-first))
 
   (defrule nthcdr-when-len

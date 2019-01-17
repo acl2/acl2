@@ -240,6 +240,8 @@
             template-subst-top
             template-subst
             std::getargs
+
+            and* or*
             )
           std::*std-exports*
           getopt::*getopt-exports*

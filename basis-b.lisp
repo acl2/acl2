@@ -2666,21 +2666,8 @@
 
 (defun sublis-var (alist form)
 
-; Call this function with alist = nil to put form into quote-normal form so
-; that for example if form is (cons '1 '2) then '(1 . 2) is returned.  The
-; following two comments come from the nqthm version of this function.
-
-;     In REWRITE-WITH-LEMMAS we use this function with the nil alist
-;     to put form into quote normal form.  Do not optimize this
-;     function for the nil alist.
-
-;     This is the only function in the theorem prover that we
-;     sometimes call with a "term" that is not in quote normal form.
-;     However, even this function requires that form be at least a
-;     pseudo-termp.
-
-; We rely on quote-normal form for the return value, for example in calls of
-; sublis-var in rewrite-with-lemma and in apply-top-hints-clause1.
+; If you are tempted to call this function with alist = nil to put form into
+; quote-normal form, consider calling quote-normal-form instead.
 
   (declare (xargs :guard (and (symbol-alistp alist)
                               (pseudo-term-listp (strip-cdrs alist))

@@ -213,6 +213,7 @@
 ; Common books to all modes.
 (include-book "cgen/top" :ttags :all)
 (include-book "defunc" :ttags :all)
+(include-book "definec" :ttags :all)
 
 #!ACL2
 (defmacro acl2s-common-settings ()

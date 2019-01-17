@@ -206,7 +206,7 @@
      (mv-nth 1 (sse-max/min operation op1 op2 mxcsr exp-width frac-width)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mxcsr-sse-max/min
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-max/min
     :bound 32
     :concl (mv-nth 2 (sse-max/min operation op1 op2 mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -229,13 +229,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n32p-result-sp-sse-max/min
+  (defthm-unsigned-byte-p n32p-result-sp-sse-max/min
     :bound 32
     :concl (mv-nth 1 (sp-sse-max/min operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sp-sse-max/min
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-max/min
     :bound 32
     :concl (mv-nth 2 (sp-sse-max/min operation op1 op2 mxcsr))
     :gen-type t
@@ -256,13 +256,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n64p-result-dp-sse-max/min
+  (defthm-unsigned-byte-p n64p-result-dp-sse-max/min
     :bound 64
     :concl (mv-nth 1 (dp-sse-max/min operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-dp-sse-max/min
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-max/min
     :bound 32
     :concl (mv-nth 2 (dp-sse-max/min operation op1 op2 mxcsr))
     :gen-type t
@@ -282,13 +282,13 @@
 
   ///
 
-  (defthm-usb n32p-result-sp-sse-add/sub/mul/div/max/min
+  (defthm-unsigned-byte-p n32p-result-sp-sse-add/sub/mul/div/max/min
     :bound 32
     :concl (mv-nth 1 (sp-sse-add/sub/mul/div/max/min operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sp-sse-add/sub/mul/div/max/min
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-add/sub/mul/div/max/min
     :bound 32
     :concl (mv-nth 2 (sp-sse-add/sub/mul/div/max/min operation op1 op2 mxcsr))
     :gen-type t
@@ -304,13 +304,13 @@
 
   ///
 
-  (defthm-usb n64p-result-dp-sse-add/sub/mul/div/max/min
+  (defthm-unsigned-byte-p n64p-result-dp-sse-add/sub/mul/div/max/min
     :bound 64
     :concl (mv-nth 1 (dp-sse-add/sub/mul/div/max/min operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-dp-sse-add/sub/mul/div/max/min
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-add/sub/mul/div/max/min
     :bound 32
     :concl (mv-nth 2 (dp-sse-add/sub/mul/div/max/min operation op1 op2 mxcsr))
     :gen-type t

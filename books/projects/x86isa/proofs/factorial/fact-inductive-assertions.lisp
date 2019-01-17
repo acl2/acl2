@@ -101,7 +101,7 @@
 
 (deflabel DEFN_fact-algorithm)
 
-(defthm-usb n32p-fact-algorithm
+(defthm-unsigned-byte-p n32p-fact-algorithm
   :hyp (and (n32p n)
             (n32p a))
   :bound 32

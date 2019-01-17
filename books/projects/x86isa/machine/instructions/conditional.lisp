@@ -431,7 +431,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -537,7 +537,7 @@
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Update the x86 state:
        (inst-ac? t)

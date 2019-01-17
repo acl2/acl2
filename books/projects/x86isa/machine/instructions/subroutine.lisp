@@ -203,7 +203,7 @@
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
        (mod (modr/m->mod modr/m))
        (r/m (modr/m->r/m modr/m))
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 2 when this

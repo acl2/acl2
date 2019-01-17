@@ -67,15 +67,15 @@
 (define gpr-sub-spec-gen-fn ((operand-size :type (member 1 2 4 8)))
   :verify-guards nil
 
-  (b* ((fn-name (mk-name "gpr-sub-spec-" operand-size))
+  (b* ((fn-name (mk-name "GPR-SUB-SPEC-" operand-size))
        (result-nbits (ash operand-size 3))
        (str-nbits (if (eql result-nbits 8) "08" result-nbits))
        (ntoi (mk-name "N" str-nbits "-TO-I" str-nbits))
-       (?cf-spec-fn (mk-name "cf-spec" result-nbits))
-       (pf-spec-fn (mk-name "pf-spec" result-nbits))
-       (af-spec-fn (mk-name "sub-af-spec" result-nbits))
-       (sf-spec-fn (mk-name "sf-spec" result-nbits))
-       (of-spec-fn (mk-name "of-spec" result-nbits)))
+       (?cf-spec-fn (mk-name "CF-SPEC" result-nbits))
+       (pf-spec-fn (mk-name "PF-SPEC" result-nbits))
+       (af-spec-fn (mk-name "SUB-AF-SPEC" result-nbits))
+       (sf-spec-fn (mk-name "SF-SPEC" result-nbits))
+       (of-spec-fn (mk-name "OF-SPEC" result-nbits)))
 
 
     `(define ,fn-name
@@ -83,7 +83,7 @@
         (src          :type (unsigned-byte ,result-nbits))
         (input-rflags :type (unsigned-byte 32)))
 
-       :parents (,(mk-name "gpr-arith/logic-spec-" operand-size))
+       :parents (,(mk-name "GPR-ARITH/LOGIC-SPEC-" operand-size))
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               ((tau-system)))))
        :inline t
@@ -147,19 +147,19 @@
 
        ///
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,result-nbits
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t
@@ -177,22 +177,22 @@
 (define gpr-sbb-spec-gen-fn ((operand-size :type (member 1 2 4 8)))
   :verify-guards nil
 
-  (b* ((fn-name (mk-name "gpr-sbb-spec-" operand-size))
+  (b* ((fn-name (mk-name "GPR-SBB-SPEC-" operand-size))
        (result-nbits (ash operand-size 3))
        (str-nbits (if (eql result-nbits 8) "08" result-nbits))
        (ntoi (mk-name "N" str-nbits "-TO-I" str-nbits))
-       (?cf-spec-fn (mk-name "cf-spec" result-nbits))
-       (pf-spec-fn (mk-name "pf-spec" result-nbits))
-       (af-spec-fn (mk-name "sbb-af-spec" result-nbits))
-       (sf-spec-fn (mk-name "sf-spec" result-nbits))
-       (of-spec-fn (mk-name "of-spec" result-nbits)))
+       (?cf-spec-fn (mk-name "CF-SPEC" result-nbits))
+       (pf-spec-fn (mk-name "PF-SPEC" result-nbits))
+       (af-spec-fn (mk-name "SBB-AF-SPEC" result-nbits))
+       (sf-spec-fn (mk-name "SF-SPEC" result-nbits))
+       (of-spec-fn (mk-name "OF-SPEC" result-nbits)))
 
 
     `(define ,fn-name
        ((dst          :type (unsigned-byte ,result-nbits))
         (src          :type (unsigned-byte ,result-nbits))
         (input-rflags :type (unsigned-byte 32)))
-       :parents (,(mk-name "gpr-arith/logic-spec-" operand-size))
+       :parents (,(mk-name "GPR-ARITH/LOGIC-SPEC-" operand-size))
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               ((tau-system)))))
        :inline t
@@ -264,19 +264,19 @@
 
        ///
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,result-nbits
          :concl (mv-nth 0 (,fn-name dst src cf))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t

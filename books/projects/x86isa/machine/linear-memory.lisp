@@ -472,7 +472,7 @@
                   :in-theory (e/d* ()
                                    (plus-and-expt))))))
 
-      (defthm-usb size-of-rb-1
+      (defthm-unsigned-byte-p size-of-rb-1
         :hyp (and (equal m (ash n 3)) (natp n))
         :bound m
         :concl (mv-nth 1 (rb-1 n addr r-x x86))
@@ -674,13 +674,13 @@
     ///
 
     (local
-     (defthm-usb size-of-read-from-physical-memory-helper
+     (defthm-unsigned-byte-p size-of-read-from-physical-memory-helper
        :hyp t
        :bound (ash (len p-addrs) 3)
        :concl (read-from-physical-memory p-addrs x86)
        :hints (("Goal" :in-theory (e/d* (expt-to-ash) (signed-byte-p))))))
 
-    (defthm-usb size-of-read-from-physical-memory
+    (defthm-unsigned-byte-p size-of-read-from-physical-memory
       ;; Ugh, why do I need size-of-read-from-physical-memory-helper?
       :hyp (equal n (ash (len p-addrs) 3))
       :bound n
@@ -756,7 +756,7 @@
                       x86))
       :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (defthm-usb size-of-rb
+    (defthm-unsigned-byte-p size-of-rb
       :hyp (and (equal m (ash n 3))
                 (natp n))
       :bound m
@@ -767,7 +767,7 @@
       :gen-linear t
       :hints-l (("Goal" :in-theory (e/d* () (rb)))))
 
-    (defthm-usb size-of-rb-in-app-view
+    (defthm-unsigned-byte-p size-of-rb-in-app-view
       ;; No need to know whether the addresses are canonical or not...
       :hyp (and (app-view x86) (natp n))
       :bound (ash n 3)
@@ -1370,7 +1370,7 @@
 
   ///
 
-  (defthm-usb n08p-mv-nth-1-rml08
+  (defthm-unsigned-byte-p n08p-mv-nth-1-rml08
     :hyp t
     :bound 8
     :concl (mv-nth 1 (rml08 lin-addr r-x x86))
@@ -1500,7 +1500,7 @@
     (mv flag (n08-to-i08 val) x86))
   ///
 
-  (defthm-sb i08p-mv-nth-1-riml08
+  (defthm-signed-byte-p i08p-mv-nth-1-riml08
     :hyp t
     :bound 8
     :concl (mv-nth 1 (riml08 lin-addr r-x x86))
@@ -1678,7 +1678,7 @@
 
   ///
 
-  (defthm-usb n16p-mv-nth-1-rml16
+  (defthm-unsigned-byte-p n16p-mv-nth-1-rml16
     :hyp t
     :bound 16
     :concl (mv-nth 1 (rml16 lin-addr r-x x86))
@@ -1705,7 +1705,7 @@
     (mv flag (n16-to-i16 val) x86))
   ///
 
-  (defthm-sb i16p-mv-nth-1-riml16
+  (defthm-signed-byte-p i16p-mv-nth-1-riml16
     :hyp t
     :bound 16
     :concl (mv-nth 1 (riml16 lin-addr r-x x86))
@@ -1902,7 +1902,7 @@
 
   ///
 
-  (defthm-usb n32p-mv-nth-1-rml32
+  (defthm-unsigned-byte-p n32p-mv-nth-1-rml32
     :hyp t
     :bound 32
     :concl (mv-nth 1 (rml32 lin-addr r-x x86))
@@ -1929,7 +1929,7 @@
     (mv flag (n32-to-i32 val) x86))
   ///
 
-  (defthm-sb i32p-mv-nth-1-riml32
+  (defthm-signed-byte-p i32p-mv-nth-1-riml32
     :hyp t
     :bound 32
     :concl (mv-nth 1 (riml32 lin-addr r-x x86))
@@ -2197,7 +2197,7 @@
 
   ///
 
-  (defthm-usb n48p-mv-nth-1-rml48
+  (defthm-unsigned-byte-p n48p-mv-nth-1-rml48
     :hyp t
     :bound 48
     :concl (mv-nth 1 (rml48 lin-addr r-x x86))
@@ -2529,7 +2529,7 @@
 
   ///
 
-  (defthm-usb n64p-mv-nth-1-rml64
+  (defthm-unsigned-byte-p n64p-mv-nth-1-rml64
     :hyp t
     :bound 64
     :concl (mv-nth 1 (rml64 lin-addr r-x x86))
@@ -2557,7 +2557,7 @@
     (mv flag (n64-to-i64 val) x86))
   ///
 
-  (defthm-sb i64p-mv-nth-1-riml64
+  (defthm-signed-byte-p i64p-mv-nth-1-riml64
     :hyp t
     :bound 64
     :concl (mv-nth 1 (riml64 lin-addr r-x x86))
@@ -2891,7 +2891,7 @@
 
   ///
 
-  (defthm-usb n80p-mv-nth-1-rml80
+  (defthm-unsigned-byte-p n80p-mv-nth-1-rml80
     :hyp t
     :bound 80
     :concl (mv-nth 1 (rml80 lin-addr r-x x86))
@@ -3145,7 +3145,7 @@
                                rb-and-rvm128-helper-2)
                               (force (force))))))
 
-   (defthm-usb unsigned-byte-p-128-of-merge-16-u8s-linear
+   (defthm-unsigned-byte-p unsigned-byte-p-128-of-merge-16-u8s-linear
      :hyp (and (unsigned-byte-p 8 h7)
                (unsigned-byte-p 8 h6)
                (unsigned-byte-p 8 h5)
@@ -3300,7 +3300,7 @@
 
   ///
 
-  (defthm-usb n128p-mv-nth-1-rml128
+  (defthm-unsigned-byte-p n128p-mv-nth-1-rml128
     :hyp t
     :bound 128
     :concl (mv-nth 1 (rml128 lin-addr r-x x86))
@@ -4005,7 +4005,7 @@
                (true-listp x))
       :rule-classes :forward-chaining)
 
-    (defthm-usb n08p-element-of-byte-listp
+    (defthm-unsigned-byte-p n08p-element-of-byte-listp
       :hyp (and (byte-listp acc)
                 (natp m)
                 (< m (len acc)))
