@@ -154,11 +154,11 @@ e.g. ((\"Goal\" :foo)).</p>")
   :short "A simple event generator that creates a theorem by finding out what a
 term simplifies to under some hyp and with some hint."
 
-  :long "<p>In contrast to @('misc/defopener'), the reductions carried out by
-@('defopen') may be less powerful because we only do simplification (no
-clausify).  However, this seems to produce more compact expressions than
-@('defopener'), where the result is formed by combining several clauses
-produced from the original term.</p>
+  :long "<p>In contrast to @('misc/defopener') (see @(see defopener)), the
+reductions carried out by @('defopen') may be less powerful because we only do
+simplification (no clausify).  However, this seems to produce more compact
+expressions than @('defopener'), where the result is formed by combining
+several clauses produced from the original term.</p>
 
 <p>General form:</p>
 

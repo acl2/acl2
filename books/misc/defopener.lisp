@@ -377,7 +377,9 @@
 (defxdoc defopener
   :parents (miscellaneous)
   :short "Create a defthm equating a call with its simplification."
-  :long "<p>Example:</p>
+  :long "<p>For a related tool, see @(see defopen).</p>
+
+<p>Example:</p>
 
 @({
   (include-book \"misc/defopener\" :dir :system)
