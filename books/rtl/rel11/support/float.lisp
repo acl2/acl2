@@ -5,7 +5,6 @@
 (local (in-theory (acl2::enable-arith5)))
 
 (local (include-book "basic"))
-(local (include-book "log"))
 (include-book "definitions")
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system)
 
@@ -13,6 +12,19 @@
   (implies (real/rationalp x)
            (real/rationalp (abs x)))
   :rule-classes :type-prescription)
+
+; Prove it without including log.lisp to certify by ACL2r
+(defrulel logior-bvecp
+  (implies (and (bvecp x n)
+                (bvecp y n))
+           (bvecp (logior x y) n))
+  :prep-books ((include-book "ihs/logops-lemmas" :dir :system))
+  :enable bvecp
+  :disable acl2::unsigned-byte-p-logior
+  :use (:instance acl2::unsigned-byte-p-logior
+                  (i x)
+                  (j y)
+                  (size n)))
 
 ;;;**********************************************************************
 ;;;                 Sign, Significand, and Exponent with Radix
@@ -380,6 +392,16 @@
   :cases ((equal (abs (* x y)) (* (abs x) (abs y))))
   :hints (("subgoal 2" :in-theory(enable abs))))
 
+(defruled expe-fl
+  (implies (and (real/rationalp x)
+                (>= x 1)
+                (radixp b))
+	   (equal (expe (fl x) b) (expe x b)))
+  :use (expe-lower-bound
+        (:instance expe-monotone (x (fl x)) (y x))
+        (:instance expe>= (n 0))
+        (:instance expe>= (x (fl x)) (n (expe x b)))))
+
 (defruled compare-abs-em
   (implies (and (real/rationalp x)
                 (real/rationalp y)
@@ -652,31 +674,33 @@
 		      (* 1/2 (sig x) (sig y)))))
   :enable sigm-prod)
 
-(defthmd expo-fl
+(defruled expo-fl
   (implies (and (rationalp x)
                 (>= x 1))
 	   (equal (expo (fl x)) (expo x)))
-  :hints (("Goal" :use (expo-lower-bound
-                        (:instance expo-monotone (x (fl x)) (y x))
-                        (:instance expo>= (n 0))
-                        (:instance expo>= (x (fl x)) (n (expo x)))))))
+  :enable expe-fl)
 
-(defthmd expo-logior
+; There is no radix-aware version:
+; Let x=2 y=9 b=10
+; (expe x b) 0
+; (expe y b) 0
+; (logior x y) 11
+; (expe (logior x y) b) 1
+;
+(defruled expo-logior
   (implies (and (natp x)
                 (natp y)
 		(<= (expo x) (expo y)))
 	   (equal (expo (logior x y))
 	          (expo y)))
-  :hints (("Goal" :in-theory (enable bvecp)
-                  :nonlinearp t
-                  :use (expo-upper-bound
-		        (:instance expo-upper-bound (x y))
-		        (:instance expo-lower-bound (x y))
-                        (:instance logior-bvecp (n (1+ (expo y))))
-			(:instance expo<= (x (logior x y)) (n (expo y)))
-			(:instance expo>= (x (logior x y)) (n (expo y)))))))
-
-
+  :enable bvecp
+  :nonlinearp t
+  :use (expo-upper-bound
+        (:instance expo-upper-bound (x y))
+        (:instance expo-lower-bound (x y))
+        (:instance logior-bvecp (n (1+ (expo y))))
+        (:instance expo<= (x (logior x y)) (n (expo y)))
+        (:instance expo>= (x (logior x y)) (n (expo y)))))
 
 
 ;;;**********************************************************************
