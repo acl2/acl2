@@ -127,6 +127,18 @@
                               (integerp r))))
   (bits (si r n) (1- m) 0))
 
+(defund uf (r n m)
+  (declare (xargs :guard (and (natp r)
+                              (natp n)
+                              (natp m))))
+  (* (expt 2 (- m n)) (ui r)))
+
+(defund sf (r n m)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n)
+                              (natp m))))
+  (* (expt 2 (- m n)) (si r n)))
+
 (defnd sgn (x)
   (if (or (not (rationalp x)) (equal x 0))
       0
