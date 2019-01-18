@@ -28,6 +28,13 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
+(defund congruent (a b n)
+  (declare (xargs :guard (and (real/rationalp a)
+                              (real/rationalp b)
+                              (real/rationalp n)
+                              (not (= n 0)))))
+  (equal (mod a n) (mod b n)))
+
 (defund chop (x k)
   (declare (xargs :guard (and (real/rationalp x)
                               (integerp k))))
@@ -104,6 +111,8 @@
            x
            l)
     0))
+
+(defnd ui (r) r)
 
 (defund si (r n)
   (declare (xargs :guard (and (integerp r)

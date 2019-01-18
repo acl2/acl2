@@ -18,6 +18,13 @@
   (declare (xargs :guard (real/rationalp x)))
   (- (fl (- x))))
 
+(defund congruent (a b n)
+  (declare (xargs :guard (and (real/rationalp a)
+                              (real/rationalp b)
+                              (real/rationalp n)
+                              (not (= n 0)))))
+  (equal (mod a n) (mod b n)))
+
 (defnd radixp (b)
   (and (integerp b) (>= b 2)))
 
@@ -496,6 +503,34 @@
 
 (in-theory (disable (:type-prescription mulcat)))
 
+(defund ui-r (r n b)
+  (declare (xargs :guard (and (real/rationalp r)
+                              (integerp n)
+                              (radixp b))))
+  (mod (realfix r) (expt b n)))
+
+(defrule ui-r-real/rational>=0
+  (implies (radixp b)
+           (and (real/rationalp (ui-r r n b))
+                (>= (ui-r r n b) 0)))
+  :enable ui-r
+  :rule-classes :type-prescription)
+
+(defrule ui-r-nat
+  (implies (and (integerp r)
+                (radixp b))
+           (natp (ui-r r n b)))
+  :enable ui-r
+  :cases ((posp n))
+  :rule-classes :type-prescription)
+
+(defnd ui (r) r)
+
+(defrule ui-nat
+  (implies (natp r)
+           (natp (ui r)))
+  :rule-classes :type-prescription)
+
 (defund si-r (r n b)
   (declare (xargs :guard (and (real/rationalp r)
                               (integerp n)
@@ -540,13 +575,68 @@
                               (integerp n)
                               (radixp b))
                   :guard-hints (("goal" :in-theory (enable si-r)))))
-  (digits (si-r r n b) (1- m) 0 b))
+  (mod (si-r r n b) (expt b m)))
 
 (defund sextend (m n r)
   (declare (xargs :guard (and (natp m)
                               (natp n)
                               (integerp r))))
   (bits (si r n) (1- m) 0))
+
+(defund uf-r (r n m b)
+  (declare (xargs :guard (and (real/rationalp r)
+                              (integerp n)
+                              (integerp m)
+                              (radixp b))))
+  (* (expt b (- m n)) (ui-r r n b)))
+
+(defrule uf-r-real/rational>=0
+  (implies (radixp b)
+           (and (real/rationalp (uf-r r n m b))
+                (>= (uf-r r n m b) 0)))
+  :rule-classes :type-prescription
+  :enable uf-r)
+
+(defrule uf-r-nat
+  (implies (and (>= m n)
+                (integerp r)
+                (radixp b))
+           (natp (uf-r r n m b)))
+  :rule-classes :type-prescription
+  :enable uf-r)
+
+(defund uf (r n m)
+  (declare (xargs :guard (and (natp r)
+                              (natp n)
+                              (natp m))))
+  (* (expt 2 (- m n)) (ui r)))
+
+(defund sf-r (r n m b)
+  (declare (xargs :guard (and (real/rationalp r)
+                              (integerp n)
+                              (integerp m)
+                              (radixp b))))
+  (* (expt b (- m n)) (si-r r n b)))
+
+(defrule sf-r-real/rational
+  (implies (radixp b)
+           (real/rationalp (sf-r r n m b)))
+  :rule-classes :type-prescription
+  :enable sf-r)
+
+(defrule sf-r-integer
+  (implies (and (>= m n)
+                (integerp r)
+                (radixp b))
+           (integerp (sf-r r n m b)))
+  :rule-classes :type-prescription
+  :enable sf-r)
+
+(defund sf (r n m)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n)
+                              (natp m))))
+  (* (expt 2 (- m n)) (si r n)))
 
 ;; From float.lisp:
 
@@ -564,8 +654,7 @@
 (local
  (defrule e0-oridnalp-expo-measure
    (e0-ordinalp (expo-measure x))
-   :enable fl
-   ))
+   :enable fl))
 
 (local
  (defrule e0-ord-<-expo-measure
