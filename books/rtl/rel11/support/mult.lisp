@@ -558,7 +558,7 @@
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)|
                           |(mod (+ x (mod a b)) y)|
-                          simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                          simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                           ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| mod-theorem-one-b))
 
 (defun theta (i y)
@@ -704,8 +704,8 @@
                   (+ (* x (sum-theta k y))
                      (expt 2 (+ n (* 2 k)))
                      (- (* (expt 2 (* 2 (1- k))) (nbit (1- k) y))))))
-  :hints (("Goal" :induct (sum-pp4p x y k n)) 
-          ("Subgoal *1/2" :use (pp4p0-rewrite))	  
+  :hints (("Goal" :induct (sum-pp4p x y k n))
+          ("Subgoal *1/2" :use (pp4p0-rewrite))
           ("Subgoal *1/1" :use (pp4p0-rewrite (:instance pp4p-rewrite (i (1- k)))) :nonlinearp t)))
 
 (defthmd booth4-corollary-3
@@ -717,8 +717,8 @@
                   (+ (* x y) (expt 2 (+ n (* 2 m))))))
   :hints (("Goal" :in-theory (enable nbit)
                   :use (sum-theta-lemma (:instance booth-lemma-1 (k m))))))
-		  
-)  
+
+)
 
 ;;;**********************************************************************
 ;;;                Statically Encoded Multiplier Arrays

@@ -1869,7 +1869,7 @@ By rnd-rto and rnd-monotone,
 	   (equal (* (qsqrt x n) (qsqrt x n))
 	          x))
   :hints (("Goal" :use (qsqrt-pos (:instance exactp-cmp-qsqrt (q (qsqrt x n)))))))
- 
+
 (defthm rnd-qsqrt-equal
   (implies (and (rationalp x)
                 (> x 0)

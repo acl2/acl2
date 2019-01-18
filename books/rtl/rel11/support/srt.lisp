@@ -5,7 +5,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| ACL2::|(logior 1 x)|))
 
 (include-book "basic")
@@ -617,7 +617,7 @@
 (defthmd int-quot-sqrt
   (implies (natp j)
            (integerp (* (expt (r%) j) (quot% j))))
-  :hints (("Goal" :in-theory (enable quot%) :induct (quot% j))  
+  :hints (("Goal" :in-theory (enable quot%) :induct (quot% j))
           ("Subgoal *1/2" :use ((:instance int-r%*n (n (* (QUOT% (+ -1 J)) (EXPT (r%) (+ -1 J)))))))))
 
 (defthmd rem0-sqrt-rewrite
@@ -654,7 +654,7 @@
   :hints (("Goal" :nonlinearp t :expand ((rem% j) (blo% j) (bhi% j)))))
 
 (local-in-theory (disable (blo%) (bhi%)))
-     
+
 (local-defthmd r0-bounds-1
   (implies (and (rationalp q) (< -1/2 q) (<= q 0))
            (<= (1- (* q q)) -3/4))
@@ -1031,7 +1031,7 @@
                 (natp j)
 		(>= j 3))
 	   (equal (- (expt 4 (- 4 j)) (* 3 (expt 4 (- 3 j))))
-	          (expt 4 (- 3 j))))		  
+	          (expt 4 (- 3 j))))
   :hints (("Goal" :use ((:instance rem%-bnds-12 (n (- 4 j)))))))
 
 (local-defthmd rem%-bnds-21
@@ -1247,7 +1247,7 @@
                         (:instance hyp-inv (k j))
                         (:instance hyp-inv (k 1))
                         (:instance hyp-inv (k 2))
-                        (:instance hyp-inv (k 3)))			
+                        (:instance hyp-inv (k 3)))
 		  :in-theory '(natp s4-inv zp))))
 
 (local-defthm rem%-bnds-37
@@ -1369,7 +1369,7 @@
 (local-defthmd quot%-bnds-4
   (implies (not (zp j))
 	   (integerp (* 1/2 (expt 4 j)))))
-	   
+
 (local-defthmd quot%-bnds-5
   (implies (and (integerp a) (integerp b) (> a b))
            (>= a (1+ b))))

@@ -165,7 +165,7 @@
   :hints (("Goal" :in-theory (enable bits-mod)
                   :use ((:instance mod-sum (n (expt 2 (1+ j))) (a a) (b b))
 		        (:instance mod-sum (n (expt 2 (1+ j))) (b a) (a (mod b (expt 2 (1+ j)))))))))
-   
+
 (local-defthmd w0-1-5
   (implies (and (natp a) (natp b) (not (zp j)) (= (bitn (p0 a b) j) 0))
            (equal (bits (+ a b) j 0)
@@ -442,13 +442,13 @@
 
 (local-defthm conds-goal
   (implies (and (natp j) (< j n) (conds a b n j) (assumps a b n))
-           (goal a b n))	   
+           (goal a b n))
   :rule-classes ()
   :hints (("Goal" :induct (nats j))
           ("Subgoal *1/2" :use (w0-1 w0-0 (:instance bitn-0-1 (x (w0 a b n)) (n j))))))
 
 (local-defthm assumps-goal
-  (implies (assumps a b n) (goal a b n))	   
+  (implies (assumps a b n) (goal a b n))
   :rule-classes ()
   :hints (("Goal" :use ((:instance conds-goal (j (1- n)))))))
 
@@ -486,11 +486,11 @@
   (implies (assumps+ a b n)
 	   (and (not (zp (e a b n)))
 	        (< (e a b n) n)))
-  :hints (("Goal" :use (lza-cor-1  
+  :hints (("Goal" :use (lza-cor-1
 			(:instance expo-monotone (x 2) (y (bits (+ 1 a b) (+ -1 n) 0)))
 			(:instance expo<= (x (bits (+ 1 a b) (+ -1 n) 0)) (n (1- n)))
 			(:instance bits-bounds (x (+ 1 a b)) (i (1- n)) (j 0))))))
-			
+
 
 (local-defthmd lza-cor-3
   (implies (assumps+ a b n)
@@ -671,7 +671,7 @@
 		        (:instance expo-fl (x (/ (w0 a b n) 2)))
                         (:instance expo-shift (x (w0 (1+ a) b n)) (n -1))
                         (:instance expo-shift (x (w0 a b n)) (n -1))))))
-			
+
 (local-defthmd lza-cor-8-b
   (implies (and (assumps+ a b n)
                 (= (bitn b 0) 0))
@@ -794,7 +794,7 @@
 		        (:instance expo-fl (x (/ (w0 a b n) 2)))
                         (:instance expo-shift (x (w0 a (1+ b) n)) (n -1))
                         (:instance expo-shift (x (w0 a b n)) (n -1))))))
-			
+
 (defthm lza-cor
   (implies (and (not (zp n))
                 (bvecp a n)
@@ -806,7 +806,7 @@
   :hints (("Goal" :use (lza-thm lza-cor-7 lza-cor-8-a lza-cor-8-b lza-cor-20-a lza-cor-20-b
                         (:instance lza-thm (a (1+ a)))
 		        (:instance lza-thm (b (1+ b)))))))
-			
+
 ;;----------------------------------------------------------------------------------------
 
 (local-defund equivs (x y n)
@@ -835,7 +835,7 @@
 			(:instance bitn-plus-bits (m 0))
                         (:instance bitn-plus-bits (x y) (m 0))
                         (:instance bits-bounds (i (1- n)) (j 0))
-                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))			
+                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))
 		  :nonlinearp t)))
 
 (local-defthmd lutz-3
@@ -918,7 +918,7 @@
                  (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
   :hints (("Goal" :in-theory (enable equivs) :use (lutz-10))))
-			
+
 ;;----------------------------------------------------------------------------------------
 
 (local-defthmd lza-cor-21
@@ -983,7 +983,7 @@
   :hints (("Goal"  :nonlinearp t
                    :use (lza-cor-2 lza-cor-4
                          (:instance expo-unique (x (bits (+ a b) (1- n) 0)) (n (1- (e a b n))))))))
-	        
+
 (local-defthm lza-cor-alt
   (implies (and (not (zp n))
                 (bvecp a n)

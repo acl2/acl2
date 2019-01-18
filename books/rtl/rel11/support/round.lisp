@@ -912,7 +912,7 @@ This is our objective:
 		(< k (expt 2 (- (1+ m) n))))
 	    (equal (err-rne k m n x0)
 	           (* (expt 2 (- (1+ (expo x0)) m))
-		      (- (expt 2 (- (1+ m) n)) k))))		         
+		      (- (expt 2 (- (1+ m) n)) k))))
   :hints (("Goal" :in-theory (enable xfp err-rne)
                   :use (x>=3n/4-rne))))
 

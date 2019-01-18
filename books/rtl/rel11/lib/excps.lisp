@@ -718,12 +718,12 @@
 ;; result and the updated FPSCR.
 
 ;; ARM-BINARY-SPEC is based on two auxiliary functions: ARM-BINARY-PRE-COMP returns
-;; an optional value and an updated FPSCR, and ARM-BINARY-COMP returns a value 
+;; an optional value and an updated FPSCR, and ARM-BINARY-COMP returns a value
 ;; and an updated FPSCR.
 
 ;; ARM-BINARY-PRE-COMP calls ARM-BINARY-PRE-COMP-EXCP, which detects pre-computation
 ;; exceptions, and ARM-BINARY-PRE-COMP-VAL, which may compute a value.  If the value
-;; is NIL, then the computation proceeds by calling ARM-BINARY-COMP, and if non-NIL, 
+;; is NIL, then the computation proceeds by calling ARM-BINARY-COMP, and if non-NIL,
 ;; the operation is terminated and that value is returned.
 
 ;; ARM-BINARY-COMP either returns an infinity or decodes the operands and computes the
@@ -781,10 +781,10 @@
                       (cond-set-flag (idc) fpscr)
                     fpscr))
             (mv a b fpscr))
-    (mv a b 
+    (mv a b
         (arm-binary-pre-comp-val op a b fpscr f)
         (arm-binary-pre-comp-excp op a b fpscr f))))
-    
+
 (defun arm-post-comp (u fpscr f)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
@@ -1010,14 +1010,14 @@
               (mv (zencode (sgnf a f) f)
                   (cond-set-flag (idc) fpscr))
             (mv a fpscr))
-    (mv a 
+    (mv a
         (if (nanp a f)
             (process-nan a fpscr f)
           ())
         (if (snanp a f)
             (cond-set-flag (ioc) fpscr)
           fpscr))))
-    
+
 (defun arm-fscale-comp (a b fpscr f)
   (declare (xargs :guard (and (encodingp a f)
                               (natp b)
