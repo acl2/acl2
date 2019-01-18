@@ -5757,7 +5757,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun remove-equal (x l)
   (declare (xargs :guard (true-listp l)))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  #-acl2-loop-only
+; For assoc-eq, Jared Davis found it more efficient to use the native assoc; so
+; we do the analogous thing here, in raw Lisp.
   (remove x l :test #'equal)
   #+acl2-loop-only
   (cond ((endp l) nil)

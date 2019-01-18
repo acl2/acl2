@@ -166,6 +166,7 @@
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+(include-book "tools/trivial-ancestors-check" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
 ;; translate11-call.  This hasn't been much of a problem in doc/top-fast (as
