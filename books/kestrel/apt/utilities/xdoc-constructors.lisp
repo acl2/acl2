@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ xdoc::apt-constructors
-  :parents (utilities)
+  :parents (utilities xdoc::constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url apt)'>APT</see> transformations."
   :long
@@ -315,7 +315,7 @@
         @('(appcond1 hints1 ... appcondp hintsp)'),
         where each @('appcondk') is a keyword
         that identifies one of the applicability conditions below,
-        and each @('hintsk') consists of hints as may appear
+        and each @('hintsk') consists of hints that may appear
         just after @(':hints') in a @(tsee defthm).
         The hints @('hintsk') are used
         to prove applicability condition @('appcondk').")
@@ -323,7 +323,7 @@
        "The @('appcond1'), ..., @('appcondp') names must be all distinct.")
       (xdoc::p
        "An @('appcondk') is allowed in the @(':hints') input iff
-        the named applicability condition is present, as specified below.")
+        the applicability condition is present, as specified below.")
       ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
