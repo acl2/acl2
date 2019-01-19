@@ -319,7 +319,7 @@
 		(exactp (qsqrt x n) (1- n)))
 	   (equal (* (qsqrt x n) (qsqrt x n))
 	          x)))
- 
+
 (defthm qsqrt-exact-equal
   (implies (and (rationalp x)
                 (> x 0)
