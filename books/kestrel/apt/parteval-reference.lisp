@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,7 +29,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-intro
+   (xdoc::evmac-section-intro
 
     (xdoc::p
      "Partial evaluation is a well-known program transformation technique.
@@ -52,7 +53,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-form
+   (xdoc::evmac-section-form
 
     (xdoc::code
      "(parteval old"
@@ -69,7 +70,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-inputs
+   (xdoc::evmac-section-inputs
 
     (xdoc::desc-apt-input-old
      (xdoc::p
@@ -142,33 +143,31 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-generated
-    nil
-    nil
+   (xdoc::evmac-section-generated :one :one
 
-    (xdoc::desc
-     "@('new')"
-     (xdoc::p
-      "Specialized version of @('old'):")
-     (xdoc::code
-      ";; when old is not recursive:"
-      "(defun new (x1 ... xn)"
-      "  old-body<x1,...,xn,c1,...,cm>)"
-      ""
-      ";; when old is recursive:"
-      "(defun new (x1 ... xn)"
-      "  (old x1 ... xn c1 ... cm))")
-     (xdoc::p
-      "The guard is @('old-guard<x1,...,xn,c1,...cm>')."))
+     (xdoc::desc
+      "@('new')"
+      (xdoc::p
+       "Specialized version of @('old'):")
+      (xdoc::code
+       ";; when old is not recursive:"
+       "(defun new (x1 ... xn)"
+       "  old-body<x1,...,xn,c1,...,cm>)"
+       ""
+       ";; when old is recursive:"
+       "(defun new (x1 ... xn)"
+       "  (old x1 ... xn c1 ... cm))")
+      (xdoc::p
+       "The guard is @('old-guard<x1,...,xn,c1,...cm>')."))
 
-    (xdoc::desc
-     "@('old-to-new')"
-     (xdoc::p
-      "Theorem that relates @('old') to @('new'):")
-     (xdoc::code
-      "(defthm old-to-new"
-      "  (implies (and (equal y1 c1)"
-      "                ..."
-      "                (equal ym cm)"
-      "           (equal (old x1 ... xn y1 ... ym)"
-      "                  (new x1 ... xn)))")))))
+     (xdoc::desc
+      "@('old-to-new')"
+      (xdoc::p
+       "Theorem that relates @('old') to @('new'):")
+      (xdoc::code
+       "(defthm old-to-new"
+       "  (implies (and (equal y1 c1)"
+       "                ..."
+       "                (equal ym cm)"
+       "           (equal (old x1 ... xn y1 ... ym)"
+       "                  (new x1 ... xn)))")))))
