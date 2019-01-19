@@ -217,7 +217,7 @@ re-arrange these nests of updates.</p>
           `(
             ;; Field type theorem:
             ,(if (equal (car (cadr type)) 'unsigned-byte)
-                 `(DEFTHM-USB ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
+                 `(DEFTHM-UNSIGNED-BYTE-P ,(mk-name getter (if (< size 10) "-IS-N0" "-IS-N") size "P")
                     :hyp t
                     :bound ,size
                     :concl (XR ,keyword I X86)
@@ -228,7 +228,7 @@ re-arrange these nests of updates.</p>
                     :gen-linear t
                     :gen-type t)
 
-               `(DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+               `(DEFTHM-SIGNED-BYTE-P ,(mk-name getter "-IS-I" size "P")
                   :hyp t
                   :bound ,size
                   :concl (XR ,keyword I X86)
@@ -263,7 +263,7 @@ re-arrange these nests of updates.</p>
         (b* ((getter  (mk-name name))
              (size    (cadr type)))
           `( ;; Field Type Theorem:
-            (DEFTHM-USB ,(mk-name getter "-IS-N" size "P")
+            (DEFTHM-UNSIGNED-BYTE-P ,(mk-name getter "-IS-N" size "P")
               :hyp t
               :bound ,size
               :concl (XR ,keyword I X86)
@@ -290,7 +290,7 @@ re-arrange these nests of updates.</p>
         (b* ((getter  (mk-name name))
              (size    (cadr type)))
           `( ;; Field Type Theorems:
-            (DEFTHM-SB ,(mk-name getter "-IS-I" size "P")
+            (DEFTHM-SIGNED-BYTE-P ,(mk-name getter "-IS-I" size "P")
               :hyp t
               :bound ,size
               :concl (XR ,keyword I X86)
@@ -322,6 +322,8 @@ re-arrange these nests of updates.</p>
             (DEFTHM-NATP ,(mk-name "NATP-" getter)
               :hyp t
               :concl (XR ,keyword I X86)
+              :gen-type t
+              :gen-linear t
               :HINTS (("GOAL" :IN-THEORY (ENABLE ,predicate))))
 
             (DEFTHM ,(mk-name getter "-LESS-THAN-" size)

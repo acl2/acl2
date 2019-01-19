@@ -206,3 +206,5 @@
  modifying the @(tsee f-put-global) call in the aforementioned book,
  @('tools/memoize-prover-fns.lisp'), for your own set of prover
  functions.</p>")
+
+(defpointer memoize-prover-fns memoized-prover-fns)

@@ -1353,7 +1353,7 @@
      (natp (mv-nth 2 (get-prefixes-alt start-rip prefixes rex-byte cnt x86))))
     :rule-classes :type-prescription)
 
-  (defthm-usb prefixes-width-p-of-get-prefixes.new-prefixes-alt
+  (defthm-unsigned-byte-p prefixes-width-p-of-get-prefixes.new-prefixes-alt
     :hyp (and (unsigned-byte-p #.*prefixes-width* prefixes)
               (x86p x86))
     :bound #.*prefixes-width*
@@ -1364,7 +1364,7 @@
              :in-theory (e/d () (prefixes-width-p-of-get-prefixes.new-prefixes))))
     :gen-linear t)
 
-  (defthm-usb byte-p-of-get-prefixes.new-rex-byte-alt
+  (defthm-unsigned-byte-p byte-p-of-get-prefixes.new-rex-byte-alt
     :hyp (and (unsigned-byte-p 8 rex-byte)
               (natp prefixes)
               (x86p x86))

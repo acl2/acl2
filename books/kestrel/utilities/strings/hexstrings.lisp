@@ -31,4 +31,14 @@
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are upper case letters.
     The result is the string of all these digits.")
-  (implode (ubyte8s=>hexchars bytes)))
+  (implode (ubyte8s=>hexchars bytes))
+
+  ///
+
+  (defrule ubyte8s=>hexstring-of-unsigned-byte-list-fix
+    (equal (ubyte8s=>hexstring (unsigned-byte-list-fix 8 bytes))
+           (ubyte8s=>hexstring bytes)))
+
+  (defrule evenp-of-length-of-ubyte8s=>hexstring
+    (evenp (length (ubyte8s=>hexstring bytes)))
+    :disable evenp))

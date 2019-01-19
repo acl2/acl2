@@ -116,7 +116,7 @@
 
      ///
 
-     (defthm-usb n32p-pcmpeqb32
+     (defthm-unsigned-byte-p n32p-pcmpeqb32
        :bound 32
        :concl (pcmpeqb32 xmm xmm/mem)
        :gen-type t
@@ -137,7 +137,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
@@ -276,7 +276,7 @@
 
      ///
 
-     (defthm-usb n08p-pmovmskb8
+     (defthm-unsigned-byte-p n08p-pmovmskb8
        :bound 8
        :concl (pmovmskb8 xmm)
        :gen-type t
@@ -295,7 +295,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? ;; Exceptions Type 7
         nil)

@@ -233,7 +233,7 @@
           a))
     1))
 
-(defthm-usb n32p-fact-algorithm
+(defthm-unsigned-byte-p n32p-fact-algorithm
   :hyp (and (n32p n)
             (n32p a))
   :bound 32

@@ -93,7 +93,7 @@
        (reg/mem-size
 	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ;; Fetch the first operand and put it in val1.
@@ -206,7 +206,7 @@
 
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ;; Fetch the first (destination) operand:

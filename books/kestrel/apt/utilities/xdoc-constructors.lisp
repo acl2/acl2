@@ -312,9 +312,9 @@
       (xdoc::p
        "It must be a
         <see topic='@(url acl2::keyword-value-listp)'>keyword-value list</see>
-        @('(appcond1 hints1 ... appcondp hintsp)')
+        @('(appcond1 hints1 ... appcondp hintsp)'),
         where each @('appcondk') is a keyword
-        that names one of the applicability conditions below,
+        that identifies one of the applicability conditions below,
         and each @('hintsk') consists of hints as may appear
         just after @(':hints') in a @(tsee defthm).
         The hints @('hintsk') are used

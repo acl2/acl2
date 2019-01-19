@@ -89,19 +89,19 @@
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
 	 :bound ,size
 	 :concl (mv-nth 0 (,fn-name dst src))
 	 :gen-type t
 	 :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
 	 :bound ,size
 	 :concl (mv-nth 1 (,fn-name dst src))
 	 :gen-type t
 	 :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
 	 :bound ,size*2
 	 :concl (mv-nth 2 (,fn-name dst src))
 	 :hints (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
@@ -139,21 +139,21 @@
 
   ///
 
-  (defthm-usb mv-nth-0-mul-spec
+  (defthm-unsigned-byte-p mv-nth-0-mul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (ash size 3)
     :concl (mv-nth 0 (mul-spec size dst src))
     :gen-linear t
     :gen-type t)
 
-  (defthm-usb mv-nth-1-mul-spec
+  (defthm-unsigned-byte-p mv-nth-1-mul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (ash size 3)
     :concl (mv-nth 1 (mul-spec size dst src))
     :gen-linear t
     :gen-type t)
 
-  (defthm-usb mv-nth-2-mul-spec
+  (defthm-unsigned-byte-p mv-nth-2-mul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (* 2 (ash size 3))
     :concl (mv-nth 2 (mul-spec size dst src))
@@ -236,25 +236,25 @@
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
 	 :bound ,size
 	 :concl (mv-nth 0 (,fn-name dst src))
 	 :gen-type t
 	 :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
 	 :bound ,size
 	 :concl (mv-nth 1 (,fn-name dst src))
 	 :gen-type t
 	 :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
 	 :bound ,size*2
 	 :concl (mv-nth 2 (,fn-name dst src))
 	 :gen-type t
 	 :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-3-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-3-" fn-name)
 	 :bound 1
 	 :concl (mv-nth 3 (,fn-name dst src))
 	 :gen-type t
@@ -293,28 +293,28 @@
 
   ///
 
-  (defthm-usb mv-nth-0-imul-spec
+  (defthm-unsigned-byte-p mv-nth-0-imul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (ash size 3)
     :concl (mv-nth 0 (imul-spec size dst src))
     :gen-linear t
     :gen-type t)
 
-  (defthm-usb mv-nth-1-imul-spec
+  (defthm-unsigned-byte-p mv-nth-1-imul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (ash size 3)
     :concl (mv-nth 1 (imul-spec size dst src))
     :gen-linear t
     :gen-type t)
 
-  (defthm-usb mv-nth-2-imul-spec
+  (defthm-unsigned-byte-p mv-nth-2-imul-spec
     :hyp   (member size '(1 2 4 8))
     :bound (* 2 (ash size 3))
     :concl (mv-nth 2 (imul-spec size dst src))
     :gen-linear t
     :gen-type t)
 
-  (defthm-usb mv-nth-3-imul-spec
+  (defthm-unsigned-byte-p mv-nth-3-imul-spec
     :hyp   (member size '(1 2 4 8))
     :bound 1
     :concl (mv-nth 3 (imul-spec size dst src))

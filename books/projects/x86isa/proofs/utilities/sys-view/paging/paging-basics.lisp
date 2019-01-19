@@ -83,7 +83,7 @@
              (< (+ 7 x) *mem-size-in-bytes*))
     :in-theory (e/d* (loghead) ())))
 
- (defthm-usb rm-low-64-logand-logior-helper-1
+ (defthm-unsigned-byte-p rm-low-64-logand-logior-helper-1
    :hyp (and (n64p x)
              (syntaxp (quotep n))
              (natp n)
@@ -112,7 +112,7 @@
 (defun-nx pml4-table-base-addr (x86)
   (ash (cr3Bits->pdb (ctri *cr3* x86)) 12))
 
-(defthm-usb n52p-of-pml4-table-base-addr
+(defthm-unsigned-byte-p n52p-of-pml4-table-base-addr
   :hyp (x86p x86)
   :bound 52
   :concl (pml4-table-base-addr x86))

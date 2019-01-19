@@ -5757,7 +5757,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun remove-equal (x l)
   (declare (xargs :guard (true-listp l)))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  #-acl2-loop-only
+; For assoc-eq, Jared Davis found it more efficient to use the native assoc; so
+; we do the analogous thing here, in raw Lisp.
   (remove x l :test #'equal)
   #+acl2-loop-only
   (cond ((endp l) nil)
@@ -15428,7 +15430,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; definitions were kept similar to those that had been in the ihs library for
 ; some time.
 
-  (declare (xargs :guard (and (integerp lower) (integerp upper))))
+; We considered Alessandro Coglio's suggestion to fix the first two arguments,
+; specifically by changing the body to the following.
+
+;   (mbe :logic (and (integerp x)
+;                    (<= (ifix lower) x)
+;                    (< x (ifix upper)))
+;        :exec (and (integerp x)
+;                   (<= lower x)
+;                   (< x upper))))
+
+; However, that caused at least 19 regression failures, and we quickly found
+; one that looked awkward to fix.  So we are abandoning that idea, at least for
+; now.
+
+  (declare (type integer lower upper))
   (and (integerp x)
        (<= lower x)
        (< x upper)))
@@ -26336,7 +26352,8 @@ Lisp definition."
 (defmacro heap-bytes-allocated ()
   '(the-mfixnum #+ccl (ccl::total-bytes-allocated)
                 #+sbcl (sb-ext:get-bytes-consed)
-                #-(or ccl sbcl)
+                #+lispworks (hcl:total-allocation)
+                #-(or ccl sbcl lispworks)
                 (error "Heap-bytes-allocated is unknown for this host Lisp.")))
 
 #-acl2-loop-only
@@ -26348,7 +26365,7 @@ Lisp definition."
         (g-args (gensym))
         (g-start-real-time (gensym))
         (g-start-run-time (gensym))
-        #+(or ccl sbcl)
+        #+(or ccl sbcl lispworks)
         (g-start-alloc (gensym)))
     `(let ((,g-real-mintime ,real-mintime)
            (,g-run-mintime ,run-mintime)
@@ -26399,7 +26416,7 @@ Lisp definition."
                 (,g-start-run-time
                  #-gcl (get-internal-run-time)
                  #+gcl (multiple-value-list (get-internal-run-time)))
-                #+(or ccl sbcl)
+                #+(or ccl sbcl lispworks)
                 (,g-start-alloc (heap-bytes-allocated)))
            (our-multiple-value-prog1
             ,x
@@ -26408,7 +26425,7 @@ Lisp definition."
                        #-gcl (get-internal-run-time)
                        #+gcl (multiple-value-list (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
-                      #+(or ccl sbcl) ; evaluate before computations below:
+                      #+(or ccl sbcl lispworks) ; before computations below:
                       (allocated (- (heap-bytes-allocated)
                                     ,g-start-alloc))
                       (float-units-sec (float internal-time-units-per-second))
@@ -26437,7 +26454,7 @@ Lisp definition."
                                    (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
                                    (< run-elapsed (float ,g-run-mintime)))
-                              #+(or ccl sbcl)
+                              #+(or ccl sbcl lispworks)
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
                    (let* ((alist (list* (cons #\t (format nil "~,2F"
@@ -26457,9 +26474,9 @@ Lisp definition."
                                                         nil "~,2F"
                                                         child-sys-elapsed)))
                                         (cons #\a
-                                              #+(or ccl sbcl)
+                                              #+(or ccl sbcl lispworks)
                                               (format nil "~:D" allocated)
-                                              #-(or ccl sbcl)
+                                              #-(or ccl sbcl lispworks)
                                               "[unknown]")
                                         (cons #\f ',x)
                                         (cons #\e (evisc-tuple
@@ -26472,7 +26489,7 @@ Lisp definition."
                                                          #\5 #\6 #\7 #\8 #\9)
                                                        ,g-args))))
                           (,g-msg (or ,g-msg
-                                      #+(or ccl sbcl)
+                                      #+(or ccl sbcl lispworks)
                                       "; ~Xfe took ~|; ~st seconds realtime, ~
                                        ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"
@@ -26488,7 +26505,7 @@ Lisp definition."
                                         "; ~Xfe took ~|; ~st sec ~
                                          realtime, ~sc sec runtime, ~sC ~
                                          sec child runtime.~%"))
-                                      #-(or ccl gcl)
+                                      #-(or ccl sbcl lispworks gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
                      (state-free-global-let*

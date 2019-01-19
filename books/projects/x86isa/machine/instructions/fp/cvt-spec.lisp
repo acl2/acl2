@@ -164,7 +164,7 @@
                                   nbytes op mxcsr trunc exp-width frac-width))))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mxcsr-sse-cvt-fp-to-int
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-fp-to-int
     :bound 32
     :concl (mv-nth 2 (sse-cvt-fp-to-int
                       nbytes op mxcsr trunc exp-width frac-width))
@@ -213,7 +213,7 @@
     (integerp (mv-nth 1 (sse-cvt-int-to-fp op mxcsr exp-width frac-width)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mxcsr-sse-cvt-int-to-fp
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-int-to-fp
     :bound 32
     :concl (mv-nth 2 (sse-cvt-int-to-fp op mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -397,7 +397,7 @@
                                     bitops::loghead-of-logior))))
   :rule-classes :type-prescription)
 
-(defthm-usb n32p-mxcsr-sse-cvt-fp1-to-fp2
+(defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-fp1-to-fp2
   :bound 32
   :concl (mv-nth
           2
@@ -440,7 +440,7 @@
               (ash nbytes 3)
               (mv-nth 1 (sp-sse-cvt-fp-to-int nbytes op mxcsr trunc)))))
 
-  (defthm-usb n32p-mxcsr-sp-sse-cvt-fp-to-int
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-cvt-fp-to-int
     :bound 32
     :concl (mv-nth 2 (sp-sse-cvt-fp-to-int nbytes op mxcsr trunc))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -457,13 +457,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n32p-result-sp-sse-cvt-int-to-fp
+  (defthm-unsigned-byte-p n32p-result-sp-sse-cvt-int-to-fp
     :bound 32
     :concl (mv-nth 1 (sp-sse-cvt-int-to-fp op mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sp-sse-cvt-int-to-fp
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-cvt-int-to-fp
     :bound 32
     :concl (mv-nth 2 (sp-sse-cvt-int-to-fp op mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -481,13 +481,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n64p-result-sse-cvt-sp-to-dp
+  (defthm-unsigned-byte-p n64p-result-sse-cvt-sp-to-dp
     :bound 64
     :concl (mv-nth 1 (sse-cvt-sp-to-dp op mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sse-cvt-sp-to-dp
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-sp-to-dp
     :bound 32
     :concl (mv-nth 2 (sse-cvt-sp-to-dp op mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -517,7 +517,7 @@
               (ash nbytes 3)
               (mv-nth 1 (dp-sse-cvt-fp-to-int nbytes op mxcsr trunc)))))
 
-  (defthm-usb n32p-mxcsr-dp-sse-cvt-fp-to-int
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-cvt-fp-to-int
     :bound 32
     :concl (mv-nth 2 (dp-sse-cvt-fp-to-int nbytes op mxcsr trunc))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -534,13 +534,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n64p-result-dp-sse-cvt-int-to-fp
+  (defthm-unsigned-byte-p n64p-result-dp-sse-cvt-int-to-fp
     :bound 64
     :concl (mv-nth 1 (dp-sse-cvt-int-to-fp op mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-dp-sse-cvt-int-to-fp
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-cvt-int-to-fp
     :bound 32
     :concl (mv-nth 2 (dp-sse-cvt-int-to-fp op mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
@@ -558,13 +558,13 @@
     (mv flg result mxcsr))
   ///
 
-  (defthm-usb n32p-result-sse-cvt-dp-to-sp
+  (defthm-unsigned-byte-p n32p-result-sse-cvt-dp-to-sp
     :bound 32
     :concl (mv-nth 1 (sse-cvt-dp-to-sp op mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sse-cvt-dp-to-sp
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-dp-to-sp
     :bound 32
     :concl (mv-nth 2 (sse-cvt-dp-to-sp op mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))

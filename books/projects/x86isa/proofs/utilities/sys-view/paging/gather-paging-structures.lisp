@@ -117,7 +117,7 @@
     (implies (qword-paddr-listp a)
              (qword-paddr-listp (remove-duplicates-equal a))))
 
-  (defthm-usb qword-paddrp-element-of-qword-paddr-listp
+  (defthm-unsigned-byte-p qword-paddrp-element-of-qword-paddr-listp
     :hyp (and (qword-paddr-listp xs)
               (natp m)
               (< m (len xs)))
@@ -160,7 +160,7 @@
     (implies (mult-8-qword-paddr-listp addrs)
              (mult-8-qword-paddr-listp (remove-duplicates-equal addrs))))
 
-  (defthm-usb qword-paddrp-element-of-mult-8-qword-paddr-listp
+  (defthm-unsigned-byte-p qword-paddrp-element-of-mult-8-qword-paddr-listp
     :hyp (and (mult-8-qword-paddr-listp xs)
               (natp m)
               (< m (len xs)))
@@ -288,12 +288,12 @@
 
    (local (in-theory (e/d* (ash unsigned-byte-p) ())))
 
-   (defthm-usb n52p-left-shifting-a-40-bit-natp-by-12
+   (defthm-unsigned-byte-p n52p-left-shifting-a-40-bit-natp-by-12
      :hyp (unsigned-byte-p 40 x)
      :bound 52
      :concl (+ 4095 (ash x 12)))
 
-   (defthm-usb n52p-left-shifting-a-40-bit-natp-by-12-+-7
+   (defthm-unsigned-byte-p n52p-left-shifting-a-40-bit-natp-by-12-+-7
      :hyp (unsigned-byte-p 40 x)
      :bound 52
      :concl (+ 7 (ash x 12)))

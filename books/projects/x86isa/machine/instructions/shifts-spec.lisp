@@ -280,19 +280,19 @@
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,size
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t
@@ -349,13 +349,13 @@ otherwise, it is set to 1.</p>"
     (natp (mv-nth 0 (sal/shl-spec size dst src input-rflags)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mv-nth-1-sal/shl-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-1-sal/shl-spec
     :bound 32
     :concl (mv-nth 1 (sal/shl-spec size dst src input-rflags))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mv-nth-2-sal/shl-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-2-sal/shl-spec
     :bound 32
     :concl (mv-nth 2 (sal/shl-spec size dst src input-rflags))
     :gen-type t
@@ -546,19 +546,19 @@ otherwise, it is set to 1.</p>"
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,size
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t
@@ -627,13 +627,13 @@ set to the most-significant bit of the original operand.</p>"
     (natp (mv-nth 0 (shr-spec size dst src input-rflags)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mv-nth-1-shr-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-1-shr-spec
     :bound 32
     :concl (mv-nth 1 (shr-spec size dst src input-rflags))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mv-nth-2-shr-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-2-shr-spec
     :bound 32
     :concl (mv-nth 2 (shr-spec size dst src input-rflags))
     :gen-type t
@@ -841,19 +841,19 @@ set to the most-significant bit of the original operand.</p>"
 
        (local (in-theory (e/d () (unsigned-byte-p))))
 
-       (defthm-usb ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
          :bound ,size
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-1-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
          :concl (mv-nth 1 (,fn-name dst src input-rflags))
          :gen-type t
          :gen-linear t)
 
-       (defthm-usb ,(mk-name "MV-NTH-2-" fn-name)
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
          :bound 32
          :concl (mv-nth 2 (,fn-name dst src input-rflags))
          :gen-type t
@@ -912,13 +912,13 @@ most-significant bit of the original operand.</p>"
     (natp (mv-nth 0 (sar-spec size dst src input-rflags)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mv-nth-1-sar-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-1-sar-spec
     :bound 32
     :concl (mv-nth 1 (sar-spec size dst src input-rflags))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mv-nth-2-sar-spec
+  (defthm-unsigned-byte-p n32p-mv-nth-2-sar-spec
     :bound 32
     :concl (mv-nth 2 (sar-spec size dst src input-rflags))
     :gen-type t

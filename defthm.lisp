@@ -6409,7 +6409,7 @@
 ; quote-normal form, both to facilitate matching when the rule is subsequently
 ; applied and to make the test robust below where we use subst-var-lst.
 
-             (sublis-var nil (cdar pairs))))
+             (quote-normal-form (cdar pairs))))
         (case-match
          hyp
          ((equiv1 xk yk)

@@ -171,8 +171,12 @@
       (b* ((base (loghead 64 (xr :seg-hidden-base seg-reg x86)))
 	   (limit (loghead 32 (xr :seg-hidden-limit seg-reg x86)))
 	   (attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
-	   (d/b (data-segment-descriptor-attributesBits->d/b attr))
-	   (e (data-segment-descriptor-attributesBits->e attr))
+	   (d/b (if (= seg-reg #.*cs*)
+                    (code-segment-descriptor-attributesBits->d attr)
+                  (data-segment-descriptor-attributesBits->d/b attr)))
+	   (e (if (= seg-reg #.*cs*)
+                  0
+                (data-segment-descriptor-attributesBits->e attr)))
 	   (lower (if (= e 1) (1+ limit) 0))
 	   (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
 	(mv (n32 base) lower upper))
@@ -187,8 +191,12 @@
 	    (bitsets::bignum-extract base 0))
 	   ((the (unsigned-byte 32) limit) (xr :seg-hidden-limit seg-reg x86))
 	   ((the (unsigned-byte 16) attr) (xr :seg-hidden-attr seg-reg x86))
-	   (d/b (data-segment-descriptor-attributesBits->d/b attr))
-	   (e (data-segment-descriptor-attributesBits->e attr))
+	   (d/b (if (= seg-reg #.*cs*)
+                    (code-segment-descriptor-attributesBits->d attr)
+                  (data-segment-descriptor-attributesBits->d/b attr)))
+	   (e (if (= seg-reg #.*cs*)
+                  0
+                (data-segment-descriptor-attributesBits->e attr)))
 	   (lower (if (= e 1) (1+ limit) 0))
 	   (upper (if (= e 1) (if (= d/b 1) #xffffffff #xffff) limit)))
 	(mv base lower upper))))
@@ -201,20 +209,20 @@
   :no-function t
   ///
 
-  (defthm-usb segment-base-is-n64p
+  (defthm-unsigned-byte-p segment-base-is-n64p
     :hyp (x86p x86)
     :bound 64
     :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb segment-lower-bound-is-n33p
+  (defthm-unsigned-byte-p segment-lower-bound-is-n33p
     :bound 33
     :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb segment-upper-bound-is-n32p
+  (defthm-unsigned-byte-p segment-upper-bound-is-n32p
     :bound 32
     :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
     :gen-type t
@@ -391,14 +399,14 @@
   :no-function t
   ///
 
-  (defthm-sb ea-to-la-is-i64p
+  (defthm-signed-byte-p ea-to-la-is-i64p
     :hyp (i64p eff-addr)
     :bound 64
     :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
     :gen-type t
     :gen-linear t)
 
-  (defthm-sb ea-to-la-is-i48p-when-no-error
+  (defthm-signed-byte-p ea-to-la-is-i48p-when-no-error
     :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
     :bound 48
     :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
@@ -736,7 +744,7 @@
 
   ///
 
-  (defthm-usb n16p-make-code-segment-attr
+  (defthm-unsigned-byte-p n16p-make-code-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-code-segment-attr-field descriptor)
@@ -791,7 +799,7 @@
 
   ///
 
-  (defthm-usb n16p-make-data-segment-attr
+  (defthm-unsigned-byte-p n16p-make-data-segment-attr
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-data-segment-attr-field descriptor)
@@ -832,7 +840,7 @@
 
   ///
 
-  (defthm-usb n16p-make-system-segment-attr
+  (defthm-unsigned-byte-p n16p-make-system-segment-attr
     :hyp (unsigned-byte-p 128 descriptor)
     :bound 16
     :concl (make-system-segment-attr-field descriptor)

@@ -4374,20 +4374,22 @@
 ; ; However, in the interest of performance we have decided to avoid a full-blown
 ; ; call of type-set here.  You get what you pay for, perhaps.
 ;
-; However, then Rich Cohen observed that if we are trying to relieve a hypothesis
-; in a lemma and the hyp rewrites to an explicit cons expression we fail to
-; recognize that it is non-nil!  Here is a thm that fails for that reason:
-;
-;  (defstub foo (x a) t)
-;  (defaxiom lemma
-;   (implies (member x a) (equal (foo x a) x)))
-;  (thm (equal (foo x (cons x y)) x))
-;
 ; We have decided to revert to the use of type-set in rewrite-solidify, but
 ; only when we have an objective of t or nil.  Under this condition we use
 ; force-flg nil and dwp t.  We tried the div proofs with force-flg t here
 ; and found premature forcing killed us.
-;
+
+; On 1/17/2019, after Version_8.1, we tried modifying rewrite-solidify-rec to
+; call type-set unconditionally, not merely when (not (eq obj '?)).  There were
+; 46 failures in the "everything" regression, which we killed before it
+; completed since there were three very-long running certifications still in
+; progress (about 3 hours each).  Among those, we noticed
+; books/nonstd/workshops/2017/cayley/cayley1c.lisp, whose certification went
+; far enough for us to see the the proof of 8-COMPOSITION-LAW completed but
+; took 7560.97 seconds, far exceeding the 6.49 seconds taken in a recent run.
+; It thus seemed obvious that such a change would likely cause massive changes
+; to be necessary not only in the community books, but also in proprietary
+; books elsewhere.
 
 (defun rewrite-if11 (term type-alist geneqv wrld ttree)
   (mv-let (ts ts-ttree)
@@ -8391,18 +8393,6 @@
                                        nil
                                      '(brr-evisc-tuple state))))
                      (value :invisible))))
-         (final-ttree-fn ()
-                         '(lambda nil
-                            (let ((lemma (get-brr-local 'lemma state)))
-                              (cond
-                               ((eq (record-type lemma) 'linear-lemma)
-                                (er soft :FINAL-TTREE
-                                    ":FINAL-TTREE is not legal for a :LINEAR ~
-                                     rule."))
-                               (t (prog2$
-                                   (cw "~F0 has not yet been :EVALed.~%"
-                                       (get-rule-field lemma :rune))
-                                   (value :invisible)))))))
          (frame-fn (plusp)
                    `(lambda (n)
                       (let ((rgstack
@@ -10264,8 +10254,12 @@
 (defun extend-unify-subst (alist unify-subst)
 
 ; We attempt to keep all terms in quote-normal form, which explains the use of
-; sublis-var-lst below.  There are also three related calls, all of the form
-; (sublis-var nil X), in rewrite-with-lemma.
+; quote-normal-form below.  There are also three calls of quote-normal-form in
+; rewrite-with-lemma.
+
+; The rest of this remark was written before the introduction of the function
+; quote-normal-form, using (sublis-var nil ...) instead, which, unlike
+; quote-normal-form, recurred inside calls of HIDE.
 
 ; We wondered if for large problems, the cost of exploring large terms might
 ; not be worth the benefit of maintaining quote-normal form, so we tried
@@ -10325,7 +10319,7 @@
 ; might need to be.)
 
   (append (pairlis$ (strip-cars alist)
-                    (sublis-var-lst nil (strip-cdrs alist)))
+                    (quote-normal-form (strip-cdrs alist)))
           unify-subst))
 
 (defun relieve-hyp-synp (rune hyp0 unify-subst rdepth type-alist wrld state
@@ -10446,8 +10440,8 @@
 
   `(cond ((and (null ,ancestors)
                (access rewrite-constant ,rcnst :splitter-output)
-               (ffnnamep 'if ,rhs)
-               (ffnnamep 'if ,rewritten-rhs))
+               (ffnnamep-hide 'if ,rhs t)
+               (ffnnamep-hide 'if ,rewritten-rhs t))
           (let ((rune ,rune)
                 (ttree ,ttree))
             (add-to-tag-tree 'splitter-if-intro rune
@@ -10467,8 +10461,8 @@
   `(cond ((and ,rune
                (null ,ancestors)
                (access rewrite-constant ,rcnst :splitter-output)
-               (ffnnamep 'if ,rhs)
-               (ffnnamep 'if ,rewritten-rhs))
+               (ffnnamep-hide 'if ,rhs t)
+               (ffnnamep-hide 'if ,rewritten-rhs t))
           (add-to-tag-tree 'splitter-if-intro ,rune ,ttree))
          (t ,ttree)))
 
@@ -14597,17 +14591,20 @@
                                  (t
                                   (let* ((hyps0 (flatten-ands-in-lit
 
-; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
+; Note: The quote-normal-form call below normalizes the explicit constant
+; constructors, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; extend-unify-subst.
 
-                                                 (sublis-var nil evaled-hyp)))
+                                                 (quote-normal-form
+                                                  evaled-hyp)))
                                          (extra-hyps (flatten-ands-in-lit
 
-; Note: The sublis-var below normalizes the explicit constant constructors,
-; e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in extend-unify-subst.
+; Note: The quote-normal-form call below normalizes the explicit constant
+; constructors, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; extend-unify-subst.
 
-                                                      (sublis-var nil
-                                                                  extra-evaled-hyp)))
+                                                 (quote-normal-form
+                                                  extra-evaled-hyp)))
                                          (hyps (append? hyps0 extra-hyps))
                                          (vars (and hyps
 
@@ -14724,11 +14721,11 @@
                                            t
                                            (rewrite-entry (rewrite
 
-; Note: The sublis-var below normalizes the explicit constant constructors in
-; val, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
+; Note: The quote-normal-form call below normalizes the explicit constant
+; constructors, e.g., (cons '1 '2) becomes '(1 . 2).  See the comment in
 ; extend-unify-subst.
 
-                                                           (sublis-var nil val)
+                                                 (quote-normal-form val)
 
 ; At one point we ignored the unify-subst constructed above and used a nil
 ; here.  That was unsound if val involved free vars bound by the relief of the

@@ -171,7 +171,7 @@
 
   ///
 
-  (defthm-usb n01p-fp-decode-sign-bit
+  (defthm-unsigned-byte-p n01p-fp-decode-sign-bit
     :bound 1
     :concl (mv-nth 1 (fp-decode x exp-width frac-width))
     :gen-type t
@@ -182,13 +182,13 @@
              (natp (mv-nth 2 (fp-decode x exp-width frac-width))))
     :rule-classes :type-prescription)
 
-  (defthm-usb exp-width-wide-exp-from-fp-decode-lemma
+  (defthm-unsigned-byte-p exp-width-wide-exp-from-fp-decode-lemma
     :hyp (posp exp-width)
     :bound exp-width
     :concl (mv-nth 2 (fp-decode x exp-width frac-width))
     :gen-linear t)
 
-  (defthm-usb n01p-implicit-bit-fp-decode
+  (defthm-unsigned-byte-p n01p-implicit-bit-fp-decode
     :bound 1
     :concl (mv-nth 3 (fp-decode x exp-width frac-width))
     :gen-type t
@@ -199,7 +199,7 @@
              (natp (mv-nth 4 (fp-decode x exp-width frac-width))))
     :rule-classes :type-prescription)
 
-  (defthm-usb frac-width-wide-frac-from-fp-decode-lemma
+  (defthm-unsigned-byte-p frac-width-wide-frac-from-fp-decode-lemma
     :hyp (posp frac-width)
     :bound frac-width
     :concl (mv-nth 4 (fp-decode x exp-width frac-width))

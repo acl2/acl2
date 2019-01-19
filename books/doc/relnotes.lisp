@@ -163,6 +163,13 @@
 
  <p>Improved the documentation of the Bitcoin library.</p>
 
+ <h4>Bytes</h4>
+
+ <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
+ unsigned-byte-list-fix), and @(tsee signed-byte-list-fix) for @(tsee
+ unsigned-byte-p), @(tsee signed-byte-p), @(tsee unsigned-byte-listp), and
+ @(tsee signed-byte-listp).</p>
+
  <h4><see topic='@(url std::define)'>Define</see></h4>
 
  <p>Added support for configuration objects that can be used to specify some
@@ -199,13 +206,11 @@
  @('nibble') instead of @('ubyte4').</p>
 
  <p>Modified the formalizations of RLP encoding and decoding to return an
- explicit error flag.</p>
-
- <p>Added theorems showing that RLP encodings are decodable: RLP encoding is
- injective, and no valid encoding is a strict prefix of another one.</p>
-
- <p>Added executable RLP decoders and proved them correct with resepct to the
- ones declaratively defined as inverses of the RLP encoders.</p>
+ explicit error flag.  Added theorems showing that RLP encodings are decodable:
+ RLP encoding is injective, and no valid encoding is a strict prefix of another
+ one.  Added executable RLP decoders and proved them correct with respect to
+ the ones declaratively defined as inverses of the RLP encoders.  Added the RLP
+ tests from the Ethereum Wiki's page on RLP.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
@@ -329,13 +334,63 @@
  eliminated.</p>
 
  <p>Improved the @('defthm-natp'), @('defthm-usb'), and @('defthm-sb')
- utilities to generate minimal and reliable hints for corollaries.</p>
+ utilities to generate minimal and reliable hints for corollaries.  Improved
+ the @('defthm-natp') utility to also generate a rewrite rule.  Extended
+ @('defthm-natp') with the ability to turn on/off the generation of the type
+ and linear corollaries, to modify their hypotheses, to supply more specific
+ hints for the corollaries, and to specify @(':otf-flg'); these options are
+ like the ones provided by @('defthm-usb') and @('defthm-sb').  Improved the
+ @('defthm-usb') utility to also generate a linear linear saying that the value
+ is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
+ @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
+ with @('defthm-natp').</p>
+
+ <p>Extended top-level memory reading functions to take into account the R bit
+ of code segment descriptors, when they access for reading (not execution) a
+ code segment in 32-bit mode: in this case, if R = 0, the code segment is
+ execute-only and thus reading data from it is not allowed.  Extended top-level
+ memory functions to take into account the W bit of data segment descriptors,
+ in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
+ to it is not allowed; writing to a code segment is not allowed either.</p>
 
  <p>Improved and extended some documentation.</p>
+
+ <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+
+ <p>The @('use-termhint') utility has been moved to its own book
+ @('std/util/termhints') from its former location at
+ @('clause-processors/use-by-hint').</p>
+
+ <p>Added a new utility, @(see function-termhint), for creating termhints from
+ existing function definitions containing @(see hintcontext) annotations.</p>
+
+ <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
+
+ <p>Used new ACL2 system features to fix the remaining known soundness bug and
+ remove a trust tag.</p>
+
+ <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
+
+ <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
+ inputs known to be equivalent or opposite to each other, not just to
+ constants.</p>
 
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
+
+ <p>Added a feature to @('books/GNUMakefile') that allows books to specify
+ dependencies on cert ACL2 system features, so that they will be automatically
+ be recertified when such features are changed.  See @(see
+ build::acl2-system-feature-dependencies).</p>
+
+ <p>Added utilities @(see ifdef-define) and @(see ifdef-undefine) in
+ @('books/build/ifdef.lisp') which set or unset environment variables while
+ allowing the build system to correctly track them for its support of @(see
+ ifdef) and @(see ifndef).</p>
+
+ <p>Cleaned up the Perl scripts implementing <see topic='@(url build::cert.pl)'>cert.pl</see>,
+ factoring them into several supporting libraries.</p>
 
  <h3>Testing</h3>
 

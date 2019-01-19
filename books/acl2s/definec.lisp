@@ -81,7 +81,6 @@ both expand into
 
 |#
 
-
 (defmacro definec (name &rest args)
   `(with-output
     :stack :push :off :all

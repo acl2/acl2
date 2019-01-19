@@ -198,7 +198,7 @@
                  the-method
                  aignet
                  gl
-                 iff*
+                 iff* and* and**
 
                  )))
 

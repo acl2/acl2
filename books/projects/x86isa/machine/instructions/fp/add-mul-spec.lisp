@@ -153,14 +153,14 @@
   (sse-add/sub/mul/div operation op1 op2 mxcsr #.*IEEE-SP-EXP-WIDTH* #.*IEEE-SP-FRAC-WIDTH*)
 
   ///
-  (defthm-usb n32p-result-sp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-result-sp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 1 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-flags-sp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-flags-sp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 2 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -177,14 +177,14 @@
   (sse-add/sub/mul/div operation op1 op2 mxcsr #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*)
 
   ///
-  (defthm-usb n64p-result-dp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n64p-result-dp-sse-add/sub/mul/div
     :bound 64
     :concl (mv-nth 1 (dp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-flags-dp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-flags-dp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 2 (dp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))

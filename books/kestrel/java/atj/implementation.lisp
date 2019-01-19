@@ -15,7 +15,8 @@
 
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/strings/hexstrings" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "oslib/top" :dir :system)
 (include-book "std/strings/charset" :dir :system)

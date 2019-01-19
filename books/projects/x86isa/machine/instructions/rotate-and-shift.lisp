@@ -66,7 +66,7 @@
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (modr/m->reg modr/m) 6))
   :guard-hints (("Goal"
-                 :in-theory (e/d () 
+                 :in-theory (e/d ()
                                  (unsigned-byte-p
                                   not force (force)))))
 
@@ -155,7 +155,7 @@
        ((the (integer 0 8) ?reg/mem-size)
         (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)

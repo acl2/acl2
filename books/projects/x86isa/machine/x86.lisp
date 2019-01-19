@@ -594,8 +594,8 @@
 
   (local (in-theory (e/d () (acl2::zp-open not))))
 
-  (defthm-usb prefixes-width-p-of-get-prefixes.new-prefixes
-    ;; [Shilpi] I tried to use defret here instead of defthm-usb, but I got
+  (defthm-unsigned-byte-p prefixes-width-p-of-get-prefixes.new-prefixes
+    ;; [Shilpi] I tried to use defret here instead of defthm-unsigned-byte-p, but I got
     ;; into trouble, probably because of the different order of lambda
     ;; expansions in defret.
     :hyp (and (unsigned-byte-p #.*prefixes-width* prefixes)
@@ -629,8 +629,8 @@
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d () (get-prefixes)))))
 
-  (defthm-usb byte-p-of-get-prefixes.new-rex-byte
-    ;; [Shilpi] I tried to use defret here instead of defthm-usb, but I got
+  (defthm-unsigned-byte-p byte-p-of-get-prefixes.new-rex-byte
+    ;; [Shilpi] I tried to use defret here instead of defthm-unsigned-byte-p, but I got
     ;; into trouble, probably because of the different order of lambda
     ;; expansions in defret.
     :hyp (and (unsigned-byte-p 8 rex-byte)

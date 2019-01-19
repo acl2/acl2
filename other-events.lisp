@@ -16863,8 +16863,14 @@
 (defmacro without-warnings (form)
   (without-warnings-fn form))
 
-(defmacro translate-without-warnings (&rest args)
+(defun translate-ignore-ok (x stobjs-out logic-modep known-stobjs ctx w state)
+  (let ((w (putprop 'acl2-defaults-table 'table-alist
+                    (put-assoc-equal-fast :ignore-ok t
+                                          (table-alist 'acl2-defaults-table w))
+                    w)))
+    (translate x stobjs-out logic-modep known-stobjs ctx w state)))
 
+(defmacro translate-without-warnings-ignore-ok (&rest args)
 
 ; To see why we may want to turn off warnings during translate, consider the
 ; following example.
@@ -16880,8 +16886,23 @@
 ;   X is not used in the body of the LET expression that binds X.  But
 ;   X is not declared IGNOREd or IGNORABLE.  See :DOC set-ignore-ok.
 
+; Additionally, because the body of the defchoose is already translated, we
+; lose IGNORABLE declarations from inside it.  IGNORE declarations are dealt
+; with by wrapping the lambda argument in HIDE, but we don't have such a hack
+; for dealing with IGNORABLE.  So we actually set IGNORE-OK to T temporarily
+; here to avoid erroring out in such cases.  Otherwise, the following form will
+; unexpectedly produce an error:
 
-  `(without-warnings (translate ,@args)))
+; (defchoose foo (x) () (let ((y nil)) (declare (ignorable y)) (consp x)))
+
+; Do we need to inhibit warnings given that we're turning on ignore-ok?  The
+; user code on which this is run has already been translated, so any legitimate
+; warnings for that have already been issued.  Any new warnings from this
+; translation would therefore be either artifacts from re-translating the
+; translation of the user code, or else warnings about the system code wrapped
+; around it, neither of which the user will want to see.
+
+  `(without-warnings (translate-ignore-ok ,@args)))
 
 (defun defchoose-constraint-basic (fn bound-vars formals tbody ctx wrld state)
 
@@ -16891,7 +16912,7 @@
   (cond
    ((null (cdr bound-vars))
     (er-let*
-     ((consequent (translate-without-warnings
+     ((consequent (translate-without-warnings-ignore-ok
                    `(let ((,(car bound-vars) ,(cons fn formals)))
                       ,tbody)
                    t t t ctx wrld state)))
@@ -16901,7 +16922,7 @@
              consequent))))
    (t
     (er-let*
-     ((consequent (translate
+     ((consequent (translate-without-warnings-ignore-ok
                    `(mv-let ,bound-vars
                             ,(cons fn formals)
                             ,tbody)
@@ -17023,7 +17044,7 @@
            (cond
             (strengthen
              (er-let* ((extra
-                        (translate-without-warnings
+                        (translate-without-warnings-ignore-ok
                          (defchoose-constraint-extra fn bound-vars formals
                            body)
                          t t t ctx wrld state)))

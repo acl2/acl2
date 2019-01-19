@@ -117,7 +117,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
@@ -221,7 +221,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
@@ -306,7 +306,7 @@
   ;; logtail-96-of-usb-128, the guard proof succeeds if :guard-debug t
   ;; is provided.
   ((local
-    (defthm-usb logtail-96-of-usb-128
+    (defthm-unsigned-byte-p logtail-96-of-usb-128
       :hyp (unsigned-byte-p 128 x)
       :bound 32
       :concl (logtail 96 x)
@@ -332,7 +332,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
@@ -431,7 +431,7 @@
   ;; x86-unpck?pd-Op/En-RM, the guard proof succeeds if :guard-debug t
   ;; is provided.
   ((local
-    (defthm-usb logtail-64-of-usb-128
+    (defthm-unsigned-byte-p logtail-64-of-usb-128
       :hyp (unsigned-byte-p 128 x)
       :bound 64
       :concl (logtail 64 x)
@@ -457,7 +457,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Cuong: Although this requirement is not specified in the
        ;; Intel manual, I got a segmentation fault when trying with
