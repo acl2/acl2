@@ -1,6 +1,9 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "basic")
+(include-book "bits")
+(include-book "float")
+(include-book "old-round")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -9,11 +12,6 @@
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
                     simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)|))
-
-(include-book "basic")
-(include-book "bits")
-(include-book "float")
-(include-book "old-round")
 
 (local-defthmd drnd-exactp-c-1
   (implies (and (formatp f)

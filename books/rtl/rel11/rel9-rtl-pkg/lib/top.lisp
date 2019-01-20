@@ -32,10 +32,6 @@
 
 (include-book "util") ;misc helpful stuff including a few macros
 
-;; Special-purpose theories:
-
-;;(include-book "srt") ;SRT division and square root
-
 ;; These are relevant to code derived from Verilog:
 
 ;;(include-book "rtl") ;semantics of the basic RTL primitives

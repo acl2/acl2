@@ -12,11 +12,11 @@
 
 (in-package "RTL")
 
-(include-book "../lib3/bits")
-(include-book "../lib3/util")
+(include-book "rtl/rel11/lib/basic" :dir :system)
+(include-book "rtl/rel11/lib/bits" :dir :system)
+(include-book "rtl/rel11/lib/util" :dir :system)
 
 (set-prover-step-limit acl2::*default-step-limit*)
-(local (include-book "../lib3/top"))
 
 (encapsulate ()
 
@@ -173,7 +173,7 @@
 ; (local (include-book "rtl/rel8/lib/arith" :dir :system))
 
 ;; bozo, jared, yuck: changing the order of these includes breaks the proof of div-table-1!!
-(local (include-book "../lib2/arith"))
+(local (include-book "arith"))
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local (deftheory jared-disables-1
@@ -314,8 +314,6 @@
   :hints (("Goal" :in-theory (enable lookup admissible-div-table-p)
                   :use ((:instance check-div-rows-lemma (rows table) (k i) (i (expt 2 m)))
                         (:instance check-div-row-lemma (row (nth i table)) (k j) (j (expt 2 n)))))))
-
-(local (in-theory (disable a2)))
 
 (defthm div-table-1
   (implies (and (natp m)
@@ -4379,9 +4377,7 @@
                 (< p 0))
            (equal (bits (FL (* p (EXPT 2 (+ -2 M)))) (+ -1 m) 0)
                   (+ (expt 2 m) (FL (* (EXPT 2 (+ -2 M)) P)))))
-  :hints (("Goal" :in-theory (disable bits-tail-2)
-                  :use (i-bounds-21
-                        (:instance bits-tail-2 (x (FL (* p (EXPT 2 (+ -2 M))))) (i (1- m)))))))
+  :hints (("Goal" :use i-bounds-21)))
 
 (local-defthm i-bounds-23
   (implies (and (integerp m)
@@ -4668,7 +4664,8 @@
                 (< (p% (1- k))
                    (+ (pi0 (i% k) (m%))
                       (/ (expt 2 (- (m%) 3)))))))
-  :hints (("Goal" :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
+  :hints (("Goal" :in-theory (disable bits-tail-gen)
+           :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
 
 (defthmd j%-constraint
   (and (bvecp (j%) (n%))
