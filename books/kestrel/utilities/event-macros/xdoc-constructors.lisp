@@ -32,6 +32,9 @@
 (defsection xdoc::evmac-section-intro
   :short "Construct the introduction section
           of the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::evmac-section-intro"))
   (defmacro xdoc::evmac-section-intro (&rest content)
     `(xdoc::app
       (xdoc::h3 "Introduction")
@@ -42,6 +45,9 @@
 (defsection xdoc::evmac-section-form
   :short "Construct the general form section
           of the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::evmac-section-form"))
   (defmacro xdoc::evmac-section-form (&rest content)
     `(xdoc::app
       (xdoc::h3 "General Form")
@@ -52,6 +58,9 @@
 (defsection xdoc::evmac-section-inputs
   :short "Construct the inputs section
           of the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::evmac-section-inputs"))
   (defmacro xdoc::evmac-section-inputs (&rest content)
     `(xdoc::app
       (xdoc::h3 "Inputs")
@@ -62,6 +71,9 @@
 (defsection xdoc::evmac-section-appconds
   :short "Construct the applicability conditions section
           of the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::evmac-section-appconds"))
   (defmacro xdoc::evmac-section-appconds (&rest content)
     `(xdoc::app
       (xdoc::h3 "Applicability Conditions")
@@ -73,10 +85,12 @@
   :short "Construct the generated function(s) and theorem(s) section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topp
-   "The two parameters indicate how many functions and theorems are listed
-    (none, one, more than one).
-    These are used to customize the section title.")
+  (xdoc::topapp
+   (xdoc::p
+    "The two parameters indicate how many functions and theorems are listed
+     (none, one, more than one).
+     These are used to customize the section title.")
+   (xdoc::def "xdoc::evmac-section-generated"))
   (defmacro xdoc::evmac-section-generated (fns thms &rest content)
     (declare (xargs :guard (and (member-eq fns '(:none :one :many))
                                 (member-eq thms '(:none :one :many))
