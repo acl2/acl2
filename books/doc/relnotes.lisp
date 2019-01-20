@@ -115,6 +115,14 @@
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
  set of natural numbers.</p>
 
+ <h4><see topic='@(url event-macros)'>Event Macros</see></h4>
+
+ <p>Started a library of concepts and utilities to develop event
+ macros (i.e. macros at the event level) more quickly and consistently.</p>
+
+ <p>Added some XDOC constructor utilities for the reference documentation of
+ event macros.</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -157,7 +165,7 @@
 
  <p>Improved and extended some documentation.</p>
 
- <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+ <p>Added some XDOC constructor utilities tailored to APT transformations.</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
