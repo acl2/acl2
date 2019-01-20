@@ -34,8 +34,6 @@
 
 ;; Special-purpose theories:
 
-;;(include-book "add") ;support for reasoning about addition
-
 ;;(include-book "srt") ;SRT division and square root
 
 ;; These are relevant to code derived from Verilog:
