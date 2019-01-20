@@ -36,6 +36,9 @@
 (defsection xdoc::desc-apt-input-old
   :short "Build a description of the @('old') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-old"))
   (defmacro xdoc::desc-apt-input-old (&rest additional)
     `(xdoc::desc
       "@('old')"
@@ -56,6 +59,9 @@
 (defsection xdoc::desc-apt-input-new-name
   :short "Build a description of the @(':new-name') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-new-name"))
   (defmacro xdoc::desc-apt-input-new-name (&rest additional)
     `(xdoc::desc
       "@(':new-name') &mdash; default @(':auto')"
@@ -82,6 +88,9 @@
 (defsection xdoc::desc-apt-input-new-enable
   :short "Build a description of the @(':new-enable') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-new-enable"))
   (defmacro xdoc::desc-apt-input-new-enable (&rest additional)
     `(xdoc::desc
       "@(':new-enable') &mdash; default @(':auto')"
@@ -101,6 +110,9 @@
 (defsection xdoc::desc-apt-input-wrapper-name
   :short "Build a description of the @(':wrapper-name') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-wrapper-name"))
   (defmacro xdoc::desc-apt-input-wrapper-name (&rest additional)
     `(xdoc::desc
       "@(':wrapper-name') &mdash; default @(':auto')"
@@ -124,6 +136,9 @@
 (defsection xdoc::desc-apt-input-wrapper-enable
   :short "Build a description of the @(':wrapper-enable') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-wrapper-enable"))
   (defmacro xdoc::desc-apt-input-wrapper-enable (&rest additional)
     `(xdoc::desc
       "@(':wrapper-enable') &mdash; default @('t')"
@@ -142,12 +157,14 @@
   :short "Build a description of the @(':thm-name') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topp
-   "The theorem relates the old function to the new function
-    when there is no wrapper function,
-    while it related the old function to the wrapper function
-    where there is a wrapper function.
-    This choice is determined by the @('wrapperp') parameter.")
+  (xdoc::topapp
+   (xdoc::p
+    "The theorem relates the old function to the new function
+     when there is no wrapper function,
+     while it related the old function to the wrapper function
+     where there is a wrapper function.
+     This choice is determined by the @('wrapperp') parameter.")
+   (xdoc::def "xdoc::desc-apt-input-thm-name"))
   (defmacro xdoc::desc-apt-input-thm-name (wrapperp &rest additional)
     (declare (xargs :guard (booleanp wrapperp)))
     (b* ((fn (if wrapperp "wrapper" "new")))
@@ -188,11 +205,13 @@
   :short "Build a description of the @(':thm-enable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topp
-   "This refers to the theorem that relates the old function
-    to either the new function or the wrapper function,
-    depending on whether the latter is present or not.
-    This is indicated by the @('wrapperp') parameter.")
+  (xdoc::topapp
+   (xdoc::p
+    "This refers to the theorem that relates the old function
+     to either the new function or the wrapper function,
+     depending on whether the latter is present or not.
+     This is indicated by the @('wrapperp') parameter.")
+   (xdoc::def "xdoc::desc-apt-input-thm-enable"))
   (defmacro xdoc::desc-apt-input-thm-enable (wrapperp &rest additional)
     (declare (xargs :guard (booleanp wrapperp)))
     (b* ((fn (if wrapperp "wrapper" "new")))
@@ -216,10 +235,12 @@
   :short "Build a description of the @(':non-executable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topp
-   "This involves the new function,
-    and also the wrapper function when present.
-    This is indicated by the @('wrapperp') parameter.")
+  (xdoc::topapp
+   (xdoc::p
+    "This involves the new function,
+     and also the wrapper function when present.
+     This is indicated by the @('wrapperp') parameter.")
+   (xdoc::def "xdoc::desc-apt-input-non-executable"))
   (defmacro xdoc::desc-apt-input-non-executable (wrapperp &rest additional)
     (declare (xargs :guard (booleanp wrapperp)))
     (b* ((new/newwrapper (if wrapperp
@@ -259,10 +280,12 @@
   :short "Build a description of the @(':verify-guards') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topp
-   "This involves the new function,
-    and also the wrapper function when present.
-    This is indicated by the @('wrapperp') parameter.")
+  (xdoc::topapp
+   (xdoc::p
+    "This involves the new function,
+     and also the wrapper function when present.
+     This is indicated by the @('wrapperp') parameter.")
+   (xdoc::def "xdoc::desc-apt-input-verify-guards"))
   (defmacro xdoc::desc-apt-input-verify-guards (wrapperp &rest additional)
     (declare (xargs :guard (booleanp wrapperp)))
     (b* ((new/newwrapper (if wrapperp
@@ -299,6 +322,9 @@
 (defsection xdoc::desc-apt-input-hints
   :short "Build a description of the @(':hints') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-hints"))
   (defmacro xdoc::desc-apt-input-hints (&rest additional)
     `(xdoc::desc
       "@(':hints') &mdash; default @('nil')"
@@ -327,6 +353,9 @@
 (defsection xdoc::desc-apt-input-print
   :short "Build a description of the @(':print') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-print"))
   (defmacro xdoc::desc-apt-input-print (&rest additional)
     `(xdoc::desc
       "@(':print') &mdash; default @(':result')"
@@ -339,6 +368,9 @@
 (defsection xdoc::desc-apt-input-show-only
   :short "Build a description of the @(':show-only') input
           for the reference documentation of an APT transformation."
+  :long
+  (xdoc::topapp
+   (xdoc::def "xdoc::desc-apt-input-show-only"))
   (defmacro xdoc::desc-apt-input-show-only (&rest additional)
     `(xdoc::desc
       "@(':show-only') &mdash; default @('nil')"
