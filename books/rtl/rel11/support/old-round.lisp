@@ -3869,8 +3869,6 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (encapsulate ()
 
-;(local (include-book "../rel9-rtl-pkg/lib/top"))
-
 (local (include-book "basic"))
 (local (include-book "bits"))
 (local (include-book "log"))

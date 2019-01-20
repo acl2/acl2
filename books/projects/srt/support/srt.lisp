@@ -11,7 +11,7 @@
 ; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "RTL")
-(local (include-book "../lib3/top"))
+(local (include-book "rtl/rel11/lib/bits" :dir :system))
 
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))
@@ -543,7 +543,8 @@
                 (< (p% (1- k))
                    (+ (pi0 (i% k) (m%))
                       (/ (expt 2 (- (m%) 3)))))))
-  :hints (("Goal" :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
+  :hints (("Goal" :in-theory (disable bits-tail-gen)
+           :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
 
 (defthmd j%-constraint
   (and (bvecp (j%) (n%))

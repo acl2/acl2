@@ -58,6 +58,4 @@
 (include-book "../lib3.delta2/logn2log")
 
 
-(include-book "../lib3.delta1/srt")
-
 (include-book "../lib3.delta3/round")

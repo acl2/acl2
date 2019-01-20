@@ -1,6 +1,6 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "util")
 
 (include-book "../rel9-rtl-pkg/lib/top")
 

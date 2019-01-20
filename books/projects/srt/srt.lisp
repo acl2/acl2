@@ -14,7 +14,7 @@
 
 (set-enforce-redundancy t)
 
-(local (include-book "rtl/rel11/rel9-rtl-pkg/support/top/top" :dir :system))
+(local (include-book "support/srt"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
@@ -547,7 +547,8 @@
                 (< (p% (1- k))
                    (+ (pi0 (i% k) (m%))
                       (/ (expt 2 (- (m%) 3)))))))
-  :hints (("Goal" :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
+  :hints (("Goal"  :in-theory (disable bits-tail-gen)
+           :use ((:instance i-bounds (p (p% (1- k))) (m (m%)))))))
 
 (defthmd j%-constraint
   (and (bvecp (j%) (n%))
