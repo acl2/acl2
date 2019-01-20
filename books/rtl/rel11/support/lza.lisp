@@ -1,7 +1,5 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
-
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (include-book "basic")
@@ -21,11 +19,21 @@
        (bvecp b n)
        (> (+ a b) (expt 2 n))))
 
-(defund p0 (a b) (logxor a b))
+(defund p0 (a b)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b))))
+  (logxor a b))
 
-(defund k0 (a b n) (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
+(defund k0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
+  (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
 
 (defund w0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
   (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
 
 (local-defthmd bvecp-w0
@@ -816,7 +824,7 @@
             (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
 
 (local-defthmd lutz-1
-   (implies (and (natp z) (natp n))
+   (implies (and (integerp z) (natp n))
             (iff (= (bits z n 0) (1- (expt 2 (1+ n))))
 	         (and (= (bitn z n) 1)
 		      (= (bits z (1- n) 0) (1- (expt 2 n))))))
@@ -826,7 +834,7 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-2
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
             (iff (= (+ (bits x n 0) (bits y n 0)) (1- (expt 2 (1+ n))))
 	         (and (not (= (bitn x n) (bitn y n)))
 		      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
@@ -839,7 +847,7 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-3
-   (implies (and (natp x) (natp y) (natp n)
+   (implies (and (integerp x) (integerp y) (natp n)
                  (equivs x y n)
 		 (not (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
 	    (equivs x y (1+ n)))
@@ -850,14 +858,14 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-4
-  (implies (and (natp x) (natp y) (natp n))
+  (implies (and (integerp x) (integerp y) (natp n))
            (equal (bits (+ x y) n 0)
                   (mod (+ (bits x n 0) (bits y n 0))
                        (expt 2 (1+ n)))))
   :hints (("Goal" :in-theory (enable bits-mod))))
 
 (local-defthmd lutz-5
-  (implies (and (natp x) (natp y) (natp n)
+  (implies (and (integerp x) (integerp y) (natp n)
                 (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
            (equal (bits (+ x y) n 0)
                   (mod (+ (* (expt 2 n) (+ (bitn x n) (bitn y n)))
@@ -871,7 +879,7 @@
 		        (:instance bitn-plus-bits (x y) (m 0))))))
 
 (local-defthmd lutz-6
-  (implies (and (natp x) (natp y) (natp n)
+  (implies (and (integerp x) (integerp y) (natp n)
                 (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
            (iff (= (bits (+ x y) n 0) (1- (expt 2 (1+ n))))
                 (not (= (bitn x n) (bitn y n)))))
@@ -881,7 +889,7 @@
 		        (:instance bitn-0-1 (x y))))))
 
 (local-defthmd lutz-7
-   (implies (and (natp x) (natp y) (natp n)
+   (implies (and (integerp x) (integerp y) (natp n)
                  (equivs x y n)
 		 (= (bits (+ x y) (1- n) 0) (1- (expt 2 n))))
 	    (equivs x y (1+ n)))
@@ -893,26 +901,26 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-8
-   (implies (and (natp x) (natp y) (not (zp n))
+   (implies (and (integerp x) (integerp y) (not (zp n))
                  (equivs x y (1- n)))
 	    (equivs x y n))
   :hints (("Goal" :use ((:instance lutz-3 (n (1- n)))
                         (:instance lutz-7 (n (1- n)))))))
 
 (local-defthmd lutz-9
-   (implies (and (natp x) (natp y))
+   (implies (and (integerp x) (integerp y))
 	    (equivs x y 0))
   :hints (("Goal" :in-theory (enable equivs))))
 
 (local-defthmd lutz-10
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
 	    (equivs x y n))
   :hints (("Goal" :induct (nats n))
           ("Subgoal *1/2" :use (lutz-8))
 	  ("Subgoal *1/1" :use (lutz-9))))
 
 (defthmd lutz-lemma
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
             (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
                  (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))

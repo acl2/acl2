@@ -305,16 +305,6 @@
 		    (* (expt 2 k) (bits x (1- n) k))))
     :hints (("Goal" :use ((:instance logand-expt-3-g)))))
 
-(defthmd logand-expt-4
-    (implies (and (natp n)
-		  (natp k)
-		  (natp l)
-		  (< l k)
-		  (<= k n))
-	     (equal (logand (- (1- (expt 2 n)) (expt 2 l)) (- (expt 2 n) (expt 2 k)))
-		    (- (expt 2 n) (expt 2 k))))
-    :hints (("Goal" :use ((:instance logand-expt-4-g)))))
-
 (defthmd lognot-shift
   (implies (and (integerp x)
                 (natp k))

@@ -299,15 +299,6 @@
 
 
 
-(defthmd logand-expt-4-g
-  (implies (and (natp n)
-                (natp k)
-                (natp l)
-                (< l k)
-                (<= k n))
-           (equal (logand (- (1- (expt 2 n)) (expt 2 l)) (- (expt 2 n) (expt 2 k)))
-                  (- (expt 2 n) (expt 2 k)))))
-
 ;;; not very good. as a rewrite rule.
 
 ;; (defthmd lognot-shift
