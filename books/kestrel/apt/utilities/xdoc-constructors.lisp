@@ -315,10 +315,11 @@
         The hints @('hintsk') are used
         to prove applicability condition @('appcondk').")
       (xdoc::p
-       "The @('appcond1'), ..., @('appcondp') names must be all distinct.")
+       "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
       (xdoc::p
-       "An @('appcondk') is allowed in the @(':hints') input iff
-        the applicability condition is present, as specified below.")
+       "An @('appcondk') keyword is allowed in the @(':hints') input iff
+        the corresponding applicability condition is present,
+        as specified below.")
       ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
