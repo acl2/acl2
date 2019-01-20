@@ -26,8 +26,6 @@
 
 (include-book "./gl")
 
-(include-book "./masc")
-
 (include-book "./basic")
 
 (include-book "./bits")
