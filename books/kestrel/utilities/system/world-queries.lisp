@@ -998,7 +998,7 @@
 
 (define macro-required-args+ ((mac (macro-namep mac wrld))
                               (wrld plist-worldp))
-  :returns (required-args "A @(tsee symbol-listp).")
+  :returns (required-args symbol-listp)
   :parents (world-queries)
   :short "Logic-friendly variant of @(tsee macro-required-args)."
   :long
@@ -1006,13 +1006,9 @@
    This returns the same result as @(tsee macro-required-args),
    but it has a stronger guard,
    is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
+   and includes run-time checks (which should always succeed)
+   that allows us to prove the return type theorem and to verify guards
    without strengthening the guard on @('wrld').
-   This utility also includes run-time checks (which should always succeed)
-   that the required arguments of the macro are symbols,
-   allowing us to verify the guards
-   without strengthening the guard of @('wrld').
    </p>"
   (b* ((all-args (macro-args+ mac wrld)))
     (if (null all-args)
