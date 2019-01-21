@@ -53,7 +53,7 @@
            (fname (str-fix fname))
            (dir (if (equal dir "") "/tmp/py_file" dir))
            ((unless (equal fname ""))
-            (concatenate 'string dir "/" (lisp-to-python-names fname)))
+            (concatenate 'string dir "/" fname))
            (cmd (concatenate 'string "mkdir -p " dir " && "
                              "mktemp " dir "/smtlink.XXXXX")))
         (mv-let (exit-status lines)
