@@ -205,7 +205,7 @@
 
   (defmacro xdoc::evmac-section-form-auto (macro)
     (declare (xargs :guard (symbolp macro)))
-    `(xdoc::evmac-section-intro
+    `(xdoc::evmac-section-form
       (xdoc::code-fn (xdoc::evmac-section-form-auto-lines ',macro (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
