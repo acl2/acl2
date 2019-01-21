@@ -1050,8 +1050,8 @@
      first we find @('&key') in the list;
      if not found, we return @('nil') (i.e. no keyword arguments).
      Otherwise, we scan and collect information from the remaining arguments,
-     until we reach the end of the macro argument list
-     or a symbol starting with @('&...') is encountered.")
+     until we reach either the end of the macro argument list
+     or a symbol starting with @('&...').")
    (xdoc::p
     "Keyword arguments have one of the forms
      @('name'), @('(name \'default)'), @('(name \'default predicate)'),
@@ -1064,21 +1064,12 @@
     "See @(tsee macro-keyword-args) for
      a logic-friendly variant of this utility."))
   (b* ((all-args (macro-args mac wrld))
-       (args-after-&key (macro-keyword-args-find all-args))
-       (keyword-args (macro-keyword-args-collect args-after-&key)))
+       (args-after-&key (cdr (member-eq '&key all-args)))
+       (keyword-args (macro-keyword-args-aux args-after-&key)))
     keyword-args)
 
   :prepwork
-
-  ((define macro-keyword-args-find ((args true-listp))
-     :returns (args-after-&key true-listp :hyp :guard)
-     :parents nil
-     (b* (((when (endp args)) nil)
-          (arg (car args))
-          ((when (eq arg '&key)) (cdr args)))
-       (macro-keyword-args-find (cdr args))))
-
-   (define macro-keyword-args-collect ((args true-listp))
+  ((define macro-keyword-args-aux ((args true-listp))
      :returns keyword-args ; SYMBOL-ALISTP
      :verify-guards nil
      :parents nil
@@ -1087,7 +1078,7 @@
           ((when (lambda-keywordp arg)) nil)
           (name (if (atom arg) arg (first arg)))
           (default (if (atom arg) nil (unquote (second arg)))))
-       (acons name default (macro-keyword-args-collect (cdr args)))))))
+       (acons name default (macro-keyword-args-aux (cdr args)))))))
 
 (define macro-keyword-args+ ((mac (macro-namep mac wrld))
                              (wrld plist-worldp))
@@ -1103,29 +1094,20 @@
     that allow us to prove the return type theorem and to verify the guards
     without strengthening the guard on @('wrld').")
   (b* ((all-args (macro-args+ mac wrld))
-       (args-after-&key (macro-keyword-args+-find all-args))
-       (keyword-args (macro-keyword-args+-collect mac args-after-&key)))
+       (args-after-&key (cdr (member-eq '&key all-args)))
+       (keyword-args (macro-keyword-args+-aux mac args-after-&key)))
     keyword-args)
 
   :prepwork
-
-  ((define macro-keyword-args+-find ((args true-listp))
-     :returns (args-after-&key true-listp :hyp :guard)
-     :parents nil ; override default
-     (b* (((when (endp args)) nil)
-          (arg (car args))
-          ((when (eq arg '&key)) (cdr args)))
-       (macro-keyword-args+-find (cdr args))))
-
-   (define macro-keyword-args+-collect ((mac symbolp) (args true-listp))
+  ((define macro-keyword-args+-aux ((mac symbolp) args)
      :returns (keyword-args symbol-alistp)
      :verify-guards :after-returns
      :parents nil ; override default
-     (b* (((when (endp args)) nil)
+     (b* (((when (atom args)) nil)
           (arg (car args))
           ((when (lambda-keywordp arg)) nil)
           ((when (symbolp arg))
-           (acons arg nil (macro-keyword-args+-collect mac (cdr args))))
+           (acons arg nil (macro-keyword-args+-aux mac (cdr args))))
           ((unless (and (consp arg)
                         (symbolp (first arg))
                         (consp (cdr arg))
@@ -1138,7 +1120,7 @@
                   arg mac)))
        (acons (first arg)
               (unquote (second arg))
-              (macro-keyword-args+-collect mac (cdr args)))))))
+              (macro-keyword-args+-aux mac (cdr args)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
