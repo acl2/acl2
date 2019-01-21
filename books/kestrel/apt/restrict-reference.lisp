@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
+(include-book "restrict")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,23 +43,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form
-
-    (xdoc::code
-     "(restrict old"
-     "          restriction"
-     "          &key"
-     "          :undefined       ; default :undefined"
-     "          :new-name        ; default :auto"
-     "          :new-enable      ; default :auto"
-     "          :thm-name        ; default :auto"
-     "          :thm-enable      ; default t"
-     "          :non-executable  ; default :auto"
-     "          :verify-guards   ; default :auto"
-     "          :hints           ; default nil"
-     "          :print           ; default :result"
-     "          :show-only       ; default nil"
-     "  )"))
+   (xdoc::evmac-section-form-auto restrict)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

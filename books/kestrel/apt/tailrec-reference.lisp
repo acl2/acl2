@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
+(include-book "tailrec")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,25 +45,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form
-
-    (xdoc::code
-     "(tailrec old"
-     "         &key"
-     "         :variant         ; default :monoid"
-     "         :domain          ; default :auto"
-     "         :new-name        ; default :auto"
-     "         :new-enable      ; default :auto"
-     "         :wrapper-name    ; default :auto"
-     "         :wrapper-enable  ; default t"
-     "         :thm-name        ; default :auto"
-     "         :thm-enable      ; default t"
-     "         :non-executable  ; default :auto"
-     "         :verify-guards   ; default :auto"
-     "         :hints           ; default nil"
-     "         :print           ; default :result"
-     "         :show-only       ; default nil"
-     "  )"))
+   (xdoc::evmac-section-form-auto tailrec)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

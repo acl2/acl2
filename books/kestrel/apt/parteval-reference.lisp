@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
+(include-book "parteval")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,20 +54,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form
-
-    (xdoc::code
-     "(parteval old"
-     "          static"
-     "          &key"
-     "          :new-name        ; default :auto"
-     "          :new-enable      ; default :auto"
-     "          :thm-name        ; default :auto"
-     "          :thm-enable      ; default t"
-     "          :verify-guards   ; default :auto"
-     "          :print           ; default :result"
-     "          :show-only       ; default nil"
-     "  )"))
+   (xdoc::evmac-section-form-auto parteval)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
