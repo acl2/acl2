@@ -1032,12 +1032,9 @@
                (macro-required-args+-aux mac
                                          (cdr args)
                                          (cons arg rev-result))
-             (hard-error 'macro-required-args+
-                         "Internal error: ~
-                          the required macro argument ~x0 of ~x1 ~
-                          is not a symbol."
-                         (list (cons #\0 arg)
-                               (cons #\1 mac))))))))))
+             (raise "Internal error: ~
+                     the required macro argument ~x0 of ~x1 is not a symbol."
+                    arg mac))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1138,8 +1135,7 @@
            (raise "Internal error: ~
                    the keyword macro argument ~x0 of ~x1 ~
                    does not have the expected form."
-                  (list (cons #\0 arg)
-                        (cons #\1 mac)))))
+                  arg mac)))
        (acons (first arg)
               (unquote (second arg))
               (macro-keyword-args+-collect mac (cdr args)))))))
