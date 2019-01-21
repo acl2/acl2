@@ -1,10 +1,7 @@
-; ----------     (ALMOST)   DEPRECATED               ---------- 
+; ----------                DEPRECATED               ---------- 
 ; ----------     SUPERSEDED BY INST-LISTING.LISP     ----------
 ; CONVERT-MAPS.LISP shows how we obtained structures in inst-listing
 ; from the old lists in this book.
-; This is still used in prefix-modrm-sib-decoding.lisp to precompute some
-; decoding information.
-
 
 ; X86ISA Library
 
@@ -2597,12 +2594,12 @@
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
                (:66        . (:EXT
-                              (((:opcode . #ux0F_38_23)
+                              (((:opcode . #ux0F_38_24)
                                 (:prefix . :66)
                                 (:mod    . :mem)) .
                                 ("PMOVSXWQ" 2 (V x) (M d)
                                  (:ex . ((chk-exc :type-5 (:avx2))))))
-                              (((:opcode . #ux0F_38_23)
+                              (((:opcode . #ux0F_38_24)
                                 (:prefix . :66)
                                 (:mod    . #b11)) .
                                 ("PMOVSXWQ" 2 (V x) (U x)
@@ -2610,12 +2607,12 @@
               ((:no-prefix . (:none
                               (:fn . (:no-instruction))))
                (:66        . (:EXT
-                              (((:opcode . #ux0F_38_23)
+                              (((:opcode . #ux0F_38_25)
                                 (:prefix . :66)
                                 (:mod    . :mem)) .
                                 ("PMOVSXDQ" 2 (V x) (M q)
                                  (:ex . ((chk-exc :type-5 (:avx2))))))
-                              (((:opcode . #ux0F_38_23)
+                              (((:opcode . #ux0F_38_25)
                                 (:prefix . :66)
                                 (:mod    . #b11)) .
                                 ("PMOVSXDQ" 2 (V x) (U x)

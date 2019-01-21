@@ -44,8 +44,20 @@
 (in-package "X86ISA")
 
 (include-book "inst-structs")
+(local (include-book "std/strings/pretty" :dir :system))
+
+(defsection opcode-maps
+  :parents (instructions x86-decoder)
+  :short "ACL2 representation of x86 Opcode Maps (see Intel Manuals, Vol. 2,
+ Appendix A)"
+  )
 
 (local (xdoc::set-default-parents 'opcode-maps))
+
+;; ----------------------------------------------------------------------
+
+;; TODO: Remove CPUID-FLAG in exception info. and add appropriate feature flags
+;; in :FEAT.
 
 (defconst *pre-one-byte-opcode-map*
   '((INST "ADD" (OP :OP #x0)
@@ -735,112 +747,128 @@
     (INST "ADD"
           (OP :OP #x80
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x0))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "OR"
           (OP :OP #x80
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x1))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "ADC"
           (OP :OP #x80
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x2))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SBB"
           (OP :OP #x80
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x6))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "AND"
           (OP :OP #x80
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x3))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SUB"
           (OP :OP #x80
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x4))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "XOR"
           (OP :OP #x80
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x5))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "CMP"
           (OP :OP #x80
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x8))
           '((:UD (UD-LOCK-USED))))
     (INST "ADD"
           (OP :OP #x81
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x0))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "OR"
           (OP :OP #x81
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x1))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "ADC"
           (OP :OP #x81
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x2))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SBB"
           (OP :OP #x81
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x6))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "AND"
           (OP :OP #x81
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x3))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SUB"
           (OP :OP #x81
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x4))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "XOR"
           (OP :OP #x81
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x5))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "CMP"
           (OP :OP #x81
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x8))
           '((:UD (UD-LOCK-USED))))
@@ -848,6 +876,7 @@
           (OP :OP #x82
               :REG #x0
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x0))
@@ -856,6 +885,7 @@
           (OP :OP #x82
               :REG #x1
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x1))
@@ -864,6 +894,7 @@
           (OP :OP #x82
               :REG #x2
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x2))
@@ -872,6 +903,7 @@
           (OP :OP #x82
               :REG #x3
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x6))
@@ -880,6 +912,7 @@
           (OP :OP #x82
               :REG #x4
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x3))
@@ -888,6 +921,7 @@
           (OP :OP #x82
               :REG #x5
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x4))
@@ -896,6 +930,7 @@
           (OP :OP #x82
               :REG #x6
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x5))
@@ -904,6 +939,7 @@
           (OP :OP #x82
               :REG #x7
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1)
               :MODE :I64)
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x8))
@@ -917,56 +953,64 @@
     (INST "ADD"
           (OP :OP #x83
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x0))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "OR"
           (OP :OP #x83
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x1))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "ADC"
           (OP :OP #x83
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x2))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SBB"
           (OP :OP #x83
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x6))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "AND"
           (OP :OP #x83
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x3))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "SUB"
           (OP :OP #x83
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x4))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "XOR"
           (OP :OP #x83
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x5))
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "CMP"
           (OP :OP #x83
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-1))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x8))
           '((:UD (UD-LOCK-USED))))
@@ -1019,7 +1063,8 @@
     (INST "POP"
           (OP :OP #x8F
               :REG #x0
-              :SUPERSCRIPTS '(:1A :D64))
+              :SUPERSCRIPTS '(:1A :D64)
+              :GROUP '(:GROUP-1A))
           (ARG :OP1 '(E V))
           '(X86-POP-EV)
           '((:UD (UD-LOCK-USED))))
@@ -1231,98 +1276,112 @@
     (INST "ROL"
           (OP :OP #xC0
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xC0
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xC0
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xC0
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xC0
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xC0
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xC0
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROL"
           (OP :OP #xC1
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xC1
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xC1
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xC1
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xC1
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xC1
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xC1
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(I B))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
@@ -1356,7 +1415,8 @@
     (INST "MOV"
           (OP :OP #xC6
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-11))
           (ARG :OP1 '(E B) :OP2 '(I B))
           '(X86-MOV-OP/EN-MI)
           '((:UD (UD-LOCK-USED))))
@@ -1365,7 +1425,8 @@
               :REG #x7
               :MOD #x3
               :R/M #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-11))
           (ARG :OP1 '(I B))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -1377,7 +1438,8 @@
     (INST "MOV"
           (OP :OP #xC7
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-11))
           (ARG :OP1 '(E V) :OP2 '(I Z))
           '(X86-MOV-OP/EN-MI)
           '((:UD (UD-LOCK-USED))))
@@ -1386,7 +1448,8 @@
               :REG #x7
               :MOD #x3
               :R/M #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-11))
           (ARG :OP1 '(J Z))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -1430,196 +1493,224 @@
     (INST "ROL"
           (OP :OP #xD0
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xD0
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xD0
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xD0
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xD0
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xD0
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xD0
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROL"
           (OP :OP #xD1
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xD1
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xD1
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xD1
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xD1
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xD1
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xD1
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(#x1))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROL"
           (OP :OP #xD2
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xD2
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xD2
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xD2
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xD2
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xD2
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xD2
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E B) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROL"
           (OP :OP #xD3
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "ROR"
           (OP :OP #xD3
               :REG #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCL"
           (OP :OP #xD3
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "RCR"
           (OP :OP #xD3
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHL/SAL"
           (OP :OP #xD3
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SHR"
           (OP :OP #xD3
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
     (INST "SAR"
           (OP :OP #xD3
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-2))
           (ARG :OP1 '(E V) :OP2 '(:CL))
           '(X86-SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR)
           '((:UD (UD-LOCK-USED))))
@@ -1785,98 +1876,112 @@
     (INST "TEST"
           (OP :OP #xF6
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x7))
           '((:UD (UD-LOCK-USED))))
     (INST "NOT"
           (OP :OP #xF6
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-NOT/NEG-F6-F7)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "NEG"
           (OP :OP #xF6
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-NOT/NEG-F6-F7)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "MUL"
           (OP :OP #xF6
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-MUL)
           '((:UD (UD-LOCK-USED))))
     (INST "IMUL"
           (OP :OP #xF6
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-IMUL-OP/EN-M)
           '((:UD (UD-LOCK-USED))))
     (INST "DIV"
           (OP :OP #xF6
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-DIV)
           '((:UD (UD-LOCK-USED))))
     (INST "IDIV"
           (OP :OP #xF6
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-IDIV)
           '((:UD (UD-LOCK-USED))))
     (INST "TEST"
           (OP :OP #xF7
               :REG #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-TEST-E-I (OPERATION . #x7))
           '((:UD (UD-LOCK-USED))))
     (INST "NOT"
           (OP :OP #xF7
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-NOT/NEG-F6-F7)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "NEG"
           (OP :OP #xF7
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-NOT/NEG-F6-F7)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "MUL"
           (OP :OP #xF7
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-MUL)
           '((:UD (UD-LOCK-USED))))
     (INST "IMUL"
           (OP :OP #xF7
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-IMUL-OP/EN-M)
           '((:UD (UD-LOCK-USED))))
     (INST "DIV"
           (OP :OP #xF7
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-DIV)
           '((:UD (UD-LOCK-USED))))
     (INST "IDIV"
           (OP :OP #xF7
               :REG #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-3))
           (ARG :OP1 '(E B))
           '(X86-IDIV)
           '((:UD (UD-LOCK-USED))))
@@ -1901,49 +2006,56 @@
     (INST "INC"
           (OP :OP #xFE
            :REG #x0
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-4))
        (ARG :OP1 '(E B))
        '(X86-INC/DEC-FE-FF)
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "DEC"
        (OP :OP #xFE
            :REG #x1
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-4))
        (ARG :OP1 '(E B))
        '(X86-INC/DEC-FE-FF)
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "INC"
        (OP :OP #xFF
            :REG #x0
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E V))
        '(X86-INC/DEC-FE-FF)
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "DEC"
        (OP :OP #xFF
            :REG #x1
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E V))
        '(X86-INC/DEC-FE-FF)
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "near CALL"
        (OP :OP #xFF
            :REG #x2
-           :SUPERSCRIPTS '(:1A :F64))
+           :SUPERSCRIPTS '(:1A :F64)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E V))
        '(X86-CALL-FF/2-OP/EN-M)
        '((:UD (UD-LOCK-USED))))
  (INST "far CALL"
        (OP :OP #xFF
            :REG #x3
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E P))
        'NIL
        '((:UD (UD-LOCK-USED))))
  (INST "near JMP"
        (OP :OP #xFF
            :REG #x4
-           :SUPERSCRIPTS '(:1A :F64))
+           :SUPERSCRIPTS '(:1A :F64)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E V))
        '(X86-NEAR-JMP-OP/EN-M)
        '((:UD (UD-LOCK-USED))))
@@ -1951,14 +2063,16 @@
        (OP :OP #xFF
            :REG #x5
            :MOD :MEM
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(M P))
        '(X86-FAR-JMP-OP/EN-D)
        '((:UD (UD-LOCK-USED))))
  (INST "PUSH"
        (OP :OP #xFF
            :REG #x6
-           :SUPERSCRIPTS '(:1A :D64))
+           :SUPERSCRIPTS '(:1A :D64)
+           :GROUP '(:GROUP-5))
        (ARG :OP1 '(E V))
        '(X86-PUSH-EV)
        '((:UD (UD-LOCK-USED))))))
@@ -1968,7 +2082,8 @@
           (OP :OP #xF00
               :REG #x0
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(M W))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -1978,7 +2093,8 @@
           (OP :OP #xF00
               :REG #x0
               :MOD #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(R V))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -1988,7 +2104,8 @@
           (OP :OP #xF00
               :REG #x1
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(M W))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -1998,7 +2115,8 @@
           (OP :OP #xF00
               :REG #x1
               :MOD #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(R V))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2007,7 +2125,8 @@
     (INST "LLDT"
           (OP :OP #xF00
               :REG #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(E W))
           '(X86-LLDT)
           '((:UD (UD-LOCK-USED))
@@ -2015,7 +2134,8 @@
     (INST "LTR"
           (OP :OP #xF00
               :REG #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(E W))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2023,14 +2143,16 @@
     (INST "VERR"
           (OP :OP #xF00
               :REG #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(E W))
           'NIL
           '((:UD (UD-LOCK-USED))))
     (INST "VERW"
           (OP :OP #xF00
               :REG #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-6))
           (ARG :OP1 '(E W))
           'NIL
           '((:UD (UD-LOCK-USED))))
@@ -2038,7 +2160,8 @@
           (OP :OP #xF01
               :REG #x0
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M S))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2049,7 +2172,8 @@
               :REG #x0
               :MOD #x3
               :R/M #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           'NIL)
     (INST "VMLAUNCH"
@@ -2057,7 +2181,8 @@
               :REG #x0
               :MOD #x3
               :R/M #x2
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:GP (GP-CPL-NOT-0))))
     (INST "VMRESUME"
@@ -2065,7 +2190,8 @@
               :REG #x0
               :MOD #x3
               :R/M #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           'NIL)
     (INST "VMXOFF"
@@ -2073,14 +2199,16 @@
               :REG #x0
               :MOD #x3
               :R/M #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:GP (GP-CPL-NOT-0))))
     (INST "SIDT"
           (OP :OP #xF01
               :REG #x1
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M S))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2091,7 +2219,8 @@
               :REG #x1
               :MOD #x3
               :R/M #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-CPL-IS-NOT-ZERO)
                  (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x3)
@@ -2101,7 +2230,8 @@
               :REG #x1
               :MOD #x3
               :R/M #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-CPL-IS-NOT-ZERO)
                  (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x3)
@@ -2112,6 +2242,7 @@
               :MOD #x3
               :R/M #x2
               :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7)
               :FEAT '(:SMAP))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
@@ -2121,7 +2252,8 @@
               :REG #x1
               :MOD #x3
               :R/M #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (UD-CPL-IS-NOT-ZERO)
@@ -2135,14 +2267,16 @@
               :REG #x1
               :MOD #x3
               :R/M #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           'NIL)
     (INST "LGDT"
           (OP :OP #xF01
               :REG #x2
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M S))
           '(X86-LGDT)
           '((:UD (UD-LOCK-USED))
@@ -2151,7 +2285,8 @@
           (OP :OP #xF01
               :REG #x3
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M S))
           '(X86-LIDT)
           '((:UD (UD-LOCK-USED))
@@ -2161,7 +2296,8 @@
               :REG #x3
               :MOD #x3
               :R/M #x0
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -2172,7 +2308,8 @@
               :REG #x3
               :MOD #x3
               :R/M #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -2183,7 +2320,8 @@
               :REG #x3
               :MOD #x3
               :R/M #x4
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           'NIL)
     (INST "XEND"
@@ -2191,7 +2329,8 @@
               :REG #x3
               :MOD #x3
               :R/M #x5
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (UD-OPR-USED)
@@ -2206,7 +2345,8 @@
               :REG #x3
               :MOD #x3
               :R/M #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (AND (EQUAL (CPUID-FLAG #x7
@@ -2224,14 +2364,16 @@
               :REG #x3
               :MOD #x3
               :R/M #x7
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:NM (NM-CR0-TS-IS-1))))
     (INST "SMSW"
           (OP :OP #xF01
               :REG #x4
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M W))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2241,7 +2383,8 @@
           (OP :OP #xF01
               :REG #x4
               :MOD #x3
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(R V))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2250,7 +2393,8 @@
     (INST "LMSW"
           (OP :OP #xF01
               :REG #x6
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(E W))
           'NIL
           '((:UD (UD-LOCK-USED))
@@ -2259,7 +2403,8 @@
           (OP :OP #xF01
               :REG #x7
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           (ARG :OP1 '(M B))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -2271,7 +2416,8 @@
               :MOD #x3
               :R/M #x0
               :MODE :O64
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED))
             (:GP (GP-CPL-NOT-0))))
@@ -2280,7 +2426,8 @@
               :REG #x7
               :MOD #x3
               :R/M #x1
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-7))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (EQUAL (CPUID-FLAG #x80000001
@@ -3122,43 +3269,57 @@
           (OP :OP #xF18
               :REG #x0
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           NIL 'NIL
           '((:UD (UD-LOCK-USED))))
     (INST "PREFETCHT0"
           (OP :OP #xF18
               :REG #x1
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           NIL 'NIL
           '((:UD (UD-LOCK-USED))))
     (INST "PREFETCHT1"
           (OP :OP #xF18
               :REG #x2
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           NIL 'NIL
           '((:UD (UD-LOCK-USED))))
     (INST "PREFETCHT2"
           (OP :OP #xF18
               :REG #x3
               :MOD :MEM
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           NIL 'NIL
           '((:UD (UD-LOCK-USED))))
-    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x4)
+    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x4
+                            :SUPERSCRIPTS '(:1A)
+                            :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x5)
+    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x5
+                            :SUPERSCRIPTS '(:1A)
+                            :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x6)
+    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x6
+                            :SUPERSCRIPTS '(:1A)
+                            :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x7)
+    (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x7
+                            :SUPERSCRIPTS '(:1A)
+                            :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF18 :MOD #x3)
+    (INST "RESERVEDNOP" (OP :OP #xF18 :MOD #x3
+                            :SUPERSCRIPTS '(:1A)
+                            :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
     (INST "RESERVEDNOP" (OP :OP #xF19)
@@ -3169,7 +3330,8 @@
               :MOD :MEM
               :PFX :NO-PREFIX
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -3200,7 +3362,8 @@
               :MOD :MEM
               :PFX :66
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
@@ -3216,7 +3379,8 @@
               :MOD #x3
               :PFX :66
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(MB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
@@ -3231,7 +3395,8 @@
           (OP :OP #xF1A
               :PFX :F3
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -3246,7 +3411,8 @@
           (OP :OP #xF1A
               :PFX :F2
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -3266,7 +3432,8 @@
               :MOD :MEM
               :PFX :NO-PREFIX
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(M) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -3295,7 +3462,8 @@
               :MOD :MEM
               :PFX :66
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(M) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
@@ -3311,7 +3479,8 @@
               :MOD #x3
               :PFX :66
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(MB) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
@@ -3327,7 +3496,8 @@
               :MOD :MEM
               :PFX :F3
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M Y))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -3355,7 +3525,8 @@
           (OP :OP #xF1B
               :PFX :F2
               :FEAT '(:MPX)
-              :SUPERSCRIPTS '(:1A))
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
@@ -6899,7 +7070,8 @@
            :REG #x2
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -6908,7 +7080,8 @@
            :REG #x2
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -6919,7 +7092,8 @@
            :REG #x4
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -6928,7 +7102,8 @@
            :REG #x4
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -6939,7 +7114,8 @@
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -6948,7 +7124,8 @@
            :REG #x6
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-12))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7076,7 +7253,8 @@
            :REG #x2
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7085,7 +7263,8 @@
            :REG #x2
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7096,7 +7275,8 @@
            :REG #x4
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7105,7 +7285,8 @@
            :REG #x4
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7116,7 +7297,8 @@
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7125,7 +7307,8 @@
            :REG #x6
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-13))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7358,7 +7541,8 @@
            :REG #x2
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7367,7 +7551,8 @@
            :REG #x2
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7378,7 +7563,8 @@
            :REG #x3
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7389,7 +7575,8 @@
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(N Q) :OP2 '(I B))
        'NIL
        '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7398,7 +7585,8 @@
            :REG #x6
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -7409,7 +7597,8 @@
            :REG #x7
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-14))
        (ARG :OP1 '(H X)
             :OP2 '(U X)
             :OP3 '(I B))
@@ -8800,7 +8989,8 @@
            :REG #x0
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
@@ -8813,7 +9003,8 @@
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -8828,7 +9019,8 @@
            :REG #x1
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
@@ -8841,7 +9033,8 @@
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -8856,7 +9049,8 @@
            :REG #x2
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
        '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
  (INST "WRFSBASE"
@@ -8865,7 +9059,8 @@
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -8880,7 +9075,8 @@
            :REG #x3
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
        '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
  (INST "WRGSBASE"
@@ -8889,7 +9085,8 @@
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -8904,7 +9101,8 @@
            :REG #x4
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -8917,7 +9115,8 @@
            :REG #x5
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -8930,7 +9129,8 @@
            :REG #x5
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
@@ -8940,7 +9140,8 @@
            :REG #x6
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -8957,7 +9158,8 @@
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
@@ -8967,7 +9169,8 @@
            :REG #x7
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x13)
@@ -8977,7 +9180,8 @@
            :REG #x7
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-15))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x19)
@@ -8987,14 +9191,14 @@
            :VEX '(:0F :LZ :WIG)
            :FEAT '(:AVX)
            :REG #x2)
-       NIL
+       (ARG :OP1 '(M D))
        NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
  (INST "VSTMXCSR"
        (OP :OP #xFAE
            :VEX '(:0F :LZ :WIG)
            :FEAT '(:AVX)
            :REG #x3)
-       NIL
+       (ARG :OP1 '(M D))
        NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
  (INST "IMUL" (OP :OP #xFAF)
        (ARG :OP1 '(G V) :OP2 '(E V))
@@ -9045,35 +9249,41 @@
               (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x17)
                      #x0))))
  (INST "UD1"
-       (OP :OP #xFB9 :SUPERSCRIPTS '(:1A))
+       (OP :OP #xFB9
+           :SUPERSCRIPTS '(:1A :1C)
+           :GROUP '(:GROUP-10))
        NIL
        '(X86-ILLEGAL-INSTRUCTION (MESSAGE . "UD1 encountered!"))
        'NIL)
  (INST "BT"
        (OP :OP #xFBA
            :REG #x4
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-8))
        (ARG :OP1 '(E V) :OP2 '(I B))
        '(X86-BT-0F-BA)
        '((:UD (UD-LOCK-USED))))
  (INST "BTS"
        (OP :OP #xFBA
            :REG #x5
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-8))
        (ARG :OP1 '(E B) :OP2 '(I B))
        'NIL
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "BTR"
        (OP :OP #xFBA
            :REG #x6
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-8))
        (ARG :OP1 '(E B) :OP2 '(I B))
        'NIL
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
  (INST "BTC"
        (OP :OP #xFBA
            :REG #x7
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-8))
        (ARG :OP1 '(E B) :OP2 '(I B))
        'NIL
        '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
@@ -9427,7 +9637,8 @@
            :MOD :MEM
            :PFX :NO-PREFIX
            :REX :W
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M DQ))
        'NIL
        '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
@@ -9437,7 +9648,8 @@
            :MOD :MEM
            :PFX :NO-PREFIX
            :REX :NOT-W
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M Q))
        'NIL
        '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
@@ -9446,7 +9658,8 @@
            :REG #x6
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M Q))
        'NIL
        '((:GP (GP-CPL-NOT-0))))
@@ -9455,7 +9668,8 @@
            :REG #x6
            :MOD :MEM
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M Q))
        'NIL
        '((:GP (GP-CPL-NOT-0))))
@@ -9464,7 +9678,8 @@
            :REG #x6
            :MOD :MEM
            :PFX :F3
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M Q))
        'NIL
        '((:GP (GP-CPL-NOT-0))))
@@ -9473,7 +9688,8 @@
            :REG #x7
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(M Q))
        'NIL
        '((:GP (GP-CPL-NOT-0))))
@@ -9482,7 +9698,8 @@
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(R V))
        '(X86-RDRAND)
        '((:UD (UD-LOCK-USED)
@@ -9494,7 +9711,8 @@
            :REG #x6
            :MOD #x3
            :PFX :66
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(R W))
        '(X86-RDRAND)
        '((:UD (UD-LOCK-USED)
@@ -9505,7 +9723,8 @@
        (OP :OP #xFC7
            :REG #x7
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(R V))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9520,7 +9739,8 @@
            :REG #x7
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(R Q))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9534,7 +9754,8 @@
            :REG #x7
            :PFX :F3
            :MODE :I64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A)
+           :GROUP '(:GROUP-9))
        (ARG :OP1 '(R D))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -13282,6 +13503,18 @@
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
+    (INST "PMOVSXWQ"
+          (OP :OP #xF3824 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
+          (ARG :OP1 '(V X) :OP2 '(M D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
+    (INST "PMOVSXWQ"
+          (OP :OP #xF3824 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
+          (ARG :OP1 '(V X) :OP2 '(U X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
     (INST "VPMOVSXWQ"
           (OP :OP #xF3824
               :VEX '(:0F38 :128 :66 :WIG)
@@ -13330,6 +13563,18 @@
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
+   (INST "PMOVSXDQ"
+          (OP :OP #xF3825 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
+          (ARG :OP1 '(V X) :OP2 '(M D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
+    (INST "PMOVSXDQ"
+          (OP :OP #xF3825 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
+          (ARG :OP1 '(V X) :OP2 '(U X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE4.1)))))
     (INST "VPMOVSXDQ"
           (OP :OP #xF3825
               :VEX '(:0F38 :128 :66 :WIG)
@@ -18508,54 +18753,48 @@
                :OP3 '(W DQ))
           NIL
           '((:EX (CHK-EXC :TYPE-4 (:AES :AVX)))))
-    (INST "MOVBE" (OP :OP #xF38F0 :PFX :NO-PREFIX)
+    (INST "MOVBE" (OP :OP #xF38F0 :PFX :NO-PREFIX
+                      :FEAT '(:MOVBE))
           (ARG :OP1 '(G Y) :OP2 '(M Y))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x16)
-                    #x0)
-                 (UD-LOCK-USED)
+          '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
-    (INST "MOVBE" (OP :OP #xF38F0 :PFX :66)
+    (INST "MOVBE" (OP :OP #xF38F0 :PFX :66
+                      :FEAT '(:MOVBE))
           (ARG :OP1 '(G W) :OP2 '(M W))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x16)
-                    #x0)
-                 (UD-LOCK-USED)
+          '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
-    (INST "CRC32" (OP :OP #xF38F0 :PFX :F2)
+    (INST "CRC32" (OP :OP #xF38F0 :PFX :F2
+                      :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E B))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x14)
-                    #x0)
-                 (UD-LOCK-USED))))
-    (INST "MOVBE" (OP :OP #xF38F1 :PFX :NO-PREFIX)
+          '((:UD (UD-LOCK-USED))))
+    (INST "MOVBE" (OP :OP #xF38F1 :PFX :NO-PREFIX
+                      :FEAT '(:MOVBE))
           (ARG :OP1 '(M Y) :OP2 '(G Y))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x16)
-                    #x0)
-                 (UD-LOCK-USED)
+          '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
-    (INST "MOVBE" (OP :OP #xF38F1 :PFX :66)
+    (INST "MOVBE" (OP :OP #xF38F1 :PFX :66
+                      :FEAT '(:MOVBE))
           (ARG :OP1 '(M W) :OP2 '(G W))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x16)
-                    #x0)
-                 (UD-LOCK-USED)
+          '((:UD (UD-LOCK-USED)
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
-    (INST "CRC32" (OP :OP #xF38F1 :PFX :F2)
+    (INST "CRC32" (OP :OP #xF38F1 :PFX :F2
+                      :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E Y))
           'NIL
-          '((:UD (= (CPUID-FLAG #x1 :REG #x1 :BIT #x14)
-                    #x0)
-                 (UD-LOCK-USED))))
+          '((:UD (UD-LOCK-USED))))
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W0)
@@ -18574,21 +18813,25 @@
                :OP3 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
-    (INST "BLSR"
-          (OP :OP #xF38F3
-              :REG #x1
-              :SUPERSCRIPTS '(:V))
-          (ARG :OP1 '(B Y) :OP2 '(E Y))
-          'NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
-    (INST "BLSMSK"
-          (OP :OP #xF38F3
-              :REG #x2
-              :SUPERSCRIPTS '(:V))
-          (ARG :OP1 '(B Y) :OP2 '(E Y))
-          'NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
-    ;; BLSI is a VEX-only instruction.
+    ;; BLSR, BLSMSK, BLSI are VEX-only instructions.
+    ;; (INST "BLSR"
+    ;;       (OP :OP #xF38F3
+    ;;           :REG #x1
+    ;;           :SUPERSCRIPTS '(:V)
+    ;;           :FEAT '(:BMI2 :AVX)
+    ;;           :GROUP '(:GROUP-17))
+    ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
+    ;;       'NIL
+    ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+    ;; (INST "BLSMSK"
+    ;;       (OP :OP #xF38F3
+    ;;           :REG #x2
+    ;;           :FEAT '(:BMI2 :AVX)
+    ;;           :SUPERSCRIPTS '(:V)
+    ;;           :GROUP '(:GROUP-17))
+    ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
+    ;;       'NIL
+    ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
     ;; (INST "BLSI"
     ;;       (OP :OP #xF38F3
     ;;           :REG #x3
@@ -18597,12 +18840,12 @@
     ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
     ;;       'NIL
     ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
-
     (INST "BLSR"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
               :FEAT '(:BMI1 :AVX)
-              :REG #x1)
+              :REG #x1
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -18610,7 +18853,8 @@
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
               :FEAT '(:BMI1 :AVX)
-              :REG #x1)
+              :REG #x1
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -18618,7 +18862,8 @@
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
               :FEAT '(:BMI1 :AVX)
-              :REG #x2)
+              :REG #x2
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -18626,7 +18871,8 @@
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
               :FEAT '(:BMI1 :AVX)
-              :REG #x2)
+              :REG #x2
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -18634,7 +18880,8 @@
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
               :FEAT '(:BMI1 :AVX)
-              :REG #x3)
+              :REG #x3
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -18642,7 +18889,8 @@
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
               :FEAT '(:BMI1 :AVX)
-              :REG #x3)
+              :REG #x3
+              :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
           '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
@@ -20585,5 +20833,334 @@
        (inst-list-p *two-byte-opcode-map*)
        (inst-list-p *0F-38-three-byte-opcode-map*)
        (inst-list-p *0F-3A-three-byte-opcode-map*)))
+
+;; ----------------------------------------------------------------------
+
+(defsection filtering-instructions
+  :parents (opcode-maps)
+  :short "Some Functions to operate on the ACL2 representation of Intel's Opcode
+  Maps"
+  )
+
+(local (xdoc::set-default-parents 'filtering-instructions))
+
+(define select-opcode-map ((map-key keywordp))
+  :guard (member-equal
+          map-key
+          '(:one-byte
+            :two-byte
+            :0F-38-three-byte
+            :0F-3A-three-byte
+            :vex-0F :vex-0F-38 :vex-0F-3A
+            :evex-0F :evex-0F-38 :evex-0F-3A))
+  :returns (inst-lst inst-list-p :hyp :guard)
+  (case map-key
+    (:one-byte *one-byte-opcode-map*)
+    ((:two-byte :vex-0F :evex-0F) *two-byte-opcode-map*)
+    ((:0F-38-three-byte :vex-0F-38 :evex-0F-38) *0F-38-three-byte-opcode-map*)
+    ((:0F-3A-three-byte :vex-0F-3A :evex-0F-3A) *0F-3A-three-byte-opcode-map*)))
+
+;; Right now, we can't select AVX instructions using the function
+;; select-insts. The reason is that VEX/EVEX-encoded instructions (but probably
+;; just EVEX-encoded --- I'm being extra cautious here) may be missing
+;; operands' information (i.e., their :vex or :evex fields may be empty)
+;; because Intel manuals are missing that information.  So selecting an
+;; instruction based on the presence or absence of the :vex or :evex fields
+;; would result in false matches.  However, all AVX instructions (I believe)
+;; have proper CPUID feature flags.  Thus, for now, we can do selection of AVX
+;; instructions using the functions remove-insts-with-feat and
+;; keep-insts-with-feat below.
+
+(define remove-insts-with-feat ((inst-lst inst-list-p)
+                                (feat acl2::keyword-listp))
+  :short "Remove all instructions from @('inst-lst') that have ANY feature
+  present in @('feat')"
+  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
+  ;; set to :rem once we have operands' spec. for EVEX instructions.
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+  (if (endp inst-lst)
+      nil
+    (b* ((inst (car inst-lst))
+         (rest (remove-insts-with-feat (cdr inst-lst) feat))
+         ((inst inst))
+         (opcode inst.opcode)
+         ((opcode opcode))
+         ((when (any-present-in feat opcode.feat)) rest))
+      (cons inst rest))))
+
+(define keep-insts-with-feat ((inst-lst inst-list-p)
+                              (feat acl2::keyword-listp))
+  :short "Keep all instructions from @('inst-lst') that have ANY feature
+  present in @('feat')"
+  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
+  ;; set to :get once we have operands' spec. for EVEX instructions.
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+
+  (if (endp inst-lst)
+      nil
+    (b* ((inst (car inst-lst))
+         (rest (keep-insts-with-feat (cdr inst-lst) feat))
+         ((inst inst))
+         (opcode inst.opcode)
+         ((opcode opcode))
+         ((when (any-present-in feat opcode.feat)) (cons inst rest)))
+      rest)))
+
+(define select-insts ((inst-lst inst-list-p)
+                      &key
+                      ((get/rem (member-equal get/rem '(:get :rem))
+                                "Either get or remove the selected instructions")
+                       ':get)
+                      ((opcode (or (eql opcode nil) (24bits-p opcode))
+                               "If specified, select all instructions with the
+                                same opcode")
+                       'nil)
+                      ((mode op-mode-p
+                             "If specified, select all instructions with the
+                                same mode of operation")
+                       'nil)
+                      ((prefix op-pfx-p
+                               "If specified, select all instructions with the
+                                same prefix")
+                       'nil)
+                      ((vex? booleanp
+                             "If @('t'), select all instructions with a non-nil
+                             @('opcode.vex') field")
+                       'nil)
+                      ((fn? booleanp
+                            "If @('t'), select all instructions with a non-nil
+                             @('inst.fn') field")
+                       'nil))
+
+  :short "Select instructions satisfying some conditions, and then either
+  remove the selection or keep only the selection"
+
+  :guard
+  ;; Specify at least one of the following keys.
+  (or opcode mode prefix vex? fn?)
+
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+
+  (b* (((when (endp inst-lst)) nil)
+       (rest (select-insts (cdr inst-lst)
+                           ;; Remember to add key/vals here too if you expand
+                           ;; the formals!
+                           :get/rem get/rem
+                           :opcode opcode
+                           :mode mode
+                           :prefix prefix
+                           :vex? vex?
+                           :fn? fn?))
+       (inst (car inst-lst))
+       ((inst inst))
+       ((opcode inst.opcode))
+       (match? (and (if (not opcode)
+                        t
+                      (equal opcode inst.opcode.op))
+                    (if (not mode)
+                        t
+                      (equal mode inst.opcode.mode))
+                    (if (not prefix)
+                        t
+                      (if (equal prefix :no-prefix)
+                          (or (equal prefix inst.opcode.pfx)
+                              (not inst.opcode.pfx))
+                        (equal prefix inst.opcode.pfx)))
+                    (if (not vex?)
+                        t
+                      (if inst.opcode.vex t nil))
+                    (if (not fn?)
+                        t
+                      (if inst.fn t nil)))))
+    (if (eql get/rem :get)
+        (append (and match? (list inst)) rest)
+      (append (if match? nil (list inst)) rest))))
+
+;; ----------------------------------------------------------------------
+
+;; Creating documentation for the implemented opcodes:
+
+(local
+ (defconst *x86isa-printconfig*
+   (str::make-printconfig
+    :home-package (pkg-witness "X86ISA")
+    :print-base 16
+    :print-radix t
+    :print-lowercase t)))
+
+(local
+ (defconst *x86isa-printconfig-uppercase*
+   (str::make-printconfig
+    :home-package (pkg-witness "X86ISA")
+    :print-base 16
+    :print-radix t
+    :print-lowercase nil)))
+
+(local
+ (define create-inst-doc ((inst inst-p))
+
+   :returns (inst-doc-string stringp)
+
+   :prepwork
+   ((defthm inst-p-implies-mnemonic-p
+      (implies (inst-p x)
+               (mnemonic-p (inst->mnemonic x)))
+      :hints (("Goal" :in-theory (e/d (inst-p) ())))
+      :rule-classes :forward-chaining)
+
+    (defthm inst-p-implies-mnemonic-p-alt
+      (implies (and (inst-p x)
+                    (not (stringp (inst->mnemonic x))))
+               ;; (keywordp (inst->mnemonic x))
+               (symbolp (inst->mnemonic x)))
+      :hints (("Goal"
+               :use ((:instance inst-p-implies-mnemonic-p))
+               :in-theory (e/d (mnemonic-p inst->mnemonic)
+                               (inst-p-implies-mnemonic-p)))))
+
+    (defthm inst-p-implies-consp-fn
+      (implies (and (inst-p x)
+                    (inst->fn x))
+               (consp (inst->fn x)))
+      :hints (("Goal" :in-theory (e/d (fn-desc-p inst->fn fn-desc-p) ())))))
+   (b* (((inst inst))
+        (opcode inst.opcode)
+        ((opcode opcode))
+        (mnemonic (if (stringp inst.mnemonic)
+                      inst.mnemonic
+                    (symbol-name inst.mnemonic)))
+        (fn-info  (if inst.fn
+                      (concatenate
+                       'string
+                       "@(tsee "
+                       (str::pretty (car inst.fn) :config *x86isa-printconfig*)
+                       ") "
+                       (if (cdr inst.fn)
+                           (concatenate
+                            'string
+                            "<tt>"
+                            (str::pretty (cdr inst.fn)
+                                         :config *x86isa-printconfig*)
+                            "</tt>")
+                         ""))
+                    ""))
+        (extra-info `(,@(and opcode.mode   `((:MODE ,opcode.mode)))
+                      ,@(and opcode.pfx    `((:PFX  ,opcode.pfx)))
+                      ,@(and opcode.reg    `((:REG  ,opcode.reg)))
+                      ,@(and opcode.mod    `((:MOD  ,opcode.mod)))
+                      ,@(and opcode.r/m    `((:R/M  ,opcode.r/m)))
+                      ,@(and opcode.rex    `((:REX  ,opcode.rex)))
+                      ,@(and opcode.vex    `((:VEX  ,opcode.vex)))
+                      ,@(and opcode.evex   `((:EVEX ,opcode.evex)))
+                      ,@(and opcode.feat   `((:FEAT ,opcode.feat)))))
+        (extra-info (if extra-info
+                        (str::pretty extra-info
+                                     :config
+                                     *x86isa-printconfig-uppercase*)
+                      ""))
+        (doc-string
+         (concatenate
+          'string
+          "<tr> "
+          " <td> " (str::hexify opcode.op) " </td> "
+          " <td> " mnemonic                " </td> "
+          " <td> " extra-info              " </td>"
+          " <td> " fn-info                 " </td> "
+          "</tr>")))
+     doc-string)))
+
+(local
+ (define create-insts-doc-aux ((inst-lst inst-list-p))
+
+   :returns (insts-doc-string stringp)
+
+   (if (endp inst-lst)
+       ""
+     (concatenate
+      'string
+      (create-inst-doc (car inst-lst))
+      (create-insts-doc-aux (cdr inst-lst))))))
+
+(local
+ (define create-insts-doc ((inst-lst inst-list-p))
+
+   :returns (insts-doc-string stringp)
+
+   (b* ((insts-doc-string (create-insts-doc-aux inst-lst))
+        (table-header-1 "<th> Opcode </th>")
+        (table-header-2 "<th> Mnemonic </th>")
+        (table-header-3 "<th> Other Information </th>")
+        (table-header-4 "<th> Semantic Function </th>")
+        (table-header (concatenate
+                       'string "<tr> "
+                       table-header-1 table-header-2
+                       table-header-3 table-header-4
+                       " </tr>")))
+     (concatenate
+      'string
+      "<table> " table-header insts-doc-string " </table>"))))
+
+
+(make-event
+ (b* ((one (create-insts-doc
+            (select-insts *one-byte-opcode-map*
+                          :get/rem :get
+                          :fn? t)))
+      (two (create-insts-doc
+            (select-insts *two-byte-opcode-map*
+                          :get/rem :get
+                          :fn? t)))
+      (three-1 (create-insts-doc
+                (select-insts *0F-38-three-byte-opcode-map*
+                              :get/rem :get
+                              :fn? t)))
+      (three-2 (create-insts-doc
+                (select-insts *0F-3A-three-byte-opcode-map*
+                              :get/rem :get
+                              :fn? t))))
+   `(progn
+      (defsection one-byte-opcodes-map
+        :parents (implemented-opcodes)
+        :short "List of implemented instructions whose opcode is one byte long"
+        :long ,one)
+      (defsection two-byte-opcodes-map
+        :parents (implemented-opcodes)
+        :short "List of implemented instructions whose opcode is two bytes long,
+       beginning with @('0F'); includes VEX/EVEX instructions too"
+        :long ,two)
+      (defsection 0F-38-three-byte-opcodes-map
+        :parents (implemented-opcodes)
+        :short "List of implemented instructions whose opcode is three bytes
+       long, beginning with @('0F_38'); includes VEX/EVEX instructions too"
+        :long ,three-1)
+      (defsection 0F-3A-three-byte-opcodes-map
+        :parents (implemented-opcodes)
+        :short "List of implemented instructions whose opcode is three bytes
+       long, beginning with @('0F_3A'); includes VEX/EVEX instructions too"
+        :long ,three-2))))
+
+
+(defsection implemented-opcodes
+  :parents (x86isa instructions x86-decoder opcode-maps)
+  :short "Intel Opcodes Supported in @('x86isa')"
+  :long
+  "<p>We support decoding of all the x86 instructions in the one-, two-, and
+ three-byte opcode maps, including the AVX/AVX2/AVX512 extensions.  However, a
+ fraction of those are actually implemented in this model --- when we say
+ 'implemented' instructions, we mean instructions that have a semantic function
+ that models its effects on the machine's state.</p>
+
+ <p>For a listing of all such supported instructions, see @(see
+ one-byte-opcodes-map), @(see two-byte-opcodes-map), @(see
+ 0f-38-three-byte-opcodes-map), and @(see 0f-3a-three-byte-opcodes-map).</p>
+
+ <p>For a readable version of all the opcode maps, see constants like
+  @('*pre-one-byte-opcode-map*') in the book @('inst-listing.lisp').  These are
+  the constants to edit in order to add new instructions, etc. in the future.
+  The dispatch, modr/m and prefixes computation, and generation of
+  documentation is done automatically from these constants.</p>")
 
 ;; ----------------------------------------------------------------------

@@ -199,12 +199,15 @@
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :increment-error flg))
 
-       ((mv msg (the (unsigned-byte 8) mandatory-prefix))
-        (compute-mandatory-prefix-for-three-byte-opcode
-         proc-mode second-escape-byte opcode prefixes))
-       ((when msg)
-        (x86-illegal-instruction msg start-rip temp-rip x86))
+       ;; ((mv msg (the (unsigned-byte 8) mandatory-prefix))
+       ;;  (compute-mandatory-prefix-for-three-byte-opcode
+       ;;   proc-mode second-escape-byte opcode prefixes))
+       ;; ((when msg)
+       ;;  (x86-illegal-instruction msg start-rip temp-rip x86))
 
+       ((the (unsigned-byte 8) mandatory-prefix)
+        (compute-mandatory-prefix-for-three-byte-opcode 
+         proc-mode second-escape-byte opcode prefixes))
        (modr/m?
         (three-byte-opcode-ModR/M-p
          proc-mode mandatory-prefix second-escape-byte opcode))

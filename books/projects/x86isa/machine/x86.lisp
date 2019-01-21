@@ -72,62 +72,6 @@
   and the top-level run function"
   )
 
-(defsection implemented-opcodes
-  :parents (x86isa instructions x86-decoder)
-  :short "Intel Opcodes Supported in @('x86isa')"
-  :long
-  "<p>Detailed doc. topic under construction after the redefinition of opcode
-   maps using @('defprod') in Jan. 2019. For now, see
-   @('inst-listing.lisp').</p>"
-
-  ;; "<h3>How to Read the Opcode Tables</h3>
-
- ;; <p>The opcode tables have 2^8 = 256 rows, one row for each relevant opcode
- ;; byte (i.e., the only opcode byte for one-byte opcodes in @(see
- ;; one-byte-opcodes-table), the second opcode byte for the two-byte opcodes in
- ;; @(see two-byte-opcodes-table), and the third opcode byte for the three-byte
- ;; opcodes in @(see 0F-38-three-byte-opcodes-table) and @(see
- ;; 0F-3A-three-byte-opcodes-table)).  Each row lists the opcode, the name of the
- ;; Intel instruction corresponding to it, and the instruction semantic function
- ;; that implements that opcode.</p>
-
- ;; <p>Often, just the opcode byte is not enough to determine the x86 instruction.
- ;; We may need to know the processor's mode of operation (e.g., 32-bit or 64-bit
- ;; mode), the value in the fields of the ModR/M byte (the so-called opcode
- ;; extensions grouped together in Intel Volume 2, Table A-6), the mandatory
- ;; prefixes, etc.  The following keywords are used to describe such information
- ;; in these tables.</p>
-
- ;; <ul>
- ;;   <li>@(':i64'):    Invalid in 64-bit mode</li>
- ;;   <li>@(':o64'):    Valid only in 64-bit mode</li>
- ;;   <li>@(':reg'):    Value of ModR/M.reg</li>
- ;;   <li>@(':mod'):    Value of ModR/M.mod</li>
- ;;   <li>@(':r/m'):    Value of ModR/M.r/m</li>
- ;;   <li>@(':66'):     Mandatory Prefix 0x66</li>
- ;;   <li>@(':F2'):     Mandatory Prefix 0xF2</li>
- ;;   <li>@(':F3'):     Mandatory Prefix 0xF3</li>
- ;;   <li>@(':No-Pfx'): No Mandatory Prefix</li>
- ;; </ul>
-
- ;; <p>Instead of the instruction semantic function, these tables may also list
- ;; <i>Reserved</i> or <i>Unimplemented</i> for certain opcodes.  <i>Reserved</i>
- ;; stands for opcodes that Intel deems reserved --- an x86 processor is supposed
- ;; to throw a @('#UD') (undefined instruction) exception if that opcode is
- ;; encountered --- we call @(tsee x86-illegal-instruction) in such cases.
- ;; <i>Unimplemented</i> stands for legal x86 instructions that are not yet
- ;; supported in @('x86isa') --- we call @(tsee x86-step-unimplemented) in such
- ;; cases.</p>
-
- ;; <h4>AVX/AVX512 Extensions</h4>
-
- ;; <p>Though we haven't defined instruction semantic functions for VEX- and
- ;; EVEX-encoded instructions yet, we can decode these instructions and can also
- ;; detect some decode-time exceptions --- see @(see vex-decode-and-execute) and
- ;; @(see evex-decode-and-execute) for details.</p>"
-
-  )
-
 (local (xdoc::set-default-parents x86-decoder))
 
 ;; ----------------------------------------------------------------------

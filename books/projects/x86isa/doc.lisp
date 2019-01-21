@@ -456,18 +456,12 @@
   Publications
   TO-DO))
 
-;; (xdoc::order-subtopics
-;;  implemented-opcodes
-;;  (one-byte-opcodes-map
-;;   two-byte-opcodes-map
-;;   0f-38-three-byte-opcodes-map
-;;   0f-3a-three-byte-opcodes-map
-;;   vex-0f-map
-;;   vex-0F-38-map
-;;   vex-0F-3A-map
-;;   evex-0f-map
-;;   evex-0F-38-map
-;;   evex-0F-3A-map))
+(xdoc::order-subtopics
+ implemented-opcodes
+ (one-byte-opcodes-map
+  two-byte-opcodes-map
+  0f-38-three-byte-opcodes-map
+  0f-3a-three-byte-opcodes-map))
 
 (xdoc::order-subtopics
  instructions

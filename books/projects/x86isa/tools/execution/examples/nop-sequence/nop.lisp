@@ -169,7 +169,7 @@
 ;; To create a log file:
 
 ;; Halt Address --- overwrites this address by #xF4 (HLT)
-;; (wme08 (len *nop*) *cs* #xf4 x86)
+;; (wme08 *64-bit-mode* (len *nop*) *cs* #xf4 x86)
 ;; (!log-file-name "nop.log")
 ;; (log_instr)
 

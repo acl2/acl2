@@ -353,6 +353,11 @@
  in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
  to it is not allowed; writing to a code segment is not allowed either.</p>
 
+ <p>Opcode maps are now represented using @(see fty::defprod)s, which makes it
+ easier to operate on them in order to automatically generate dispatch
+ functions and documentation, and to precompute some kinds of decoding
+ information.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>

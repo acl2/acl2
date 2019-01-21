@@ -46,6 +46,5 @@
 
 ;; Experimental or WIP books:
 (include-book "machine/new-decode" :ttags :all)
-(include-book "machine/convert-maps" :ttags :all)
 
 ;; ======================================================================

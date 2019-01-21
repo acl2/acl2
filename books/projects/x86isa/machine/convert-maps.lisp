@@ -9316,7 +9316,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x0
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
@@ -9329,7 +9329,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9344,7 +9344,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x1
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
@@ -9357,7 +9357,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9372,7 +9372,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x2
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
        '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
  (INST "WRFSBASE"
@@ -9381,7 +9381,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9396,7 +9396,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x3
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
        '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
  (INST "WRGSBASE"
@@ -9405,7 +9405,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :MOD #x3
            :PFX :F3
            :MODE :O64
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
@@ -9420,7 +9420,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x4
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -9433,7 +9433,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x5
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -9446,7 +9446,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x5
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
@@ -9456,7 +9456,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x6
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
@@ -9473,7 +9473,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x6
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
@@ -9483,7 +9483,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x7
            :MOD :MEM
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x13)
@@ -9493,7 +9493,7 @@ cells in *opcode-extensions-by-group-number* instead.
            :REG #x7
            :MOD #x3
            :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A))
+           :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x19)
@@ -9561,7 +9561,7 @@ cells in *opcode-extensions-by-group-number* instead.
               (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x17)
                      #x0))))
  (INST "UD1"
-       (OP :OP #xFB9 :SUPERSCRIPTS '(:1A))
+       (OP :OP #xFB9 :SUPERSCRIPTS '(:1A :1C)) ;; [SG] Hand-edited
        NIL
        '(X86-ILLEGAL-INSTRUCTION (MESSAGE . "UD1 encountered!"))
        'NIL)

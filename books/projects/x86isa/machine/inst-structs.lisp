@@ -51,15 +51,12 @@
 (include-book "std/lists/duplicity" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 
-; Lisp representation of Intel's opcode maps (See Intel Manuals,
-; Vol. 2, Appendix A)
-
-(defsection opcode-maps
-  :parents (instructions x86-decoder)
-  :short "ACL2 representation of Intel's x86 Opcode Maps"
+(defsection opcode-maps-structures
+  :parents (structures opcode-maps)
+  :short "Structures for representing of Intel's x86 Opcode Maps in ACL2"
   )
 
-(local (xdoc::set-default-parents 'opcode-maps))
+(local (xdoc::set-default-parents 'opcode-maps-structures))
 
 ;; ----------------------------------------------------------------------
 
@@ -86,22 +83,22 @@
    ;; register, index register, or scaling factor can be applied (for
    ;; example far JMP (EA)).
 
-   '(A (:modr/m? . nil))
+   '(A (:modr/m? . nil) (:vex? . nil))
 
    ;; B The VEX.vvvv field of the VEX prefix selects a general purpose
    ;; register.
 
-   '(B (:modr/m? . nil))
+   '(B (:modr/m? . nil) (:vex? . t))
 
    ;; C The reg field of the ModR/M byte selects a control register
    ;; (for example MOV (0F20, 0F22)).
 
-   '(C (:modr/m? . t))
+   '(C (:modr/m? . t) (:vex? . nil))
 
    ;; D The reg field of the ModR/M byte selects a debug register (for
    ;; example MOV (0F21,0F23)).
 
-   '(D (:modr/m? . t))
+   '(D (:modr/m? . t) (:vex? . nil))
 
    ;; E A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either a general-purpose register or a
@@ -110,33 +107,33 @@
    ;; values: a base register, an index register, a scaling factor, a
    ;; displacement.
 
-   '(E (:modr/m? . t))
+   '(E (:modr/m? . t) (:vex? . nil))
 
    ;; F EFLAGS/RFLAGS Register.
 
-   '(F (:modr/m? . nil))
+   '(F (:modr/m? . nil) (:vex? . nil))
 
    ;; G The reg field of the ModR/M byte selects a general register
    ;; (for example AX (000)).
 
-   '(G (:modr/m? . t))
+   '(G (:modr/m? . t) (:vex? . nil))
 
    ;; H The VEX.vvvv field of the VEX prefix selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand
    ;; type. For legacy SSE encodings this operand does not exist,
    ;; changing the instruction to destructive form.
 
-   '(H (:modr/m? . nil))
+   '(H (:modr/m? . nil) (:vex? . t))
 
    ;; I Immediate data: the operand value is encoded in subsequent
    ;; bytes of the instruction.
 
-   '(I (:modr/m? . nil))
+   '(I (:modr/m? . nil) (:vex? . nil))
 
    ;; J The instruction contains a relative offset to be added to the
    ;; instruction pointer register (for example JMP (0E9), LOOP).
 
-   '(J (:modr/m? . nil))
+   '(J (:modr/m? . nil) (:vex? . nil))
 
    ;; Important: Note that rB, mB are not listed as Z addressing methods in the
    ;; Intel manuals (May 2018 edition).  I borrowed them from the following:
@@ -145,12 +142,12 @@
    ;; rB: modr/m.reg is used to access bound registers (added as a part of the
    ;; Intel MPX Programming Environment).
 
-   '(rB (:modr/m? . t))
+   '(rB (:modr/m? . t) (:vex? . nil))
 
    ;; mB: modr/m.r/m is used to access bound registers (added as a part of the
    ;; Intel MPX Programming Environment).
 
-   '(mB (:modr/m? . t))
+   '(mB (:modr/m? . t) (:vex? . nil))
 
    ;; Important: Addressing info with "K-" prefix below does not appear in the
    ;; Intel Manuals (dated May, 2018).  The Intel manuals do not define a Z
@@ -163,7 +160,7 @@
    ;; K-reg: modr/m.reg is used to access opmask registers k0-k7 (common
    ;; usages: source).
 
-   '(K-reg (:modr/m? . t))
+   '(K-reg (:modr/m? . t) (:vex? . nil))
 
    ;; K-vex: VEX.vvvv is used to access opmask registers k0-k7 (common usages:
    ;; 2nd source).
@@ -173,7 +170,7 @@
    ;; K-r/m: modr/m.r/m is used to access opmask registers k0-k7 (common
    ;; usages: 1st source).
 
-   '(K-r/m (:modr/m? . t))
+   '(K-r/m (:modr/m? . t) (:vex? . nil))
 
    ;; K-evex: EVEX.aaa is used to access opmask registers k0-k4 (common usages:
    ;; Opmask).
@@ -184,17 +181,17 @@
    ;; register or a 256-bit YMM register determined by operand
    ;; type. (the MSB is ignored in 32-bit mode)
 
-   '(L (:modr/m? . nil))
+   '(L (:modr/m? . nil) (:vex? . t))
 
    ;; M The ModR/M byte may refer only to memory (for example BOUND,
    ;; LES, LDS, LSS, LFS, LGS, CMPXCHG8B).
 
-   '(M (:modr/m? . t))
+   '(M (:modr/m? . t) (:vex? . nil))
 
    ;; N The R/M field of the ModR/M byte selects a packed-quadword MMX
    ;; technology register.
 
-   '(N (:modr/m? . t))
+   '(N (:modr/m? . t) (:vex? . nil))
 
    ;; O The instruction has no ModR/M byte. The offset of the operand
    ;; is coded as a word or double word (depending on address size
@@ -206,7 +203,7 @@
    ;; P The reg field of the ModR/M byte selects a packed quadword MMX
    ;; technology register.
 
-   '(P (:modr/m? . t))
+   '(P (:modr/m? . t) (:vex? . nil))
 
    ;; Q A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either an MMX technology register or a
@@ -215,27 +212,27 @@
    ;; values: a base register, an index register, a scaling factor, and a
    ;; displacement.
 
-   '(Q (:modr/m? . t))
+   '(Q (:modr/m? . t) (:vex? . nil))
 
    ;; R The R/M field of the ModR/M byte may refer only to a general
    ;; register (for example MOV (0F20-0F23)).
 
-   '(R (:modr/m? . t))
+   '(R (:modr/m? . t) (:vex? . nil))
 
    ;; S The reg field of the ModR/M byte selects a segment register
    ;; (for example MOV (8C,8E)).
 
-   '(S (:modr/m? . t))
+   '(S (:modr/m? . t) (:vex? . nil))
 
    ;; U The R/M field of the ModR/M byte selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand type.
 
-   '(U (:modr/m? . t))
+   '(U (:modr/m? . t) (:vex? . t))
 
    ;; V The reg field of the ModR/M byte selects a 128-bit XMM
    ;; register or a 256-bit YMM register determined by operand type.
 
-   '(V (:modr/m? . t))
+   '(V (:modr/m? . t) (:vex? . t))
 
    ;; W A ModR/M byte follows the opcode and specifies the
    ;; operand. The operand is either a 128-bit XMM register, a 256-bit
@@ -244,17 +241,17 @@
    ;; a segment register and any of the following values: a base
    ;; register, an index register, a scaling factor, and a displacement.
 
-   '(W (:modr/m? . t))
+   '(W (:modr/m? . t) (:vex? . t))
 
    ;; X Memory addressed by the DS:rSI register pair (for example MOVS,
    ;; CMPS, OUTS, or LODS).
 
-   '(X (:modr/m? . nil))
+   '(X (:modr/m? . nil) (:vex? . nil))
 
    ;; Y Memory addressed by the ES:rDI register pair (for example MOVS,
    ;; CMPS, INS, STOS, or SCAS).
 
-   '(Y (:modr/m? . nil))
+   '(Y (:modr/m? . nil) (:vex? . nil))
 
    ))
 
@@ -319,6 +316,68 @@
    )
   :parents (opcode-maps)
   :short "Codes for Operand Type; See Intel Vol. 2, Appendix A.2.2")
+
+(defconst *opcode-map-superscripts*
+
+  ;; Source: Intel Manuals, Volume 2, Appendix A.2.5.
+  ;; Table A-1. Superscripts Utilized in Opcode Tables.
+
+  (list
+
+   ;; Bits 5, 4, and 3 of ModR/M byte used as an opcode extension
+   ;; (refer to Section A.4, Opcode Extensions For One-Byte And
+   ;; Two-byte Opcodes)
+   :1a
+
+   ;; Use the 0F0B opcode (UD2 instruction) or the 0FB9H opcode when
+   ;; deliberately trying to generate an invalid opcode exception
+   ;; (#UD).
+   :1b
+
+   ;; Some instructions use the same two-byte opcode. If the
+   ;; instruction has variations, or the opcode represents different
+   ;; instructions, the ModR/M byte will be used to differentiate the
+   ;; instruction. For the value of the ModR/M byte needed to decode
+   ;; the instruction, see Table A-6.
+   :1c
+
+   ;; The instruction is invalid or not encodable in 64-bit mode. 40
+   ;; through 4F (single-byte INC and DEC) are REX prefix combinations
+   ;; when in 64-bit mode (use FE/FF Grp 4 and 5 for INC and DEC).
+   :i64
+
+   ;; Instruction is only available when in 64-bit mode.
+   :o64
+
+   ;; When in 64-bit mode, instruction defaults to 64-bit operand size
+   ;; and cannot encode 32-bit operand size.
+   :d64
+
+   ;; The operand size is forced to a 64-bit operand size when in
+   ;; 64-bit mode (prefixes that change operand size are ignored for
+   ;; this instruction in 64-bit mode).
+   :f64
+
+   ;; VEX form only exists. There is no legacy SSE form of the
+   ;; instruction. For Integer GPR instructions it means VEX prefix
+   ;; required.
+   :v
+
+   ;; VEX128 & SSE forms only exist (no VEX256), when can't be
+   ;; inferred from the data size.
+   :v1
+   ))
+
+(defconst *group-numbers*
+  '(:group-1  :group-1a
+    :group-2  :group-3
+    :group-4  :group-5
+    :group-6  :group-7
+    :group-8  :group-9
+    :group-10 :group-11
+    :group-12 :group-13
+    :group-14 :group-15
+    :group-16 :group-17))
 
 ;; ----------------------------------------------------------------------
 
@@ -552,6 +611,38 @@
     :equiv maybe-evex-equiv
     :define t))
 
+(define superscripts-p (x)
+  (or (not x)
+      (and (acl2::keyword-listp x)
+           (subsetp-equal x *opcode-map-superscripts*)))
+  ///
+  (define superscripts-fix ((x superscripts-p))
+    :enabled t
+    (mbe :logic (if (superscripts-p x) x 'nil)
+         :exec x))
+
+  (fty::deffixtype superscripts
+    :pred superscripts-p
+    :fix superscripts-fix
+    :equiv superscripts-equiv
+    :define t))
+
+(define opcode-extension-group-p (x)
+  (or (not x)
+      (and (acl2::keyword-listp x)
+           (subsetp-equal x *group-numbers*)))
+  ///
+  (define opcode-extension-group-fix ((x opcode-extension-group-p))
+    :enabled t
+    (mbe :logic (if (opcode-extension-group-p x) x 'nil)
+         :exec x))
+
+  (fty::deffixtype opcode-extension-group
+    :pred opcode-extension-group-p
+    :fix opcode-extension-group-fix
+    :equiv opcode-extension-group-equiv
+    :define t))
+
 (defprod opcode
   ((op            24bits-p
                   "Includes escape bytes of two- and three-byte opcodes as
@@ -577,7 +668,9 @@
                   :default 'nil)
    (feat          symbol-listp
                   :default 'nil)
-   (superscripts  symbol-listp
+   (superscripts  superscripts-p
+                  :default 'nil)
+   (group         opcode-extension-group-p
                   :default 'nil))
   :layout :tree)
 
@@ -745,6 +838,7 @@
   :layout :tree)
 
 (define inst-list-p (xs)
+  :enabled t
   (if (atom xs)
       (equal xs nil)
     (and (or (inst-p (car xs))
@@ -754,42 +848,114 @@
 
 ;; ----------------------------------------------------------------------
 
-;; ;; From the one-byte opcode map:
-;; (inst "ADD" (op :op #x00) (arg :op1 '(E b) :op2 '(G b))
-;;       '(x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
-;;         (operation . #.*OP-ADD*))
-;;       '((:ud . ((ud-Lock-used-Dest-not-Memory-Op)))))
+;; Some useful lemmas:
 
-;; ;; From Opcode Extensions:
-;; (inst "CLAC"
-;;       (op :esc #x0F :op #x01 :mod #b11 :reg #b001 :r/m #b010 :feat '(:smap))
-;;       'nil
-;;       'nil
-;;       '((:ud  . ((ud-Lock-used)
-;;                  (ud-cpl-is-not-zero)))))
+(local
+ (defthm operands-p-when-maybe-operands-p
+   (implies (and (maybe-operands-p x) x)
+            (operands-p x))
+   :hints (("Goal" :in-theory (e/d (maybe-operands-p) ())))))
 
-;; ;; A Vex Opcode:
-;; (inst "VPSHUFB"
-;;       (op :op #x00 :vex '(:NDS :0F38 :128 :66 :WIG) :feat '(:avx))
-;;       (arg :op1 '(V x) :op2 '(H x) :op3 '(W x))
-;;       'nil
-;;       '((:ud  . ((ud-Lock-used)
-;;                  (ud-cpl-is-not-zero)
-;;                  (equal (feature-flags-macro '(:avx)) 0)))))
+(defthm operands-p-of-inst->operands
+  (implies (and (inst-p x)
+                (inst->operands x))
+           (operands-p (inst->operands x)))
+  :hints (("Goal" :in-theory (e/d (maybe-operands-p inst-p) ()))))
 
-;; (b* ((vshufb-desc
-;;       (inst "VPSHUFB"
-;;             (op :op #x00 :vex '(:NDS :0F38 :128 :66 :WIG) :feat '(:avx))
-;;             (arg :op1 '(V x) :op2 '(H x) :op3 '(W x))
-;;             'nil
-;;             '(:ud  . ((ud-Lock-used)
-;;                       (ud-cpl-is-not-zero)
-;;                       (equal (feature-flags-macro '(:avx)) 0)))))
-;;      ((inst vshufb-desc))
-;;      ((opcode vshufb-desc.opcode))
-;;      ((operands vshufb-desc.operands)))
-;;   (list vshufb-desc.mnemonic
-;;         vshufb-desc.operands.op1
-;;         vshufb-desc.opcode.feat))
+(defthm operand-type-p-implies-true-listp
+  (implies (operand-type-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (operand-type-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm inst-p-implies-operand-type-p-op1
+  (implies
+   (inst-p inst)
+   (operand-type-p (operands->op1 (inst->operands inst))))
+  :hints (("Goal" :in-theory (e/d (inst-p operands-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm inst-p-implies-operand-type-p-op2
+  (implies
+   (inst-p inst)
+   (operand-type-p (operands->op2 (inst->operands inst))))
+  :hints (("Goal" :in-theory (e/d (inst-p operands-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm inst-p-implies-operand-type-p-op3
+  (implies
+   (inst-p inst)
+   (operand-type-p (operands->op3 (inst->operands inst))))
+  :hints (("Goal" :in-theory (e/d (inst-p operands-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm inst-p-implies-operand-type-p-op4
+  (implies
+   (inst-p inst)
+   (operand-type-p (operands->op4 (inst->operands inst))))
+  :hints (("Goal" :in-theory (e/d (inst-p operands-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm strict-opcode-p-implies-opcode-p
+  (implies (strict-opcode-p x)
+           (opcode-p x))
+  :hints (("Goal" :in-theory (e/d (strict-opcode-p) ()))))
+
+(defthm inst-p-implies-opcode-p
+  (implies (inst-p x)
+           (opcode-p (inst->opcode x)))
+  :hints (("Goal" :in-theory (e/d (inst-p) ()))))
+
+(defthm superscripts-p-implies-true-listp
+  (implies (superscripts-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (superscripts-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm vex-p-implies-true-listp
+  (implies (vex-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (vex-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm evex-p-implies-true-listp
+  (implies (evex-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (evex-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm maybe-vex-p-implies-true-listp
+  (implies (maybe-vex-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (maybe-vex-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm maybe-evex-p-implies-true-listp
+  (implies (maybe-evex-p x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (e/d (maybe-evex-p) ())))
+  :rule-classes :forward-chaining)
+
+(local
+ (defthm subsetp-equal-and-keyword-listp
+   (implies (and (subsetp-equal x y)
+                 (acl2::keyword-listp y)
+                 (true-listp x))
+            (acl2::keyword-listp x))
+   :hints (("Goal" :in-theory (e/d (subsetp-equal
+                                    acl2::keyword-listp)
+                                   ())))))
+
+(defthm maybe-vex-p-implies-keyword-listp
+  (implies (maybe-vex-p x)
+           (acl2::keyword-listp x))
+  :hints (("Goal" :in-theory (e/d (maybe-vex-p vex-p) ())))
+  :rule-classes :forward-chaining)
+
+(defthm maybe-evex-p-implies-keyword-listp
+  (implies (maybe-evex-p x)
+           (acl2::keyword-listp x))
+  :hints (("Goal" :in-theory (e/d (maybe-evex-p evex-p) ())))
+  :rule-classes :forward-chaining)
 
 ;; ----------------------------------------------------------------------

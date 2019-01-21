@@ -45,46 +45,15 @@
 
 (include-book "inst-listing")
 
-(local (xdoc::set-default-parents 'opcode-maps))
+(defsection dispatch-creator
+  :parents (filtering-instructions)
+  :short "Utilities to generate opcode dispatch functions from the annotated
+opcode maps."
+  )
 
-;; Utilities to generate opcode dispatch functions from the annotated opcode
-;; maps.
+(local (xdoc::set-default-parents 'dispatch-creator))
 
 ;; ----------------------------------------------------------------------
-
-;; (include-book "std/strings/pretty" :dir :system)
-;; (defconst *x86isa-printconfig*
-;;   (str::make-printconfig
-;;    :home-package (pkg-witness "X86ISA")
-;;    :print-lowercase t))
-
-(local (in-theory (e/d (inst-list-p) ())))
-
-(defthm strict-opcode-p-implies-opcode-p
-  (implies (strict-opcode-p x)
-           (opcode-p x))
-  :hints (("Goal" :in-theory (e/d (strict-opcode-p) ()))))
-
-(defthm inst-p-implies-opcode-p
-  (implies (inst-p x)
-           (opcode-p (inst->opcode x)))
-  :hints (("Goal" :in-theory (e/d (inst-p) ()))))
-
-(define get-all-insts-with-same-opcode ((this-opcode 24bits-p)
-                                        (inst-lst    inst-list-p))
-  ;; (get-all-insts-with-same-opcode #x00 *one-byte-opcode-map*)
-  ;; (get-all-insts-with-same-opcode #x80 *one-byte-opcode-map*)
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-  (b* (((when (atom inst-lst)) nil)
-       (inst (car inst-lst))
-       (rest (get-all-insts-with-same-opcode this-opcode (cdr inst-lst)))
-       ((inst inst))
-       (opcode inst.opcode)
-       ((opcode opcode)))
-    (if (equal opcode.op this-opcode)
-        (cons inst rest)
-      rest)))
 
 (local
  (defthm true-listp-of-subst-when-not-true-listp-old
@@ -285,45 +254,6 @@
                                    ())))))
 
 (local
- (defthm vex-p-implies-true-listp
-   (implies (vex-p x)
-            (true-listp x))
-   :hints (("Goal" :in-theory (e/d (vex-p) ())))))
-
-(local
- (defthm evex-p-implies-true-listp
-   (implies (evex-p x)
-            (true-listp x))
-   :hints (("Goal" :in-theory (e/d (evex-p) ())))))
-
-(local
- (defthm maybe-vex-p-implies-true-listp
-   (implies (maybe-vex-p x)
-            (true-listp x))
-   :hints (("Goal" :in-theory (e/d (maybe-vex-p) ())))))
-
-(local
- (defthm maybe-evex-p-implies-true-listp
-   (implies (maybe-evex-p x)
-            (true-listp x))
-   :hints (("Goal" :in-theory (e/d (maybe-evex-p) ())))))
-
-(local
- (defthm maybe-vex-p-implies-keyword-listp
-   (implies (maybe-vex-p x)
-            (acl2::keyword-listp x))
-   :hints (("Goal" :in-theory (e/d (maybe-vex-p
-                                    vex-p)
-                                   ())))))
-
-(local
- (defthm maybe-evex-p-implies-keyword-listp
-   (implies (maybe-evex-p x)
-            (acl2::keyword-listp x))
-   :hints (("Goal" :in-theory (e/d (maybe-evex-p
-                                    evex-p) ())))))
-
-(local
  (defthm cons-keyword-listp
    (implies (and (keywordp e)
                  (acl2::keyword-listp x))
@@ -392,12 +322,12 @@
                                         (wrld plist-worldp))
 
   ;; (create-dispatch-for-one-opcode
-  ;;  (get-all-insts-with-same-opcode #x00 *one-byte-opcode-map*)
+  ;;  (select-insts *one-byte-opcode-map* :opcode #x0)
   ;;  :one-byte
   ;;  (w state))
 
   ;; (create-dispatch-for-one-opcode
-  ;;  (get-all-insts-with-same-opcode #x80 *one-byte-opcode-map*)
+  ;;  (select-insts *one-byte-opcode-map* :opcode #x80)
   ;;  :one-byte
   ;;  (w state))
 
@@ -505,51 +435,6 @@
     ;; Unreachable.
     (mv nil nil)))
 
-(define select-opcode-map ((map-key keywordp))
-  :guard (member-equal
-          map-key
-          '(:one-byte
-            :two-byte
-            :0F-38-three-byte
-            :0F-3A-three-byte
-            :vex-0F :vex-0F-38 :vex-0F-3A
-            :evex-0F :evex-0F-38 :evex-0F-3A))
-  :returns (inst-lst inst-list-p :hyp :guard)
-  (case map-key
-    (:one-byte *one-byte-opcode-map*)
-    ((:two-byte :vex-0F :evex-0F) *two-byte-opcode-map*)
-    ((:0F-38-three-byte :vex-0F-38 :evex-0F-38) *0F-38-three-byte-opcode-map*)
-    ((:0F-3A-three-byte :vex-0F-3A :evex-0F-3A) *0F-3A-three-byte-opcode-map*)))
-
-(define remove-insts-with-feat ((inst-lst inst-list-p)
-                                (feat acl2::keyword-listp))
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-  (if (endp inst-lst)
-      nil
-    (b* ((inst (car inst-lst))
-         (rest (remove-insts-with-feat (cdr inst-lst) feat))
-         ((inst inst))
-         (opcode inst.opcode)
-         ((opcode opcode))
-         ((when (any-present-in feat opcode.feat)) rest))
-      (cons inst rest))))
-
-(define keep-insts-with-feat ((inst-lst inst-list-p)
-                              (feat acl2::keyword-listp))
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-
-  (if (endp inst-lst)
-      nil
-    (b* ((inst (car inst-lst))
-         (rest (keep-insts-with-feat (cdr inst-lst) feat))
-         ((inst inst))
-         (opcode inst.opcode)
-         ((opcode opcode))
-         ((when (any-present-in feat opcode.feat)) (cons inst rest)))
-      rest)))
-
 (define create-dispatch-for-opcodes ((first-opcode 24bits-p)
                                      (num-opcodes  natp)
                                      (map-key  keywordp)
@@ -586,15 +471,20 @@
                (er hard? 'create-dispatch-for-opcodes
                    "Illegal opcode ~s0.~%" (str::hexify (1+ first-opcode)))))
        (map (select-opcode-map map-key))
-       (same-opcode-insts (get-all-insts-with-same-opcode first-opcode map))
+       (same-opcode-insts (select-insts map :opcode first-opcode))
        (relevant-insts
         (if (member-equal map-key '(:one-byte
                                     :two-byte
                                     :0F-38-three-byte
                                     :0F-3A-three-byte))
+            ;; Because of strict-opcode-p, we know that instructions without
+            ;; the following CPUID features have empty opcode.vex and
+            ;; opcode.evex fields, which means that they are non-AVX opcodes.
             (remove-insts-with-feat same-opcode-insts
                                     (append (list :avx :avx2 :bmi1 :bmi2)
                                             *avx512-feature-flags*))
+          ;; Similarly, we know that instructions with these CPUID features are
+          ;; AVX opcodes.
           (keep-insts-with-feat same-opcode-insts
                                 (append (list :avx :avx2 :bmi1 :bmi2)
                                         *avx512-feature-flags*))))
