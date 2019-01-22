@@ -298,6 +298,9 @@
  @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
  str::defcharset).  Added a new predicate.</p>
 
+ <p>Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
+
  <h4>System Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even

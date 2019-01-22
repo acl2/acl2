@@ -30,7 +30,8 @@
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are upper case letters.
-    The result is the string of all these digits.")
+    The result is the string of all these digits.
+    The result has always an even length.")
   (implode (ubyte8s=>hexchars bytes))
 
   ///
@@ -42,3 +43,19 @@
   (defrule evenp-of-length-of-ubyte8s=>hexstring
     (evenp (length (ubyte8s=>hexstring bytes)))
     :disable evenp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hexstring=>ubyte8s ((string (and (stringp string)
+                                         (str::hex-digit-string-p string)
+                                         (evenp (length string)))))
+  :returns (bytes (unsigned-byte-listp 8 bytes))
+  :parents (8bitbytes-hexstrings-conversions)
+  :short "Convert an even-length string of hexadecimal digit characters
+          to a list of natural numbers below 256."
+  :long
+  (xdoc::topp
+   "Each pair of hexadecimal digit characters is turned into sa number.
+    Each such two-digit hexadecimal notation is treated as big endian,
+    i.e. the most significant digit appears first.")
+  (hexchars=>ubyte8s (explode string)))
