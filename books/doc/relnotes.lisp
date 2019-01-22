@@ -365,6 +365,11 @@
  in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
  to it is not allowed; writing to a code segment is not allowed either.</p>
 
+ <p>Extended effective-to-linear address translation to check that the visible
+ part of the DS, ES, FS, and GS segment registers does not contain a null
+ segment selector.  A similar check on CS and SS is not needed because a null
+ segment selector cannot be loaded into these two segment registers.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
