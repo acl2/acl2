@@ -21,6 +21,7 @@
                          access-event-tuple-type
                          all-ffn-symbs
                          all-pkgs-in-world
+                         alpha/digit-chars
                          alpha/digit/dash-charlist-p
                          alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
@@ -82,7 +83,6 @@
                          upper-case-p
                          variablep
                          str::chars-in-charset-p
-                         str::defcharset
                          str::natchars16
                          str::natstr
                          str::strtok)))

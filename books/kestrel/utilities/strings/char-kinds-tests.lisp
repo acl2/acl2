@@ -16,6 +16,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (alpha/digit-char-p #\a))
+
+(assert! (alpha/digit-char-p #\G))
+
+(assert! (alpha/digit-char-p #\5))
+
+(assert! (not (alpha/digit-char-p #\-)))
+
+(assert! (not (alpha/digit-char-p #\\)))
+
+(assert! (not (alpha/digit-char-p #\<)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (alpha/digit-charlist-p nil))
+
+(assert! (alpha/digit-charlist-p '(#\O #\5 #\a)))
+
+(assert! (not (alpha/digit-charlist-p '(#\a #\<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (alpha/digit/dash-char-p #\a))
 
 (assert! (alpha/digit/dash-char-p #\G))

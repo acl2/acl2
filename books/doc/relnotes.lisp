@@ -296,7 +296,7 @@
 
  <p>Redefined more compactly the predicates in
  @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
- str::defcharset).</p>
+ str::defcharset).  Added a new predicate.</p>
 
  <h4>System Utilities</h4>
 
