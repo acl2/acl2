@@ -282,7 +282,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (rule-classes (defdata::get1 :rule-classes kwd-alist)))
 
     `(DEFTHM ,(make-sym name 'CONTRACT)
-       (IMPLIES ,ic ,oc)
+       (IMPLIES (force ,ic) ,oc)
        ,@(and hints `(:HINTS ,hints))
        ,@(and rule-classes `(:RULE-CLASSES ,rule-classes))
        ,@(and otf-flg `(:OTF-FLG ,otf-flg))
@@ -302,7 +302,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  (and hints `(:HINTS ,hints))))
        (try-first-with-induct-and-tp
         `(DEFTHM ,contract-name
-           (IMPLIES ,ic ,oc)
+           (IMPLIES (force ,ic) ,oc)
            ,@rhints
            :rule-classes (:rewrite
                           :type-prescription
@@ -311,7 +311,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                           )))
        (try-with-induct
         `(DEFTHM ,contract-name
-           (IMPLIES ,ic ,oc)
+           (IMPLIES (force ,ic) ,oc)
            ,@ihints))
 
        (final-contract-defthm (make-contract-defthm name ic oc kwd-alist)))

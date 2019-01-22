@@ -50,7 +50,7 @@
   `(make-event
     (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
          (f-args ',(car args))
-         (pkg (acl2::symbol-package-name-safe ',name))
+         (pkg (current-package state))
          (f-type (intern$ ,(symbol-name (second args)) pkg))
          (d-args (evens f-args))
          (d-arg-types (odds f-args))
@@ -86,8 +86,8 @@ both expand into
     :stack :push :off :all
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+          (pkg (current-package state))
           (f-args ',(car args))
-          (pkg (acl2::symbol-package-name-safe ',name))
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
