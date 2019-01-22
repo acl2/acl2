@@ -12,8 +12,6 @@
 
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 (include-book "std/strings/hex" :dir :system)
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexchars ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (chars character-listp)
+  :returns (chars str::hex-digit-listp)
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert a list of natural numbers below 256
           to a sequence of hexadecimal digit characters."
@@ -47,7 +45,7 @@
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
-                                  (rev-chars character-listp))
+                                  (rev-chars str::hex-digit-listp))
      (cond ((endp bytes) (rev rev-chars))
            (t (b* ((digits (str::natchars16 (car bytes)))
                    (digits (if (= (len digits) 2)

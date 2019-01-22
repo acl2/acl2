@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexstring ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (string stringp)
+  :returns (string str::hex-digit-string-p)
   :parents (8bitbytes-hexstrings-conversions)
   :short "Convert a list of natural numbers below 256
           to a string of hexadecimal digits."

@@ -292,7 +292,7 @@
 
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>Added new lemmas and generalized some existing lemmas.</p>
+ <p>Added new lemmas and generalized and improved some existing lemmas.</p>
 
  <p>Redefined more compactly the predicates in
  @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
