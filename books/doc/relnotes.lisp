@@ -294,6 +294,10 @@
 
  <p>Added new lemmas and generalized some existing lemmas.</p>
 
+ <p>Redefined more compactly the predicates in
+ @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
+ str::defcharset).</p>
+
  <h4>System Utilities</h4>
 
  <p>The new utility @(tsee sublis-expr+) replaces terms by variables even

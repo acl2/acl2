@@ -109,7 +109,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))
+       (nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-start nil nil
@@ -170,7 +170,7 @@
    Check whether @('x') consists of zero or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))))
+       (nondigit-charlist-p (explode x))))
 
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
@@ -230,7 +230,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))
+       (nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-wildcard nil nil

@@ -17,7 +17,7 @@
 (defpkg "ABNF" (set-difference-eq
                 (append *std-pkg-symbols*
                         '(add-const-to-untranslate-preprocess
-                          alpha/digit/dash-char-listp
+                          alpha/digit/dash-charlist-p
                           bool
                           char-fix
                           chars=>nats
