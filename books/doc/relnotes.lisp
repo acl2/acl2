@@ -115,6 +115,14 @@
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
  set of natural numbers.</p>
 
+ <h4><see topic='@(url event-macros)'>Event Macros</see></h4>
+
+ <p>Started a library of concepts and utilities to develop event
+ macros (i.e. macros at the event level) more quickly and consistently.</p>
+
+ <p>Added some XDOC constructor utilities for the reference documentation of
+ event macros.</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -157,7 +165,7 @@
 
  <p>Improved and extended some documentation.</p>
 
- <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+ <p>Added some XDOC constructor utilities tailored to APT transformations.</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
@@ -303,6 +311,10 @@
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
 
+ <p>Added utilities @(tsee macro-keyword-args) and @(tsee macro-keyword-args+)
+ to retrieve an alist of the keyword arguments of a macro, associated to their
+ default values.</p>
+
  <h4>Typed List Utilities</h4>
 
  <p>Refactored the old file
@@ -352,6 +364,11 @@
  memory functions to take into account the W bit of data segment descriptors,
  in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
  to it is not allowed; writing to a code segment is not allowed either.</p>
+
+ <p>Extended effective-to-linear address translation to check that the visible
+ part of the DS, ES, FS, and GS segment registers does not contain a null
+ segment selector.  A similar check on CS and SS is not needed because a null
+ segment selector cannot be loaded into these two segment registers.</p>
 
  <p>Improved and extended some documentation.</p>
 

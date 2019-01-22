@@ -34,9 +34,6 @@
 
 (include-book "../lib3.delta2/round") ;floating-point rounding
 
-(include-book "../lib3.delta2/add") ;support for reasoning about floating-point addition
-;                      (leading one prediction and sticky bit computation)
-
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 
@@ -60,7 +57,5 @@
 
 (include-book "../lib3.delta2/logn2log")
 
-
-(include-book "../lib3.delta1/srt")
 
 (include-book "../lib3.delta3/round")

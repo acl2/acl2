@@ -14,9 +14,7 @@
 
 (include-book "verify-guards")
 
-(include-book "../rel9-rtl-pkg/lib/add")
-
-(include-book "./lza")
+(include-book "./add")
 
 (include-book "./mult")
 
@@ -25,8 +23,6 @@
 (include-book "./srt")
 
 (include-book "./gl")
-
-(include-book "./masc")
 
 (include-book "./basic")
 

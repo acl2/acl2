@@ -179,22 +179,3 @@
 		    (- (1- (expt 2 (- (1+ i) j))) (bits x i j))))
   :hints (("Goal" :in-theory (enable bits bits-lognot-3)
 		  :use ((:instance fl-m-n (m (- (mod x (expt 2 (1+ i))))) (n (expt 2 j)))))))
-
-;;Add to add.lisp, after bits-sum:
-
-(defthm bits-sum-shift
-    (implies (and (integerp x)
-		  (integerp y)
-		  (natp i)
-		  (natp j)
-		  (> j 0)
-		  (>= i j))
-           (equal (bits (+ (* (expt 2 j) x) y) i j)
-                  (bits (+ (bits (* (expt 2 j) x) i j)
-                           (bits y i j))
-                        (- i j) 0)))
-  :rule-classes ()
-  :hints (("Goal" :in-theory (enable gen-val)
-		  :use ((:instance bits-sum (x (* (expt 2 j) x)))
-			(:instance bits-bounds (x y) (i (1- j)) (j 0))
-			(:instance bits-shift-up-2 (k j) (i -1))))))

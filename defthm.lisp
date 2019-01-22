@@ -11523,13 +11523,6 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg)
-  (list 'thm-fn
-        (list 'quote term)
-        'state
-        (list 'quote hints)
-        (list 'quote otf-flg)))
-
 (defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
@@ -11555,6 +11548,26 @@
                 (fms "Proof succeeded.~%" nil
                      (proofs-co state) state nil))
            (value :invisible))))
+
+(defmacro thm (term &key hints otf-flg)
+
+; We started using make-event here in January, 2019.  Instead of defining
+; thm-fn above and generating a call of it below, we could presumably generate
+; a new name and instead call defthm with that name, adding :rule-classes nil.
+; But to reduce risk and potential churn we decided, when introducing
+; make-event here, to continue with the existing definition of thm-fn, and
+; essentially the same use of thm-fn.  It seems very reasonable to try the
+; defthm approach instead if someone wants to do that.
+
+  `(with-output :off summary :stack :push
+     (make-event (er-progn (with-output :stack :pop
+                             (thm-fn ',term
+                                     state
+                                     ',hints
+                                     ',otf-flg))
+                           (value '(value-triple :invisible)))
+                 :expansion? (value-triple :invisible)
+                 :on-behalf-of :quiet!)))
 
 ; Note:  During boot-strapping the thm macro is unavailable because it is
 ; not one of the *initial-event-defmacros*.

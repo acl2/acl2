@@ -14,6 +14,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
@@ -997,7 +998,7 @@
 
 (define macro-required-args+ ((mac (macro-namep mac wrld))
                               (wrld plist-worldp))
-  :returns (required-args "A @(tsee symbol-listp).")
+  :returns (required-args symbol-listp)
   :parents (world-queries)
   :short "Logic-friendly variant of @(tsee macro-required-args)."
   :long
@@ -1005,13 +1006,9 @@
    This returns the same result as @(tsee macro-required-args),
    but it has a stronger guard,
    is guard-verified,
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
+   and includes run-time checks (which should always succeed)
+   that allows us to prove the return type theorem and to verify guards
    without strengthening the guard on @('wrld').
-   This utility also includes run-time checks (which should always succeed)
-   that the required arguments of the macro are symbols,
-   allowing us to verify the guards
-   without strengthening the guard of @('wrld').
    </p>"
   (b* ((all-args (macro-args+ mac wrld)))
     (if (null all-args)
@@ -1035,12 +1032,95 @@
                (macro-required-args+-aux mac
                                          (cdr args)
                                          (cons arg rev-result))
-             (hard-error 'macro-required-args+
-                         "Internal error: ~
-                          the required macro argument ~x0 of ~x1 ~
-                          is not a symbol."
-                         (list (cons #\0 arg)
-                               (cons #\1 mac))))))))))
+             (raise "Internal error: ~
+                     the required macro argument ~x0 of ~x1 is not a symbol."
+                    arg mac))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-keyword-args ((mac symbolp) (wrld plist-worldp))
+  :returns (keyword-args "A @(tsee symbol-alistp).")
+  :verify-guards nil
+  :parents (world-queries)
+  :short "Keyword arguments of a macro, in order, with their default values."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Starting from the full argument list of the macro,
+     first we find @('&key') in the list;
+     if not found, we return @('nil') (i.e. no keyword arguments).
+     Otherwise, we scan and collect information from the remaining arguments,
+     until we reach either the end of the macro argument list
+     or a symbol starting with @('&...').")
+   (xdoc::p
+    "Keyword arguments have one of the forms
+     @('name'), @('(name \'default)'), @('(name \'default predicate)'),
+     where @('name') is the argument name (a symbol)
+     @('default') its default value (quoted),
+     and @('predicate') is another symbol.
+     When we scan a keyword argument,
+     we put name and default value as a pair into an alist.")
+   (xdoc::p
+    "See @(tsee macro-keyword-args) for
+     a logic-friendly variant of this utility."))
+  (b* ((all-args (macro-args mac wrld))
+       (args-after-&key (cdr (member-eq '&key all-args)))
+       (keyword-args (macro-keyword-args-aux args-after-&key)))
+    keyword-args)
+
+  :prepwork
+  ((define macro-keyword-args-aux ((args true-listp))
+     :returns keyword-args ; SYMBOL-ALISTP
+     :verify-guards nil
+     :parents nil
+     (b* (((when (endp args)) nil)
+          (arg (car args))
+          ((when (lambda-keywordp arg)) nil)
+          (name (if (atom arg) arg (first arg)))
+          (default (if (atom arg) nil (unquote (second arg)))))
+       (acons name default (macro-keyword-args-aux (cdr args)))))))
+
+(define macro-keyword-args+ ((mac (macro-namep mac wrld))
+                             (wrld plist-worldp))
+  :returns (keyword-args symbol-alistp)
+  :parents (world-queries)
+  :short "Logic-friendly variant of @(tsee macro-keyword-args)."
+  :long
+  (xdoc::topp
+   "This returns the same result as @(tsee macro-keyword-args),
+    but it has a stronger guard,
+    is guard-verified,
+    and includes run-time checks (which should always succeed)
+    that allow us to prove the return type theorem and to verify the guards
+    without strengthening the guard on @('wrld').")
+  (b* ((all-args (macro-args+ mac wrld))
+       (args-after-&key (cdr (member-eq '&key all-args)))
+       (keyword-args (macro-keyword-args+-aux mac args-after-&key)))
+    keyword-args)
+
+  :prepwork
+  ((define macro-keyword-args+-aux ((mac symbolp) args)
+     :returns (keyword-args symbol-alistp)
+     :verify-guards :after-returns
+     :parents nil ; override default
+     (b* (((when (atom args)) nil)
+          (arg (car args))
+          ((when (lambda-keywordp arg)) nil)
+          ((when (symbolp arg))
+           (acons arg nil (macro-keyword-args+-aux mac (cdr args))))
+          ((unless (and (consp arg)
+                        (symbolp (first arg))
+                        (consp (cdr arg))
+                        (consp (second arg))
+                        (eq (car (second arg)) 'quote)
+                        (consp (cdr (second arg)))))
+           (raise "Internal error: ~
+                   the keyword macro argument ~x0 of ~x1 ~
+                   does not have the expected form."
+                  arg mac)))
+       (acons (first arg)
+              (unquote (second arg))
+              (macro-keyword-args+-aux mac (cdr args)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
