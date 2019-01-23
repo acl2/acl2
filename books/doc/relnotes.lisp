@@ -397,8 +397,10 @@
 
  <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
  inputs known to be equivalent or opposite to each other, not just to
- constants.</p>
-
+ constants.  Added @(see aignet::obs-constprop) that combines this
+ with the existing observability transform, which works better than running
+ the two transforms separately.</p>
+ 
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>

@@ -98,5 +98,8 @@ satlink) to solve queries."
        (defattach bfr-counterex-mode bfr-counterex-alist)
        (defattach (bfr-sat bfr-satlink)
          :hints(("Goal" :in-theory (enable bfr-eval))))
+       (defattach (bfr-vacuity-check
+                   bfr-sat)
+         :hints (("goal" :use bfr-sat-unsat)))
        (defattach #!aignet (aig->cnf-aignet-transform aig->cnf-default-aignet-transform)))))
 

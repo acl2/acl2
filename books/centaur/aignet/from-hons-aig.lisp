@@ -2782,6 +2782,17 @@
                   (aignet-bitarr-to-aig-env vars bitarr))
            :hints(("Goal" :in-theory (enable aignet-bitarr-to-aig-env)))))
 
+  ;; ;; BOZO this otherwise nice rule causes a mismatch in normal forms below,
+  ;; ;; could be solved by proving a similar rule about aignet-eval-to-env.
+
+  ;; ;; (local (in-theory (disable lit-eval-of-take-num-regs)))
+
+  (local (defthm aignet-eval-to-env-of-take-num-regs
+           (implies (equal (nfix n) (num-regs aignet))
+                    (equal (aignet-eval-to-env varmap invals (take n regvals) aignet)
+                           (aignet-eval-to-env varmap invals regvals aignet)))
+           :hints(("Goal" :in-theory (enable aignet-eval-to-env)))))
+
   (defthm-reg-eval-of-aig-fsm-to-aignet-ind-flag
     (defthm frame-regvals-of-aig-fsm-to-aignet
       (b* (((mv aignet ?varmap ?invars ?regvars)
@@ -2797,7 +2808,7 @@
                                         (nth (1- k) (aig-fsm-states regs aig-initst aig-ins))))))
       :hints ((and stable-under-simplificationp
                    `(:expand (,(car (last clause)))
-                     :in-theory (enable reg-eval-seq acl2::aig-env-lookup))))
+                     :in-theory (e/d (reg-eval-seq acl2::aig-env-lookup)))))
       :flag frame-regvals-of-aig-fsm-to-aignet-ind)
 
     (defthm reg-eval-of-aig-fsm-to-aignet

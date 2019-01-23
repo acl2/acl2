@@ -1525,42 +1525,6 @@
 
     ;; (local (in-theory (enable co-node->fanin)))
 
-    (defthm id-eval-of-take-num-ins
-      (equal (id-eval id (take (stype-count :pi aignet) invals)
-                      regvals aignet)
-             (id-eval id invals regvals aignet))
-      :hints (("goal" :induct (id-eval-ind id aignet)
-               :expand ((:free (invals regvals)
-                         (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-    (defthm id-eval-of-take-num-regs
-      (equal (id-eval id invals
-                      (take (stype-count :reg aignet) regvals)
-                      aignet)
-             (id-eval id invals regvals aignet))
-      :hints (("goal" :induct (id-eval-ind id aignet)
-               :expand ((:free (invals regvals)
-                         (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-    (defthm lit-eval-of-take-num-ins
-      (equal (lit-eval lit (take (stype-count :pi aignet) invals)
-                       regvals aignet)
-             (lit-eval lit invals regvals aignet))
-      :hints(("Goal"
-              :expand ((:free (invals regvals)
-                        (lit-eval lit invals regvals aignet))))))
-
-    ;; (defthm lit-eval-of-take-num-regs
-    ;;   (equal (lit-eval lit invals
-    ;;                    (take (stype-count :reg aignet) regvals)
-    ;;                    aignet)
-    ;;          (lit-eval lit invals regvals aignet))
-    ;;   :hints(("Goal"
-    ;;           :expand ((:free (invals regvals)
-    ;;                     (lit-eval lit invals regvals aignet))))))
-
     (defthm eval-output-of-aignet-complete-copy-aux
       (b* (((mv & & aignet2) (aignet-complete-copy-aux aignet copy gatesimp
                                                        strash aignet2)))
@@ -2178,33 +2142,6 @@ aignet when its initial value is the specified vector:</p>
 
     ;; (local (in-theory (enable co-node->fanin)))
 
-    (defthm id-eval-of-take-num-ins
-      (equal (id-eval id (take (stype-count :pi aignet) invals)
-                      regvals aignet)
-             (id-eval id invals regvals aignet))
-      :hints (("goal" :induct (id-eval-ind id aignet)
-               :expand ((:free (invals regvals)
-                         (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-    (defthm id-eval-of-take-num-regs
-      (equal (id-eval id invals
-                      (take (stype-count :reg aignet) regvals)
-                      aignet)
-             (id-eval id invals regvals aignet))
-      :hints (("goal" :induct (id-eval-ind id aignet)
-               :expand ((:free (invals regvals)
-                         (id-eval id invals regvals aignet)))
-               :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))))
-
-    (defthm lit-eval-of-take-num-ins
-      (equal (lit-eval lit (take (stype-count :pi aignet) invals)
-                       regvals aignet)
-             (lit-eval lit invals regvals aignet))
-      :hints(("Goal"
-              :expand ((:free (invals regvals)
-                        (lit-eval lit invals regvals aignet))))))
-
 
     (defthm eval-output-of-aignet-copy-init-aux
       (implies (< (nfix n) (num-outs aignet))
@@ -2349,26 +2286,17 @@ aignet when its initial value is the specified vector:</p>
   (defcong bits-equiv bits-equiv (take n x) 2)
 
   (local (defthm lit-eval-b-xor-lst-take-subst
-           (equal (lit-eval id ins
+           (equal (lit-eval lit ins
                            (b-xor-lst x (take (stype-count :reg aignet) y))
                            aignet)
-                  (lit-eval id ins
+                  (lit-eval lit ins
                             (b-xor-lst x y) aignet))
            :hints (("goal" :use ((:instance lit-eval-of-take-num-regs
                                   (invals ins)
+                                  (n (num-regs aignet))
                                   (regvals
-                                   (b-xor-lst x (take (stype-count :reg aignet) y)))))))))
-
-  (local (defthm lit-eval-of-take-num-regs-strong
-           (implies (equal nregs (stype-count :reg aignet))
-                    (equal (lit-eval lit invals
-                                     (take nregs regvals)
-                                     aignet)
-                           (lit-eval lit invals regvals aignet)))
-           :hints(("Goal"
-                   :expand ((:free (invals regvals)
-                             (lit-eval lit invals regvals aignet)))))))
-
+                                   (b-xor-lst x (take (stype-count :reg aignet) y)))))
+                    :do-not-induct t))))
 
 
   (defthm frame-regvals-of-aignet-copy-init
