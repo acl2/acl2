@@ -33,7 +33,7 @@
 
 (include-book "ipasir-tools")
 (include-book "ipasir-backend")
-(include-book "centaur/misc/arith-equiv-defs" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (local (define triv (state)

@@ -7,7 +7,7 @@
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "centaur/misc/u32-listp" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
-(include-book "centaur/misc/iffstar" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
 
 ;; (include-book "std/stobjs/rewrites" :dir :system)

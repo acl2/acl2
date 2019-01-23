@@ -36,7 +36,7 @@
 ;; ============================ INCLUDES =============================
 
 ;; This book defines the b* macro for easy bindings in function definitions.
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 ;; This book introduces a macro called "define" that is a more powerful way to
 ;; define functions (as opposed to "defun").

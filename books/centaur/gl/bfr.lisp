@@ -36,7 +36,7 @@
 (include-book "centaur/aig/misc" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/fty/fixtype" :dir :system)
-(include-book "centaur/misc/iffstar" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "centaur/aig/aig-vars" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 

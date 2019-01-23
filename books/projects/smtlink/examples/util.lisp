@@ -1,6 +1,6 @@
 (in-package "SMT")
 (include-book "std/util/define" :dir :system)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "centaur/fty/top" :dir :system) ; for defalist, etc.
 (include-book "../top")
 
