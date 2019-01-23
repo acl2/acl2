@@ -1165,35 +1165,6 @@
 
 ;;;;
 
-;; (defthm logand-expt-4
-;;   (implies (and (integerp n) (>= n 0)
-;;                 (integerp k) (>= k 0)
-;;                 (integerp l) (>= l 0) (< l k)
-;;                 (<= k n))
-;;            (= (logand (- (1- (expt 2 n)) (expt 2 l))
-;;                       (- (expt 2 n) (expt 2 k)))
-;;               (- (expt 2 n) (expt 2 k))))
-;;   :rule-classes ()
-;;   :hints (("goal" :hands-off (expt mod fl)
-;;            :use ((:instance logand-expt-4-10)
-;;                  (:instance expt-split (r 2) (i (- n k)) (j k))))))
-
-(encapsulate ()
-     (local (include-book "../support/merge"))
-
-
-     (defthmd logand-expt-4-g
-       (implies (and (natp n)
-                     (natp k)
-                     (natp l)
-                     (< l k)
-                     (<= k n))
-                (equal (logand (- (1- (expt 2 n)) (expt 2 l)) (- (expt 2 n) (expt 2 k)))
-                       (- (expt 2 n) (expt 2 k))))
-       :hints (("Goal" :use ((:instance logand-expt-4)))))
-       )
-
-
 (defthmd lognot-shift
   (implies (and (integerp x)
                 (natp k))

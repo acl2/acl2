@@ -806,12 +806,23 @@
 
 (assert-equal (macro-required-args 'list (w state)) nil)
 
+(assert-equal (macro-required-args 'defun (w state)) nil)
+
+(assert-equal (macro-required-args 'defthm (w state)) '(name term))
+
+(assert-equal (macro-required-args 'defun-sk (w state)) '(name args))
+
 (must-succeed*
  (defmacro m (a) `(list ,a))
  (assert-equal (macro-required-args 'm (w state)) '(a)))
 
 (must-succeed*
  (defmacro m (a &key b) `(list ,a ,(or b :default)))
+ (assert-equal (macro-required-args 'm (w state)) '(a)))
+
+(must-succeed*
+ (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
+   `(list ,a ,b ,c ,d ,e ,e-p ,form))
  (assert-equal (macro-required-args 'm (w state)) '(a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -820,6 +831,12 @@
 
 (assert-equal (macro-required-args+ 'list (w state)) nil)
 
+(assert-equal (macro-required-args+ 'defun (w state)) nil)
+
+(assert-equal (macro-required-args+ 'defthm (w state)) '(name term))
+
+(assert-equal (macro-required-args+ 'defun-sk (w state)) '(name args))
+
 (must-succeed*
  (defmacro m (a) `(list ,a))
  (assert-equal (macro-required-args+ 'm (w state)) '(a)))
@@ -827,6 +844,73 @@
 (must-succeed*
  (defmacro m (a &key b) `(list ,a ,(or b :default)))
  (assert-equal (macro-required-args+ 'm (w state)) '(a)))
+
+(must-succeed*
+ (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
+   `(list ,a ,b ,c ,d ,e ,e-p ,form))
+ (assert-equal (macro-required-args+ 'm (w state)) '(a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (macro-keyword-args 'tthm (w state)) nil)
+
+(assert-equal (macro-keyword-args 'list (w state)) nil)
+
+(assert-equal (macro-keyword-args 'defun (w state)) nil)
+
+(assert-equal
+ (macro-keyword-args 'defthm (w state)) '((rule-classes . (:rewrite))
+                                          (instructions . nil)
+                                          (hints . nil)
+                                          (otf-flg . nil)))
+
+(assert-equal (macro-keyword-args 'defun-sk (w state)) nil)
+
+(must-succeed*
+ (defmacro m (a) `(list ,a))
+ (assert-equal (macro-keyword-args 'm (w state)) nil))
+
+(must-succeed*
+ (defmacro m (a &key b) `(list ,a ,(or b :default)))
+ (assert-equal (macro-keyword-args 'm (w state)) '((b . nil))))
+
+(must-succeed*
+ (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
+   `(list ,a ,b ,c ,d ,e ,e-p ,form))
+ (assert-equal (macro-keyword-args 'm (w state)) '((c . nil)
+                                                   (d . 3)
+                                                   (e . #\e))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (macro-keyword-args+ 'tthm (w state)) nil)
+
+(assert-equal (macro-keyword-args+ 'list (w state)) nil)
+
+(assert-equal (macro-keyword-args+ 'defun (w state)) nil)
+
+(assert-equal
+ (macro-keyword-args+ 'defthm (w state)) '((rule-classes . (:rewrite))
+                                           (instructions . nil)
+                                           (hints . nil)
+                                           (otf-flg . nil)))
+
+(assert-equal (macro-keyword-args+ 'defun-sk (w state)) nil)
+
+(must-succeed*
+ (defmacro m (a) `(list ,a))
+ (assert-equal (macro-keyword-args+ 'm (w state)) nil))
+
+(must-succeed*
+ (defmacro m (a &key b) `(list ,a ,(or b :default)))
+ (assert-equal (macro-keyword-args+ 'm (w state)) '((b . nil))))
+
+(must-succeed*
+ (defmacro m (&whole form a &optional b &key c (d '3) (e '#\e e-p))
+   `(list ,a ,b ,c ,d ,e ,e-p ,form))
+ (assert-equal (macro-keyword-args+ 'm (w state)) '((c . nil)
+                                                    (d . 3)
+                                                    (e . #\e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

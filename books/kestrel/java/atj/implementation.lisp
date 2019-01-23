@@ -153,12 +153,6 @@
         (t (cons (unquote (car list))
                  (atj-unquote-lst (cdr list))))))
 
-(defcharset alpha/digit
-  (or (and (standard-char-p x)
-           (alpha-char-p x))
-      (and (digit-char-p x) t))
-  :short "Recognize letters and digits.")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-input-processing
@@ -275,7 +269,7 @@
        (b* ((chars (explode string)))
          (and (consp chars)
               (alpha/uscore/dollar-char-p (car chars))
-              (alpha/digit/uscore/dollar-char-listp (cdr chars))))))
+              (alpha/digit/uscore/dollar-charlist-p (cdr chars))))))
 
 (std::deflist atj-string-ascii-java-identifier-listp (x)
   (atj-string-ascii-java-identifier-p x)
@@ -1182,7 +1176,7 @@
      can always be safely printed as Java string literals.
      So, for example, @(tsee atj-gen-package-name) always does that."))
   (b* ((chars (explode string)))
-    (if (printable-char-listp chars)
+    (if (printable-charlist-p chars)
         (msg "~x0" string)
       (msg "new String(new char[]{~s0})"
            (implode (atj-chars-to-comma-sep-hex (explode string))))))

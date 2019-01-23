@@ -21,8 +21,9 @@
                          access-event-tuple-type
                          all-ffn-symbs
                          all-pkgs-in-world
-                         alpha/digit/dash-char-listp
-                         alpha/digit/uscore/dollar-char-listp
+                         alpha/digit-chars
+                         alpha/digit/dash-charlist-p
+                         alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
                          body
                          bool
@@ -63,7 +64,7 @@
                          partition-rest-and-keyword-args
                          patbind-run-when
                          primitivep
-                         printable-char-listp
+                         printable-charlist-p
                          pseudo-termfnp
                          quote-listp
                          sbyte16
@@ -82,7 +83,6 @@
                          upper-case-p
                          variablep
                          str::chars-in-charset-p
-                         str::defcharset
                          str::natchars16
                          str::natstr
                          str::strtok)))

@@ -5,12 +5,17 @@
 
 <H1><A NAME="top"><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/index.html">ACL2</a> Version 8.1 Installation Guide</A></H1>
 
+<!-- If an incremental release is made, consider adding something here --
+  -- like the following: --
+
 <H3>NOTE: From time to time we may provide so-called <i>incremental
 releases</i> of ACL2.  Please follow the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/new.html">recent changes
 to this page</a> link on the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</a> for more
 information.</H3>
+
+-->
 
 <hr size=3 noshade>
 
@@ -36,8 +41,8 @@ obtained or explored separately</a>.
 <li>Connect to a directory whose full pathname contains no whitespace
 and which does not already contain a subdirectory
 named <code>acl2-sources</code> or <code>acl2-8.1</code>.  Then use
-either of the following two methods to obtain the ACL2 source code and
-community books.
+<font color="red">either</font> of the following two methods to obtain
+the ACL2 source code and community books.
 
   <ul>
 
@@ -59,22 +64,22 @@ community books.
 
   </ul>
 
-</li>
+</li><p/>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
-already have one.</li>
+already have one.</li><p/>
 
 <li>Type:
 <pre>
 make LISP=&lt;path_to_your_lisp_executable&gt;
-</pre></li>
+</pre>
 This will create a script in your connected directory
    for running ACL2.  The script is named <code>saved_acl2</code>.<br/>
 <font color="red">Note:</font> You will need Gnu make.  We have seen
 problems on some Linux systems with Version 3.81 of that utility, so
 if you encounter errors, please consider
 our <a href="installing-make.html">instructions for downloading and
-installing GNU make version 3.80</a>.
+installing GNU make version 3.80</a>.</li><p/>
 
 <li><A NAME="certify-books">Certify books, for example with
 <pre>
@@ -91,7 +96,14 @@ resulting log file, <code>make-certify-books.log</code>, should
 contain no occurrences of the string ``CERTIFICATION FAILED''; a
 normal exit (status 0) should guarantee this.  If you want additional
 explanation and further options, see the documentation
-for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>;
+for example, use of the target, <code>basic</code>, as in
+<pre>
+cd books ; make -j 8 ACL2=&lt;path_to_acl2&gt; basic
+</pre>
+will take considerably less time (perhaps as little as 5 minutes
+instead of several hours) than using the
+target <code>certify-books</code>.
 
 </ol>
 
@@ -143,8 +155,12 @@ NEED.</font></b> Otherwise, read on....
   <LI><A HREF="misc.html#License-and-Copyright">License and Copyright</A>
 </UL>
 </UL>
-<P>
 
+<P>Note: To build variants of ACL2, see the documentation
+  topic <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=COMMON-LISP____REAL">REAL</a>
+  for ACL2(r)
+  and <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMPILING-ACL2P">COMPILING-ACL2P</a>
+  for ACL2(p).</P>
 
 </BODY>
 </HTML>

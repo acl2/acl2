@@ -12,8 +12,6 @@
 
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 (include-book "std/strings/hex" :dir :system)
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexchars ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (chars character-listp)
+  :returns (chars str::hex-digit-listp)
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert a list of natural numbers below 256
           to a sequence of hexadecimal digit characters."
@@ -47,7 +45,7 @@
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
-                                  (rev-chars character-listp))
+                                  (rev-chars str::hex-digit-listp))
      (cond ((endp bytes) (rev rev-chars))
            (t (b* ((digits (str::natchars16 (car bytes)))
                    (digits (if (= (len digits) 2)
@@ -94,3 +92,50 @@
        :rule-classes :linear
        :enable str::natchars16
        :prep-books ((include-book "std/lists/len" :dir :system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hexchars=>ubyte8s ((chars (and (str::hex-digit-listp chars)
+                                       (true-listp chars)
+                                       (evenp (len chars)))))
+  :returns (bytes (unsigned-byte-listp 8 bytes))
+  :parents (8bitbytes-hexchars-conversions)
+  :short "Convert an even-length sequence of hexadecimal digit characters
+          to a list of natural numbers below 256."
+  :long
+  (xdoc::topp
+   "Each pair of hexadecimal digit characters is turned into sa number.
+    Each such two-digit hexadecimal notation is treated as big endian,
+    i.e. the most significant digit appears first.")
+  (mbe :logic (cond ((endp chars) nil)
+                    (t (b* ((hi-digit (str::hex-digit-val (car chars)))
+                            (lo-digit (str::hex-digit-val (cadr chars)))
+                            (byte (+ (* hi-digit 16) lo-digit))
+                            (bytes (hexchars=>ubyte8s (cddr chars))))
+                         (cons byte bytes))))
+       :exec (hexchars=>ubyte8s-aux chars nil))
+
+  :prepwork
+  ((define hexchars=>ubyte8s-aux ((chars (and (str::hex-digit-listp chars)
+                                              (true-listp chars)
+                                              (evenp (len chars))))
+                                  (rev-bytes (unsigned-byte-listp 8 rev-bytes)))
+     (cond ((endp chars) (rev rev-bytes))
+           (t (b* ((hi-digit (str::hex-digit-val (car chars)))
+                   (lo-digit (str::hex-digit-val (cadr chars)))
+                   (byte (+ (* hi-digit 16) lo-digit)))
+                (hexchars=>ubyte8s-aux (cddr chars) (cons byte rev-bytes)))))
+     :enabled t))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (defrulel verify-guards-lemma
+    (implies (and (str::hex-digit-listp chars)
+                  (true-listp chars)
+                  (evenp (len chars)))
+             (equal (hexchars=>ubyte8s-aux chars rev-bytes)
+                    (revappend rev-bytes (hexchars=>ubyte8s chars)))))
+
+  (verify-guards hexchars=>ubyte8s))

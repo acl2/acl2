@@ -15,7 +15,9 @@
   (cond ((equal type 'tl) 'acl2::true-listp)
         ((equal type 'int) 'acl2::integerp)
         ((equal type 'bool) 'acl2::booleanp)
-        (t (get-alist :predicate (get-alist type tbl)))))
+        (t (let ((res (get-alist :predicate (get-alist type tbl))))
+             (or res
+                 (er hard 'Definec "~%**Unknown type in definec**: ~x0 is not a known type name.~%" type ))))))
 
 (defun map-preds (types pkg tbl)
   (if (endp types)
@@ -48,7 +50,7 @@
   `(make-event
     (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
          (f-args ',(car args))
-         (pkg (acl2::symbol-package-name-safe ',name))
+         (pkg (current-package state))
          (f-type (intern$ ,(symbol-name (second args)) pkg))
          (d-args (evens f-args))
          (d-arg-types (odds f-args))
@@ -84,8 +86,8 @@ both expand into
     :stack :push :off :all
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+          (pkg (current-package state))
           (f-args ',(car args))
-          (pkg (acl2::symbol-package-name-safe ',name))
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
@@ -96,6 +98,10 @@ both expand into
           (fc-name (intern$ ,(concatenate 'acl2::string (symbol-name name) 
                                           "-DEFINEC-FC-RULE")
                             pkg))
+          (f-contract-name
+           (intern$ ,(concatenate 'acl2::string (symbol-name name)
+                                  "-CONTRACT")
+                    pkg))
           (defunc `(defunc ,',name ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
@@ -103,6 +109,10 @@ both expand into
           (defthm (if (equal oc t)
                       '(value-triple :passed)
                     `(defthm ,fc-name (implies (force ,ic) ,oc)
+                       :hints (("goal"
+                                :instructions ((dv 1) r))
+                               ("goal'"
+                                :by ,f-contract-name))
                        :rule-classes
                        ((:forward-chaining
                          :trigger-terms ((,',name ,@d-args))))))))

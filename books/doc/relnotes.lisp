@@ -115,6 +115,14 @@
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
  set of natural numbers.</p>
 
+ <h4><see topic='@(url event-macros)'>Event Macros</see></h4>
+
+ <p>Started a library of concepts and utilities to develop event
+ macros (i.e. macros at the event level) more quickly and consistently.</p>
+
+ <p>Added some XDOC constructor utilities for the reference documentation of
+ event macros.</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -157,7 +165,7 @@
 
  <p>Improved and extended some documentation.</p>
 
- <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+ <p>Added some XDOC constructor utilities tailored to APT transformations.</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
@@ -284,7 +292,14 @@
 
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>Added new lemmas and generalized some existing lemmas.</p>
+ <p>Added new lemmas and generalized and improved some existing lemmas.</p>
+
+ <p>Redefined more compactly the predicates in
+ @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
+ str::defcharset).  Added a new predicate.</p>
+
+ <p>Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
 
  <h4>System Utilities</h4>
 
@@ -302,6 +317,10 @@
  <p>For the event macro @(tsee orelse*), the default for the @(':expansion?p')
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
+
+ <p>Added utilities @(tsee macro-keyword-args) and @(tsee macro-keyword-args+)
+ to retrieve an alist of the keyword arguments of a macro, associated to their
+ default values.</p>
 
  <h4>Typed List Utilities</h4>
 
@@ -357,6 +376,11 @@
  easier to operate on them in order to automatically generate dispatch
  functions and documentation, and to precompute some kinds of decoding
  information.</p>
+
+ <p>Extended effective-to-linear address translation to check that the visible
+ part of the DS, ES, FS, and GS segment registers does not contain a null
+ segment selector.  A similar check on CS and SS is not needed because a null
+ segment selector cannot be loaded into these two segment registers.</p>
 
  <p>Improved and extended some documentation.</p>
 

@@ -23,5 +23,3 @@
 (include-book "float") ;floating-point numbers
 
 (include-book "round") ;floating-point rounding
-
-(include-book "add") ;support for reasoning about integer addition

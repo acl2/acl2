@@ -593,12 +593,6 @@
   (<= (lxor x y n) (lior x y n))
   :rule-classes (:rewrite :linear))
 
-(defthmd lior-plus
-  (implies (= (land x y n) 0)
-           (equal (lior x y n)
-                  (+ (bits x (1- n) 0)
-                     (bits y (1- n) 0)))))
-
 (defthmd land-with-shifted-arg
   (implies (and (integerp x)
 		(rationalp y)
@@ -684,58 +678,6 @@
 		(case-split (bvecp x n)))
 	   (equal (lxor k x n)
 		  (lnot x n))))
-
-(defthm land-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (land x (- (expt 2 i) (expt 2 j)) n)
-		  (* (expt 2 j) (bits x (1- i) j))))
-  :rule-classes ())
-
-(defthmd lior-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (lior x
-                        (- (expt 2 i) (expt 2 j))
-                        n)
-		  (cat (bits x (1- n) i)     (- n i)
-                       (1- (expt 2 (- i j))) (- i j)
-                       (bits x (1- j) 0)     j))))
-
-(defthmd lxor-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (lxor x
-                        (- (expt 2 i) (expt 2 j))
-                        n)
-		  (cat (bits x (1- n) i) (- n i)
-                       (lnot (bits x (1- i) j) (- i j)) (- i j)
-                       (bits x (1- j) 0) j))))
-
-(defthmd land-slices
-  (implies (and (natp n)
-                (natp l)
-                (natp k)
-                (<= l k)
-                (< k n))
-           (equal (land (- (expt 2 n) (1+ (expt 2 l)))
-                        (- (expt 2 n) (expt 2 k))
-                        n)
-                  (if (= l k)
-                      (- (expt 2 n) (expt 2 (1+ k)))
-                    (- (expt 2 n) (expt 2 k))))))
 
 
 ;;;**********************************************************************

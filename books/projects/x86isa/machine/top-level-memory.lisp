@@ -273,6 +273,7 @@
                (not (equal fld :seg-hidden-base))
                (not (equal fld :seg-hidden-limit))
                (not (equal fld :seg-hidden-attr))
+               (not (equal fld :seg-visible))
                (not (equal fld :msr)))
           (and
            (equal (mv-nth 0

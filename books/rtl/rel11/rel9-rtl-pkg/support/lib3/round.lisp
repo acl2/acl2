@@ -295,21 +295,6 @@
 ;;                                   (LAND X (- (EXPT 2 M) (EXPT 2 (- N K)))
 ;;                                         N)))
 ;;                       :RULE-CLASSES NIL)
-;;
-;;
-;; (defthm land-slice
-;;   (implies (and (<= j i) ;drop? or not?
-;;                 (<= i n)
-;;                 (integerp n)
-;;                 (integerp i)
-;;                 (integerp j)
-;;                 (<= 0 j)
-;;                 )
-;;            (equal (land x (- (expt 2 i) (expt 2 j)) n)
-;;                   (* (expt 2 j) (bits x (1- i) j))))
-;;   :hints (("Goal" :use land0-slice))
-;;   :rule-classes ())
-;;
 
 (defthm trunc-logand
   (implies (and (>= x (expt 2 (1- n)))
