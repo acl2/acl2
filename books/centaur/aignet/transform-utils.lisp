@@ -38,6 +38,9 @@
 (local (in-theory (disable acl2::resize-list-when-atom resize-list)))
 
 (defstobj-clone aignet-tmp aignet :suffix "TMP")
+(defstobj-clone copy2 copy :suffix "2")
+(defstobj-clone strash2 strash :suffix "2")
+
 
 (define count-xors-rec ((start natp) aignet (acc natp))
   :guard (<= start (num-fanins aignet))

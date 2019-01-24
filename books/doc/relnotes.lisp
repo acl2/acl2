@@ -292,7 +292,14 @@
 
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>Added new lemmas and generalized some existing lemmas.</p>
+ <p>Added new lemmas and generalized and improved some existing lemmas.</p>
+
+ <p>Redefined more compactly the predicates in
+ @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
+ str::defcharset).  Added a new predicate.</p>
+
+ <p>Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
 
  <h4>System Utilities</h4>
 
@@ -390,8 +397,10 @@
 
  <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
  inputs known to be equivalent or opposite to each other, not just to
- constants.</p>
-
+ constants.  Added @(see aignet::obs-constprop) that combines this
+ with the existing observability transform, which works better than running
+ the two transforms separately.</p>
+ 
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>

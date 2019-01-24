@@ -624,7 +624,10 @@ simulation.</p>"
              (bfr-sat bfr-sat-bdd)
              :hints (("goal" :in-theory '(bfr-sat-bdd-unsat))
                      (and stable-under-simplificationp
-                          '(:in-theory (enable bfr-sat-bdd))))))))
+                          '(:in-theory (enable bfr-sat-bdd)))))
+            (acl2::defattach (bfr-vacuity-check
+                              bfr-sat)
+              :hints (("goal" :use bfr-sat-unsat))))))
 
 ;; BDD mode is on by default -- the above defattaches are set up in bfr.lisp
 ;; and bfr-sat.lisp, respectively.

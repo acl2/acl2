@@ -91,13 +91,11 @@
   (savings :desc "savings computed" :abbrev "savings"))
 
 
-(defstobj-clone strash2 strash :suffix "2")
 
 ;; bozo redundant with balance.lisp
 (defstobj-clone refcounts2 u32arr :prefix "REFCOUNTS2-")
 ;; (defstobj-clone rwlib rwlib :prefix "RWLIB-")
 
-(defstobj-clone copy2 copy :suffix "2")
 ;; (defstobj-clone smm acl2::smm :strsubst (("abcd" . "abcd")))
 (defstobj-clone eba2 eba :suffix "2")
 (defstobj-clone eba3 eba :suffix "3")

@@ -18,7 +18,7 @@
 (include-book "supplemental/clause" :dir :itp13)
 (include-book "supplemental/evaluator" :dir :itp13)
 (include-book "supplemental/unit-propagation" :dir :itp13)
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 
 
