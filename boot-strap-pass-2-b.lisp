@@ -815,9 +815,12 @@
 
 (deftheory ground-zero
 
-; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
-; the ground-zero theory to be as expected.
+; We want to Keep this near the end of *acl2-pass-2-files* in order for the
+; ground-zero theory to be as expected; hence the assert$ below.
 
+  #-acl2-loop-only ; *acl2-pass-2-files* is only defined in raw Lisp.
+  (assert (equal (car (last *acl2-pass-2-files*))
+                  "boot-strap-pass-2-b.lisp"))
   (current-theory :here))
 
 (deflabel
