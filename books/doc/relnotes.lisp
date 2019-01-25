@@ -367,7 +367,7 @@
  @('defthm-usb') utility to also generate a linear linear saying that the value
  is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
- with @('defthm-natp').</p>
+ with @('defthm-natp').  Moved all three utilities under @(see std/util).</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
  of code segment descriptors, when they access for reading (not execution) a
