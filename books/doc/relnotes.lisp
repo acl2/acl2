@@ -292,8 +292,8 @@
 
  <h4>@(csee std/util)</h4>
 
- <p>Added macros @(tsee defthm-natp), @(tsee defthm-unsigned-byte-p), and
- @(tsee defthm-signed-byte-p), from the X86ISA model.</p>
+ <p>Added macros @(tsee std::defthm-natp), @(tsee std::defthm-unsigned-byte-p),
+ and @(tsee std::defthm-signed-byte-p), from the X86ISA model.</p>
 
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
