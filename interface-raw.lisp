@@ -1271,7 +1271,7 @@
                          oneify encountered an untranslatable LAMBDA$, ~x0, ~
                          even though it was supposedly translated ~
                          successfully earlier.  Please contact the ACL2 ~
-                         implementors." 
+                         implementors."
                         x)
           tx)))
    ((not (symbolp (car x)))
@@ -7278,19 +7278,28 @@
 (assert (subsetp-equal *acl2-pass-2-files* *acl2-files*))
 
 ; Next we define fns-different-wrt-acl2-loop-only, used below in
-; check-built-in-constants.  We base our code loosely on
-; functions-defined-in-file in hons-raw.lisp.
+; check-built-in-constants.
 
-(defun our-update-ht (key val ht)
-  (let ((old (gethash key ht)))
+(defun our-update-ht (key val ht when-pass-2-p)
+
+; We aim to store in ht all definitions associated with key, and here we add
+; one definition, val.  Perhaps it is only necessary to store the most recent
+; definition, but here we store them all, even though that is probably
+; needlessly conservative for our purpose of finding where logical and raw Lisp
+; definitions differ.
+
+  (let ((old (gethash key ht))
+        (val (if when-pass-2-p
+                 (list :when-pass-2-p val)
+               val)))
     (setf (gethash key ht)
           (cond ((and (consp old)
                       (eq (car old) :multiple))
                  (list* (car old) val (cdr old)))
-                (old (list :multiple val))
+                (old (list :multiple val old))
                 (t val)))))
 
-(defun note-fns-in-form (form ht)
+(defun note-fns-in-form (form ht when-pass-2-p)
 
 ; For every macro and every function defined by form, associate its definition
 ; with its name in the given hash table, ht.  See note-fns-in-files.
@@ -7300,34 +7309,47 @@
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defabbrev defun@par defmacro-last defun-overrides
             defun-with-guard-check defun-sk)
-          (our-update-ht (cadr form) form ht))
+          (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
-          (note-fns-in-form (cadr form) ht))
+          (note-fns-in-form (cadr form) ht when-pass-2-p))
          (defun-for-state
-           (our-update-ht (defun-for-state-name (cadr form)) form ht))
+           (our-update-ht (defun-for-state-name (cadr form)) form ht when-pass-2-p))
          (define-global
-           (our-update-ht (define-global-name (cadr form)) form ht)
-           (our-update-ht (cadr form) form ht))
+           (our-update-ht (define-global-name (cadr form)) form ht when-pass-2-p)
+           (our-update-ht (cadr form) form ht when-pass-2-p))
          ((define-pc-atomic-macro define-pc-bind* define-pc-help
             define-pc-macro define-pc-meta define-pc-primitive)
           (let ((name (make-official-pc-command
                        (if (eq (car form) 'define-pc-meta-or-macro-fn)
                            (nth 2 form)
                          (nth 1 form)))))
-            (our-update-ht name form ht)))
-         ((mutual-recursion mutual-recursion@par progn when-pass-2)
+            (our-update-ht name form ht when-pass-2-p)))
+         ((mutual-recursion mutual-recursion@par progn)
           (loop for x in (cdr form)
-                do (note-fns-in-form x ht)))
+                do (note-fns-in-form x ht when-pass-2-p)))
+         ((when-pass-2)
+
+; When inside when-pass-2, since the #-acl2-loop-only definition of when-pass-2
+; is nil, #-acl2-loop-only code is ignored.  So as we collect definitions
+; inside when-pass-2, we add a special when-pass-2 marker to help us to cause
+; an error (see fns-different-wrt-acl2-loop-only) when such #-acl2-loop-only
+; code is detected.  Note also that merely being in a pass-2 file like
+; apply.lisp may not be a problem: that is, putting the #-acl2-loop-only
+; outside when-pass-2 is enough to get the raw lisp code to be noticed.
+
+          (loop for x in (cdr form)
+                do (note-fns-in-form x ht t)))
          ((encapsulate when)
           (loop for x in (cddr form)
-                do (note-fns-in-form x ht)))
+                do (note-fns-in-form x ht when-pass-2-p)))
          (partial-encapsulate
           (loop for x in (cdddr form)
-                do (note-fns-in-form x ht)))
+                do (note-fns-in-form x ht when-pass-2-p)))
          ((skip-proofs local)
-          (note-fns-in-form (cadr form) ht))
+          (note-fns-in-form (cadr form) ht when-pass-2-p))
          (defrec ; pick just one function introduced
-           (our-update-ht (record-changer-function-name (cadr form)) form ht))
+           (our-update-ht (record-changer-function-name (cadr form)) form ht
+                          when-pass-2-p))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
@@ -7412,7 +7434,7 @@
      (loop while (not (eq (setq x (read str nil avrc))
                           avrc))
            do
-           (note-fns-in-form x ht)))))
+           (note-fns-in-form x ht nil)))))
 
 (defun note-fns-in-files (filenames ht loop-only-p)
 
@@ -7440,33 +7462,43 @@
 
 ; For each file in acl2-files we collect up all definitions of functions and
 ; macros, reading each file both with and without feature :acl2-loop-only.  We
-; return (mv macro-result program-mode-result logic-mode-result), where each of
-; macro-result, program-mode-result, and logic-mode-result is a list of
-; symbols.  Each symbol is the name of a macro, program-mode function, or
-; logic-mode function (respectively) defined with feature :acl2-loop-only,
+; return (mv when-pass-2-result macro-result program-mode-result
+; logic-mode-result), where each return value is a list of symbols unless debug
+; variable *check-built-in-constants-debug* is true.  Each symbol is the name
+; of a macro, program-mode function, or logic-mode function (respectively, for
+; results other than when-pass-2-result) defined with feature :acl2-loop-only,
 ; which has a different (or absent) definition without feature :acl2-loop-only.
+; However, when such a symbol has a definition (raw Lisp, logical, or both)
+; under when-pass-2, it is put into the list when-pass-2-result rather than the
+; other three.
 
 ; This function is typically called with acl2-files equal to *acl2-files*, in
 ; the build directory.  See the comment about redundant definitions in
 ; chk-acceptable-defuns-redundancy for a pertinent explanation.
 
-  (let ((logic-filenames (loop for x in acl2-files
-                               when (not (raw-source-name-p x))
+  (flet ((when-pass-2-p (val)
+                        (and (consp val)
+                             (if (eq (car val) :multiple)
+                                 (assoc-eq :when-pass-2-p (cdr val))
+                               (eq (car val) :when-pass-2-p)))))
+    (let ((logic-filenames (loop for x in acl2-files
+                                 when (not (raw-source-name-p x))
+                                 collect (concatenate 'string x ".lisp")))
+          (raw-filenames (loop for x in acl2-files
                                collect (concatenate 'string x ".lisp")))
-        (raw-filenames (loop for x in acl2-files
-                             collect (concatenate 'string x ".lisp")))
-        (ht-raw (make-hash-table :test 'eq))
-        (ht-logic (make-hash-table :test 'eq))
-        (macro-result nil)
-        (program-mode-result nil)
-        (logic-mode-result nil)
-        (wrld (w *the-live-state*)))
-    (note-fns-in-files raw-filenames ht-raw nil)
-    (note-fns-in-files logic-filenames ht-logic t)
-    (maphash (lambda (key logic-val)
-               (progn
-                 (assert (symbolp key))
-                 (let ((raw-val (gethash key ht-raw)))
+          (ht-raw (make-hash-table :test 'eq))
+          (ht-logic (make-hash-table :test 'eq))
+          (when-pass-2-result nil)
+          (macro-result nil)
+          (program-mode-result nil)
+          (logic-mode-result nil)
+          (wrld (w *the-live-state*)))
+      (note-fns-in-files raw-filenames ht-raw nil)
+      (note-fns-in-files logic-filenames ht-logic t)
+      (maphash (lambda (key logic-val)
+                 (progn
+                   (assert (symbolp key))
+                   (let ((raw-val (gethash key ht-raw)))
 
 ; We use equalp rather than equal below because in August, 2014 using SBCL
 ; 1.2.2 (and this might happen with other Lisps in the future), backquote was
@@ -7480,39 +7512,70 @@
 ; (SB-INT:QUASIQUOTE #S(SB-IMPL::COMMA :EXPR X :KIND 0))
 ; *
 
-                   (or (equalp logic-val raw-val)
-                       (let ((x
-                              (if *check-built-in-constants-debug*
-                                  (list key :logic logic-val :raw raw-val)
+                     (or (equalp logic-val raw-val)
+                         (let ((x (if *check-built-in-constants-debug*
+                                      (list key :logic logic-val :raw raw-val)
+                                    key))
+                               (when-pass-2-p
+                                (or (when-pass-2-p logic-val)
+                                    (when-pass-2-p raw-val))))
+                           (cond ((and when-pass-2-p
+
+; Our approach makes it impossible to recognize exactly those cases in which
+; #-acl2-loop-only code appears under a when-pass-2 call, which are the cases
+; that we want to catch (since such code is always ignored, because when-pass-2
+; calls expand to nil in raw Lisp).  A conservative approach is to cause an
+; error whenever there is a discrepancy between the logic and raw values, but
+; here we exempt one safe situation: there is no raw value inside when-pass-2.
+; In that exceptional case, we fall through to the other branches of this COND.
+
+                                       (not ; the exception is as follows:
+                                        (and
+                                         (eq (car logic-val) :when-pass-2-p)
+                                         (consp raw-val)
+                                         (if (eq (car raw-val) :multiple)
+                                             (loop for form in (cdr raw-val)
+                                                   always
+                                                   (not
+                                                    (and
+                                                     (consp (car form))
+                                                     (eq (car form)
+                                                         :when-pass-2-p))))
+                                           (not (eq (car raw-val)
+                                                    :when-pass-2-p))))))
+                                  (push x when-pass-2-result))
+                                 ((getpropc key 'macro-body nil wrld)
+                                  (push x macro-result))
+                                 ((eq (symbol-class key wrld)
+                                      :program)
+                                  (push x program-mode-result))
+                                 (t
+                                  (push x logic-mode-result))))))))
+               ht-logic)
+      (maphash (lambda (key raw-val)
+                 (progn
+                   (assert (symbolp key))
+                   (when (not (gethash key ht-logic))
+                     (let ((x (if *check-built-in-constants-debug*
+                                  (list key :raw raw-val)
                                 key)))
-                         (cond ((getpropc key 'macro-body nil wrld)
-                                (push x macro-result))
-                               ((eq (symbol-class key wrld)
-                                    :program)
-                                (push x program-mode-result))
-                               (t
-                                (push x logic-mode-result))))))))
-             ht-logic)
-    (maphash (lambda (key raw-val)
-               (progn
-                 (assert (symbolp key))
-                 (when (not (or (gethash key ht-logic)
-                                (assoc key *primitive-formals-and-guards* :test
-                                       'eq)))
-                   (cond ((getpropc key 'macro-body nil wrld)
-                          (push key macro-result))
-                         (t (let ((c ; avoid symbol-class (defaults to :program)
-                                   (getpropc key 'symbol-class nil wrld)))
-                              (when c
-                                (let ((x
-                                       (if *check-built-in-constants-debug*
-                                           (list key :raw raw-val)
-                                         key)))
-                                  (if (eq c :program)
-                                      (push x program-mode-result)
-                                    (push x logic-mode-result))))))))))
-             ht-raw)
-    (mv macro-result program-mode-result logic-mode-result)))
+                       (cond ((when-pass-2-p raw-val)
+                              (push x when-pass-2-result))
+                             ((assoc key *primitive-formals-and-guards*
+                                     :test 'eq))
+                             ((getpropc key 'macro-body nil wrld)
+                              (push x macro-result))
+                             (t (let ((c ; avoid symbol-class (defaults to :program)
+                                       (getpropc key 'symbol-class nil wrld)))
+                                  (when c
+                                    (if (eq c :program)
+                                        (push x program-mode-result)
+                                      (push x logic-mode-result))))))))))
+               ht-raw)
+      (mv when-pass-2-result
+          macro-result
+          program-mode-result
+          logic-mode-result))))
 
 (defun collect-monadic-booleans (fns ens wrld)
   (cond ((endp fns) nil)
@@ -7775,47 +7838,60 @@
             (merge-sort-lexorder
              (loop for f in *definition-minimal-theory* collect
                    (cons f (body f t (w *the-live-state*))))))))
-    (mv-let
-     (macros-found program-found logic-found)
-     (fns-different-wrt-acl2-loop-only *acl2-files*)
-     (flet ((my-diff (x y)
-                     (if *check-built-in-constants-debug*
-                         (loop for tuple in x
-                               when (not (member (car tuple) y :test 'eq))
-                               collect tuple)
-                       (set-difference-eq x y))))
-       (let ((bad-macros (my-diff macros-found
-                                  *initial-macros-with-raw-code*))
-             (bad-program (my-diff program-found
-                                   *initial-program-fns-with-raw-code*))
-             (bad-logic (my-diff logic-found
-                                 *initial-logic-fns-with-raw-code*)))
-         (when (or bad-macros bad-program bad-logic)
-           (format t "Failed check for coverage of functions with acl2-loop-only code
-differences!  Please send this error message to the ACL2 implementors.
-Missing functions (use *check-built-in-constants-debug* = t for verbose report):
-  ~s
-~s;
-  ~a
-~s:
-  ~a"
-
-; We need to update *initial-macros-with-raw-code*,
-; *initial-program-fns-with-raw-code*, or
-; *initial-logic-fns-with-raw-code*, respectively according to the non-nil
-; fields in the error message.
-
-                   (list (list '*initial-macros-with-raw-code*
-                               bad-macros)
-                         (list '*initial-program-fns-with-raw-code*
-                               bad-program)
-                         (list '*initial-logic-fns-with-raw-code*
-                               bad-logic))
-                   '(lisp-implementation-type)
-                   (lisp-implementation-type)
-                   '(lisp-implementation-version)
-                   (lisp-implementation-version))
-           (error "Check failed!")))))
+    (mv-let (when-pass-2-result macros-found program-found logic-found)
+      (fns-different-wrt-acl2-loop-only *acl2-files*)
+      (flet ((my-diff (x y)
+                      (if *check-built-in-constants-debug*
+                          (loop for tuple in x
+                                when (not (member (car tuple) y :test 'eq))
+                                collect tuple)
+                        (set-difference-eq x y))))
+        (let ((bad-macros (my-diff macros-found
+                                   *initial-macros-with-raw-code*))
+              (bad-program (my-diff program-found
+                                    *initial-program-fns-with-raw-code*))
+              (bad-logic (my-diff logic-found
+                                  *initial-logic-fns-with-raw-code*)))
+          (when (or when-pass-2-result bad-macros bad-program bad-logic)
+            (format t
+                    "~%ERROR: Failed check for coverage of functions with~%~
+                    acl2-loop-only code differences!  Please send this~%~
+                    error message to the ACL2 implementors. Problems are~%~
+                    as shown below; use *check-built-in-constants-debug* = t~%~
+                    for a verbose report.~%~
+                    Note: (lisp-implementation-type) =~%~
+                    ~6t~s~%~
+                    Note: (lisp-implementation-version) =~%~
+                    ~6t~s~%~%"
+                    (lisp-implementation-type)
+                    (lisp-implementation-version))
+            (when when-pass-2-result
+              (format t
+                      "The following have #-acl2-loop-only code within ~
+                       (when-pass-2 ...):~%~s~%~%"
+                      when-pass-2-result))
+            (when bad-macros
+              (format t
+                      "The following macros differ in their #+acl2-loop-only~%~
+                       and #-acl2-loop-only code:~%~s~%~
+                       They probably should be added to ~s.~%~%"
+                      bad-macros
+                      '*initial-macros-with-raw-code*))
+            (when bad-program
+              (format t
+                      "The following program-mode functions differ in their~%~
+                       #+acl2-loop-only and #-acl2-loop-only code:~%~s~%~
+                       They probably should be added to ~s.~%~%"
+                      bad-program
+                      '*initial-program-fns-with-raw-code*))
+            (when bad-logic
+              (format t
+                      "The following logic-mode functions differ in their~%~
+                       #+acl2-loop-only and #-acl2-loop-only code:~%~s~%~
+                       They probably should be added to ~s.~%~%"
+                      bad-logic
+                      '*initial-logic-fns-with-raw-code*))
+            (error "Check failed!")))))
 
 ; The following is a start on checking that we don't have superfluous symbols
 ; in the list values of certain constants.  But in fact there can be such

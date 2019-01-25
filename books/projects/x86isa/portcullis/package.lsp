@@ -66,7 +66,7 @@
      def-gl-thm
      b*
      include-raw
-     
+
      ;; XDOC
      defsection
      defxdoc
@@ -82,6 +82,9 @@
      enable*
      disable*
      e/d*
+     std::defthm-natp
+     std::defthm-unsigned-byte-p
+     std::defthm-signed-byte-p
 
      x86isa ; so that top-level :doc topic is also in "ACL2" package
 
