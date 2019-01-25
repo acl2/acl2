@@ -290,6 +290,11 @@
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
 
+ <h4>@(csee std/util)</h4>
+
+ <p>Added macros @(tsee defthm-natp), @(tsee defthm-unsigned-byte-p), and
+ @(tsee defthm-signed-byte-p), from the X86ISA model.</p>
+
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
  <p>Added new lemmas and generalized and improved some existing lemmas.</p>
@@ -400,7 +405,7 @@
  constants.  Added @(see aignet::obs-constprop) that combines this
  with the existing observability transform, which works better than running
  the two transforms separately.</p>
- 
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
