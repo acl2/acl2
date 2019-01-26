@@ -91,7 +91,12 @@
                          2)))
        :rule-classes :linear
        :enable str::natchars16
-       :prep-books ((include-book "std/lists/len" :dir :system))))))
+       :prep-books ((include-book "std/lists/len" :dir :system)))))
+
+  (defrule ubyte8s=>hexchars-of-append
+    (equal (ubyte8s=>hexchars (append bytes1 bytes2))
+           (append (ubyte8s=>hexchars bytes1)
+                   (ubyte8s=>hexchars bytes2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -138,4 +143,11 @@
              (equal (hexchars=>ubyte8s-aux chars rev-bytes)
                     (revappend rev-bytes (hexchars=>ubyte8s chars)))))
 
-  (verify-guards hexchars=>ubyte8s))
+  (verify-guards hexchars=>ubyte8s)
+
+  (defrule hexchars=>ubyte8s-of-append
+    (implies (evenp (len chars1))
+             (equal (hexchars=>ubyte8s (append chars1 chars2))
+                    (append (hexchars=>ubyte8s chars1)
+                            (hexchars=>ubyte8s chars2))))
+    :induct (hexchars=>ubyte8s chars1)))
