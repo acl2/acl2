@@ -444,6 +444,10 @@ indicated as follows.</p>
   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 })
 
+<p>To abbreviate the above message, you can specify an @(tsee
+evisc-tuple) using the @(':evisc-tuple') keyword of @('defopener'),
+which is @('nil') by default.</p>
+
 <p>The simplification that takes place uses a prover interface that is also
 used in the distributed book @('misc/bash'), in which the following hint is
 automatically generated for @('\"Goal\"'), though they can be overridden if
@@ -473,7 +477,7 @@ prefer the more primitive form, use @(':flatten nil').</p>
 
 (defmacro defopener (&whole ev-form
                             name call
-                            &key hyp equiv hints debug (flatten 't))
+                            &key hyp equiv hints debug (flatten 't) (evisc-tuple 'nil))
   (let* ((ctx (cons 'defopener name))
          (form `(er-let*
                  ((name-chk (chk-name ,name ,ctx ,ev-form)))
@@ -510,7 +514,7 @@ prefer the more primitive form, use @(':flatten nil').</p>
                                     ',ev-form)))
                       (pprogn
                        (fms "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@~|~%"
-                            nil (proofs-co state) state nil)
+                            nil (proofs-co state) state ,evisc-tuple)
                        (if flatten-failed-flg
                            (warning$ ',ctx nil
                                      "An incomplete case split for ~
@@ -524,7 +528,7 @@ prefer the more primitive form, use @(':flatten nil').</p>
                                 (list (cons #\0 defthm-form2))
                                 (proofs-co state)
                                 state
-                                nil))
+                                ,evisc-tuple))
                        (value `(encapsulate
                                 ()
                                 ,table-ev

@@ -318,6 +318,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
+ (b* (((er x) (ensure-tuple '(36 #\y "aw" '(2 9)) 4 "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-eval-to-t
+ (b* (((er x) (ensure-tuple nil 0 "This" t nil 'test state)))
+   (value (equal x nil))))
+
+(must-fail
+ (ensure-tuple '(1 2 3) 8 "This" t nil 'test state))
+
+(must-fail
+ (ensure-tuple '(1 2 3) 0 "This" t nil 'test state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-eval-to-t
  (b* (((er x) (ensure-defun-mode :logic "This" t nil 'test state)))
    (value (equal x nil))))
 

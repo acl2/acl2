@@ -162,6 +162,14 @@
   "Cause an error if a symbol is a keyword."
   (((not (keywordp symb)) "~@0 must not be a keyword." description)))
 
+(def-error-checker ensure-tuple
+  ((x "Value to check.")
+   (n natp "Length that @('x') must have."))
+  "Cause an error if a value is not a tuple of a given length."
+  (((acl2::tuplep n x)
+    "~@0 must be a NIL-terminated list of ~x1 elements."
+    description n)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-defun-mode

@@ -290,6 +290,11 @@
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
 
+ <h4>@(csee std/util)</h4>
+
+ <p>Added macros @(tsee std::defthm-natp), @(tsee std::defthm-unsigned-byte-p),
+ and @(tsee std::defthm-signed-byte-p), from the X86ISA model.</p>
+
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
  <p>Added new lemmas and generalized and improved some existing lemmas.</p>
@@ -362,7 +367,7 @@
  @('defthm-usb') utility to also generate a linear linear saying that the value
  is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
- with @('defthm-natp').</p>
+ with @('defthm-natp').  Moved all three utilities under @(see std/util).</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
  of code segment descriptors, when they access for reading (not execution) a
@@ -400,7 +405,7 @@
  constants.  Added @(see aignet::obs-constprop) that combines this
  with the existing observability transform, which works better than running
  the two transforms separately.</p>
- 
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
