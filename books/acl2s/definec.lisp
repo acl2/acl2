@@ -247,3 +247,13 @@ bells and whistles of @('acl2s::defunc').
 "
   )
 
+(defmacro definecd (name &rest args)
+  (let* ((defname (make-symbl `(,name -DEFINITION-RULE))))
+    `(progn
+      (definec ,name ,@args)
+      (in-theory (disable ,defname)))))
+
+(defmacro definec-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (definec ,name ,@args)))
