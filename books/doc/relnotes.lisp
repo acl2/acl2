@@ -120,8 +120,8 @@
  <p>Started a library of concepts and utilities to develop event
  macros (i.e. macros at the event level) more quickly and consistently.</p>
 
- <p>Added some XDOC constructor utilities for the reference documentation of
- event macros.</p>
+ <p>This library includes some XDOC constructor utilities for the reference
+ documentation of event macros.</p>
 
  <h4>Graphviz</h4>
 
