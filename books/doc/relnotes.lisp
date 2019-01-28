@@ -171,6 +171,8 @@
 
  <p>Improved the documentation of the Bitcoin library.</p>
 
+ <p>Added fixtypes for bytes and byte sequences.</p>
+
  <h4>Bytes</h4>
 
  <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
