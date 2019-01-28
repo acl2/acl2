@@ -758,6 +758,10 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
       (vl-ppst-bytes :type unsigned-byte :initially 0)
       ;; Include directory cache
       (vl-ppst-idcache :type (satisfies vl-dirlist-cache-p) :initially nil)
+      ;; Ifdef use map
+      (vl-ppst-ifdefmap :type (satisfies vl-ifdef-use-map-p) :initially nil)
+      ;; Define (non-ifdef) use map
+      (vl-ppst-defmap :type (satisfies vl-def-use-map-p) :initially nil)
       :inline t
       :non-memoizable t
       :renaming ((ppstp                     vl-ppst-p)
@@ -783,6 +787,10 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
                  (update-vl-ppst-bytes      vl-ppst-update-bytes-raw)
                  (vl-ppst-idcache           vl-ppst->idcache-raw)
                  (update-vl-ppst-idcache    vl-ppst-update-idcache-raw)
+                 (vl-ppst-ifdefmap          vl-ppst->ifdefmap-raw)
+                 (update-vl-ppst-ifdefmap   vl-ppst-update-ifdefmap-raw)
+                 (vl-ppst-defmap            vl-ppst->defmap-raw)
+                 (update-vl-ppst-defmap     vl-ppst-update-defmap-raw)
                  ))))
 
 (defsection ppst-accessors
@@ -854,8 +862,21 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
     :returns (idcache vl-dirlist-cache-p)
     :inline t
     (mbe :logic (vl-dirlist-cache-fix (vl-ppst->idcache-raw ppst))
-         :exec (vl-ppst->idcache-raw ppst))))
+         :exec (vl-ppst->idcache-raw ppst)))
 
+  (define vl-ppst->ifdefmap (&key (ppst 'ppst))
+    :returns (map vl-ifdef-use-map-p)
+    :inline t
+    (mbe :logic (vl-ifdef-use-map-fix (vl-ppst->ifdefmap-raw ppst))
+         :exec (vl-ppst->ifdefmap-raw ppst)))
+
+  (define vl-ppst->defmap (&key (ppst 'ppst))
+    :returns (map vl-def-use-map-p)
+    :inline t
+    (mbe :logic (vl-def-use-map-fix (vl-ppst->defmap-raw ppst))
+         :exec (vl-ppst->defmap-raw ppst)))
+
+  )
 
 
 (defsection ppst-mutators
@@ -915,8 +936,19 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
   (define vl-ppst-update-idcache ((idcache vl-dirlist-cache-p) &key (ppst 'ppst))
     :returns ppst
     :inline t
-    (vl-ppst-update-idcache-raw idcache ppst)))
+    (vl-ppst-update-idcache-raw idcache ppst))
 
+  (define vl-ppst-update-ifdefmap ((ifdefmap vl-ifdef-use-map-p) &key (ppst 'ppst))
+    :returns ppst
+    :inline t
+    (vl-ppst-update-ifdefmap-raw ifdefmap ppst))
+
+  (define vl-ppst-update-defmap ((defmap vl-def-use-map-p) &key (ppst 'ppst))
+    :returns ppst
+    :inline t
+    (vl-ppst-update-defmap-raw defmap ppst))
+
+  )
 
 
 (defprod vl-saved-ppst
@@ -934,7 +966,10 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
    (warnings vl-warninglist-p)
    (includes string-listp)
    (bytes natp)
-   (idcache vl-dirlist-cache-p)))
+   (idcache vl-dirlist-cache-p)
+   (ifdefmap vl-ifdef-use-map-p)
+   (defmap vl-def-use-map-p)
+   ))
 
 (define vl-save-ppst (&key (ppst 'ppst))
   :returns (saved vl-saved-ppst-p)
@@ -950,7 +985,9 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
                       :warnings (vl-ppst->warnings)
                       :includes (vl-ppst->includes)
                       :bytes (vl-ppst->bytes)
-                      :idcache (vl-ppst->idcache)))
+                      :idcache (vl-ppst->idcache)
+                      :ifdefmap (vl-ppst->ifdefmap)
+                      :defmap (vl-ppst->defmap)))
 
 (define vl-restore-ppst ((saved vl-saved-ppst-p)
                          &key (ppst 'ppst))
@@ -967,7 +1004,9 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
        (ppst (vl-ppst-update-warnings saved.warnings))
        (ppst (vl-ppst-update-includes saved.includes))
        (ppst (vl-ppst-update-bytes saved.bytes))
-       (ppst (vl-ppst-update-idcache saved.idcache)))
+       (ppst (vl-ppst-update-idcache saved.idcache))
+       (ppst (vl-ppst-update-ifdefmap saved.ifdefmap))
+       (ppst (vl-ppst-update-defmap saved.defmap)))
     ppst)
   ///
   (local (defthm xx
@@ -1004,6 +1043,8 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
                                     vl-ppst-update-includes
                                     vl-ppst-update-bytes
                                     vl-ppst-update-idcache
+                                    vl-ppst-update-ifdefmap
+                                    vl-ppst-update-defmap
                                     vl-ppst->acc
                                     vl-ppst->istack
                                     vl-ppst->activep
@@ -1015,6 +1056,8 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
                                     vl-ppst->includes
                                     vl-ppst->bytes
                                     vl-ppst->idcache
+                                    vl-ppst->ifdefmap
+                                    vl-ppst->defmap
                                     ))))))
 
 (define vl-ppst-warn (&key (type symbolp)
@@ -1131,7 +1174,6 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
     ppst))
 
 
-
 (define vl-includeskips-controller-lookup ((realfile stringp)
                                            (iskips vl-includeskips-p))
   :returns (controller maybe-stringp :rule-classes :type-prescription)
@@ -1227,12 +1269,19 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
           (vl-skip-whitespace/comments remainder))))
     x))
 
+(local (defthm maybe-stringp-of-vl-read-identifier
+         (implies (vl-echarlist-p echars)
+                  (maybe-stringp (mv-nth 0 (vl-read-identifier echars))))
+         :hints(("Goal" :in-theory (e/d (maybe-stringp))))))
+
 (define vl-match-proper-header-file-start-1 ((x vl-echarlist-p))
   :parents (vl-includeskips)
   :short "Match the start of a ``proper'' @('ifndef')-controlled header file."
   :returns
   (mv (controller maybe-stringp :rule-classes :type-prescription
                   "On success, the name of the controlling define.")
+      (loc        vl-location-p
+                  "Location of the controlling define")
       (resume-point vl-echarlist-p
                     "On success, the remainder of the file immediately
                     after the @('ifndef included_foo') part."
@@ -1258,17 +1307,22 @@ the name of the ``controlling define'' for this file.  If the file isn't
 of an acceptable form we just return NIL.</p>"
 
   (b* (;; Any leading comments/whitespace are OK.
+       (x (vl-echarlist-fix x))
        (x (vl-skip-whitespace/comments x))
+
+       (loc (if (consp x)
+                (vl-echar->loc (car x))
+              *vl-fakeloc*))
 
        ;; Match `ifndef
        ((mv prefix x) (vl-read-literal "`ifndef" x))
-       ((unless prefix) (mv nil nil))
+       ((unless prefix) (mv nil loc nil))
 
        ;; Match included_foo
        ((mv ws x) (vl-read-while-whitespace x))
-       ((unless ws) (mv nil nil))
+       ((unless ws) (mv nil loc nil))
        ((mv ifndef-name & x) (vl-read-identifier x))
-       ((unless ifndef-name) (mv nil nil))
+       ((unless ifndef-name) (mv nil loc nil))
 
        ;; Any subsequent comments/whitespace are OK.
        (x (vl-skip-whitespace/comments x))
@@ -1277,19 +1331,20 @@ of an acceptable form we just return NIL.</p>"
 
        ;; Match `define
        ((mv prefix x) (vl-read-literal "`define" x))
-       ((unless prefix) (mv nil nil))
+       ((unless prefix) (mv nil loc nil))
 
        ;; Match included_foo
        ((mv ws x) (vl-read-while-whitespace x))
-       ((unless ws) (mv nil nil))
+       ((unless ws) (mv nil loc nil))
        ((mv define-name ?prefix ?remainder) (vl-read-identifier x))
-       ((unless define-name) (mv nil nil))
+       ((unless define-name) (mv nil loc nil))
 
        ;; Make sure the ifndef/define both are for the same name
-       ((unless (equal ifndef-name define-name)) (mv nil nil)))
+       ((unless (equal ifndef-name define-name)) (mv nil loc nil)))
 
     ;; Looks like a proper ifndef header.
     (mv (string-fix ifndef-name)
+        loc
         resume-point)))
 
 (define vl-match-proper-header-file-start-2 ((x vl-echarlist-p))
@@ -1298,6 +1353,8 @@ of an acceptable form we just return NIL.</p>"
   :returns
   (mv (controller maybe-stringp :rule-classes :type-prescription
                   "On success, the name of the controlling define.")
+      (loc        vl-location-p
+                  "Location of the controlling define")
       (resume-point vl-echarlist-p
                     "On success, the remainder of the file immediately after
                      the @('else') part."
@@ -1325,39 +1382,59 @@ acceptable form we just return NIL.</p>"
 
   (b* (;; Match `ifdef
        (x (vl-skip-whitespace/comments x))
+       (loc (if (consp x)
+                (vl-echar->loc (car x))
+              *vl-fakeloc*))
        ((mv prefix x) (vl-read-literal "`ifdef" x))
-       ((unless prefix) (mv nil nil))
+       ((unless prefix) (mv nil loc nil))
 
        ;; Match included_foo
        ((mv ws x) (vl-read-while-whitespace x))
-       ((unless ws) (mv nil nil))
+       ((unless ws) (mv nil loc nil))
        ((mv ifdef-name & x) (vl-read-identifier x))
-       ((unless ifdef-name) (mv nil nil))
+       ((unless ifdef-name) (mv nil loc nil))
 
        ;; Match `else
        (x (vl-skip-whitespace/comments x))
        ((mv prefix x) (vl-read-literal "`else" x))
-       ((unless prefix) (mv nil nil))
+       ((unless prefix) (mv nil loc nil))
 
        (resume-point x)
 
        ;; Match `define
        (x (vl-skip-whitespace/comments x))
        ((mv prefix x) (vl-read-literal "`define" x))
-       ((unless prefix) (mv nil nil))
+       ((unless prefix) (mv nil loc nil))
 
        ;; Match included_foo
        ((mv ws x) (vl-read-while-whitespace x))
-       ((unless ws) (mv nil nil))
+       ((unless ws) (mv nil loc nil))
        ((mv define-name ?prefix ?remainder) (vl-read-identifier x))
-       ((unless define-name) (mv nil nil))
+       ((unless define-name) (mv nil loc nil))
 
        ;; Make sure the ifdef/define both are for the same name
-       ((unless (equal ifdef-name define-name)) (mv nil nil)))
+       ((unless (equal ifdef-name define-name)) (mv nil loc nil)))
 
     ;; Looks like a proper ifdef header.
     (mv (string-fix ifdef-name)
+        loc
         resume-point)))
+
+(define vl-ppst-record-ifdef-use ((name stringp)
+                                  (ctx vl-ifdef-context-p)
+                                  &key (ppst 'ppst))
+  :returns ppst
+  (b* ((ifdef-map (vl-ppst->ifdefmap))
+       (ifdef-map (vl-extend-ifdef-map name ctx ifdef-map)))
+    (vl-ppst-update-ifdefmap ifdef-map)))
+
+(define vl-ppst-record-def-use ((name stringp)
+                                (ctx vl-def-context-p)
+                                &key (ppst 'ppst))
+  :returns ppst
+  (b* ((def-map (vl-ppst->defmap))
+       (def-map (vl-extend-def-map name ctx def-map)))
+    (vl-ppst-update-defmap def-map)))
 
 (define vl-multiple-include-begin ((realfile stringp        "File name being loaded.")
                                    (contents vl-echarlist-p "Contents of that file.")
@@ -1372,15 +1449,16 @@ acceptable form we just return NIL.</p>"
                (ppst "Possibly updated with a special iframe for the include guard."))
 
   (b* ((contents (vl-echarlist-fix contents))
-       ((mv controller1 post-ifndef)
+       ((mv controller1 controller1-loc post-ifndef)
         (vl-match-proper-header-file-start-1 contents))
-       ((mv controller2 post-else)
+       ((mv controller2 controller2-loc post-else)
         (if controller1
-            (mv nil nil)
+            (mv nil nil nil)
           (vl-match-proper-header-file-start-2 contents)))
 
        (controller (or controller1 controller2))
        (resume-point (if controller1 post-ifndef post-else))
+       (controller-loc (if controller1 controller1-loc controller2-loc))
        ((unless controller)
         (let ((ppst (vl-ppst-warn
                      :type :vl-warn-include-guard
@@ -1458,6 +1536,10 @@ acceptable form we just return NIL.</p>"
                 :already-saw-elsep (not controller1)
                 :mi-controller controller
                 :mi-filename realfile))
+
+       (ppst (vl-ppst-record-ifdef-use controller
+                                       (make-vl-ifdef-context :loc controller-loc)))
+
        (istack (vl-ppst->istack))
        (ppst   (vl-ppst-update-istack (cons iframe istack))))
     ;; Finally, since we're forging the iframe ourselves, sneak just past the
@@ -1513,7 +1595,9 @@ the defines table, and make the appropriate changes to the @('istack') and
                                                 :mi-filename           nil))
                (new-istack      (cons new-iframe istack))
                (new-activep     (and activep this-satisfiedp))
+               (new-ctx         (make-vl-ifdef-context :loc loc))
                (ppst            (vl-ppst-update-istack new-istack))
+               (ppst            (vl-ppst-record-ifdef-use name new-ctx))
                (ppst            (vl-ppst-update-activep new-activep)))
           (mv t remainder ppst)))
 
@@ -1527,7 +1611,9 @@ the defines table, and make the appropriate changes to the @('istack') and
                                                 :mi-filename           nil))
                (new-istack      (cons new-iframe istack))
                (new-activep     (and activep this-satisfiedp))
+               (new-ctx         (make-vl-ifdef-context :loc loc))
                (ppst            (vl-ppst-update-istack new-istack))
+               (ppst            (vl-ppst-record-ifdef-use name new-ctx))
                (ppst            (vl-ppst-update-activep new-activep)))
           (mv t remainder ppst)))
 
@@ -1567,8 +1653,10 @@ the defines table, and make the appropriate changes to the @('istack') and
                          ;; because we don't want to think about `elsif trees here.
                          :mi-controller nil
                          :mi-filename nil))
+       (new-ctx         (make-vl-ifdef-context :loc loc))
        (new-istack      (cons new-iframe (cdr istack)))
        (ppst            (vl-ppst-update-activep new-activep))
+       (ppst            (vl-ppst-record-ifdef-use name new-ctx))
        (ppst            (vl-ppst-update-istack new-istack)))
     (mv t remainder ppst))
   ///
@@ -3536,7 +3624,16 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        ((unless (vl-is-compiler-directive-p directive))
         ;; A macro usage like `foo.  The defines table stores the macro text in
         ;; order, so we can essentially revappend it into the accumulator.
-        (b* (((unless (vl-ppst->activep))
+        (b* ((activep (vl-ppst->activep))
+             (ppst
+              ;; Record that we have seen a use of this macro.  We do this
+              ;; regardless of whether we are in an ifdef-ed out part of the
+              ;; file.  But we record whether the macro would actually be
+              ;; expanded or not as part of the context we save.
+              (vl-ppst-record-def-use directive
+                                      (make-vl-def-context :activep activep
+                                                           :loc (vl-echar->loc echar1))))
+             ((unless (vl-ppst->activep))
               ;; Subtle.  Never try to expand macros in inactive sections,
               ;; because it is legitimate for them to be undefined.
               (vl-preprocess-loop remainder n ppst state))
@@ -3946,6 +4043,8 @@ out of memory before running out of clock.</p>"
    (iskips   "Multi-include optimization." vl-includeskips-p)
    (bytes    "Bytes read so far." natp)
    (idcache  "Include-directory cache." vl-dirlist-cache-p)
+   (ifdefmap "Ifdef use map to extend." vl-ifdef-use-map-p)
+   (defmap   "Define use map to extend." vl-def-use-map-p)
    (warnings "Warnings accumulator to extend." vl-warninglist-p)
    ((state   "ACL2's @(see state), for file i/o.") 'state))
   :returns
@@ -3954,13 +4053,15 @@ out of memory before running out of clock.</p>"
       (defines    vl-defines-p "Updated defines after preprocessing the files.")
       (filemap    vl-filemap-p "Possibly extended filemap.")
       (iskips     vl-includeskips-p "Possibly updated iskips.")
+      (ifdefmap   vl-ifdef-use-map-p "Possibly extended ifdef use map.")
+      (defmap     vl-def-use-map-p "Possibly extended define use map.")
       (bytes      natp :rule-classes :type-prescription "Updated total bytes.")
       (warnings   vl-warninglist-p "Possibly updated warnings.")
       (new-echars vl-echarlist-p "Updated extended characters, after preprocessing.")
       (state      state-p1 :hyp (force (state-p1 state))))
 
   (b* (((local-stobjs ppst)
-        (mv successp defines filemap iskips bytes warnings new-echars ppst state))
+        (mv successp defines filemap iskips ifdefmap defmap bytes warnings new-echars ppst state))
        ;; istack defaults to nil
        ;; acc defaults to nil
        (ppst (vl-ppst-update-defines defines))
@@ -3970,6 +4071,8 @@ out of memory before running out of clock.</p>"
        (ppst (vl-ppst-update-iskips iskips))
        (ppst (vl-ppst-update-warnings warnings))
        (ppst (vl-ppst-update-idcache idcache))
+       (ppst (vl-ppst-update-ifdefmap ifdefmap))
+       (ppst (vl-ppst-update-defmap defmap))
        ;; just a quick sanity check
        (- (or (equal (vl-loadconfig->include-dirs config)
                      (alist-keys (vl-ppst->idcache)))
@@ -3979,19 +4082,23 @@ out of memory before running out of clock.</p>"
        (ppst (vl-ppst-update-bytes bytes))
        ((mv successp remainder ppst state)
         (vl-preprocess-loop echars *vl-preprocess-clock* ppst state))
-       (defines (vl-ppst->defines))
-       (filemap (vl-ppst->filemap))
-       (iskips  (vl-ppst->iskips))
-       (bytes   (vl-ppst->bytes))
+       (defines  (vl-ppst->defines))
+       (filemap  (vl-ppst->filemap))
+       (iskips   (vl-ppst->iskips))
+       ;; Don't clean/free the ifdefmap/defmap here, loader will do it.
+       (ifdefmap (vl-ppst->ifdefmap))
+       (defmap   (vl-ppst->defmap))
+       (bytes    (vl-ppst->bytes))
        (warnings (vl-ppst->warnings))
        ((when successp)
         ;; Using nreverse here saves a copy of a potentially hugely long list.
         (let ((ppst (vl-ppst-unsound-nreverse-acc ppst)))
-          (mv successp defines filemap iskips bytes warnings (vl-ppst->acc) ppst state))))
+          (mv successp defines filemap iskips ifdefmap defmap bytes warnings (vl-ppst->acc) ppst state))))
     (mv (cw "[[ Previous  ]]: ~s0~%~
              [[ Remaining ]]: ~s1~%"
             (vl-echarlist->string (vl-safe-previous-n 50 (vl-ppst->acc)))
             (vl-echarlist->string (vl-safe-next-n 50 remainder)))
-        defines filemap iskips bytes warnings nil ppst state)))
+        defines filemap iskips ifdefmap defmap bytes warnings nil ppst state)))
+
 
 

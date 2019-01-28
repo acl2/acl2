@@ -32,51 +32,17 @@
 (include-book "../../util/warnings")
 (include-book "centaur/fty/basetypes" :dir :system)
 
-(fty::defalist vl-usertypes
-  :key-type stringp)
-
 (defprod vl-parsestate
   :tag :vl-parsestate
   :layout :tree
-  ((usertypes vl-usertypes-p
-              "Fast alist binding names of declared types (forward typedefs
-               and regular typedefs) to anything, which is occasionally
-               needed to distinguish between expressions and data types.")
-
-   (warnings vl-warninglist-p
+  ;; This used to additionally contain a fast-alist for user-defined types that
+  ;; we had encountered.  That has since been removed, so now there's just a
+  ;; warning list.  It's probably best to keep this in its parsestate wrapper,
+  ;; in case we ever want to add any other fields here.
+  ((warnings vl-warninglist-p
              "Warnings created at parse time.")))
 
 (local (xdoc::set-default-parents vl-parsestate))
-
-(define vl-parsestate-free ((pstate vl-parsestate-p))
-  :short "Free fast alists associated with a parse state."
-  (b* (((vl-parsestate pstate) pstate))
-    (fast-alist-free pstate.usertypes)))
-
-(define vl-parsestate-restore ((pstate vl-parsestate-p))
-  :short "Build a new parse-state whose alists are fast."
-  :returns (new-pstate vl-parsestate-p)
-  (b* (((vl-parsestate pstate) pstate))
-    (change-vl-parsestate pstate
-                          :usertypes (make-fast-alist pstate.usertypes))))
-
-(define vl-parsestate-add-user-defined-type
-  :short "Extend the parse state to record that there is a new user-defined type."
-  ((name stringp)
-   (pstate vl-parsestate-p))
-  :returns (new-pstate vl-parsestate-p)
-  (b* (((vl-parsestate pstate) pstate)
-       (new-usertypes (hons-acons name t pstate.usertypes)))
-    (change-vl-parsestate pstate
-                          :usertypes new-usertypes)))
-
-(define vl-parsestate-is-user-defined-type-p
-  :short "Check whether some name is the name of a previously-defined, user-defined type."
-  ((name   stringp)
-   (pstate vl-parsestate-p))
-  :returns (user-defined-type-p booleanp :rule-classes :type-prescription)
-  (b* (((vl-parsestate pstate) pstate))
-    (consp (hons-get name pstate.usertypes))))
 
 (define vl-parsestate-add-warning
   :short "Extend the parse state with a new warning."
@@ -86,11 +52,13 @@
   (b* (((vl-parsestate pstate) pstate))
     (change-vl-parsestate pstate :warnings (cons warning pstate.warnings))))
 
-(define vl-parsestate-set-warnings
-  ((warnings vl-warninglist-p)
-   (pstate   vl-parsestate-p))
-  :returns (new-pstate vl-parsestate-p)
-  (change-vl-parsestate pstate :warnings warnings))
+;; Turns out this was never used.
+;;
+;; (define vl-parsestate-set-warnings
+;;   ((warnings vl-warninglist-p)
+;;    (pstate   vl-parsestate-p))
+;;   :returns (new-pstate vl-parsestate-p)
+;;   (change-vl-parsestate pstate :warnings warnings))
 
 
 

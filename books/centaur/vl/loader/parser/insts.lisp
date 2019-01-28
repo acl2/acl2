@@ -323,28 +323,19 @@ tests at the bottom of this file.</p>")
   :resultp-of-nil nil
   :fails gracefully
   :count strong
-  (seq tokstream
-        ;; Datatype and expression are ambiguous when we just have an identifier, so
-        ;; check for this case first.
-        (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p
-                         (vl-idtoken->name (car (vl-tokstream->tokens)))
-                         (vl-tokstream->pstate))))
-          ;; Non-type identifier.
-          (ans := (vl-parse-mintypmax-expression))
-          (return (make-vl-paramvalue-expr :expr ans)))
-        (return-raw
-         ;; Otherwise, use backtracking: arbitrarily try to get a datatype
-         ;; first, then try to get an expr.
-         (b* ((backup (vl-tokstream-save))
-              ((mv dt-err dt-val tokstream)
-               (vl-parse-datatype))
-              ((unless dt-err)
-               (mv dt-err (make-vl-paramvalue-type :type dt-val) tokstream))
-              (tokstream (vl-tokstream-restore backup)))
-           (seq tokstream
-                 (ans := (vl-parse-mintypmax-expression))
-                 (return (make-vl-paramvalue-expr :expr ans)))))))
+  ;; We use backtracking to try to match expression first, then datatype only
+  ;; if that fails.  This order is important, to handle the ambiguous case of a
+  ;; plain identifier in the way that the type-disambiguation transform
+  ;; expects.
+  (b* ((backup (vl-tokstream-save))
+       ((mv err expr tokstream)
+        (vl-parse-mintypmax-expression))
+       ((unless err)
+        (mv err (make-vl-paramvalue-expr :expr expr) tokstream))
+       (tokstream (vl-tokstream-restore backup)))
+    (seq tokstream
+         (type := (vl-parse-datatype))
+         (return (make-vl-paramvalue-type :type type)))))
 
 (defparser vl-parse-named-parameter-assignment ()
   :result (vl-namedparamvalue-p val)

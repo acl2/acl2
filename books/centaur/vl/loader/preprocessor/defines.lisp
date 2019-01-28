@@ -204,3 +204,74 @@ of names to @('1')."
 
 ;; (vl-parse-cmdline-defines (list "foo" "bar" "baz=3" "baz=5")
 ;;                           *vl-fakeloc* t)
+
+
+
+(defprod vl-ifdef-context
+  :parents (preprocessor)
+  :short "Information about a single use of @('ifdef FOO') or @('elsif BAR')."
+  :layout :tree
+  :tag nil
+  ((loc     vl-location-p "Location where the @('`ifdef FOO') or @('elsif BAR') occurred.")
+   ;; maybe eventually other things
+   ))
+
+(fty::deflist vl-ifdef-context-list
+  :elt-type vl-ifdef-context
+  :parents (preprocessor))
+
+(fty::defalist vl-ifdef-use-map
+  :parents (preprocessor)
+  :key-type stringp
+  :val-type vl-ifdef-context-list
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :short "A log of where @('`define')s are used in the @('`ifdef') tree.")
+
+(define vl-extend-ifdef-map ((name stringp)
+                             (ctx  vl-ifdef-context-p)
+                             (map  vl-ifdef-use-map-p))
+  :parents (vl-ifdef-use-map)
+  :returns (new-map vl-ifdef-use-map-p)
+  (b* ((name (string-fix name))
+       (ctx  (vl-ifdef-context-fix ctx))
+       (map  (vl-ifdef-use-map-fix map))
+       (prev-uses (cdr (hons-get name map)))
+       (new-uses  (cons ctx prev-uses)))
+    (hons-acons name new-uses map)))
+
+
+
+(defprod vl-def-context
+  :parents (preprocessor)
+  :short "Information about a single use of a define like @('`FOO')."
+  :layout :tree
+  :tag nil
+  ((activep booleanp      "Was this use in code that was actively being preprocessed?")
+   (loc     vl-location-p "Location where the use of @('`FOO') occurred.")))
+
+(fty::deflist vl-def-context-list
+  :elt-type vl-def-context
+  :parents (preprocessor))
+
+(fty::defalist vl-def-use-map
+  :parents (preprocessor)
+  :key-type stringp
+  :val-type vl-def-context-list
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :short "A log of where @('`define')s are used, outside of ifdefs.")
+
+(define vl-extend-def-map ((name stringp)
+                           (ctx  vl-def-context-p)
+                           (map  vl-def-use-map-p))
+  :parents (vl-def-use-map)
+  :returns (new-map vl-def-use-map-p)
+  (b* ((name      (string-fix name))
+       (ctx       (vl-def-context-fix ctx))
+       (map       (vl-def-use-map-fix map))
+       (prev-uses (cdr (hons-get name map)))
+       (new-uses  (cons ctx prev-uses)))
+    (hons-acons name new-uses map)))
+
+
