@@ -14,7 +14,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "BITCOIN" (append *std-pkg-symbols*
+(defpkg "BITCOIN" (append (set-difference-eq *std-pkg-symbols*
+                                             '(byte))
                           '(bendian=>nat
                             dab-digit-fix
                             dab-digit-list-fix

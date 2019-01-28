@@ -266,3 +266,44 @@
                                       thm-word)))))
       `(xdoc::app (xdoc::h3 ,title)
                   ,@content))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-section-redundancy
+  :returns (text xdoc::textp)
+  :short "Construct the redundancy section
+          of the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This assumes an event macro with a @(':print') and @(':show-only') inputs
+     with specific meanings.
+     This XDOC constructor may be generalized in the future
+     to cover event macros that do not have exactly
+     those two specific inputs with those specific meanings.")
+   (xdoc::def "xdoc::evmac-section-redundancy"))
+  (defmacro xdoc::evmac-section-redundancy (macro)
+    (declare (xargs :guard (symbolp macro)))
+    (let ((macro-name (string-downcase (symbol-name macro))))
+      `(xdoc::app
+        (xdoc::h3 "Redundancy")
+        (xdoc::p
+         (concatenate
+          'string
+          "A call of @('"
+          ,macro-name
+          "') is redundant if and only if
+           it is identical to a previous successful call of @('"
+          ,macro-name
+          "') whose @(':show-only') input is not @('t'),
+           except that the two calls may differ in
+           their @(':print') and @(':show-only') inputs.
+           These inputs do not affect the generated events,
+           and thus they are ignored for the purpose of redundancy."))
+        (xdoc::p
+         (xdoc::app
+          "A call of @('"
+          ,macro-name
+          "') whose @(':show-only') input is @('t')
+           does not generate any event.
+           Thus, no successive call may be redundant with such a call."))))))

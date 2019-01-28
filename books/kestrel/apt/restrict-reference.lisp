@@ -267,4 +267,8 @@
        "(defthm old-to-new"
        "  (implies restriction<x1,...,xn>"
        "           (equal (old x1 ... xn)"
-       "                  (new x1 ... xn))))")))))
+       "                  (new x1 ... xn))))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy restrict)))

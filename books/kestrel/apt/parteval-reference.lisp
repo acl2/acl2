@@ -158,4 +158,8 @@
        "                ..."
        "                (equal ym cm)"
        "           (equal (old x1 ... xn y1 ... ym)"
-       "                  (new x1 ... xn)))")))))
+       "                  (new x1 ... xn)))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy parteval)))

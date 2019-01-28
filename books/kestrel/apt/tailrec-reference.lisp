@@ -536,4 +536,8 @@
       (xdoc::code
        "(defthm old-to-wrapper"
        "  (equal (old x1 ... xn)"
-       "         (wrapper x1 ... xn)))")))))
+       "         (wrapper x1 ... xn)))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy tailrec)))

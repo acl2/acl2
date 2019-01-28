@@ -120,8 +120,8 @@
  <p>Started a library of concepts and utilities to develop event
  macros (i.e. macros at the event level) more quickly and consistently.</p>
 
- <p>Added some XDOC constructor utilities for the reference documentation of
- event macros.</p>
+ <p>This library includes some XDOC constructor utilities for the reference
+ documentation of event macros.</p>
 
  <h4>Graphviz</h4>
 
@@ -170,6 +170,8 @@
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
  <p>Improved the documentation of the Bitcoin library.</p>
+
+ <p>Added fixtypes for bytes and byte sequences.</p>
 
  <h4>Bytes</h4>
 
