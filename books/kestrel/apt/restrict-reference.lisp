@@ -171,9 +171,7 @@
 
    (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    restrict
 
     (xdoc::desc
      "@(':restriction-of-rec-calls')"
