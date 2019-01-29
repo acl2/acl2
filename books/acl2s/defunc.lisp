@@ -6,6 +6,7 @@
 (in-package "ACL2S")
 (include-book "cgen/top" :ttags :all)
 (include-book "utilities")
+(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "centaur/misc/outer-local" :dir :system)
 
 #|
@@ -173,6 +174,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         nil))))
 
 (include-book "coi/util/pseudo-translate" :dir :system)
+
+(defun c-is-t (c)
+  (or (equal c 't) (equal c ''t)))
+
 (acl2::program)
 (defun add-output-contract-check (body output-contract fun-name fun-args wrld)
   "To body, we insert a runtime check for output-contract."
@@ -195,8 +200,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun make-defun-body/logic (name formals ic oc body wrld make-staticp)
   (b* ((with-ic-body
-        (cond ((or (equal ic 't) (equal ic ''t))
-               body)
+        (cond ((c-is-t ic) body)
               ((equal oc `(acl2::booleanp (,name ,@formals)))
                `(if ,ic
                     ,body
@@ -296,12 +300,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (cons 'and (map-force-list (cdr ic))))
         (t `(force ,ic))))
 
-(defun make-contract-body (name ic oc)
-  (if (and (listp oc)
-           (listp (cdr oc))
-           (listp (second oc))
-           (equal (car oc) 'acl2::booleanp)
-           (equal (car (second oc)) name))
+(defun make-contract-body (ic oc)
+  (if (c-is-t ic)
       oc
     `(implies ,(map-force-ic ic) ,oc)))
 
@@ -310,7 +310,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (otf-flg (defdata::get1 :otf-flg kwd-alist))
        (hints (defdata::get1 :function-contract-hints kwd-alist))
        (rule-classes (defdata::get1 :rule-classes kwd-alist))
-       (body (make-contract-body name ic oc)))
+       (body (make-contract-body ic oc)))
     `(DEFTHM ,(make-sym name 'CONTRACT)
        ,body
        ,@(and hints `(:HINTS ,hints))
@@ -318,39 +318,61 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        ,@(and otf-flg `(:OTF-FLG ,otf-flg))
        ,@(and instructions `(:INSTRUCTIONS ,instructions)))))
 
+
 (defun make-contract-ev (name formals ic oc kwd-alist make-staticp)
-  (b* (((when (or (equal oc 't) (equal oc ''t))) nil) ;trivially satisfied
+  (b* (((when (c-is-t oc)) nil) ;trivially satisfied
        (function-contract-strictp
         (defdata::get1 :function-contract-strictp kwd-alist))
        (instructions (defdata::get1 :instructions kwd-alist))
        (otf-flg (defdata::get1 :otf-flg kwd-alist))
        (hints (defdata::get1 :function-contract-hints kwd-alist))
        (rule-classes (defdata::get1 :rule-classes kwd-alist))
-       (body (make-contract-body name ic oc))
+       (body (make-contract-body ic oc))
        (contract-name (make-sym name 'CONTRACT))
+       (contract-tpname (make-sym name 'CONTRACT-TP))
        (recursivep (defdata::get1 :recursivep kwd-alist))
-       (ihints `(:hints
+       (ihints `(:hints ;; add induction hint, so user-provided
+                 ;; hints are treated as extra
                  ,(append `(("Goal" :induct ,(cons name formals)))
                           hints)))
        (rhints (if recursivep
                    ihints
                  (and hints `(:hints ,hints))))
-       (rclass ;; removed type-prescription, added fc
-        `((:rewrite :Backchain-limit-lst 3)
+       (rewrite-class (if (c-is-t ic)
+                          '(:rewrite) ;; error if no hyps
+                        '(:rewrite :backchain-limit-lst 3)))
+       (rclass
+        `(,rewrite-class
           (:forward-chaining :trigger-terms ((,name ,@formals)))))
        (rclass (or rule-classes rclass)) ; rule-classes overrides rclass
-       (try-first-with-induct-and-fc
-        `(DEFTHM ,contract-name ,
-           body
-           ,@rhints
-           ,@(and rclass `(:RULE-CLASSES ,rclass))
-           ,@(and otf-flg `(:OTF-FLG ,otf-flg))
-           ,@(and instructions `(:INSTRUCTIONS ,instructions)))))
+       (rewrite-fc ;; in case user wanted to completely override hints
+        (if hints
+            `(DEFTHM ,contract-name ,body
+               ,@(and hints `(:hints ,hints))
+               ,@(and rclass `(:rule-classes ,rclass))
+               ,@(and otf-flg `(:otf-flg ,otf-flg))
+               ,@(and instructions `(:instructions ,instructions)))
+          '(acl2::fail-event :defunc t :fail-contract "No user-provided hints")))
+       (induct-rewrite-fc
+        `(DEFTHM ,contract-name ,body ,@rhints
+           ,@(and rclass `(:rule-classes ,rclass))
+           ,@(and otf-flg `(:otf-flg ,otf-flg))
+           ,@(and instructions `(:instructions ,instructions))))
+       (tp-rule
+        `(DEFTHM ,contract-tpname ,body
+           :rule-classes ((:type-prescription))
+           :hints (("goal" :by ,contract-name)))))
       (if (or make-staticp function-contract-strictp)
-          `(MAKE-EVENT ',try-first-with-induct-and-fc)
-        `(MAKE-EVENT
-          '(:OR ,try-first-with-induct-and-fc
-                (value-triple :CONTRACT-FAILED))))))
+          `(encapsulate
+            ()
+            (make-event '(:or ,induct-rewrite-fc ,rewrite-fc))
+            (make-event '(:or ,tp-rule (value-triple :type-prescription-rule-failed))))
+        `(encapsulate
+          ()
+          (make-event '(:OR ,induct-rewrite-fc
+                            (value-triple :contract-failed)))
+          (make-event '(:OR ,tp-rule
+                            (value-triple :Type-prescription-rule-failed)))))))
 
 (defun make-verify-guards-ev (name kwd-alist)
   (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist)) ; (defdata::get1 :guard-hints xargs{})
@@ -462,20 +484,21 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (make-event
       (b* ((symbol-class (acl2::symbol-class ',name (w state)))
            (contract-name (make-sym ',name 'contract))
-           (function-contract-proven-p (or (eq 't ',oc) (equal ''t ',oc) (acl2::logical-namep contract-name (w state))))
+           (function-contract-proven-p
+            (or (c-is-t ',oc) (acl2::logical-namep contract-name (w state))))
            (print (defdata::get1 :print-summary ',kwd-alist))
            ((mv end state) (acl2::read-run-time state))
            ((er &) (if print (print-time-taken ,(defdata::get1 :start-time kwd-alist) end state) (value nil)))
            )
-        (value
-         `(with-output :stack :pop
-            (value-triple
-             (defdata::cw? ,print
-               "~%~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
-               ',',name
-               (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
-               (print-*-or-space ,function-contract-proven-p)
-               (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class))))))))))
+          (value
+           `(with-output :stack :pop
+              (value-triple
+               (defdata::cw? ,print
+                 "~%~|Function Name : ~s0 ~|Termination proven -------- [~s1] ~|Function Contract proven -- [~s2] ~|Body Contracts proven ----- [~s3]~%"
+                 ',',name
+                 (print-*-or-space (not (eq :PROGRAM ,symbol-class)))
+                 (print-*-or-space ,function-contract-proven-p)
+                 (print-*-or-space (eq :COMMON-LISP-COMPLIANT ,symbol-class))))))))))
 
 (defun print-*-or-space (b)
   (if b "*" " "))

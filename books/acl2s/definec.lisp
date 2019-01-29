@@ -27,7 +27,7 @@
 
 (defun make-input-contract-aux (args types)
   (cond ((endp args) nil)
-        ((equal (car types) 'allp)
+        ((equal (car types) 'acl2s::allp)
          (make-input-contract-aux (rest args) (rest types)))
         (t (cons `(,(car types) ,(car args))
                  (make-input-contract-aux (rest args) (rest types))))))
@@ -39,7 +39,7 @@
           (t (cons 'and res)))))
      
 (defun make-output-contract (name args type)
-  (cond ((equal type 'allp) t)
+  (cond ((equal type 'acl2s::allp) t)
         (t `(,type ,(cons name args)))))
 
 
