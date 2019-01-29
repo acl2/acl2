@@ -229,6 +229,12 @@ warning that maybe something is amiss with file loading.</p>")
               "Supports multiple-include optimization in the @(see
                preprocessor).")
 
+   (ifdefmap   vl-ifdef-use-map-p
+               "Log of which @('`define')s are used by @('`ifdef')s.")
+
+   (defmap     vl-def-use-map-p
+               "Log of which @('`define')s are used by non-@('`ifdef')s.")
+
    (idcache    vl-dirlist-cache-p
                "Cache for the contents of the :include-dirs.")
 
@@ -276,8 +282,8 @@ warning that maybe something is amiss with file loading.</p>")
   :returns (new-st (and (vl-loadstate-p new-st)
                         (equal (vl-loadstate->descs new-st)
                                (vl-loadstate->descs st))))
-  (b* (((vl-loadstate st) st)
-       (new-pstate (change-vl-parsestate st.pstate :warnings warnings)))
+  (b* ((?pstate    (vl-loadstate->pstate st))
+       (new-pstate (change-vl-parsestate pstate :warnings warnings)))
     (change-vl-loadstate st :pstate new-pstate)))
 
 (define vl-loadstate-pad ((st vl-loadstate-p))
@@ -533,22 +539,29 @@ descriptions.</li>
 ; still free to update warnings, iskips, bytes read, etc., because those aren't
 ; relevant to the contents of the files we've loaded.
 
-       ((mv successp defines filemap iskips bytes warnings preprocessed state)
+       ((mv successp defines filemap iskips ifdefmap defmap bytes warnings preprocessed state)
         (time$ (vl-preprocess contents
-                              :defines st.defines
-                              :filemap filemap
-                              :iskips  st.iskips
-                              :bytes   new-bytes
-                              :config  st.config
-                              :idcache st.idcache
+                              :defines  st.defines
+                              :filemap  filemap
+                              :iskips   st.iskips
+                              :ifdefmap st.ifdefmap
+                              :defmap   st.defmap
+                              :bytes    new-bytes
+                              :config   st.config
+                              :idcache  st.idcache
                               :warnings (vl-loadstate->warnings st))
                :msg "~s0 (preprocess: ~st sec, ~sa bytes)~%"
                :args (list pad)
                :mintime st.config.mintime))
        (st (vl-loadstate-set-warnings warnings))
        (st (change-vl-loadstate st
-                                :iskips iskips
-                                :bytes bytes))
+                                :iskips   iskips
+                                ;; keeping the ifdefmap/defmap regardless of
+                                ;; whether things are successful is useful for
+                                ;; fast alist discipline
+                                :ifdefmap ifdefmap
+                                :defmap   defmap
+                                :bytes    bytes))
        ((unless successp)
         (mv (vl-loadstate-fatal :type :vl-preprocess-failed
                                 :msg "Preprocessing failed for ~s0."
@@ -597,9 +610,7 @@ descriptions.</li>
         ;; we want to add nothing but warnings to the parse state.  That means
         ;; unwinding and restoring the pstate-backup that we had.
         (b* ((new-warnings (vl-parsestate->warnings pstate))
-             (-            (vl-parsestate-free pstate))
-             (pstate       (vl-parsestate-restore pstate-backup))
-             (st           (change-vl-loadstate st :pstate pstate))
+             (st           (change-vl-loadstate st :pstate pstate-backup))
              (st           (vl-loadstate-set-warnings new-warnings))
              (st           (vl-loadstate-fatal :type :vl-parse-failed
                                                :msg "Parsing failed for ~s0."
@@ -903,7 +914,13 @@ will look for new modules.</p>"
    (defines     vl-defines-p
                 "Final defines that we ended up with.  This can be useful for
                  extracting the values of @('`define')s.  See also @(see
-                 scope-of-defines)."))
+                 scope-of-defines).")
+
+   (ifdefmap    vl-ifdef-use-map-p
+                "Map of where @('`define')s were used in @('`ifdef')s.")
+
+   (defmap      vl-def-use-map-p
+                "Map of where @('`define')s were used in non-@('`ifdef') contexts."))
 
   :tag :vl-loadresult)
 
@@ -1094,8 +1111,7 @@ will look for new modules.</p>"
                :args (list (len config.search-path))
                :mintime config.mintime))
 
-       (pstate (make-vl-parsestate :warnings warnings
-                                   :usertypes nil))
+       (pstate (make-vl-parsestate :warnings warnings))
 
        (st     (make-vl-loadstate :config     config
                                   :descs      nil
@@ -1104,6 +1120,8 @@ will look for new modules.</p>"
                                   :reportcard nil
                                   :pstate     pstate
                                   :iskips     nil
+                                  :ifdefmap   nil
+                                  :defmap     nil
                                   :filemap    nil
                                   :bytes      0
                                   :idcache    idcache
@@ -1130,13 +1148,18 @@ will look for new modules.</p>"
                                  :plusargs config.plusargs
                                  :warnings (append-without-guard (vl-parsestate->warnings st.pstate)
                                                                  (vl-design->warnings design))))
+       (ifdefmap (fast-alist-clean st.ifdefmap))
+       (defmap   (fast-alist-clean st.defmap))
        (result (make-vl-loadresult :design   design
                                    :filemap  st.filemap
-                                   :defines  st.defines))
+                                   :defines  st.defines
+                                   :ifdefmap ifdefmap
+                                   :defmap   defmap))
 
+       (- (fast-alist-free ifdefmap))
+       (- (fast-alist-free defmap))
        (- (vl-free-dirlist-cache idcache))
        (- (vl-free-dirxlist-cache spcache))
-       (- (vl-parsestate-free st.pstate))
        (- (fast-alist-free st.descalist))
        (- (vl-iskips-report st.iskips))
        (state (vl-read-file-report state)))
