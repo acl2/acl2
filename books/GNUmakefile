@@ -215,7 +215,7 @@ ACL2_CUSTOM_TARGETS :=
 # that we'll try to rebuild it on every invocation of make.
 .PHONY: $(BUILD_DIR)/Makefile-features
 $(BUILD_DIR)/Makefile-features : 
-	@echo Determining ACL2 features (for ACL2 = $(ACL2)))
+	@echo "Determining ACL2 features (for ACL2 = $(ACL2)))"
 	@rm -f $(BUILD_DIR)/Makefile-features ; \
 	   cd $(BUILD_DIR); ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
 	   "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;
