@@ -4,7 +4,6 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-(include-book "kestrel/utilities/symbols" :dir :system)
 (include-book "defunc" :ttags :all)
 
 (defun get-alist (key alist)
