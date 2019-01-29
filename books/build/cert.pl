@@ -113,6 +113,7 @@ my @include_afters = ();
 my $svn_mode = 0;
 my $quiet = 0;
 my @run_sources = ();
+my @run_otherdeps = ();
 my @run_out_of_date = ();
 my @run_up_to_date = ();
 my $make = $ENV{"MAKE"} || "make";
@@ -143,6 +144,7 @@ if ($bin_dir) {
 }
 
 my $write_sources=0;
+my $write_otherdeps=0;
 my $write_certs=0;
 
 $base_path = abs_canonical_path(".");
@@ -398,6 +400,11 @@ COMMAND LINE OPTIONS
            Any number of --source-cmd directives may be given; the
            commands will then be run in the order in which they are given.
 
+   --otherdeps-cmd <command-str>
+           Run the command on each non-source dependency file, in the same
+           manner as --source-cmd.  Non-source dependencies include files
+           referenced by depends-on comments as well as .image files.
+
    --out-of-date-cmd <command-str>
            Like --source-cmd, but runs the command on all of the bottommost
            out of date certificates in the dependency tree.  {} is replaced
@@ -469,6 +476,9 @@ COMMAND LINE OPTIONS
 
    --write-certs <filename>
           Dump the list of all cert files, one per line, into filename.
+
+   --write-otherdeps <filename>
+          Dump the list of all non-source dependencies, one per line, into filename.
 
    --pcert-all
           Allow provisional certification for all books, not just the ones with
@@ -586,6 +596,13 @@ GetOptions ("help|h"               => sub { print $summary_str;
                                                         my $line = $cmd;
                                                         $line =~ s/{}/$target/g;
                                                         print `$line`;})},
+            "otherdep-cmd=s"      => sub { shift;
+                                            my $cmd = shift;
+                                            push (@run_otherdeps,
+                                                  sub { my $target = shift;
+                                                        my $line = $cmd;
+                                                        $line =~ s/{}/$target/g;
+                                                        print `$line`;})},
             "up-to-date-cmd=s"     => sub { shift;
                                             my $cmd = shift;
                                             push (@run_up_to_date,
@@ -612,7 +629,8 @@ GetOptions ("help|h"               => sub { print $summary_str;
             "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
             "params=s"             => \$params_file,
             "write-certs=s"        => \$write_certs,
-            "write-sources=s"        => \$write_sources,
+            "write-sources=s"      => \$write_sources,
+            "write-otherdeps=s"    => \$write_otherdeps,
             "pcert-all"            =>\$certlib_opts{"pcert_all"},
             "include-excludes"     =>\$certlib_opts{"include_excludes"},
             "target-ext|e=s"       => \$target_ext,
@@ -779,12 +797,18 @@ if ($params_file && open (my $params, "<", $params_file)) {
 store_cache($cache, $cache_file);
 
 my @sources = sort(keys %{$depdb->sources});
-
+my @otherdeps = sort(keys %{$depdb->others});
 # Is this how we want to nest these?  Pick a command, run it on
 # every source file, versus pick a source file, run every command?
 # This way seems more flexible; commands can be grouped together.
 foreach my $run (@run_sources) {
     foreach my $source (@sources) {
+        &$run($source);
+    }
+}
+
+foreach my $run (@run_otherdeps) {
+    foreach my $source (@otherdeps) {
         &$run($source);
     }
 }
@@ -1188,6 +1212,15 @@ if ($write_sources) {
         print $sourcesfile "${source}\n";
     }
     close($sourcesfile);
+}
+
+if ($write_otherdeps) {
+    open (my $otherdepsfile, ">", $write_otherdeps)
+        or die "Failed to open output file $write_otherdeps\n";
+    foreach my $source (@otherdeps) {
+        print $otherdepsfile "${source}\n";
+    }
+    close($otherdepsfile);
 }
 
 if ($write_certs) {

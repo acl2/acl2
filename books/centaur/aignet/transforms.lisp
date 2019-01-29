@@ -160,6 +160,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:balance-config "Balance")
     (:fraig-config "Fraig")
     (:rewrite-config "Rewrite")
+    (:obs-constprop-config "Observability")
     (:observability-config "Observability")
     (:constprop-config "Constprop")
     (:snapshot-config "Snapshot")
