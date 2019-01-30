@@ -6,10 +6,6 @@
 (in-package "ACL2S")
 (include-book "defunc" :ttags :all)
 
-(defun get-alist (key alist)
-  (declare (xargs :guard (alistp alist)))
-  (cdr (assoc-equal key alist)))
-
 (defun pred-of-type (type tbl)
   (cond ((equal type 'tl) 'acl2::true-listp)
         ((equal type 'int) 'acl2::integerp)
