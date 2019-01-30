@@ -301,9 +301,7 @@
 
    (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    tailrec
 
     (xdoc::desc
      "@(':domain-of-base')"

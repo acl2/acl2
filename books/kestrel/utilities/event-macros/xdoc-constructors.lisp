@@ -229,10 +229,25 @@
   :long
   (xdoc::topapp
    (xdoc::def "xdoc::evmac-section-appconds"))
-  (defmacro xdoc::evmac-section-appconds (&rest content)
-    `(xdoc::app
-      (xdoc::h3 "Applicability Conditions")
-      ,@content)))
+  (defmacro xdoc::evmac-section-appconds (macro &rest content)
+    (declare (xargs :guard (symbolp macro)))
+    (let ((macro-name (string-downcase (symbol-name macro))))
+      `(xdoc::app
+        (xdoc::h3 "Applicability Conditions")
+        (xdoc::p
+         (concatenate 'string
+                      "In order for @('"
+                      ,macro-name
+                      "') to apply,
+                       in addition to the requirements on the inputs
+                       stated above,
+                       the following conditions must be proved.
+                       The proofs are attempted when @('"
+                      ,macro-name
+                      "') is called,
+                       using the hints optionally supplied
+                       as the @(':hints') input above."))
+        ,@content))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

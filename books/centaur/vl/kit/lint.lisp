@@ -491,6 +491,9 @@ shown.</p>"
    (design-orig   vl-design-p
               "Really the initial, pre-transformed modules.")
 
+   (sv-modalist sv::modalist-p
+                "The result of converting the elaborated design into SV modules.")
+
    (reportcard vl-reportcard-p
                "The main result: binds \"original\" (pre-unparameterization)
                 module names to their warnings.")
@@ -896,6 +899,7 @@ shown.</p>"
     (make-vl-lintresult :design design
                         :design0 design0
                         :design-orig design-orig
+                        :sv-modalist modalist
                         :reportcard reportcard
                         :sd-probs sd-probs
                         )))
