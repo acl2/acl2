@@ -25,8 +25,16 @@
    (xdoc::p
     "The @('xdoc::evmac-section-...') utilities construct level-3 sections.
      Some are relatively thin wrappers,
-     which precede their arguments with specific level-3 headings.
-     Others provide more automation."))
+     which precede their arguments
+     (which must be zero or more pieces of XDOC text)
+     with specific level-3 headings.
+     Other utilities provide more automation.")
+   (xdoc::p
+    "The @('xdoc::evmac-input-...') utilities construct
+     <see topic='@(url xdoc::desc)'>descriptions</see>
+     of inputs that are expected to be common to multiple event macros.
+     These utilities accept zero or more additional pieces of XDOC text,
+     which are concatenated after the automatically generated XDOC text."))
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -322,3 +330,165 @@
           "') whose @(':show-only') input is @('t')
            does not generate any event.
            Thus, no successive call may be redundant with such a call."))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-input-hints
+  :short "Construct a description of the @(':hints') input
+          for the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Note that the generated text mentions `below'
+     in reference to the applicability conditions.
+     In the reference documentation of the event macro,
+     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
+     section</see> should come before
+     the <see topic='@(url xdoc::evmac-section-appconds)'>applicability
+     conditions section</see>.")
+   (xdoc::def "xdoc::evmac-input-hints"))
+  (defmacro xdoc::evmac-input-hints (&rest additional)
+    `(xdoc::desc
+      "@(':hints') &mdash; default @('nil')"
+      (xdoc::p
+       "Hints to prove the applicability conditions below.")
+      (xdoc::p
+       "It must be a
+        <see topic='@(url acl2::keyword-value-listp)'>keyword-value list</see>
+        @('(appcond1 hints1 ... appcondp hintsp)'),
+        where each @('appcondk') is a keyword
+        that identifies one of the applicability conditions below,
+        and each @('hintsk') consists of hints that may appear
+        just after @(':hints') in a @(tsee defthm).
+        The hints @('hintsk') are used
+        to prove applicability condition @('appcondk').")
+      (xdoc::p
+       "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
+      (xdoc::p
+       "An @('appcondk') keyword is allowed in the @(':hints') input iff
+        the corresponding applicability condition is present,
+        as specified below.")
+      ,@additional)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-input-print
+  :short "Construct a description of the @(':print') input
+          for the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Note that the generated text mentions `below'
+     in reference to the generated events and to redundancy.
+     In the reference documentation of the event macro,
+     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
+     section</see> should come before
+     the <see topic='@(url xdoc::evmac-section-generated)'>generated
+     events section</see> and
+     the <see topic='@(url xdoc::evmac-section-redundancy)'>redundancy
+     section</see>.")
+   (xdoc::def "xdoc::evmac-input-print"))
+  (defmacro xdoc::evmac-input-print (macro &rest additional)
+    (declare (xargs :guard (symbolp macro)))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@('" macro-name "')")))
+      `(xdoc::desc
+        "@(':print') &mdash; default @(':result')"
+        (xdoc::p
+         "Specifies what is printed on the screen:")
+        (xdoc::ul
+         (xdoc::li
+          "@('nil'), to print nothing (not even error output).")
+         (xdoc::li
+          "@(':error'), to print only error output (if any).")
+         (xdoc::li
+          (concatenate
+           'string
+           "@(':result'), to print,
+            besides any error output,
+            also the generated events described below,
+            i.e. the resulting events of "
+           ,macro-ref
+           ". This is the default value of the @(':print') input."))
+         (xdoc::li
+          (concatenate
+           'string
+           "@(':info'), to print,
+            besides any error output and the resulting events,
+            also some additional information about the operations performed by "
+           ,macro-ref
+           "."))
+         (xdoc::li
+          "@(':all'), to print,
+          besides any error output,
+          the resulting events,
+          and the additional information,
+          also ACL2's output in response to all the submitted events
+          (the ones that form the result as well as some ancillary ones)."))
+        (xdoc::p
+         "These are ordered printing levels")
+        (xdoc::code
+         "nil < :error < :result < :info < :all")
+        (xdoc::p
+         "where the amount of printed material increases monotonically.")
+        (xdoc::p
+         (concatenate
+          'string
+          "If the call of "
+          ,macro-ref
+          " is redundant
+           (as defined in the `Redundancy' section below),
+           a message to that effect is printed on the screen,
+           unless @(':print') is @('nil')."))
+        ,@additional))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-input-show-only
+  :short "Construct a description of the @(':show-only') input
+          for the reference documentation of an event macro."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Note that the generated text mentions `below'
+     in reference to redundancy.
+     In the reference documentation of the event macro,
+     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
+     section</see> should come before
+     the <see topic='@(url xdoc::evmac-section-redundancy)'>redundancy
+     section</see>.")
+   (xdoc::def "xdoc::evmac-input-show-only"))
+  (defmacro xdoc::evmac-input-show-only (macro &rest additional)
+    (declare (xargs :guard (symbolp macro)))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@('" macro-name "')")))
+      `(xdoc::desc
+        "@(':show-only') &mdash; default @('nil')"
+        (xdoc::p
+         (concatenate
+          'string
+          "Determines whether the event expansion of "
+          ,macro-ref
+          " is submitted to ACL2 or just printed on the screen:"))
+        (xdoc::ul
+         (xdoc::li
+          "@('nil'), to submit it.")
+         (xdoc::li
+          (concatenate
+           'string
+           "@('t'), to just print it.
+            In this case:
+            the event expansion is printed even if @(':print') is @('nil')
+            (because the user has explicitly asked to show the event expansion);
+            the resulting events are not re-printed separately
+            (other than their appearance in the printed event expansion)
+            even if @(':print') is @(':result') or @(':info') or @(':all');
+            no ACL2 output is printed for the event expansion
+            even if @(':print') is @(':all')
+            (because the event expansion is not submitted).
+            If the call of "
+           ,macro-ref
+           " is redundant
+            (as defined in the `Redundancy' section below),
+            the event expansion generated by the existing call is printed.")))
+        ,@additional))))
