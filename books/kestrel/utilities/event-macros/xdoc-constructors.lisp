@@ -249,20 +249,21 @@
    (xdoc::def "xdoc::evmac-section-appconds"))
   (defmacro xdoc::evmac-section-appconds (macro &rest content)
     (declare (xargs :guard (symbolp macro)))
-    (let ((macro-name (string-downcase (symbol-name macro))))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@('" macro-name "')")))
       `(xdoc::app
         (xdoc::h3 "Applicability Conditions")
         (xdoc::p
          (concatenate 'string
-                      "In order for @('"
-                      ,macro-name
-                      "') to apply,
+                      "In order for "
+                      ,macro-ref
+                      " to apply,
                        in addition to the requirements on the inputs
                        stated above,
                        the following conditions must be proved.
-                       The proofs are attempted when @('"
-                      ,macro-name
-                      "') is called,
+                       The proofs are attempted when "
+                      ,macro-ref
+                      " is called,
                        using the hints optionally supplied
                        as the @(':hints') input above."))
         ,@content))))
@@ -317,27 +318,28 @@
    (xdoc::def "xdoc::evmac-section-redundancy"))
   (defmacro xdoc::evmac-section-redundancy (macro)
     (declare (xargs :guard (symbolp macro)))
-    (let ((macro-name (string-downcase (symbol-name macro))))
+    (let* ((macro-name (string-downcase (symbol-name macro)))
+           (macro-ref (concatenate 'string "@('" macro-name "')")))
       `(xdoc::app
         (xdoc::h3 "Redundancy")
         (xdoc::p
          (concatenate
           'string
-          "A call of @('"
-          ,macro-name
-          "') is redundant if and only if
-           it is identical to a previous successful call of @('"
-          ,macro-name
-          "') whose @(':show-only') input is not @('t'),
+          "A call of "
+          ,macro-ref
+          " is redundant if and only if
+           it is identical to a previous successful call of "
+          ,macro-ref
+          " whose @(':show-only') input is not @('t'),
            except that the two calls may differ in
            their @(':print') and @(':show-only') inputs.
            These inputs do not affect the generated events,
            and thus they are ignored for the purpose of redundancy."))
         (xdoc::p
          (xdoc::app
-          "A call of @('"
-          ,macro-name
-          "') whose @(':show-only') input is @('t')
+          "A call of "
+          ,macro-ref
+          " whose @(':show-only') input is @('t')
            does not generate any event.
            Thus, no successive call may be redundant with such a call."))))))
 
