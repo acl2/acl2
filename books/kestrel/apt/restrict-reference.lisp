@@ -161,11 +161,11 @@
 
     (xdoc::desc-apt-input-verify-guards nil)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print restrict)
 
-    (xdoc::desc-apt-input-show-only))
+    (xdoc::evmac-input-show-only restrict))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

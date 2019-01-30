@@ -212,11 +212,11 @@
 
     (xdoc::desc-apt-input-verify-guards t)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print tailrec)
 
-    (xdoc::desc-apt-input-show-only)
+    (xdoc::evmac-input-show-only tailrec)
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
