@@ -210,14 +210,18 @@ ACL2_CUSTOM_TARGETS :=
 ### invoked with INFO=warning; otherwise, same as $(info just a test).
 ## $(eval $$($(INFO) just a test))
 
+# Note: The use of .PHONY is strange here since
+# $(BUILD_DIR)/Makefile-features will be a real file; it just means
+# that we'll try to rebuild it on every invocation of make.
+.PHONY: $(BUILD_DIR)/Makefile-features
+$(BUILD_DIR)/Makefile-features : 
+	@echo "Determining ACL2 features (for ACL2 = $(ACL2)))"
+	@rm -f $(BUILD_DIR)/Makefile-features ; \
+	   cd $(BUILD_DIR); ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
+	   "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;
+	@ls -l $(BUILD_DIR)/Makefile-features
 
-$(info Determining ACL2 features (for ACL2 = $(ACL2)))
-ACL2_FEATURES := $(shell \
-  rm -f $(BUILD_DIR)/Makefile-features ; \
-  cd $(BUILD_DIR); ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
-     "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
-  ls -l $(BUILD_DIR)/Makefile-features)
-
+-include $(BUILD_DIR)/Makefile-features
 
 $(info Determining whether Glucose is installed)
 # If glucose doesn't exist, then the error message saying it can't be
@@ -274,7 +278,6 @@ endif
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
--include $(BUILD_DIR)/Makefile-features
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_ANSI     := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
@@ -1679,8 +1682,9 @@ git_status:
                       --cache $(BUILD_DIR)/Makefile-cache \
                       --acl2-books `pwd` \
                       --write-sources $(BUILD_DIR)/git_source_deps \
+                      --write-otherdeps $(BUILD_DIR)/git_other_deps \
                       --targets $(BUILD_DIR)/git_lisp_sources
-	xargs --delimiter='\n' git status -- < $(BUILD_DIR)/git_source_deps
+	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status --
 
 
 ##############################

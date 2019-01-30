@@ -77,7 +77,7 @@
          (warnings nil)
          ((mv idcache ?warnings state)
           (vl-make-dirlist-cache include-dirs warnings state))
-         ((mv successp ?defs ?filemap ?iskips ?bytes warnings output state)
+         ((mv successp ?defs ?filemap ?iskips ?ifdefmap ?defmap ?bytes warnings output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig :include-dirs include-dirs)
@@ -117,7 +117,7 @@
          (warnings nil)
          ((mv idcache warnings state)
           (vl-make-dirlist-cache include-dirs warnings state))
-         ((mv successp ?defs ?filemap ?iskips ?bytes warnings output state)
+         ((mv successp ?defs ?filemap ?iskips ?ifdefmap ?defmap ?bytes warnings output state)
           (vl-preprocess echars
                          :defines ,defines
                          :config (make-vl-loadconfig :include-dirs include-dirs)

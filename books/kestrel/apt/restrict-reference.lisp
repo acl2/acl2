@@ -161,19 +161,17 @@
 
     (xdoc::desc-apt-input-verify-guards nil)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print restrict)
 
-    (xdoc::desc-apt-input-show-only))
+    (xdoc::evmac-input-show-only restrict))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    restrict
 
     (xdoc::desc
      "@(':restriction-of-rec-calls')"
@@ -267,4 +265,8 @@
        "(defthm old-to-new"
        "  (implies restriction<x1,...,xn>"
        "           (equal (old x1 ... xn)"
-       "                  (new x1 ... xn))))")))))
+       "                  (new x1 ... xn))))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy restrict)))

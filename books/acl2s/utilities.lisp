@@ -169,4 +169,7 @@ skip-proofs forms, without testing."
   (declare (xargs :guard (and (symbolp s) (symbolp suf))))
   (make-symbl (list s '- suf)))
 
+(defun get-alist (key alist)
+  (declare (xargs :guard (alistp alist)))
+  (cdr (assoc-equal key alist)))
 

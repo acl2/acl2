@@ -1332,6 +1332,7 @@ sub find_deps {
 	    # Won't check the result of canonical_path because we're
 	    # already in the right directory.
 	    push(@{$certinfo->otherdeps}, $imfilepath);
+	    $depdb->others->{$imfilepath} = 1;
 	    my $line;
 	    if (open(my $im, "<", $imagefile)) {
 		$line = <$im>;

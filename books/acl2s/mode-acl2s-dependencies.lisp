@@ -34,6 +34,9 @@
 (include-book "system/doc/acl2-doc-wrap" :dir :system)
 (include-book "misc/eval" :dir :system)
 (include-book "kestrel/utilities/symbols" :dir :system)
+(include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "centaur/misc/outer-local" :dir :system)
 
 #|
  (include-book 

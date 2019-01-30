@@ -72,7 +72,6 @@
                            (:t vl-tokenlist-fix)
                            ;; CONSP-WHEN-MEMBER-EQUAL-OF-VL-ATTS-P
                            ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
-                           consp-when-member-equal-of-vl-usertypes-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            (:t atom)
                            not
@@ -1396,13 +1395,6 @@ with these grammar rules, I believe simple_type is equivalent to:</p>
           ;; can't have $root.  But we don't have to worry about that because
           ;; we know we have an ID, so it can't be root.
           (hid := (vl-parse-hierarchical-identifier nil))
-
-          ;; We don't correctly keep track of what identifiers are user-defined types yet.
-          ;; (when (and (vl-hidexpr-case hid :end)
-          ;;            (not (vl-parsestate-is-user-defined-type-p (vl-hidexpr-end->name hid)
-          ;;                                                       (vl-tokstream->pstate))))
-          ;;   (return-raw
-          ;;    (vl-parse-error (cat "Not a known type: " (vl-hidexpr-end->name hid)))))
 
           (return (make-vl-usertype
                    :name (make-vl-scopeexpr-end :hid hid)))))
@@ -3218,8 +3210,6 @@ identifier, so we convert it into a hidpiece.</p>"
                              acl2::leq-position-equal-len
                              str::count-leading-charset-len
                              (:t vl-loadconfig->edition)
-                             booleanp-of-vl-parsestate-is-user-defined-type-p
-                             (:t vl-parsestate-is-user-defined-type-p)
                              (:t vl-expr-kind)
                              (:t vl-lookahead-is-token?)
                              (:t vl-lookahead-is-token?-fn-when-atom-of-tokens))))

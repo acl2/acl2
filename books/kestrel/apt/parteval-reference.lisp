@@ -125,9 +125,9 @@
 
     (xdoc::desc-apt-input-verify-guards nil)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print parteval)
 
-    (xdoc::desc-apt-input-show-only))
+    (xdoc::evmac-input-show-only parteval))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,4 +158,8 @@
        "                ..."
        "                (equal ym cm)"
        "           (equal (old x1 ... xn y1 ... ym)"
-       "                  (new x1 ... xn)))")))))
+       "                  (new x1 ... xn)))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy parteval)))

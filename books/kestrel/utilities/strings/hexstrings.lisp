@@ -42,7 +42,12 @@
 
   (defrule evenp-of-length-of-ubyte8s=>hexstring
     (evenp (length (ubyte8s=>hexstring bytes)))
-    :disable evenp))
+    :disable evenp)
+
+  (defrule ubyte8s=>hexstring-of-append
+    (equal (ubyte8s=>hexstring (append bytes1 bytes2))
+           (string-append (ubyte8s=>hexstring bytes1)
+                          (ubyte8s=>hexstring bytes2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,4 +63,12 @@
    "Each pair of hexadecimal digit characters is turned into sa number.
     Each such two-digit hexadecimal notation is treated as big endian,
     i.e. the most significant digit appears first.")
-  (hexchars=>ubyte8s (explode string)))
+  (hexchars=>ubyte8s (explode string))
+
+  ///
+
+  (defrule hexstring=>ubyte8s-of-string-append
+    (implies (evenp (length string1))
+             (equal (hexstring=>ubyte8s (string-append string1 string2))
+                    (append (hexstring=>ubyte8s string1)
+                            (hexstring=>ubyte8s string2))))))

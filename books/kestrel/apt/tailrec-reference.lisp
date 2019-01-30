@@ -212,11 +212,11 @@
 
     (xdoc::desc-apt-input-verify-guards t)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print tailrec)
 
-    (xdoc::desc-apt-input-show-only)
+    (xdoc::evmac-input-show-only tailrec)
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,9 +301,7 @@
 
    (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    tailrec
 
     (xdoc::desc
      "@(':domain-of-base')"
@@ -536,4 +534,8 @@
       (xdoc::code
        "(defthm old-to-wrapper"
        "  (equal (old x1 ... xn)"
-       "         (wrapper x1 ... xn)))")))))
+       "         (wrapper x1 ... xn)))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy tailrec)))

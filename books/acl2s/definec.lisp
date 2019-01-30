@@ -4,12 +4,7 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-(include-book "kestrel/utilities/symbols" :dir :system)
 (include-book "defunc" :ttags :all)
-
-(defun get-alist (key alist)
-  (declare (xargs :guard (alistp alist)))
-  (cdr (assoc-equal key alist)))
 
 (defun pred-of-type (type tbl)
   (cond ((equal type 'tl) 'acl2::true-listp)
@@ -27,7 +22,7 @@
 
 (defun make-input-contract-aux (args types)
   (cond ((endp args) nil)
-        ((equal (car types) 'allp)
+        ((equal (car types) 'acl2s::allp)
          (make-input-contract-aux (rest args) (rest types)))
         (t (cons `(,(car types) ,(car args))
                  (make-input-contract-aux (rest args) (rest types))))))
@@ -39,7 +34,7 @@
           (t (cons 'and res)))))
      
 (defun make-output-contract (name args type)
-  (cond ((equal type 'allp) t)
+  (cond ((equal type 'acl2s::allp) t)
         (t `(,type ,(cons name args)))))
 
 
@@ -81,6 +76,8 @@ both expand into
 
 |#
 
+;; Before latest updates to defunc 
+
 (defmacro definec (name &rest args)
   `(with-output
     :stack :push :off :all
@@ -95,32 +92,11 @@ both expand into
           (f-type-pred (pred-of-type f-type tbl))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
-          (fc-name (intern$ ,(concatenate 'acl2::string (symbol-name name) 
-                                          "-DEFINEC-FC-RULE")
-                            pkg))
-          (f-contract-name
-           (intern$ ,(concatenate 'acl2::string (symbol-name name)
-                                  "-CONTRACT")
-                    pkg))
           (defunc `(defunc ,',name ,d-args
                      :input-contract ,ic
                      :output-contract ,oc
-                     ,@(cddr ',args)))
-          (defthm (if (equal oc t)
-                      '(value-triple :passed)
-                    `(defthm ,fc-name (implies (force ,ic) ,oc)
-                       :hints (("goal"
-                                :instructions ((dv 1) r))
-                               ("goal'"
-                                :by ,f-contract-name))
-                       :rule-classes
-                       ((:forward-chaining
-                         :trigger-terms ((,',name ,@d-args))))))))
-         `(progn (with-output :stack :pop ,defunc)
-                 (with-output
-                  :off :all
-                  (make-event
-                   `(:or ,',defthm (value-triple :passed)))))))))
+                     ,@(cddr ',args))))
+         `(with-output :stack :pop ,defunc)))))
 
 #|
 
@@ -247,3 +223,18 @@ bells and whistles of @('acl2s::defunc').
 "
   )
 
+(defmacro definecd (name &rest args)
+  (let ((defname (make-symbl `(,name -DEFINITION-RULE))))
+    `(progn
+       (definec ,name ,@args)
+       (in-theory (disable ,defname)))))
+
+(defmacro definec-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (definec ,name ,@args)))
+
+(defmacro definecd-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (definecd ,name ,@args)))
