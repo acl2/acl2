@@ -33,8 +33,10 @@
     "The @('xdoc::evmac-input-...') utilities construct
      <see topic='@(url xdoc::desc)'>descriptions</see>
      of inputs that are expected to be common to multiple event macros.
-     These utilities accept zero or more additional pieces of XDOC text,
-     which are concatenated after the automatically generated XDOC text."))
+     Each such utility includes zero or more parameters
+     to customize the description,
+     as well as zero or more additional pieces of XDOC text (e.g. paragraphs)
+     that are appended after the automatically generated XDOC text."))
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,6 +238,14 @@
           of the reference documentation of an event macro."
   :long
   (xdoc::topapp
+   (xdoc::p
+    "Note that the generated text mentions `above'
+     in reference to the inputs of the event macro.
+     In the reference documentation of the event macro,
+     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
+     section</see> should come before
+     the <see topic='@(url xdoc::evmac-section-appconds)'>applicability
+     conditions section</see>.")
    (xdoc::def "xdoc::evmac-section-appconds"))
   (defmacro xdoc::evmac-section-appconds (macro &rest content)
     (declare (xargs :guard (symbolp macro)))
