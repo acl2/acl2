@@ -125,9 +125,9 @@
 
     (xdoc::desc-apt-input-verify-guards nil)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print parteval)
 
-    (xdoc::desc-apt-input-show-only))
+    (xdoc::evmac-input-show-only parteval))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
