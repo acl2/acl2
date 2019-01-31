@@ -51,12 +51,13 @@ href='http://en.wikipedia.org/wiki/Formal_verification'>formally verify</a>
 many <see topic='@(url interesting-applications)'>interesting systems</see> in
 academia and industry.</p>
 
-<p>The <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a> are
-the canonical set of open-source libraries (\"@(see books)\") for ACL2.  They
-include lemma libraries for reasoning in many domains, macro libraries for more
-quickly writing and documenting code, interfacing tools for connecting ACL2 to
-other systems, productivity tools for better proof automation and debugging,
-and specialty libraries for areas like @(see hardware-verification).</p>
+<p>The <a href='https://github.com/acl2/acl2/tree/master/books'>ACL2 Community
+Books</a> are the canonical set of open-source libraries (\"@(see books)\") for
+ACL2.  They include lemma libraries for reasoning in many domains, macro
+libraries for more quickly writing and documenting code, interfacing tools for
+connecting ACL2 to other systems, productivity tools for better proof
+automation and debugging, and specialty libraries for areas like @(see
+hardware-verification).</p>
 
 <p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It covers
 both ACL2 and the Community Books.  It is derived by combining</p>
@@ -76,4 +77,4 @@ hierarchy to try to provide a coherent organization.</p>
 
 <p>This manual is very much a work in progress.  If you would like to
 contribute to its development, please join the <a
-href='https://github.com/acl2/'>acl2</a> project!</p>")
+href='https://github.com/acl2/'>acl2 project on GitHub</a>!</p>")
