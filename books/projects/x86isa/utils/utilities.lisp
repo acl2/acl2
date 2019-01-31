@@ -70,7 +70,7 @@
 
   :parents (utilities)
   :short "Macro that can be used to create event names by
-  concatenating strings, symbols, and numbers."
+  concatenating strings, symbols, numbers, and characters."
   :long "@(def mk-name)"
 
   (defmacro mk-name (&rest x)
