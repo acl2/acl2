@@ -67,6 +67,8 @@
 # for $(shell ...) directives.
 
 
+export STARTJOB=/bin/bash
+
 # Run from within build directory
 echo "Determining ACL2 features (for ACL2 = $ACL2)" 1>&2
 rm -f Makefile-features;

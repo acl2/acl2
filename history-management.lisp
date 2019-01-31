@@ -10064,13 +10064,14 @@
            (t (access type-prescription tp :corollary)))))
        ((and (eq (car rune) :induction)
              (equal (cddr rune) nil))
-        (prettyify-clause-set
-         (induction-formula (list (list (cons :p (formals (base-symbol rune)
-                                                          wrld))))
-                            (tests-and-alists-lst-from-fn (base-symbol rune)
-                                                          wrld))
-         nil
-         wrld))
+
+; At one time we returned a result based on induction-formula.  But that result
+; was not a term: it contained calls of :P and was untranslated (see pf-fn for
+; how that is now handled).  There is truly no formula associated with an
+; induction "rule", as opposed to the corresponding symbol (which represents a
+; defthm event with formula 'T), so we return nil here.
+
+        nil)
        (t (er hard 'corollary
               "It was thought to be impossible for a rune to have no ~
                'classes property except in the case of the four or five ~
@@ -10112,6 +10113,47 @@
                    (t (or (getpropc name 'theorem nil wrld)
                           (getpropc name 'defchoose-axiom nil wrld))))))))
 
+(defun pf-induction-scheme (x wrld state)
+  (declare (xargs :guard (or (symbolp x)
+                             (runep x wrld))))
+  (flet ((induction-pretty-clause-set
+          (name flg wrld)
+          (prettyify-clause-set
+           (induction-formula (list (list (cons :p (formals name wrld))))
+                              (tests-and-alists-lst-from-fn name wrld))
+           flg
+           wrld)))
+    (let* ((rune (if (symbolp x)
+                     (let ((r (list :induction x)))
+                       (and (runep r wrld)
+                            r))
+                   (and (eq (car x) :induction)
+                        (null (cddr x)) ; sanity check
+                        x)))
+           (name (and rune (base-symbol rune))))
+      (cond
+       ((null rune) (mv nil nil))
+       ((function-symbolp name wrld)
+        (mv (induction-pretty-clause-set name (let*-abstractionp state) wrld)
+            nil))
+       (t (let* ((class (truncated-class
+                         rune
+                         (getpropc name 'runic-mapping-pairs
+                                   '(:error "See COROLLARY.")
+                                   wrld)
+                         (getpropc name 'classes nil wrld)))
+                 (scheme (and (consp class)
+                              (eq (car class) :induction)
+                              (cadr (member :scheme class))))
+                 (fn (and scheme
+                          (ffn-symb scheme))))
+            (cond ((runep `(:induction ,fn) wrld)
+                   (mv (induction-pretty-clause-set fn
+                                                    (let*-abstractionp state)
+                                                    wrld)
+                       fn))
+                  (t (mv nil nil)))))))))
+
 (defun pf-fn (name state)
   (io? temporary nil (mv erp val state)
        (name)
@@ -10122,26 +10164,46 @@
            (let* ((name (if (symbolp name)
                             (deref-macro-name name (macro-aliases (w state)))
                           name))
-                  (term (formula name t wrld)))
+                  (term (if (and (not (symbolp name)) ; (runep name wrld)
+                                 (eq (car name) :induction))
+                            nil
+                          (formula name t wrld))))
              (mv-let (col state)
-                     (cond
-                      ((equal term *t*)
-                       (fmt1 "The formula associated with ~x0 is simply T.~%"
-                             (list (cons #\0 name))
-                             0
-                             (standard-co state) state nil))
-                      (term
-                       (fmt1 "~p0~|"
-                             (list (cons #\0 (untranslate term t wrld)))
-                             0
-                             (standard-co state) state
-                             (term-evisc-tuple nil state)))
-                      (t
-                       (fmt1 "There is no formula associated with ~x0.~%"
-                             (list (cons #\0 name))
-                             0 (standard-co state) state nil)))
-                     (declare (ignore col))
-                     (value :invisible))))
+               (cond
+                ((or (null term)
+                     (equal term *t*))
+                 (fmt1 (if (null term)
+                           "There is no formula associated with ~x0.~@1"
+                         "The formula associated with ~x0 is simply T.~@1")
+                       (list (cons #\0 name)
+                             (cons #\1
+                                   (mv-let (s fn)
+                                     (pf-induction-scheme name wrld state)
+                                     (if s
+                                         (msg "~|However, there is the ~
+                                               following associated induction ~
+                                               scheme~@0.~|~x1~|"
+                                              (if fn
+                                                  (msg " based on the ~
+                                                        function symbol, ~x0"
+                                                       fn)
+                                                "")
+                                              s)
+                                       "~|"))))
+                       0
+                       (standard-co state) state nil))
+                (term
+                 (fmt1 "~p0~|"
+                       (list (cons #\0 (untranslate term t wrld)))
+                       0
+                       (standard-co state) state
+                       (term-evisc-tuple nil state)))
+                (t
+                 (fmt1 "There is no formula associated with ~x0.~|"
+                       (list (cons #\0 name))
+                       0 (standard-co state) state nil)))
+               (declare (ignore col))
+               (value :invisible))))
           (t
            (er soft 'pf
                "~x0 is neither a symbol nor a rune in the current world."
@@ -13237,8 +13299,7 @@
                                    (t term))))
                        (value@par (list term nil nil nil))))))))))
      ((runep lmi wrld)
-      (let ((term (and (not (eq (car lmi) :INDUCTION))
-                       (corollary lmi wrld))))
+      (let ((term (corollary lmi wrld)))
         (cond (term (value@par (list term nil nil nil)))
               (t (er@par soft ctx str lmi
                    "there is no known formula associated with this rune")))))
