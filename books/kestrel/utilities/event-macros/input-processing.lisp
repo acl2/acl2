@@ -128,7 +128,7 @@
      This facilitates guard/type proofs involving this function,
      by obviating the need to enable this function in such proofs
      to establish that, if the @(':print') input passes validation,
-     then it satisfies @(tsee evmac-input-printp)."))
+     then it satisfies @(tsee evmac-input-print-p)."))
   (if (evmac-input-print-p print)
       (value print)
     (er-soft+ ctx t nil
