@@ -45,6 +45,7 @@
 (include-book "../lint/leftright")
 (include-book "../lint/oddexpr")
 (include-book "../lint/qmarksize-check")
+(include-book "../lint/arith-compare")
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
 (include-book "../lint/logicassign")
@@ -381,7 +382,10 @@ for particular modules, or all warnings of particular types, etc.  See @(see
    (post-shell  booleanp
                 "After running the linter, enter an ACL2 shell where the linter
                  configuration has been saved as constant
-                 @('vl::*vl-user-lintconfig*').")))
+                 @('vl::*vl-user-lintconfig*')."))
+  ;; Note: would be nice to use the default alist layout here but it's ~14x
+  ;; faster to admit this with :fulltree (23 sec vs 320 sec.)
+  :layout :fulltree)
 
 (defval *vl-lint-help*
   :short "Usage message for vl lint."
@@ -833,6 +837,7 @@ shown.</p>"
 
        (design (xf-cwtime (vl-design-check-selfassigns design)))
        (design (xf-cwtime (vl-design-qmarksize-check design)))
+       (design (xf-cwtime (vl-design-arith-compare-check design)))
        (sd-probs (xf-cwtime (sd-analyze-design design0)))
 
 ;; Not sure we care abotu this for anything
@@ -1185,6 +1190,7 @@ shown.</p>"
         :vl-warn-include-guard
         :vl-warn-plain-always
         :vl-warn-always-latch
+        :vl-warn-arithmetic-comparison
         ))
 
 (defconst *smell-minor-warnings*
