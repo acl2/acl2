@@ -55,7 +55,12 @@
      (equal (keyword-value-list-to-alist-aux kvlist rev-alist)
             (revappend rev-alist (keyword-value-list-to-alist kvlist)))))
 
-  (verify-guards keyword-value-list-to-alist))
+  (verify-guards keyword-value-list-to-alist)
+
+  (more-returns
+   (alist symbol-alistp
+          :hyp (keyword-value-listp kvlist)
+          :name symbol-alistp-of-keyword-value-list-to-alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
