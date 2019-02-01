@@ -37,9 +37,9 @@
 # This used to all be done in GNUMakefile itself, but we separated it
 # in case other Makefiles want to use it as well.  To use it in a
 # Makefile, first run it and then include the resulting
-# Makefile-features, making sure that ACL2 is in the environment --
-# e.g.:
-# RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) ./features.sh)
+# Makefile-features, making sure that ACL2 and STARTJOB are in the
+# environment -- e.g.:
+# RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) ./features.sh)
 # -include $(BUILD_DIR)/Makefile-features
 
 # We first run ACL2 on the cert_features.lsp script, which begins by
