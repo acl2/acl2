@@ -159,6 +159,8 @@
      ;defunc defaults
       defunc
       definec
+      defintrange
+      defnatrange
       set-defunc-termination-strictp set-defunc-function-contract-strictp set-defunc-body-contracts-strictp set-defunc-timeout
       get-defunc-timeout get-defunc-termination-strictp get-defunc-function-contract-strictp get-defunc-body-contracts-strictp
        ))))
@@ -223,7 +225,8 @@
               equal
 
               defun acl2s::defunc acl2s::definec;for function definitions
-
+              acl2s::defintrange acl2s::defnatrange
+              
               ; + * unary-- unary-/ < ;see definitions below
               numerator denominator
               rationalp integerp
