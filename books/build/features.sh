@@ -66,14 +66,11 @@
 # for shell commands within recipes, it doesn't affact the environment
 # for $(shell ...) directives.
 
-
-export STARTJOB=/bin/bash
-
 # Run from within build directory
 echo "Determining ACL2 features (for ACL2 = $ACL2)" 1>&2
 rm -f Makefile-features;
 # Don't fail here if ACL2 isn't built! Still want to be able to do "make clean" etc.
-ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || true
+ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || echo "*** Failed to run ACL2! ***" 1>&2
 
 
 echo "Determining whether Glucose is installed" 1>&2
