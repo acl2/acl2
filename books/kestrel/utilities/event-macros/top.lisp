@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "input-processing")
 (include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

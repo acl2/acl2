@@ -176,6 +176,7 @@ SHELL := $(shell which bash)
 endif # ifdef ACL2_SHELL_OVERRIDE
 
 STARTJOB ?= $(SHELL)
+export STARTJOB
 
 # We avoid ?= below because we want to be sure that the check below is
 # done only after ACL2 has been assigned, and because we want to treat
@@ -183,6 +184,7 @@ STARTJOB ?= $(SHELL)
 ifeq ($(ACL2),)
 ACL2 := acl2
 endif # ifeq ($(ACL2),)
+export ACL2
 
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
@@ -210,74 +212,11 @@ ACL2_CUSTOM_TARGETS :=
 ### invoked with INFO=warning; otherwise, same as $(info just a test).
 ## $(eval $$($(INFO) just a test))
 
-# Note: The use of .PHONY is strange here since
-# $(BUILD_DIR)/Makefile-features will be a real file; it just means
-# that we'll try to rebuild it on every invocation of make.
-.PHONY: $(BUILD_DIR)/Makefile-features
-$(BUILD_DIR)/Makefile-features : 
-	@echo "Determining ACL2 features (for ACL2 = $(ACL2)))"
-	@rm -f $(BUILD_DIR)/Makefile-features ; \
-	   cd $(BUILD_DIR); ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
-	   "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;
-	@ls -l $(BUILD_DIR)/Makefile-features
-
--include $(BUILD_DIR)/Makefile-features
-
-$(info Determining whether Glucose is installed)
-# If glucose doesn't exist, then the error message saying it can't be
-# found is redirected to /dev/null, resulting in an empty value for
-# GLUCOSE_EXISTS
-GLUCOSE_EXISTS := $(shell glucose --help 2>/dev/null)
-ifdef GLUCOSE_EXISTS
-  export OS_HAS_GLUCOSE ?= 1
-  EXPORTED_VARS += OS_HAS_GLUCOSE
-endif # ifdef GLUCOSE_EXISTS
-
-$(info Determining whether an ipasir shared library is installed)
-ifdef IPASIR_SHARED_LIBRARY
-  IPASIR_LIB_EXISTS := $(wildcard $(IPASIR_SHARED_LIBRARY))
-  ifdef IPASIR_LIB_EXISTS
-    export OS_HAS_IPASIR ?= 1
-    EXPORTED_VARS += OS_HAS_IPASIR
-    $(info Ipasir library supposedly exists)
-  else # ifdef IPASIR_LIB_EXISTS
-    $(info !!!WARNING: IPASIR_SHARED_LIBRARY was set to \
-      "$(IPASIR_SHARED_LIBRARY)", but this file does not exist)
-  endif # ifdef IPASIR_LIB_EXISTS
-endif # ifdef IPASIR_SHARED_LIBRARY
-
-$(info Determining whether ABC is installed)
-# If abc doesn't exist, then the error message saying it can't be
-# found is redirected to /dev/null, resulting in an empty value for
-# ABC_EXISTS
-ABC_EXISTS := $(shell abc -h 2>&1 | fgrep 'UC Berkeley, ABC' 2>/dev/null)
-ifdef ABC_EXISTS
-  export OS_HAS_ABC ?= 1
-  EXPORTED_VARS += OS_HAS_ABC
-endif # ifdef ABC_EXISTS
-
-
-$(info Determining whether Z3 is installed, for use by SMTLink)
-SMTLINK_EXISTS := $(shell z3 --version 2>/dev/null)
-ifdef SMTLINK_EXISTS
-  export OS_HAS_SMTLINK ?= 1
-  EXPORTED_VARS += OS_HAS_SMTLINK
-endif # ifdef SMTLINK_EXISTS
-
-# The default for USE_QUICKLISP is now 1 for all ACL2 host Lisps
-# except for GCL, which we believe does not support quicklisp.
-# (Probably we could avoid the ifndef and just use ?= instead of :=;
-# but that seems potentially unsafe if ?= can assign like = instead of
-# like :=.
-ifndef USE_QUICKLISP
-  ifneq ($(ACL2_HOST_LISP), GCL)
-    export USE_QUICKLISP := 1
-    EXPORTED_VARS += USE_QUICKLISP
-  endif
-endif
-
+RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) ./features.sh > features.out)
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
+-include $(BUILD_DIR)/Makefile-features
+
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_ANSI     := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
@@ -290,7 +229,6 @@ $(info OS_HAS_IPASIR     := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
 $(info USE_QUICKLISP     := $(USE_QUICKLISP))
 $(info Done with features.)
-
 
 ifdef ACL2_FEATURES_DETECTED
 # This sanity check tries to make sure that the copy of ACL2 you are using
@@ -311,16 +249,6 @@ $(error Books Sanity Check Failed)
 endif
 
 endif # ACL2_FEATURES_DETECTED
-
-# $(info EXPORTED_VARS = $(EXPORTED_VARS))
-EXPORT_SHELL_ENV := $(foreach v,$(EXPORTED_VARS),$(v)='$($(v))')
-
-EXPORT_EXPORT_SHELL_ENV := $(foreach v,$(EXPORTED_VARS),export $(v)='$($(v))';)
-
-BUILD_MAKEFILE_FEATURES_SH := $(shell \
-  echo "$(EXPORT_EXPORT_SHELL_ENV)" > $(BUILD_DIR)/Makefile-features.sh)
-
-# $(info EXPORT_SHELL_ENV = $(EXPORT_SHELL_ENV))
 
 ifndef NO_RESCAN
 

@@ -125,6 +125,10 @@
                          ensure-term-not-call-of$
                          equivalence-relationp
                          er-soft+
+                         evmac-input-print-p
+                         evmac-process-input-hints
+                         evmac-process-input-print
+                         evmac-process-input-show-only
                          ext-address-subterm-governors-lst
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term

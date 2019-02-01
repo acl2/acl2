@@ -118,7 +118,7 @@
   "Cause an error if any element of a true list
    is not a member of another true list."
   (((subsetp-equal list super)
-    "~@0 must have only elements in ~x1, but it includes the ~@2."
+    "~@0 must have only elements in the list ~x1, but it includes the ~@2."
     description
     super
     (let ((extra (remove-duplicates-equal (set-difference-equal list super))))
