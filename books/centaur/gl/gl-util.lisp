@@ -293,3 +293,29 @@ passed to ~x2 in that theorem.~%"
   (implies (pseudo-termp term)
            (pseudo-termp (dumb-negate-lit term)))
   :hints(("Goal" :in-theory (enable dumb-negate-lit pseudo-termp))))
+
+
+(acl2::defund-inline maybe-fmt-to-comment-window (test str alist col evisc-tuple print-base-radix)
+  (declare (xargs :guard t))
+  (and test
+       (fmt-to-comment-window str alist col evisc-tuple print-base-radix)))
+
+(defmacro maybe-cw (test str &rest args)
+  `(maybe-fmt-to-comment-window ,test ,str
+                                (pairlis2 acl2::*base-10-chars* (list ,@args))
+                                0 nil nil))
+
+(acl2::defund-inline observation-uninhibited (state)
+  (declare (xargs :guard t :stobjs state
+                  :guard-hints (("goal" :in-theory (e/d (state-p1)
+                                                        (state-p-implies-and-forward-to-state-p1))))))
+  
+  (not (let ((lst (f-get-global 'acl2::inhibit-output-lst state)))
+         (and (true-listp lst)
+              (member-eq 'acl2::observation lst)))))
+
+(defmacro obs-cw (str &rest args)
+  `(maybe-cw (observation-uninhibited state)
+             ,str . ,args))
+
+

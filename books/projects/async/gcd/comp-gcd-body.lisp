@@ -4,13 +4,15 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 (in-package "ADE")
 
+(include-book "../link-joint")
+(include-book "../tv-if")
 (include-book "../vector-module")
+(include-book "../adders/subtractor")
 (include-book "../comparators/v-less")
-(include-book "../serial-adder/serial-sub")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -30,12 +32,10 @@
 ;; 1. DE Module Generator of COMP-GCD-BODY
 ;;
 ;; COMP-GCD-BODY performs the GCD operation in one iteration.  It is
-;; constructed using the self-timed serial subtractor SERIAL-SUB.
+;; constructed using the ripple-carry subtractor RIPPLE-SUB.
 
-(defconst *comp-gcd-body$prim-go-num* 2)
-(defconst *comp-gcd-body$go-num* (+ *comp-gcd-body$prim-go-num*
-                                    *serial-sub$go-num*))
-(defconst *comp-gcd-body$st-len* 4)
+(defconst *comp-gcd-body$go-num* 3)
+(defconst *comp-gcd-body$st-len* 3)
 
 (defun comp-gcd-body$data-ins-len (data-width)
   (declare (xargs :guard (natp data-width)))
@@ -55,14 +55,14 @@
                 (sis 'go 0 *comp-gcd-body$go-num*)))
  (list* 'in-act 'out-act
         (sis 'data-out 0 (* 2 data-width)))
- '(l0 l1 l2 sub)
+ '(l0 l1 l2)
  (list
   ;; LINKS
   ;; L0
   (list 'l0
         (list* 'l0-status (sis 'd0-out 0 (* 2 data-width)))
         (si 'link (* 2 data-width))
-        (list* 'in-act 'sub-in-act (sis 'd0-in 0 (* 2 data-width))))
+        (list* 'in-act 'sub-act (sis 'd0-in 0 (* 2 data-width))))
 
   ;; L1
   (list 'l1
@@ -74,7 +74,7 @@
   (list 'l2
         (list* 'l2-status (sis 'd2-out 0 data-width))
         (si 'link data-width)
-        (list* 'sub-out-act 'out-act (sis 'd2-in 0 data-width)))
+        (list* 'sub-act 'out-act (sis 'd2-in 0 data-width)))
 
   ;; JOINTS
   ;; In
@@ -102,15 +102,16 @@
               (append (sis 'data-in 0 data-width)
                       (sis 'data-in data-width data-width))))
 
-  ;; Subtractor
-  (list 'sub
-        (list* 'sub-in-act 'sub-out-act
-               (sis 'd2-in 0 data-width))
-        (si 'serial-sub data-width)
-        (list* 'l0-status 'l2-status
-               (append (sis 'd0-out 0 data-width)
-                       (sis 'd0-out data-width data-width)
-                       (sis 'go 2 *serial-sub$go-num*))))
+  ;; Sub
+  (list 'sub-cntl
+        '(sub-act)
+        'joint-cntl
+        (list 'l0-status 'l2-status (si 'go 2)))
+  (list 'sub-op
+        (sis 'd2-in 0 (1+ data-width))
+        (si 'ripple-sub data-width)
+        (append (sis 'd0-out 0 data-width)
+                (sis 'd0-out data-width data-width)))
 
   ;; Out
   '(g1 (ready-out) b-and (l1-status l2-status))
@@ -123,34 +124,33 @@
         (si 'v-wire (* 2 data-width))
         (append (sis 'd1-out 0 data-width)
                 (sis 'd2-out 0 data-width))))
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'comp-gcd-body '(l0 l1 l2 sub) 0)))
+    ,@(state-accessors-gen 'comp-gcd-body '(l0 l1 l2) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-GCD-BODY.
 
-(defund comp-gcd-body$netlist (data-width cnt-width)
-  (declare (xargs :guard (and (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
+(defund comp-gcd-body$netlist (data-width)
+  (declare (xargs :guard (natp data-width)))
   (cons (comp-gcd-body* data-width)
-        (union$ (link$netlist (* 2 data-width))
+        (union$ (link$netlist data-width)
+                (link$netlist (* 2 data-width))
+                *joint-cntl*
+                (tv-if$netlist (make-tree data-width))
                 (tv-if$netlist (make-tree (* 2 data-width)))
                 (v-wire$netlist (* 2 data-width))
                 (v-<$netlist data-width)
-                (serial-sub$netlist data-width cnt-width)
+                (ripple-sub$netlist data-width)
                 :test 'equal)))
 
 ;; Recognizer for COMP-GCD-BODY
 
-(defund comp-gcd-body& (netlist data-width cnt-width)
+(defund comp-gcd-body& (netlist data-width)
   (declare (xargs :guard (and (alistp netlist)
-                              (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
+                              (natp data-width))))
   (b* ((subnetlist (delete-to-eq (si 'comp-gcd-body data-width) netlist)))
     (and (equal (assoc (si 'comp-gcd-body data-width) netlist)
                 (comp-gcd-body* data-width))
@@ -161,60 +161,52 @@
          (tv-if& subnetlist (make-tree (* 2 data-width)))
          (v-wire& subnetlist (* 2 data-width))
          (v-<& subnetlist data-width)
-         (serial-sub& subnetlist data-width cnt-width))))
+         (ripple-sub& subnetlist data-width))))
 
 ;; Sanity check
 
 (local
- (defthmd check-comp-gcd-body$netlist-64-7
-   (and (net-syntax-okp (comp-gcd-body$netlist 64 7))
-        (net-arity-okp (comp-gcd-body$netlist 64 7))
-        (comp-gcd-body& (comp-gcd-body$netlist 64 7) 64 7))))
+ (defthmd check-comp-gcd-body$netlist-64
+   (and (net-syntax-okp (comp-gcd-body$netlist 64))
+        (net-arity-okp (comp-gcd-body$netlist 64))
+        (comp-gcd-body& (comp-gcd-body$netlist 64) 64))))
 
 ;; Constraints on the state of COMP-GCD-BODY
 
-(defund comp-gcd-body$st-format (st data-width cnt-width)
+(defund comp-gcd-body$st-format (st data-width)
   (b* ((l0 (get-field *comp-gcd-body$l0* st))
        (l1 (get-field *comp-gcd-body$l1* st))
-       (l2 (get-field *comp-gcd-body$l2* st))
-       (sub (get-field *comp-gcd-body$sub* st)))
-    (and (link$st-format l0 (* 2 data-width))
+       (l2 (get-field *comp-gcd-body$l2* st)))
+    (and (< 0 data-width)
+         (link$st-format l0 (* 2 data-width))
          (link$st-format l1 data-width)
-         (link$st-format l2 data-width)
-         (serial-sub$st-format sub data-width cnt-width))))
+         (link$st-format l2 data-width))))
 
-(defthm comp-gcd-body$st-format=>constraints
-  (implies (comp-gcd-body$st-format st data-width cnt-width)
-           (and (posp data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
+(defthm comp-gcd-body$st-format=>constraint
+  (implies (comp-gcd-body$st-format st data-width)
+           (posp data-width))
   :hints (("Goal" :in-theory (enable comp-gcd-body$st-format)))
   :rule-classes :forward-chaining)
 
-(defund comp-gcd-body$valid-st (st data-width cnt-width)
+(defund comp-gcd-body$valid-st (st data-width)
   (b* ((l0 (get-field *comp-gcd-body$l0* st))
        (l1 (get-field *comp-gcd-body$l1* st))
-       (l2 (get-field *comp-gcd-body$l2* st))
-       (sub (get-field *comp-gcd-body$sub* st)))
-    (and (link$valid-st l0 (* 2 data-width))
+       (l2 (get-field *comp-gcd-body$l2* st)))
+    (and (< 0 data-width)
+         (link$valid-st l0 (* 2 data-width))
          (link$valid-st l1 data-width)
-         (link$valid-st l2 data-width)
-         (serial-sub$valid-st sub data-width cnt-width))))
+         (link$valid-st l2 data-width))))
 
-(defthmd comp-gcd-body$valid-st=>constraints
-  (implies (comp-gcd-body$valid-st st data-width cnt-width)
-           (and (posp data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
-  :hints (("Goal" :in-theory (enable serial-sub$valid-st=>constraints
-                                     comp-gcd-body$valid-st)))
+(defthmd comp-gcd-body$valid-st=>constraint
+  (implies (comp-gcd-body$valid-st st data-width)
+           (posp data-width))
+  :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd comp-gcd-body$valid-st=>st-format
-  (implies (comp-gcd-body$valid-st st data-width cnt-width)
-           (comp-gcd-body$st-format st data-width cnt-width))
-  :hints (("Goal" :in-theory (e/d (serial-sub$valid-st=>st-format
-                                   comp-gcd-body$st-format
+  (implies (comp-gcd-body$valid-st st data-width)
+           (comp-gcd-body$st-format st data-width))
+  :hints (("Goal" :in-theory (e/d (comp-gcd-body$st-format
                                    comp-gcd-body$valid-st)
                                   ()))))
 
@@ -243,24 +235,6 @@
       (fv-< nil t
             (rev (take data-width data-in))
             (rev (nthcdr data-width data-in)))))
-
-  ;; Extract the inputs for the SUB joint
-
-  (defund comp-gcd-body$sub-inputs (inputs st data-width)
-    (b* ((go-signals (nthcdr (comp-gcd-body$data-ins-len data-width) inputs))
-         (sub-go-signals (take *serial-sub$go-num*
-                               (nthcdr *comp-gcd-body$prim-go-num*
-                                       go-signals)))
-
-         (l0 (get-field *comp-gcd-body$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l0.d (get-field *link$d* l0))
-         (l2 (get-field *comp-gcd-body$l2* st))
-         (l2.s (get-field *link$s* l2)))
-      (list* (f-buf (car l0.s)) (f-buf (car l2.s))
-             (append (v-threefix (take data-width (strip-cars l0.d)))
-                     (v-threefix (nthcdr data-width (strip-cars l0.d)))
-                     sub-go-signals))))
 
   ;; Extract the "in-act" signal
 
@@ -303,7 +277,7 @@
     :hints (("Goal" :in-theory (enable comp-gcd-body$out-act))))
 
   (defthm comp-gcd-body$in-out-acts-mutually-exclusive
-    (implies (and (comp-gcd-body$valid-st st data-width cnt-width)
+    (implies (and (comp-gcd-body$valid-st st data-width)
                   (comp-gcd-body$in-act inputs st data-width))
              (not (comp-gcd-body$out-act inputs st data-width)))
     :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st
@@ -321,21 +295,21 @@
               (v-threefix (strip-cars l2.d)))))
 
   (defthm len-comp-gcd-body$data-out-1
-    (implies (comp-gcd-body$st-format st data-width cnt-width)
+    (implies (comp-gcd-body$st-format st data-width)
              (equal (len (comp-gcd-body$data-out st))
                     (* 2 data-width)))
     :hints (("Goal" :in-theory (enable comp-gcd-body$st-format
                                        comp-gcd-body$data-out))))
 
   (defthm len-comp-gcd-body$data-out-2
-    (implies (comp-gcd-body$valid-st st data-width cnt-width)
+    (implies (comp-gcd-body$valid-st st data-width)
              (equal (len (comp-gcd-body$data-out st))
                     (* 2 data-width)))
     :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st
                                        comp-gcd-body$data-out))))
 
   (defthm bvp-comp-gcd-body$data-out
-    (implies (and (comp-gcd-body$valid-st st data-width cnt-width)
+    (implies (and (comp-gcd-body$valid-st st data-width)
                   (comp-gcd-body$out-act inputs st data-width))
              (bvp (comp-gcd-body$data-out st)))
     :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st
@@ -348,21 +322,17 @@
            (comp-gcd-body$data-out st)))
   )
 
-;; Prove that COMP-GCD-BODY is not a DE primitive.
-
-(not-primp-lemma comp-gcd-body)
-
 ;; The value lemma for COMP-GCD-BODY
 
 (defthm comp-gcd-body$value
   (b* ((inputs (list* full-in empty-out-
                       (append data-in go-signals))))
-    (implies (and (comp-gcd-body& netlist data-width cnt-width)
+    (implies (and (comp-gcd-body& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) (* 2 data-width))
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-gcd-body$go-num*)
-                  (comp-gcd-body$st-format st data-width cnt-width))
+                  (comp-gcd-body$st-format st data-width))
              (equal (se (si 'comp-gcd-body data-width) inputs st netlist)
                     (comp-gcd-body$outputs inputs st data-width))))
   :hints (("Goal"
@@ -381,19 +351,22 @@
 
 ;; This function specifies the next state of COMP-GCD-BODY.
 
-(defun comp-gcd-body$step (inputs st data-width cnt-width)
+(defun comp-gcd-body$step (inputs st data-width)
   (b* ((data-in (comp-gcd-body$data-in inputs data-width))
+       (go-signals (nthcdr (comp-gcd-body$data-ins-len data-width) inputs))
+
+       (go-sub (nth 2 go-signals))
 
        (l0 (get-field *comp-gcd-body$l0* st))
+       (l0.s (get-field *link$s* l0))
+       (l0.d (get-field *link$d* l0))
        (l1 (get-field *comp-gcd-body$l1* st))
        (l2 (get-field *comp-gcd-body$l2* st))
-       (sub (get-field *comp-gcd-body$sub* st))
+       (l2.s (get-field *link$s* l2))
 
-       (sub-inputs (comp-gcd-body$sub-inputs inputs st data-width))
-       (sub-in-act (serial-sub$in-act sub-inputs sub data-width))
-       (sub-out-act (serial-sub$out-act sub-inputs sub data-width))
        (in-act (comp-gcd-body$in-act inputs st data-width))
        (out-act (comp-gcd-body$out-act inputs st data-width))
+       (sub-act (joint-act (car l0.s) (car l2.s) go-sub))
 
        (a<b (comp-gcd-body$a<b inputs data-width))
        (d0-in (fv-if a<b
@@ -403,23 +376,25 @@
        (d1-in (fv-if a<b
                      (take data-width data-in)
                      (nthcdr data-width data-in)))
-       (d2-in (serial-sub$data-out sub))
+       (d2-in (take data-width
+                    (fv-adder t
+                              (take data-width (strip-cars l0.d))
+                              (fv-not
+                               (nthcdr data-width (strip-cars l0.d))))))
 
-       (l0-inputs (list* in-act sub-in-act d0-in))
+       (l0-inputs (list* in-act sub-act d0-in))
        (l1-inputs (list* in-act out-act d1-in))
-       (l2-inputs (list* sub-out-act out-act d2-in)))
+       (l2-inputs (list* sub-act out-act d2-in)))
     (list
      ;; L0
      (link$step l0-inputs l0 (* 2 data-width))
      ;; L1
      (link$step l1-inputs l1 data-width)
      ;; L2
-     (link$step l2-inputs l2 data-width)
-     ;; Joint SUB
-     (serial-sub$step sub-inputs sub data-width cnt-width))))
+     (link$step l2-inputs l2 data-width))))
 
 (defthm len-of-comp-gcd-body$step
-  (equal (len (comp-gcd-body$step inputs st data-width cnt-width))
+  (equal (len (comp-gcd-body$step inputs st data-width))
          *comp-gcd-body$st-len*))
 
 ;; The state lemma for COMP-GCD-BODY
@@ -427,14 +402,14 @@
 (defthm comp-gcd-body$state
   (b* ((inputs (list* full-in empty-out-
                       (append data-in go-signals))))
-    (implies (and (comp-gcd-body& netlist data-width cnt-width)
+    (implies (and (comp-gcd-body& netlist data-width)
                   (true-listp data-in)
                   (equal (len data-in) (* 2 data-width))
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-gcd-body$go-num*)
-                  (comp-gcd-body$st-format st data-width cnt-width))
+                  (comp-gcd-body$st-format st data-width))
              (equal (de (si 'comp-gcd-body data-width) inputs st netlist)
-                    (comp-gcd-body$step inputs st data-width cnt-width))))
+                    (comp-gcd-body$step inputs st data-width))))
   :hints (("Goal"
            :do-not-induct t
            :expand (:free (inputs data-width)
@@ -446,11 +421,11 @@
                             comp-gcd-body$st-format
                             comp-gcd-body$data-in
                             comp-gcd-body$a<b
-                            comp-gcd-body$sub-inputs
                             comp-gcd-body$in-act
                             comp-gcd-body$out-act)
-                           (acl2::associativity-of-append
+                           (associativity-of-append
                             append-take-nthcdr
+                            append-v-threefix
                             de-module-disabled-rules)))))
 
 (in-theory (disable comp-gcd-body$step))
@@ -479,25 +454,9 @@
             (list* full-in empty-out-
                    (append data-in go-signals))))))
 
-(local
- (defthm comp-gcd-body$input-format=>sub$input-format
-   (implies (and (comp-gcd-body$input-format inputs data-width)
-                 (comp-gcd-body$valid-st st data-width cnt-width))
-            (serial-sub$input-format
-             (comp-gcd-body$sub-inputs inputs st data-width)
-             data-width))
-   :hints (("Goal"
-            :in-theory (e/d (serial-sub$input-format
-                             serial-sub$data0-in
-                             serial-sub$data1-in
-                             comp-gcd-body$input-format
-                             comp-gcd-body$valid-st
-                             comp-gcd-body$sub-inputs)
-                            ())))))
-
 (defthm booleanp-comp-gcd-body$in-act
   (implies (and (comp-gcd-body$input-format inputs data-width)
-                (comp-gcd-body$valid-st st data-width cnt-width))
+                (comp-gcd-body$valid-st st data-width))
            (booleanp (comp-gcd-body$in-act inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (comp-gcd-body$input-format
@@ -508,7 +467,7 @@
 
 (defthm booleanp-comp-gcd-body$out-act
   (implies (and (comp-gcd-body$input-format inputs data-width)
-                (comp-gcd-body$valid-st st data-width cnt-width))
+                (comp-gcd-body$valid-st st data-width))
            (booleanp (comp-gcd-body$out-act inputs st data-width)))
   :hints (("Goal"
            :in-theory (e/d (comp-gcd-body$input-format
@@ -517,7 +476,7 @@
                            ())))
   :rule-classes (:rewrite :type-prescription))
 
-(simulate-lemma comp-gcd-body :sizes (data-width cnt-width))
+(simulate-lemma comp-gcd-body)
 
 ;; ======================================================================
 
@@ -536,8 +495,10 @@
           (not (bvp x)))
       x)
      (t (v-if a<b
-              (append a (serial-sub$op t b a))
-              (append b (serial-sub$op t a b)))))))
+              (append a (take data-width
+                              (v-adder t b (v-not a))))
+              (append b (take data-width
+                              (v-adder t a (v-not b)))))))))
 
 ;; The operation of COMP-GCD-BODY over a data sequence
 
@@ -552,16 +513,15 @@
          (append (comp-gcd-body$op-map x)
                  (comp-gcd-body$op-map y))))
 
-;; The extraction function for COMP-GCD-BODY that extracts the future
-;; output sequence from the current state.
+;; The extraction function for COMP-GCD-BODY that extracts the future output
+;; sequence from the current state.
 
 (defund comp-gcd-body$extract (st data-width)
   (b* ((l0 (get-field *comp-gcd-body$l0* st))
        (l0.s (get-field *link$s* l0))
        (l0.d (get-field *link$d* l0))
        (l1 (get-field *comp-gcd-body$l1* st))
-       (l2 (get-field *comp-gcd-body$l2* st))
-       (sub (get-field *comp-gcd-body$sub* st)))
+       (l2 (get-field *comp-gcd-body$l2* st)))
     (if (zp (len (extract-valid-data (list l1))))
         nil
       (list (append
@@ -569,17 +529,18 @@
              (car (append
                    (if (fullp l0.s)
                        (list
-                        (serial-sub$op
-                         t
-                         (take data-width (strip-cars l0.d))
-                         (nthcdr data-width (strip-cars l0.d))))
+                        (take data-width
+                              (v-adder
+                               t
+                               (take data-width (strip-cars l0.d))
+                               (v-not
+                                (nthcdr data-width (strip-cars l0.d))))))
                      nil)
-                   (serial-sub$extract sub data-width)
                    (extract-valid-data (list l2)))))))))
 
 (defthm comp-gcd-body$extract-not-empty
   (implies (and (comp-gcd-body$out-act inputs st data-width)
-                (comp-gcd-body$valid-st st data-width cnt-width))
+                (comp-gcd-body$valid-st st data-width))
            (< 0 (len (comp-gcd-body$extract st data-width))))
   :hints (("Goal"
            :in-theory (e/d (comp-gcd-body$valid-st
@@ -591,51 +552,30 @@
 ;; Specify and prove a state invariant
 
 (progn
-  (defund comp-gcd-body$inv (st data-width)
+  (defund comp-gcd-body$inv (st)
     (b* ((l0 (get-field *comp-gcd-body$l0* st))
          (l1 (get-field *comp-gcd-body$l1* st))
          (l2 (get-field *comp-gcd-body$l2* st))
-         (sub (get-field *comp-gcd-body$sub* st))
 
          (len1 (len (extract-valid-data (list l1))))
-         (len2 (len (append
-                     (serial-sub$op-map (extract-valid-data (list l0)))
-                     (serial-sub$extract sub data-width)
-                     (extract-valid-data (list l2))))))
-      (and (equal len1 len2)
-           (serial-sub$inv sub data-width))))
-
-  (local
-   (defthm comp-gcd-body$sub-in-act-inactive
-     (b* ((l0 (nth *comp-gcd-body$l0* st))
-          (l0.s (nth *link$s* l0))
-          (sub (nth *comp-gcd-body$sub* st))
-          (sub-inputs (comp-gcd-body$sub-inputs inputs st data-width)))
-       (implies (emptyp l0.s)
-                (not (serial-sub$in-act sub-inputs
-                                        sub
-                                        data-width))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-gcd-body$sub-inputs)))))
+         (len2 (len (extract-valid-data (list l0 l2)))))
+      (equal len1 len2)))
 
   (defthm comp-gcd-body$inv-preserved
     (implies (and (comp-gcd-body$input-format inputs data-width)
-                  (comp-gcd-body$valid-st st data-width cnt-width)
-                  (comp-gcd-body$inv st data-width))
+                  (comp-gcd-body$valid-st st data-width)
+                  (comp-gcd-body$inv st))
              (comp-gcd-body$inv
-              (comp-gcd-body$step inputs st data-width cnt-width)
-              data-width))
+              (comp-gcd-body$step inputs st data-width)))
     :hints (("Goal"
-             :use comp-gcd-body$input-format=>sub$input-format
              :in-theory (e/d (get-field
                               f-sr
-                              serial-sub$extracted-step
                               comp-gcd-body$valid-st
                               comp-gcd-body$inv
                               comp-gcd-body$step
                               comp-gcd-body$in-act
                               comp-gcd-body$out-act)
-                             (comp-gcd-body$input-format=>sub$input-format)))))
+                             ()))))
   )
 
 ;; The extracted next-state function for COMP-GCD-BODY.  Note that this
@@ -675,59 +615,27 @@
 
 ;; The single-step-update property
 
-(encapsulate
-  ()
-
-  (local
-   (defthm comp-gcd-body$extracted-step-correct-aux-1
-     (b* ((sub-inputs (comp-gcd-body$sub-inputs inputs st data-width))
-          (l0 (nth *comp-gcd-body$l0* st))
-          (l0.d (nth *link$d* l0)))
-       (equal (serial-sub$data0-in sub-inputs data-width)
-              (v-threefix (take data-width (strip-cars l0.d)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        serial-sub$data0-in
-                                        comp-gcd-body$sub-inputs)))))
-
-  (local
-   (defthm comp-gcd-body$extracted-step-correct-aux-2
-     (b* ((sub-inputs (comp-gcd-body$sub-inputs inputs st data-width))
-          (l0 (nth *comp-gcd-body$l0* st))
-          (l0.d (nth *link$d* l0)))
-       (implies (and (equal (len l0.d) (* 2 data-width))
-                     (integerp data-width))
-                (equal (serial-sub$data1-in sub-inputs data-width)
-                       (v-threefix (nthcdr data-width (strip-cars l0.d))))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        serial-sub$data1-in
-                                        comp-gcd-body$sub-inputs)))))
-
-  (defthm comp-gcd-body$extracted-step-correct
-    (b* ((next-st (comp-gcd-body$step inputs st data-width cnt-width)))
-      (implies (and (comp-gcd-body$input-format inputs data-width)
-                    (comp-gcd-body$valid-st st data-width cnt-width)
-                    (comp-gcd-body$inv st data-width))
-               (equal (comp-gcd-body$extract next-st data-width)
-                      (comp-gcd-body$extracted-step inputs st data-width))))
-    :hints (("Goal"
-             :use comp-gcd-body$input-format=>sub$input-format
-             :in-theory (e/d (get-field
-                              joint-act
-                              pos-len=>cons
-                              fv-if-rewrite
-                              serial-sub$valid-st=>constraints
-                              serial-sub$extracted-step
-                              comp-gcd-body$extracted-step
-                              comp-gcd-body$valid-st
-                              comp-gcd-body$inv
-                              comp-gcd-body$step
-                              comp-gcd-body$a<b
-                              comp-gcd-body$in-act
-                              comp-gcd-body$out-act
-                              comp-gcd-body$extract
-                              comp-gcd-body$op)
-                             (comp-gcd-body$input-format=>sub$input-format)))))
-  )
+(defthm comp-gcd-body$extracted-step-correct
+  (b* ((next-st (comp-gcd-body$step inputs st data-width)))
+    (implies (and (comp-gcd-body$input-format inputs data-width)
+                  (comp-gcd-body$valid-st st data-width))
+             (equal (comp-gcd-body$extract next-st data-width)
+                    (comp-gcd-body$extracted-step inputs st data-width))))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            joint-act
+                            pos-len=>cons
+                            fv-if-rewrite
+                            comp-gcd-body$extracted-step
+                            comp-gcd-body$valid-st
+                            comp-gcd-body$inv
+                            comp-gcd-body$step
+                            comp-gcd-body$a<b
+                            comp-gcd-body$in-act
+                            comp-gcd-body$out-act
+                            comp-gcd-body$extract
+                            comp-gcd-body$op)
+                           ()))))
 
 ;; ======================================================================
 
@@ -735,55 +643,33 @@
 
 ;; Prove that comp-gcd-body$valid-st is an invariant.
 
-(encapsulate
-  ()
-
-  (local
-   (defthm comp-gcd-body$sub-out-act-inactive
-     (b* ((l2 (nth *comp-gcd-body$l2* st))
-          (l2.s (nth *link$s* l2))
-          (sub (nth *comp-gcd-body$sub* st))
-          (sub-inputs (comp-gcd-body$sub-inputs inputs st data-width)))
-       (implies (fullp l2.s)
-                (not (serial-sub$out-act sub-inputs
-                                                sub
-                                                data-width))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-gcd-body$sub-inputs)))))
-
-  (defthm comp-gcd-body$valid-st-preserved
-    (implies (and (comp-gcd-body$input-format inputs data-width)
-                  (comp-gcd-body$valid-st st data-width cnt-width))
-             (comp-gcd-body$valid-st
-              (comp-gcd-body$step inputs st data-width cnt-width)
-              data-width
-              cnt-width))
-    :hints (("Goal"
-             :use comp-gcd-body$input-format=>sub$input-format
-             :in-theory (e/d (get-field
-                              f-sr
-                              joint-act
-                              serial-sub$valid-st=>constraints
-                              comp-gcd-body$valid-st
-                              comp-gcd-body$step
-                              comp-gcd-body$a<b
-                              comp-gcd-body$in-act
-                              comp-gcd-body$out-act)
-                             (comp-gcd-body$input-format=>sub$input-format
-                              if*)))))
-  )
+(defthm comp-gcd-body$valid-st-preserved
+  (implies (and (comp-gcd-body$input-format inputs data-width)
+                (comp-gcd-body$valid-st st data-width))
+           (comp-gcd-body$valid-st
+            (comp-gcd-body$step inputs st data-width)
+            data-width))
+  :hints (("Goal"
+           :in-theory (e/d (get-field
+                            f-sr
+                            joint-act
+                            comp-gcd-body$valid-st
+                            comp-gcd-body$step
+                            comp-gcd-body$a<b
+                            comp-gcd-body$in-act
+                            comp-gcd-body$out-act)
+                           (if*)))))
 
 (defthm comp-gcd-body$extract-lemma
-  (implies (and (comp-gcd-body$valid-st st data-width cnt-width)
-                (comp-gcd-body$inv st data-width)
+  (implies (and (comp-gcd-body$valid-st st data-width)
+                (comp-gcd-body$inv st)
                 (comp-gcd-body$out-act inputs st data-width))
            (equal (list (comp-gcd-body$data-out st))
                   (nthcdr (1- (len (comp-gcd-body$extract st data-width)))
                           (comp-gcd-body$extract st data-width))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (len-0-is-atom
-                            comp-gcd-body$valid-st
+           :in-theory (e/d (comp-gcd-body$valid-st
                             comp-gcd-body$inv
                             comp-gcd-body$extract
                             comp-gcd-body$out-act
@@ -793,15 +679,13 @@
 ;; Extract the accepted input sequence
 
 (seq-gen comp-gcd-body in in-act 0
-         (comp-gcd-body$data-in inputs data-width)
-         :sizes (data-width cnt-width))
+         (comp-gcd-body$data-in inputs data-width))
 
 ;; Extract the valid output sequence
 
 (seq-gen comp-gcd-body out out-act 1
          (comp-gcd-body$data-out st)
-         :netlist-data (nthcdr 2 outputs)
-         :sizes (data-width cnt-width))
+         :netlist-data (nthcdr 2 outputs))
 
 ;; The multi-step input-output relationship
 
@@ -816,23 +700,23 @@
                      (append (comp-gcd-body$op-map seq)
                              y2 z)))
      :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
+                                     (associativity-of-append))))))
 
   (defthmd comp-gcd-body$dataflow-correct
     (b* ((extracted-st (comp-gcd-body$extract st data-width))
          (final-st (comp-gcd-body$run
-                    inputs-seq st data-width cnt-width n))
+                    inputs-seq st data-width n))
          (final-extracted-st (comp-gcd-body$extract final-st data-width)))
       (implies
        (and (comp-gcd-body$input-format-n inputs-seq data-width n)
-            (comp-gcd-body$valid-st st data-width cnt-width)
-            (comp-gcd-body$inv st data-width))
+            (comp-gcd-body$valid-st st data-width)
+            (comp-gcd-body$inv st))
        (equal (append final-extracted-st
                       (comp-gcd-body$out-seq
-                       inputs-seq st data-width cnt-width n))
+                       inputs-seq st data-width n))
               (append (comp-gcd-body$op-map
                        (comp-gcd-body$in-seq
-                        inputs-seq st data-width cnt-width n))
+                        inputs-seq st data-width n))
                       extracted-st))))
     :hints (("Goal"
              :in-theory (enable comp-gcd-body$extracted-step))))
@@ -843,10 +727,10 @@
                          inputs-seq st netlist n))
          (final-extracted-st (comp-gcd-body$extract final-st data-width)))
       (implies
-       (and (comp-gcd-body& netlist data-width cnt-width)
+       (and (comp-gcd-body& netlist data-width)
             (comp-gcd-body$input-format-n inputs-seq data-width n)
-            (comp-gcd-body$valid-st st data-width cnt-width)
-            (comp-gcd-body$inv st data-width))
+            (comp-gcd-body$valid-st st data-width)
+            (comp-gcd-body$inv st))
        (equal (append final-extracted-st
                       (comp-gcd-body$netlist-out-seq
                        inputs-seq st netlist data-width n))

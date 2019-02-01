@@ -60,17 +60,15 @@
 
    (defthm member-p-and-gather-qword-addresses-corresponding-to-1-entry
      (implies (and (<=
-                    (ash (loghead
-                          40
-                          (logtail 12 (rm-low-64 superior-structure-paddr x86)))
+                    (ash (ia32e-page-tablesbits->reference-addr
+                          (rm-low-64 superior-structure-paddr x86))
                          12)
                     e)
                    (< e
                       (+
                        4096
-                       (ash (loghead
-                             40
-                             (logtail 12 (rm-low-64 superior-structure-paddr x86)))
+                       (ash (ia32e-page-tablesbits->reference-addr
+                             (rm-low-64 superior-structure-paddr x86))
                             12)))
                    ;; The following hypothesis isn't necessary if
                    ;; gather-qword-addresses-corresponding-to-1-entry
@@ -147,7 +145,8 @@
    :hints (("Goal"
             :in-theory (e/d* (pml4-table-entry-addr
                               gather-pml4-table-qword-addresses
-                              member-p)
+                              member-p
+                              cr3bits->pdb)
                              ())))))
 
 (defthm pml4-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
@@ -182,21 +181,24 @@
                (gather-pml4-table-qword-addresses x86)
                x86)))
    :hints (("Goal"
-            :use ((:instance pml4-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
-                             (base-addr (pml4-table-base-addr x86)))
-                  (:instance member-p-when-gather-qword-addresses-corresponding-to-1-entry-then-member-p-entries-aux
-                             (e (page-dir-ptr-table-entry-addr
-                                 lin-addr
-                                 (page-dir-ptr-table-base-addr lin-addr x86)))
-                             (superior-structure-paddr
-                              (pml4-table-entry-addr
-                               lin-addr (pml4-table-base-addr x86)))
-                             (superior-structure-paddrs (gather-pml4-table-qword-addresses x86))))
+            :use
+            ((:instance pml4-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
+                        (base-addr (pml4-table-base-addr x86)))
+             (:instance member-p-when-gather-qword-addresses-corresponding-to-1-entry-then-member-p-entries-aux
+                        (e (page-dir-ptr-table-entry-addr
+                            lin-addr
+                            (page-dir-ptr-table-base-addr lin-addr x86)))
+                        (superior-structure-paddr
+                         (pml4-table-entry-addr
+                          lin-addr (pml4-table-base-addr x86)))
+                        (superior-structure-paddrs (gather-pml4-table-qword-addresses x86))))
             :in-theory (e/d* (page-dir-ptr-table-entry-addr
                               gather-all-paging-structure-qword-addresses
                               gather-qword-addresses-corresponding-to-entries
                               gather-qword-addresses-corresponding-to-entries-aux
-                              member-p)
+                              member-p
+                              cr3bits->pdb
+                              ia32e-page-tablesbits->reference-addr)
                              (pml4-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses
                               member-p-when-gather-qword-addresses-corresponding-to-1-entry-then-member-p-entries-aux))))))
 
@@ -272,7 +274,9 @@
                               gather-qword-addresses-corresponding-to-entries
                               gather-qword-addresses-corresponding-to-entries-aux
                               gather-all-paging-structure-qword-addresses
-                              member-p)
+                              member-p
+                              ia32e-page-tablesbits->reference-addr
+                              cr3bits->pdb)
                              (member-p-when-gather-qword-addresses-corresponding-to-1-entry-then-member-p-entries-aux
                               page-dir-ptr-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses))))))
 
@@ -373,7 +377,9 @@
                               gather-qword-addresses-corresponding-to-entries
                               gather-qword-addresses-corresponding-to-entries-aux
                               gather-all-paging-structure-qword-addresses
-                              member-p)
+                              member-p
+                              ia32e-page-tablesbits->reference-addr
+                              cr3bits->pdb)
                              (page-directory-base-addr
                               member-p-when-gather-qword-addresses-corresponding-to-1-entry-then-member-p-entries-aux
                               page-dir-ptr-table-entry-addr-is-a-member-of-gather-all-paging-structure-qword-addresses))))))

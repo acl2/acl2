@@ -73,9 +73,15 @@
            (state (princ$ "EXPORTED_VARS += ACL2_COMP_EXT" channel state))
            (state (newline channel state))
            (state (princ$ "export ACL2_HOST_LISP := " channel state))
-           (state (princ$ (symbol-name (@ host-lisp)) channel state))
+           (host-lisp (symbol-name (@ host-lisp)))
+           (state (princ$ host-lisp channel state))
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_HOST_LISP" channel state))
+           (state (newline channel state))
+           (state (princ$ "export USE_QUICKLISP ?= " channel state))
+           (state (princ$ (if (equal host-lisp "GCL") "0" "1") channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += USE_QUICKLISP" channel state))
            (state (newline channel state))
            (state (princ$ "export ACL2_THINKS_BOOK_DIR_IS := " channel state))
            (state (princ$ (f-get-global 'system-books-dir state) channel state))
@@ -84,5 +90,49 @@
            (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))
+
+(defun write-file-if-obj-differs (filename object state)
+  ;; Reads the given file and checks whether the first object it contains
+  ;; equals the given object.  If not, overwrites that file with the given
+  ;; object.
+  (declare (xargs :mode :program :stobjs state))
+  (mv-let (channel state)
+    (open-input-channel filename :object state)
+    (mv-let (need-to-write-file-p state)
+      (if channel
+          (mv-let (eof val state)
+            (read-object channel state)
+            (let ((state (close-input-channel channel state)))
+              (if (and (not eof) (equal val object))
+                  ;; File was read and object matches.
+                  (mv nil state)
+                ;; No object in the file or didn't match.
+                (mv t state))))
+        ;; File didn't exist.
+        (mv t state))
+      
+      (if need-to-write-file-p
+          (mv-let (channel state)
+            (open-output-channel filename :object state)
+            (if channel
+                (let* ((state (print-object$ object channel state)))
+                  (prog2$ (cw "Wrote ~s0~%" filename)
+                          (close-output-channel channel state)))
+              (prog2$ (cw "Error writing to ~s0~%" filename)
+                      state)))
+        (prog2$ (cw "No need to write ~s0~%" filename)
+                state)))))
+
+(write-file-if-obj-differs "first-order-like-terms-and-out-arities.certdep"
+                           *first-order-like-terms-and-out-arities*
+                           state)
+
+(write-file-if-obj-differs "acl2-exports.certdep"
+                           *acl2-exports*
+                           state)
+
+(write-file-if-obj-differs "acl2-version.certdep"
+                           (f-get-global 'acl2-version state)
+                           state)
 
 (good-bye 0)

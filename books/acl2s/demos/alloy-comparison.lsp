@@ -61,7 +61,7 @@
   (if (endp names)
     N-T-map
     (if (set::in (car names) (reachable (car names) N-T-map))
-      (names-not-cyclic-fix (cdr names) (delete-assoc-equal (car names) N-T-map))
+      (names-not-cyclic-fix (cdr names) (remove1-assoc-equal (car names) N-T-map))
       (names-not-cyclic-fix (cdr names) N-T-map))))
 
 

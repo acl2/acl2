@@ -229,8 +229,8 @@ ACL2 !>
   (cond ((endp alist) nil)
         ((assoc-eq (caar alist) (cdr alist))
          (cons (car alist)
-               (delete-assoc-eq (caar alist)
-                                (remove-eq-duplicate-keys (cdr alist)))))
+               (remove1-assoc-eq (caar alist)
+                                 (remove-eq-duplicate-keys (cdr alist)))))
         (t (cons (car alist)
                  (remove-eq-duplicate-keys (cdr alist))))))
 

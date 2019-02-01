@@ -39,4 +39,7 @@ devel-check.out
 *.x86f
 *.sse2f
 *.fn
+*.certdep
+!universal-dependency.certdep
+books/build/Makefile-features.sh
 gitlog-all.txt

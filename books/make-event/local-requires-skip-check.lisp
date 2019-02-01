@@ -11,6 +11,12 @@
 
 (in-package "ACL2")
 
+; The following book reads the .cert file of the present book.  So recertify
+; the present book if the following book changes, in case that's because the
+; format of .cert files has changed.
+
+; (depends-on "local-requires-skip-check-include.lisp")
+
 (local
  (defmacro identity-macro (x)
    x))
@@ -77,4 +83,3 @@
    :check-expansion
    (defun test10 (x) (cons x x)))
   ))
-

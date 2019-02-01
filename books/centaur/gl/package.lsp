@@ -31,10 +31,13 @@
 (in-package "ACL2")
 (include-book "centaur/aignet/portcullis" :dir :system)
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
 
 (defpkg "GL"
   (union-eq
-   *acl2-exports*
+   (remove1 'acl2::remove-assoc *acl2-exports*)
    *common-lisp-symbols-from-main-lisp-package*
    '(pkg-witness bad-atom<= b* quit exit
                  hons-acons hons-get hut het hqual hons-equal
@@ -195,7 +198,7 @@
                  the-method
                  aignet
                  gl
-                 iff*
+                 iff* and* and**
 
                  )))
 

@@ -210,6 +210,11 @@
                         args))))))
         (t term)))
 
+; Occasionally the value of *first-order-like-terms-and-out-arities*, computed
+; when ACL2 is built, is changed due to, e.g., the addition of a new built-in
+; function.  The following form tells the build system that this book depends
+; on that constant, and needs to be rebuilt if it is changed.
+; (depends-on "build/first-order-like-terms-and-out-arities.certdep" :dir :system)
 (make-event
  `(encapsulate
     nil

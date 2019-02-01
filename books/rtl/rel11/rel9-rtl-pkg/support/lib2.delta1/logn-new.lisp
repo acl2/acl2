@@ -679,13 +679,6 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :use lxor-bnd)))
 
-(defthmd lior_alt-plus
-  (implies (= (land_alt x y n) 0)
-           (equal (lior_alt x y n)
-                  (+ (bits_alt x (1- n) 0)
-                     (bits_alt y (1- n) 0))))
-  :hints (("Goal" :use lior-plus)))
-
 (defthmd land_alt-with-shifted-arg
   (implies (and (integerp x)
 		(rationalp y)
@@ -783,62 +776,6 @@
 	   (equal (lxor_alt k x n)
 		  (lnot_alt x n)))
   :hints (("Goal" :use lxor-ones-rewrite)))
-
-(defthm land_alt-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (land_alt x (- (expt 2 i) (expt 2 j)) n)
-		  (* (expt 2 j) (bits_alt x (1- i) j))))
-  :rule-classes ()
-  :hints (("Goal" :use land-slice)))
-
-(defthmd lior_alt-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (lior_alt x
-                        (- (expt 2 i) (expt 2 j))
-                        n)
-		  (cat_alt (bits_alt x (1- n) i)     (- n i)
-                       (1- (expt 2 (- i j))) (- i j)
-                       (bits_alt x (1- j) 0)     j)))
-  :hints (("Goal" :use lior-slice)))
-
-(defthmd lxor_alt-slice
-  (implies (and (<= j i)
-		(<= i n)
-		(integerp n)
-		(integerp i)
-		(integerp j)
-		(<= 0 j))
-	   (equal (lxor_alt x
-                        (- (expt 2 i) (expt 2 j))
-                        n)
-		  (cat_alt (bits_alt x (1- n) i) (- n i)
-                       (lnot_alt (bits_alt x (1- i) j) (- i j)) (- i j)
-                       (bits_alt x (1- j) 0) j)))
-  :hints (("Goal" :use lxor-slice)))
-
-(defthmd land_alt-slices
-  (implies (and (natp n)
-                (natp l)
-                (natp k)
-                (<= l k)
-                (< k n))
-           (equal (land_alt (- (expt 2 n) (1+ (expt 2 l)))
-                        (- (expt 2 n) (expt 2 k))
-                        n)
-                  (if (= l k)
-                      (- (expt 2 n) (expt 2 (1+ k)))
-                    (- (expt 2 n) (expt 2 k)))))
-  :hints (("Goal" :use land-slices)))
 
 
 ;;;**********************************************************************

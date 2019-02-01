@@ -4,12 +4,12 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 (in-package "ADE")
 
 (include-book "comp-interl")
-(include-book "interl-gcd")
+(include-book "igcd")
 (include-book "interl-ll")
 (include-book "../fifo/simulators")
 (include-book "../gcd/simulators")
@@ -21,7 +21,7 @@
 ;;; 1. ARB-MERGE
 ;;; 2. INTERL
 ;;; 3. INTERL-LL
-;;; 4. INTERL-GCD
+;;; 4. IGCD
 ;;; 5. COMP-INTERL
 
 ;; ======================================================================
@@ -70,10 +70,12 @@
   (defun interl$map-to-links (st)
     (b* ((q20-l0 (get-field *interl$q20-l0* st))
          (q20-l1 (get-field *interl$q20-l1* st))
-         (arb-merge (get-field *interl$arb-merge* st)))
+         ;; (arb-merge (get-field *interl$arb-merge* st))
+         )
       (append (list (cons 'q20-l0 (queue20-l$map-to-links q20-l0)))
               (list (cons 'q20-l1 (queue20-l$map-to-links q20-l1)))
-              (list (cons 'arb-merge (arb-merge$map-to-links arb-merge))))))
+              ;; (list (cons 'arb-merge (arb-merge$map-to-links arb-merge)))
+              )))
 
   (defun interl$map-to-links-list (x)
     (if (atom x)
@@ -83,13 +85,15 @@
 
   (defund interl$st-gen (data-width)
     (declare (xargs :guard (natp data-width)))
-    (b* ((full '(t))
-         (empty '(nil))
+    (b* (;; (full '(t))
+         ;; (empty '(nil))
          (q20-l0 (queue20-l$st-gen data-width))
          (q20-l1 (queue20-l$st-gen data-width))
-         (arb-merge (list (list full '((nil) (nil)))
-                          (list empty '((x) (x))))))
-      (list q20-l0 q20-l1 arb-merge)))
+         ;; (arb-merge (list (list full '((nil) (nil)))
+         ;;                  (list empty '((x) (x)))))
+         )
+      (list q20-l0 q20-l1 ;; arb-merge
+            )))
 
   (defund interl$ins-and-st-test (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -103,6 +107,10 @@
       (mv (and (interl$input-format-n inputs-seq data-width n)
                (interl$valid-st st data-width))
           state)))
+
+  (local
+   (defthm interl$ins-and-st-test-ok
+     (interl$ins-and-st-test 4 10 state)))
 
   (defund interl$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
@@ -186,6 +194,10 @@
                (interl-ll$valid-st st data-width))
           state)))
 
+  (local
+   (defthm interl-ll$ins-and-st-test-ok
+     (interl-ll$ins-and-st-test 4 10 state)))
+
   (defund interl-ll$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
@@ -228,24 +240,24 @@
        state)))
   )
 
-;; 4. INTERL-GCD
+;; 4. IGCD
 
 (progn
-  (defun interl-gcd$map-to-links (st)
-    (b* ((l (get-field *interl-gcd$l* st))
-         (interl (get-field *interl-gcd$interl* st))
-         (gcd (get-field *interl-gcd$gcd* st)))
+  (defun igcd$map-to-links (st)
+    (b* ((l (get-field *igcd$l* st))
+         (interl (get-field *igcd$interl* st))
+         (gcd (get-field *igcd$gcd* st)))
       (append (list (cons 'interl (interl$map-to-links interl)))
               (map-to-links (list (cons 'l l)))
               (list (cons 'gcd (gcd$map-to-links gcd))))))
 
-  (defun interl-gcd$map-to-links-list (x)
+  (defun igcd$map-to-links-list (x)
     (if (atom x)
         nil
-      (cons (interl-gcd$map-to-links (car x))
-            (interl-gcd$map-to-links-list (cdr x)))))
+      (cons (igcd$map-to-links (car x))
+            (igcd$map-to-links-list (cdr x)))))
 
-  (defund interl-gcd$st-gen (data-width)
+  (defund igcd$st-gen (data-width)
     (declare (xargs :guard (natp data-width)))
     (b* ((empty '(nil))
          (invalid-data (make-list (* 2 data-width) :initial-element '(x)))
@@ -253,59 +265,63 @@
          (gcd (gcd$st-gen data-width)))
       (list (list empty invalid-data) interl gcd)))
 
-  (defund interl-gcd$ins-and-st-test (data-width n state)
+  (defund igcd$ins-and-st-test (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (interl-gcd$ins-len data-width))
+    (b* ((num-signals (igcd$ins-len data-width))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (interl-gcd$st-gen data-width)))
-      (mv (and (interl-gcd$input-format-n inputs-seq data-width n)
-               (interl-gcd$valid-st st data-width)
-               (interl-gcd$inv st))
+         (st (igcd$st-gen data-width)))
+      (mv (and (igcd$input-format-n inputs-seq data-width n)
+               (igcd$valid-st st data-width)
+               (igcd$inv st))
           state)))
 
-  (defund interl-gcd$sim (data-width n state)
+  (local
+   (defthm igcd$ins-and-st-test-ok
+     (igcd$ins-and-st-test 4 10 state)))
+
+  (defund igcd$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (interl-gcd$ins-len data-width))
+    (b* ((num-signals (igcd$ins-len data-width))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (interl-gcd$st-gen data-width)))
+         (st (igcd$st-gen data-width)))
       (mv (pretty-list
            (remove-dup-neighbors
-            (interl-gcd$map-to-links-list
-             (de-sim-trace (si 'interl-gcd data-width)
+            (igcd$map-to-links-list
+             (de-sim-trace (si 'igcd data-width)
                            inputs-seq
                            st
-                           (interl-gcd$netlist data-width))))
+                           (igcd$netlist data-width))))
            0)
           state)))
 
-  (defund interl-gcd$in-out-sim (data-width n state)
+  (defund igcd$in-out-sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (interl-gcd$ins-len data-width))
+    (b* ((num-signals (igcd$ins-len data-width))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (interl-gcd$st-gen data-width)))
+         (st (igcd$st-gen data-width)))
       (mv
        (append
         (list (cons 'in0-seq
                     (v-to-nat-lst
-                     (interl-gcd$in0-seq inputs-seq st data-width n))))
+                     (igcd$in0-seq inputs-seq st data-width n))))
         (list (cons 'in1-seq
                     (v-to-nat-lst
-                     (interl-gcd$in1-seq inputs-seq st data-width n))))
+                     (igcd$in1-seq inputs-seq st data-width n))))
         (list (cons 'out-seq
                     (v-to-nat-lst
-                     (interl-gcd$out-seq inputs-seq st data-width n)))))
+                     (igcd$out-seq inputs-seq st data-width n)))))
        state)))
   )
 
@@ -353,6 +369,10 @@
       (mv (and (comp-interl$input-format-n inputs-seq data-width n)
                (comp-interl$valid-st st data-width))
           state)))
+
+  (local
+   (defthm comp-interl$ins-and-st-test-ok
+     (comp-interl$ins-and-st-test 4 10 state)))
 
   (defund comp-interl$sim (data-width n state)
     (declare (xargs :guard (and (natp data-width)

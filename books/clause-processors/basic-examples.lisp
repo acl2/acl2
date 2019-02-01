@@ -169,6 +169,109 @@
            :clause-processor
            binary-append))))
 
+; Next we test the return of summary-data with a variant of strengthen-cl.
+
+(defun strengthen-cl2 (cl term state)
+  (declare (xargs :stobjs state))
+; sad that we can't translate term first
+  (cond ((null term) ; then no change
+         (mv nil (list cl) state nil))
+        ((pseudo-termp term) ; sad that we can't use termp!
+         (mv nil
+             (list (cons (list 'not term)
+                         cl)
+                   (list term))
+             state
+             (make-summary-data :runes '((:rewrite car-cons)
+                                         (:rewrite cdr-cons)
+                                         (:rewrite car-cons))
+                                :use-names '(nth binary-append)
+                                :by-names '(nthcdr)
+                                :clause-processor-fns
+                                '(note-fact-clause-processor))))
+        (t ; sad that we can't use (er soft ...)
+         (prog2$ (cw "~%ERROR: Strengthen-cl2 was supplied an alleged term ~
+                      that is not a term in the current ACL2 world.  Consider ~
+                      evaluating the following, which will either cause an ~
+                      error (with a potentially helpful message) or will ~
+                      provide an appropriate term to use:~|~%  ~x0~|"
+                     `(translate ',term t t t 'top-level (w state) state))
+                 (mv t nil state nil)))))
+
+(defthm correctness-of-strengthen-cl2
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (strengthen-cl2 cl term state)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(defthm test-strengthen-cl2
+  (equal y y)
+  :hints (("Goal"
+           :instructions
+           ((:prove
+             :hints (("Goal" 
+                      :clause-processor
+                      (strengthen-cl2 clause '(equal x x) state)))))))
+  :rule-classes nil)
+
+(assert-event
+ (equal (sort-symbol-listp
+         (car (global-val 'proof-supporters-alist (w state))))
+        '(BINARY-APPEND CAR-CONS CDR-CONS
+                        NOTE-FACT-CLAUSE-PROCESSOR NTH NTHCDR
+                        STRENGTHEN-CL2 TEST-STRENGTHEN-CL2)))
+
+; This variant returns summary-data = nil.
+(defun strengthen-cl3 (cl term state)
+  (declare (xargs :stobjs state))
+; sad that we can't translate term first
+  (cond ((null term) ; then no change
+         (mv nil (list cl) state nil))
+        ((pseudo-termp term) ; sad that we can't use termp!
+         (mv nil
+             (list (cons (list 'not term)
+                         cl)
+                   (list term))
+             state
+             nil))
+        (t ; sad that we can't use (er soft ...)
+         (prog2$ (cw "~%ERROR: Strengthen-cl3 was supplied an alleged term ~
+                      that is not a term in the current ACL2 world.  Consider ~
+                      evaluating the following, which will either cause an ~
+                      error (with a potentially helpful message) or will ~
+                      provide an appropriate term to use:~|~%  ~x0~|"
+                     `(translate ',term t t t 'top-level (w state) state))
+                 (mv t nil state nil)))))
+
+(defthm correctness-of-strengthen-cl3
+  (implies (and (pseudo-term-listp cl)
+                (alistp a)
+                (evl (conjoin-clauses
+                      (clauses-result (strengthen-cl3 cl term state)))
+                     a))
+           (evl (disjoin cl) a))
+  :rule-classes :clause-processor)
+
+(defthm test-strengthen-cl3
+  (equal y y)
+  :hints (("Goal"
+           :instructions
+           ((:prove
+             :hints (("Goal" 
+                      :clause-processor
+                      (strengthen-cl3 clause '(equal x x) state)))))))
+  :rule-classes nil)
+
+(assert-event
+ (equal (sort-symbol-listp
+         (car (global-val 'proof-supporters-alist (w state))))
+        '(STRENGTHEN-CL3 TEST-STRENGTHEN-CL3)))
+
+; End of tests of the return of summary-data.
+
 (must-fail ; need clauses-result
  (defthm correctness-of-strengthen-cl-bad
    (implies (and (pseudo-term-listp cl)
@@ -333,6 +436,13 @@
                                    (equal (car (cons x y)) x)))
     :ttag my-ttag)))
 
+(must-fail
+ (partial-encapsulate ; empty signature
+  ()
+  nil
+  (defthm my-car-cons
+    (equal (car (cons x y)) x))))
+
 (must-fail ; no sub-events of encapsulate
  (encapsulate ; hard error thrown below defeats must-fail without encapsulate
   ()
@@ -342,6 +452,13 @@
     :partial-theory (encapsulate ((f0 (x) t)))
     :ttag my-ttag)))
 
+(must-fail
+ (encapsulate ; hard error thrown below defeats must-fail without encapsulate
+   ()
+   (partial-encapsulate ; no sub-events
+    ((f0 (x) t))
+    nil)))
+
 (must-fail ; non true-listp sub-events of encapsulate
  (encapsulate ; hard error thrown below defeats must-fail without encapsulate
   ()
@@ -350,6 +467,14 @@
     nil
     :partial-theory (encapsulate ((f0 (x) t)) (local (defun f0 (x) x)) . 3)
     :ttag my-ttag)))
+
+(must-fail    ; non true-listp sub-events of encapsulate
+ (encapsulate ; hard error thrown below defeats must-fail without encapsulate
+   ()
+   (partial-encapsulate
+    ((f0 (x) t))
+    (local (defun f0 (x) x))
+    . 3)))
 
 (must-fail
 ; nested non-trivial encapsulates around the table event, so no unique promised
@@ -367,6 +492,19 @@
                                             (integerp (f0 x)))))
     :ttag my-ttag)))
 
+(must-fail
+; nested non-trivial encapsulate around partial-encapsulate
+ (encapsulate
+   ((g0 (x) t))
+   (local (defun g0 (x) x))
+   (partial-encapsulate
+    ((f0 (x) t))
+    nil
+    (local (defun f0 (x) x))
+    (defthm f0-prop
+      (implies (integerp x)
+               (integerp (f0 x)))))))
+
 (must-fail ; partial encapsulate introduces something not in its signature
  (define-trusted-clause-processor
    strengthen-cl-program2
@@ -378,6 +516,16 @@
                                   (implies (integerp x)
                                            (integerp (f0 x)))))
    :ttag my-ttag))
+
+(must-fail ; partial encapsulate introduces something not in its signature
+ (partial-encapsulate
+  ((f0 (x) t))
+  nil
+  (local (defun f0 (x) x))
+  (defun g (x) x)
+  (defthm f0-prop
+    (implies (integerp x)
+             (integerp (f0 x))))))
 
 (encapsulate ; just to check that empty signature isn't a problem
  ()
@@ -1238,3 +1386,134 @@
 (must-succeed
  (thm (equal x x)
   :hints (("Goal" :clause-processor (cl-2-1-mac-alt clause clause)))))
+
+(partial-encapsulate
+ ((f-partial (x) t))
+ (nth)
+ (local (defun f-partial (x) (declare (xargs :guard t)) (consp x)))
+ (defthm booleanp-f-partial (booleanp (f-partial x))))
+
+(assert-event
+ (equal (getpropc 'f-partial 'constraint-lst)
+        '(:UNKNOWN-CONSTRAINTS BOOLEANP F-PARTIAL NTH)))
+
+(defthm booleanp-f-partial-again
+  (booleanp (f-partial y))
+  :hints (("Goal" :by booleanp-f-partial)))
+
+(encapsulate
+ ((g-partial (x) t))
+ (local (defun g-partial (x) (declare (xargs :guard t)) (consp x)))
+ (defthm booleanp-g-partial (booleanp (g-partial x))))
+
+(must-fail ; fails because f-partial has unknown-constraints
+ (defthm booleanp-g-partial-again
+   (booleanp (g-partial y))
+   :hints (("Goal" :by (:functional-instance booleanp-f-partial-again
+                                             (f-partial g-partial))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; The following are variants of
+;   (defun strengthen-cl-program2 ...)
+;   (define-trusted-clause-processor strengthen-cl-program2 ...)
+;   (defthm test7 ... :clause-processor ...)
+; where we separate out the :partial-theory into a separate
+; partial-encapsulate.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; First, simply separate out the partial-encapsulate from the
+;;; define-trusted-clause-processor event.
+
+(defun cl-proc1 (cl term state)
+  (declare (xargs :stobjs state :mode :program))
+  (let ((ctx 'strengthen-cl-program))
+    (er-let* ((tterm (translate term t t t ctx (w state) state)))
+             (value (list (cons (fcons-term* 'not tterm)
+                                cl)
+                          (list tterm))))))
+
+(partial-encapsulate
+ ((h1 (x) t))
+ nil ; could be (h1)
+ (local (defun h1 (x) x))
+ (defthm h1-prop
+   (implies (integerp x)
+            (integerp (h1 x)))))
+
+(define-trusted-clause-processor cl-proc1
+  (h1)
+  :ttag my-ttag)
+
+(defthm cl-proc1-test
+  (equal (car (cons x y))
+         x)
+  :hints (("Goal"
+           :clause-processor
+           (cl-proc1 clause '(my-equal x x) state))))
+
+;;; Now further separate things out so that we have an ordinary encapsulate
+;;; with a somewhat-buried table event that makes it, in essence, a
+;;; partial-encapsulate.
+
+(defun cl-proc2 (cl term state)
+  (declare (xargs :stobjs state :mode :program))
+  (let ((ctx 'strengthen-cl-program))
+    (er-let* ((tterm (translate term t t t ctx (w state) state)))
+             (value (list (cons (fcons-term* 'not tterm)
+                                cl)
+                          (list tterm))))))
+
+(encapsulate
+ ((h2 (x) t))
+ (local (defun h2 (x) x))
+ (encapsulate ; just bury the table event below a bit
+   ()
+   (set-unknown-constraints-supporters))
+ (defthm h2-prop
+   (implies (integerp x)
+            (integerp (h2 x)))))
+
+(define-trusted-clause-processor cl-proc2
+  (h2)
+  :ttag my-ttag)
+
+(defthm cl-proc2-test
+  (equal (car (cons x y))
+         x)
+  :hints (("Goal"
+           :clause-processor
+           (cl-proc2 clause '(my-equal x x) state))))
+
+;;; Now avoid define-trusted-clause-processor in favor of a table event.  I'm
+;;; wrapping this in an encapsulate so that the ttag doesn't get exported.
+
+(encapsulate
+  ()
+  (defun cl-proc3 (cl term state)
+    (declare (xargs :stobjs state :mode :program))
+    (let ((ctx 'strengthen-cl-program))
+      (er-let* ((tterm (translate term t t t ctx (w state) state)))
+        (value (list (cons (fcons-term* 'not tterm)
+                           cl)
+                     (list tterm))))))
+
+  (encapsulate
+    ((h3 (x) t))
+    (local (defun h3 (x) x))
+    (encapsulate ; just bury the table event below a bit
+      ()
+      (set-unknown-constraints-supporters))
+    (defthm h3-prop
+      (implies (integerp x)
+               (integerp (h3 x)))))
+
+  (defttag my-ttag)
+
+  (table trusted-cl-proc-table 'cl-proc3 '(h3))
+
+  (defthm cl-proc3-test
+    (equal (car (cons x y))
+           x)
+    :hints (("Goal"
+             :clause-processor
+             (cl-proc3 clause '(my-equal x x) state)))))

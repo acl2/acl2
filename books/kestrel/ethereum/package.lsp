@@ -16,18 +16,15 @@
 
 (defpkg "ETHEREUM" (append (set-difference-eq *std-pkg-symbols*
                                               '(byte))
-                           '(bendian=>nat
+                           '(assert-equal
+                             bendian=>nat
+                             defmax-nat
                              defxdoc+
                              lnfix
                              nat=>bendian
                              nat
                              nat=>bendian*
-                             set::map-assoc
-                             set::map-empty
-                             set::map-head
-                             set::map-keys
-                             set::map-put-assoc
-                             set::map-tail
-                             set::map-vals
-                             set::mapp
+                             prefixp
+                             string=>nats
+                             trim-bendian*
                              std::define-sk)))

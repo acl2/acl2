@@ -30,6 +30,10 @@
 
 #!ACL2 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defpkg "COI-DEBUG" nil)
 
 (defpkg "DEF" nil)
@@ -54,3 +58,9 @@
 
 (defconst *util-exports*
   (append *mv-nth-exports* nil))
+
+(defpkg "TALIST"
+  (append '(acl2::*t* acl2::*nil* acl2::val acl2::met acl2::and-list
+            acl2::ts-union acl2::ts-subsetp acl2::ts-intersectp)
+          *acl2-exports*
+          *common-lisp-symbols-from-main-lisp-package*))

@@ -71,7 +71,10 @@
   :hints
   (("Goal"
     :in-theory (e/d* (paging-entry-no-page-fault-p
-                      page-fault-exception page-present)
+                      page-fault-exception
+                      page-present
+                      ia32e-page-tablesbits->p
+                      ia32e-page-tablesbits-fix)
                      ()))))
 
 (defthm page-size=1-and-paging-entry-no-page-fault-p-for-structure-type=3
@@ -86,7 +89,10 @@
   :hints
   (("Goal"
     :in-theory (e/d* (paging-entry-no-page-fault-p
-                      page-fault-exception page-size)
+                      page-fault-exception
+                      page-size
+                      ia32e-page-tablesbits->ps
+                      ia32e-page-tablesbits-fix)
                      ()))))
 
 ;; Note that xlation-governing-entries-paddrs-* do not talk about
@@ -173,7 +179,7 @@
 
        ;; 4K pages:
        (page-table-base-addr
-        (ash (ia32e-pde-pg-table-slice :pde-pt page-directory-entry) 12))
+        (ash (ia32e-pde-pg-tableBits->pt page-directory-entry) 12))
        (page-table-addresses
         (xlation-governing-entries-paddrs-for-page-table
          lin-addr page-table-base-addr x86)))
@@ -251,7 +257,7 @@
 
        ;; 2M or 4K pages:
 
-       (page-directory-base-addr (ash (ia32e-pdpte-pg-dir-slice :pdpte-pd page-dir-ptr-table-entry) 12))
+       (page-directory-base-addr (ash (ia32e-pdpte-pg-dirBits->pd page-dir-ptr-table-entry) 12))
        (page-directory-addresses
         (xlation-governing-entries-paddrs-for-page-directory
          lin-addr page-directory-base-addr x86)))
@@ -328,7 +334,7 @@
 
        ;; Page Directory Pointer Table:
        (ptr-table-base-addr
-        (ash (ia32e-pml4e-slice :pml4e-pdpt pml4-entry) 12))
+        (ash (ia32e-pml4eBits->pdpt pml4-entry) 12))
 
        (ptr-table-addresses
         (xlation-governing-entries-paddrs-for-page-dir-ptr-table
@@ -413,7 +419,7 @@
   (if (mbt (not (app-view x86)))
       (b* ((cr3       (ctri *cr3* x86))
            ;; PML4 Table:
-           (pml4-base-addr (ash (cr3-slice :cr3-pdb cr3) 12)))
+           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12)))
 
         (xlation-governing-entries-paddrs-for-pml4-table
          lin-addr pml4-base-addr x86))
@@ -443,17 +449,7 @@
                          (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
                   (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
                          (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))
-
-  (defthm xlation-governing-entries-paddrs-and-!flgi
-    (equal (xlation-governing-entries-paddrs lin-addr (!flgi index value x86))
-           (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* (!flgi) (xlation-governing-entries-paddrs force (force))))))
-
-  (defthm xlation-governing-entries-paddrs-and-!flgi-undefined
-    (equal (xlation-governing-entries-paddrs lin-addr (!flgi-undefined index x86))
-           (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (xlation-governing-entries-paddrs force (force))))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))  
 
   (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint
     (implies (and (disjoint-p (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)) p-addrs)
@@ -518,17 +514,7 @@
     (implies (not (member-p index (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
              (equal (all-xlation-governing-entries-paddrs n addr (xw :mem index value x86))
                     (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
-    :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs)))))
-
-  (defthm all-xlation-governing-entries-paddrs-and-!flgi
-    (equal (all-xlation-governing-entries-paddrs n addr (!flgi index value x86))
-           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force))))))
-
-  (defthm all-xlation-governing-entries-paddrs-and-!flgi-undefined
-    (equal (all-xlation-governing-entries-paddrs n addr (!flgi-undefined index x86))
-           (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs force (force)))))))
+    :hints (("Goal" :in-theory (e/d* () (xlation-governing-entries-paddrs))))))
 
 ;; ======================================================================
 
@@ -743,7 +729,8 @@
                              member-p
                              ia32e-la-to-pa-page-table
                              page-table-entry-addr
-                             xlation-governing-entries-paddrs-for-page-table)
+                             xlation-governing-entries-paddrs-for-page-table
+                             ia32e-pte-4k-pagebits->page)
                             (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
                              wb
                              bitops::logand-with-negated-bitmask

@@ -113,7 +113,7 @@
    (declare (xargs :mode :program))
    (if (atom topics)
        nil
-     (cons (acons :from from (delete-assoc :from (car topics)))
+     (cons (acons :from from (remove1-assoc :from (car topics)))
            (change-topic-origins from (cdr topics))))))
 
 (make-event

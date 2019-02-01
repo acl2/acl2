@@ -34,20 +34,22 @@
 
 use warnings;
 use strict;
-use Getopt::Long qw(:config bundling); 
+use Getopt::Long qw(:config bundling);
 use File::Spec;
 use FindBin qw($RealBin);
-use Storable;
+use lib "$RealBin/lib";
+use Storable qw(nstore retrieve);
+use Certlib;
 
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
 # the system below.
 
-(do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
+# (do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
 
 
 my $HELP_MESSAGE = "
 
- critpath.pl [OPTIONS] <top-book1> <top-book2> ... 
+ critpath.pl [OPTIONS] <top-book1> <top-book2> ...
 
  This program displays the longest dependency chain leading up to any of the
  top-books specified, measured in sequential certification time.  This is the
@@ -177,7 +179,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'max-depth|m=i' =>  \$OPTIONS{'short'},
 			     'real|r'  => \$OPTIONS{'real'},
 			     'debug|d' => \$debug,
-			     "targets|t=s"          
+			     "targets|t=s"
 			              => sub { shift;
 					       read_targets(shift, \@user_targets);
 					   },
@@ -266,7 +268,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 	my @parts = $pline =~ m/([^:]*):(.*)/;
 	if (@parts) {
 	    my ($certname, $paramstr) = @parts;
-	    my $certpars = cert_get_params($certname, $depdb);
+	    my $certpars = $depdb->cert_get_params($certname);
 	    if ($certpars) {
 		my $passigns = parse_params($paramstr);
 		foreach my $pair (@$passigns) {
@@ -308,7 +310,7 @@ print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs, $updateds);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $updateds, $debug, $depdb); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $updateds, $debug, $depdb);
 
 
 	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});

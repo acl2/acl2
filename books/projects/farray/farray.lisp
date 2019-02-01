@@ -1125,7 +1125,7 @@ stobj</li>
 ;; This function can print the contents of an array in a stobj.  Specifically,
 ;; the array mem in stobj st.
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 (defun print-st1 (i max st)
   (declare (xargs :guard (and (integerp i)

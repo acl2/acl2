@@ -3660,7 +3660,7 @@
    (shallow-clausify
     (mv-let (sym x)
             (constraint-info ev wrld)
-            (assert$ (not (eq x *unknown-constraints*))
+            (assert$ (not (unknown-constraints-p x))
                      (cond
                       (sym (conjoin x))
                       (t x)))))))
@@ -3858,7 +3858,16 @@
   (let* ((defthm (if (or (eql i 0) (eql i 6) (eql i 7)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
-         (formula (prettyify-clause clause nil nil))
+         (formula
+
+; Notice that we pass nil to the world argument of prettyify-clause below, so
+; that the user cannot affect the formula generated here, for example by
+; setting the 'untranslate or 'untranslate-preprocess entry in the
+; user-defined-functions-table.  We do not rely on this for soundness, however,
+; since ultimately the defthm returned below would be rejected if the formula
+; is unsuitable.
+
+          (prettyify-clause clause nil nil))
          (hints (defevaluator-form/defthm-hints evfn evfn-lst i)))
     `((,defthm ,name
         ,formula
@@ -4380,17 +4389,10 @@
     (mv-let (name x)
             (constraint-info fn wrld)
             (cond
-             ((eq x *unknown-constraints*)
-              (let* ((cl-proc
-                      (getpropc name 'constrainedp
-                                '(:error
-                                  "See immediate-canonical-ancestors:  ~
-                                   expected to find a 'constrainedp property ~
-                                   where we did not.")
-                                wrld))
-                     (supporters (unknown-constraint-supporters cl-proc wrld)))
-                (collect-canonical-siblings supporters wrld guard-anc
-                                            ignore-fns)))
+             ((unknown-constraints-p x)
+              (collect-canonical-siblings (unknown-constraints-supporters x)
+                                          wrld guard-anc
+                                          ignore-fns))
              (name (canonical-ffn-symbs-lst x wrld guard-anc ignore-fns rlp))
              (t (canonical-ffn-symbs x wrld guard-anc ignore-fns rlp))))))
 
@@ -4469,18 +4471,14 @@
     (constraint-info ev wrld)
     (declare (ignore fn))
     (cond
-     ((eq constraint *unknown-constraints*)
+     ((unknown-constraints-p constraint)
       (er soft ctx ; see comment in defaxiom-supporters
           "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-           function symbol, ~x2, is constrained by the (unknown) theory of a ~
-           dependent clause-processor, ~x3.  See :DOC clause-processor."
+           function symbol, ~x2, has unknown-constraints.  See :DOC ~
+           partial-encapsulate."
           rule-type
           name
-          ev
-          (getpropc ev 'constrainedp
-                    '(:error "See chk-evaluator-use-in-rule:  expected to ~
-                              find a 'constrainedp property where we did not.")
-                    wrld)))
+          ev))
      (t
       (let* ((ev-lst (ev-lst-from-ev ev wrld))
              (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
@@ -6420,7 +6418,7 @@
 ; quote-normal form, both to facilitate matching when the rule is subsequently
 ; applied and to make the test robust below where we use subst-var-lst.
 
-             (sublis-var nil (cdar pairs))))
+             (quote-normal-form (cdar pairs))))
         (case-match
          hyp
          ((equiv1 xk yk)
@@ -7172,6 +7170,8 @@
 ; (cl-proc cl hint) => cl-list
 ; or
 ; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in)
+; or
+; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in d)
 
   (cond
    ((null (cdr stobjs-out)) ; first two signatures
@@ -7184,19 +7184,20 @@
           (t (msg "~x0 returns a single argument, but doesn't take exactly one ~
                    or two arguments, both not stobjs"
                   cl-proc))))
-   ((and ; the final (third) class of signatures above
-     (null (car stobjs-in))
-     (cdr stobjs-in)
-     (null (cadr stobjs-in))
-     (not (member-eq nil (cddr stobjs-in)))
-     (null (car stobjs-out))
-     (cdr stobjs-out)
-     (null (cadr stobjs-out))
-     (not (member-eq nil (cddr stobjs-out))))
+   ((and (null (car stobjs-in))
+         (cdr stobjs-in)
+         (null (cadr stobjs-in))
+         (not (member-eq nil (cddr stobjs-in)))
+         (null (car stobjs-out))
+         (cdr stobjs-out)
+         (null (cadr stobjs-out))
+         (member-equal (member-eq nil (cddr stobjs-out))
+                       '(nil (nil))))
     nil)
    (t
     (msg "both the arguments and results of ~x0 in this case are expected to ~
-          contain stobjs in exactly all positions other than the first two"
+          contain stobjs in exactly all positions other than the first two ~
+          and possibly the last"
          cl-proc))))
 
 (defun destructure-clause-processor-rule (term)
@@ -7206,7 +7207,7 @@
 ; (mv flg fn cl alist rest-args ev call xflg)
 ; where
 ; flg:   :error, if term is not the right shape
-;        t, if the clause processor function returns an error triple
+;        t, if the clause processor function returns (mv erp clauses ...)
 ;           and is thus to be accessed with CLAUSES-RESULT
 ;        nil, if the clause processor returns a set of clauses.
 ; fn:    the clause processor function (presumably a function symbol)
@@ -7402,7 +7403,7 @@
 ; do with defthm, but it seems reasonable to place it immediately below code
 ; for verified clause-processors.
 
-(defun trusted-clause-processor-table-guard (key val wrld)
+(defun trusted-cl-proc-table-guard (key val wrld)
 
 ; There is not much point in checking whether the key is already designated as
 ; a clause-processor, because a redundant table event won't even result in such
@@ -7424,7 +7425,7 @@
   (let ((er-msg "The proposed designation of a trusted clause-processor is ~
                  illegal because ~@0.  See :DOC ~
                  define-trusted-clause-processor.")
-        (ctx 'trusted-clause-processor-table-guard))
+        (ctx 'trusted-cl-proc-table-guard))
     (cond
      ((not (or (ttag wrld)
                (global-val 'boot-strap-flg wrld)))
@@ -7438,36 +7439,15 @@
       (er hard ctx er-msg
           (msg "the clause-processor must be a function symbol, unlike ~x0"
                key)))
-     ((not (and (consp val)
-                (all-function-symbolps (car val) wrld)))
-      (cond ((not (symbol-listp (car val)))
+     ((not (all-function-symbolps val wrld))
+      (cond ((not (symbol-listp val))
              (er hard ctx er-msg
                  "the indicated supporters list is not a true list of symbols"))
             (t (er hard ctx er-msg
                    (msg "the indicated supporter~#0~[ ~&0 is not a function ~
                          symbol~/s ~&0 are not function symbols~] in the ~
                          current ACL2 world"
-                        (non-function-symbols (car val) wrld))))))
-     ((and (cdr val)
-           (not (eql (length (non-trivial-encapsulate-ee-entries
-                              (global-val 'embedded-event-lst wrld)))
-                     1)))
-      (let  ((ee-entries (non-trivial-encapsulate-ee-entries
-                          (global-val 'embedded-event-lst wrld))))
-        (cond
-         ((null ee-entries)
-          (er hard ctx er-msg
-              "there is no promised encapsulate to associate with this ~
-               dependent clause-processor"))
-         (t
-          (er hard ctx er-msg
-              (msg "there is not a unique encapsulate for the promised ~
-                    encapsulate to associate with this dependent ~
-                    clause-processor.  In particular, an enclosing ~
-                    encapsulate introduces function ~x0, while an encapsulate ~
-                    superior to that introduces function ~x1"
-                   (caar (cadr (car ee-entries)))
-                   (caar (cadr (cadr ee-entries)))))))))
+                        (non-function-symbols val wrld))))))
      (t
       (let ((failure-msg (tilde-@-illegal-clause-processor-sig-msg
                           key
@@ -7478,9 +7458,62 @@
           (er hard ctx er-msg failure-msg))
          (t t)))))))
 
-(table trusted-clause-processor-table nil nil
+(table trusted-cl-proc-table nil nil
        :guard
-       (trusted-clause-processor-table-guard key val world))
+       (trusted-cl-proc-table-guard key val world))
+
+(defun unknown-constraints-table-guard (key val wrld)
+  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
+                 because ~@0.  See :DOC partial-encapsulate.")
+        (ctx 'unknown-constraints-table-guard))
+    (and (eq key :supporters)
+         (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                            (global-val 'embedded-event-lst wrld))))
+           (cond
+            ((null ee-entries)
+             (er hard ctx er-msg
+                 "it is not being made in the scope of a non-trivial ~
+                  encapsulate"))
+            ((cdr ee-entries)
+             (er hard ctx er-msg
+                 (msg "it is being made in the scope of nested non-trivial ~
+                       encapsulates.  In particular, an enclosing encapsulate ~
+                       introduces function ~x0, while an encapsulate superior ~
+                       to that one introduces function ~x1"
+                      (caar (cadr (car ee-entries)))
+                      (caar (cadr (cadr ee-entries))))))
+            ((not (all-function-symbolps val wrld))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, is not a list of known function symbols"
+                      val)))
+            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                                 val))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, does not include all of the signature ~
+                       functions of the partial-encapsulate"
+                      val)))
+            (t t))))))
+
+(table unknown-constraints-table nil nil
+       :guard
+       (unknown-constraints-table-guard key val world))
+
+(defmacro set-unknown-constraints-supporters (&rest fns)
+  `(table unknown-constraints-table
+          :supporters
+
+; Notice that by including the newly-constrained functions in the supporters,
+; we are guaranteeing that this table event is not redundant.  To see this,
+; first note that we are inside a non-trivial encapsulate (see
+; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
+; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
+; would have rejected a previous attempt to set to these supporters, since they
+; were not function symbols at that time.
+
+          (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                             (global-val 'embedded-event-lst world))))
+            (union-equal (strip-cars (cadr (car ee-entries)))
+                         ',fns))))
 
 (defmacro define-trusted-clause-processor
   (clause-processor supporters
@@ -7489,12 +7522,6 @@
                     partial-theory       ;;; optional
                     ttag                 ;;; optional; nil is same as missing
                     )
-
-; We could mention that unlike trusted clause-processors, no supporters need to
-; be specified for a verified clause-processor, as such a rule is guaranteed to
-; be a theorem even in if local events have been removed.  But that probably
-; would distract more than it would enlighten.
-
   (let* ((ctx 'define-trusted-clause-processor)
          (er-msg "The proposed use of define-trusted-clause-processor is ~
                   illegal because ~@0.  See :DOC ~
@@ -7502,7 +7529,7 @@
          (assert-check
           `(assert-event
             (not (assoc-eq ',clause-processor
-                           (table-alist 'trusted-clause-processor-table
+                           (table-alist 'trusted-cl-proc-table
                                         (w state))))
             :msg (msg "The function ~x0 is already indicated as a trusted ~
                        clause-processor."
@@ -7538,8 +7565,7 @@
             ()
             ,assert-check
             ,@extra
-            (table trusted-clause-processor-table ',clause-processor
-                   '(,supporters))))
+            (table trusted-cl-proc-table ',clause-processor ',supporters)))
         (('encapsulate sigs . events)
          (cond
           ((atom sigs)
@@ -7560,8 +7586,9 @@
                 (logic) ; to avoid skipping local events
                 ,@events
                 ,@extra
-                (table trusted-clause-processor-table ',clause-processor
-                       '(,supporters . t))))))
+                (set-unknown-constraints-supporters ,@supporters)
+                (table trusted-cl-proc-table ',clause-processor
+                       ',supporters)))))
         (& (er hard ctx er-msg
                "a supplied :partial-theory argument must be a call of ~
                 encapsulate")))))))
@@ -7888,8 +7915,8 @@
 ; In the case of a :meta fn, triple-flg is :error or nil and rest-args may be
 ; nil or something like (mfc state).  In the case of a :clause-processor,
 ; triple-flg may be :error, t, or nil and rest-args may be nil or (hint) or
-; (hint stobj1 stobj2 ... stobjk).  When hyp-fn is present, we know that it can
-; take the same arguments as fn.
+; (hint stobj1 stobj2 ...).  When hyp-fn is present, we know that it can take
+; the same arguments as fn.
 
 ; If triple-flg is :error then we know chk-acceptable-x-rule will cause an
 ; error.  Otherwise, we guarantee that fn is a function symbol, hyp-fn is nil
@@ -10763,16 +10790,16 @@
                        nil 0 0
                        nil)))
 
-(defun delete-assoc-equal? (key alist)
+(defun remove1-assoc-equal? (key alist)
   (cond ((assoc-equal key alist)
-         (delete-assoc-equal key alist))
+         (remove1-assoc-equal key alist))
         (t alist)))
 
-(defun delete-assoc-equal?-lst (lst alist)
+(defun remove1-assoc-equal?-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
   (if (consp lst)
-      (delete-assoc-equal?-lst (cdr lst)
-                               (delete-assoc-equal? (car lst) alist))
+      (remove1-assoc-equal?-lst (cdr lst)
+                                (remove1-assoc-equal? (car lst) alist))
     alist))
 
 (defun monitor1 (x form ctx state)
@@ -10789,18 +10816,18 @@
      (pprogn
       (f-put-global 'brr-monitored-runes
                     (append (pairlis-x2 runes (list term))
-                            (delete-assoc-equal?-lst
+                            (remove1-assoc-equal?-lst
                              runes
                              (get-brr-global 'brr-monitored-runes
                                              state)))
                     state)
       (value (get-brr-global 'brr-monitored-runes state))))))
 
-(defun delete-assoc-equal-lst (lst alist)
+(defun remove1-assoc-equal-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
   (if (consp lst)
-      (delete-assoc-equal-lst (cdr lst)
-                              (delete-assoc-equal (car lst) alist))
+      (remove1-assoc-equal-lst (cdr lst)
+                               (remove1-assoc-equal (car lst) alist))
     alist))
 
 (defun set-difference-assoc-equal (lst alist)
@@ -10848,7 +10875,7 @@
                         (value nil))))
          (pprogn
           (f-put-global 'brr-monitored-runes
-                        (delete-assoc-equal-lst runes monitored-runes-alist)
+                        (remove1-assoc-equal-lst runes monitored-runes-alist)
                         state)
           (prog2$
            (cond ((and (f-get-global 'gstackp state)
@@ -10939,10 +10966,11 @@
    (flg
     (pprogn
      (f-put-global 'gstackp t state)
+     (maybe-initialize-brr-evisc-tuple state)
      (prog2$
-      (cw "Use :a! to exit break-rewrite.~|See :DOC set-evisc-tuple to ~
-           control suppression of details when printing.~|~%The monitored ~
-           runes are:~%")
+      (cw "Use :a! to exit break-rewrite.~|See :DOC set-brr-evisc-tuple and ~
+           :DOC iprint to control suppression of details when ~
+           printing.~|~%The monitored runes are:~%")
       (er-progn
        (monitored-runes-fn state)
        (value t)))))
@@ -11018,6 +11046,9 @@
                    state)
     (put-brr-local 'saved-brr-monitored-runes
                    (get-brr-global 'brr-monitored-runes state)
+                   state)
+    (put-brr-local 'saved-brr-evisc-tuple
+                   (get-brr-global 'brr-evisc-tuple state)
                    state)
     (if (eq runes t)
         state
@@ -11501,13 +11532,6 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg)
-  (list 'thm-fn
-        (list 'quote term)
-        'state
-        (list 'quote hints)
-        (list 'quote otf-flg)))
-
 (defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
@@ -11533,6 +11557,26 @@
                 (fms "Proof succeeded.~%" nil
                      (proofs-co state) state nil))
            (value :invisible))))
+
+(defmacro thm (term &key hints otf-flg)
+
+; We started using make-event here in January, 2019.  Instead of defining
+; thm-fn above and generating a call of it below, we could presumably generate
+; a new name and instead call defthm with that name, adding :rule-classes nil.
+; But to reduce risk and potential churn we decided, when introducing
+; make-event here, to continue with the existing definition of thm-fn, and
+; essentially the same use of thm-fn.  It seems very reasonable to try the
+; defthm approach instead if someone wants to do that.
+
+  `(with-output :off summary :stack :push
+     (make-event (er-progn (with-output :stack :pop
+                             (thm-fn ',term
+                                     state
+                                     ',hints
+                                     ',otf-flg))
+                           (value '(value-triple :invisible)))
+                 :expansion? (value-triple :invisible)
+                 :on-behalf-of :quiet!)))
 
 ; Note:  During boot-strapping the thm macro is unavailable because it is
 ; not one of the *initial-event-defmacros*.

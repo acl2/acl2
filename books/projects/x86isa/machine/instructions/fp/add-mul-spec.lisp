@@ -42,7 +42,7 @@
 ;; (david@russinoff.com).
 
 (in-package "X86ISA")
-(include-book "constants" :dir :utils)
+(include-book "fp-structures" :dir :utils)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "tools/with-supporters" :dir :system)
 
@@ -101,29 +101,29 @@
         (mxcsr (loghead 32 (ifix mxcsr)))
         ;; Pre-computation Exceptions
         ;; Check invalid operation
-        ((when (and (equal (mxcsr-slice :ie mxcsr) 1)
-                    (equal (mxcsr-slice :im mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->ie mxcsr) 1)
+                    (equal (mxcsrBits->im mxcsr) 0)))
          (mv 'invalid-operand-exception-is-not-masked result mxcsr))
         ;; Check divide-by-zero
-        ((when (and (equal (mxcsr-slice :ze mxcsr) 1)
-                    (equal (mxcsr-slice :zm mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->ze mxcsr) 1)
+                    (equal (mxcsrBits->zm mxcsr) 0)))
          (mv 'divide-by-zero-exception-is-not-masked result mxcsr))
         ;; Check denormal operand
-        ((when (and (equal (mxcsr-slice :de mxcsr) 1)
-                    (equal (mxcsr-slice :dm mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->de mxcsr) 1)
+                    (equal (mxcsrBits->dm mxcsr) 0)))
          (mv 'denormal-operand-exception-is-not-masked result mxcsr))
         ;; Post-computation Exceptions
         ;; Check overflow
-        ((when (and (equal (mxcsr-slice :oe mxcsr) 1)
-                    (equal (mxcsr-slice :om mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->oe mxcsr) 1)
+                    (equal (mxcsrBits->om mxcsr) 0)))
          (mv 'overflow-exception-is-not-masked result mxcsr))
         ;; Check underflow
-        ((when (and (equal (mxcsr-slice :ue mxcsr) 1)
-                    (equal (mxcsr-slice :um mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->ue mxcsr) 1)
+                    (equal (mxcsrBits->um mxcsr) 0)))
          (mv 'underflow-exception-is-not-masked result mxcsr))
         ;; Check precision
-        ((when (and (equal (mxcsr-slice :pe mxcsr) 1)
-                    (equal (mxcsr-slice :pm mxcsr) 0)))
+        ((when (and (equal (mxcsrBits->pe mxcsr) 1)
+                    (equal (mxcsrBits->pm mxcsr) 0)))
          (mv 'precision-exception-is-not-masked result mxcsr)))
      (mv nil result mxcsr))))
 
@@ -153,14 +153,14 @@
   (sse-add/sub/mul/div operation op1 op2 mxcsr #.*IEEE-SP-EXP-WIDTH* #.*IEEE-SP-FRAC-WIDTH*)
 
   ///
-  (defthm-usb n32p-result-sp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-result-sp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 1 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-flags-sp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-flags-sp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 2 (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -177,14 +177,14 @@
   (sse-add/sub/mul/div operation op1 op2 mxcsr #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*)
 
   ///
-  (defthm-usb n64p-result-dp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n64p-result-dp-sse-add/sub/mul/div
     :bound 64
     :concl (mv-nth 1 (dp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-flags-dp-sse-add/sub/mul/div
+  (defthm-unsigned-byte-p n32p-flags-dp-sse-add/sub/mul/div
     :bound 32
     :concl (mv-nth 2 (dp-sse-add/sub/mul/div operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))

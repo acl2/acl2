@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexstring ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (string stringp)
+  :returns (string str::hex-digit-string-p)
   :parents (8bitbytes-hexstrings-conversions)
   :short "Convert a list of natural numbers below 256
           to a string of hexadecimal digits."
@@ -30,5 +30,45 @@
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are upper case letters.
-    The result is the string of all these digits.")
-  (implode (ubyte8s=>hexchars bytes)))
+    The result is the string of all these digits.
+    The result has always an even length.")
+  (implode (ubyte8s=>hexchars bytes))
+
+  ///
+
+  (defrule ubyte8s=>hexstring-of-unsigned-byte-list-fix
+    (equal (ubyte8s=>hexstring (unsigned-byte-list-fix 8 bytes))
+           (ubyte8s=>hexstring bytes)))
+
+  (defrule evenp-of-length-of-ubyte8s=>hexstring
+    (evenp (length (ubyte8s=>hexstring bytes)))
+    :disable evenp)
+
+  (defrule ubyte8s=>hexstring-of-append
+    (equal (ubyte8s=>hexstring (append bytes1 bytes2))
+           (string-append (ubyte8s=>hexstring bytes1)
+                          (ubyte8s=>hexstring bytes2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hexstring=>ubyte8s ((string (and (stringp string)
+                                         (str::hex-digit-string-p string)
+                                         (evenp (length string)))))
+  :returns (bytes (unsigned-byte-listp 8 bytes))
+  :parents (8bitbytes-hexstrings-conversions)
+  :short "Convert an even-length string of hexadecimal digit characters
+          to a list of natural numbers below 256."
+  :long
+  (xdoc::topp
+   "Each pair of hexadecimal digit characters is turned into sa number.
+    Each such two-digit hexadecimal notation is treated as big endian,
+    i.e. the most significant digit appears first.")
+  (hexchars=>ubyte8s (explode string))
+
+  ///
+
+  (defrule hexstring=>ubyte8s-of-string-append
+    (implies (evenp (length string1))
+             (equal (hexstring=>ubyte8s (string-append string1 string2))
+                    (append (hexstring=>ubyte8s string1)
+                            (hexstring=>ubyte8s string2))))))

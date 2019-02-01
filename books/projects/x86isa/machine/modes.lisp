@@ -40,6 +40,8 @@
 
 (in-package "X86ISA")
 
+(include-book "segmentation-structures" :dir :utils)
+(include-book "paging-structures" :dir :utils)
 (include-book "register-readers-and-writers" :ttags (:undef-flg))
 (include-book "std/bitsets/bignum-extract" :dir :system) ;; For 64-bit-modep
 
@@ -100,7 +102,7 @@
    <p>
    Since @('(xr :msr ... x86)') returns a 64-bit value
    but the IA32_EFER register consists of 12 bits.
-   So we use @(tsee n12) to make @('ia32_efer-slice') applicable.
+   So we use @(tsee n12) to make @('ia32_eferBits') functions applicable.
    </p>"
 
   :no-function t
@@ -108,9 +110,9 @@
   (mbe
    :logic
    (b* ((ia32_efer (n12 (xr :msr #.*ia32_efer-idx* x86)))
-	(ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+	(ia32_efer.lma (ia32_eferBits->lma ia32_efer))
 	(cs-attr (xr :seg-hidden-attr #.*cs* x86))
-	(cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+	(cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
      (and (equal ia32_efer.lma 1)
 	  (equal cs.l 1)))
    :exec
@@ -126,10 +128,10 @@
 	((the (unsigned-byte 12) ia32_efer)
 	 (mbe :logic (n12 ia32_efer-low-32)
 	      :exec (logand #xFFF (the (unsigned-byte 32) ia32_efer-low-32))))
-	(ia32_efer.lma (ia32_efer-slice :ia32_efer-lma ia32_efer))
+	(ia32_efer.lma (ia32_eferBits->lma ia32_efer))
 	((the (unsigned-byte 16) cs-attr)
 	 (xr :seg-hidden-attr #.*cs* x86))
-	(cs.l (code-segment-descriptor-attributes-layout-slice :l cs-attr)))
+	(cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
      (and (equal ia32_efer.lma 1)
 	  (equal cs.l 1))))
   ///
@@ -142,14 +144,14 @@
 	     (equal (64-bit-modep (xw fld index value x86))
 		    (64-bit-modep x86))))
 
-  (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
-    (equal (64-bit-modep (!flgi flag val x86))
-	   (64-bit-modep x86)))
+  ;; (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
+  ;;   (equal (64-bit-modep (!flgi flag val x86))
+  ;;          (64-bit-modep x86)))
 
-  (defrule 64-bit-modep-of-!flgi-undefined
-    (equal (64-bit-modep (!flgi-undefined flg x86))
-	   (64-bit-modep x86))
-    :enable !flgi-undefined)
+  ;; (defrule 64-bit-modep-of-!flgi-undefined
+  ;;   (equal (64-bit-modep (!flgi-undefined flg x86))
+  ;;          (64-bit-modep x86))
+  ;;   :enable !flgi-undefined)
 
   (defrule 64-bit-modep-of-write-user-rflags
     (equal (64-bit-modep (write-user-rflags vector mask x86))
@@ -180,14 +182,14 @@
 	     (equal (x86-operation-mode (xw fld index value x86))
 		    (x86-operation-mode x86))))
 
-  (defrule x86-operation-mode-of-!flgi
-    (equal (x86-operation-mode (!flgi flag val x86))
-	   (x86-operation-mode x86)))
+  ;; (defrule x86-operation-mode-of-!flgi
+  ;;   (equal (x86-operation-mode (!flgi flag val x86))
+  ;;          (x86-operation-mode x86)))
 
-  (defrule x86-operation-mode-of-!flgi-undefined
-    (equal (x86-operation-mode (!flgi-undefined flg x86))
-	   (x86-operation-mode x86))
-    :enable !flgi-undefined)
+  ;; (defrule x86-operation-mode-of-!flgi-undefined
+  ;;   (equal (x86-operation-mode (!flgi-undefined flg x86))
+  ;;          (x86-operation-mode x86))
+  ;;   :enable !flgi-undefined)
 
   (defrule x86-operation-mode-of-write-user-rflags
     (equal (x86-operation-mode (write-user-rflags vector mask x86))

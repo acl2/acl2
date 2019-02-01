@@ -101,7 +101,7 @@
 
 (deflabel DEFN_fact-algorithm)
 
-(defthm-usb n32p-fact-algorithm
+(defthm-unsigned-byte-p n32p-fact-algorithm
   :hyp (and (n32p n)
             (n32p a))
   :bound 32
@@ -316,8 +316,8 @@
    :concl (equal (n32 (* (n32-to-i32 a) (n32-to-i32 n)))
                  a)
    :g-bindings
-   `((n   (:g-number ,(gl-int 0 2 33)))
-     (a   (:g-number ,(gl-int 1 2 33))))))
+   `((n   (:g-number ,(increasing-list 0 2 33)))
+     (a   (:g-number ,(increasing-list 1 2 33))))))
 
 (defthm Loop-Inv-To-Halt
   (implies (and (loop-inv n0 n a0 a)
@@ -463,7 +463,8 @@
                 (program-at addr *factorial_recursive* x86))
            (inv n0 addr (x86-fetch-decode-execute x86)))
   :hints (("Goal"
-           :in-theory (e/d* (check-instruction-length)
+           :in-theory (e/d* (check-instruction-length
+                             rflag-RoWs-enables)
                             (get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
                              get-prefixes-opener-lemma-group-3-prefix
@@ -472,6 +473,7 @@
           ("Subgoal 2"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        rflag-RoWs-enables
                         x86-operation-mode
 
                         gpr-and-spec-4
@@ -484,7 +486,6 @@
                         two-byte-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
-                        x86-operand-to-reg/mem$
                         check-instruction-length
                         wr64
                         wr32
@@ -494,7 +495,6 @@
                         rml64
                         wml32
                         x86-operand-from-modr/m-and-sib-bytes
-                        x86-operand-from-modr/m-and-sib-bytes$
                         riml-size
                         riml32
                         riml08
@@ -504,9 +504,6 @@
                         subset-p
                         ;; Flags
                         write-user-rflags
-                        !flgi-undefined
-                        !flgi
-                        flgi
                         zf-spec
                         pf-spec32
                         sub-af-spec32
@@ -531,6 +528,7 @@
           ("Subgoal 1"
            :in-theory (e/d*
                        (instruction-decoding-and-spec-rules
+                        rflag-RoWs-enables
                         x86-operation-mode
 
                         gpr-and-spec-4
@@ -542,7 +540,6 @@
                         one-byte-opcode-execute
                         !rgfi-size
                         x86-operand-to-reg/mem
-                        x86-operand-to-reg/mem$
                         wr64
                         wr32
                         rr32
@@ -551,7 +548,6 @@
                         rml64
                         wml32
                         x86-operand-from-modr/m-and-sib-bytes
-                        x86-operand-from-modr/m-and-sib-bytes$
                         check-instruction-length
                         riml-size
                         riml32
@@ -562,9 +558,6 @@
                         subset-p
                         ;; Flags
                         write-user-rflags
-                        !flgi-undefined
-                        !flgi
-                        flgi
                         zf-spec
                         pf-spec32
                         sub-af-spec32
@@ -597,6 +590,7 @@
   :hints (("Goal" :in-theory
            (e/d*
             (instruction-decoding-and-spec-rules
+             rflag-RoWs-enables
              x86-operation-mode
 
              gpr-and-spec-4
@@ -605,7 +599,6 @@
              one-byte-opcode-execute
              !rgfi-size
              x86-operand-to-reg/mem
-             x86-operand-to-reg/mem$
              wr64
              wr32
              rr32
@@ -616,7 +609,6 @@
              rml64
              wml32
              x86-operand-from-modr/m-and-sib-bytes
-             x86-operand-from-modr/m-and-sib-bytes$
              check-instruction-length
              riml-size
              riml32
@@ -627,9 +619,6 @@
              subset-p
              ;; Flags
              write-user-rflags
-             !flgi-undefined
-             !flgi
-             flgi
              zf-spec
              pf-spec32)
             ()))

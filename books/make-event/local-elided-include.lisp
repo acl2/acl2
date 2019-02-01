@@ -12,220 +12,96 @@
 ; Here is the expected :expansion-alist from local-elided.cert when provisional
 ; certification was not used.
 (defconst *local-elided-expansion-alist*
-  '((1 RECORD-EXPANSION
-       (LOCAL (MAKE-EVENT '(DEFUN FOO (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
-    (2 RECORD-EXPANSION
-       (MAKE-EVENT '(LOCAL (DEFUN FOO (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
-    (3 RECORD-EXPANSION
-       (MAKE-EVENT '(LOCAL (DEFUN FOO-2 (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
+  '((1 LOCAL (VALUE-TRIPLE :ELIDED))
+    (2 LOCAL (VALUE-TRIPLE :ELIDED))
+    (3 LOCAL (VALUE-TRIPLE :ELIDED))
     (5
-     RECORD-EXPANSION
-     (PROGN
-      (MAKE-EVENT '(LOCAL (DEFUN G (X) X)))
-      (LOCAL (DEFUN G2 (X) X))
-      (MAKE-EVENT (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                                       (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                                       (DEFTHM BAR2-PRESERVES-CONSP
-                                         (IMPLIES (CONSP X)
-                                                  (CONSP (BAR2 X))))))))
-     (PROGN
-      (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN G (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED)))
-      (LOCAL (VALUE-TRIPLE :ELIDED))
-      (RECORD-EXPANSION
-       (MAKE-EVENT
-        (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                             (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                             (DEFTHM BAR2-PRESERVES-CONSP
-                               (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
-       (ENCAPSULATE ((BAR2 (X) T))
-                    (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                    (DEFTHM BAR2-PRESERVES-CONSP
-                      (IMPLIES (CONSP X)
-                               (CONSP (BAR2 X))))))))
-    (6
-     RECORD-EXPANSION
-     (MAKE-EVENT
-      (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                           (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                           (DEFTHM BAR2-PRESERVES-CONSP
-                             (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
+     PROGN
+     (LOCAL (VALUE-TRIPLE :ELIDED))
+     (LOCAL (VALUE-TRIPLE :ELIDED))
      (ENCAPSULATE ((BAR2 (X) T))
-                  (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                  (DEFTHM BAR2-PRESERVES-CONSP
-                    (IMPLIES (CONSP X) (CONSP (BAR2 X))))))
-    (7
-     RECORD-EXPANSION
-     (MAKE-EVENT
-      (VALUE '(ENCAPSULATE ((BAR3 (X) T))
-                           (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                           (DEFTHM BAR3-PRESERVES-CONSP
-                             (IMPLIES (CONSP X) (CONSP (BAR3 X)))))))
-     (ENCAPSULATE
-      ((BAR3 (X) T))
-      (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                        (LOCAL (VALUE-TRIPLE :ELIDED)))
-      (DEFTHM BAR3-PRESERVES-CONSP
-        (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (8 RECORD-EXPANSION
-       (ENCAPSULATE ((BAR3 (X) T))
-                    (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                    (DEFTHM BAR3-PRESERVES-CONSP
-                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
-       (ENCAPSULATE
-        ((BAR3 (X) T))
-        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
+       (DEFTHM BAR2-PRESERVES-CONSP
+         (IMPLIES (CONSP X)
+                  (CONSP (BAR2 X))))))
+    (6
+     ENCAPSULATE ((BAR2 (X) T))
+     (LOCAL (VALUE-TRIPLE :ELIDED))
+     (DEFTHM BAR2-PRESERVES-CONSP
+       (IMPLIES (CONSP X) (CONSP (BAR2 X)))))
+    (7 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (8 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (9 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (10 DEFUN FOO-3 (X) X)
+    (12 ENCAPSULATE
+        NIL (MY-LOCAL (DEFUN G3 (X) X))
+        (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
                           (LOCAL (VALUE-TRIPLE :ELIDED)))
-        (DEFTHM BAR3-PRESERVES-CONSP
-          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (9 RECORD-EXPANSION
-       (ENCAPSULATE ((BAR3 (X) T))
-                    (LOCAL (DEFUN BAR3 (X) (FOO X)))
-                    (DEFTHM BAR3-PRESERVES-CONSP
-                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
-       (ENCAPSULATE
-        ((BAR3 (X) T))
-        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+        (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
                           (LOCAL (VALUE-TRIPLE :ELIDED)))
-        (DEFTHM BAR3-PRESERVES-CONSP
-          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (10 RECORD-EXPANSION
-        (MAKE-EVENT '(DEFUN FOO-3 (X) X))
-        (DEFUN FOO-3 (X) X))
-    (12
-     RECORD-EXPANSION
-     (ENCAPSULATE NIL (MY-LOCAL (DEFUN G3 (X) X))
-                  (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
-                  (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
-                  (MY-LOCAL (DEFUN G4 (X) X))
-                  (PROGN (MY-LOCAL (DEFUN G5 (X) X))
-                         (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X))))))
-     (ENCAPSULATE
-      NIL (MY-LOCAL (DEFUN G3 (X) X))
-      (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED)))
-      (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED)))
-      (MY-LOCAL (DEFUN G4 (X) X))
-      (RECORD-EXPANSION
-       (PROGN (MY-LOCAL (DEFUN G5 (X) X))
-              (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X)))))
-       (PROGN
-        (MY-LOCAL (DEFUN G5 (X) X))
-        (RECORD-EXPANSION (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X))))
-                          (LOCAL (VALUE-TRIPLE :ELIDED)))))))))
+        (MY-LOCAL (DEFUN G4 (X) X))
+        (RECORD-EXPANSION
+         (PROGN (MY-LOCAL (DEFUN G5 (X) X))
+                (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X)))))
+         (PROGN (MY-LOCAL (DEFUN G5 (X) X))
+                (LOCAL (VALUE-TRIPLE :ELIDED)))))))
 
 ; Here is the expected :expansion-alist from local-elided.cert when provisional
 ; certification was used.
 (defconst *local-elided-expansion-alist-pcert*
-  '((1 RECORD-EXPANSION
-       (LOCAL (MAKE-EVENT '(DEFUN FOO (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
-    (2 RECORD-EXPANSION
-       (MAKE-EVENT '(LOCAL (DEFUN FOO (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
-    (3 RECORD-EXPANSION
-       (MAKE-EVENT '(LOCAL (DEFUN FOO-2 (X) X)))
-       (LOCAL (VALUE-TRIPLE :ELIDED)))
-    (5
-     RECORD-EXPANSION
-     (PROGN
-      (MAKE-EVENT '(LOCAL (DEFUN G (X) X)))
-      (LOCAL (DEFUN G2 (X) X))
-      (MAKE-EVENT (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                                       (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                                       (DEFTHM BAR2-PRESERVES-CONSP
-                                         (IMPLIES (CONSP X)
-                                                  (CONSP (BAR2 X))))))))
-     (PROGN
-      (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN G (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED)))
-      (LOCAL (VALUE-TRIPLE :ELIDED))
-      (RECORD-EXPANSION
-       (MAKE-EVENT
-        (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                             (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                             (DEFTHM BAR2-PRESERVES-CONSP
-                               (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
+  '((1 LOCAL (VALUE-TRIPLE :ELIDED))
+    (2 LOCAL (VALUE-TRIPLE :ELIDED))
+    (3 LOCAL (VALUE-TRIPLE :ELIDED))
+    (5 PROGN (LOCAL (VALUE-TRIPLE :ELIDED))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
        (ENCAPSULATE ((BAR2 (X) T))
-                    (LOCAL (VALUE-TRIPLE :ELIDED)) ; eliding was optional
-                    (DEFTHM BAR2-PRESERVES-CONSP
-                      (IMPLIES (CONSP X)
-                               (CONSP (BAR2 X))))))))
-    (6
-     RECORD-EXPANSION
-     (MAKE-EVENT
-      (VALUE '(ENCAPSULATE ((BAR2 (X) T))
-                           (LOCAL (DEFUN BAR2 (X) (FOO X)))
-                           (DEFTHM BAR2-PRESERVES-CONSP
-                             (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
-     (ENCAPSULATE ((BAR2 (X) T))
-                  (LOCAL (VALUE-TRIPLE :ELIDED)) ; eliding was optional
-                  (DEFTHM BAR2-PRESERVES-CONSP
-                    (IMPLIES (CONSP X) (CONSP (BAR2 X))))))
-    (7
-     RECORD-EXPANSION
-     (MAKE-EVENT
-      (VALUE '(ENCAPSULATE ((BAR3 (X) T))
-                           (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                           (DEFTHM BAR3-PRESERVES-CONSP
-                             (IMPLIES (CONSP X) (CONSP (BAR3 X)))))))
-     (ENCAPSULATE
-      ((BAR3 (X) T))
-      (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
-      (DEFTHM BAR3-PRESERVES-CONSP
-        (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (8 RECORD-EXPANSION
-       (ENCAPSULATE ((BAR3 (X) T))
-                    (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                    (DEFTHM BAR3-PRESERVES-CONSP
-                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
-       (ENCAPSULATE
-        ((BAR3 (X) T))
-        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                          (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
-        (DEFTHM BAR3-PRESERVES-CONSP
-          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (9 RECORD-EXPANSION
-       (ENCAPSULATE ((BAR3 (X) T))
-                    (LOCAL (DEFUN BAR3 (X) (FOO X)))
-                    (DEFTHM BAR3-PRESERVES-CONSP
-                      (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
-       (ENCAPSULATE
-        ((BAR3 (X) T))
-        (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                          (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
-        (DEFTHM BAR3-PRESERVES-CONSP
-          (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
-    (10 RECORD-EXPANSION
-        (MAKE-EVENT '(DEFUN FOO-3 (X) X))
-        (DEFUN FOO-3 (X) X))
-    (12
-     RECORD-EXPANSION
-     (ENCAPSULATE NIL (MY-LOCAL (DEFUN G3 (X) X))
-                  (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
-                  (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
-                  (MY-LOCAL (DEFUN G4 (X) X))
-                  (PROGN (MY-LOCAL (DEFUN G5 (X) X))
-                         (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X))))))
-     (ENCAPSULATE
-      NIL (MY-LOCAL (DEFUN G3 (X) X))
-      (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
-      (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
-                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
-      (MY-LOCAL (DEFUN G4 (X) X))
-      (RECORD-EXPANSION
-       (PROGN (MY-LOCAL (DEFUN G5 (X) X))
-              (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X)))))
-       (PROGN
-        (MY-LOCAL (DEFUN G5 (X) X))
-        (RECORD-EXPANSION (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X))))
-                          (LOCAL (VALUE-TRIPLE :ELIDED))))))))) ; eliding was optional
+         (LOCAL (VALUE-TRIPLE :ELIDED))
+         (DEFTHM BAR2-PRESERVES-CONSP
+           (IMPLIES (CONSP X) (CONSP (BAR2 X))))))
+    (6 ENCAPSULATE ((BAR2 (X) T))
+       (LOCAL (VALUE-TRIPLE :ELIDED))
+       (DEFTHM BAR2-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR2 X)))))
+    (7 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (8 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (9 ENCAPSULATE ((BAR3 (X) T))
+       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
+                         (LOCAL (VALUE-TRIPLE :ELIDED)))
+       (DEFTHM BAR3-PRESERVES-CONSP
+         (IMPLIES (CONSP X) (CONSP (BAR3 X)))))
+    (10 DEFUN FOO-3 (X) X)
+    (12 ENCAPSULATE
+        NIL (MY-LOCAL (DEFUN G3 (X) X))
+        (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
+                          (LOCAL (VALUE-TRIPLE :ELIDED)))
+        (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
+                          (LOCAL (VALUE-TRIPLE :ELIDED)))
+        (MY-LOCAL (DEFUN G4 (X) X))
+        (RECORD-EXPANSION
+         (PROGN (MY-LOCAL (DEFUN G5 (X) X))
+                (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X)))))
+         (PROGN (MY-LOCAL (DEFUN G5 (X) X))
+                (LOCAL (VALUE-TRIPLE :ELIDED)))))))
 
 ; Include the book whose certificate we want to check.
 (include-book "local-elided")

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -159,7 +159,7 @@
                                *alt-branch$go-num*)
                             *alt-merge$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -217,7 +217,7 @@
          (queue2$st-format q2 data-width)
          (queue3$st-format q3 data-width))))
 
-(defthm round-robin1$st-format=>data-width-constraint
+(defthm round-robin1$st-format=>constraint
   (implies (round-robin1$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$st-format)))
@@ -245,7 +245,7 @@
          (alt-branch$valid-st br)
          (alt-merge$valid-st me))))
 
-(defthmd round-robin1$valid-st=>data-width-constraint
+(defthmd round-robin1$valid-st=>constraint
   (implies (round-robin1$valid-st st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable round-robin1$valid-st)))
@@ -432,10 +432,6 @@
            (round-robin1$out-act inputs st data-width)
            (round-robin1$data-out st)))
   )
-
-;; Prove that RR1 is not a DE primitive.
-
-(not-primp-lemma round-robin1)
 
 ;; The value lemma for RR1
 
@@ -1201,7 +1197,7 @@
                           (round-robin1$extract st))))
   :hints (("Goal"
            :do-not-induct t
-           :use round-robin1$valid-st=>data-width-constraint
+           :use round-robin1$valid-st=>constraint
            :in-theory (e/d (f-and3
                             len-0-is-atom
                             cons-append-instances
@@ -1219,7 +1215,7 @@
                            (nfix
                             b-not
                             append
-                            acl2::associativity-of-append
+                            associativity-of-append
                             round-robin1$disabled-rules)))))
 
 ;; Extract the accepted input sequence

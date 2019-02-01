@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2017
+;; January 2019
 
 (in-package "ADE")
 
@@ -192,6 +195,8 @@ Register Numbers for "a" and "b".
 
 (defthm len-mode-b
   (equal (len (mode-b i-reg)) 2))
+
+(acl2::set-induction-depth-limit nil) ; 14 suffices, but 13 does not
 
 (defthm bvp-mode-b
   (implies (bvp i-reg)

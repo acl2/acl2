@@ -41,7 +41,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utils/constants")
+(include-book "../utils/structures")
 (include-book "opcode-maps")
 (include-book "top-level-memory")
 (include-book "dispatch-macros")
@@ -270,10 +270,10 @@
    ))
 
 (local
- (defthm delete-assoc-equal-returns-an-alistp
+ (defthm remove1-assoc-equal-returns-an-alistp
    (implies (alistp y)
-	    (alistp (delete-assoc-equal x y)))
-   :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))))
+	    (alistp (remove1-assoc-equal x y)))
+   :hints (("Goal" :in-theory (e/d (remove1-assoc-equal) ())))))
 
 (local
  (defthmd not-consp-not-assoc-equal
@@ -329,10 +329,10 @@
 		;; have the following legal keys now:
 		;; (*compound-cells-legal-keys* - '(:i64 :o64))
 		(if 64-bit-modep
-		    (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+		    (b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 			 (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 		      (or o64-cell no-i64-cell))
-		  (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+		  (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 		       (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 		    (or i64-cell no-o64-cell))))
 	       (this-computed-val  (cond
@@ -864,21 +864,12 @@
     ;; Example invocations:
     ;; (compute-prop-for-a-simple-cell :modr/m? '("ADD" 2 (E b)  (G b)))
     ;; (compute-prop-for-a-simple-cell :modr/m? '(:2-byte-escape))
-    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT
-    ;;                                            (("VPMOVZXBW" 2 (V x)  (U x))
-    ;;                                             ("VPMOVZXBW" 2 (V x)  (M q)))))
 
     (cond ((not (simple-cell-p cell))
 	   (er hard? 'compute-prop-for-a-simple-cell
 	       "Use this function for a simple cell only.~%~x0 is not simple!~%" cell))
 	  ((basic-simple-cell-p cell)
-	   (any-operand-with-prop? prop cell))
-	  ((and (equal (car cell) :ALT)
-		(true-listp (cdr cell))
-		(true-list-listp (car (cdr cell))))
-	   ;; See comment in *simple-cells-legal-keywords* for a
-	   ;; description of :ALT.
-	   (any-operand-with-prop-for-simple-cells? prop (car (cdr cell))))
+	   (any-operand-with-prop? prop cell))	  
 	  ;; We've observed that either all :EXT opcodes have the same prop, or
 	  ;; none do.
 	  ((and (equal (car cell) :EXT)
@@ -923,10 +914,10 @@
 		 ;; mode, we ignore the opcode information that is valid
 		 ;; only in 64-bit mode.
 		 (if 64-bit-modep
-		     (b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+		     (b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 			  (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 		       (or o64-cell no-i64-cell))
-		   (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+		   (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 			(i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 		     (or i64-cell no-o64-cell))))
 		;; If a stripped cell is compound, then it can only have
@@ -3082,11 +3073,11 @@
 		       (unsigned-byte-p 8 mandatory-prefix)
 		       :hints
 		       (("goal"
-			 :use ((:instance opr-p-of-prefixes->opr (x prefixes))
-			       (:instance rep-p-of-prefixes->rep (x prefixes)))
-			 :in-theory (e/d (opr-p rep-p)
-					 (opr-p-of-prefixes->opr
-					  rep-p-of-prefixes->rep))))))
+			 :use ((:instance 8bits-p-of-prefixes->opr (x prefixes))
+			       (:instance 8bits-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (8bits-p)
+					 (8bits-p-of-prefixes->opr
+					  8bits-p-of-prefixes->rep))))))
 
 	    (let ((rep-pfx (the (unsigned-byte 8)
 			     (prefixes->rep prefixes))))
@@ -3323,10 +3314,10 @@
 			    ;; information that is valid only in 64-bit
 			    ;; mode.
 			    (if 64-bit-modep
-				(b* ((no-i64-cell (delete-assoc-equal :i64 cell))
+				(b* ((no-i64-cell (remove1-assoc-equal :i64 cell))
 				     (o64-cell    (cdr (assoc-equal :o64 no-i64-cell))))
 				  (or o64-cell no-i64-cell))
-			      (b* ((no-o64-cell (delete-assoc-equal :o64 cell))
+			      (b* ((no-o64-cell (remove1-assoc-equal :o64 cell))
 				   (i64-cell    (cdr (assoc-equal :i64 no-o64-cell))))
 				(or i64-cell no-o64-cell)))))
 			(if (and (basic-simple-cell-p stripped-cell)
@@ -3448,7 +3439,7 @@
 	      (list (acl2::flatten (acl2::rev acc)))
 	    (acl2::rev acc)))
 	 (new-acc (cons val acc))
-	 (new-alst (delete-assoc-equal key alst)))
+	 (new-alst (remove1-assoc-equal key alst)))
       (collect-all-vals-of-a-key key new-alst new-acc)))
 
   (define delete-all-keys ((key)
@@ -3457,16 +3448,16 @@
     (if (endp alst)
 	nil
       (if (assoc-equal key alst)
-	  (delete-all-keys key (delete-assoc-equal key alst))
+	  (delete-all-keys key (remove1-assoc-equal key alst))
 	alst))
     ///
 
     (local
-     (defthm len-reduced-by-delete-assoc-equal
+     (defthm len-reduced-by-remove1-assoc-equal
        (implies (and (alistp alst) (assoc-equal key alst))
-		(< (len (delete-assoc-equal key alst))
+		(< (len (remove1-assoc-equal key alst))
 		   (len alst)))
-       :hints (("Goal" :in-theory (e/d (delete-assoc-equal) ())))
+       :hints (("Goal" :in-theory (e/d (remove1-assoc-equal) ())))
        :rule-classes :linear))
 
     (defthm len-reduced-by-delete-all-keys

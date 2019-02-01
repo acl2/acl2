@@ -21,7 +21,9 @@
                          access-event-tuple-type
                          all-ffn-symbs
                          all-pkgs-in-world
-                         alpha/digit/uscore/dollar-char-listp
+                         alpha/digit-chars
+                         alpha/digit/dash-charlist-p
+                         alpha/digit/uscore/dollar-charlist-p
                          alpha/uscore/dollar-char-p
                          body
                          bool
@@ -29,13 +31,18 @@
                          char-upcase
                          chars=>nats
                          defxdoc+
+                         doublets-to-alist
                          ensure-boolean$
+                         ensure-doublet-list$
                          ensure-function-name$
                          ensure-function-name-list$
                          ensure-list-functions$
                          ensure-list-no-duplicates$
+                         ensure-member-of-list$
                          ensure-string$
                          ensure-string-or-nil$
+                         ensure-term$
+                         ensure-term-ground$
                          er-soft+
                          explode
                          fargn
@@ -46,6 +53,7 @@
                          formals
                          fquotep
                          implode
+                         known-packages
                          lambda-body
                          lambda-formals
                          lower-case-p
@@ -55,22 +63,26 @@
                          no-stobjs-p
                          partition-rest-and-keyword-args
                          patbind-run-when
-                         printable-char-listp
+                         primitivep
+                         printable-charlist-p
                          pseudo-termfnp
-                         sbyte8
+                         quote-listp
                          sbyte16
                          sbyte32
                          sbyte64
+                         sbyte8
                          sort-symbol-listp
                          string-downcase
                          string-upcase
                          string=>nats
+                         trans-eval
                          tuplep
                          typed-tuplep
-                         ubyte8s=>hexstring
                          ubyte16
+                         ubyte8s=>hexstring
                          upper-case-p
                          variablep
+                         str::chars-in-charset-p
                          str::natchars16
                          str::natstr
                          str::strtok)))

@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; January 2019
 
 ;; Automatic definition and proofs for simple linear vector modules of
 ;; primitives or other modules.  VECTOR-MODULE is defined in
@@ -73,7 +76,7 @@
  (sis 'y 0 n)
  nil
  (v-wire-body 0 n)
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 (defund v-wire& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
@@ -104,8 +107,6 @@
             :induct (vector-module-induction
                      body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis)))))
-
-(not-primp-lemma v-wire)
 
 (defthm v-wire$value
   (implies (and (v-wire& netlist n)
@@ -138,7 +139,7 @@
  (sis 'y 0 n)
  nil
  (v-if-body 0 n)
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 (defund v-if& (netlist n)
   (declare (xargs :guard (and (alistp netlist) (natp n))))
@@ -170,8 +171,6 @@
             :induct (vector-module-induction
                      body m n wire-alist st-alist netlist)
             :in-theory (enable de-rules sis fv-if)))))
-
-(not-primp-lemma v-if)
 
 (defthm v-if$value
   (implies (and (v-if& netlist n)

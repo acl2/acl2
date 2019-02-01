@@ -41,8 +41,8 @@
 
 (in-package "X86ISA")
 
-(include-book "constants" :dir :utils)
-(include-book "centaur/fty/top" :dir :system)
+(include-book "utilities" :dir :utils)
+(include-book "structures" :dir :utils)
 
 ; cert_param: (non-lispworks)
 ; cert_param: (hons-only)
@@ -104,16 +104,16 @@
     <tt>1</tt>, then <tt>5000</tt> will be popped out.</p>"
     :parents (environment-field)
     (if (atom lst)
-	(equal lst nil)
+        (equal lst nil)
       (and (consp (car lst))
-	   (i48p (caar lst))
-	   (true-listp (cdar lst))
-	   (rip-ret-alistp (cdr lst))))
+           (i48p (caar lst))
+           (true-listp (cdar lst))
+           (rip-ret-alistp (cdr lst))))
     ///
 
     (defthm rip-ret-alistp-fwd-chaining-alistp
       (implies (rip-ret-alistp x)
-	       (alistp x))
+               (alistp x))
       :rule-classes :forward-chaining))
 
   (define env-alistp (env)
@@ -123,42 +123,42 @@
     contents, and an oracle field.</p>"
     :parents (environment-field)
     (or (equal env nil)
-	(and (alistp env)
-	     (equal (len env) 3)
-	     (consp (assoc :FILE-DESCRIPTORS env))
-	     (alistp (cdr (assoc :FILE-DESCRIPTORS env)))
-	     (consp (assoc :FILE-CONTENTS env))
-	     (alistp (cdr (assoc :FILE-CONTENTS env)))
-	     (consp (assoc :ORACLE env))
-	     (rip-ret-alistp (cdr (assoc :ORACLE env)))))
+        (and (alistp env)
+             (equal (len env) 3)
+             (consp (assoc :FILE-DESCRIPTORS env))
+             (alistp (cdr (assoc :FILE-DESCRIPTORS env)))
+             (consp (assoc :FILE-CONTENTS env))
+             (alistp (cdr (assoc :FILE-CONTENTS env)))
+             (consp (assoc :ORACLE env))
+             (rip-ret-alistp (cdr (assoc :ORACLE env)))))
 
     ///
 
     (defthm env-alistp-fwd-chaining-alistp
       (implies (env-alistp x)
-	       (alistp x))
+               (alistp x))
       :rule-classes :forward-chaining)
 
-    (defthml nth-and-assoc-equal-check
+    (defrulel nth-and-assoc-equal-check
       (implies (and (alistp x)
-		    (not (equal (car (nth 0 x)) :oracle))
-		    (equal (car (nth 1 x)) :oracle))
-	       (equal (nth 1 x)
-		      (assoc-equal :oracle x))))
+                    (not (equal (car (nth 0 x)) :oracle))
+                    (equal (car (nth 1 x)) :oracle))
+               (equal (nth 1 x)
+                      (assoc-equal :oracle x))))
 
     (defthm env-alistp-fwd-chaining-rip-ret-alistp
       (implies (env-alistp x)
-	       (rip-ret-alistp (cdr (assoc-equal :oracle x))))
+               (rip-ret-alistp (cdr (assoc-equal :oracle x))))
       :rule-classes :forward-chaining)
 
     (defthm env-alistp-fwd-chaining-alistp-file-descriptors
       (implies (env-alistp x)
-	       (alistp (cdr (assoc-equal :file-descriptors x))))
+               (alistp (cdr (assoc-equal :file-descriptors x))))
       :rule-classes :forward-chaining)
 
     (defthm env-alistp-fwd-chaining-alistp-file-contents
       (implies (env-alistp x)
-	       (alistp (cdr (assoc-equal :file-contents x))))
+               (alistp (cdr (assoc-equal :file-contents x))))
       :rule-classes :forward-chaining)))
 
 ;; ======================================================================
@@ -188,9 +188,9 @@
       ;; unsigned format would occupy 64 bits, a bignum.  But in the
       ;; signed format, it would be a fixum.
       (rgf$c :type (array (signed-byte 64)
-			  (#.*64-bit-general-purpose-registers-len*))
-	     :initially 0
-	     :resizable nil)
+                          (#.*64-bit-general-purpose-registers-len*))
+             :initially 0
+             :resizable nil)
 
       ;; We choose the RIP to be a 48-bit signed integer.  RIP can
       ;; contain only canonical addresses, which range from 0 to
@@ -199,7 +199,7 @@
       ;; range of canonical addresses and -2^47 to -1 represents the
       ;; upper range of canonical addresses.
       (rip$c :type (signed-byte 48)
-	     :initially 0)
+             :initially 0)
 
       ;; Rflags: We define the rflags register as a 32-bit field, even
       ;; though in the 64-bit mode, rflags is a 64-bit register.  This
@@ -207,8 +207,8 @@
       ;; of 2014, Intel says that the top 32 bits of rflags are
       ;; reserved, so we aren't messing anything up.
       (rflags$c :type (unsigned-byte 32)
-		;; Bit 1 is always 1.
-		:initially 2)
+                ;; Bit 1 is always 1.
+                :initially 2)
 
       ;; User Segment Registers
       ;; Visible portion:
@@ -218,21 +218,21 @@
       ;; 32-bit Limit
       ;; 64-bit Base Address
       (seg-visible$c :type (array (unsigned-byte 16)
-				  (#.*segment-register-names-len*))
-		     :initially 0
-		     :resizable nil)
+                                  (#.*segment-register-names-len*))
+                     :initially 0
+                     :resizable nil)
       (seg-hidden-base$c :type (array (unsigned-byte 64)
-				      (#.*segment-register-names-len*))
-			 :initially 0
-			 :resizable nil)
+                                      (#.*segment-register-names-len*))
+                         :initially 0
+                         :resizable nil)
       (seg-hidden-limit$c :type (array (unsigned-byte 32)
-				       (#.*segment-register-names-len*))
-			  :initially 0
-			  :resizable nil)
+                                       (#.*segment-register-names-len*))
+                          :initially 0
+                          :resizable nil)
       (seg-hidden-attr$c :type (array (unsigned-byte 16)
-				      (#.*segment-register-names-len*))
-			 :initially 0
-			 :resizable nil)
+                                      (#.*segment-register-names-len*))
+                         :initially 0
+                         :resizable nil)
 
 
       ;; System Table Registers (GDTR and IDTR) -- these registers
@@ -240,9 +240,9 @@
       ;; In 64-bit mode, the system table registers are extended from
       ;; 48 to 80 bits.
       (str$c :type (array (unsigned-byte 80)
-			  (#.*gdtr-idtr-names-len*))
-	     :initially 0
-	     :resizable nil)
+                          (#.*gdtr-idtr-names-len*))
+             :initially 0
+             :resizable nil)
 
       ;; System Segment Registers (Task Register and LDTR)
       ;; Visible portion:
@@ -252,21 +252,21 @@
       ;; 32-bit Limit
       ;; 64-bit Base Address
       (ssr-visible$c :type (array (unsigned-byte 16)
-				  (#.*ldtr-tr-names-len*))
-		     :initially 0
-		     :resizable nil)
+                                  (#.*ldtr-tr-names-len*))
+                     :initially 0
+                     :resizable nil)
       (ssr-hidden-base$c :type (array (unsigned-byte 64)
-				      (#.*ldtr-tr-names-len*))
-			 :initially 0
-			 :resizable nil)
+                                      (#.*ldtr-tr-names-len*))
+                         :initially 0
+                         :resizable nil)
       (ssr-hidden-limit$c :type (array (unsigned-byte 32)
-				       (#.*ldtr-tr-names-len*))
-			  :initially 0
-			  :resizable nil)
+                                       (#.*ldtr-tr-names-len*))
+                          :initially 0
+                          :resizable nil)
       (ssr-hidden-attr$c :type (array (unsigned-byte 16)
-				      (#.*ldtr-tr-names-len*))
-			 :initially 0
-			 :resizable nil)
+                                      (#.*ldtr-tr-names-len*))
+                         :initially 0
+                         :resizable nil)
 
       ;; Control registers
       ;; [Shilpi]:
@@ -276,15 +276,15 @@
       ;; registers separately so that bignum creation can be avoided
       ;; during slicing operations involving these registers.
       (ctr$c  :type (array (unsigned-byte 64)
-			   (#.*control-register-names-len*))
-	      :initially 0
-	      :resizable nil)
+                           (#.*control-register-names-len*))
+              :initially 0
+              :resizable nil)
 
       ;; Debug registers
       (dbg$c :type (array (unsigned-byte 64)
-			  (#.*debug-register-names-len*))
-	     :initially 0
-	     :resizable nil)
+                          (#.*debug-register-names-len*))
+             :initially 0
+             :resizable nil)
 
       ;; Floating-point registers:
 
@@ -292,33 +292,33 @@
       ;; The MMX registers (MM0 through MM7) are aliased to the low
       ;; 64-bits of the FPU data registers.
       (fp-data$c :type (array (unsigned-byte 80)
-			      (#.*fp-data-register-names-len*))
-		 :initially 0
-		 :resizable nil)
+                              (#.*fp-data-register-names-len*))
+                 :initially 0
+                 :resizable nil)
 
       ;; FPU 16-bit control register
       (fp-ctrl$c :type (unsigned-byte 16)
-		 :initially 0)
+                 :initially 0)
 
       ;; FPU 16-bit status register
       (fp-status$c :type (unsigned-byte 16)
-		   :initially 0)
+                   :initially 0)
 
       ;; FPU 16-bit tag register
       (fp-tag$c :type (unsigned-byte 16)
-		:initially 0)
+                :initially 0)
 
       ;; FPU 48-bit last instruction pointer
       (fp-last-inst$c :type (unsigned-byte 48)
-		      :initially 0)
+                      :initially 0)
 
       ;; FPU 48-bit last data (operand) pointer
       (fp-last-data$c :type (unsigned-byte 48)
-		      :initially 0)
+                      :initially 0)
 
       ;; FPU 11-bit opcode
       (fp-opcode$c :type (unsigned-byte 11)
-		   :initially 0)
+                   :initially 0)
 
       ;; ZMM 512-bit data registers The lower 256-bits of the ZMM
       ;; registers are aliased to the respective 256-bit YMM registers
@@ -326,23 +326,23 @@
       ;; XMM registers.  Note that registers YMM16/XMM16 to
       ;; YMM31/XMM31 are available only via the EVEX prefix (AVX-512).
       (zmm$c :type (array (unsigned-byte 512)
-			  (#.*zmm-register-names-len*))
-	     :initially 0
-	     :resizable nil)
+                          (#.*zmm-register-names-len*))
+             :initially 0
+             :resizable nil)
 
       ;; MXCSR
       ;; Top 16 bits are reserved.
       (mxcsr$c :type (unsigned-byte 32)
-	       ;; Bits 7 through 12 are the individual masks for the
-	       ;; SIMD floating point exceptions.  These are set upon
-	       ;; a power-up or reset.
-	       :initially 8064)
+               ;; Bits 7 through 12 are the individual masks for the
+               ;; SIMD floating point exceptions.  These are set upon
+               ;; a power-up or reset.
+               :initially 8064)
 
       ;; Model-specific registers
       (msr$c :type (array (unsigned-byte 64)
-			  (#.*model-specific-register-names-len*))
-	     :initially 0
-	     :resizable nil)
+                          (#.*model-specific-register-names-len*))
+             :initially 0
+             :resizable nil)
 
       ;; Model state, used to indicate I/O or errors that our model
       ;; does not handle yet.  Basically, we use the model state to
@@ -416,48 +416,48 @@
       ;;  2^27 bytes corresponding to byte addresses with top 25 bits = #x0111111
 
       (mem-table :type (array (unsigned-byte #.*mem-table-size-bits+1*)
-			      ;; *mem-table-size-bits* of pseudo-page
-			      ;; address, followed by 1 extra bit
-			      ;; (LSB) to indicate the
-			      ;; absence/presence of pseudo-pages
-			      (#.*mem-table-size*))
-		 :initially 1
-		 :resizable nil)
+                              ;; *mem-table-size-bits* of pseudo-page
+                              ;; address, followed by 1 extra bit
+                              ;; (LSB) to indicate the
+                              ;; absence/presence of pseudo-pages
+                              (#.*mem-table-size*))
+                 :initially 1
+                 :resizable nil)
 
       (mem-array :type (array (unsigned-byte 8)
-			      (#.*initial-mem-array-length*))
-		 :initially 0
-		 :resizable t)
+                              (#.*initial-mem-array-length*))
+                 :initially 0
+                 :resizable t)
 
       (mem-array-next-addr :type (integer 0 #.*mem-table-size*)
-			   :initially 0)))
+                           :initially 0)))
 
   ;; Creating the stobj
 
   (defun create-stobj-renaming-fn-1 (x86-model-field)
     ;; Renaming the field updaters
     (let ((name (car x86-model-field))
-	  (type (caddr x86-model-field)))
+          (type (caddr x86-model-field)))
       (cond ((and (consp type)
-		  (equal (car type) 'array))
-	     (let ((namei (mk-name name "I")))
-	       `(,(mk-name "UPDATE-" namei) ,(mk-name "!" namei))))
-	    (t
-	     `(,(mk-name "UPDATE-" name) ,(mk-name "!" name))))))
+                  (equal (car type) 'array))
+             (let ((namei (mk-name name "I")))
+               `(,(mk-name "UPDATE-" namei) ,(mk-name "!" namei))))
+            (t
+             `(,(mk-name "UPDATE-" name) ,(mk-name "!" name))))))
 
   (defun create-stobj-renaming-fn (x86-model)
     (cond ((endp x86-model)
-	   '())
-	  (t
-	   `(,(create-stobj-renaming-fn-1 (car x86-model))
-	     ,@(create-stobj-renaming-fn (cdr x86-model))))))
+           '())
+          (t
+           `(,(create-stobj-renaming-fn-1 (car x86-model))
+             ,@(create-stobj-renaming-fn (cdr x86-model))))))
 
   (defun create-x86-stobj-1 (x86$c-model)
     `(DEFSTOBJ X86$C
        ,@x86$c-model
        :INLINE t
        :RENAMING ((x86$cp x86$cp-pre)
-		  ,@(create-stobj-renaming-fn x86$c-model))
+                  ,@(create-stobj-renaming-fn x86$c-model))
        :NON-MEMOIZABLE T))
 
   (defmacro create-x86-stobj ()
@@ -497,58 +497,58 @@
     :enabled t
     :parents (x86-concrete-stobj-recognizer)
     (cond ((mbt (and (natp i) (natp table-bound) (<= i table-bound)))
-	   (let ((addr (mem-tablei i x86$c)))
-	     (and (or (eql addr 1)
-		      (and (natp addr)
-			   (equal (logand #x1 addr) 0)
-			   (< (ash addr -1)
-			      array-next-addr)))
-		  (or (eql i table-bound)
-		      (good-mem-table-entriesp (1+ i) table-bound array-next-addr
-					       x86$c)))))
-	  (t nil)))
+           (let ((addr (mem-tablei i x86$c)))
+             (and (or (eql addr 1)
+                      (and (natp addr)
+                           (equal (logand #x1 addr) 0)
+                           (< (ash addr -1)
+                              array-next-addr)))
+                  (or (eql i table-bound)
+                      (good-mem-table-entriesp (1+ i) table-bound array-next-addr
+                                               x86$c)))))
+          (t nil)))
 
   (defun good-mem-table-entriesp-logic (i table-bound array-next-addr mem-table)
     (declare (xargs :measure (nfix (- table-bound i))))
     (cond ((mbt (and (natp i) (natp table-bound) (<= i table-bound)))
-	   (let ((addr (nth i mem-table)))
-	     (and (or (eql addr 1)
-		      (and (natp addr)
-			   (equal (logand #x1 addr) 0)
-			   (< (ash addr -1)
-			      array-next-addr)))
-		  (or (eql i table-bound)
-		      (good-mem-table-entriesp-logic
-		       (1+ i) table-bound array-next-addr mem-table)))))
-	  (t nil)))
+           (let ((addr (nth i mem-table)))
+             (and (or (eql addr 1)
+                      (and (natp addr)
+                           (equal (logand #x1 addr) 0)
+                           (< (ash addr -1)
+                              array-next-addr)))
+                  (or (eql i table-bound)
+                      (good-mem-table-entriesp-logic
+                       (1+ i) table-bound array-next-addr mem-table)))))
+          (t nil)))
 
   (defun-nx nth-nx (n x)
     (nth n x))
 
   (defthm good-mem-table-entriesp-is-good-mem-table-entriesp-logic
     (equal (good-mem-table-entriesp i table-bound array-next-addr x86$c)
-	   (good-mem-table-entriesp-logic i table-bound array-next-addr
-					  (nth *mem-tablei* x86$c))))
+           (good-mem-table-entriesp-logic i table-bound array-next-addr
+                                          (nth *mem-tablei* x86$c))))
 
   (in-theory (disable good-mem-table-entriesp-logic))
 
   (defun good-mem-table-entriesp-weak (i table-bound x86$c)
     ;; For guard of mem-table-entries.
     (declare (type (unsigned-byte #.*mem-table-size-bits*)
-		   i table-bound)
-	     (xargs :stobjs x86$c
-		    :guard (<= i table-bound)
-		    :measure (nfix (- table-bound i))))
+                   i table-bound)
+             (xargs :stobjs x86$c
+                    :guard (<= i table-bound)
+                    :measure (nfix (- table-bound i))))
     (cond ((mbt (and (natp i) (natp table-bound) (<= i table-bound)))
-	   (and (natp (mem-tablei i x86$c))
-		(or (eql i table-bound)
-		    (good-mem-table-entriesp-weak (1+ i) table-bound x86$c))))
-	  (t nil)))
+           (and (natp (mem-tablei i x86$c))
+                (or (eql i table-bound)
+                    (good-mem-table-entriesp-weak (1+ i) table-bound x86$c))))
+          (t nil)))
 
-  (defthml rational-listp-revappend
+  (defrulel rational-listp-revappend
     (implies (rational-listp x)
-	     (equal (rational-listp (revappend x y))
-		    (rational-listp y))))
+             (equal (rational-listp (revappend x y))
+                    (rational-listp y))))
 
   (define merge-<-into->
     ((lst1 rational-listp)
@@ -560,17 +560,17 @@
     downward-sorted list acc."
     :parents (x86-concrete-stobj-recognizer)
     (cond ((endp lst1) (revappend lst2 acc))
-	  ((endp lst2) (revappend lst1 acc))
-	  ((< (car lst1) (car lst2))
-	   (merge-<-into-> (cdr lst1) lst2 (cons (car lst1) acc)))
-	  (t
-	   (merge-<-into-> lst1 (cdr lst2) (cons (car lst2) acc))))
+          ((endp lst2) (revappend lst1 acc))
+          ((< (car lst1) (car lst2))
+           (merge-<-into-> (cdr lst1) lst2 (cons (car lst1) acc)))
+          (t
+           (merge-<-into-> lst1 (cdr lst2) (cons (car lst2) acc))))
     ///
     (defthm rational-listp-merge-<-into->
       (implies (and (rational-listp x)
-		    (rational-listp y)
-		    (rational-listp z))
-	       (rational-listp (merge-<-into-> x y z)))))
+                    (rational-listp y)
+                    (rational-listp z))
+               (rational-listp (merge-<-into-> x y z)))))
 
   (define merge->-into-<
     ((lst1 rational-listp)
@@ -582,17 +582,17 @@
     list acc."
     :parents (x86-concrete-stobj-recognizer)
     (cond ((endp lst1) (revappend lst2 acc))
-	  ((endp lst2) (revappend lst1 acc))
-	  ((> (car lst1) (car lst2))
-	   (merge->-into-< (cdr lst1) lst2 (cons (car lst1) acc)))
-	  (t
-	   (merge->-into-< lst1 (cdr lst2) (cons (car lst2) acc))))
+          ((endp lst2) (revappend lst1 acc))
+          ((> (car lst1) (car lst2))
+           (merge->-into-< (cdr lst1) lst2 (cons (car lst1) acc)))
+          (t
+           (merge->-into-< lst1 (cdr lst2) (cons (car lst2) acc))))
     ///
     (defthm rational-listp-merge->-into-<
       (implies (and (rational-listp x)
-		    (rational-listp y)
-		    (rational-listp z))
-	       (rational-listp (merge->-into-< x y z)))))
+                    (rational-listp y)
+                    (rational-listp z))
+               (rational-listp (merge->-into-< x y z)))))
 
 
   (encapsulate
@@ -605,23 +605,23 @@
        (local (include-book "arithmetic-5/top" :dir :system))
 
        (defthm mem-table-entries-measure-helper-1
-	 (implies (and (not (equal lower upper))
-		       (not (equal (+ 1 lower) upper))
-		       (natp lower)
-		       (natp upper)
-		       (< (+ 1 lower) upper)
-		       (<= lower (floor (+ lower upper) 2)))
-		  (< (floor (+ lower upper) 2) upper)))
+         (implies (and (not (equal lower upper))
+                       (not (equal (+ 1 lower) upper))
+                       (natp lower)
+                       (natp upper)
+                       (< (+ 1 lower) upper)
+                       (<= lower (floor (+ lower upper) 2)))
+                  (< (floor (+ lower upper) 2) upper)))
 
        (defthm mem-table-entries-measure-helper-2
-	 (implies (and (not (equal lower upper))
-		       (not (equal (+ 1 lower) upper))
-		       (natp lower)
-		       (natp upper)
-		       (< (+ 1 lower) upper)
-		       (< (floor (+ lower upper) 2) upper))
-		  (< (+ -1 (- (floor (+ lower upper) 2)))
-		     (- lower))))
+         (implies (and (not (equal lower upper))
+                       (not (equal (+ 1 lower) upper))
+                       (natp lower)
+                       (natp upper)
+                       (< (+ 1 lower) upper)
+                       (< (floor (+ lower upper) 2) upper))
+                  (< (+ -1 (- (floor (+ lower upper) 2)))
+                     (- lower))))
        ))
 
     (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -631,59 +631,59 @@
 
     (defun mem-table-entries (lower upper x86$c parity)
       (declare (type (unsigned-byte #.*mem-table-size-bits*) lower upper)
-	       (xargs :stobjs x86$c
-		      :guard (and (<= lower upper)
-				  (booleanp parity)
-				  (good-mem-table-entriesp-weak lower upper x86$c))
-		      :verify-guards nil
-		      :measure (nfix (- upper lower))))
+               (xargs :stobjs x86$c
+                      :guard (and (<= lower upper)
+                                  (booleanp parity)
+                                  (good-mem-table-entriesp-weak lower upper x86$c))
+                      :verify-guards nil
+                      :measure (nfix (- upper lower))))
       (cond ((eql lower upper)
-	     (let ((addr (mem-tablei lower x86$c)))
-	       (cond ((eql addr 1) nil)
-		     (t (list (ash addr -1))))))
-	    ((eql (1+ lower) upper)
-	     (let ((addr-lower (mem-tablei lower x86$c))
-		   (addr-upper (mem-tablei upper x86$c)))
-	       (cond ((eql addr-lower 1)
-		      (cond ((eql addr-upper 1) nil)
-			    (t (list (ash addr-upper -1)))))
-		     ((eql addr-upper 1)
-		      (list (ash addr-lower -1)))
-		     ((equal parity (< addr-lower addr-upper))
-		      (list (ash addr-lower -1) (ash addr-upper -1)))
-		     (t
-		      (list (ash addr-upper -1) (ash addr-lower -1))))))
-	    ((mbt (and (natp lower) (natp upper) (< (1+ lower) upper)))
-	     (let ((mid (ash (+ lower upper) -1)))
-	       (cond (parity
-		      (merge->-into-<
-		       (mem-table-entries lower mid x86$c nil)
-		       (mem-table-entries (1+ mid) upper x86$c nil)
-		       nil))
-		     (t
-		      (merge-<-into->
-		       (mem-table-entries lower mid x86$c t)
-		       (mem-table-entries (1+ mid) upper x86$c t)
-		       nil)))))
-	    (t 'impossible)))
+             (let ((addr (mem-tablei lower x86$c)))
+               (cond ((eql addr 1) nil)
+                     (t (list (ash addr -1))))))
+            ((eql (1+ lower) upper)
+             (let ((addr-lower (mem-tablei lower x86$c))
+                   (addr-upper (mem-tablei upper x86$c)))
+               (cond ((eql addr-lower 1)
+                      (cond ((eql addr-upper 1) nil)
+                            (t (list (ash addr-upper -1)))))
+                     ((eql addr-upper 1)
+                      (list (ash addr-lower -1)))
+                     ((equal parity (< addr-lower addr-upper))
+                      (list (ash addr-lower -1) (ash addr-upper -1)))
+                     (t
+                      (list (ash addr-upper -1) (ash addr-lower -1))))))
+            ((mbt (and (natp lower) (natp upper) (< (1+ lower) upper)))
+             (let ((mid (ash (+ lower upper) -1)))
+               (cond (parity
+                      (merge->-into-<
+                       (mem-table-entries lower mid x86$c nil)
+                       (mem-table-entries (1+ mid) upper x86$c nil)
+                       nil))
+                     (t
+                      (merge-<-into->
+                       (mem-table-entries lower mid x86$c t)
+                       (mem-table-entries (1+ mid) upper x86$c t)
+                       nil)))))
+            (t 'impossible)))
 
     )
 
-  (defthml good-mem-table-entriesp-weak-preserved-lemma
+  (defrulel good-mem-table-entriesp-weak-preserved-lemma
     (implies (and (good-mem-table-entriesp-weak lower upper1 x86$c)
-		  (natp upper2)
-		  (<= lower upper2)
-		  (<= upper2 upper1))
-	     (good-mem-table-entriesp-weak lower upper2 x86$c)))
+                  (natp upper2)
+                  (<= lower upper2)
+                  (<= upper2 upper1))
+             (good-mem-table-entriesp-weak lower upper2 x86$c)))
 
   (defthm good-mem-table-entriesp-weak-preserved
     (implies (and (good-mem-table-entriesp-weak lower1 upper1 x86$c)
-		  (natp lower2)
-		  (natp upper2)
-		  (<= lower1 lower2)
-		  (<= lower2 upper2)
-		  (<= upper2 upper1))
-	     (good-mem-table-entriesp-weak lower2 upper2 x86$c)))
+                  (natp lower2)
+                  (natp upper2)
+                  (<= lower1 lower2)
+                  (<= lower2 upper2)
+                  (<= upper2 upper1))
+             (good-mem-table-entriesp-weak lower2 upper2 x86$c)))
 
   (local
    (encapsulate
@@ -694,62 +694,62 @@
      ;; mem-table-entries.
      (defthm ash-minus-1-inequality-1
        (implies (and (natp lower)
-		     (natp upper)
-		     (< (1+ lower) upper))
-		(< lower
-		   (ash (+ lower upper) -1)))
+                     (natp upper)
+                     (< (1+ lower) upper))
+                (< lower
+                   (ash (+ lower upper) -1)))
        :rule-classes :linear)
 
      (defthm ash-minus-1-inequality-2
        (implies (and (natp lower)
-		     (natp upper)
-		     (< (1+ lower) upper))
-		(<= (+ 1 (ash (+ lower upper) -1))
-		    upper))
+                     (natp upper)
+                     (< (1+ lower) upper))
+                (<= (+ 1 (ash (+ lower upper) -1))
+                    upper))
        :rule-classes :linear)
 
      (defthm floor-1/2-inequalities
        (implies (and (natp lower)
-		     (natp upper)
-		     (< lower 33554432)
-		     (< upper 33554432)
-		     (< (+ 1 lower) upper))
-		(and (< (floor (+ (* 1/2 lower) (* 1/2 upper)) 1) 33554432)
-		     (<= 0 (floor (+ (* 1/2 lower) (* 1/2 upper)) 1))
-		     (<= (+ 1 (floor (+ (* 1/2 lower) (* 1/2 upper)) 1)) upper)
-		     (<= lower (floor (+ (* 1/2 lower) (* 1/2 upper)) 1))))
+                     (natp upper)
+                     (< lower 33554432)
+                     (< upper 33554432)
+                     (< (+ 1 lower) upper))
+                (and (< (floor (+ (* 1/2 lower) (* 1/2 upper)) 1) 33554432)
+                     (<= 0 (floor (+ (* 1/2 lower) (* 1/2 upper)) 1))
+                     (<= (+ 1 (floor (+ (* 1/2 lower) (* 1/2 upper)) 1)) upper)
+                     (<= lower (floor (+ (* 1/2 lower) (* 1/2 upper)) 1))))
        :rule-classes :linear)
      ))
 
   (defthm rational-listp-mem-table-entries
     (implies (good-mem-table-entriesp-weak lower upper x86$c)
-	     (rational-listp (mem-table-entries lower upper x86$c parity)))
+             (rational-listp (mem-table-entries lower upper x86$c parity)))
     :hints (("Goal"
-	     :induct (mem-table-entries lower upper x86$c parity))))
+             :induct (mem-table-entries lower upper x86$c parity))))
 
   (verify-guards mem-table-entries)
 
   (defun no-duplicatesp-sorted (lst)
     (declare (xargs :guard (eqlable-listp lst)))
     (cond ((or (endp lst)
-	       (endp (cdr lst)))
-	   t)
-	  ((eql (car lst) (cadr lst))
-	   nil)
-	  (t (no-duplicatesp-sorted (cdr lst)))))
+               (endp (cdr lst)))
+           t)
+          ((eql (car lst) (cadr lst))
+           nil)
+          (t (no-duplicatesp-sorted (cdr lst)))))
 
-  (defthml rational-listp-implies-eqlable-listp
+  (defrulel rational-listp-implies-eqlable-listp
     (implies (rational-listp x)
-	     (eqlable-listp x))
+             (eqlable-listp x))
     :rule-classes (:rewrite :type-prescription))
 
   (defun good-mem-table-no-dupsp (lower upper x86$c)
     (declare (type (unsigned-byte #.*mem-table-size-bits*)
-		   lower upper)
-	     (xargs :stobjs x86$c
-		    :guard
-		    (and (<= lower upper)
-			 (good-mem-table-entriesp-weak lower upper x86$c))))
+                   lower upper)
+             (xargs :stobjs x86$c
+                    :guard
+                    (and (<= lower upper)
+                         (good-mem-table-entriesp-weak lower upper x86$c))))
     (no-duplicatesp-sorted (mem-table-entries lower upper x86$c t)))
 
 
@@ -757,53 +757,53 @@
     ;; The result is increasing if parity is true, increasing if parity is false.
     (declare (xargs :measure (nfix (- upper lower))))
     (cond ((eql lower upper)
-	   (let ((addr (nth lower mem-table)))
-	     (cond ((eql addr 1) nil)
-		   (t (list (ash addr -1))))))
-	  ((eql (1+ lower) upper)
-	   (let ((addr-lower (nth lower mem-table))
-		 (addr-upper (nth upper mem-table)))
-	     (cond ((eql addr-lower 1)
-		    (cond ((eql addr-upper 1) nil)
-			  (t (list (ash addr-upper -1)))))
-		   ((eql addr-upper 1)
-		    (list (ash addr-lower -1)))
-		   ((equal parity (< addr-lower addr-upper))
-		    (list (ash addr-lower -1)
-			  (ash addr-upper -1)))
-		   (t
-		    (list (ash addr-upper -1)
-			  (ash addr-lower -1))))))
-	  ((mbt (and (natp lower) (natp upper) (< (1+ lower) upper)))
-	   (let ((mid (ash (+ lower upper) -1)))
-	     (cond (parity
-		    (merge->-into-<
-		     (mem-table-entries-logic lower mid mem-table nil)
-		     (mem-table-entries-logic (1+ mid) upper mem-table nil)
-		     nil))
-		   (t
-		    (merge-<-into->
-		     (mem-table-entries-logic lower mid mem-table t)
-		     (mem-table-entries-logic (1+ mid) upper mem-table t)
-		     nil)))))
-	  (t 'impossible)))
+           (let ((addr (nth lower mem-table)))
+             (cond ((eql addr 1) nil)
+                   (t (list (ash addr -1))))))
+          ((eql (1+ lower) upper)
+           (let ((addr-lower (nth lower mem-table))
+                 (addr-upper (nth upper mem-table)))
+             (cond ((eql addr-lower 1)
+                    (cond ((eql addr-upper 1) nil)
+                          (t (list (ash addr-upper -1)))))
+                   ((eql addr-upper 1)
+                    (list (ash addr-lower -1)))
+                   ((equal parity (< addr-lower addr-upper))
+                    (list (ash addr-lower -1)
+                          (ash addr-upper -1)))
+                   (t
+                    (list (ash addr-upper -1)
+                          (ash addr-lower -1))))))
+          ((mbt (and (natp lower) (natp upper) (< (1+ lower) upper)))
+           (let ((mid (ash (+ lower upper) -1)))
+             (cond (parity
+                    (merge->-into-<
+                     (mem-table-entries-logic lower mid mem-table nil)
+                     (mem-table-entries-logic (1+ mid) upper mem-table nil)
+                     nil))
+                   (t
+                    (merge-<-into->
+                     (mem-table-entries-logic lower mid mem-table t)
+                     (mem-table-entries-logic (1+ mid) upper mem-table t)
+                     nil)))))
+          (t 'impossible)))
 
   (defun good-mem-table-no-dupsp-logic (lower upper mem-table)
     (no-duplicatesp-sorted (mem-table-entries-logic lower upper mem-table t)))
 
   (defthm mem-table-entries-is-mem-table-entries-logic
     (equal (mem-table-entries lower upper x86$c parity)
-	   (mem-table-entries-logic lower upper
-				    (nth *mem-tablei* x86$c)
-				    parity)))
+           (mem-table-entries-logic lower upper
+                                    (nth *mem-tablei* x86$c)
+                                    parity)))
 
   (defthm good-mem-table-no-dupsp-is-good-mem-table-no-dupsp-logic
     (equal (good-mem-table-no-dupsp lower upper x86$c)
-	   (good-mem-table-no-dupsp-logic lower upper
-					  (nth *mem-tablei* x86$c))))
+           (good-mem-table-no-dupsp-logic lower upper
+                                          (nth *mem-tablei* x86$c))))
 
   (in-theory (disable good-mem-table-no-dupsp-logic
-		      good-mem-table-no-dupsp))
+                      good-mem-table-no-dupsp))
 
   ;; Before defining good-memp, towards defining x86$cp, we define a
   ;; function that will let us reason about the mem-array-next-addr
@@ -812,193 +812,193 @@
 
   (defun expected-mem-array-next-addr (i table-len x86$c)
     (declare (type (integer 0 #.*mem-table-size*)
-		   ;; Note that 0 and *mem-table-size* form a closed interval,
-		   ;; unlike that formed by (unsigned-byte 25).
-		   i table-len)
-	     (xargs :stobjs x86$c
-		    :guard (<= i table-len)
-		    :measure (nfix (- table-len i))))
+                   ;; Note that 0 and *mem-table-size* form a closed interval,
+                   ;; unlike that formed by (unsigned-byte 25).
+                   i table-len)
+             (xargs :stobjs x86$c
+                    :guard (<= i table-len)
+                    :measure (nfix (- table-len i))))
     (cond ((or (not (natp i))
-	       (not (natp table-len))
-	       (>= i table-len))
-	   0)
-	  (t (let ((addr (mem-tablei i x86$c)))
-	       (cond ((eql addr 1)
-		      (expected-mem-array-next-addr (1+ i) table-len x86$c))
-		     (t (+ 1 (expected-mem-array-next-addr (1+ i)
-							   table-len
-							   x86$c))))))))
+               (not (natp table-len))
+               (>= i table-len))
+           0)
+          (t (let ((addr (mem-tablei i x86$c)))
+               (cond ((eql addr 1)
+                      (expected-mem-array-next-addr (1+ i) table-len x86$c))
+                     (t (+ 1 (expected-mem-array-next-addr (1+ i)
+                                                           table-len
+                                                           x86$c))))))))
 
   (defthm expected-mem-array-in-parts
     (implies (and (natp i)
-		  (natp j)
-		  (natp k)
-		  (<= i j)
-		  (<= j k))
-	     (equal (+ (expected-mem-array-next-addr i j x86$c)
-		       (expected-mem-array-next-addr j k x86$c))
-		    (expected-mem-array-next-addr i k x86$c)))
+                  (natp j)
+                  (natp k)
+                  (<= i j)
+                  (<= j k))
+             (equal (+ (expected-mem-array-next-addr i j x86$c)
+                       (expected-mem-array-next-addr j k x86$c))
+                    (expected-mem-array-next-addr i k x86$c)))
     :rule-classes nil)
 
   (defthm expected-mem-array-bound-general
     (implies (<= i table-len)
-	     (<= (expected-mem-array-next-addr i table-len x86$c)
-		 (- table-len i)))
+             (<= (expected-mem-array-next-addr i table-len x86$c)
+                 (- table-len i)))
     :rule-classes :linear)
 
   (defthm expected-mem-array-bound
     (<= (expected-mem-array-next-addr 0
-				      (mem-table-length x86$c)
-				      x86$c)
-	(mem-table-length x86$c))
+                                      (mem-table-length x86$c)
+                                      x86$c)
+        (mem-table-length x86$c))
     :hints (("Goal" :use ((:instance expected-mem-array-bound-general
-				     (i 0)
-				     (table-len (mem-table-length x86$c))))))
+                                     (i 0)
+                                     (table-len (mem-table-length x86$c))))))
     :rule-classes :linear)
 
   (defthm expected-mem-array-next-addr-only-depends-on-mem-table-lemma
     (implies (equal (nth *mem-tablei* x86$c-alt)
-		    (nth *mem-tablei* x86$c))
-	     (equal (expected-mem-array-next-addr i j x86$c-alt)
-		    (expected-mem-array-next-addr i j x86$c)))
+                    (nth *mem-tablei* x86$c))
+             (equal (expected-mem-array-next-addr i j x86$c-alt)
+                    (expected-mem-array-next-addr i j x86$c)))
     :rule-classes nil)
 
   (defthm expected-mem-array-next-addr-only-depends-on-mem-table
     (implies (and (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c)
-			 x) ;; free var
-		  (syntaxp (equal x86$c 'x86$c))
-		  (equal (nth *mem-tablei* x86$c-alt)
-			 (nth *mem-tablei* x86$c)))
-	     (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c-alt)
-		    x))
+                         x) ;; free var
+                  (syntaxp (equal x86$c 'x86$c))
+                  (equal (nth *mem-tablei* x86$c-alt)
+                         (nth *mem-tablei* x86$c)))
+             (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c-alt)
+                    x))
     :hints (("Goal"
-	     :use
-	     ((:instance
-	       expected-mem-array-next-addr-only-depends-on-mem-table-lemma
-	       (i 0) (j *mem-table-size*))))))
+             :use
+             ((:instance
+               expected-mem-array-next-addr-only-depends-on-mem-table-lemma
+               (i 0) (j *mem-table-size*))))))
 
   (defthmd expected-mem-array-next-addr-only-depends-on-mem-table-no-syntaxp
     (implies (and (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c)
-			 x) ;; free var
-		  (equal (nth *mem-tablei* x86$c-alt)
-			 (nth *mem-tablei* x86$c)))
-	     (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c-alt)
-		    x))
+                         x) ;; free var
+                  (equal (nth *mem-tablei* x86$c-alt)
+                         (nth *mem-tablei* x86$c)))
+             (equal (expected-mem-array-next-addr 0 *mem-table-size* x86$c-alt)
+                    x))
     :hints (("Goal"
-	     :use
-	     ((:instance
-	       expected-mem-array-next-addr-only-depends-on-mem-table-lemma
-	       (i 0) (j *mem-table-size*))))))
+             :use
+             ((:instance
+               expected-mem-array-next-addr-only-depends-on-mem-table-lemma
+               (i 0) (j *mem-table-size*))))))
 
   (in-theory (disable expected-mem-array-next-addr))
 
   (defthm good-mem-table-entriesp-logic-forward-to-good-mem-table-entriesp-weak
     (implies (good-mem-table-entriesp-logic lower upper
-					    array-next-addr
-					    (nth *mem-tablei* x86$c))
-	     (good-mem-table-entriesp-weak lower upper x86$c))
+                                            array-next-addr
+                                            (nth *mem-tablei* x86$c))
+             (good-mem-table-entriesp-weak lower upper x86$c))
     :hints (("Goal" :in-theory (e/d (good-mem-table-entriesp-logic
-				     good-mem-table-entriesp-weak)
-				    ((force)))))
+                                     good-mem-table-entriesp-weak)
+                                    ((force)))))
     :rule-classes :forward-chaining)
 
   (defun good-mem-arrayp-1 (index len x86$c)
     (declare (xargs :stobjs x86$c
-		    :guard (and (natp index)
-				(natp len)
-				(<= index len)
-				(<= len (mem-array-length x86$c)))
-		    :measure (nfix (- len index))))
+                    :guard (and (natp index)
+                                (natp len)
+                                (<= index len)
+                                (<= len (mem-array-length x86$c)))
+                    :measure (nfix (- len index))))
     (cond ((mbe :logic (not (and (natp index)
-				 (natp len)
-				 (< index len)))
-		:exec (eql index len))
-	   t)
-	  (t (and (eql (mem-arrayi index x86$c) 0)
-		  (good-mem-arrayp-1 (1+ index) len x86$c)))))
+                                 (natp len)
+                                 (< index len)))
+                :exec (eql index len))
+           t)
+          (t (and (eql (mem-arrayi index x86$c) 0)
+                  (good-mem-arrayp-1 (1+ index) len x86$c)))))
 
   (defun good-mem-arrayp-1-logic (index len mem-array)
     (declare (xargs :measure (nfix (- len index))))
     (cond ((not (and (natp index)
-		     (natp len)
-		     (< index len)))
-	   t)
-	  (t (and (eql (nth index mem-array) 0)
-		  (good-mem-arrayp-1-logic (1+ index) len mem-array)))))
+                     (natp len)
+                     (< index len)))
+           t)
+          (t (and (eql (nth index mem-array) 0)
+                  (good-mem-arrayp-1-logic (1+ index) len mem-array)))))
 
   (defthm good-mem-arrayp-1-is-good-mem-arrayp-1-logic
     (equal (good-mem-arrayp-1 index len x86$c)
-	   (good-mem-arrayp-1-logic index len (nth *mem-arrayi* x86$c))))
+           (good-mem-arrayp-1-logic index len (nth *mem-arrayi* x86$c))))
 
   (defun good-mem-arrayp (x86$c)
     (declare (xargs :stobjs x86$c
-		    :guard (<= (ash (mem-array-next-addr x86$c) #.*2^x-byte-pseudo-page*)
-			       (mem-array-length x86$c))
-		    :guard-hints (("Goal" :in-theory (enable ash floor)))))
+                    :guard (<= (ash (mem-array-next-addr x86$c) #.*2^x-byte-pseudo-page*)
+                               (mem-array-length x86$c))
+                    :guard-hints (("Goal" :in-theory (enable ash floor)))))
     (mbe :logic
-	 (good-mem-arrayp-1-logic (ash (mem-array-next-addr x86$c)
-				       #.*2^x-byte-pseudo-page*)
-				  (mem-array-length x86$c)
-				  (nth-nx *mem-arrayi* x86$c))
-	 :exec
-	 (good-mem-arrayp-1 (ash (mem-array-next-addr x86$c)
-				 #.*2^x-byte-pseudo-page*)
-			    (mem-array-length x86$c)
-			    x86$c)))
+         (good-mem-arrayp-1-logic (ash (mem-array-next-addr x86$c)
+                                       #.*2^x-byte-pseudo-page*)
+                                  (mem-array-length x86$c)
+                                  (nth-nx *mem-arrayi* x86$c))
+         :exec
+         (good-mem-arrayp-1 (ash (mem-array-next-addr x86$c)
+                                 #.*2^x-byte-pseudo-page*)
+                            (mem-array-length x86$c)
+                            x86$c)))
 
   ;; mem-table lemmas
 
   (defthm mem-tablep-forward
     (implies (mem-tablep x)
-	     (nat-listp x))
+             (nat-listp x))
     :rule-classes :forward-chaining)
 
   (defmacro mem-table-indexp (x)
     `(and (natp ,x)
-	  (< ,x *mem-table-size*)))
+          (< ,x *mem-table-size*)))
 
   (defthm nth-of-nat-listp-within-bounds
     (implies (and (nat-listp x)
-		  (natp i)
-		  (< i (len x)))
-	     (natp (nth i x)))
+                  (natp i)
+                  (< i (len x)))
+             (natp (nth i x)))
     :rule-classes :type-prescription)
 
 
   (defthm natp-mem-tablep-when-valid-mem-table-index
     (implies (forced-and (x86$cp-pre x86$c)
-			 (mem-table-indexp i))
-	     (and (integerp (mem-tablei i x86$c))
-		  (<= 0 (mem-tablei i x86$c))))
+                         (mem-table-indexp i))
+             (and (integerp (mem-tablei i x86$c))
+                  (<= 0 (mem-tablei i x86$c))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm natp-mem-tablep-when-valid-mem-table-index-nth-version
     (implies (forced-and (x86$cp-pre x86$c)
-			 (mem-table-indexp i))
-	     (and (integerp (nth i (nth *mem-tablei* x86$c)))
-		  (<= 0 (nth i (nth *mem-tablei* x86$c)))))
+                         (mem-table-indexp i))
+             (and (integerp (nth i (nth *mem-tablei* x86$c)))
+                  (<= 0 (nth i (nth *mem-tablei* x86$c)))))
     :rule-classes (:rewrite :type-prescription))
 
-  (defthml nth-of-mem-table-<=-*2^mem-table-size-bits+1*
+  (defrulel nth-of-mem-table-<=-*2^mem-table-size-bits+1*
     (implies (and (mem-tablep x)
-		  (integerp i)
-		  (<= 0 i)
-		  (< i (len x)))
-	     (< (nth i x) #.*2^mem-table-size-bits+1*))
+                  (integerp i)
+                  (<= 0 i)
+                  (< i (len x)))
+             (< (nth i x) #.*2^mem-table-size-bits+1*))
     :rule-classes :linear
     :hints (("Goal" :in-theory (e/d (nth) ()))))
 
   (defthm mem-tablei-less-than-*2^mem-table-size-bits+1*
     (implies (forced-and (x86$cp-pre x86$c)
-			 (mem-table-indexp i))
-	     (< (mem-tablei i x86$c) #.*2^mem-table-size-bits+1*))
+                         (mem-table-indexp i))
+             (< (mem-tablei i x86$c) #.*2^mem-table-size-bits+1*))
     :rule-classes :linear)
 
   (defthm mem-tablei-less-than-*2^mem-table-size-bits+1*-nth-version
     (implies (forced-and (x86$cp-pre x86$c)
-			 (mem-table-indexp i))
-	     (< (nth i (nth *mem-tablei* x86$c))
-		#.*2^mem-table-size-bits+1*))
+                         (mem-table-indexp i))
+             (< (nth i (nth *mem-tablei* x86$c))
+                #.*2^mem-table-size-bits+1*))
     :rule-classes :linear)
 
   (define good-memp (x86$c)
@@ -1006,28 +1006,28 @@
     @('x86') ISA has a well-formed byte-addressable memory."
     :parents (x86-concrete-stobj-recognizer)
     (let ((table-bound (1- (mem-table-length x86$c)))
-	  (array-length (mem-array-length x86$c))
-	  (array-next-addr (mem-array-next-addr x86$c)))
+          (array-length (mem-array-length x86$c))
+          (array-next-addr (mem-array-next-addr x86$c)))
       (and (<= (ash array-next-addr #.*2^x-byte-pseudo-page*) array-length)
-	   (<= *initial-mem-array-length* array-length)
-	   (eql (logand #.*pseudo-page-size-in-bytes-1* array-length) 0)
-	   ;; integral number of pseudo pages
-	   (equal array-next-addr
-		  (expected-mem-array-next-addr 0
-						(mem-table-length x86$c)
-						x86$c))
-	   (mbe :logic
-		(good-mem-table-entriesp-logic 0 table-bound array-next-addr
-					       (nth-nx *mem-tablei* x86$c))
-		:exec
-		(good-mem-table-entriesp 0 table-bound array-next-addr
-					 x86$c))
-	   (mbe :logic
-		(good-mem-table-no-dupsp-logic 0 table-bound
-					       (nth-nx *mem-tablei* x86$c))
-		:exec
-		(good-mem-table-no-dupsp 0 table-bound x86$c))
-	   (good-mem-arrayp x86$c))))
+           (<= *initial-mem-array-length* array-length)
+           (eql (logand #.*pseudo-page-size-in-bytes-1* array-length) 0)
+           ;; integral number of pseudo pages
+           (equal array-next-addr
+                  (expected-mem-array-next-addr 0
+                                                (mem-table-length x86$c)
+                                                x86$c))
+           (mbe :logic
+                (good-mem-table-entriesp-logic 0 table-bound array-next-addr
+                                               (nth-nx *mem-tablei* x86$c))
+                :exec
+                (good-mem-table-entriesp 0 table-bound array-next-addr
+                                         x86$c))
+           (mbe :logic
+                (good-mem-table-no-dupsp-logic 0 table-bound
+                                               (nth-nx *mem-tablei* x86$c))
+                :exec
+                (good-mem-table-no-dupsp 0 table-bound x86$c))
+           (good-mem-arrayp x86$c))))
 
   (define x86$cp (x86$c)
     :parents (x86-concrete-stobj-recognizer)
@@ -1035,7 +1035,7 @@
     :short "The <i>real</i> recognizer of a well-formed concrete
     @('x86') state"
     (and (x86$cp-pre x86$c)
-	 (good-memp x86$c))))
+         (good-memp x86$c))))
 
 ;; ======================================================================
 ;; Type-like theorems about concrete stobj accessors/updaters and
@@ -1066,86 +1066,120 @@
     ;; same syntax as that for a field in a defstobj definition.
 
     (let* ((name (car x86$c-model-field))
-	   (type (caddr x86$c-model-field))
-	   (size (cadr (cadr type))))
+           (type (caddr x86$c-model-field))
+           (size (cadr (cadr type)))
+           (length (caaddr (caddr x86$c-model-field)))
+           (getter (mk-name name "I")))
       (cond ((equal (car (cadr type)) 'unsigned-byte)
-	     (let* ((predicate (mk-name (symbol-name name) "P")))
-	       `( ;; readers
-		 (DEFRULE ,(mk-name predicate "-FORWARD")
-		   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
-		   (IMPLIES (,predicate X)
-			    (NAT-LISTP X))
-		   :RULE-CLASSES :FORWARD-CHAINING)
-		 ;; writers
-		 (DEFRULE ,(mk-name predicate "-UPDATE-NTH")
-		   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
-		   (IMPLIES (FORCED-AND (,predicate X)
-					(INTEGERP I)
-					(<= 0 I)
-					(< I (LEN X))
-					(INTEGERP V)
-					(<= 0 V)
-					(< V ,(expt 2 size)))
-			    (,predicate (UPDATE-NTH I V X)))
-		   :HINTS (("Goal" :IN-THEORY (E/D (UPDATE-NTH) ()))))
-		 )))
-	    (t
-	     ;; This branch pertains to all arrays of type signed-byte.
-	     ;;      (equal (car (cadr type)) 'signed-byte)
-	     (let* ((predicate (mk-name (symbol-name name) "P")))
-	       `( ;; readers
-		 (DEFRULE ,(mk-name predicate "-FORWARD")
-		   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
-		   (IMPLIES (,predicate X)
-			    (INTEGER-LISTP X))
-		   :RULE-CLASSES :FORWARD-CHAINING)
-		 ;; writers
-		 (DEFRULE ,(mk-name predicate "-UPDATE-NTH")
-		   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
-		   (IMPLIES (FORCED-AND (,predicate X)
-					(INTEGERP I)
-					(<= 0 I)
-					(< I (LEN X))
-					(INTEGERP V)
-					(<= ,(- (expt 2 (1- size))) V)
-					(< V ,(expt 2 (1- size))))
-			    (,predicate (UPDATE-NTH I V X)))
-		   :HINTS (("Goal" :IN-THEORY (E/D (UPDATE-NTH) ()))))
-		 )))
-	    )))
+             (let* ((predicate (mk-name (symbol-name name) "P")))
+               `( ;; readers
+                 (DEFRULE ,(mk-name predicate "-FORWARD")
+                   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
+                   (IMPLIES (,predicate X)
+                            (NAT-LISTP X))
+                   :RULE-CLASSES :FORWARD-CHAINING)
+                 ,@(if (or (equal name 'MEM-ARRAY)
+                          (equal name 'MEM-TABLE))
+                      `()
+                    `((LOCAL
+                       (DEFTHM ,(mk-name name "-TYPE-HELPER")
+                         (IMPLIES (AND (,predicate F)
+                                       (NATP I) (< I (LEN F)))
+                                  (UNSIGNED-BYTE-P ,size (NTH I F)))
+                         :HINTS (("GOAL" :IN-THEORY (E/D (,predicate NTH)
+                                                         (UNSIGNED-BYTE-P
+                                                          SIGNED-BYTE-P))))))
+                      (DEFTHM ,(mk-name name "-TYPE-THM")
+                        (IMPLIES (AND (X86$CP X86$C)
+                                      (NATP I) (< I ,length))
+                                 (UNSIGNED-BYTE-P ,size (,getter I X86$C)))
+                        :HINTS (("GOAL" :IN-THEORY (E/D () (UNSIGNED-BYTE-P
+                                                            SIGNED-BYTE-P)))))))
+                 ;; writers
+                 (DEFRULE ,(mk-name predicate "-UPDATE-NTH")
+                   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
+                   (IMPLIES (FORCED-AND (,predicate X)
+                                        (INTEGERP I)
+                                        (<= 0 I)
+                                        (< I (LEN X))
+                                        (INTEGERP V)
+                                        (<= 0 V)
+                                        (< V ,(expt 2 size)))
+                            (,predicate (UPDATE-NTH I V X)))
+                   :HINTS (("Goal" :IN-THEORY (E/D (UPDATE-NTH) ()))))
+                 )))
+            (t
+             ;; This branch pertains to all arrays of type signed-byte.
+             ;;      (equal (car (cadr type)) 'signed-byte)
+             (let* ((predicate (mk-name (symbol-name name) "P")))
+               `( ;; readers
+                 (DEFRULE ,(mk-name predicate "-FORWARD")
+                   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
+                   (IMPLIES (,predicate X)
+                            (INTEGER-LISTP X))
+                   :RULE-CLASSES :FORWARD-CHAINING)
+                 (LOCAL
+                  (DEFTHM ,(mk-name name "-TYPE-HELPER")
+                    (IMPLIES (AND (,predicate F)
+                                  (NATP I) (< I (LEN F)))
+                             (SIGNED-BYTE-P ,size (NTH I F)))
+                    :HINTS (("GOAL" :IN-THEORY (E/D (,predicate NTH)
+                                                    (SIGNED-BYTE-P
+                                                     UNSIGNED-BYTE-P))))))
+
+                 (DEFTHM ,(mk-name name "-TYPE-THM")
+                   (IMPLIES (AND (X86$CP X86$C)
+                                 (NATP I) (< I ,length))
+                            (SIGNED-BYTE-P ,size (,getter I X86$C)))
+                   :HINTS (("GOAL" :IN-THEORY (E/D () (SIGNED-BYTE-P
+                                                       UNSIGNED-BYTE-P)))))
+                 ;; writers
+                 (DEFRULE ,(mk-name predicate "-UPDATE-NTH")
+                   :parents (theorems-about-concrete-accessors-updaters-and-recognizers)
+                   (IMPLIES (FORCED-AND (,predicate X)
+                                        (INTEGERP I)
+                                        (<= 0 I)
+                                        (< I (LEN X))
+                                        (INTEGERP V)
+                                        (<= ,(- (expt 2 (1- size))) V)
+                                        (< V ,(expt 2 (1- size))))
+                            (,predicate (UPDATE-NTH I V X)))
+                   :HINTS (("Goal" :IN-THEORY (E/D (UPDATE-NTH) ()))))
+                 )))
+            )))
 
   (defun x86-concrete-stobj-array-thms (x86$c-model)
     (cond ((endp x86$c-model)
-	   '())
-	  (t
-	   (if (and (consp (caddr (car x86$c-model)))
-		    (equal (caaddr (car x86$c-model)) 'array))
-	       (append (x86-concrete-stobj-array-thms-1 (car x86$c-model))
-		       (x86-concrete-stobj-array-thms (cdr x86$c-model)))
-	     (x86-concrete-stobj-array-thms (cdr x86$c-model))))))
+           '())
+          (t
+           (if (and (consp (caddr (car x86$c-model)))
+                    (equal (caaddr (car x86$c-model)) 'array))
+               (append (x86-concrete-stobj-array-thms-1 (car x86$c-model))
+                       (x86-concrete-stobj-array-thms (cdr x86$c-model)))
+             (x86-concrete-stobj-array-thms (cdr x86$c-model))))))
 
   (defmacro x86-concrete-stobj-array-theorems ()
     (cons 'progn
-	  (x86-concrete-stobj-array-thms *x86$c-model*)))
+          (x86-concrete-stobj-array-thms *x86$c-model*)))
 
   (x86-concrete-stobj-array-theorems)
 
-  ;; Additional theorems about mem-array:
+  ;; Some additional theorems about mem-array:
 
-  (defthml nth-of-mem-arrayp
+  (defrulel nth-of-mem-arrayp
     (implies (and (mem-arrayp x)
-		  (integerp i)
-		  (<= 0 i)
-		  (< i (len x)))
-	     (< (nth i x) 256))
+                  (integerp i)
+                  (<= 0 i)
+                  (< i (len x)))
+             (< (nth i x) 256))
     :hints (("Goal" :in-theory (e/d (nth) nil)))
     :rule-classes :linear)
 
-  (defthm-usb n08p-mem-arrayi
+  (defthm-unsigned-byte-p n08p-mem-arrayi
     :hyp (forced-and (x86$cp x86$c)
-		     (integerp i)
-		     (<= 0 i)
-		     (< i (len (nth *mem-arrayi* x86$c))))
+                     (integerp i)
+                     (<= 0 i)
+                     (< i (len (nth *mem-arrayi* x86$c))))
     :bound 8
     :concl (nth i (nth *mem-arrayi* x86$c))
     :gen-type t
@@ -1153,12 +1187,12 @@
 
   (defthm x86$cp-forward-to-x86$cp-pre
     (implies (x86$cp x86$c)
-	     (x86$cp-pre x86$c))
+             (x86$cp-pre x86$c))
     :rule-classes :forward-chaining)
 
   (defthm x86$cp-forward-to-good-memp
     (implies (x86$cp x86$c)
-	     (good-memp x86$c))
+             (good-memp x86$c))
     :rule-classes :forward-chaining))
 
 ;; ======================================================================
@@ -1175,27 +1209,27 @@
 
   (defun disable-stobj-fns-fn (x86$c-model)
     (cond ((endp x86$c-model)
-	   '())
-	  (t
-	   (let ((name (car (car x86$c-model)))
-		 (type (caddr (car x86$c-model))))
-	     (cond ((and (consp type)
-			 (equal (car type) 'array))
-		    (let* ((namei     (mk-name name "I"))
-			   (getter    namei)
-			   (setter    (mk-name "!" namei))
-			   (recognizer (mk-name (symbol-name name) "P")))
-		      (append `(,getter
-				,setter
-				,recognizer
-				)
-			      (disable-stobj-fns-fn (cdr x86$c-model)))))
-		   (t
-		    (let ((getter  name)
-			  (setter  (mk-name "!" name))
-			  (recognizer (mk-name (symbol-name name) "P")))
-		      (append `(,getter ,setter ,recognizer)
-			      (disable-stobj-fns-fn (cdr x86$c-model))))))))))
+           '())
+          (t
+           (let ((name (car (car x86$c-model)))
+                 (type (caddr (car x86$c-model))))
+             (cond ((and (consp type)
+                         (equal (car type) 'array))
+                    (let* ((namei     (mk-name name "I"))
+                           (getter    namei)
+                           (setter    (mk-name "!" namei))
+                           (recognizer (mk-name (symbol-name name) "P")))
+                      (append `(,getter
+                                ,setter
+                                ,recognizer
+                                )
+                              (disable-stobj-fns-fn (cdr x86$c-model)))))
+                   (t
+                    (let ((getter  name)
+                          (setter  (mk-name "!" name))
+                          (recognizer (mk-name (symbol-name name) "P")))
+                      (append `(,getter ,setter ,recognizer)
+                              (disable-stobj-fns-fn (cdr x86$c-model))))))))))
 
   (defmacro create-concrete-stobj-fns-ruleset (x86$c-model)
     `(DEF-RULESET concrete-stobj-fns-ruleset

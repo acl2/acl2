@@ -55,7 +55,7 @@
         (cons (car all-topics)
               (change-parents-fn name new-parents (cdr all-topics))))
        (topic (cons (cons :parents new-parents)
-                    (delete-assoc-equal :parents topic))))
+                    (remove1-assoc-equal :parents topic))))
     (cons topic (cdr all-topics))))
 
 (defmacro change-parents (name new-parents)
@@ -72,7 +72,7 @@
         (cons (car all-topics)
               (change-short-fn name new-short (cdr all-topics))))
        (topic (cons (cons :short new-short)
-                    (delete-assoc-equal :short topic))))
+                    (remove1-assoc-equal :short topic))))
     (cons topic (cdr all-topics))))
 
 (defmacro change-short (name new-short)
@@ -90,7 +90,7 @@
         (cons (car all-topics)
               (change-long-fn name new-long (cdr all-topics))))
        (topic (cons (cons :long new-long)
-                    (delete-assoc-equal :long topic))))
+                    (remove1-assoc-equal :long topic))))
     (cons topic (cdr all-topics))))
 
 (defmacro change-long (name new-long)
@@ -108,7 +108,7 @@
         (cons (car all-topics)
               (change-base-pkg-fn name pkg (cdr all-topics))))
        (topic (cons (cons :base-pkg (acl2::pkg-witness pkg))
-                    (delete-assoc-equal :base-pkg topic))))
+                    (remove1-assoc-equal :base-pkg topic))))
     (cons topic (cdr all-topics))))
 
 (defmacro change-base-pkg (name pkg)

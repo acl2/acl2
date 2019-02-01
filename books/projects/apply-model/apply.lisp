@@ -1850,6 +1850,7 @@
               (count-to-nil (car x))
               (count-to-nil (cdr x)))))
 
+     #+acl2-devel ; else not redundant with :? measure
      (verify-termination
        (ffnnamep (declare (xargs :measure (count-to-nil term)
                                  :verify-guards nil)))
@@ -2190,6 +2191,9 @@
 
   (declare (xargs :guard (symbol-listp names)))
   (cond ((endp names) nil)
+        ((assoc-eq (car names)
+                   *badge-prim-falist*) ; primitives don't have warrants
+         (warrant-fn (cdr names)))
         (t (cons (list (warrant-name (car names)))
                  (warrant-fn (cdr names))))))
 

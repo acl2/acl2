@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; November 2018
 
 (in-package "ADE")
 
@@ -93,7 +93,7 @@
         (si 'v-buf data-width)
         (sis 'q4-l0-data-out 0 data-width)))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -136,7 +136,7 @@
     (and (queue4-l$st-format q4-l0 data-width)
          (queue4-l$st-format q4-l1 data-width))))
 
-(defthm queue8-l$st-format=>data-width-constraint
+(defthm queue8-l$st-format=>constraint
   (implies (queue8-l$st-format st data-width)
            (natp data-width))
   :hints (("Goal" :in-theory (enable queue8-l$st-format)))
@@ -148,10 +148,10 @@
     (and (queue4-l$valid-st q4-l0 data-width)
          (queue4-l$valid-st q4-l1 data-width))))
 
-(defthmd queue8-l$valid-st=>data-width-constraint
+(defthmd queue8-l$valid-st=>constraint
   (implies (queue8-l$valid-st st data-width)
            (natp data-width))
-  :hints (("Goal" :in-theory (enable queue4-l$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable queue4-l$valid-st=>constraint
                                      queue8-l$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -297,10 +297,6 @@
            (queue8-l$data-out st)))
   )
 
-;; Prove that QUEUE8-L is not a DE primitive.
-
-(not-primp-lemma queue8-l)
-
 ;; The value lemma for QUEUE8-L
 
 (defthm queue8-l$value
@@ -425,7 +421,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue4-l$valid-st=>data-width-constraint
+                             queue4-l$valid-st=>constraint
                              queue4-l$input-format
                              queue4-l$in-act
                              queue4-l$out-act
@@ -447,7 +443,7 @@
    :hints (("Goal"
             :in-theory (e/d (get-field
                              joint-act
-                             queue4-l$valid-st=>data-width-constraint
+                             queue4-l$valid-st=>constraint
                              queue4-l$input-format
                              queue4-l$in-act
                              queue4-l$out-act
@@ -601,7 +597,7 @@
     :hints (("Goal"
              :use queue8-l$input-format=>q4-l0$input-format
              :in-theory (e/d (get-field
-                              queue4-l$valid-st=>data-width-constraint
+                              queue4-l$valid-st=>constraint
                               queue4-l$extracted-step
                               queue8-l$extracted-step
                               queue8-l$input-format
@@ -654,7 +650,7 @@
              :do-not-induct t
              :use queue8-l$input-format=>q4-l1$input-format
              :in-theory (e/d (get-field
-                              queue4-l$valid-st=>data-width-constraint
+                              queue4-l$valid-st=>constraint
                               queue8-l$input-format
                               queue8-l$valid-st
                               queue8-l$extract

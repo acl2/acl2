@@ -1006,7 +1006,7 @@
           entry)))
 
 (defmacro remove-package-entry (name known-package-alist)
-  `(delete-assoc-equal ,name ,known-package-alist))
+  `(remove1-assoc-equal ,name ,known-package-alist))
 
 (defmacro change-package-entry-hidden-p (entry value)
   `(let ((entry ,entry))
@@ -1242,10 +1242,44 @@
 ; whether we add the redundant one or not.
 
   (cond ((null *wormhole-cleanup-form*)
-         (interface-er
-          "push-wormhole-undo-formi was called with an empty ~
-           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is ~
-           only called when *wormholep* is non-nil and, supposedly, when ~
+
+; Originally we used interface-er here.  However, that could get us into an
+; infinite loop in Version_8.1, for example as follows.
+
+;   (accumulated-persistence t)
+;   (trace$ pop-accp-fn)
+;   (mini-proveall)
+
+; The essence of the problem in the example just above was that pop-accp-fn is
+; called inside wormhole-eval (see pop-accp), which doesn't seem to accommodate
+; state modification; indeed, as documented, wormhole1 should be used in that
+; case.  Yet state global trace-level was modified during tracing, by
+; custom-trace-ppr.  (That is no longer the case, but was so in Version_8.1.)
+; The following example, derived from the one above, makes this more clear.
+
+;   (defn foo (n) n)
+;   (value :q)
+;   ; Derived from (trace$ foo):
+;   (CCL:ADVISE foo
+;               (PROGN (SETQ *TRACE-ARGLIST* CCL:ARGLIST)
+;                      (CUSTOM-TRACE-PPR
+;                       :IN
+;                       (CONS 'FOO
+;                             (TRACE-HIDE-WORLD-AND-STATE
+;                              *TRACE-ARGLIST*))))
+;               :WHEN
+;               :BEFORE)
+;   (lp)
+;   (wormhole-eval 'demo
+;                  '(lambda (whs) (set-wormhole-data whs (foo 6)))
+;                  nil)
+
+; So now we use error instead of interface-er, to avoid the infinite loop.
+
+         (error
+          "push-wormhole-undo-formi was called with an empty~%~
+           *wormhole-cleanup-form*.  Supposedly, push-wormhole-undo-formi is~%~
+           only called when *wormholep* is non-nil and, supposedly, when~%~
            *wormholep* is non-nil, the *wormhole-cleanup-form* is too.")))
   (let ((qarg1 (list 'quote arg1))
         (undo-forms-and-last-two (cddr *wormhole-cleanup-form*)))
@@ -1347,7 +1381,10 @@
                          *the-live-state*)
                        (cddr *wormhole-cleanup-form*)))))
       (otherwise
-       (interface-er "Unrecognized op in push-wormhole-undo-formi,~x0." op)))))
+
+; See the comment above describing why we avoid interface-er.
+
+       (error "Unrecognized op in push-wormhole-undo-formi, ~s." op)))))
 
 ; The following symbol is the property under which we store Common
 ; Lisp streams on the property lists of channels.
@@ -1581,8 +1618,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro defun-overrides (name formals &rest rest)
 
 ; This defines the function symbol, name, in raw Lisp.  Name should include
-; STATE as a formal, have a guard of t and should have *unknown-constraints*.
-; We push name onto *defun-overrides* so that add-trip knows to leave the *1*
+; STATE as a formal, have a guard of t and should have unknown-constraints.  We
+; push name onto *defun-overrides* so that add-trip knows to leave the *1*
 ; definition in place.
 
 ; Warning: The generated definitions will replace both the raw Lisp and *1*
@@ -3969,21 +4006,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun synp (vars form term)
 
-; Top-level calls of this function in the hypothesis of a linear or
-; rewrite rule are given special treatment when relieving the rule's
-; hypotheses.  (When the rule class gives such special treatment, it
-; is an error to use synp in other than at the top-level.)  The
-; special treatment is as follows.  Term is evaluated, binding state
-; to the live state and mfc to the current metafunction context, as
-; with meta rules.  The result of this evaluation should be either t,
-; nil, or an alist binding variables to terms, else we get a hard
-; error.  Moreover, if we get an alist then either (1) vars should be
-; t, representing the set of all possible vars, and none of the keys
-; in the alist should already be bound; or else (2) vars should be of
-; the form (var1 ... vark), the keys of alist should all be among the
-; vari, and none of vari should already be bound (actually this is
-; checked when the rule is submitted) -- otherwise we get a hard
-; error.
+; Top-level calls of this function in the hypothesis of a linear or rewrite
+; rule on quoted arguments are given special treatment when relieving the
+; rule's hypotheses.  (When the rule class gives such special treatment, it is
+; an error to use synp in other than at the top-level.)  The special treatment
+; is as follows.  Term is evaluated, binding state to the live state and mfc to
+; the current metafunction context, as with meta rules.  The result of this
+; evaluation should be either t, nil, or an alist binding variables to terms,
+; else we get a hard error.  Moreover, if we get an alist then either (1) vars
+; should be t, representing the set of all possible vars, and none of the keys
+; in the alist should already be bound; or else (2) vars should be of the form
+; (var1 ... vark), the keys of alist should all be among the vari, and none of
+; vari should already be bound (actually this is checked when the rule is
+; submitted) -- otherwise we get a hard error.
 
 ; As of Version_2.7 there are two macros that expand into calls to synp:
 
@@ -3995,9 +4030,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;      `(synp (quote ,vars) (quote (bind-free ,form ,vars)) (quote ,form))
 ;    `(synp (quote t) (quote (bind-free ,form)) (quote ,form))))
 
-; Warning: This function must be defined to always return t in order
-; for our treatment of it (in particular, in translate) to be sound.
-; The special treatment referred to above happens within relieve-hyp.
+; Warning: This function must be defined to always return t in order for our
+; treatment of it (in particular, in translate) to be sound.  The special
+; treatment referred to above happens within relieve-hyp.
 
   (declare (xargs :mode :logic :guard t)
            (ignore vars form term))
@@ -5722,7 +5757,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun remove-equal (x l)
   (declare (xargs :guard (true-listp l)))
-  #-acl2-loop-only ; for assoc-eq, Jared Davis found native assoc efficient
+  #-acl2-loop-only
+; For assoc-eq, Jared Davis found it more efficient to use the native assoc; so
+; we do the analogous thing here, in raw Lisp.
   (remove x l :test #'equal)
   #+acl2-loop-only
   (cond ((endp l) nil)
@@ -6954,7 +6991,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((and (consp x)               ; (>= (len x) 3)
               (consp (cdr x))
               (consp (cddr x)))
-         (cond ((atom (cdddr x))      ; (= (len x) 3) 
+         (cond ((atom (cdddr x))      ; (= (len x) 3)
                 (if (null (cdddr x)) (caddr x) nil))
                ((null (cddddr x))     ; (= (len x) 4)
                 (cadddr x))
@@ -9254,6 +9291,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         'state
         (list 'quote event-form)))
 
+(defmacro partial-encapsulate (sigs supporters &rest cmd-lst)
+
+; We considered instead allowing an event like (make-unknown-constraint fn),
+; rather than providing partial-encapsulate as an interface to encapsulate with
+; an invocation of set-unknown-constraints-supporters.  But that would make it
+; too easy for users to introduce unsoundness with trust tags (always a
+; possibility, but as a courtesy we'd like to encourage sound use of trust
+; tags!).  Consider for example this book.
+
+;   (in-package "ACL2")
+;   (defstub f (x) t)
+;   (local (make-unknown-constraint f))
+;   (include-raw "f-raw")
+
+; After including the book, f no longer has unknown-constraints, yet if
+; f-raw.lsp provides a way to compute with f, we can now prove theorems that
+; don't follow from the (trivial) axioms of f.  A proof of nil with functional
+; instantiation would not be far behind!
+
+; So instead, we insist that unknown-constraints are put on the function as
+; part of the encapsulate that introduces it.
+
+  (declare (xargs :guard (symbol-listp supporters)))
+  (cond
+   ((null cmd-lst)
+    (er hard 'partial-encapsulate
+        "There must be at least one event form following the supporters in a ~
+         call of partial-encapsulate."))
+   (t `(encapsulate ,sigs
+         ,@cmd-lst
+         (set-unknown-constraints-supporters ,@supporters)))))
+
 (defconst *load-compiled-file-values*
   '(t nil :warn :default :comp))
 
@@ -9308,35 +9377,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We use record-expansion (as described in :doc make-event-details) in order to
 ; support redundancy of encapsulate, as implemented by redundant-encapsulatep
-; and its subroutines.  Here is a summary of the issue.  Consider: (encapsulate
-; ((foo (x) t)) ... (make-event <form>)).  We have several goals.
-; + Be able to execute this form a second time and have it be redundant.
-; + If this form is redundant yet in a book, it cannot cause a new expansion
-;   result for the make-event or the encapsulate, and include-book has to do
-;   the right thing even, if possible, in raw mode.
-; + We want to store a proper expansion of an encapsulate.
-; + We want to recognize redundancy without having to execute the encapsulate.
-; + If an encapsulate form is redundant then its stored version is identical
-;   to the stored version of the earlier form for which it is redundant.
-; The last of these properties is important because otherwise unsoundness could
-; result!  Suppose for example that a book bar.lisp contains (local
-; (include-book "foo")), where foo.lisp contains an encapsulate that causes a
-; later encapsulate in bar.lisp to be redundant.  What should we know at the
-; point we see the later encapsulate?  We should know that the event logically
-; represented by the encapsulate is the same as the one logically represented
-; by the earlier encapsulate, so we certainly do not want to re-do its
-; expansion at include-book time.  Thus, when an encapsulate is redundant, we
-; store the expanded version of the earlier encapsulate as the expansion of the
-; current unexpanded encapsulate, unless the two are identical.  But how do we
-; expand a non-redundant encapsulate?  We expand it by replacing every
-; sub-event ev by (record-expansion ev exp), when ev has an expansion exp.
-; Then, we recognize a subsequent encapsulate as redundant with this one if
-; their signatures are equal and each of the subsequent encapsulate's events,
-; ev2, is either the same as the corresponding event ev1 of the old encapsulate
-; or else ev1 is of the form (record-expansion ev2 ...).
+; and its subroutines.  Here is a summary of the redundancy issue.
 
-; We elide local forms arising from make-event expansions when writing to book
-; certificates, in order to save space.  See elide-locals.
+; We have these two key goals regarding redundancy
+
+; + We prefer to recognize redundancy without having to execute the
+;   encapsulate.
+
+; + If an encapsulate form is redundant with an earlier form that is local, and
+;   thus including the book causes only the latter form to be processed, then
+;   the resulting event stored at include-book time should agree logically with
+;   the event stored at certification time.
+
+; The latter of these properties is important because otherwise unsoundness
+; could result!  Suppose for example that a book bar.lisp contains (local
+; (include-book "foo")), where foo.lisp contains an encapsulate that causes a
+; second encapsulate in bar.lisp to be redundant.  What should we know at the
+; point we see the second encapsulate as redundant?  We should know that the
+; event logically represented by the encapsulate is the same as the one
+; logically represented by the earlier encapsulate, so we certainly do not want
+; to re-do its expansion at include-book time.  Thus, when an encapsulate is
+; redundant, we store the expanded version of the earlier encapsulate as the
+; expansion of the current encapsulate.  But how do we expand a non-redundant
+; encapsulate?  We expand it by replacing every sub-event by its expansion (if
+; it has an expansion).  Then, we may recognize a subsequent encapsulate as
+; redundant with this one if their signatures are equal, they have the same
+; length, and each of the subsequent encapsulate's events, ev2, is either the
+; same as the corresponding event ev1 of the old encapsulate or their
+; expansions match up.  Note that two local events always "match up" in this
+; sense when each is under an encapsulate or in a book.
+
+; We elide local forms arising from make-event expansions when writing
+; expansion-alists to book certificates, in order to save space.  See
+; elide-locals.
 
 ; Note that when :puff (specifically puff-command-block) is applied to an
 ; include-book form, it uses the expansion-alist from the book's certificate if
@@ -10090,66 +10163,106 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (car l)
                  (add-pair key value (cdr l))))))
 
-; Delete-assoc
+; Remove1-assoc
 
-(defun-with-guard-check delete-assoc-eq-exec (key alist)
+(defun-with-guard-check remove1-assoc-eq-exec (key alist)
   (if (symbolp key)
       (alistp alist)
     (symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-eq-exec key (cdr alist))))))
 
-(defun-with-guard-check delete-assoc-eql-exec (key alist)
+(defun-with-guard-check remove1-assoc-eql-exec (key alist)
   (if (eqlablep key)
       (alistp alist)
     (eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-eql-exec key (cdr alist))))))
 
-(defun delete-assoc-equal (key alist)
+(defun remove1-assoc-equal (key alist)
   (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) nil)
         ((equal key (caar alist)) (cdr alist))
-        (t (cons (car alist) (delete-assoc-equal key (cdr alist))))))
+        (t (cons (car alist) (remove1-assoc-equal key (cdr alist))))))
 
-(defmacro delete-assoc-eq (key lst)
-  `(delete-assoc ,key ,lst :test 'eq))
+(defmacro remove1-assoc-eq (key lst)
+  `(remove1-assoc ,key ,lst :test 'eq))
 
-(defthm delete-assoc-eq-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eq-exec key lst)
-         (delete-assoc-equal key lst)))
+(defthm remove1-assoc-eq-exec-is-remove1-assoc-equal
+  (equal (remove1-assoc-eq-exec key lst)
+         (remove1-assoc-equal key lst)))
 
-(defthm delete-assoc-eql-exec-is-delete-assoc-equal
-  (equal (delete-assoc-eql-exec key lst)
-         (delete-assoc-equal key lst)))
+(defthm remove1-assoc-eql-exec-is-remove1-assoc-equal
+  (equal (remove1-assoc-eql-exec key lst)
+         (remove1-assoc-equal key lst)))
 
-(defmacro delete-assoc (key alist &key (test ''eql))
+(defmacro remove1-assoc (key alist &key (test ''eql))
   (declare (xargs :guard (or (equal test ''eq)
                              (equal test ''eql)
                              (equal test ''equal))))
   (cond
    ((equal test ''eq)
     `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eq-exec key alist)))
+              :logic (remove1-assoc-equal key alist)
+              :exec  (remove1-assoc-eq-exec key alist)))
    ((equal test ''eql)
     `(let-mbe ((key ,key) (alist ,alist))
-              :logic (delete-assoc-equal key alist)
-              :exec  (delete-assoc-eql-exec key alist)))
+              :logic (remove1-assoc-equal key alist)
+              :exec  (remove1-assoc-eql-exec key alist)))
    (t ; (equal test 'equal)
-    `(delete-assoc-equal ,key ,alist))))
+    `(remove1-assoc-equal ,key ,alist))))
 
-(defun delete-assoc-eq-all (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+(defun-with-guard-check remove-assoc-eq-exec (x alist)
+  (if (symbolp x)
+      (alistp alist)
+    (symbol-alistp alist))
   (cond ((endp alist) nil)
-        ((eq key (caar alist))
-         (delete-assoc-eq-all key (cdr alist)))
+        ((eq x (car (car alist))) (remove-assoc-eq-exec x (cdr alist)))
         (t (cons (car alist)
-                 (delete-assoc-eq-all key (cdr alist))))))
+                 (remove-assoc-eq-exec x (cdr alist))))))
+
+(defun-with-guard-check remove-assoc-eql-exec (x alist)
+  (if (eqlablep x)
+      (alistp alist)
+    (eqlable-alistp alist))
+  (cond ((endp alist) nil)
+        ((eql x (car (car alist))) (remove-assoc-eql-exec x (cdr alist)))
+        (t (cons (car alist) (remove-assoc-eql-exec x (cdr alist))))))
+
+(defun remove-assoc-equal (x alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        ((equal x (car (car alist))) (remove-assoc-equal x (cdr alist)))
+        (t (cons (car alist) (remove-assoc-equal x (cdr alist))))))
+
+(defmacro remove-assoc-eq (x lst)
+  `(remove-assoc ,x ,lst :test 'eq))
+
+(defthm remove-assoc-eq-exec-is-remove-assoc-equal
+  (equal (remove-assoc-eq-exec x l)
+         (remove-assoc-equal x l)))
+
+(defthm remove-assoc-eql-exec-is-remove-assoc-equal
+  (equal (remove-assoc-eql-exec x l)
+         (remove-assoc-equal x l)))
+
+(defmacro remove-assoc (x alist &key (test ''eql))
+  (declare (xargs :guard (or (equal test ''eq)
+                             (equal test ''eql)
+                             (equal test ''equal))))
+  (cond
+   ((equal test ''eq)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (remove-assoc-equal x alist)
+              :exec  (remove-assoc-eq-exec x alist)))
+   ((equal test ''eql)
+    `(let-mbe ((x ,x) (alist ,alist))
+              :logic (remove-assoc-equal x alist)
+              :exec  (remove-assoc-eql-exec x alist)))
+   (t ; (equal test 'equal)
+    `(remove-assoc-equal ,x ,alist))))
 
 (defun getprops1 (alist)
 
@@ -10193,7 +10306,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (let ((alist (getprops symb world-name (cdr world-alist))))
            (if (eq (cddar world-alist) *acl2-property-unbound*)
                (if (assoc-eq (cadar world-alist) alist)
-                   (delete-assoc-eq (cadar world-alist) alist)
+                   (remove1-assoc-eq (cadar world-alist) alist)
                  alist)
              (add-pair (cadar world-alist)
                        (cddar world-alist)
@@ -10467,7 +10580,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; not necessarily in translated form -- it may actually have the OR macro in
 ; it.  If tflg is t, we return an IF-term instead of using OR.
 
-  (declare (xargs :guard (true-listp lst)))  
+  (declare (xargs :guard (true-listp lst)))
   (cond
    (tflg (or-macro lst))
    ((null lst) NIL)
@@ -13432,10 +13545,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     sys-call+ ; system-call+
     sys-call* ; system-call+
 
-    canonical-pathname ; under dependent clause-processor
+    canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn
-    concrete-apply$-userfn
+    concrete-badge-userfn ; redefined from partial-encapsulate
+    concrete-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
@@ -13451,16 +13564,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     mfc-type-alist ; *metafunction-context*
     mfc-unify-subst ; *metafunction-context*
     mfc-world ; *metafunction-context*
-    mfc-ap-fn ; under dependent clause-processor
-    mfc-relieve-hyp-fn ; under dependent clause-processor
-    mfc-relieve-hyp-ttree ; under dependent clause-processor
-    mfc-rw+-fn ; under dependent clause-processor
-    mfc-rw+-ttree ; under dependent clause-processor
-    mfc-rw-fn ; under dependent clause-processor
-    mfc-rw-ttree ; under dependent clause-processor
-    mfc-ts-fn ; under dependent clause-processor
-    mfc-ts-ttree ; under dependent clause-processor
-    magic-ev-fncall ; under dependent clause-processor
+    mfc-ap-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-fn ; redefined from partial-encapsulate
+    mfc-relieve-hyp-ttree ; redefined from partial-encapsulate
+    mfc-rw+-fn ; redefined from partial-encapsulate
+    mfc-rw+-ttree ; redefined from partial-encapsulate
+    mfc-rw-fn ; redefined from partial-encapsulate
+    mfc-rw-ttree ; redefined from partial-encapsulate
+    mfc-ts-fn ; redefined from partial-encapsulate
+    mfc-ts-ttree ; redefined from partial-encapsulate
+    magic-ev-fncall ; redefined from partial-encapsulate
     never-memoize-fn
 
 ; The following are introduced into the logic by an encapsulate, but have raw
@@ -13497,7 +13610,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
     set-backchain-limit set-default-hints!
-    set-rw-cache-state! set-override-hints-macro
+    set-rw-cache-state! set-induction-depth-limit! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
@@ -13842,6 +13955,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; corresponding state global.
 
                     t)
+    (brr-evisc-tuple-initialized . nil)
     (cert-data . nil)
     (certify-book-info .
 
@@ -13999,7 +14113,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
     (trace-co . acl2-output-channel::standard-character-output-0)
-    (trace-level . 0)
     (trace-specs . nil)
     (triple-print-prefix . " ")
     (ttags-allowed . :all)
@@ -14724,7 +14837,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                             (get-global x state-state))))))
          (makunbound (global-symbol x))
          (return-from makunbound-global *the-live-state*)))
-  (update-global-table (delete-assoc-eq
+  (update-global-table (remove1-assoc-eq
                         x
                         (global-table state-state))
                        state-state))
@@ -15317,7 +15430,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; definitions were kept similar to those that had been in the ihs library for
 ; some time.
 
-  (declare (xargs :guard (and (integerp lower) (integerp upper))))
+; We considered Alessandro Coglio's suggestion to fix the first two arguments,
+; specifically by changing the body to the following.
+
+;   (mbe :logic (and (integerp x)
+;                    (<= (ifix lower) x)
+;                    (< x (ifix upper)))
+;        :exec (and (integerp x)
+;                   (<= lower x)
+;                   (< x upper))))
+
+; However, that caused at least 19 regression failures, and we quickly found
+; one that looked awkward to fix.  So we are abandoning that idea, at least for
+; now.
+
+  (declare (type integer lower upper))
   (and (integerp x)
        (<= lower x)
        (< x upper)))
@@ -15562,9 +15689,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (not (equal x y))))
    :hints (("Goal" :in-theory (enable symbol-< string<))))
 
- (defthm ordered-symbol-alistp-delete-assoc-eq
+ (defthm ordered-symbol-alistp-remove1-assoc-eq
    (implies (ordered-symbol-alistp l)
-            (ordered-symbol-alistp (delete-assoc-eq key l))))
+            (ordered-symbol-alistp (remove1-assoc-eq key l))))
 
  (defthm symbol-<-irreflexive
    (implies (symbolp x)
@@ -17671,7 +17798,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               state-state)))
         (let ((state-state
                (update-open-input-channels
-                (delete-assoc-eq channel (open-input-channels state-state))
+                (remove1-assoc-eq channel (open-input-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -18233,7 +18360,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               state-state)))
         (let ((state-state
                (update-open-output-channels
-                (delete-assoc-eq channel (open-output-channels state-state))
+                (remove1-assoc-eq channel (open-output-channels state-state))
                 state-state)))
           state-state)))))
 
@@ -20523,15 +20650,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (t (princ$ r channel state)))))))
 )
 
-(skip-proofs
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
                               (state-p state)
                               (boundp-global 'print-base state)
+                              (symbolp channel)
                               (open-output-channel-p channel :character state)
-                      (consp (get-timer name state)))))
+                              (equal (print-base) 10)
+                              (consp (get-timer name state))
+                              (rationalp (car (get-timer name state))))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
-)
 
 (defthm state-p1-update-print-base
   (implies (state-p1 state)
@@ -21020,7 +21148,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     logic-fns-with-raw-code
     macros-with-raw-code
     dmrp
-    trace-level ; can change under the hood without logic explanation
     trace-specs
     retrace-p
     parallel-execution-enabled
@@ -21975,7 +22102,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (let ((diff (set-difference-eq (cdr old-entry) unary-fns)))
                   (if diff
                       (put-assoc-eq top-fn diff tbl)
-                    (delete-assoc-eq top-fn tbl)))
+                    (remove1-assoc-eq top-fn tbl)))
               (prog2$ (cw "~%NOTE:  Remove-invisible-fns did not change the ~
                            invisible-fns-table.  Consider using :u or :ubt to ~
                            undo this event.~%")
@@ -22527,7 +22654,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(table untrans-table nil
           (let ((tbl (table-alist 'untrans-table world)))
             (if (assoc-eq ',macro-fn tbl)
-                (delete-assoc-eq-exec ',macro-fn tbl)
+                (remove1-assoc-eq-exec ',macro-fn tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            untrans-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -23030,18 +23157,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (add-macro-alias put-assoc-eq put-assoc-equal)
 (add-macro-alias put-assoc-eql put-assoc-equal) ; for pre-v4-3 compatibility
 (add-macro-alias put-assoc put-assoc-equal)
-(add-macro-alias delete-assoc-eq delete-assoc-equal)
-(add-macro-alias delete-assoc delete-assoc-equal)
+(add-macro-alias remove1-assoc-eq remove1-assoc-equal)
+(add-macro-alias remove1-assoc remove1-assoc-equal)
 (add-macro-alias union-eq union-equal)
 (add-macro-alias union$ union-equal)
 (add-macro-alias intersection-eq intersection-equal)
 (add-macro-alias intersection$ intersection-equal)
 
+; The following, pertaining to delete-assoc, may be deprecated:
+(defmacro delete-assoc-eq-exec (key alist)
+  `(remove1-assoc-eq-exec ,key ,alist))
+(add-macro-alias delete-assoc-eq-exec remove1-assoc-eq-exec)
+(defmacro delete-assoc-eql-exec (key alist)
+  `(remove1-assoc-eql-exec ,key ,alist))
+(add-macro-alias delete-assoc-eql-exec remove1-assoc-eql-exec)
+(defmacro delete-assoc-equal (key alist)
+  `(remove1-assoc-equal ,key ,alist))
+(add-macro-alias delete-assoc-equal remove1-assoc-equal)
+(defmacro delete-assoc-eq (key alist)
+  `(remove1-assoc-eq ,key ,alist))
+(defmacro delete-assoc (key alist)
+  `(remove1-assoc ,key ,alist))
+
 (defmacro remove-macro-alias (macro-name)
   `(table macro-aliases-table nil
           (let ((tbl (table-alist 'macro-aliases-table world)))
             (if (assoc-eq ',macro-name tbl)
-                (delete-assoc-eq-exec ',macro-name tbl)
+                (remove1-assoc-eq-exec ',macro-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            macro-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -23076,7 +23218,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(table nth-aliases-table nil
           (let ((tbl (table-alist 'nth-aliases-table world)))
             (if (assoc-eq ',alias-name tbl)
-                (delete-assoc-eq-exec ',alias-name tbl)
+                (remove1-assoc-eq-exec ',alias-name tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            nth-aliases-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -23415,6 +23557,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (case key
          ((t) (member-eq val *legal-rw-cache-states*))
          (t nil)))
+
+(table induction-depth-limit-table nil nil
+       :guard
+       (and (eq key t)
+            (or (null val) ; no limit
+                (natp val))))
+
+(defconst *induction-depth-limit-default*
+
+; By default, abort if we attempt to induction past 9 levels.  If this constant
+; is changed, then change :doc induction-depth-limit.
+
+  9)
+
+(table induction-depth-limit-table t *induction-depth-limit-default*)
+
+#-acl2-loop-only
+(defmacro set-induction-depth-limit! (x)
+  (declare (ignore x))
+  nil)
+
+#+acl2-loop-only
+(defmacro set-induction-depth-limit! (val)
+  `(with-output
+     :off (event summary)
+     (progn (table induction-depth-limit-table t ,val)
+            (table induction-depth-limit-table t))))
+
+(defmacro set-induction-depth-limit (val)
+  `(local (set-induction-depth-limit! ,val)))
 
 ; We thank Jared Davis for permission to adapt his function true-list-fix (and
 ; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
@@ -24649,9 +24821,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;    because they are what they seem.  Such functions are defined here in
 ;    axioms.lisp.
 
-; 3. Functions of the second type are introduced with unknown constraints from
-;    a define-trusted-clause-processor event, and are defined in raw
-;    Lisp using the defun-overrides mechanism.
+; 3. Functions of the second type are introduced with unknown-constraints using
+;    a partial-encapsulate, and are defined in raw Lisp using the
+;    defun-overrides mechanism.
 
 ; In the next four paragraphs, we typically refer only to metafunctions, but
 ; most of the below applies to meta-level functions generally.
@@ -25672,7 +25844,7 @@ Lisp definition."
   `(table custom-keywords-table nil
           (let ((tbl (table-alist 'custom-keywords-table world)))
             (if (assoc-eq ',keyword tbl)
-                (delete-assoc-eq-exec ',keyword tbl)
+                (remove1-assoc-eq-exec ',keyword tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
                            custom-keywords-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
@@ -26180,7 +26352,8 @@ Lisp definition."
 (defmacro heap-bytes-allocated ()
   '(the-mfixnum #+ccl (ccl::total-bytes-allocated)
                 #+sbcl (sb-ext:get-bytes-consed)
-                #-(or ccl sbcl)
+                #+lispworks (hcl:total-allocation)
+                #-(or ccl sbcl lispworks)
                 (error "Heap-bytes-allocated is unknown for this host Lisp.")))
 
 #-acl2-loop-only
@@ -26192,7 +26365,7 @@ Lisp definition."
         (g-args (gensym))
         (g-start-real-time (gensym))
         (g-start-run-time (gensym))
-        #+(or ccl sbcl)
+        #+(or ccl sbcl lispworks)
         (g-start-alloc (gensym)))
     `(let ((,g-real-mintime ,real-mintime)
            (,g-run-mintime ,run-mintime)
@@ -26243,7 +26416,7 @@ Lisp definition."
                 (,g-start-run-time
                  #-gcl (get-internal-run-time)
                  #+gcl (multiple-value-list (get-internal-run-time)))
-                #+(or ccl sbcl)
+                #+(or ccl sbcl lispworks)
                 (,g-start-alloc (heap-bytes-allocated)))
            (our-multiple-value-prog1
             ,x
@@ -26252,7 +26425,7 @@ Lisp definition."
                        #-gcl (get-internal-run-time)
                        #+gcl (multiple-value-list (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
-                      #+(or ccl sbcl) ; evaluate before computations below:
+                      #+(or ccl sbcl lispworks) ; before computations below:
                       (allocated (- (heap-bytes-allocated)
                                     ,g-start-alloc))
                       (float-units-sec (float internal-time-units-per-second))
@@ -26281,7 +26454,7 @@ Lisp definition."
                                    (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
                                    (< run-elapsed (float ,g-run-mintime)))
-                              #+(or ccl sbcl)
+                              #+(or ccl sbcl lispworks)
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
                    (let* ((alist (list* (cons #\t (format nil "~,2F"
@@ -26301,9 +26474,9 @@ Lisp definition."
                                                         nil "~,2F"
                                                         child-sys-elapsed)))
                                         (cons #\a
-                                              #+(or ccl sbcl)
+                                              #+(or ccl sbcl lispworks)
                                               (format nil "~:D" allocated)
-                                              #-(or ccl sbcl)
+                                              #-(or ccl sbcl lispworks)
                                               "[unknown]")
                                         (cons #\f ',x)
                                         (cons #\e (evisc-tuple
@@ -26316,7 +26489,7 @@ Lisp definition."
                                                          #\5 #\6 #\7 #\8 #\9)
                                                        ,g-args))))
                           (,g-msg (or ,g-msg
-                                      #+(or ccl sbcl)
+                                      #+(or ccl sbcl lispworks)
                                       "; ~Xfe took ~|; ~st seconds realtime, ~
                                        ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"
@@ -26332,7 +26505,7 @@ Lisp definition."
                                         "; ~Xfe took ~|; ~st sec ~
                                          realtime, ~sc sec runtime, ~sC ~
                                          sec child runtime.~%"))
-                                      #-(or ccl gcl)
+                                      #-(or ccl sbcl lispworks gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
                      (state-free-global-let*

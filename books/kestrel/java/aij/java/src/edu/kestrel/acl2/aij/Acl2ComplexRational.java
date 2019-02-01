@@ -189,16 +189,18 @@ final class Acl2ComplexRational extends Acl2Number {
                 return this.imaginaryPart.compareTo(that.imaginaryPart);
         }
         // complex rationals are less than
-        // characters, strings, symbols, and pairs:
+        // characters, strings, symbols, and cons pairs:
         return -1;
     }
 
     /**
      * Returns a printable representation of this ACL2 complex rational.
+     * We return a Java string that
+     * conforms to ACL2's notation for complex rationals.
      */
     @Override
     public String toString() {
-        return this.realPart + "+" + this.imaginaryPart + "i";
+        return "#\\c(" + this.realPart + " " + this.imaginaryPart + ")";
     }
 
     /**

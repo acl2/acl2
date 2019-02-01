@@ -58,6 +58,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xdoc::textp (x)
+  :returns (yes/no booleanp)
   :short "Recognize XDOC text."
   :long
   "<p>
@@ -290,7 +291,7 @@
   :short "Build an XML preformatted code block @('@({...})')."
   :long
   "<p>
-   The arguments must be strings that are the lines of the code block,
+   The arguments must evaluate to strings that are the lines of the code block,
    starting with suitable spaces and with no ending new line characters.
    New line characters are automatically added at the end of each line.
    A new line character is also automatically added after the opening @('@({'),
@@ -322,11 +323,22 @@
                       (string-listp y))
                  (string-listp (revappend x y)))))))
 
-  (defmacro xdoc::code (&rest lines)
-    (declare (xargs :guard (string-listp lines)))
+  (define xdoc::code-fn ((lines string-listp))
+    :returns (text xdoc::textp
+                   :hints (("Goal" :in-theory (enable xdoc::textp))))
+    :parents nil
     (let ((newline (coerce (list #\Newline) 'string))
           (lines (xdoc::terminate-lines lines nil)))
-      `(concatenate 'string "@({" ,newline ,@lines "})" ,newline ,newline))))
+      (concatenate 'string
+                   "@({"
+                   newline
+                   (string-append-lst lines)
+                   "})"
+                   newline
+                   newline)))
+
+  (defmacro xdoc::code (&rest lines)
+    `(xdoc::code-fn (list ,@lines))))
 
 (defsection xdoc::desc
   :short "Build a description."

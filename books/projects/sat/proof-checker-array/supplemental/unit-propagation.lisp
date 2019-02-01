@@ -10,7 +10,7 @@
 (include-book "all-literals")
 (include-book "evaluator")
 
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 
 ;; ===================================================================

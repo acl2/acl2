@@ -135,7 +135,7 @@ data last modified: [2014-08-06]
                (cond (remaining-x-es
                       (prog2$ ;check this
                        (cw? nil "~| Presence of ~x0 precludes a tau characterization of ~x1~%" remaining-x-es P)
-"Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
+"Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...))
  not allowed in conclusion of signature rule."))
                      ((nested-functional-terms-with-vars-p dest-es x1--xk)
                       (prog2$
@@ -198,10 +198,10 @@ data last modified: [2014-08-06]
               ((not (consp (cdr fes2))) ;exactly one sig-like term
                (if (= (depth-var x (car fes2)) 2)
                    ;;sig rule
-                   `((IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2))) 
+                   `((IMPLIES (AND . ,(cons (list P x) (dumber-negate-lit-lst (set-difference-equal terms fes2)))) ,(car fes2)))
                  (list "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule")))
-              (t 
-               (list "Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...)) 
+              (t
+               (list "Multiple sig terms i.e. (P1 (f x1 ...)) OR (P2 (f x1 ...))
  not allowed in conclusion of signature rule"))))
     (list "Impossible: Empty clause")))
 
@@ -452,7 +452,7 @@ data last modified: [2014-08-06]
 
 
 (defloop delete2-key (key C)
-  (for ((cx in C)) (collect (cons (car cx) (delete-assoc-eq key (cdr cx))))))
+  (for ((cx in C)) (collect (cons (car cx) (remove1-assoc-eq key (cdr cx))))))
 
 ;adapted from coi/util/pseudo-translate.lisp for adding tau-pair prop
 (defun extend-wrld-with-fn-args-list-with-tau-pair (fn-args-lst wrld)
@@ -485,13 +485,13 @@ data last modified: [2014-08-06]
        (pred-body (make-pred-I ndef xvar kwd-alist M C B wrld))
        (pred-name (predicate-name name M))
        (Px `(,pred-name ,xvar))
-       
+
        ;; ;; [2017-09-19 Tue] incorporate satisfies support
        ;; (pred-name-aux (s+ pred-name "-AUX"))
        ;; (pred-body-aux (acl2::subst pred-name-aux pred-name pred-body))
        ;; (Px-aux `(,pred-name-aux ,xvar))
        ;; (dep-exprs (satisfies-terms xvar kwd-alist))
-       
+
        (mon-fns (all-1-arity-fns new-constructors))
        (all-conx-fns-args (all-conx-fns-args new-constructors 'x))
        (current-preds (predicate-names (strip-cars new-types) new-types))
@@ -502,7 +502,7 @@ data last modified: [2014-08-06]
 
        ((mv msgs<= rule-=>-Px) (mv-messages-rule (tau-rules-form=>Px pred-body Px new-fns-and-args ctx C wrld)))
        ((mv msgs=> rule-Px-=>) (mv-messages-rule (tau-rules-Px=>form pred-body Px ndef new-fns-and-args ctx C wrld)))
-     
+
        ;; ((mv msgs<= rule-=>-Px)
        ;;  (if (consp dep-exprs)
        ;;      (mv-messages-rule
@@ -510,14 +510,14 @@ data last modified: [2014-08-06]
        ;;               (tau-rules-form=>Px `(AND Px-aux ,@dep-exprs) Px new-fns-and-args ctx C wrld)))
        ;;    (mv-messages-rule
        ;;     (tau-rules-form=>Px pred-body Px new-fns-and-args ctx C wrld))))
-       
+
        ;; ((mv msgs=> rule-Px-=>)
        ;;  (if (consp dep-exprs)
        ;;      (mv-messages-rule
        ;;       (tau-rules-Px=>form `(AND ,pred-body-aux ,@dep-exprs) Px ndef new-fns-and-args ctx C wrld))
        ;;    (mv-messages-rule
        ;;     (tau-rules-Px=>form pred-body Px ndef new-fns-and-args ctx C wrld))))
-          
+
 
 ; the following breaks because ndef has name declarations
        (without-names-ndef (remove-names ndef))
@@ -574,4 +574,3 @@ data last modified: [2014-08-06]
 
 
 (add-pre-post-hook defdata-defaults-table :post-pred-hook-fns '(tau-characterization-events))
-

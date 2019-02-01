@@ -21,6 +21,24 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Perhaps split :doc hints into separate topics.}}
+
+This item was added by Matt K. but is based on correspondence
+initiated by Eric McCarthy.  Note that it could take some effort to do
+well, since a lot of other stuff might point to :doc hints that would
+then need to point somewhere else (e.g., in error messages).  Also,
+it's pretty simple to search for a specific hint type within that
+page, so this is perhaps not high priority [note from Matt: which is
+why I'm adding this item here rather than doing it myself].  Eric
+points out that with separate topics, "people can add more tips on
+using hints and examples without making the page unmanageably large."
+
+Perhaps a simple but adequate change would be for each kind of hint to
+have HINTS as its parent.  Then error messages could still point to
+:DOC hints, which would then show a clickable list of all hint types.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Improve argument names for set-guard-checking.}}
 
 Alessandro Coglio had the following suggestions for renaming arguments
@@ -254,78 +272,6 @@ ERC>
   channels.  But it doesn't seem to be strong enough to allow me to say
   that if (STATE-P STATE), then there are no duplicate open channels in
   STATE.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Fix profile book for sbcl.}}
-
-This could be a good one for Lisp hackers.
-
-The following is on linux -- I should try it on a Mac.  Maybe SBCL has
-some thread-local settings that I could increase.
-
-The error shown below even happens when starting SBCL with:
---dynamic-space-size 240000 --control-stack-size 640
-
-acl2s
-(include-book "centaur/memoize/old/profile" :dir :system)
-(profile-all) ; goes into ldb
-
-The error (using the large settings above, but the error is
-essentially the same either way):
-
-ACL2 !>(profile-all)
-
-ACL2 Observation in MEMOIZE-CALL-ARRAY-GROW:  Now reinitializing memoization
-structures.  This will erase saved values and statistics.
-Thread local storage exhausted.
-fatal error encountered in SBCL pid 14538(tid 0x7ffff7fd4740):
-%PRIMITIVE HALT called; the party is over.
-
-
-Welcome to LDB, a low-level debugger for the Lisp runtime environment.
-ldb>
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Improve redundancy for verify-termination.}}
-
-[Warning: This one might be tricky.]
-
-Try the files below with:
-
-(certify-book "sub")
-(certify-book "foo")
-
-The include-book phase of the latter is an error, I think because the
-make-event expansion wasn't recorded in the first phase.  How should
-we deal with this?  Notice that if we replace the verify-termination with
-(defun foo (x) x), the problem goes away.  But adding layers of make-event,
-encapsulate, etc. didn't seem to help.
-
-ginger:~/temp% cat sub.lisp
-(in-package "ACL2")
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-ginger:~/temp% cat foo.lisp
-(in-package "ACL2")
-
-(local (include-book "sub"))
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-
-(defun bar (x)
-  (foo x))
-
-ginger:~/temp%
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 

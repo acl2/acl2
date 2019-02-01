@@ -178,7 +178,7 @@ final class Acl2Ratio extends Acl2Rational {
             return thisMultiplied.compareTo(thatMultiplied);
         }
         // ratios are less than
-        // complex rationals, characters, strings, symbols, and pairs:
+        // complex rationals, characters, strings, symbols, and cons pairs:
         return -1;
     }
 

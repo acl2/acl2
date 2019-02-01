@@ -1067,7 +1067,7 @@
                                          aignet))))))
 
 
-    (defcong bits-equiv equal
+  (defcong bits-equiv equal
     (eval-xor-of-lits lit1 lit2 invals regvals aignet) 3
     :hints (("goal"
              :expand ((:free (invals regvals)
@@ -1301,17 +1301,17 @@
              (equal (eval-xor-of-lits y (aignet-lit-fix x aignet) invals regvals aignet2)
                     (eval-xor-of-lits y x invals regvals aignet))))
 
-  (in-theory (disable id-eval-of-aignet-lit-fix
-                      lit-eval-of-aignet-lit-fix
-                      lit-eval-of-aignet-lit-fix-extension
-                      eval-and-of-lits-of-aignet-lit-fix-1
-                      eval-and-of-lits-of-aignet-lit-fix-1-extension
-                      eval-and-of-lits-of-aignet-lit-fix-2
-                      eval-and-of-lits-of-aignet-lit-fix-2-extension
-                      eval-xor-of-lits-of-aignet-lit-fix-1
-                      eval-xor-of-lits-of-aignet-lit-fix-1-extension
-                      eval-xor-of-lits-of-aignet-lit-fix-2
-                      eval-xor-of-lits-of-aignet-lit-fix-2-extension))
+  (in-theory (disable ;; id-eval-of-aignet-lit-fix
+              ;; lit-eval-of-aignet-lit-fix
+              ;; lit-eval-of-aignet-lit-fix-extension
+              eval-and-of-lits-of-aignet-lit-fix-1
+              eval-and-of-lits-of-aignet-lit-fix-1-extension
+              eval-and-of-lits-of-aignet-lit-fix-2
+              eval-and-of-lits-of-aignet-lit-fix-2-extension
+              eval-xor-of-lits-of-aignet-lit-fix-1
+              eval-xor-of-lits-of-aignet-lit-fix-1-extension
+              eval-xor-of-lits-of-aignet-lit-fix-2
+              eval-xor-of-lits-of-aignet-lit-fix-2-extension))
 
 
   (verify-guards lit-eval)
@@ -1389,7 +1389,52 @@
                              invals regvals aignet)
                     (bfix (nth n regvals))))
     :hints(("Goal"
-            :in-theory (enable* id-eval regnum->id)))))
+            :in-theory (enable* id-eval regnum->id))))
+
+
+  (defthm id-eval-of-take-num-ins
+    (implies (<= (num-ins aignet) (nfix n))
+             (equal (id-eval id (take n invals)
+                             regvals aignet)
+                    (id-eval id invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind id aignet)
+             :expand ((:free (invals regvals)
+                       (id-eval id invals regvals aignet)))
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::nth-when-too-large)))))
+
+  (defthm lit-eval-of-take-num-ins
+    (implies (<= (num-ins aignet) (nfix n))
+             (equal (lit-eval lit (take n invals)
+                              regvals aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints (("goal" 
+             :expand ((:free (invals regvals)
+                       (lit-eval lit invals regvals aignet))))))
+
+  (defthm id-eval-of-take-num-regs
+    (implies (<= (num-regs aignet) (nfix n))
+             (equal (id-eval id invals
+                             (take n regvals)
+                             aignet)
+                    (id-eval id invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind id aignet)
+             :expand ((:free (invals regvals)
+                       (id-eval id invals regvals aignet)))
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::nth-when-too-large)))))
+
+  (defthm lit-eval-of-take-num-regs
+    (implies (<= (num-regs aignet) (nfix n))
+             (equal (lit-eval lit invals
+                              (take n regvals)
+                              aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints (("goal" 
+             :expand ((:free (invals regvals)
+                       (lit-eval lit invals regvals aignet)))))))
 
 
 (define output-eval ((n natp) invals regvals aignet)
@@ -2246,27 +2291,6 @@ with the all-0 initial state using @(see aignet-copy-init).</p>
            (if (zp k)
                k
              (count-down (1- k)))))
-
-  (defthm id-eval-of-take-num-regs
-    (equal (id-eval id invals
-                    (take (stype-count :reg aignet) regvals)
-                    aignet)
-           (id-eval id invals regvals aignet))
-    :hints (("goal" :induct (id-eval-ind id aignet)
-             :expand ((:free (invals regvals)
-                       (id-eval id invals regvals aignet)))
-             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable acl2::nth-when-too-large)))))
-
-  (defthm lit-eval-of-take-num-regs
-    (equal (lit-eval id invals
-                    (take (stype-count :reg aignet) regvals)
-                    aignet)
-           (lit-eval id invals regvals aignet))
-    :hints (("goal" 
-             :expand ((:free (invals regvals)
-                       (lit-eval id invals regvals aignet))))))
 
   (defthmd comb-equiv-implies-same-frame-regvals
     (implies (and (comb-equiv aignet aignet2)

@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; January 2019
 
 (in-package "ADE")
 
@@ -63,6 +66,10 @@
 (defmacro destructuring-lemma (fn args declare-form bindings
                                   name ins outs sts occs)
   (b* ((destructure (strings-to-symbol (symbol-name fn) "$DESTRUCTURE"))
+       (prefix-name (strings-to-symbol
+                     (coerce (butlast (coerce (symbol-name fn) 'list)
+                                      1)
+                             'string)))
        (form `(,fn ,@args)))
 
     `(progn
@@ -80,19 +87,27 @@
             (EQUAL (CADDDR ,form) ,sts)
             (EQUAL (CAR (CDDDDR ,form)) ,occs))))
 
+       ;; Prove that this module is not a DE primitive.
+
+       (not-primp-lemma ,prefix-name)
+
        (in-theory (disable ,fn)))))
 
 ;; MODULE-GENERATOR generator args name inputs outputs body state.
 
 (defmacro module-generator (generator args name inputs outputs sts body
-                                      &key guard)
+                                      &optional declare-form)
   (let ((destructuring-lemma (strings-to-symbol (symbol-name generator)
                                                 "$DESTRUCTURE"))
+        (prefix-name (strings-to-symbol
+                      (coerce (butlast (coerce (symbol-name generator) 'list)
+                                       1)
+                              'string)))
         (form `(,generator ,@args)))
 
     `(progn
        (defun ,generator ,args
-         (declare (xargs :guard ,guard))
+         ,declare-form
          (LIST ,name ,inputs ,outputs ,sts ,body))
 
        (defthmd ,destructuring-lemma
@@ -102,6 +117,10 @@
           (EQUAL (CADDR ,form) ,outputs)
           (EQUAL (CADDDR ,form) ,sts)
           (EQUAL (CAR (CDDDDR ,form)) ,body)))
+
+       ;; Prove that this module is not a DE primitive.
+
+       (not-primp-lemma ,prefix-name)
 
        (in-theory (disable ,generator)))))
 
@@ -566,17 +585,14 @@
              nil
            (b* ((inputs (car inputs-seq))
                 (,act-name ,act)
-                (data ,data))
+                (data ,data)
+                (seq (,seq (cdr inputs-seq)
+                           (,step inputs st ,@sizes)
+                           ,@sizes
+                           (1- n))))
              (if (equal ,act-name t)
-                 (append (,seq (cdr inputs-seq)
-                               (,step inputs st ,@sizes)
-                               ,@sizes
-                               (1- n))
-                         (list data))
-               (,seq (cdr inputs-seq)
-                     (,step inputs st ,@sizes)
-                     ,@sizes
-                     (1- n))))))
+                 (append seq (list data))
+               seq))))
 
        (defun ,netlist-seq (inputs-seq st netlist ,(car sizes) n)
          (declare (ignorable st netlist)
@@ -585,25 +601,20 @@
              nil
            (b* ((inputs (car inputs-seq))
                 (?outputs (se (si ',name ,(car sizes))
-                             inputs st netlist))
+                              inputs st netlist))
                 (,act-name ,(if (natp act-idx)
                                 `(nth ,act-idx outputs)
                               act))
-                (data ,(if netlist-data netlist-data data)))
+                (data ,(if netlist-data netlist-data data))
+                (seq (,netlist-seq (cdr inputs-seq)
+                                   (de (si ',name ,(car sizes))
+                                       inputs st netlist)
+                                   netlist
+                                   ,(car sizes)
+                                   (1- n))))
              (if (equal ,act-name t)
-                 (append (,netlist-seq (cdr inputs-seq)
-                                       (de (si ',name ,(car sizes))
-                                           inputs st netlist)
-                                       netlist
-                                       ,(car sizes)
-                                       (1- n))
-                         (list data))
-               (,netlist-seq (cdr inputs-seq)
-                             (de (si ',name ,(car sizes))
-                                 inputs st netlist)
-                             netlist
-                             ,(car sizes)
-                             (1- n))))))
+                 (append seq (list data))
+               seq))))
 
        (defthm ,seq-lemma
          (implies (and (,recognizer netlist ,@sizes)
@@ -624,7 +635,7 @@
                                     (inv 'nil)
                                     (clink 'nil))
   (declare (xargs :guard (and (symbolp name)
-                              (booleanp op)
+                              (symbolp op)
                               (booleanp inv)
                               (booleanp clink))))
   (b* ((recognizer (strings-to-symbol (symbol-name name)
@@ -653,8 +664,7 @@
                                    "$OUT-SEQ"))
        (netlist-out-seq (strings-to-symbol (symbol-name name)
                                            "$NETLIST-OUT-SEQ"))
-       (op-map (strings-to-symbol (symbol-name name)
-                                  "$OP-MAP"))
+       (op-map (strings-to-symbol (symbol-name op) "-MAP"))
        (seq (if op
                 `(,op-map seq)
               `(,in-seq inputs-seq st data-width n)))
@@ -722,7 +732,7 @@
                    (equal (append x y1 z)
                           (append ,seq y2 z)))
           :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                          (acl2::associativity-of-append))))))
+                                          (associativity-of-append))))))
 
        (defthmd ,dataflow-correct
          (b* ((extracted-st (,extract st))

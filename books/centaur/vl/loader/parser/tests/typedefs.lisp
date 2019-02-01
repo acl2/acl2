@@ -41,21 +41,15 @@
 
 (defmacro test-parse-typedef (&key input (successp 't)
                                    atts
-                                   expect
-                                   pre-usertypes  ; string list
-                                   post-usertypes ; string list
-                                   )
+                                   expect)
   `(with-output
      :off summary
      (assert! (b* ((tokens (make-test-tokens ,input))
-                   (pstate (make-vl-parsestate :warnings nil
-                                               :usertypes (make-lookup-alist ',pre-usertypes)))
+                   (pstate (make-vl-parsestate :warnings nil))
                    (config *vl-default-loadconfig*)
                    ((mv erp val ?tokens ?pstate) (vl-parse-type-declaration-top ,atts))
-                   (- (vl-parsestate-free pstate))
                    (pretty    (and (not erp)
                                    (vl-pretty-type-declaration val)))
-                   (new-types (alist-keys (vl-parsestate->usertypes pstate)))
                    (- (cw "ERP ~x0.~%" erp))
                    (- (cw "VAL ~x0.~%" val))
                    (- (cw "Pretty val: ~x0.~%" pretty))
@@ -66,8 +60,7 @@
                     (and (not erp)
                          (or (vl-fwdtypedef-p val)
                              (vl-typedef-p val))
-                         (equal ',expect pretty)
-                         (equal new-types ',post-usertypes))))
+                         (equal ',expect pretty))))
                 ;; Otherwise we expect it to fail
                 erp))))
 
@@ -78,28 +71,22 @@
 ;; very basic forward type declarations...
 
 (test-parse-typedef :input "typedef struct foo;"
-                    :expect (fwdtypedef :vl-struct "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-struct "foo"))
 
 (test-parse-typedef :input "typedef struct \foo ;"
-                    :expect (fwdtypedef :vl-struct "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-struct "foo"))
 
 (test-parse-typedef :input "typedef enum foo ;"
-                    :expect (fwdtypedef :vl-enum "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-enum "foo"))
 
 (test-parse-typedef :input "typedef union foo ;"
-                    :expect (fwdtypedef :vl-union "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-union "foo"))
 
 (test-parse-typedef :input "typedef class foo ;"
-                    :expect (fwdtypedef :vl-class "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-class "foo"))
 
 (test-parse-typedef :input "typedef interface class foo ;"
-                    :expect (fwdtypedef :vl-interfaceclass "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-interfaceclass "foo"))
 
 
 ;; some other stupid, invalid forward declarations...
@@ -127,16 +114,13 @@
 ;; signedness here doesn't make any sense but it's fine
 
 (test-parse-typedef :input "typedef string foo;"
-                    :expect (:vl-typedef "foo" (:vl-string unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-string unsigned)))
 
 (test-parse-typedef :input "typedef chandle foo;"
-                    :expect (:vl-typedef "foo" (:vl-chandle unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-chandle unsigned)))
 
 (test-parse-typedef :input "typedef event foo;"
-                    :expect (:vl-typedef "foo" (:vl-event unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-event unsigned)))
 
 
 (test-parse-typedef :input "typedef string unsigned foo;" :successp nil)
@@ -149,48 +133,37 @@
 ; these should be unsigned by default
 
 (test-parse-typedef :input "typedef bit foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned)))
 
 (test-parse-typedef :input "typedef bit [3:0] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0))))
 
 (test-parse-typedef :input "typedef bit signed [0:3] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 0 3)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 0 3))))
 
 (test-parse-typedef :input "typedef bit unsigned [5:5] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 5 5)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 5 5))))
 
 (test-parse-typedef :input "typedef bit signed [3:0] [7:4] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 3 0) (:range 7 4)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 3 0) (:range 7 4))))
 
 (test-parse-typedef :input "typedef bit unsigned [3:0] [7:4] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) (:range 7 4)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) (:range 7 4))))
 
 (test-parse-typedef :input "typedef bit unsigned [3:0] [7:4] [10:0] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) (:range 7 4) (:range 10 0)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) (:range 7 4) (:range 10 0))))
 
 (test-parse-typedef :input "typedef bit unsigned [] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned :vl-unsized-dimension))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned :vl-unsized-dimension)))
 
 (test-parse-typedef :input "typedef bit unsigned [3:0][] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) :vl-unsized-dimension))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) :vl-unsized-dimension)))
 
 (test-parse-typedef :input "typedef bit unsigned [3:0][][10:0] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) :vl-unsized-dimension (:range 10 0)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit unsigned (:range 3 0) :vl-unsized-dimension (:range 10 0))))
 
 (test-parse-typedef :input "typedef bit signed [3:0][10:0][] foo;"
-                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 3 0) (:range 10 0) :vl-unsized-dimension))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-bit signed (:range 3 0) (:range 10 0) :vl-unsized-dimension)))
 
 (test-parse-typedef :input "typedef bit [5] foo;" :successp nil)
 (test-parse-typedef :input "typedef bit [$] foo;" :successp nil)
@@ -200,45 +173,35 @@
 
 
 (test-parse-typedef :input "typedef logic foo;"
-                    :expect (:vl-typedef "foo" (:vl-logic unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-logic unsigned)))
 
 (test-parse-typedef :input "typedef logic [3:0] foo;"
-                    :expect (:vl-typedef "foo" (:vl-logic unsigned (:range 3 0)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-logic unsigned (:range 3 0))))
 
 (test-parse-typedef :input "typedef logic signed [0:3] foo;"
-                    :expect (:vl-typedef "foo" (:vl-logic signed (:range 0 3)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-logic signed (:range 0 3))))
 
 (test-parse-typedef :input "typedef logic unsigned [5:5] foo;"
-                    :expect (:vl-typedef "foo" (:vl-logic unsigned (:range 5 5)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-logic unsigned (:range 5 5))))
 
 (test-parse-typedef :input "typedef logic signed [3:0] [7:4] foo;"
-                    :expect (:vl-typedef "foo" (:vl-logic signed (:range 3 0) (:range 7 4)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-logic signed (:range 3 0) (:range 7 4))))
 
 
 (test-parse-typedef :input "typedef reg foo;"
-                    :expect (:vl-typedef "foo" (:vl-reg unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-reg unsigned)))
 
 (test-parse-typedef :input "typedef reg [3:0] foo;"
-                    :expect (:vl-typedef "foo" (:vl-reg unsigned (:range 3 0)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-reg unsigned (:range 3 0))))
 
 (test-parse-typedef :input "typedef reg signed [0:3] foo;"
-                    :expect (:vl-typedef "foo" (:vl-reg signed (:range 0 3)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-reg signed (:range 0 3))))
 
 (test-parse-typedef :input "typedef reg unsigned [5:5] foo;"
-                    :expect (:vl-typedef "foo" (:vl-reg unsigned (:range 5 5)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-reg unsigned (:range 5 5))))
 
 (test-parse-typedef :input "typedef reg signed [3:0] [7:4] foo;"
-                    :expect (:vl-typedef "foo" (:vl-reg signed (:range 3 0) (:range 7 4)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-reg signed (:range 3 0) (:range 7 4))))
 
 
 ; integer atom types -----------------------------------------------------------
@@ -248,16 +211,13 @@
 ; and unlike the above, they do NOT allow dimensions
 
 (test-parse-typedef :input "typedef time foo;"
-                    :expect (:vl-typedef "foo" (:vl-time unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-time unsigned)))
 
 (test-parse-typedef :input "typedef time signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-time signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-time signed)))
 
 (test-parse-typedef :input "typedef time unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-time unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-time unsigned)))
 
 (test-parse-typedef :input "typedef time [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef time signed [0:3] foo;" :successp nil)
@@ -267,16 +227,13 @@
 ;; the others are signed by default
 
 (test-parse-typedef :input "typedef byte foo;"
-                    :expect (:vl-typedef "foo" (:vl-byte signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-byte signed)))
 
 (test-parse-typedef :input "typedef byte signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-byte signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-byte signed)))
 
 (test-parse-typedef :input "typedef byte unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-byte unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-byte unsigned)))
 
 (test-parse-typedef :input "typedef byte [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef byte signed [0:3] foo;" :successp nil)
@@ -285,16 +242,13 @@
 
 
 (test-parse-typedef :input "typedef shortint foo;"
-                    :expect (:vl-typedef "foo" (:vl-shortint signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-shortint signed)))
 
 (test-parse-typedef :input "typedef shortint signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-shortint signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-shortint signed)))
 
 (test-parse-typedef :input "typedef shortint unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-shortint unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-shortint unsigned)))
 
 (test-parse-typedef :input "typedef shortint [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef shortint signed [0:3] foo;" :successp nil)
@@ -303,16 +257,13 @@
 
 
 (test-parse-typedef :input "typedef int foo;"
-                    :expect (:vl-typedef "foo" (:vl-int signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-int signed)))
 
 (test-parse-typedef :input "typedef int signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-int signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-int signed)))
 
 (test-parse-typedef :input "typedef int unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-int unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-int unsigned)))
 
 (test-parse-typedef :input "typedef int [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef int signed [0:3] foo;" :successp nil)
@@ -321,16 +272,13 @@
 
 
 (test-parse-typedef :input "typedef longint foo;"
-                    :expect (:vl-typedef "foo" (:vl-longint signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-longint signed)))
 
 (test-parse-typedef :input "typedef longint signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-longint signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-longint signed)))
 
 (test-parse-typedef :input "typedef longint unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-longint unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-longint unsigned)))
 
 (test-parse-typedef :input "typedef longint [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef longint signed [0:3] foo;" :successp nil)
@@ -339,16 +287,13 @@
 
 
 (test-parse-typedef :input "typedef integer foo;"
-                    :expect (:vl-typedef "foo" (:vl-integer signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-integer signed)))
 
 (test-parse-typedef :input "typedef integer signed foo;"
-                    :expect (:vl-typedef "foo" (:vl-integer signed))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-integer signed)))
 
 (test-parse-typedef :input "typedef integer unsigned foo;"
-                    :expect (:vl-typedef "foo" (:vl-integer unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-integer unsigned)))
 
 (test-parse-typedef :input "typedef integer [3:0] foo;" :successp nil)
 (test-parse-typedef :input "typedef integer signed [0:3] foo;" :successp nil)
@@ -365,8 +310,7 @@
 ;; applicable to these types
 
 (test-parse-typedef :input "typedef shortreal foo;"
-                    :expect (:vl-typedef "foo" (:vl-shortreal unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-shortreal unsigned)))
 
 (test-parse-typedef :input "typedef shortreal signed foo;"
                     :successp nil)
@@ -381,8 +325,7 @@
 
 
 (test-parse-typedef :input "typedef real foo;"
-                    :expect (:vl-typedef "foo" (:vl-real unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-real unsigned)))
 
 (test-parse-typedef :input "typedef real signed foo;"
                     :successp nil)
@@ -397,8 +340,7 @@
 
 
 (test-parse-typedef :input "typedef realtime foo;"
-                    :expect (:vl-typedef "foo" (:vl-realtime unsigned))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-realtime unsigned)))
 
 (test-parse-typedef :input "typedef realtime signed foo;"
                     :successp nil)
@@ -415,8 +357,7 @@
 ;; enums --------------------------------------------------------------------
 
 (test-parse-typedef :input "typedef enum foo;"      ;; valid forward reference
-                    :expect (fwdtypedef :vl-enum "foo")
-                    :post-usertypes ("foo"))
+                    :expect (fwdtypedef :vl-enum "foo"))
 
 (test-parse-typedef :input "typedef enum int foo;"  ;; invalid: no base type on forward reference
                     :successp nil)
@@ -428,8 +369,7 @@
 ;; default signedness for int is signed
 
 (test-parse-typedef :input "typedef enum {a} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a"))))
 
 (test-parse-typedef :input "typedef enum {a,} foo;" :successp nil)
 (test-parse-typedef :input "typedef enum {a} byte;" :successp nil)
@@ -442,8 +382,7 @@
                     :expect (:vl-typedef "foo"
                              (:vl-enum :vl-int signed
                               ("a")
-                              ("b")))
-                    :post-usertypes ("foo"))
+                              ("b"))))
 
 ; valid enum base types:
 ;  - integer_atom_types (byte, shortint, int, longint, integer, time) with signing
@@ -451,16 +390,13 @@
 ;  - other type identifiers with packed dimensions
 
 (test-parse-typedef :input "typedef enum byte {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum byte signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum byte unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-byte unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum byte unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -477,16 +413,13 @@
 
 
 (test-parse-typedef :input "typedef enum shortint {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum shortint signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum shortint unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-shortint unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum shortint unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -503,16 +436,13 @@
 
 
 (test-parse-typedef :input "typedef enum int {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum int signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum int unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum int unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -529,16 +459,13 @@
 
 
 (test-parse-typedef :input "typedef enum longint {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum longint signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum longint unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-longint unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum longint unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -555,16 +482,13 @@
 
 
 (test-parse-typedef :input "typedef enum integer {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum integer signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum integer unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-integer unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum integer unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -583,16 +507,13 @@
 ;; time is special because it's unsigned by default
 
 (test-parse-typedef :input "typedef enum time {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-time unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-time unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum time signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-time signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-time signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum time unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-time unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-time unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum time unsigned [3:0] {a, b} foo;"
                     :successp nil)
@@ -613,26 +534,21 @@
 ; and can include signedness and packed dimensions
 
 (test-parse-typedef :input "typedef enum logic {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic unsigned [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic unsigned [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic unsigned [3:0][7:4] {a, b} foo;"
                     :successp nil)  ;; only one packed dimension is allowed!
@@ -642,37 +558,30 @@
 
 (test-parse-typedef :input "typedef enum logic [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum logic [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-logic unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 
 
 (test-parse-typedef :input "typedef enum reg {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg unsigned [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg unsigned [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg unsigned [3:0][7:4] {a, b} foo;"
                     :successp nil)  ;; only one packed dimension is allowed!
@@ -682,36 +591,29 @@
 
 (test-parse-typedef :input "typedef enum reg [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum reg [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-reg unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 
 (test-parse-typedef :input "typedef enum bit {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit signed {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit unsigned {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit unsigned [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit unsigned [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit unsigned [3:0][7:4] {a, b} foo;"
                     :successp nil)  ;; only one packed dimension is allowed!
@@ -721,90 +623,68 @@
 
 (test-parse-typedef :input "typedef enum bit [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bit [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-bit unsigned (:range 3 0)
-                                                ("a") ("b")))
-                    :post-usertypes ("foo"))
+                                                ("a") ("b"))))
 
 
 ; enums of other arbitrary base types
 
 ; these don't really have a signedness, they'll all look unsigned but that's just nonsense
 
-(test-parse-typedef :input "typedef enum bar_t {a, b} foo;" :successp nil) ;; bar_t not defined
+(test-parse-typedef :input "typedef enum bar_t {a, b} foo;"
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t" ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bar_t {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t" ("a") ("b")))
-                    :pre-usertypes ("bar_t")
-                    :post-usertypes ("foo" "bar_t"))
-
-(test-parse-typedef :input "typedef enum bar_t {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t" ("a") ("b")))
-                    :pre-usertypes ("bar_t")
-                    :post-usertypes ("foo" "bar_t"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t" ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bar_t [] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t"
                                                 :dims :vl-unsized-dimension
-                                                ("a") ("b")))
-                    :pre-usertypes ("bar_t")
-                    :post-usertypes ("foo" "bar_t"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bar_t [3:0] {a, b} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-usertype "bar_t"
                                                 :dims (:range 3 0)
-                                                ("a") ("b")))
-                    :pre-usertypes ("bar_t")
-                    :post-usertypes ("foo" "bar_t"))
+                                                ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum bar_t [3:0][4:0] {a, b} foo;"
-                    :pre-usertypes ("bar_t")
                     :successp nil)  ;; not allowed to have multiple dimensions
 
 (test-parse-typedef :input "typedef enum bar_t [3:0][] {a, b} foo;"
-                    :pre-usertypes ("bar_t")
                     :successp nil)  ;; not allowed to have multiple dimensions
 
 (test-parse-typedef :input "typedef enum bar_t [][] {a, b} foo;"
-                    :pre-usertypes ("bar_t")
                     :successp nil)  ;; not allowed to have multiple dimensions
 
 (test-parse-typedef :input "typedef enum bar_t [][3:0] {a, b} foo;"
-                    :pre-usertypes ("bar_t")
                     :successp nil)  ;; not allowed to have multiple dimensions
 
 
 ;; that covers the base types, now how about member stuff
 (test-parse-typedef :input "typedef enum {a, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a") ("b"))))
 
 (test-parse-typedef :input "typedef enum {a = 1, b} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" = 1) ("b")))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" = 1) ("b"))))
 
 (test-parse-typedef :input "typedef enum {a = 1, b = 2} foo;"
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" = 1) ("b" = 2)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" = 1) ("b" = 2))))
 
 (test-parse-typedef :input "typedef enum {a[3] = 1, b = 2} foo;" ;; subtle, a[3] means a[0:2]!!!
-                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" (:range 0 2) = 1) ("b" = 2)))
-                    :post-usertypes ("foo"))
+                    :expect (:vl-typedef "foo" (:vl-enum :vl-int signed ("a" (:range 0 2) = 1) ("b" = 2))))
 
 (test-parse-typedef :input "typedef enum {a[3:0] = 1, b[1:2] = 2} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-int signed
                                                 ("a" (:range 3 0) = 1)
-                                                ("b" (:range 1 2) = 2)))
-                    :post-usertypes ("foo"))
+                                                ("b" (:range 1 2) = 2))))
 
 (test-parse-typedef :input "typedef enum {a[3:0] = 1, b[1:2] = 2+3} foo;"
                     :expect (:vl-typedef "foo" (:vl-enum :vl-int signed
                                                 ("a" (:range 3 0) = 1)
-                                                ("b" (:range 1 2) = (:vl-binary-plus nil 2 3))))
-                    :post-usertypes ("foo"))
+                                                ("b" (:range 1 2) = (:vl-binary-plus nil 2 3)))))
 
 
 
@@ -841,8 +721,7 @@
 
 (test-parse-typedef :input "typedef struct {int a;} foo;"
                     :expect (:vl-typedef "foo"
-                             (:vl-struct ("a" :vl-int signed)))
-                    :post-usertypes ("foo"))
+                             (:vl-struct ("a" :vl-int signed))))
 
 (test-parse-typedef :input "typedef struct tagged {int a;} foo;" ;; only unions are tagged
                     :successp nil)
@@ -850,22 +729,19 @@
 (test-parse-typedef :input "typedef struct {rand int a; randc byte b;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-rand :vl-int signed)
-                                         ("b" :vl-randc :vl-byte signed)))
-                    :post-usertypes ("foo"))
+                                         ("b" :vl-randc :vl-byte signed))))
 
 (test-parse-typedef :input "typedef struct {rand int a; randc byte b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-rand :vl-int signed)
                                          ("b" :vl-randc :vl-byte signed)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct {rand int a; randc byte b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-rand :vl-int signed)
                                          ("b" :vl-randc :vl-byte signed)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 
 (test-parse-typedef :input "typedef struct packed signed {rand int a, b; logic c;} foo;"
@@ -873,16 +749,14 @@
                              (:vl-struct packed signed
                               ("a" :vl-rand :vl-int signed)
                               ("b" :vl-rand :vl-int signed)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct packed {rand int unsigned a, b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct packed
                               ("a" :vl-rand :vl-int unsigned)
                               ("b" :vl-rand :vl-int unsigned)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct signed {rand int unsigned a, b; logic c;} foo;"
                     ;; can't be signed without being packed
@@ -893,8 +767,7 @@
                              (:vl-struct packed ;; structure unsigned doesn't show up in pretty display
                               ("a" :vl-rand :vl-int signed)
                               ("b" :vl-rand :vl-int signed)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct {rand int unsigned [3:0] a, b; logic c;} foo;"
                     ;; int isn't a vector type
@@ -904,22 +777,19 @@
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-rand :vl-reg unsigned (:range 3 0))
                                          ("b" :vl-rand :vl-reg unsigned (:range 3 0))
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct {reg signed [3:0][] a, b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef struct {reg signed [3:0][] a, b; void c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("c" :vl-void unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-void unsigned))))
 
 (test-parse-typedef :input "typedef struct {reg signed [3:0][] a, b;
                                             struct { int i1, i2; } blob; }
@@ -927,8 +797,7 @@
                     :expect (:vl-typedef "foo"
                              (:vl-struct ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("blob" :vl-struct ("i1" :vl-int signed) ("i2" :vl-int signed))))
-                    :post-usertypes ("foo"))
+                                         ("blob" :vl-struct ("i1" :vl-int signed) ("i2" :vl-int signed)))))
 
 
 
@@ -945,33 +814,28 @@
 
 (test-parse-typedef :input "typedef union {int a;} foo;"
                     :expect (:vl-typedef "foo"
-                             (:vl-union ("a" :vl-int signed)))
-                    :post-usertypes ("foo"))
+                             (:vl-union ("a" :vl-int signed))))
 
 (test-parse-typedef :input "typedef union tagged {int a;} foo;" ;; only unions are tagged
                     :expect (:vl-typedef "foo"
-                             (:vl-union tagged ("a" :vl-int signed)))
-                    :post-usertypes ("foo"))
+                             (:vl-union tagged ("a" :vl-int signed))))
 
 (test-parse-typedef :input "typedef union {rand int a; randc byte b;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-rand :vl-int signed)
-                              ("b" :vl-randc :vl-byte signed)))
-                    :post-usertypes ("foo"))
+                              ("b" :vl-randc :vl-byte signed))))
 
 (test-parse-typedef :input "typedef union {rand int a; randc byte b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-rand :vl-int signed)
                                          ("b" :vl-randc :vl-byte signed)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union {rand int a; randc byte b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-rand :vl-int signed)
                                          ("b" :vl-randc :vl-byte signed)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 
 (test-parse-typedef :input "typedef union packed signed {rand int a, b; logic c;} foo;"
@@ -979,16 +843,14 @@
                              (:vl-union packed signed
                               ("a" :vl-rand :vl-int signed)
                               ("b" :vl-rand :vl-int signed)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union packed {rand int unsigned a, b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union packed
                               ("a" :vl-rand :vl-int unsigned)
                               ("b" :vl-rand :vl-int unsigned)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union signed {rand int unsigned a, b; logic c;} foo;"
                     ;; can't be signed without being packed
@@ -999,8 +861,7 @@
                              (:vl-union packed ;; unionure unsigned doesn't show up in pretty display
                               ("a" :vl-rand :vl-int signed)
                               ("b" :vl-rand :vl-int signed)
-                              ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                              ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union {rand int unsigned [3:0] a, b; logic c;} foo;"
                     ;; int isn't a vector type
@@ -1010,22 +871,19 @@
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-rand :vl-reg unsigned (:range 3 0))
                                          ("b" :vl-rand :vl-reg unsigned (:range 3 0))
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union {reg signed [3:0][] a, b; logic c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("c" :vl-logic unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-logic unsigned))))
 
 (test-parse-typedef :input "typedef union {reg signed [3:0][] a, b; void c;} foo;"
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("c" :vl-void unsigned)))
-                    :post-usertypes ("foo"))
+                                         ("c" :vl-void unsigned))))
 
 (test-parse-typedef :input "typedef union {reg signed [3:0][] a, b;
                                             union { int i1, i2; } blob; }
@@ -1033,8 +891,7 @@
                     :expect (:vl-typedef "foo"
                              (:vl-union ("a" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
                                          ("b" :vl-reg signed (:range 3 0) :vl-unsized-dimension)
-                                         ("blob" :vl-union ("i1" :vl-int signed) ("i2" :vl-int signed))))
-                    :post-usertypes ("foo"))
+                                         ("blob" :vl-union ("i1" :vl-int signed) ("i2" :vl-int signed)))))
 
 
 

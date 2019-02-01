@@ -17,7 +17,7 @@
   ()
   (local
    (include-book "std/lists/update-nth" :dir :system))
-  
+
   (defthm take-of-update-nth
     (equal (take n1 (update-nth n2 val x))
            (if (<= (nfix n1) (nfix n2))
@@ -527,7 +527,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_fatsz32
-        (delete-assoc 'update-bpb_fatsz32 *the-list*)
+        (remove1-assoc 'update-bpb_fatsz32 *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -541,7 +541,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_secperclus
-        (delete-assoc 'update-bpb_secperclus *the-list*)
+        (remove1-assoc 'update-bpb_secperclus *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -556,7 +556,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_rsvdseccnt
-        (delete-assoc 'update-bpb_rsvdseccnt *the-list*)
+        (remove1-assoc 'update-bpb_rsvdseccnt *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -571,7 +571,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_numfats
-        (delete-assoc 'update-bpb_numfats *the-list*)
+        (remove1-assoc 'update-bpb_numfats *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -586,7 +586,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_bytspersec
-        (delete-assoc 'update-bpb_bytspersec *the-list*)
+        (remove1-assoc 'update-bpb_bytspersec *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -601,7 +601,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_totsec32
-        (delete-assoc 'update-bpb_totsec32 *the-list*)
+        (remove1-assoc 'update-bpb_totsec32 *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -616,7 +616,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_rootclus
-        (delete-assoc 'update-bpb_rootclus *the-list*)
+        (remove1-assoc 'update-bpb_rootclus *the-list*)
         'fat32-in-memory))))
 
 (defthm
@@ -1074,18 +1074,18 @@
       (("goal"
         :do-not-induct t
         :in-theory (disable fat32-in-memoryp unsigned-byte-p nth))
-       ("subgoal 7" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-p)
+       ("subgoal 7" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-listp)
         :use ((:instance
-               unsigned-byte-p-of-nth-when-unsigned-byte-p
+               unsigned-byte-p-of-nth-when-unsigned-byte-listp
                (n 13)
                (l (get-initial-bytes str))
                (bits 8))
               (:instance unsigned-byte-p-forward-to-nonnegative-integerp
                          (n bits)
                          (x (nth 13 (get-initial-bytes str))))))
-       ("subgoal 6" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-p)
+       ("subgoal 6" :in-theory (disable unsigned-byte-p-of-nth-when-unsigned-byte-listp)
         :use (:instance
-              unsigned-byte-p-of-nth-when-unsigned-byte-p
+              unsigned-byte-p-of-nth-when-unsigned-byte-listp
               (n 0)
               (l (get-remaining-rsvdbyts str))
               (bits 8))))
@@ -3638,7 +3638,7 @@ Some (rather awful) testing forms are
              (equal filename "..         "))
          (list filename first-cluster)
        (b*
-           (((mv contents &) 
+           (((mv contents &)
              (get-clusterchain
               fat32-in-memory
               (fat32-entry-mask first-cluster)

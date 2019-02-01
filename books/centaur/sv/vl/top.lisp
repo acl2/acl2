@@ -92,6 +92,7 @@
        (good          (xf-cwtime (vl-design-eliminitial good)))
        ;;(- (sneaky-save :pre-unparam good))
        (good          (xf-cwtime (vl-design-elaborate good config)))
+       ;; (good          (xf-cwtime (vl-design-argresolve good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad config.suppress-fatal-warning-types)))
 
 
@@ -197,7 +198,7 @@
        ;; occforming.
        (x (if (vl-simpconfig->already-annotated config)
               x
-            (cwtime (vl-annotate-design x))))
+            (cwtime (vl-annotate-design x config))))
        ;; [Jared] I pulled addnames out of annotate because it interfered with
        ;; certain linter checks.  (In particular for detecting duplicate things
        ;; we don't really want to be adding names to unnamed blocks, etc.)

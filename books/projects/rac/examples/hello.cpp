@@ -16,8 +16,8 @@ ui8 reverseByte(ui8 mumble)
 {
   ui8 result;
 
-  for(int i=0; i<4; i++) {
-    result.set_slc(2*i, mumble.slc<2>(6-2*i));
+  for(int i=0; i<8; i++) {
+    result.set_slc(i, mumble.slc<1>(7-i));
   }
 
   return result;

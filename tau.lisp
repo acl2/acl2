@@ -851,6 +851,41 @@
             (cdr lst)
             (all-runes-in-var-to-runes-alist (car lst) ans)))))
 
+(defun union-equal-removing-duplicates (x y)
+
+; Returns the same set as (union-equal x y), but is tail recursive and removes
+; any duplicates from x.
+
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) y)
+        (t (union-equal-removing-duplicates
+            (cdr x)
+            (add-to-set-equal (car x) y)))))
+
+(defrec summary-data
+  ((runes . use-names)
+   .
+   (by-names . clause-processor-fns))
+
+; The use of nil for the cheap flag helps to ensure that when one writes a
+; clause-processor function without taking care to return a summary-data record
+; (or nil) as the final, non-stobj argument, the error message will point that
+; out.
+
+  nil)
+
+(defmacro make-summary-data (&key runes use-names by-names clause-processor-fns)
+
+; This macro would of course not be necessary for ACL2 developers, who can just
+; as well call MAKE directly.  However, make-summary-data provides a documented
+; interface that hides the defrec machinery.
+
+  `(make summary-data
+         :runes ,runes
+         :use-names ,use-names
+         :by-names ,by-names
+         :clause-processor-fns ,clause-processor-fns))
+
 (mutual-recursion
 
 (defun all-runes-in-elim-sequence-lst (lst ans)
@@ -893,10 +928,25 @@
                (all-runes-in-ttree (access poly (cdr val) :ttree)
                                    ans)))))))
 
+(defun all-runes-summary-data-lst (lst ans)
+
+; Lst is a list of tuples of the form (clause-processor-hint summary-data
+; . clauses).  We collect the runes from those summary-data fields.
+
+  (cond ((endp lst) ans)
+        (t (all-runes-summary-data-lst
+            (cdr lst)
+            (let ((summary-data (cadr (car lst))))
+              (if summary-data
+                  (union-equal-removing-duplicates
+                   (access summary-data summary-data :runes)
+                   ans)
+                ans))))))
+
 (defun all-runes-in-ttree (ttree ans)
 
 ; Ttree is any ttree produced by this system.  We sweep it collecting into ans
-; every rune in it.
+; every rune (or fake rune) in it.
 
   (cond
    ((endp ttree) ans)
@@ -1010,8 +1060,8 @@
 ; Shape: t
             ans)
            (:clause-processor
-; Shape: (clause-processor-hint . clauses)
-            ans)
+; Shape: (clause-processor-hint summary-data . clauses)
+            (all-runes-summary-data-lst lst ans))
            (otherwise (er hard 'all-runes-in-ttree
                           "This function must know every possible tag so that ~
                            it can recover the runes used in a ttree.  The ~

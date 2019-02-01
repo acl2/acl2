@@ -188,8 +188,6 @@
      (ADD-SUFFIX-TO-FN)
      (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
      (ALL->=-LEN ACL2-COUNT LST)
-     (ALL-FFN-SYMBS ACL2-COUNT TERM)
-     (ALL-FFN-SYMBS-LST ACL2-COUNT LST)
      (ALL-FNNAMES1 ACL2-COUNT X)
      (ARGLISTP)
      (ARGLISTP1 ACL2-COUNT LST)
@@ -619,7 +617,8 @@
 
 #-acl2-devel ; because apply$ is in :program mode when #+acl2-devel
 (defun-sk apply$-equivalence (fn1 fn2)
-  (declare (xargs :guard t))
+  (declare (xargs :verify-guards t ; avoid make-event in boot-strap
+                  :guard t))
   (forall (args)
 
 ; We use ec-call to support guard verification in "make proofs".
@@ -816,9 +815,12 @@
 
 (deftheory ground-zero
 
-; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
-; the ground-zero theory to be as expected.
+; We want to Keep this near the end of *acl2-pass-2-files* in order for the
+; ground-zero theory to be as expected; hence the assert$ below.
 
+  #-acl2-loop-only ; *acl2-pass-2-files* is only defined in raw Lisp.
+  (assert (equal (car (last *acl2-pass-2-files*))
+                  "boot-strap-pass-2-b.lisp"))
   (current-theory :here))
 
 (deflabel

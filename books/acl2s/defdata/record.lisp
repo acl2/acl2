@@ -715,7 +715,7 @@ data last modified: [2014-08-06]
   `(record-dest-elim-support-fn acl2::stable-under-simplificationp acl2::clause acl2::keyword-alist acl2::world))
 
 (defmacro enable-record-dest-elim ()
-  `(acl2::add-override-hints! '((record-dest-elim-support))))
-
+  `(progn (acl2::remove-override-hints! '((record-dest-elim-support)))
+          (acl2::add-override-hints! '((record-dest-elim-support)))))
 
 (enable-record-dest-elim)

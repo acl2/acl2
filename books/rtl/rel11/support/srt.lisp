@@ -1,16 +1,14 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
+(include-book "basic")
+(include-book "bits")
+(include-book "float")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (local-in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| ACL2::|(logior 1 x)|))
-
-(include-book "basic")
-(include-book "bits")
-(include-book "float")
 
 (encapsulate (((e$) => *) ((d$) => *) ((x$) => *) ((a$) => *) ((q$ *) => *))
   (local (defun e$ () 2))
@@ -380,20 +378,20 @@
   :hints (("Goal" :in-theory (enable rho$ md8 sel-lower-div sel-upper-div max-lower min-upper)
                   :use ((:instance bvecp-member (x i) (n 6))))))
 
-(defund i$ () (fl (* 128 (- (d$) 1/2))))
+(defund i64 (d) (fl (* 128 (- d 1/2))))
 
-(local-in-theory (disable (i$)))
+(local-in-theory (disable (i64)))
 
 (local-defthmd bvecp-i$
   (implies (and (<= 1/2 (d$)) (< (d$) 1))
-           (bvecp (i$) 6))
-  :hints (("Goal" :in-theory (enable bvecp i$))))
+           (bvecp (i64 (d$)) 6))
+  :hints (("Goal" :in-theory (enable bvecp i64))))
 
 (local-defthmd d$-i$-bounds
   (implies (and (<= 1/2 (d$)) (< (d$) 1))
-           (and (<= (+ 1/2 (/ (i$) 128)) (d$))
-                (< (d$) (+ 1/2 (/ (1+ (i$)) 128)))))
-  :hints (("Goal" :in-theory (enable i$))))
+           (and (<= (+ 1/2 (/ (i64 (d$)) 128)) (d$))
+                (< (d$) (+ 1/2 (/ (1+ (i64 (d$))) 128)))))
+  :hints (("Goal" :in-theory (enable i64))))
 
 (defthmd sel-limits-8
   (implies (and (= (r$) 8)
@@ -402,9 +400,9 @@
 		(< (d$) 1)
                 (member k '(-4 -3 -2 -1 0 1 2 3 4)))
            (and (<= (sel-lower-div k (d$))
-                    (max-lower (i$) k))
+                    (max-lower (i64 (d$)) k))
                 (>= (sel-upper-div k (d$))
-                    (min-upper (i$) k))))
+                    (min-upper (i64 (d$)) k))))
   :hints (("Goal" :in-theory (enable rho$ max-lower min-upper sel-lower-div sel-upper-div)
            :use (d$-i$-bounds))))
 
@@ -415,13 +413,13 @@
 		(< (d$) 1))
            (and (implies (member k '(-3 -2 -1 0 1 2 3 4))
                          (<= (+ (sel-lower-div k (d$)) 1/64)
-                             (md8 k (i$))))
+                             (md8 k (i64 (d$)))))
                 (implies (member k '(-4 -3 -2 -1 0 1 2 3))
                          (>= (sel-upper-div k (d$))
-                             (md8 (1+ k) (i$))))))
+                             (md8 (1+ k) (i64 (d$)))))))
   :hints (("Goal" :use (bvecp-i$ sel-limits-8
-                        (:instance sel-limits-check-8 (i (i$)) (k (1+ k)))
-                        (:instance sel-limits-check-8 (i (i$)))))))
+                        (:instance sel-limits-check-8 (i (i64 (d$))) (k (1+ k)))
+                        (:instance sel-limits-check-8 (i (i64 (d$))))))))
 
 (local-defthmd r-bound-inv-8-1
   (implies (and (= (r$) 8)
@@ -432,15 +430,15 @@
                 (>= (sel-upper-div 4 (d$)) (* 8 (rem$ j)))))
   :hints (("Goal" :in-theory (enable rho$) :use (div-containment))))
 
-(defund select-digit-d8 (a)
-  (cond ((<= (md8 4 (i$)) a) 4)
-        ((<= (md8 3 (i$)) a) 3)
-        ((<= (md8 2 (i$)) a) 2)
-        ((<= (md8 1 (i$)) a) 1)
-        ((<= (md8 0 (i$)) a) 0)
-        ((<= (md8 -1 (i$)) a) -1)
-        ((<= (md8 -2 (i$)) a) -2)
-        ((<= (md8 -3 (i$)) a) -3)
+(defund select-digit-d8 (a i)
+  (cond ((<= (md8 4 i) a) 4)
+        ((<= (md8 3 i) a) 3)
+        ((<= (md8 2 i) a) 2)
+        ((<= (md8 1 i) a) 1)
+        ((<= (md8 0 i) a) 0)
+        ((<= (md8 -1 i) a) -1)
+        ((<= (md8 -2 i) a) -2)
+        ((<= (md8 -3 i) a) -3)
         (t -4)))
 
 (local-in-theory (disable (md8)))
@@ -453,9 +451,9 @@
                 (rationalp a)
                 (integerp (* 64 a))
                 (< (abs (- a (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 a))
+                (= (q$ (1+ j)) (select-digit-d8 a (i64 (d$))))
                 (< (q$ (1+ j)) 4))
-           (< a (md8 (1+ (q$ (1+ j))) (i$))))
+           (< a (md8 (1+ (q$ (1+ j))) (i64 (d$)))))
   :hints (("Goal" :in-theory (enable rho$ select-digit-d8))))
 
 (local-defthmd r-bound-inv-8-3
@@ -484,12 +482,12 @@
                 (rationalp a)
                 (integerp (* 64 a))
                 (< (abs (- a (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 a))
+                (= (q$ (1+ j)) (select-digit-d8 a (i64 (d$))))
                 (< (q$ (1+ j)) 4))
-           (< (* 8 (rem$ j)) (md8 (1+ (q$ (1+ j))) (i$))))
+           (< (* 8 (rem$ j)) (md8 (1+ (q$ (1+ j))) (i64 (d$)))))
   :hints (("Goal" :in-theory (enable select-digit-d8)
                   :use (r-bound-inv-8-2
-		        (:instance r-bound-inv-8-3 (m (md8 (1+ (q$ (1+ j))) (i$))))))))
+		        (:instance r-bound-inv-8-3 (m (md8 (1+ (q$ (1+ j))) (i64 (d$)))))))))
 
 (local-defthmd r-bound-inv-8-5
   (implies (and (= (r$) 8)
@@ -499,9 +497,9 @@
                 (rationalp a)
                 (integerp (* 64 a))
                 (< (abs (- a (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 a))
+                (= (q$ (1+ j)) (select-digit-d8 a (i64 (d$))))
                 (> (q$ (1+ j)) -4))
-           (> (* 8 (rem$ j)) (- (md8 (q$ (1+ j)) (i$)) 1/64)))
+           (> (* 8 (rem$ j)) (- (md8 (q$ (1+ j)) (i64 (d$))) 1/64)))
   :hints (("Goal" :in-theory (enable select-digit-d8))))
 
 (local-defthmd r-bound-inv-8-6
@@ -513,7 +511,7 @@
                 (rationalp a)
                 (integerp (* 64 a))
                 (< (abs (- a (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 a)))
+                (= (q$ (1+ j)) (select-digit-d8 a (i64 (d$)))))
 	   (and (<= (sel-lower-div (q$ (1+ j)) (d$)) (* 8 (rem$ j)))
 	        (>= (sel-upper-div (q$ (1+ j)) (d$)) (* 8 (rem$ j)))))
   :hints (("Goal" :in-theory (enable rho$ select-digit-d8)
@@ -530,7 +528,7 @@
                 (rationalp approx)
                 (integerp (* 64 approx))
                 (< (abs (- approx (* 8 (rem$ j)))) 1/64)
-                (= (q$ (1+ j)) (select-digit-d8 approx)))
+                (= (q$ (1+ j)) (select-digit-d8 approx (i64 (d$)))))
 	   (<= (abs (rem$ (1+ j))) (* 4/7 (d$))))
   :hints (("Goal" :in-theory (enable rho$ select-digit-d8)
                   :use (rem-div-bnd-next (:instance r-bound-inv-8-6 (a approx))))))
@@ -617,7 +615,7 @@
 (defthmd int-quot-sqrt
   (implies (natp j)
            (integerp (* (expt (r%) j) (quot% j))))
-  :hints (("Goal" :in-theory (enable quot%) :induct (quot% j))  
+  :hints (("Goal" :in-theory (enable quot%) :induct (quot% j))
           ("Subgoal *1/2" :use ((:instance int-r%*n (n (* (QUOT% (+ -1 J)) (EXPT (r%) (+ -1 J)))))))))
 
 (defthmd rem0-sqrt-rewrite
@@ -654,7 +652,7 @@
   :hints (("Goal" :nonlinearp t :expand ((rem% j) (blo% j) (bhi% j)))))
 
 (local-in-theory (disable (blo%) (bhi%)))
-     
+
 (local-defthmd r0-bounds-1
   (implies (and (rationalp q) (< -1/2 q) (<= q 0))
            (<= (1- (* q q)) -3/4))
@@ -1031,7 +1029,7 @@
                 (natp j)
 		(>= j 3))
 	   (equal (- (expt 4 (- 4 j)) (* 3 (expt 4 (- 3 j))))
-	          (expt 4 (- 3 j))))		  
+	          (expt 4 (- 3 j))))
   :hints (("Goal" :use ((:instance rem%-bnds-12 (n (- 4 j)))))))
 
 (local-defthmd rem%-bnds-21
@@ -1247,7 +1245,7 @@
                         (:instance hyp-inv (k j))
                         (:instance hyp-inv (k 1))
                         (:instance hyp-inv (k 2))
-                        (:instance hyp-inv (k 3)))			
+                        (:instance hyp-inv (k 3)))
 		  :in-theory '(natp s4-inv zp))))
 
 (local-defthm rem%-bnds-37
@@ -1369,7 +1367,7 @@
 (local-defthmd quot%-bnds-4
   (implies (not (zp j))
 	   (integerp (* 1/2 (expt 4 j)))))
-	   
+
 (local-defthmd quot%-bnds-5
   (implies (and (integerp a) (integerp b) (> a b))
            (>= a (1+ b))))

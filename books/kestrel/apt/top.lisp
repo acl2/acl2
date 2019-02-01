@@ -12,7 +12,12 @@
 
 (include-book "utilities/top")
 
+(include-book "common-concepts")
 (include-book "common-options-reference")
+
+(include-book "parteval")
+(include-book "parteval-design")
+(include-book "parteval-reference")
 
 (include-book "restrict")
 (include-book "restrict-design")

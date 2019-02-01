@@ -10,7 +10,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/error-checking" :dir :system)
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
@@ -18,7 +19,6 @@
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,10 +33,10 @@
    </p>
    <ul>
      <li>
-     @('state') is the ACL2's @(see state).
+     @('state') is the ACL2 @(see state).
      </li>
      <li>
-     @('wrld') is the ACL2's @(see world).
+     @('wrld') is the ACL2 @(see world).
      </li>
      <li>
      @('ctx') is the context used for errors.
@@ -54,12 +54,12 @@
      @('hints'),
      @('print'), and
      @('show-only')
-     are the homonymous inputs to @(tsee tailrec),
+     are the homonymous inputs to @(tsee restrict),
      before being processed.
      These formal parameters have no types because they may be any values.
      </li>
      <li>
-     @('call') is the call to @(tsee tailrec) supplied by the user.
+     @('call') is the call to @(tsee restrict) supplied by the user.
      </li>
      <li>
      @('old$'),
@@ -359,35 +359,6 @@
                                               verify-guards$
                                               wrld))))))
 
-(define restrict-process-hints
-  (hints
-   (app-cond-present-names restrict-app-cond-name-listp)
-   ctx
-   state)
-  :returns (mv erp
-               (hints$ "A @('symbol-alistp') that is the alist form of
-                        the keyword-value list @('hints').")
-               state)
-  :mode :program
-  :short "Process the @(':hints') input."
-  :long
-  "<p>
-   Here we only check that the input is a keyword-value list
-   whose keywords are unique and include only names of applicability conditions.
-   The values of the keyword-value list
-   are checked to be well-formed hints not here,
-   but implicitly when attempting to prove the applicability conditions.
-   </p>"
-  (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
-       (alist (keyword-value-list-to-alist hints))
-       (keys (strip-cars alist))
-       (description
-        (msg "The list ~x0 of keywords of the :HINTS input" keys))
-       ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys app-cond-present-names
-                                    description t nil)))
-    (value alist)))
-
 (define restrict-process-inputs (old
                                  restriction
                                  undefined
@@ -443,7 +414,7 @@
                         @('verify-guards$') indicates whether the guards of
                         the new function should be verified or not,
                         @('hints$') is
-                        the result of @(tsee restrict-process-hints), and
+                        the result of @(tsee evmac-process-input-hints), and
                         @('app-cond-present-names') is
                         the result of @(tsee restrict-app-cond-present-names).")
                state)
@@ -488,10 +459,10 @@
                               "The :NON-EXECUTABLE input" t nil))
        (app-cond-present-names (restrict-app-cond-present-names
                                 old$ verify-guards$ wrld))
-       ((er hints$) (restrict-process-hints
+       ((er hints$) (evmac-process-input-hints
                      hints app-cond-present-names ctx state))
-       ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
+       ((er &) (evmac-process-input-print print ctx state))
+       ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
                  restriction$
                  undefined$
@@ -611,7 +582,7 @@
                                (old$ symbolp)
                                (restriction$ pseudo-termp)
                                (hints$ symbol-alistp)
-                               (print$ print-specifier-p)
+                               (print$ evmac-input-print-p)
                                (names-to-avoid symbol-listp)
                                ctx
                                state)
@@ -670,7 +641,7 @@
    (restriction$ pseudo-termp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
-   (print$ print-specifier-p)
+   (print$ evmac-input-print-p)
    (app-cond-present-names restrict-app-cond-name-listp)
    (names-to-avoid symbol-listp)
    ctx
@@ -697,7 +668,7 @@
                                        (restriction$ pseudo-termp)
                                        (verify-guards$ booleanp)
                                        (hints$ symbol-alistp)
-                                       (print$ print-specifier-p)
+                                       (print$ evmac-input-print-p)
                                        (names-to-avoid symbol-listp)
                                        ctx
                                        state)
@@ -971,7 +942,7 @@
    (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
-   (print$ print-specifier-p)
+   (print$ evmac-input-print-p)
    (show-only$ booleanp)
    (app-cond-present-names restrict-app-cond-name-listp)
    (call pseudo-event-formp)

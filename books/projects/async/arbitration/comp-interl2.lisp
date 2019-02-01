@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -110,7 +110,7 @@
                        (cons (si 'select *interl$select-num*)
                              (sis 'go *interl$go-num* *interl$go-num*))))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -156,7 +156,7 @@
          (interl$st-format interl1 data-width)
          (interl-ll$st-format interl-ll data-width))))
 
-(defthm comp-interl2$st-format=>data-width-constraint
+(defthm comp-interl2$st-format=>constraint
   (implies (comp-interl2$st-format st data-width)
            (posp data-width))
   :hints (("Goal" :in-theory (enable comp-interl2$st-format)))
@@ -171,10 +171,10 @@
          (interl$valid-st interl1 data-width)
          (interl-ll$valid-st interl-ll data-width))))
 
-(defthmd comp-interl2$valid-st=>data-width-constraint
+(defthmd comp-interl2$valid-st=>constraint
   (implies (comp-interl2$valid-st st data-width)
            (posp data-width))
-  :hints (("Goal" :in-theory (enable interl$valid-st=>data-width-constraint
+  :hints (("Goal" :in-theory (enable interl$valid-st=>constraint
                                      comp-interl2$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -523,10 +523,6 @@
            (comp-interl2$data-out inputs st data-width)))
   )
 
-;; Prove that COMP-INTERL2 is not a DE primitive.
-
-(not-primp-lemma comp-interl2)
-
 ;; The value lemma for COMP-INTERL2
 
 (defthm comp-interl2$value
@@ -708,7 +704,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (open-nth
-                             interl$valid-st=>data-width-constraint
+                             interl$valid-st=>constraint
                              interl$input-format
                              interl$data0-in
                              interl$data1-in
@@ -726,7 +722,7 @@
              data-width))
    :hints (("Goal"
             :in-theory (e/d (open-nth
-                             interl$valid-st=>data-width-constraint
+                             interl$valid-st=>constraint
                              interl$input-format
                              interl$data0-in
                              interl$data1-in
@@ -812,7 +808,7 @@
               :in-theory (e/d (get-field
                                open-nth
                                interl$out-act
-                               interl-ll$valid-st=>data-width-constraint
+                               interl-ll$valid-st=>constraint
                                interl-ll$input-format
                                interl-ll$data0-in
                                interl-ll$data1-in
@@ -1740,7 +1736,7 @@
                (comp-interl2$interl0-data-out inputs st data-width))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 interl$valid-st=>data-width-constraint
+                                 interl$valid-st=>constraint
                                  interl-ll$data0-in
                                  comp-interl2$interl-ll-inputs
                                  comp-interl2$interl0-data-out
@@ -1759,7 +1755,7 @@
                (comp-interl2$interl1-data-out inputs st data-width))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 interl$valid-st=>data-width-constraint
+                                 interl$valid-st=>constraint
                                  interl-ll$data1-in
                                  comp-interl2$interl-ll-inputs
                                  comp-interl2$interl0-data-out
@@ -2105,6 +2101,10 @@
 ;;       (mv (and (comp-interl2$input-format-n inputs-seq data-width n)
 ;;                (comp-interl2$valid-st st data-width))
 ;;           state)))
+
+;;   (local
+;;    (defthm comp-interl2$ins-and-st-test-ok
+;;      (comp-interl2$ins-and-st-test 4 10 state)))
 
 ;;   (defund comp-interl2$sim (data-width n state)
 ;;     (declare (xargs :guard (and (natp data-width)

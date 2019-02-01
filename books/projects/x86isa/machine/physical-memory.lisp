@@ -169,7 +169,7 @@ recommend using these functions at the top-level.</p>")
     (implies (app-view x86)
              (equal (rm-low-32 p-addr x86) 0)))
 
-  (defthm-usb n32p-rm-low-32
+  (defthm-unsigned-byte-p n32p-rm-low-32
     :bound 32
     :concl (rm-low-32 addr x86)
     :hints (("Goal" :in-theory (e/d () (force (force)))))
@@ -216,7 +216,7 @@ recommend using these functions at the top-level.</p>")
     (implies (app-view x86)
              (equal (rm-low-64 p-addr x86) 0)))
 
-  (defthm-usb n64p-rm-low-64
+  (defthm-unsigned-byte-p n64p-rm-low-64
     :bound 64
     :concl (rm-low-64 addr x86)
     :hints (("Goal" :in-theory (e/d ()
@@ -281,8 +281,7 @@ recommend using these functions at the top-level.</p>")
   ///
 
   (defthm x86p-wm-low-32
-    (implies (and (x86p x86)
-                  (integerp addr))
+    (implies (x86p x86)
              (x86p (wm-low-32 addr val x86)))
     :rule-classes (:rewrite :type-prescription))
 
@@ -323,8 +322,7 @@ recommend using these functions at the top-level.</p>")
     x86)
   ///
   (defthm x86p-wm-low-64
-    (implies (and (x86p x86)
-                  (integerp addr))
+    (implies (x86p x86)
              (x86p (wm-low-64 addr val x86)))
     :rule-classes (:rewrite :type-prescription))
 

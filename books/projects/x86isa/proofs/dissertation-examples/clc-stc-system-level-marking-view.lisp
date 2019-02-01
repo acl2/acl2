@@ -91,7 +91,7 @@
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
                   (xw :rip 0 (+ 1 (xr :rip 0 x86))
-                      (!flgi *cf* 0
+                      (!flgi :cf 0
                              (mv-nth 2
                                      (las-to-pas 1 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
@@ -100,7 +100,8 @@
                                     mv-nth-0-las-to-pas-subset-p
                                     member-p
                                     subset-p
-                                    disjoint-p$)
+                                    disjoint-p$
+                                    rflag-RoWs-enables)
                                    ()))))
 
 
@@ -108,7 +109,7 @@
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
                   (xw :rip 0 (+ 2 (xr :rip 0 x86))
-                      (!flgi *cf* 1
+                      (!flgi :cf 1
                              (mv-nth 2
                                      (las-to-pas 2 (xr :rip 0 x86) :x x86))))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
@@ -117,7 +118,8 @@
                                     mv-nth-0-las-to-pas-subset-p
                                     member-p
                                     subset-p
-                                    disjoint-p$)
+                                    disjoint-p$
+                                    rflag-RoWs-enables)
                                    ()))))
 
 ;; ======================================================================

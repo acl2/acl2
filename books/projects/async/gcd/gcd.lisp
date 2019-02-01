@@ -4,14 +4,13 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 (in-package "ADE")
 
 (include-book "gcd-body")
 (include-book "gcd-cond")
-
-(local (include-book "gcd-alg"))
+(include-book "gcd-spec")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -141,7 +140,7 @@
                                *gcd-cond$go-num*)
                             *gcd-body$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -194,7 +193,7 @@
          (link$st-format l1 (* 2 data-width))
          (link$st-format l2 (* 2 data-width)))))
 
-(defthm gcd$st-format=>data-width-constraint
+(defthm gcd$st-format=>constraint
   (implies (gcd$st-format st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -212,7 +211,7 @@
          (link$valid-st l1 (* 2 data-width))
          (link$valid-st l2 (* 2 data-width)))))
 
-(defthmd gcd$valid-st=>data-width-constraint
+(defthmd gcd$valid-st=>constraint
   (implies (gcd$valid-st st data-width)
            (and (natp data-width)
                 (<= 3 data-width)))
@@ -376,10 +375,6 @@
            (gcd$data-out inputs st data-width)))
   )
 
-;; Prove that GCD is not a DE primitive.
-
-(not-primp-lemma gcd)
-
 ;; The value lemma for GCD
 
 (defthm gcd$value
@@ -397,7 +392,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             gcd&
                             gcd*$destructure
                             gcd$data-in
@@ -472,7 +466,6 @@
            :expand (:free (inputs data-width)
                           (de (si 'gcd data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             gcd&
                             gcd*$destructure
                             merge$act
@@ -541,173 +534,6 @@
 ;; ======================================================================
 
 ;; 3. Single-Step-Update Property
-
-;; Specify the functionality of GCD, i.e., compute the greatest common divisor
-;; of two natural numbers (see gcd$op).  Prove the correctness of gcd$op.
-
-(encapsulate
-  ()
-
-  (local
-   (defthm v-<-correct-instance
-     (implies (and (natp data-width)
-                   (equal (len x) (* 2 data-width))
-                   (bvp x)
-                   (v-< nil t
-                        (rev (take data-width x))
-                        (rev (nthcdr data-width x))))
-              (< (v-to-nat (take data-width x))
-                 (v-to-nat (nthcdr data-width x))))
-     :hints (("Goal"
-              :use (:instance v-<-correct-1
-                              (a (take data-width x))
-                              (b (nthcdr data-width x)))
-              :in-theory (disable v-<-correct-1)))
-     :rule-classes :linear))
-
-  (local
-   (defthm v-to-nat-of-v-zp
-     (equal (v-zp x)
-            (equal (v-to-nat x) 0))
-     :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
-
-  (local
-   (defun my-count (x)
-     (nfix (+ (v-to-nat (take (/ (len x) 2) x))
-              (v-to-nat (nthcdr (/ (len x) 2) x))))))
-
-  (local
-   (defun gcd$op (x)
-     (declare (xargs :hints (("Goal"
-                              :in-theory (e/d ()
-                                              (v-not-take
-                                               v-not-nthcdr))))
-                     :measure (my-count x)))
-     (b* ((data-width (/ (len x) 2))
-          (a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (cond
-        ((or (atom x)
-             (zp data-width)
-             (not (bvp x)))
-         x)
-        ((v-zp a) b)
-        ((v-zp b) a)
-        ((equal a b) a)
-        (t (gcd$op
-            (v-if a<b
-                  (append a b-a)
-                  (append a-b b))))))))
-
-  (defun gcd$op (x)
-    (declare (xargs :measure (:? x)))
-    (b* ((data-width (/ (len x) 2))
-         (a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (cond
-       ((or (atom x)
-            (zp data-width)
-            (not (bvp x)))
-        x)
-       ((v-zp a) b)
-       ((v-zp b) a)
-       ((equal a b) a)
-       (t (gcd$op
-           (v-if a<b
-                 (append a b-a)
-                 (append a-b b)))))))
-
-  (local
-   (defthm gcd$op-lemma-aux
-     (implies (and (bv2p a b)
-                   (not (v-< nil t (rev a) (rev b)))
-                   (equal (v-to-nat a) 0))
-              (equal a b))
-     :hints (("Goal" :use (v-to-nat-equality
-                           v-<-correct-2)))
-     :rule-classes nil))
-
-  (defthm gcd$op-lemma
-    (b* ((a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (implies (and (natp data-width)
-                    (equal data-width (/ (len x) 2))
-                    (bvp x))
-               (equal (gcd$op (v-if a<b
-                                    (append a b-a)
-                                    (append a-b b)))
-                      (gcd$op x))))
-    :hints (("Goal"
-             :induct (gcd$op x)
-             :in-theory (e/d ()
-                             (v-to-nat-equality
-                              v-not-take
-                              v-not-nthcdr)))
-            ("Subgoal *1/3"
-             :use (:instance
-                   v-to-nat-equality
-                   (a (take data-width
-                            (v-adder t (take data-width x)
-                                     (v-not (nthcdr data-width x)))))
-                   (b (take data-width x))))
-            ("Subgoal *1/2"
-             :use ((:instance
-                    v-to-nat-equality
-                    (a (take data-width
-                             (v-adder t (nthcdr data-width x)
-                                      (v-not (take data-width x)))))
-                    (b (nthcdr data-width x)))
-                   (:instance
-                    gcd$op-lemma-aux
-                    (a (take data-width x))
-                    (b (nthcdr data-width x)))))))
-
-  ;; Prove that gcd$op correctly computes the greatest common divisor
-
-  (local
-   (defthm v-to-nat-of-GCD$OP-is-GCD-ALG
-     (implies (and (equal data-width (/ (len x) 2))
-                   (bvp x))
-              (equal (v-to-nat (gcd$op x))
-                     (gcd-alg (v-to-nat (take data-width x))
-                              (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d ()
-                                     (v-not-take
-                                      v-not-nthcdr))))))
-
-  (in-theory (disable gcd$op))
-  )
-
-;; The operation of GCD over a data sequence
-
-(defun gcd$op-map (x)
-  (if (atom x)
-      nil
-    (cons (gcd$op (car x))
-          (gcd$op-map (cdr x)))))
-
-(defthm len-of-gcd$op-map
-  (equal (len (gcd$op-map x))
-         (len x)))
-
-(defthm gcd$op-map-of-append
-  (equal (gcd$op-map (append x y))
-         (append (gcd$op-map x) (gcd$op-map y))))
 
 ;; The extraction function for GCD that extracts the future output sequence
 ;; from the current state.
@@ -1010,5 +836,5 @@
 
 ;; The multi-step input-output relationship
 
-(in-out-stream-lemma gcd :op t :inv t)
+(in-out-stream-lemma gcd :op gcd$op :inv t)
 

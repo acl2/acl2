@@ -487,7 +487,10 @@ remember to initialize the x86 state appropriately.</p>
 default configuration of 1G page tables"
 
   :guard (equal (loghead 12 paging-base-addr) 0)
-  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+  :guard-hints (("Goal" :in-theory (e/d (!cr4bits->pae
+                                         !ia32_eferbits->lme
+                                         !cr0bits->pg)
+                                        (unsigned-byte-p))))
 
   :returns (x86 x86p :hyp (and (x86p x86) (unsigned-byte-p 52 paging-base-addr)))
   :prepwork
@@ -529,13 +532,13 @@ default configuration of 1G page tables"
        (cr0 (n32 (ctri #.*cr0* x86)))
        (cr4 (n21 (ctri #.*cr4* x86)))
        ;; Control registers:
-       (x86 (!ctri #.*cr0* (!cr0-slice :cr0-pg 1 cr0) x86))
-       (x86 (!ctri #.*cr4* (!cr4-slice :cr4-pae 1 cr4) x86))
-       (x86 (!ctri #.*cr3* (!cr3-slice :cr3-pdb paging-base-addr40 (ctri #.*cr3* x86)) x86))
+       (x86 (!ctri #.*cr0* (!cr0Bits->pg 1 cr0) x86))
+       (x86 (!ctri #.*cr4* (!cr4Bits->pae 1 cr4) x86))
+       (x86 (!ctri #.*cr3* (!cr3Bits->pdb paging-base-addr40 (ctri #.*cr3* x86)) x86))
 
        ;; Model-specific registers:
        (efer (n12 (msri #.*ia32_efer-idx* x86)))
-       (x86 (!msri #.*ia32_efer-idx* (!ia32_efer-slice :ia32_efer-lme 1 efer) x86))
+       (x86 (!msri #.*ia32_efer-idx* (!ia32_eferBits->lme 1 efer) x86))
 
        ;; Initializing the page tables.
        (x86

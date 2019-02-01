@@ -10,13 +10,13 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-
 ; the order of the following INCLUDE-BOOKs determines
 ; the order of the subtopics of the ETHEREUM topic below:
 (include-book "basics")
-(include-book "rlp")
+(include-book "crypto")
+(include-book "rlp/top")
 (include-book "hex-prefix")
+(include-book "mmp-trees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,7 +37,7 @@
      "The <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>,
       referenced as `[Wiki]' in the documentation of this library.")
     (xdoc::li
-     "The BYZANTIUM VERSION e94ebda 2018-06-05 of
+     "The BYZANTIUM VERSION 69351d5 of
       the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
       Yellow Paper</a>,
       referenced as `[YP]' in the documentation of this library.

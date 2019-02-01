@@ -110,8 +110,7 @@
    this case.</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -130,7 +129,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
 		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -195,8 +194,7 @@
    extension (ModR/m.reg = 6).</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -221,7 +219,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
 		(xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -231,10 +229,10 @@
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 E (the (unsigned-byte 3) increment-RIP-by) ?E-addr x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* operand-size
 	 t   ; do alignment checking
 	 nil ;; Not a memory pointer operand
@@ -299,8 +297,7 @@
    execution in this case.</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -325,7 +322,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -406,8 +403,7 @@
    this case.</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -426,7 +422,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -444,10 +440,6 @@
 			(#xA0 #.*FS*)
 			(t #.*GS*))
 		      x86))
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
 
@@ -496,8 +488,7 @@
    this case.</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -515,7 +506,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -583,8 +574,7 @@
    extension (ModR/m.reg = 0).</p>"
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -608,7 +598,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -646,7 +636,7 @@
        ((when flg1) ;; #SS exception?
 	(!!ms-fresh :x86-effective-addr-error flg1))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
@@ -665,7 +655,7 @@
        (x86 (write-*sp proc-mode new-rsp x86))
 
        ((mv flg3 x86)
-	(x86-operand-to-reg/mem$ proc-mode operand-size
+	(x86-operand-to-reg/mem proc-mode operand-size
 				 check-alignment?
 				 nil ;; Not a memory pointer operand
 				 val
@@ -706,8 +696,7 @@
 ;; other opcodes like ADD, SUB, etc. I've just coupled the decoding with
 ;; the execution in this case.</p>"
 
-;;   :returns (x86 x86p :hyp (and (x86p x86)
-;;                                (canonical-address-p temp-rip)))
+;;   :returns (x86 x86p :hyp (x86p x86))
 
 ;;   :guard-debug t
 
@@ -717,9 +706,9 @@
 ;;        (lock (equal #.*lock* (prefixes->lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
-;;        (p2 (prefixes-slice :group-2-prefix prefixes))
+;;        (p2 (prefixes->group-2-prefix prefixes))
 ;;        (p3 (equal #.*operand-size-override*
-;;               (prefixes-slice :group-3-prefix prefixes)))
+;;               (prefixes->group-3-prefix prefixes)))
 
 ;;        (r/m (modr/m->r/m modr/m))
 ;;        (mod (modr/m->mod modr/m))
@@ -746,7 +735,7 @@
 ;;         (!!fault-fresh :ss 0 :rme-size-error flg0)) ;; #SS(0)
 
 ;;        (p4 (equal #.*addr-size-override*
-;;               (prefixes-slice :group-4-prefix prefixes)))
+;;               (prefixes->group-4-prefix prefixes)))
 ;;        ((mv flg1 v-addr (the (unsigned-byte 3) increment-RIP-by) x86)
 ;;         (if (equal mod #b11)
 ;;             (mv nil 0 0 x86)
@@ -812,8 +801,7 @@
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -832,7 +820,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -947,8 +935,7 @@
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(select-operand-size
 						 signed-byte-p
@@ -967,7 +954,7 @@
 	  (b* (((the (unsigned-byte 16) cs-attr)
                 (xr :seg-hidden-attr #.*cs* x86))
 	       (cs.d
-		(code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+		(code-segment-descriptor-attributesBits->d cs-attr)))
 	    (if (= cs.d 1)
 		(if p3? 2 4)
 	      (if p3? 4 2)))))
@@ -1009,13 +996,13 @@
 	  (otherwise
 	   ;; VIP and VIF cleared.  RF, VM unaffected.  Other non-reserved
 	   ;; flags can be modified.
-	   (let* ((rf (the (unsigned-byte 1) (flgi #.*rf* x86)))
-		  (vm (the (unsigned-byte 1) (flgi #.*vm* x86)))
+	   (let* ((rf (the (unsigned-byte 1) (flgi :rf x86)))
+		  (vm (the (unsigned-byte 1) (flgi :vm x86)))
 		  (x86 (!rflags val x86))
-		  (x86 (!flgi #.*rf* rf x86))
-		  (x86 (!flgi #.*vm* vm x86))
-		  (x86 (!flgi #.*vip* 0 x86))
-		  (x86 (!flgi #.*vif* 0 x86)))
+		  (x86 (!flgi :rf rf x86))
+		  (x86 (!flgi :vm vm x86))
+		  (x86 (!flgi :vip 0 x86))
+		  (x86 (!flgi :vif 0 x86)))
 	     x86))))
 
        ;; We don't need to check for valid length for one-byte
@@ -1061,8 +1048,7 @@
   :guard (not (equal proc-mode #.*64-bit-mode*))
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(rgfi-size
 						 select-operand-size
@@ -1172,8 +1158,7 @@
   :guard (not (equal proc-mode #.*64-bit-mode*))
 
   :returns (x86 x86p
-		:hyp (and (x86p x86)
-			  (canonical-address-p temp-rip))
+		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(!rgfi-size
 						 select-operand-size

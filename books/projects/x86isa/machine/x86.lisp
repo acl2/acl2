@@ -400,9 +400,8 @@
 		       !prefixes->adr
 		       !prefixes->nxt
 		       prefixes-fix
-		       num-prefixes-fix
-		       lck-fix rep-fix seg-fix
-		       opr-fix adr-fix next-byte-fix)
+		       4bits-fix
+		       8bits-fix)
 		      (bitops::logand-with-negated-bitmask))))
        :rule-classes :linear))
 
@@ -595,8 +594,8 @@
 
   (local (in-theory (e/d () (acl2::zp-open not))))
 
-  (defthm-usb prefixes-width-p-of-get-prefixes.new-prefixes
-    ;; [Shilpi] I tried to use defret here instead of defthm-usb, but I got
+  (defthm-unsigned-byte-p prefixes-width-p-of-get-prefixes.new-prefixes
+    ;; [Shilpi] I tried to use defret here instead of defthm-unsigned-byte-p, but I got
     ;; into trouble, probably because of the different order of lambda
     ;; expansions in defret.
     :hyp (and (unsigned-byte-p #.*prefixes-width* prefixes)
@@ -630,8 +629,8 @@
     :gen-linear t
     :hints-l (("Goal" :in-theory (e/d () (get-prefixes)))))
 
-  (defthm-usb byte-p-of-get-prefixes.new-rex-byte
-    ;; [Shilpi] I tried to use defret here instead of defthm-usb, but I got
+  (defthm-unsigned-byte-p byte-p-of-get-prefixes.new-rex-byte
+    ;; [Shilpi] I tried to use defret here instead of defthm-unsigned-byte-p, but I got
     ;; into trouble, probably because of the different order of lambda
     ;; expansions in defret.
     :hyp (and (unsigned-byte-p 8 rex-byte)
@@ -1159,7 +1158,17 @@
    (local (in-theory (e/d* ()
 			   (signed-byte-p
 			    unsigned-byte-p
-			    not (tau-system))))))
+			    not (tau-system)))))
+
+   ;; For RoW proofs involving these bitstructs' accessors and updaters:
+   (local (in-theory (e/d (!vex-prefixes->byte0-is-vex-prefixes
+                           !vex-prefixes->byte1-is-vex-prefixes
+                           !vex-prefixes->byte2-is-vex-prefixes
+                           !evex-prefixes->byte0-is-evex-prefixes
+                           !evex-prefixes->byte1-is-evex-prefixes
+                           !evex-prefixes->byte2-is-evex-prefixes
+                           !evex-prefixes->byte3-is-evex-prefixes)
+                          ()))))
 
   :guard-hints
   (("Goal" :in-theory (e/d (modr/m-p
@@ -1237,11 +1246,9 @@
 	     ((when flg)
 	      (!!ms-fresh :vex-byte1-increment-error flg))
 	     (vex-prefixes
-	      (!vex-prefixes-slice
-	       :byte0 opcode/vex/evex-byte 0))
+	      (!vex-prefixes->byte0 opcode/vex/evex-byte 0))
 	     (vex-prefixes
-	      (!vex-prefixes-slice
-	       :byte1 les/lds-distinguishing-byte vex-prefixes)))
+	      (!vex-prefixes->byte1 les/lds-distinguishing-byte vex-prefixes)))
 	  (vex-decode-and-execute
 	   proc-mode
 	   start-rip temp-rip prefixes rex-byte vex-prefixes x86)))
@@ -1291,10 +1298,9 @@
 	     ((when flg)
 	      (!!ms-fresh :evex-byte1-increment-error flg))
 	     (evex-prefixes
-	      (!evex-prefixes-slice :byte0 opcode/evex-byte 0))
+	      (!evex-prefixes->byte0 opcode/evex-byte 0))
 	     (evex-prefixes
-	      (!evex-prefixes-slice
-	       :byte1 bound-distinguishing-byte evex-prefixes)))
+	      (!evex-prefixes->byte1 bound-distinguishing-byte evex-prefixes)))
 	  (evex-decode-and-execute
 	   proc-mode
 	   start-rip temp-rip prefixes rex-byte evex-prefixes x86)))

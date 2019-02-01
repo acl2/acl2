@@ -191,6 +191,10 @@
                     (eqlable-listp x))))
 
   ;; defun-sk switches you into a tiny theory, so this fails:
+  ;; Matt K. mod: The tiny-theory problem no longer applies as of mid-January
+  ;; 2019, because of how defun-sk now always delays guard verification.  I've
+  ;; replaced the commented-out event just below by the defun-sk below it.
+  #||
   (must-fail (defun-sk all-greater-p (max x)
                (forall elem
                        (impliez (member elem x)
@@ -198,6 +202,14 @@
                :witness-dcls ((declare (xargs :guard (and (natp max)
                                                           (nat-listp x))
                                               :verify-guards t)))))
+  ||#
+  (defun-sk all-greater-p-for-defun-sk (max x)
+    (forall elem
+            (impliez (member elem x)
+                     (<= elem max)))
+    :witness-dcls ((declare (xargs :guard (and (natp max)
+                                               (nat-listp x))
+                                   :verify-guards t))))
 
   ;; but define-sk is smart enough to make it work
   (define-sk all-greater-p ((max natp)

@@ -1,0 +1,43 @@
+; List Utilities -- Theorems about PREFIXP
+;
+; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "std/lists/prefixp" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+
+(local (include-book "std/lists/take" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection prefixp-theorems
+  :parents (list-utilities prefixp)
+  :short "Some theorems about the library function @(tsee prefixp)."
+
+  (defrule same-car-when-prefixp-and-consp
+    (implies (and (prefixp x y)
+                  (consp x))
+             (equal (car x)
+                    (car y)))
+    :rule-classes nil)
+
+  (defrule same-take-when-prefixp-and-longer
+    (implies (and (prefixp x y)
+                  (>= (len x) (nfix n)))
+             (equal (take n x)
+                    (take n y)))
+    :rule-classes nil
+    :enable take-redefinition)
+
+  (defrule prefixp-of-cdr-cdr
+    (implies (and (prefixp x y)
+                  (consp x))
+             (prefixp (cdr x) (cdr y)))))

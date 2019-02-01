@@ -16,25 +16,36 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-gcd.lisp: a circuit, gcd, computing the Greatest Common Divisor (GCD)
-of two natural numbers.
+gcd-alg.lisp: a GCD algorithm and its correctness theorems.
 
-gcd-alg.lisp: the correctness proof of the GCD algorithm.
+gcd-spec.lisp: a GCD specification at the bit-vector level.
 
-comp-gcd-cond.lisp: a circuit, C, performing the GCD condition. It
-contains Q2 and Q3 as submodules.
+gcd.lisp: a circuit family, gcd, computing the Greatest Common Divisor
+(GCD) of two natural numbers.
 
-comp-gcd.lisp: a GCD circuit, c-gcd, that contains C as a submodule.
+comp-gcd-body.lisp: a circuit family, comp-gcd-body, performing the
+GCD operation in one iteration.  It is constructed using the
+ripple-carry subtractor ripple-sub.
 
-comp-gcd-body.lisp: a circuit, comp-gcd-body, performing the GCD
-operation in one iteration.  It is constructed using the self-timed
-serial subtractor serial-sub.
+comp-gcd.lisp: a GCD circuit family, c-gcd, that contains
+comp-gcd-body as a submodule.
 
-comp-gcd2.lisp: a GCD circuit, c-gcd2, that contains comp-gcd-body as
-a submodule.
+comp-gcd-body2.lisp: a circuit family, comp-gcd-body2, performing the
+GCD operation in one iteration.  It is constructed using the
+self-timed serial subtractor serial-sub.
 
-q10-gcd.lisp: a GCD circuit, q10-gcd, that concatenates Q10 and gcd.
+comp-gcd2.lisp: a GCD circuit family, c-gcd2, that contains
+comp-gcd-body2 as a submodule.
 
-q10-comp-gcd.lisp: a GCD circuit, q10-c-gcd, that concatenates Q10 and
-c-gcd.
+comp-gcd-cond.lisp: a circuit family, comp-gcd-cond, performing the
+GCD condition. It contains Q2 and Q3 as submodules.
+
+comp-gcd3.lisp: a GCD circuit family, c-gcd3, that contains comp-gcd-cond
+as a submodule.
+
+q10-gcd.lisp: a GCD circuit family, q10-gcd, that concatenates Q10 and
+gcd.
+
+q10-comp-gcd3.lisp: a GCD circuit family, q10-c-gcd3, that concatenates
+Q10 and c-gcd3.
 

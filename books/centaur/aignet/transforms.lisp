@@ -34,7 +34,7 @@
 (include-book "rewrite")
 (include-book "fraig")
 (include-book "balance")
-(include-book "observability")
+(include-book "obs-constprop")
 (include-book "constprop")
 (include-book "abc-wrappers")
 
@@ -51,6 +51,7 @@ transforms.  The currently supported transforms are:</p>
 <li>@(see balance)</li>
 <li>@(see fraig)</li>
 <li>@(see rewrite)</li>
+<li>@(see obs-constprop)</li>
 <li>@(see observability-fix)</li>
 <li>@(see constprop)</li>
 <li>@(see prune)</li>
@@ -147,6 +148,7 @@ for translating between ABC and aignet does not support xors.</p>"
    fraig-config
    rewrite-config
    abc-comb-simp-config
+   obs-constprop-config
    observability-config
    constprop-config
    snapshot-config
@@ -158,6 +160,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:balance-config "Balance")
     (:fraig-config "Fraig")
     (:rewrite-config "Rewrite")
+    (:obs-constprop-config "Observability")
     (:observability-config "Observability")
     (:constprop-config "Constprop")
     (:snapshot-config "Snapshot")
@@ -180,6 +183,7 @@ for translating between ABC and aignet does not support xors.</p>"
              (:fraig-config (fraig aignet aignet2 transform state))
              (:rewrite-config (b* ((aignet2 (rewrite aignet aignet2 transform)))
                                 (mv aignet2 state)))
+             (:obs-constprop-config (obs-constprop aignet aignet2 transform state))
              (:observability-config (observability-fix aignet aignet2 transform state))
              (:constprop-config (b* ((aignet2 (constprop aignet aignet2 transform)))
                                   (mv aignet2 state)))
@@ -228,6 +232,7 @@ for translating between ABC and aignet does not support xors.</p>"
              (:fraig-config (fraig! aignet transform state))
              (:rewrite-config (b* ((aignet (rewrite! aignet transform)))
                                 (mv aignet state)))
+             (:obs-constprop-config (obs-constprop! aignet transform state))
              (:observability-config (observability-fix! aignet transform state))
              (:constprop-config (b* ((aignet (constprop! aignet transform)))
                                   (mv aignet state)))

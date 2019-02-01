@@ -33,7 +33,7 @@
 (include-book "gtypes")
 (include-book "gl-util")
 (include-book "symbolic-arithmetic")
-(include-book "and-star")
+(include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
@@ -1344,7 +1344,7 @@
     shape-spec-obj-in-range-open-atom
     shape-spec-obj-in-range-open-list-of-g-booleans
     shape-spec-obj-in-range-var
-    and*-rem-first and*-rem-second
+    acl2::and*-rem-first acl2::and*-rem-second
     acl2::iff-implies-equal-and*-1
     acl2::iff-implies-iff-and*-2
     car-cons cdr-cons natp-compound-recognizer
@@ -1399,8 +1399,8 @@ any other @(':G-BOOLEAN') or @(':G-NUMBER') construct in the shape-spec.</dd>
 <dd>Represents a two's-complement integer with bits corresponding to the list,
 least significant bit first.  Rationals and complex rationals are also
 available; see @(see SYMBOLIC-OBJECTS).  A :G-INTEGER construct with a list of
-length @('N') represents integers @('X') where @('(<= (- (expt 2 n)) x)') and
-@('(< x (expt 2 n))').  The @('list-of-nums') must be natural numbers, may not
+length @('N') represents integers @('X') where @('(<= (- (expt 2 (+ -1 n))) x)') and
+@('(< x (expt 2 (+ -1 n)))').  The @('list-of-nums') must be natural numbers, may not
 repeat, and may not occur in any other @(':G-BOOLEAN') or @(':G-INTEGER')/
 @(':G-NUMBER') construct.</dd>
 

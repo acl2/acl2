@@ -30,6 +30,10 @@
 
 (in-package "ACL2")
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defconst *standard-acl2-imports*
   (set-difference-eq-exec
    (union-eq-exec (append
@@ -150,7 +154,8 @@
                set-default-parents
                getprop formals justification def-bodies current-acl2-world def-body
                access theorem untranslated-theorem guard xdoc xdoc! unquote
-               undocumented assert! top explode implode)
+               undocumented assert! top explode implode
+               remove-equal-with-hint)
           set::*sets-exports*
           *standard-acl2-imports*))
 

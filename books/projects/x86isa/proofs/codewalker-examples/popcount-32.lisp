@@ -150,9 +150,7 @@
  :updater-drivers (((XW FLD I :VALUE :BASE)
                     (XR FLD I :BASE))
                    ((WB N ADDR R-W-X :VALUE :BASE)
-                    (RB N ADDR R-W-X :BASE))
-                   ((!FLGI I :VALUE :BASE)
-                    (FLGI I :BASE)))
+                    (RB N ADDR R-W-X :BASE)))
  :constructor-drivers nil
  ;; Determine the "state components" that def-projection can
  ;; generalize to produce functions independent of state.
@@ -167,10 +165,10 @@
 ;  (2, 8, 10, or 16)
 
 ; how to generate variable names from state comps
- :var-names (((XR :RGF *RDI* X86) "RDI"))
- )
+ :var-names (((XR :RGF *RDI* X86) "RDI")))
 
 (local (in-theory (e/d* (instruction-decoding-and-spec-rules
+                         rflag-RoWs-enables
                          x86-operation-mode
 
                          shr-spec
@@ -188,7 +186,6 @@
                          one-byte-opcode-execute
                          !rgfi-size
                          x86-operand-to-reg/mem
-                         x86-operand-to-reg/mem$
                          wr64
                          wr32
                          rr08
@@ -200,7 +197,6 @@
                          wml64
                          rr32
                          x86-operand-from-modr/m-and-sib-bytes
-                         x86-operand-from-modr/m-and-sib-bytes$
                          rime-size
                          rme-size
                          wime-size
@@ -214,11 +210,9 @@
                          x86-effective-addr
                          subset-p
                          ;; Flags
-                         write-user-rflags
-                         !flgi-undefined)
+                         write-user-rflags)
 
                         (unsigned-byte-p
-                         las-to-pas-values-and-!flgi
                          las-to-pas
                          default-+-2
                          get-prefixes-opener-lemma-group-1-prefix
@@ -254,6 +248,6 @@
   :concl (equal (popcount-result-fn n)
                 (logcount n))
   :g-bindings
-  `((n    (:g-number ,(gl-int 0 1 33)))))
+  `((n    (:g-number ,(increasing-list 0 1 33)))))
 
 ;; ----------------------------------------------------------------------

@@ -23,4 +23,4 @@
   (defrule list-of-car-when-one
     (implies (and (consp list)
                   (not (consp (cdr list))))
-             (equal (list (car list)) (list-fix list)))))
+             (equal (list (car list)) (true-list-fix list)))))

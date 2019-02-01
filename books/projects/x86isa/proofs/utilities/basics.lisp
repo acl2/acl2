@@ -119,7 +119,7 @@
   (x86-fn-untranslate
    '(XR ':RGF)
    '(?x)
-   (gl-int 0 1 16)
+   (increasing-list 0 1 16)
    '(*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
            *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*))))
 
@@ -129,7 +129,7 @@
   (x86-fn-untranslate
    '(XW ':RGF)
    '(?v ?x)
-   (gl-int 0 1 16)
+   (increasing-list 0 1 16)
    '(*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
            *R8*  *R9*  *R10* *R11* *R12* *R13* *R14* *R15*))))
 
@@ -141,7 +141,7 @@
   (x86-fn-untranslate
    '(XR ':seg)
    '(?x)
-   (gl-int 0 1 6)
+   (increasing-list 0 1 6)
    '(*ES* *CS* *SS* *DS* *FS* *GS*))))
 
 (make-event
@@ -150,7 +150,7 @@
   (x86-fn-untranslate
    '(XW ':seg)
    '(?v ?x)
-   (gl-int 0 1 6)
+   (increasing-list 0 1 6)
    '(*ES* *CS* *SS* *DS* *FS* *GS*))))
 
 ;; Control Registers:
@@ -161,7 +161,7 @@
   (x86-fn-untranslate
    '(XR ':ctr)
    '(?x)
-   (gl-int 0 1 17)
+   (increasing-list 0 1 17)
    '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
@@ -172,7 +172,7 @@
   (x86-fn-untranslate
    '(XW ':ctr)
    '(?v ?x)
-   (gl-int 0 1 17)
+   (increasing-list 0 1 17)
    '(*CR0* *CR1* *CR2* *CR3* *CR4* *CR5* *CR6* *CR7*
            *CR8* *CR9*  *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
            *XCR0*))))
@@ -194,7 +194,7 @@
    ;; the correct register addresses, as specified by the Intel
    ;; manuals. See define-model-specific-registers in
    ;; portcullis/shart-dot-constants.lisp for details.
-   (gl-int 0 1 7)
+   (increasing-list 0 1 7)
    '(*IA32_EFER-IDX* *IA32_FS_BASE-IDX* *IA32_GS_BASE-IDX* *IA32_KERNEL_GS_BASE-IDX*
                      *IA32_STAR-IDX* *IA32_LSTAR-IDX* *IA32_FMASK-IDX*))))
 
@@ -204,32 +204,32 @@
   (x86-fn-untranslate
    '(XW ':msr)
    '(?v ?x)
-   (gl-int 0 1 7)
+   (increasing-list 0 1 7)
    '(*IA32_EFER-IDX* *IA32_FS_BASE-IDX* *IA32_GS_BASE-IDX* *IA32_KERNEL_GS_BASE-IDX*
                      *IA32_STAR-IDX* *IA32_LSTAR-IDX* *IA32_FMASK-IDX*))))
 
 ;; Flags:
 
-(make-event
- (cons
-  'progn
-  (x86-fn-untranslate
-   '(flgi)
-   '(?x)
-   '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
-          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
+;; (make-event
+;;  (cons
+;;   'progn
+;;   (x86-fn-untranslate
+;;    '(flgi)
+;;    '(?x)
+;;    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
+;;    '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+;;           *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 
-(make-event
- (cons
-  'progn
-  (x86-fn-untranslate
-   '(!flgi)
-   '(?v ?x)
-   '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
-          *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
+;; (make-event
+;;  (cons
+;;   'progn
+;;   (x86-fn-untranslate
+;;    '(!flgi)
+;;    '(?v ?x)
+;;    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
+;;    '(*CF* *PF* *AF* *ZF* *SF* *TF* *IF* *DF* *OF*
+;;           *IOPL* *NT* *RF* *VM* *AC* *VIF* *VIP* *ID*))))
 
 (acl2::optimize-untranslate-patterns)
 

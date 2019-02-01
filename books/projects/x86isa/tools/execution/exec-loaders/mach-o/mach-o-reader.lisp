@@ -1334,9 +1334,9 @@
        (cr4        (ctri *cr4*       x86))
        (ia32e-efer (msri *ia32_efer-idx* x86))
 
-       (cr0        (!cr0-slice       :cr0-pg        1 cr0))
-       (cr4        (!cr4-slice       :cr4-pae       1 cr4))
-       (ia32e-efer (!ia32_efer-slice :ia32_efer-lme 1 ia32e-efer))
+       (cr0        (!cr0Bits>pg         1 cr0))
+       (cr4        (!cr4Bits->pae       1 cr4))
+       (ia32e-efer (!ia32_eferBits->lme 1 ia32e-efer))
 
        (x86 (!ctri *cr0*           cr0        x86))
        (x86 (!ctri *cr4*           cr4        x86))

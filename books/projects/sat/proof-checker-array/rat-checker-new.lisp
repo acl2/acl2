@@ -7,7 +7,7 @@
 (include-book "supplemental/clause")
 (include-book "supplemental/evaluator")
 (include-book "supplemental/unit-propagation")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 
 
 

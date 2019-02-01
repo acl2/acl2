@@ -6,6 +6,8 @@
 
 package edu.kestrel.acl2.aij;
 
+import java.util.Map;
+
 /**
  * Representation of ACL2 named functions in ACL2 terms.
  * These are just the symbols that name the functions.
@@ -50,6 +52,16 @@ public final class Acl2NamedFunction extends Acl2Function {
     @Override
     boolean isIf() {
         return name.equals(Acl2Symbol.IF);
+    }
+
+    /**
+     * Checks if this function is the {@code or} ACL2 "pseudo-function".
+     * This is not an ACL2 notion; it is an AIJ notion.
+     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     */
+    @Override
+    boolean isOr() {
+        return name.equals(Acl2Symbol.OR);
     }
 
     //////////////////////////////////////// public members:
@@ -99,9 +111,6 @@ public final class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Returns a printable representation of this ACL2 named function.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the function name includes "unusual" characters.
      */
     @Override
     public String toString() {

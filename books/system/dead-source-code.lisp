@@ -49,7 +49,7 @@
           (constraint-info fn wrld)
           (cond ((null flg)
                  (all-fnnames x))
-                ((eq x *unknown-constraints*)
+                ((unknown-constraints-p x)
                  nil)
                 (t
                  (all-fnnames-lst x)))))

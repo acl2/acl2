@@ -4,15 +4,15 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; December 2018
 
 (in-package "ADE")
 
-(include-book "comp-gcd-body")
+(include-book "comp-gcd-body2")
 (include-book "gcd-cond")
+(include-book "gcd-spec")
 (include-book "../merge")
 
-(local (include-book "gcd-alg"))
 (local (include-book "arithmetic-3/top" :dir :system))
 
 (local (in-theory (disable nth)))
@@ -32,12 +32,12 @@
 ;;
 ;; Construct the DE module generator COMP-GCD2 that computes the Greatest
 ;; Common Divisor of two natural numbers.  COMP-GCD2 contains submodule
-;; COMP-GCD-BODY, which in turn contains the self-timed serial subtractor
+;; COMP-GCD-BODY2, which in turn contains the self-timed serial subtractor
 ;; SERIAL-SUB as a submodule.
 
 (defconst *comp-gcd2$go-num* (+ *merge$go-num*
                                 *gcd-cond$go-num*
-                                *comp-gcd-body$go-num*))
+                                *comp-gcd-body2$go-num*))
 (defconst *comp-gcd2$st-len* 5)
 
 (defun comp-gcd2$data-ins-len (data-width)
@@ -133,12 +133,12 @@
   (list 'body
         (list* 'body-in-act 'body-out-act
                (sis 'd2-in 0 (* 2 data-width)))
-        (si 'comp-gcd-body data-width)
+        (si 'comp-gcd-body2 data-width)
         (list* 'l1-status 'l2-status
                (append (sis 'd1-out 0 (* 2 data-width))
-                       (sis 'go 2 *comp-gcd-body$go-num*)))))
+                       (sis 'go 2 *comp-gcd-body2$go-num*)))))
 
- :guard (natp data-width))
+ (declare (xargs :guard (natp data-width))))
 
 (make-event
  `(progn
@@ -154,7 +154,7 @@
   (cons (comp-gcd2* data-width)
         (union$ (link1$netlist)
                 (gcd-cond$netlist data-width)
-                (comp-gcd-body$netlist data-width cnt-width)
+                (comp-gcd-body2$netlist data-width cnt-width)
                 (merge$netlist (* 2 data-width))
                 :test 'equal)))
 
@@ -172,7 +172,7 @@
          (link1& subnetlist)
          (link& subnetlist (* 2 data-width))
          (gcd-cond& subnetlist data-width)
-         (comp-gcd-body& subnetlist data-width cnt-width)
+         (comp-gcd-body2& subnetlist data-width cnt-width)
          (merge& subnetlist (* 2 data-width)))))
 
 ;; Sanity check
@@ -194,9 +194,9 @@
          (link$st-format l0 (* 2 data-width))
          (link$st-format l1 (* 2 data-width))
          (link$st-format l2 (* 2 data-width))
-         (comp-gcd-body$st-format body data-width cnt-width))))
+         (comp-gcd-body2$st-format body data-width cnt-width))))
 
-(defthm comp-gcd2$st-format=>constraints
+(defthm comp-gcd2$st-format=>constraint
   (implies (comp-gcd2$st-format st data-width cnt-width)
            (and (natp data-width)
                 (<= 3 data-width)
@@ -216,22 +216,22 @@
          (link$valid-st l0 (* 2 data-width))
          (link$valid-st l1 (* 2 data-width))
          (link$valid-st l2 (* 2 data-width))
-         (comp-gcd-body$valid-st body data-width cnt-width))))
+         (comp-gcd-body2$valid-st body data-width cnt-width))))
 
-(defthmd comp-gcd2$valid-st=>constraints
+(defthmd comp-gcd2$valid-st=>constraint
   (implies (comp-gcd2$valid-st st data-width cnt-width)
            (and (natp data-width)
                 (<= 3 data-width)
                 (natp cnt-width)
                 (<= 4 cnt-width)))
-  :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st=>constraints
+  :hints (("Goal" :in-theory (enable comp-gcd-body2$valid-st=>constraint
                                      comp-gcd2$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd comp-gcd2$valid-st=>st-format
   (implies (comp-gcd2$valid-st st data-width cnt-width)
            (comp-gcd2$st-format st data-width cnt-width))
-  :hints (("Goal" :in-theory (e/d (comp-gcd-body$valid-st=>st-format
+  :hints (("Goal" :in-theory (e/d (comp-gcd-body2$valid-st=>st-format
                                    comp-gcd2$st-format
                                    comp-gcd2$valid-st)
                                   ()))))
@@ -309,7 +309,7 @@
   (defund comp-gcd2$body-inputs (inputs st data-width)
     (b* ((go-signals (nthcdr (comp-gcd2$data-ins-len data-width) inputs))
 
-         (body-go-signals (take *comp-gcd-body$go-num*
+         (body-go-signals (take *comp-gcd-body2$go-num*
                                 (nthcdr (+ *merge$go-num*
                                            *gcd-cond$go-num*)
                                         go-signals)))
@@ -365,7 +365,7 @@
     (implies (comp-gcd2$valid-st st data-width cnt-width)
              (equal (len (comp-gcd2$data-out inputs st data-width))
                     data-width))
-    :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st=>constraints
+    :hints (("Goal" :in-theory (enable comp-gcd-body2$valid-st=>constraint
                                        comp-gcd2$valid-st
                                        comp-gcd2$data-out))))
 
@@ -373,7 +373,7 @@
     (implies (and (comp-gcd2$valid-st st data-width cnt-width)
                   (comp-gcd2$out-act inputs st data-width))
              (bvp (comp-gcd2$data-out inputs st data-width)))
-    :hints (("Goal" :in-theory (enable comp-gcd-body$valid-st=>constraints
+    :hints (("Goal" :in-theory (enable comp-gcd-body2$valid-st=>constraint
                                        comp-gcd2$valid-st
                                        comp-gcd2$out-act
                                        comp-gcd2$data-out
@@ -388,10 +388,6 @@
            (comp-gcd2$out-act inputs st data-width)
            (comp-gcd2$data-out inputs st data-width)))
   )
-
-;; Prove that COMP-GCD2 is not a DE primitive.
-
-(not-primp-lemma comp-gcd2)
 
 ;; The value lemma for COMP-GCD2
 
@@ -410,7 +406,6 @@
            :expand (:free (inputs data-width)
                           (se (si 'comp-gcd2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act0
@@ -440,15 +435,15 @@
        (body-inputs (comp-gcd2$body-inputs inputs st data-width))
 
        (d1-in (gcd-cond$data1-out br-inputs data-width))
-       (d2-in (comp-gcd-body$data-out body))
+       (d2-in (comp-gcd-body2$data-out body))
 
        (done- (gcd-cond$flag br-inputs data-width))
        (merge-act1 (merge$act1 me-inputs (* 2 data-width)))
        (merge-act (merge$act me-inputs (* 2 data-width)))
        (branch-act1 (gcd-cond$act1 br-inputs data-width))
        (branch-act (gcd-cond$act br-inputs data-width))
-       (body-in-act (comp-gcd-body$in-act body-inputs body data-width))
-       (body-out-act (comp-gcd-body$out-act body-inputs body data-width))
+       (body-in-act (comp-gcd-body2$in-act body-inputs body data-width))
+       (body-out-act (comp-gcd-body2$out-act body-inputs body data-width))
 
        (s-inputs (list branch-act merge-act done-))
        (l0-inputs (list* merge-act branch-act
@@ -465,7 +460,7 @@
      ;; L2
      (link$step l2-inputs l2 (* 2 data-width))
      ;; Joint BODY
-     (comp-gcd-body$step body-inputs body data-width cnt-width))))
+     (comp-gcd-body2$step body-inputs body data-width cnt-width))))
 
 (defthm len-of-comp-gcd2$step
   (equal (len (comp-gcd2$step inputs st data-width cnt-width))
@@ -488,7 +483,6 @@
            :expand (:free (inputs data-width)
                           (de (si 'comp-gcd2 data-width) inputs st netlist))
            :in-theory (e/d (de-rules
-                            nthcdr-of-pos-const-idx
                             comp-gcd2&
                             comp-gcd2*$destructure
                             merge$act
@@ -529,13 +523,13 @@
  (defthm comp-gcd2$input-format=>body$input-format
    (implies (and (comp-gcd2$input-format inputs data-width)
                  (comp-gcd2$valid-st st data-width cnt-width))
-            (comp-gcd-body$input-format
+            (comp-gcd-body2$input-format
              (comp-gcd2$body-inputs inputs st data-width)
              data-width))
    :hints (("Goal"
-            :in-theory (e/d (comp-gcd-body$input-format
-                             comp-gcd-body$data-in
-                             comp-gcd-body$valid-st=>constraints
+            :in-theory (e/d (comp-gcd-body2$input-format
+                             comp-gcd-body2$data-in
+                             comp-gcd-body2$valid-st=>constraint
                              comp-gcd2$input-format
                              comp-gcd2$valid-st
                              comp-gcd2$body-inputs)
@@ -574,223 +568,17 @@
 
 ;; 3. Single-Step-Update Property
 
-;; Specify the functionality of COMP-GCD2, i.e., compute the greatest common
-;; divisor of two natural numbers (see comp-gcd2$op).  Prove the correctness of
-;; comp-gcd2$op.
-
-(encapsulate
-  ()
-
-  (local
-   (defthm v-<-correct-instance
-     (implies (and (natp data-width)
-                   (equal (len x) (* 2 data-width))
-                   (bvp x)
-                   (v-< nil t
-                        (rev (take data-width x))
-                        (rev (nthcdr data-width x))))
-              (< (v-to-nat (take data-width x))
-                 (v-to-nat (nthcdr data-width x))))
-     :hints (("Goal"
-              :use (:instance v-<-correct-1
-                              (a (take data-width x))
-                              (b (nthcdr data-width x)))
-              :in-theory (disable v-<-correct-1)))
-     :rule-classes :linear))
-
-  (local
-   (defthm v-to-nat-of-v-zp
-     (equal (v-zp x)
-            (equal (v-to-nat x) 0))
-     :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
-
-  (local
-   (defun my-count (x)
-     (nfix (+ (v-to-nat (take (/ (len x) 2) x))
-              (v-to-nat (nthcdr (/ (len x) 2) x))))))
-
-  (local
-   (defun comp-gcd2$op (x)
-     (declare
-      (xargs :hints (("Goal"
-                      :in-theory (e/d ()
-                                      (v-not-take
-                                       v-not-nthcdr))))
-             :measure (my-count x)))
-     (b* ((data-width (/ (len x) 2))
-          (a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (cond
-        ((or (atom x)
-             (zp data-width)
-             (not (bvp x)))
-         x)
-        ((v-zp a) b)
-        ((v-zp b) a)
-        ((equal a b) a)
-        (t (comp-gcd2$op
-            (v-if a<b
-                  (append a b-a)
-                  (append a-b b))))))))
-
-  (defun comp-gcd2$op (x)
-    (declare (xargs :measure (:? x)))
-    (b* ((data-width (/ (len x) 2))
-         (a (take data-width x))
-         (b (nthcdr data-width x))
-         (a-b (take data-width
-                    (v-adder t a (v-not b))))
-         (b-a (take data-width
-                    (v-adder t b (v-not a))))
-         (a<b (v-< nil t (rev a) (rev b))))
-      (cond
-       ((or (atom x)
-            (zp data-width)
-            (not (bvp x)))
-        x)
-       ((v-zp a) b)
-       ((v-zp b) a)
-       ((equal a b) a)
-       (t (comp-gcd2$op
-           (v-if a<b
-                 (append a b-a)
-                 (append a-b b)))))))
-
-  (defthm bvp-comp-gcd2$op
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (bvp (comp-gcd2$op x))))
-
-  (defthm len-comp-gcd2$op
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (equal (len (comp-gcd2$op x))
-                    (/ (len x) 2))))
-
-  (local
-   (defthm comp-gcd2$op-lemma-aux-1
-     (implies (and (bv2p a b)
-                   (not (v-< nil t (rev a) (rev b)))
-                   (equal (v-to-nat a) 0))
-              (equal a b))
-     :hints (("Goal" :use (v-to-nat-equality
-                           v-<-correct-2)))
-     :rule-classes nil))
-
-  (local
-   (defthm comp-gcd2$op-lemma-aux-2
-     (b* ((a (take data-width x))
-          (b (nthcdr data-width x))
-          (a-b (take data-width
-                     (v-adder t a (v-not b))))
-          (b-a (take data-width
-                     (v-adder t b (v-not a))))
-          (a<b (v-< nil t (rev a) (rev b))))
-       (implies (and (natp data-width)
-                     (equal data-width (/ (len x) 2))
-                     (bvp x))
-                (equal (comp-gcd2$op (v-if a<b
-                                           (append a b-a)
-                                           (append a-b b)))
-                       (comp-gcd2$op x))))
-     :hints (("Goal"
-              :induct (comp-gcd2$op x)
-              :in-theory (e/d ()
-                              (v-to-nat-equality
-                               v-not-take
-                               v-not-nthcdr)))
-             ("Subgoal *1/3"
-              :use (:instance
-                    v-to-nat-equality
-                    (a (take data-width
-                             (v-adder t (take data-width x)
-                                      (v-not (nthcdr data-width x)))))
-                    (b (take data-width x))))
-             ("Subgoal *1/2"
-              :use ((:instance
-                     v-to-nat-equality
-                     (a (take data-width
-                              (v-adder t (nthcdr data-width x)
-                                       (v-not (take data-width x)))))
-                     (b (nthcdr data-width x)))
-                    (:instance
-                     comp-gcd2$op-lemma-aux-1
-                     (a (take data-width x))
-                     (b (nthcdr data-width x))))))))
-
-  ;; Prove that comp-gcd2$op correctly computes the greatest common divisor
-
-  (local
-   (defthm v-to-nat-of-COMP-GCD2$OP-is-GCD-ALG
-     (implies (and (equal data-width (/ (len x) 2))
-                   (bvp x))
-              (equal (v-to-nat (comp-gcd2$op x))
-                     (gcd-alg (v-to-nat (take data-width x))
-                              (v-to-nat (nthcdr data-width x)))))
-     :hints (("Goal" :in-theory (e/d ()
-                                     (v-not-take
-                                      v-not-nthcdr))))))
-
-  (in-theory (disable comp-gcd2$op))
-
-  (defthmd comp-gcd2$op-commutative
-    (implies (bv2p a b)
-             (equal (comp-gcd2$op (append a b))
-                    (comp-gcd2$op (append b a))))
-    :hints (("Goal"
-             :use (:instance v-to-nat-equality
-                             (a (comp-gcd2$op (append a b)))
-                             (b (comp-gcd2$op (append b a))))
-             :in-theory (e/d (gcd-alg-commutative)
-                             (v-to-nat-equality))))
-    :rule-classes ((:rewrite :loop-stopper ((a b)))))
-
-  (defthm comp-gcd2$op-lemma
-    (implies (and (natp (/ (len x) 2))
-                  (bvp x))
-             (equal (comp-gcd2$op (comp-gcd-body$op x))
-                    (comp-gcd2$op x)))
-    :hints (("Goal"
-             :use (:instance comp-gcd2$op-lemma-aux-2
-                             (data-width (/ (len x) 2)))
-             :in-theory (e/d (serial-sub$op
-                              comp-gcd-body$op
-                              comp-gcd2$op-commutative)
-                             (comp-gcd2$op-lemma-aux-2)))))
-  )
-
-;; The operation of COMP-GCD2 over a data sequence
-
-(defun comp-gcd2$op-map (x)
-  (if (atom x)
-      nil
-    (cons (comp-gcd2$op (car x))
-          (comp-gcd2$op-map (cdr x)))))
-
-(defthm len-of-comp-gcd2$op-map
-  (equal (len (comp-gcd2$op-map x))
-         (len x)))
-
-(defthm comp-gcd2$op-map-of-append
-  (equal (comp-gcd2$op-map (append x y))
-         (append (comp-gcd2$op-map x) (comp-gcd2$op-map y))))
-
-;; The extraction function for COMP-GCD2 that extracts the future output sequence
-;; from the current state.
+;; The extraction function for COMP-GCD2 that extracts the future output
+;; sequence from the current state.
 
 (defund comp-gcd2$extract (st data-width)
   (b* ((l0 (get-field *comp-gcd2$l0* st))
        (l1 (get-field *comp-gcd2$l1* st))
        (l2 (get-field *comp-gcd2$l2* st))
        (body (get-field *comp-gcd2$body* st)))
-    (comp-gcd2$op-map
+    (gcd$op-map
      (append (extract-valid-data (list l1 l2 l0))
-             (comp-gcd-body$extract body data-width)))))
+             (comp-gcd-body2$extract body data-width)))))
 
 (defthm comp-gcd2$extract-not-empty
   (implies (and (comp-gcd2$out-act inputs st data-width)
@@ -815,7 +603,7 @@
          (s.s (get-field *link1$s* s))
          (s.d (get-field *link1$d* s))
          (body (get-field *comp-gcd2$body* st)))
-      (and (comp-gcd-body$inv body data-width)
+      (and (comp-gcd-body2$inv body data-width)
            (if (and (fullp s.s) (not (car s.d)))
                (= (len (comp-gcd2$extract st data-width))
                   0)
@@ -850,7 +638,7 @@
           (body-inputs (comp-gcd2$body-inputs inputs st data-width))
           (body (nth *comp-gcd2$body* st)))
        (implies (emptyp l1.s)
-                (not (comp-gcd-body$in-act body-inputs body data-width))))
+                (not (comp-gcd-body2$in-act body-inputs body data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         comp-gcd2$body-inputs)))))
 
@@ -864,7 +652,7 @@
              :use comp-gcd2$input-format=>body$input-format
              :in-theory (e/d (get-field
                               f-sr
-                              comp-gcd-body$extracted-step
+                              comp-gcd-body2$extracted-step
                               comp-gcd2$valid-st
                               comp-gcd2$inv
                               comp-gcd2$step
@@ -890,7 +678,7 @@
 ;; avoids exploring the internal computation of COMP-GCD2.
 
 (defund comp-gcd2$extracted-step (inputs st data-width)
-  (b* ((data (comp-gcd2$op (comp-gcd2$data-in inputs data-width)))
+  (b* ((data (gcd$op (comp-gcd2$data-in inputs data-width)))
        (extracted-st (comp-gcd2$extract st data-width))
        (n (1- (len extracted-st))))
     (cond
@@ -915,9 +703,9 @@
 
 (local
  (defthm comp-gcd2-aux
-   (implies (equal (len (comp-gcd-body$extract st data-width))
+   (implies (equal (len (comp-gcd-body2$extract st data-width))
                    0)
-            (not (comp-gcd-body$extract st data-width)))
+            (not (comp-gcd-body2$extract st data-width)))
    :hints (("Goal" :in-theory (enable len-0-is-atom)))))
 
 (encapsulate
@@ -930,11 +718,25 @@
           (body-inputs (comp-gcd2$body-inputs inputs st data-width)))
        (implies (and (natp data-width)
                      (equal (len l1.d) (* 2 data-width)))
-                (equal (comp-gcd-body$data-in body-inputs data-width)
+                (equal (comp-gcd-body2$data-in body-inputs data-width)
                        (v-threefix (strip-cars l1.d)))))
      :hints (("Goal" :in-theory (enable get-field
-                                        comp-gcd-body$data-in
+                                        comp-gcd-body2$data-in
                                         comp-gcd2$body-inputs)))))
+
+  (local
+   (defthm gcd$op-of-comp-gcd-body2$op
+     (implies (and (natp (/ (len x) 2))
+                   (bvp x))
+              (equal (gcd$op (comp-gcd-body2$op x))
+                     (gcd$op x)))
+     :hints (("Goal"
+              :use (:instance gcd$op-lemma
+                              (data-width (/ (len x) 2)))
+              :in-theory (e/d (serial-sub$op
+                               comp-gcd-body2$op
+                               gcd$op-commutative)
+                              (gcd$op-lemma))))))
 
   (defthm comp-gcd2$extracted-step-correct
     (b* ((next-st (comp-gcd2$step inputs st data-width cnt-width)))
@@ -949,8 +751,8 @@
                               f-sr
                               joint-act
                               fv-if-rewrite
-                              comp-gcd-body$valid-st=>constraints
-                              comp-gcd-body$extracted-step
+                              comp-gcd-body2$valid-st=>constraint
+                              comp-gcd-body2$extracted-step
                               comp-gcd2$extracted-step
                               comp-gcd2$valid-st
                               comp-gcd2$inv
@@ -993,7 +795,7 @@
           (body-inputs (comp-gcd2$body-inputs inputs st data-width))
           (body (nth *comp-gcd2$body* st)))
        (implies (fullp l2.s)
-                (not (comp-gcd-body$out-act body-inputs body data-width))))
+                (not (comp-gcd-body2$out-act body-inputs body data-width))))
      :hints (("Goal" :in-theory (enable get-field
                                         comp-gcd2$body-inputs)))))
 
@@ -1009,7 +811,7 @@
              :in-theory (e/d (get-field
                               f-sr
                               joint-act
-                              comp-gcd-body$valid-st=>constraints
+                              comp-gcd-body2$valid-st=>constraint
                               comp-gcd2$valid-st
                               comp-gcd2$step
                               comp-gcd2$br-inputs
@@ -1044,11 +846,11 @@
                             gcd-cond$act0
                             gcd-cond$flag
                             gcd-cond$data0-out
-                            comp-gcd-body$valid-st=>constraints
+                            comp-gcd-body2$valid-st=>constraint
                             comp-gcd2$valid-st
                             comp-gcd2$inv
                             comp-gcd2$extract
-                            comp-gcd2$op
+                            gcd$op
                             comp-gcd2$br-inputs
                             comp-gcd2$out-act
                             comp-gcd2$data-out)
@@ -1076,12 +878,12 @@
   (local
    (defthm comp-gcd2$dataflow-correct-aux
      (implies (equal (append x y1)
-                     (append (comp-gcd2$op-map seq) y2))
+                     (append (gcd$op-map seq) y2))
               (equal (append x y1 z)
-                     (append (comp-gcd2$op-map seq)
+                     (append (gcd$op-map seq)
                              y2 z)))
      :hints (("Goal" :in-theory (e/d (left-associativity-of-append)
-                                     (acl2::associativity-of-append))))))
+                                     (associativity-of-append))))))
 
   (defthmd comp-gcd2$dataflow-correct
     (b* ((extracted-st (comp-gcd2$extract st data-width))
@@ -1095,7 +897,7 @@
        (equal (append final-extracted-st
                       (comp-gcd2$out-seq
                        inputs-seq st data-width cnt-width n))
-              (append (comp-gcd2$op-map
+              (append (gcd$op-map
                        (comp-gcd2$in-seq
                         inputs-seq st data-width cnt-width n))
                       extracted-st))))
@@ -1115,7 +917,7 @@
        (equal (append final-extracted-st
                       (comp-gcd2$netlist-out-seq
                        inputs-seq st netlist data-width n))
-              (append (comp-gcd2$op-map
+              (append (gcd$op-map
                        (comp-gcd2$netlist-in-seq
                         inputs-seq st netlist data-width n))
                       extracted-st))))

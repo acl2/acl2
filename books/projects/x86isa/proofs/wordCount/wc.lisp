@@ -300,8 +300,8 @@
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; Enabling the SYSCALL instruction.
-       (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-       (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+       (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+       (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
        (program-at addr *wc* x86)))
 
 (defthm preconditions-forward-chain-addresses-info
@@ -335,8 +335,8 @@
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
                 (program-at addr *wc* x86)))
   :rule-classes :forward-chaining)
 
@@ -351,8 +351,8 @@
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)))
+                (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)))
   :rule-classes :forward-chaining)
 
 (defun-nx loop-preconditions (addr x86)
@@ -392,8 +392,8 @@
        (equal (xr :ms 0 x86) nil)
        (equal (xr :fault 0 x86) nil)
        ;; Enabling the SYSCALL instruction.
-       (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-       (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+       (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+       (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
        (program-at addr *wc* x86)))
 
 (defthm loop-preconditions-weird-rbp-rsp
@@ -451,8 +451,8 @@
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)))
+                (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)))
   :rule-classes ((:forward-chaining :trigger-terms ((loop-preconditions addr x86)))))
 
 (in-theory (e/d* () (preconditions loop-preconditions)))
@@ -503,95 +503,59 @@
                      :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
                      (XW
                       :RIP 0 (+ 94 (XR :RIP 0 X86))
-                      (MV-NTH
-                       1
-                       (WB
-                        4 (+ -28 (XR :RGF *RSP* X86))
-                        :W 0
-                        (MV-NTH
-                         1
-                         (WB
-                          4 (+ -24 (XR :RGF *RSP* X86))
-                          :W 0
-                          (MV-NTH
-                           1
-                           (WB
-                            4 (+ -20 (XR :RGF *RSP* X86))
-                            :W 0
-                            (MV-NTH
-                             1
-                             (WB
-                              4 (+ -16 (XR :RGF *RSP* X86))
-                              :W 0
-                              (MV-NTH
-                               1
-                               (WB
-                                8 (+ -8 (XR :RGF *RSP* X86))
-                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
-                                (!FLGI
-                                 *CF*
-                                 (LOGHEAD
-                                  1
-                                  (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                32)))
-                                 (!FLGI
-                                  *PF*
-                                  (LOGIOR
+                      (XW
+                       :RFLAGS 0
+                       (RFLAGSBITS (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                 32))
+                                   (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
                                    (PF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                   (LOGHEAD
-                                    -1
-                                    (LOGTAIL
-                                     2
-                                     (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                   32)))))
-                                  (!FLGI
-                                   *AF*
-                                   (LOGIOR
-                                    (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                   32)
-                                    (LOGHEAD
-                                     -3
-                                     (LOGTAIL
-                                      4
-                                      (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                    32)))))
-                                   (!FLGI
-                                    *ZF*
-                                    (LOGIOR
-                                     (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                     (LOGHEAD
-                                      -5
-                                      (LOGTAIL
-                                       6
-                                       (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                     32)))))
-                                    (!FLGI
-                                     *SF*
-                                     (LOGIOR
-                                      (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
-                                      (LOGHEAD
-                                       -6
-                                       (LOGTAIL
-                                        7
-                                        (BOOL->BIT (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                                      32)))))
-                                     (!FLGI
-                                      *OF*
-                                      (LOGIOR
-                                       (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
-                                       (LOGHEAD
-                                        -10
-                                        (LOGTAIL
-                                         11
-                                         (BOOL->BIT
-                                          (< (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
-                                             32)))))
-                                      X86))))))))))))))))))))))
+                                   (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                   (SUB-AF-SPEC64 (LOGHEAD 64 (+ -8 (XR :RGF *RSP* X86)))
+                                                  32)
+                                   (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                   (ZF-SPEC (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                                   (SF-SPEC64 (LOGHEAD 64 (+ -40 (XR :RGF *RSP* X86))))
+                                   (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                   (OF-SPEC64 (+ -40 (XR :RGF *RSP* X86)))
+                                   (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                   (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                       (MV-NTH
+                        1
+                        (WB
+                         4 (+ -28 (XR :RGF *RSP* X86))
+                         :W 0
+                         (MV-NTH
+                          1
+                          (WB
+                           4 (+ -24 (XR :RGF *RSP* X86))
+                           :W 0
+                           (MV-NTH
+                            1
+                            (WB 4 (+ -20 (XR :RGF *RSP* X86))
+                                :W 0
+                                (MV-NTH 1
+                                        (WB 4 (+ -16 (XR :RGF *RSP* X86))
+                                            :W 0
+                                            (MV-NTH 1
+                                                    (WB 8 (+ -8 (XR :RGF *RSP* X86))
+                                                        :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                                                        X86)))))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (preconditions
                              gc-clk-main-before-call
 
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-add-spec-4
                              gpr-add-spec-8
@@ -606,7 +570,6 @@
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -617,7 +580,6 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml32
@@ -630,8 +592,7 @@
                              ;; Flags
                              write-user-rflags)
 
-                            (las-to-pas-values-and-!flgi
-                             las-to-pas
+                            (las-to-pas
                              default-+-2
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -663,15 +624,13 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
            (and
-            (equal (ia32_efer-slice
-                    :ia32_efer-sce
+            (equal (ia32_eferBits->sce
                     (xr :msr *ia32_efer-idx*
-                          (x86-run (gc-clk-main-before-call) x86)))
+                        (x86-run (gc-clk-main-before-call) x86)))
                    1)
-            (equal (ia32_efer-slice
-                    :ia32_efer-lma
+            (equal (ia32_eferBits->lma
                     (xr :msr *ia32_efer-idx*
-                          (x86-run (gc-clk-main-before-call) x86)))
+                        (x86-run (gc-clk-main-before-call) x86)))
                    1)))
   :hints (("Goal" :in-theory (e/d ()
                                   (preconditions-fwd-chaining-essentials))
@@ -691,7 +650,10 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (preconditions addr x86))
            (equal (xr :rip 0 (x86-run (gc-clk-main-before-call) x86))
-                  (+ 94 (xr :rip 0 x86)))))
+                  (+ 94 (xr :rip 0 x86))))
+  :hints (("Goal" :use ((:instance effects-to-gc-no-call))
+           :in-theory (e/d* (preconditions)
+                            (effects-to-gc-no-call)))))
 
 (defthmd effects-to-gc-program-projection
   (implies (preconditions addr x86)
@@ -975,6 +937,14 @@
 ;; Call to GC + GC Procedure
 ;;**********************************************************************
 
+(local
+ (defthm ia32_eferbits->sce-of-loghead-12
+   (equal (ia32_eferbits->sce (loghead 12 x))
+          (ia32_eferbits->sce x))
+   :hints (("Goal" :in-theory (e/d (ia32_eferbits->sce
+                                    ia32_eferbits-fix)
+                                   ())))))
+
 (defthm effects-call-gc
   ;;  callq <gc>
   ;;  push %rbp
@@ -1025,26 +995,22 @@
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
         (program-at addr *wc* x86))
    (equal (x86-run (gc-clk) x86)
           (XW
            :RGF *RAX*
            (LOGHEAD
             32
-            (COMBINE-BYTES
-             (GRAB-BYTES
-              (TAKE
-               1
-               (NTHCDR
-                (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                (STRING-TO-BYTES
-                 (CDR
-                  (ASSOC-EQUAL
-                   :CONTENTS (READ-X86-FILE-CONTENTS
-                              (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                              X86)))))))))
+            (NTH
+             (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+             (STRING-TO-BYTES
+              (CDR
+               (ASSOC-EQUAL
+                :CONTENTS (READ-X86-FILE-CONTENTS
+                           (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                           X86))))))
            (XW
             :RGF *RCX* (+ -109 (XR :RIP 0 X86))
             (XW
@@ -1061,108 +1027,97 @@
                   :RGF *RDI* 0
                   (XW
                    :RGF *R11*
-                   (LOGIOR
-                    256
-                    (LOGAND
-                     -257
-                     (LOGEXT
-                      64
-                      (XR
-                       :RFLAGS 0
-                       (!FLGI-UNDEFINED
-                        4
-                        (!FLGI
-                         *CF* 0
-                         (!FLGI
-                          *PF* 1
-                          (!FLGI
-                           *AF*
-                           (BITOPS::LOGSQUASH
-                            -3
-                            (LOGHEAD 1
-                                     (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                           (!FLGI *ZF* 1
-                                  (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
+                   (LOGEXT
+                    64
+                    (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                (LOGHEAD 1
+                                         (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                1 0
+                                1 (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86))))
                    (XW
                     :RIP 0 (+ 5 (XR :RIP 0 X86))
-                    (MV-NTH
-                     1
-                     (WB
-                      4 (+ -32 (XR :RGF *RSP* X86))
-                      :W 1
-                       (!FLGI
-                        *PF* 0
-                        (!FLGI
-                         *RF* 0
-                         (!FLGI
-                          *VM* 0
+                    (XW
+                     :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+                     (XW
+                      :RFLAGS 0
+                      (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                  1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                  (LOGHEAD 1
+                                           (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                  (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                  1 0 (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                  0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                  0 0 (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                  (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                      (MV-NTH
+                       1
+                       (WB
+                        4 (+ -32 (XR :RGF *RSP* X86))
+                        :W 1
+                        (MV-NTH
+                         1
+                         (WB
+                          1 (+ -25 (XR :RGF *RSP* X86))
+                          :W
+                          (NTH
+                           (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                           (STRING-TO-BYTES
+                            (CDR
+                             (ASSOC-EQUAL
+                              :CONTENTS
+                              (READ-X86-FILE-CONTENTS
+                               (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                               X86)))))
                           (MV-NTH
                            1
                            (WB
-                            1 (+ -25 (XR :RGF *RSP* X86))
+                            8 (+ -48 (XR :RGF *RSP* X86))
                             :W
-                             (COMBINE-BYTES
-                              (GRAB-BYTES
-                               (TAKE
-                                1
-                                (NTHCDR
-                                 (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                 (STRING-TO-BYTES
-                                  (CDR
-                                   (ASSOC-EQUAL
-                                    :CONTENTS
-                                     (READ-X86-FILE-CONTENTS
-                                      (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                      X86))))))))
-                             (MV-NTH
-                              1
-                              (WB
-                               8 (+ -48 (XR :RGF *RSP* X86))
-                               :W
-                                (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                            (MV-NTH
+                             1
+                             (WB
+                              8 (+ -24 (XR :RGF *RSP* X86))
+                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
+                              (MV-NTH
+                               1
+                               (WB
+                                8 (+ -16 (XR :RGF *RSP* X86))
+                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
                                 (MV-NTH
                                  1
                                  (WB
-                                  8 (+ -24 (XR :RGF *RSP* X86))
-                                  :W (LOGHEAD 64 (XR :RGF *RBX* X86))
-                                   (MV-NTH
-                                    1
-                                    (WB
-                                     8 (+ -16 (XR :RGF *RSP* X86))
-                                     :W (LOGHEAD 64 (XR :RGF *RBP* X86))
-                                      (MV-NTH
-                                       1
-                                       (WB
-                                        8 (+ -8 (XR :RGF *RSP* X86))
-                                        :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
-                                         (WRITE-X86-FILE-DES
-                                          0
-                                          (PUT-ASSOC-EQUAL
-                                           :OFFSET
-                                            (+
-                                             1
-                                             (CDR
-                                              (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                            (READ-X86-FILE-DES 0 X86))
-                                          (!FLGI-UNDEFINED
-                                           4
-                                           (!FLGI
-                                            *CF* 0
-                                            (!FLGI
-                                             *PF* 1
-                                             (!FLGI
-                                              *AF*
-                                              (BITOPS::LOGSQUASH
-                                               -3
-                                               (LOGHEAD
-                                                1
-                                                (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                              (!FLGI
-                                               *ZF* 1
-                                               (!FLGI
-                                                *SF* 0
-                                                (!FLGI *OF*
-                                                       0 X86)))))))))))))))))))))))))))))))))))
+                                  8 (+ -8 (XR :RGF *RSP* X86))
+                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                  (WRITE-X86-FILE-DES
+                                   0
+                                   (PUT-ASSOC-EQUAL
+                                    :OFFSET
+                                    (+ 1
+                                       (CDR (ASSOC-EQUAL
+                                             :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                    (READ-X86-FILE-DES 0 X86))
+                                   X86)))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (syscall-read
                              syscall-read-logic
@@ -1174,6 +1129,7 @@
                              gc-clk
 
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              select-segment-register
                              select-address-size
@@ -1190,7 +1146,6 @@
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1202,7 +1157,6 @@
                              write-canonical-address-to-memory
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml32
@@ -1221,7 +1175,6 @@
                              write-user-rflags)
 
                             (negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -1262,8 +1215,8 @@
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
                 (program-at addr *wc* x86))
 
            (equal (xr :ms 0 (x86-run (gc-clk) x86)) nil)))
@@ -1299,8 +1252,8 @@
         (equal (xr :ms 0 x86) nil)
         (equal (xr :fault 0 x86) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
         (program-at addr *wc* x86))
    (equal (xr :fault 0 (x86-run (gc-clk) x86)) nil)))
 
@@ -1351,118 +1304,98 @@
                           :RGF *RDI* 0
                           (XW
                            :RGF *R11*
-                           (LOGIOR
-                            256
-                            (LOGAND
-                             -257
-                             (LOGEXT
-                              64
-                              (XR
-                               :RFLAGS 0
-                               (!FLGI-UNDEFINED
-                                4
-                                (!FLGI
-                                 *CF* 0
-                                 (!FLGI
-                                  *PF* 1
-                                  (!FLGI
-                                   *AF*
-                                   (BITOPS::LOGSQUASH
-                                    -3
-                                    (LOGHEAD 1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                   (!FLGI *ZF* 1
-                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
+                           (LOGEXT
+                            64
+                            (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                        1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                        (LOGHEAD 1
+                                                 (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                        1 0
+                                        1 (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                        0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86))))
                            (XW
                             :RIP 0 (+ 19 (XR :RIP 0 X86))
-                            (MV-NTH
-                             1
-                             (WB
-                              4 (+ 28 (XR :RGF *RSP* X86))
-                              :W 35
+                            (XW
+                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+                             (XW
+                              :RFLAGS 0
+                              (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                          1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                          0 (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                          1 0 (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                          0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                          0 0 (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
                               (MV-NTH
                                1
                                (WB
-                                4 (+ -32 (XR :RGF *RSP* X86))
-                                :W 1
-                                (!FLGI
-                                 *CF* 0
-                                 (!FLGI
-                                  *PF* 1
-                                  (!FLGI
-                                   *AF* 0
-                                   (!FLGI
-                                    *ZF* 1
-                                    (!FLGI
-                                     *SF* 0
-                                     (!FLGI
-                                      *OF* 0
-                                      (!FLGI
-                                       *RF* 0
-                                       (!FLGI
-                                        *VM* 0
+                                4 (+ 28 (XR :RGF *RSP* X86))
+                                :W 35
+                                (MV-NTH
+                                 1
+                                 (WB
+                                  4 (+ -32 (XR :RGF *RSP* X86))
+                                  :W 1
+                                  (MV-NTH
+                                   1
+                                   (WB
+                                    1 (+ -25 (XR :RGF *RSP* X86))
+                                    :W 35
+                                    (MV-NTH
+                                     1
+                                     (WB
+                                      8 (+ -48 (XR :RGF *RSP* X86))
+                                      :W
+                                      (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                      (MV-NTH
+                                       1
+                                       (WB
+                                        8 (+ -24 (XR :RGF *RSP* X86))
+                                        :W (LOGHEAD 64 (XR :RGF *RBX* X86))
                                         (MV-NTH
                                          1
                                          (WB
-                                          1 (+ -25 (XR :RGF *RSP* X86))
-                                          :W 35
+                                          8 (+ -16 (XR :RGF *RSP* X86))
+                                          :W
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
                                           (MV-NTH
                                            1
                                            (WB
-                                            8 (+ -48 (XR :RGF *RSP* X86))
-                                            :W
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
-                                            (MV-NTH
-                                             1
-                                             (WB
-                                              8 (+ -24 (XR :RGF *RSP* X86))
-                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
-                                              (MV-NTH
+                                            8 (+ -8 (XR :RGF *RSP* X86))
+                                            :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                            (WRITE-X86-FILE-DES
+                                             0
+                                             (PUT-ASSOC-EQUAL
+                                              :OFFSET
+                                              (+
                                                1
-                                               (WB
-                                                8 (+ -16 (XR :RGF *RSP* X86))
-                                                :W
-                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
-                                                (MV-NTH
-                                                 1
-                                                 (WB
-                                                  8 (+ -8 (XR :RGF *RSP* X86))
-                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
-                                                  (WRITE-X86-FILE-DES
-                                                   0
-                                                   (PUT-ASSOC-EQUAL
-                                                    :OFFSET
-                                                    (+
-                                                     1
-                                                     (CDR
-                                                      (ASSOC-EQUAL
-                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                                    (READ-X86-FILE-DES 0 X86))
-                                                   (!FLGI-UNDEFINED
-                                                    4
-                                                    (!FLGI
-                                                     *CF* 0
-                                                     (!FLGI
-                                                      *PF* 1
-                                                      (!FLGI
-                                                       *AF*
-                                                       (BITOPS::LOGSQUASH
-                                                        -3
-                                                        (LOGHEAD
-                                                         1
-                                                         (BOOL->BIT
-                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                                       (!FLGI
-                                                        *ZF* 1
-                                                        (!FLGI
-                                                         *SF* 0
-                                                         (!FLGI
-                                                          *OF* 0
-                                                          X86))))))))))))))))))))))))))))))))))))))))))
+                                               (CDR (ASSOC-EQUAL
+                                                     :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                              (READ-X86-FILE-DES 0 X86))
+                                             X86)))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (env-assumptions
                              one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-add-spec-4
                              gpr-sub-spec-4
@@ -1473,14 +1406,12 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml08
@@ -1498,7 +1429,6 @@
                              negative-loghead)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -1536,114 +1466,93 @@
                           :RGF *RDI* 0
                           (XW
                            :RGF *R11*
-                           (LOGIOR
-                            256
-                            (LOGAND
-                             -257
-                             (LOGEXT
-                              64
-                              (XR
-                               :RFLAGS 0
-                               (!FLGI-UNDEFINED
-                                4
-                                (!FLGI
-                                 *CF* 0
-                                 (!FLGI
-                                  *PF* 1
-                                  (!FLGI
-                                   *AF*
-                                   (BITOPS::LOGSQUASH
-                                    -3
-                                    (LOGHEAD 1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                   (!FLGI *ZF* 1
-                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
+                           (LOGEXT
+                            64
+                            (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                        1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                        (LOGHEAD 1
+                                                 (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                        1 0
+                                        1 (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                        0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86))))
                            (XW
                             :RIP 0 (+ 19 (XR :RIP 0 X86))
-                            (MV-NTH
-                             1
-                             (WB
-                              4 (+ 28 (XR :RGF *RSP* X86))
-                              :W 35
+                            (XW
+                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+                             (XW
+                              :RFLAGS 0
+                              (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                          1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                          0 (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                          1 0 (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                          0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                          0 0 (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                          (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
                               (MV-NTH
                                1
                                (WB
-                                4 (+ -32 (XR :RGF *RSP* X86))
-                                :W 1
-                                (!FLGI
-                                 *CF* 0
-                                 (!FLGI
-                                  *PF* 1
-                                  (!FLGI
-                                   *AF* 0
-                                   (!FLGI
-                                    *ZF* 1
-                                    (!FLGI
-                                     *SF* 0
-                                     (!FLGI
-                                      *OF* 0
-                                      (!FLGI
-                                       *RF* 0
-                                       (!FLGI
-                                        *VM* 0
+                                4 (+ 28 (XR :RGF *RSP* X86))
+                                :W 35
+                                (MV-NTH
+                                 1
+                                 (WB
+                                  4 (+ -32 (XR :RGF *RSP* X86))
+                                  :W 1
+                                  (MV-NTH
+                                   1
+                                   (WB
+                                    1 (+ -25 (XR :RGF *RSP* X86))
+                                    :W 35
+                                    (MV-NTH
+                                     1
+                                     (WB
+                                      8 (+ -48 (XR :RGF *RSP* X86))
+                                      :W
+                                      (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                      (MV-NTH
+                                       1
+                                       (WB
+                                        8 (+ -24 (XR :RGF *RSP* X86))
+                                        :W (LOGHEAD 64 (XR :RGF *RBX* X86))
                                         (MV-NTH
                                          1
                                          (WB
-                                          1 (+ -25 (XR :RGF *RSP* X86))
-                                          :W 35
+                                          8 (+ -16 (XR :RGF *RSP* X86))
+                                          :W
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
                                           (MV-NTH
                                            1
                                            (WB
-                                            8 (+ -48 (XR :RGF *RSP* X86))
-                                            :W
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
-                                            (MV-NTH
-                                             1
-                                             (WB
-                                              8 (+ -24 (XR :RGF *RSP* X86))
-                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
-                                              (MV-NTH
+                                            8 (+ -8 (XR :RGF *RSP* X86))
+                                            :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                            (WRITE-X86-FILE-DES
+                                             0
+                                             (PUT-ASSOC-EQUAL
+                                              :OFFSET
+                                              (+
                                                1
-                                               (WB
-                                                8 (+ -16 (XR :RGF *RSP* X86))
-                                                :W
-                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
-                                                (MV-NTH
-                                                 1
-                                                 (WB
-                                                  8 (+ -8 (XR :RGF *RSP* X86))
-                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
-                                                  (WRITE-X86-FILE-DES
-                                                   0
-                                                   (PUT-ASSOC-EQUAL
-                                                    :OFFSET
-                                                    (+
-                                                     1
-                                                     (CDR
-                                                      (ASSOC-EQUAL
-                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                                    (READ-X86-FILE-DES 0 X86))
-                                                   (!FLGI-UNDEFINED
-                                                    4
-                                                    (!FLGI
-                                                     *CF* 0
-                                                     (!FLGI
-                                                      *PF* 1
-                                                      (!FLGI
-                                                       *AF*
-                                                       (BITOPS::LOGSQUASH
-                                                        -3
-                                                        (LOGHEAD
-                                                         1
-                                                         (BOOL->BIT
-                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                                       (!FLGI
-                                                        *ZF* 1
-                                                        (!FLGI
-                                                         *SF* 0
-                                                         (!FLGI
-                                                          *OF* 0
-                                                          X86))))))))))))))))))))))))))))))))))))))))))
+                                               (CDR (ASSOC-EQUAL
+                                                     :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                              (READ-X86-FILE-DES 0 X86))
+                                             X86)))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-eof)
            :in-theory (union-theories
@@ -1680,15 +1589,19 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *eof*))
-           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-eof) x86))) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-eof) x86))) 1)))
+           (and (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-eof) x86))) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-eof) x86))) 1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-eof-encountered-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *eof*))
-           (equal (xr :rip 0 (x86-run (gc-clk-eof) x86)) (+ 164 addr))))
+           (equal (xr :rip 0 (x86-run (gc-clk-eof) x86)) (+ 164 addr)))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d* (loop-preconditions)
+                            (effects-eof-encountered))
+           :use ((:instance effects-eof-encountered)))))
 
 (defthmd effects-eof-encountered-env-stdin-des-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -1830,305 +1743,193 @@
                           :RGF *RDI* 0
                           (XW
                            :RGF *R11*
-                           (LOGIOR
-                            256
-                            (LOGAND
-                             -257
-                             (LOGEXT
-                              64
-                              (XR
-                               :RFLAGS 0
-                               (!FLGI-UNDEFINED
-                                4
-                                (!FLGI
-                                 *CF* 0
-                                 (!FLGI
-                                  *PF* 1
-                                  (!FLGI
-                                   *AF*
-                                   (BITOPS::LOGSQUASH
-                                    -3
-                                    (LOGHEAD 1
-                                             (BOOL->BIT (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                   (!FLGI *ZF* 1
-                                          (!FLGI *SF* 0 (!FLGI *OF* 0 X86)))))))))))
+                           (LOGEXT
+                            64
+                            (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                        1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                        (LOGHEAD 1
+                                                 (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                        1 0
+                                        1 (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                        0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86))))
                            (XW
                             :RIP 0 (+ -58 (XR :RIP 0 X86))
-                            (MV-NTH
-                             1
-                             (WB
-                              4 (+ 28 (XR :RGF *RSP* X86))
-                              :W
-                              (LOGHEAD
-                               32
-                               (NTH
-                                (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                (STRING-TO-BYTES
-                                 (CDR
-                                  (ASSOC-EQUAL
-                                   :CONTENTS
-                                   (READ-X86-FILE-CONTENTS
-                                    (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                    X86))))))
+                            (XW
+                             :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+                             (XW
+                              :RFLAGS 0
+                              (RFLAGSBITS
+                               (BOOL->BIT
+                                (<
+                                 (LOGHEAD
+                                  32
+                                  (NTH
+                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                   (STRING-TO-BYTES
+                                    (CDR
+                                     (ASSOC-EQUAL
+                                      :CONTENTS
+                                      (READ-X86-FILE-CONTENTS
+                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                       X86))))))
+                                 35))
+                               (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                               (PF-SPEC32
+                                (LOGHEAD
+                                 32
+                                 (+
+                                  -35
+                                  (LOGEXT
+                                   32
+                                   (NTH
+                                    (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                    (STRING-TO-BYTES
+                                     (CDR
+                                      (ASSOC-EQUAL
+                                       :CONTENTS
+                                       (READ-X86-FILE-CONTENTS
+                                        (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                        X86)))))))))
+                               (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                               (SUB-AF-SPEC32
+                                (LOGHEAD
+                                 32
+                                 (NTH
+                                  (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                  (STRING-TO-BYTES
+                                   (CDR
+                                    (ASSOC-EQUAL
+                                     :CONTENTS
+                                     (READ-X86-FILE-CONTENTS
+                                      (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                      X86))))))
+                                35)
+                               (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                               0
+                               (SF-SPEC32
+                                (LOGHEAD
+                                 32
+                                 (+
+                                  -35
+                                  (LOGEXT
+                                   32
+                                   (NTH
+                                    (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                    (STRING-TO-BYTES
+                                     (CDR
+                                      (ASSOC-EQUAL
+                                       :CONTENTS
+                                       (READ-X86-FILE-CONTENTS
+                                        (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                        X86)))))))))
+                               (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                               (OF-SPEC32
+                                (+
+                                 -35
+                                 (LOGEXT
+                                  32
+                                  (NTH
+                                   (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                   (STRING-TO-BYTES
+                                    (CDR
+                                     (ASSOC-EQUAL
+                                      :CONTENTS
+                                      (READ-X86-FILE-CONTENTS
+                                       (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                       X86))))))))
+                               (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                               0 0 (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                               (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
                               (MV-NTH
                                1
                                (WB
-                                4 (+ -32 (XR :RGF *RSP* X86))
-                                :W 1
-                                (!FLGI
-                                 *CF*
-                                 (LOGHEAD
-                                  1
-                                  (BOOL->BIT
-                                   (<
-                                    (LOGHEAD
-                                     32
-                                     (NTH
-                                      (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                      (STRING-TO-BYTES
-                                       (CDR
-                                        (ASSOC-EQUAL
-                                         :CONTENTS
-                                         (READ-X86-FILE-CONTENTS
-                                          (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                          X86))))))
-                                    35)))
-                                 (!FLGI
-                                  *PF*
-                                  (LOGIOR
-                                   (PF-SPEC32
-                                    (LOGHEAD
-                                     32
-                                     (+
-                                      -35
-                                      (LOGEXT
-                                       32
-                                       (NTH
-                                        (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                        (STRING-TO-BYTES
-                                         (CDR
-                                          (ASSOC-EQUAL
-                                           :CONTENTS
-                                           (READ-X86-FILE-CONTENTS
-                                            (CDR
-                                             (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                            X86)))))))))
-                                   (LOGHEAD
-                                    -1
-                                    (LOGTAIL
-                                     2
-                                     (BOOL->BIT
-                                      (<
-                                       (LOGHEAD
-                                        32
-                                        (NTH
-                                         (CDR
-                                          (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                         (STRING-TO-BYTES
-                                          (CDR
-                                           (ASSOC-EQUAL
-                                            :CONTENTS
-                                            (READ-X86-FILE-CONTENTS
-                                             (CDR
-                                              (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                             X86))))))
-                                       35)))))
-                                  (!FLGI
-                                   *AF*
-                                   (LOGIOR
-                                    (SUB-AF-SPEC32
-                                     (LOGHEAD
-                                      32
-                                      (NTH
-                                       (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                       (STRING-TO-BYTES
-                                        (CDR
-                                         (ASSOC-EQUAL
-                                          :CONTENTS
-                                          (READ-X86-FILE-CONTENTS
-                                           (CDR
-                                            (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                           X86))))))
-                                     35)
-                                    (LOGHEAD
-                                     -3
-                                     (LOGTAIL
-                                      4
-                                      (BOOL->BIT
-                                       (<
-                                        (LOGHEAD
-                                         32
-                                         (NTH
-                                          (CDR
-                                           (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                          (STRING-TO-BYTES
-                                           (CDR
-                                            (ASSOC-EQUAL
-                                             :CONTENTS
-                                             (READ-X86-FILE-CONTENTS
-                                              (CDR
-                                               (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
-                                              X86))))))
-                                        35)))))
-                                   (!FLGI
-                                    *ZF* 0
-                                    (!FLGI
-                                     *SF*
-                                     (LOGIOR
-                                      (SF-SPEC32
-                                       (LOGHEAD
-                                        32
-                                        (+
-                                         -35
-                                         (LOGEXT
-                                          32
-                                          (NTH
-                                           (CDR
-                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                           (STRING-TO-BYTES
-                                            (CDR
-                                             (ASSOC-EQUAL
-                                              :CONTENTS
-                                              (READ-X86-FILE-CONTENTS
-                                               (CDR (ASSOC-EQUAL
-                                                     :NAME (READ-X86-FILE-DES 0 X86)))
-                                               X86)))))))))
-                                      (LOGHEAD
-                                       -6
-                                       (LOGTAIL
-                                        7
-                                        (BOOL->BIT
-                                         (<
-                                          (LOGHEAD
-                                           32
-                                           (NTH
-                                            (CDR
-                                             (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                            (STRING-TO-BYTES
-                                             (CDR
-                                              (ASSOC-EQUAL
-                                               :CONTENTS
-                                               (READ-X86-FILE-CONTENTS
-                                                (CDR (ASSOC-EQUAL
-                                                      :NAME (READ-X86-FILE-DES 0 X86)))
-                                                X86))))))
-                                          35)))))
-                                     (!FLGI
-                                      *OF*
-                                      (LOGIOR
-                                       (OF-SPEC32
-                                        (+
-                                         -35
-                                         (LOGEXT
-                                          32
-                                          (NTH
-                                           (CDR
-                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                           (STRING-TO-BYTES
-                                            (CDR
-                                             (ASSOC-EQUAL
-                                              :CONTENTS
-                                              (READ-X86-FILE-CONTENTS
-                                               (CDR (ASSOC-EQUAL
-                                                     :NAME (READ-X86-FILE-DES 0 X86)))
-                                               X86))))))))
-                                       (LOGHEAD
-                                        -10
-                                        (LOGTAIL
-                                         11
-                                         (BOOL->BIT
-                                          (<
-                                           (LOGHEAD
-                                            32
-                                            (NTH
-                                             (CDR (ASSOC-EQUAL
-                                                   :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                             (STRING-TO-BYTES
-                                              (CDR
-                                               (ASSOC-EQUAL
-                                                :CONTENTS
-                                                (READ-X86-FILE-CONTENTS
-                                                 (CDR (ASSOC-EQUAL
-                                                       :NAME (READ-X86-FILE-DES 0 X86)))
-                                                 X86))))))
-                                           35)))))
-                                      (!FLGI
-                                       *RF* 0
-                                       (!FLGI
-                                        *VM* 0
+                                4 (+ 28 (XR :RGF *RSP* X86))
+                                :W
+                                (LOGHEAD
+                                 32
+                                 (NTH
+                                  (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                  (STRING-TO-BYTES
+                                   (CDR
+                                    (ASSOC-EQUAL
+                                     :CONTENTS
+                                     (READ-X86-FILE-CONTENTS
+                                      (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                      X86))))))
+                                (MV-NTH
+                                 1
+                                 (WB
+                                  4 (+ -32 (XR :RGF *RSP* X86))
+                                  :W 1
+                                  (MV-NTH
+                                   1
+                                   (WB
+                                    1 (+ -25 (XR :RGF *RSP* X86))
+                                    :W
+                                    (NTH
+                                     (CDR (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
+                                     (STRING-TO-BYTES
+                                      (CDR
+                                       (ASSOC-EQUAL
+                                        :CONTENTS
+                                        (READ-X86-FILE-CONTENTS
+                                         (CDR (ASSOC-EQUAL :NAME (READ-X86-FILE-DES 0 X86)))
+                                         X86)))))
+                                    (MV-NTH
+                                     1
+                                     (WB
+                                      8 (+ -48 (XR :RGF *RSP* X86))
+                                      :W
+                                      (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
+                                      (MV-NTH
+                                       1
+                                       (WB
+                                        8 (+ -24 (XR :RGF *RSP* X86))
+                                        :W (LOGHEAD 64 (XR :RGF *RBX* X86))
                                         (MV-NTH
                                          1
                                          (WB
-                                          1 (+ -25 (XR :RGF *RSP* X86))
+                                          8 (+ -16 (XR :RGF *RSP* X86))
                                           :W
-                                          (NTH
-                                           (CDR
-                                            (ASSOC-EQUAL :OFFSET (READ-X86-FILE-DES 0 X86)))
-                                           (STRING-TO-BYTES
-                                            (CDR
-                                             (ASSOC-EQUAL
-                                              :CONTENTS
-                                              (READ-X86-FILE-CONTENTS
-                                               (CDR (ASSOC-EQUAL
-                                                     :NAME (READ-X86-FILE-DES 0 X86)))
-                                               X86)))))
+                                          (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
                                           (MV-NTH
                                            1
                                            (WB
-                                            8 (+ -48 (XR :RGF *RSP* X86))
-                                            :W
-                                            (LOGHEAD 64 (+ -25 (XR :RGF *RSP* X86)))
-                                            (MV-NTH
-                                             1
-                                             (WB
-                                              8 (+ -24 (XR :RGF *RSP* X86))
-                                              :W (LOGHEAD 64 (XR :RGF *RBX* X86))
-                                              (MV-NTH
+                                            8 (+ -8 (XR :RGF *RSP* X86))
+                                            :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
+                                            (WRITE-X86-FILE-DES
+                                             0
+                                             (PUT-ASSOC-EQUAL
+                                              :OFFSET
+                                              (+
                                                1
-                                               (WB
-                                                8 (+ -16 (XR :RGF *RSP* X86))
-                                                :W
-                                                (LOGHEAD 64 (+ 32 (XR :RGF *RSP* X86)))
-                                                (MV-NTH
-                                                 1
-                                                 (WB
-                                                  8 (+ -8 (XR :RGF *RSP* X86))
-                                                  :W (LOGHEAD 64 (+ 5 (XR :RIP 0 X86)))
-                                                  (WRITE-X86-FILE-DES
-                                                   0
-                                                   (PUT-ASSOC-EQUAL
-                                                    :OFFSET
-                                                    (+
-                                                     1
-                                                     (CDR
-                                                      (ASSOC-EQUAL
-                                                       :OFFSET (READ-X86-FILE-DES 0 X86))))
-                                                    (READ-X86-FILE-DES 0 X86))
-                                                   (!FLGI-UNDEFINED
-                                                    4
-                                                    (!FLGI
-                                                     *CF* 0
-                                                     (!FLGI
-                                                      *PF* 1
-                                                      (!FLGI
-                                                       *AF*
-                                                       (BITOPS::LOGSQUASH
-                                                        -3
-                                                        (LOGHEAD
-                                                         1
-                                                         (BOOL->BIT
-                                                          (LOGBITP 4 (XR :RFLAGS 0 X86)))))
-                                                       (!FLGI
-                                                        *ZF* 1
-                                                        (!FLGI
-                                                         *SF* 0
-                                                         (!FLGI
-                                                          *OF* 0
-                                                          X86))))))))))))))))))))))))))))))))))))))))))
+                                               (CDR (ASSOC-EQUAL
+                                                     :OFFSET (READ-X86-FILE-DES 0 X86))))
+                                              (READ-X86-FILE-DES 0 X86))
+                                             X86)))))))))))))))))))))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (env-assumptions
                              one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              jcc/cmovcc/setcc-spec
@@ -2138,14 +1939,12 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml08
@@ -2161,7 +1960,6 @@
                              gc-clk-no-eof)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -2176,7 +1974,10 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
-           (equal (xr :rip 0 (x86-run (gc-clk-no-eof) x86)) (+ 87 addr))))
+           (equal (xr :rip 0 (x86-run (gc-clk-no-eof) x86)) (+ 87 addr)))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-eof-not-encountered-prelim))
+           :use ((:instance effects-eof-not-encountered-prelim)))))
 
 (defthmd effects-eof-not-encountered-prelim-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2196,11 +1997,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *eof*)))
            (and
             (equal
-             (ia32_efer-slice :ia32_efer-sce
+             (ia32_eferBits->sce
                               (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
              1)
             (equal
-             (ia32_efer-slice :ia32_efer-lma
+             (ia32_eferBits->lma
                               (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
              1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
@@ -2357,10 +2158,10 @@
                 (equal (xr :rip 0 (x86-run (gc-clk-no-eof) x86)) (+ 87 addr))
                 (equal (xr :ms 0 (x86-run (gc-clk-no-eof) x86)) nil)
                 (equal (xr :fault 0 (x86-run (gc-clk-no-eof) x86)) nil)
-                (equal (ia32_efer-slice :ia32_efer-sce
+                (equal (ia32_eferBits->sce
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
                        1)
-                (equal (ia32_efer-slice :ia32_efer-lma
+                (equal (ia32_eferBits->lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-no-eof) x86)))
                        1)
                 (program-at addr *wc* (x86-run (gc-clk-no-eof) x86))
@@ -2463,49 +2264,65 @@
         (equal (xr :ms 0 x86-new) nil)
         (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *newline*))
    (equal (x86-run 10 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (MV-NTH
-            1
-            (WB
-             4 (+ 24 (XR :RGF *RSP* X86-NEW))
-             :W 0
-             (MV-NTH
-              1
-              (WB
-               4 (+ 12 (XR :RGF *RSP* X86-NEW))
-               :W
-               (LOGHEAD 32
-                        (+ 1
-                           (MV-NTH 1
-                                   (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
-                                       :R X86-NEW))))
-               (MV-NTH
-                1
-                (WB
-                 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                 :W
-                 (LOGHEAD 32
-                          (+ 1
-                             (MV-NTH 1
-                                     (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                         :R X86-NEW))))
-                 (!FLGI
-                  *CF* 0
-                  (!FLGI *PF* 1
-                         (!FLGI *AF* 0
-                                (!FLGI *ZF* 1
-                                       (!FLGI *SF*
-                                              0 (!FLGI *OF* 0 X86-NEW)))))))))))))))
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS 0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                        1
+                        (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                        1 0
+                        (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+            (MV-NTH
+             1
+             (WB
+              4 (+ 24 (XR :RGF *RSP* X86-NEW))
+              :W 0
+              (MV-NTH
+               1
+               (WB
+                4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                :W
+                (LOGHEAD 32
+                         (+ 1
+                            (MV-NTH 1
+                                    (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                                        :R X86-NEW))))
+                (MV-NTH 1
+                        (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                            :W
+                            (LOGHEAD 32
+                                     (+ 1
+                                        (MV-NTH 1
+                                                (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                    :R X86-NEW))))
+                            X86-NEW))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -2514,7 +2331,6 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              select-segment-register
                              wr64
                              wr32
@@ -2522,7 +2338,6 @@
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
@@ -2538,7 +2353,6 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -2558,38 +2372,53 @@
            (equal (x86-run 10 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 12 (XR :RGF *RSP* X86-NEW))
-                       :W
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
-                                               :R X86-NEW))))
-                       (MV-NTH
-                        1
-                        (WB
-                         4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                         :W
-                         (LOGHEAD 32
-                                  (+ 1
-                                     (MV-NTH 1
-                                             (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                                 :R X86-NEW))))
-                         (!FLGI
-                          *CF* 0
-                          (!FLGI *PF* 1
-                                 (!FLGI *AF* 0
-                                        (!FLGI *ZF* 1
-                                               (!FLGI *SF*
-                                                      0 (!FLGI *OF* 0 X86-NEW)))))))))))))))
+                   (XW
+                    :RFLAGS 0
+                    (RFLAGSBITS 0
+                                (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                                1
+                                (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                                1 0
+                                (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+                    (MV-NTH
+                     1
+                     (WB
+                      4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                      :W 0
+                      (MV-NTH
+                       1
+                       (WB
+                        4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                        :W
+                        (LOGHEAD 32
+                                 (+ 1
+                                    (MV-NTH 1
+                                            (RB 4 (+ 12 (XR :RGF *RSP* X86-NEW))
+                                                :R X86-NEW))))
+                        (MV-NTH 1
+                                (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                    :W
+                                    (LOGHEAD 32
+                                             (+ 1
+                                                (MV-NTH 1
+                                                        (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                            :R X86-NEW))))
+                                    X86-NEW))))))))))
   :hints (("Goal"
            :in-theory (e/d* (loop-preconditions
                              input
@@ -2613,43 +2442,60 @@
   ;;  addl $0x1,-0x10(%rbp)
   ;;  callq <gc>
 
-  (implies (and (loop-preconditions addr x86)
-                (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (x86-run (gc-clk-newline) x86)
-                  (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                       :W
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 12 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                               :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                       (MV-NTH
-                        1
-                        (WB
-                         4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                         :W
-                         (LOGHEAD 32
-                                  (+ 1
-                                     (MV-NTH 1
-                                             (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                 :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                         (!FLGI
-                          *CF* 0
-                          (!FLGI *PF* 1
-                                 (!FLGI *AF* 0
-                                        (!FLGI *ZF* 1
-                                               (!FLGI *SF*
-                                                      0 (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))))
+  (implies
+   (and (loop-preconditions addr x86)
+        (equal (get-char (offset x86) (input x86)) *newline*))
+   (equal
+    (x86-run (gc-clk-newline) x86)
+    (XW
+     :RIP 0 (+ 58 (XR :RIP 0 (x86-run (gc-clk-no-eof) x86)))
+     (XW
+      :RFLAGS 0
+      (RFLAGSBITS 0
+                  (RFLAGSBITS->RES1 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  1
+                  (RFLAGSBITS->RES2 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  0
+                  (RFLAGSBITS->RES3 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  1 0
+                  (RFLAGSBITS->TF (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->INTF (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->DF (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  0
+                  (RFLAGSBITS->IOPL (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->NT (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->RES4 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->RF (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->VM (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->AC (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->VIF (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->VIP (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->ID (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86)))
+                  (RFLAGSBITS->RES5 (XR :RFLAGS 0 (x86-run (gc-clk-no-eof) x86))))
+      (MV-NTH
+       1
+       (WB
+        4 (+ 24 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86)))
+        :W 0
+        (MV-NTH
+         1
+         (WB
+          4 (+ 12 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86)))
+          :W
+          (LOGHEAD 32
+                   (+ 1
+                      (MV-NTH 1
+                              (RB 4 (+ 12 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86)))
+                                  :R (x86-run (gc-clk-no-eof) x86)))))
+          (MV-NTH 1
+                  (WB 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86)))
+                      :W
+                      (LOGHEAD 32
+                               (+ 1
+                                  (MV-NTH 1
+                                          (RB 4 (+ 20 (XR :RGF *RSP* (x86-run (gc-clk-no-eof) x86)))
+                                              :R (x86-run (gc-clk-no-eof) x86)))))
+                      (x86-run (gc-clk-no-eof) x86)))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-newline)
            :in-theory (union-theories
@@ -2692,10 +2538,10 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (and (equal (ia32_efer-slice :ia32_efer-sce
+           (and (equal (ia32_eferBits->sce
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86)))
                        1)
-                (equal (ia32_efer-slice :ia32_efer-lma
+                (equal (ia32_eferBits->lma
                                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-newline) x86)))
                        1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
@@ -2704,7 +2550,11 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *newline*))
-           (equal (xr :rip 0 (x86-run (gc-clk-newline) x86)) (+ 145 addr))))
+           (equal (xr :rip 0 (x86-run (gc-clk-newline) x86)) (+ 145 addr)))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-newline-encountered))
+           :use ((:instance effects-newline-encountered)
+                 (:instance effects-eof-not-encountered-prelim-rip-projection)))))
 
 (defthmd effects-newline-encountered-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -2914,38 +2764,54 @@
         (equal (xr :ms 0 x86-new) nil)
         (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *space*))
    (equal (x86-run 7 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (MV-NTH
-            1
-            (WB
-             4 (+ 24 (XR :RGF *RSP* X86-NEW))
-             :W 0
-             (MV-NTH
-              1
-              (WB
-               4 (+ 20 (XR :RGF *RSP* X86-NEW))
-               :W
-               (LOGHEAD 32
-                        (+ 1
-                           (MV-NTH 1
-                                   (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                       :R X86-NEW))))
-               (!FLGI
-                *CF* 0
-                (!FLGI *PF* 1
-                       (!FLGI *AF* 0
-                              (!FLGI *ZF* 1
-                                     (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS 0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                        1
+                        (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                        1 0
+                        (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+            (MV-NTH
+             1
+             (WB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                 :W 0
+                 (MV-NTH 1
+                         (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                             :W
+                             (LOGHEAD 32
+                                      (+ 1
+                                         (MV-NTH 1
+                                                 (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                     :R X86-NEW))))
+                             X86-NEW))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -2954,14 +2820,12 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
@@ -2978,7 +2842,6 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -2999,27 +2862,42 @@
            (equal (x86-run 7 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                       :W
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                               :R X86-NEW))))
-                       (!FLGI
-                        *CF* 0
-                        (!FLGI *PF* 1
-                               (!FLGI *AF* 0
-                                      (!FLGI *ZF* 1
-                                             (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
+                   (XW
+                    :RFLAGS 0
+                    (RFLAGSBITS 0
+                                (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                                1
+                                (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                                1 0
+                                (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+                    (MV-NTH
+                     1
+                     (WB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                         :W 0
+                         (MV-NTH 1
+                                 (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                     :W
+                                     (LOGHEAD 32
+                                              (+ 1
+                                                 (MV-NTH 1
+                                                         (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                             :R X86-NEW))))
+                                     X86-NEW))))))))
   :hints (("Goal" :in-theory
            (e/d (loop-preconditions
                  input
@@ -3048,33 +2926,50 @@
   ;;  addl $0x1,-0x10(%rbp)
   ;;  callq <gc>
 
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (loop-preconditions addr x86)
-                (equal (get-char (offset x86) (input x86)) *space*))
-           (equal (x86-run (gc-clk-space) x86)
-                  (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+  (implies
+   (and (bind-free '((addr . addr)) (addr))
+        (loop-preconditions addr x86)
+        (equal (get-char (offset x86) (input x86)) *space*))
+   (equal
+    (x86-run (gc-clk-space) x86)
+    (XW
+     :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+     (XW
+      :RFLAGS 0
+      (RFLAGSBITS 0
+                  (RFLAGSBITS->RES1 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  1
+                  (RFLAGSBITS->RES2 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  0
+                  (RFLAGSBITS->RES3 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  1 0
+                  (RFLAGSBITS->TF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->INTF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->DF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  0
+                  (RFLAGSBITS->IOPL (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->NT (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->RES4 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->RF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->VM (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->AC (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->VIF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->VIP (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->ID (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  (RFLAGSBITS->RES5 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86))))
+      (MV-NTH
+       1
+       (WB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+           :W 0
+           (MV-NTH 1
+                   (WB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
                        :W
                        (LOGHEAD 32
                                 (+ 1
                                    (MV-NTH 1
                                            (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
                                                :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                       (!FLGI
-                        *CF* 0
-                        (!FLGI *PF* 1
-                               (!FLGI *AF* 0
-                                      (!FLGI *ZF* 1
-                                             (!FLGI *SF* 0 (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))
+                       (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-space)
            :in-theory (union-theories
@@ -3118,10 +3013,10 @@
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
            (and
-            (equal (ia32_efer-slice :ia32_efer-sce
+            (equal (ia32_eferBits->sce
                                     (xr :msr *ia32_efer-idx* (x86-run (gc-clk-space) x86)))
                    1)
-            (equal (ia32_efer-slice :ia32_efer-lma
+            (equal (ia32_eferBits->lma
                                     (xr :msr *ia32_efer-idx* (x86-run (gc-clk-space) x86)))
                    1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
@@ -3130,7 +3025,11 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *space*))
-           (equal (xr :rip 0 (x86-run (gc-clk-space) x86)) (+ 145 addr))))
+           (equal (xr :rip 0 (x86-run (gc-clk-space) x86)) (+ 145 addr)))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-space-encountered))
+           :use ((:instance effects-space-encountered)
+                 (:instance effects-eof-not-encountered-prelim-rip-projection)))))
 
 (defthmd effects-space-encountered-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3335,38 +3234,54 @@
         (equal (xr :ms 0 x86-new) nil)
         (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at addr *wc* x86-new)
         (equal (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new))
                *tab*))
    (equal (x86-run 11 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (MV-NTH
-            1
-            (WB
-             4 (+ 24 (XR :RGF *RSP* X86-NEW))
-             :W 0
-             (MV-NTH
-              1
-              (WB
-               4 (+ 20 (XR :RGF *RSP* X86-NEW))
-               :W
-               (LOGHEAD 32
-                        (+ 1
-                           (MV-NTH 1
-                                   (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                       :R X86-NEW))))
-               (!FLGI
-                *CF* 0
-                (!FLGI *PF* 1
-                       (!FLGI *AF* 0
-                              (!FLGI *ZF* 1
-                                     (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS 0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                        1
+                        (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                        1 0
+                        (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+            (MV-NTH
+             1
+             (WB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                 :W 0
+                 (MV-NTH 1
+                         (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                             :W
+                             (LOGHEAD 32
+                                      (+ 1
+                                         (MV-NTH 1
+                                                 (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                     :R X86-NEW))))
+                             X86-NEW))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3375,14 +3290,12 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
@@ -3399,7 +3312,6 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -3420,27 +3332,42 @@
            (equal (x86-run 11 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                       :W
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                               :R X86-NEW))))
-                       (!FLGI
-                        *CF* 0
-                        (!FLGI *PF* 1
-                               (!FLGI *AF* 0
-                                      (!FLGI *ZF* 1
-                                             (!FLGI *SF* 0 (!FLGI *OF* 0 X86-NEW)))))))))))))
+                   (XW
+                    :RFLAGS 0
+                    (RFLAGSBITS 0
+                                (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                                1
+                                (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                                1 0
+                                (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                                0
+                                (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+                    (MV-NTH
+                     1
+                     (WB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                         :W 0
+                         (MV-NTH 1
+                                 (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                     :W
+                                     (LOGHEAD 32
+                                              (+ 1
+                                                 (MV-NTH 1
+                                                         (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                             :R X86-NEW))))
+                                     X86-NEW))))))))
   :hints (("Goal" :in-theory
            (e/d (loop-preconditions
                  input
@@ -3469,33 +3396,49 @@
   ;;  addl $0x1,-0x10(%rbp)
   ;;  callq <gc>
 
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (loop-preconditions addr x86)
-                (equal (get-char (offset x86) (input x86)) *tab*))
-           (equal (x86-run (gc-clk-tab) x86)
-                  (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                     :W 0
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                       :W
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                               :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                       (!FLGI
-                        *CF* 0
-                        (!FLGI *PF* 1
-                               (!FLGI *AF* 0
-                                      (!FLGI *ZF* 1
-                                             (!FLGI *SF* 0 (!FLGI *OF* 0 (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))
+  (implies
+   (and (bind-free '((addr . addr)) (addr))
+        (loop-preconditions addr x86)
+        (equal (get-char (offset x86) (input x86)) *tab*))
+   (equal (x86-run (gc-clk-tab) x86)
+          (XW
+           :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS 0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        1
+                        (RFLAGSBITS->RES2 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        0
+                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        1 0
+                        (RFLAGSBITS->TF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->INTF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->DF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        0
+                        (RFLAGSBITS->IOPL (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->NT (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->RF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->VM (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->AC (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->VIF (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->VIP (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->ID (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 (X86-RUN (GC-CLK-NO-EOF) X86))))
+            (MV-NTH
+             1
+             (WB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                 :W 0
+                 (MV-NTH 1
+                         (WB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                             :W
+                             (LOGHEAD 32
+                                      (+ 1
+                                         (MV-NTH 1
+                                                 (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                                     :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                             (X86-RUN (GC-CLK-NO-EOF) X86)))))))))
   :hints (("Goal" :do-not '(preprocess)
            :expand (gc-clk-tab)
            :in-theory (union-theories
@@ -3538,15 +3481,19 @@
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
-           (and (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-tab) x86))) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-tab) x86))) 1)))
+           (and (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* (x86-run (gc-clk-tab) x86))) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* (x86-run (gc-clk-tab) x86))) 1)))
   :hints (("Goal" :use ((:instance loop-preconditions-fwd-chaining-essentials)))))
 
 (defthmd effects-tab-encountered-rip-projection
   (implies (and (bind-free '((addr . addr)) (addr))
                 (loop-preconditions addr x86)
                 (equal (get-char (offset x86) (input x86)) *tab*))
-           (equal (xr :rip 0 (x86-run (gc-clk-tab) x86)) (+ 145 addr))))
+           (equal (xr :rip 0 (x86-run (gc-clk-tab) x86)) (+ 145 addr)))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-tab-encountered))
+           :use ((:instance effects-tab-encountered)
+                 (:instance effects-eof-not-encountered-prelim-rip-projection)))))
 
 (defthmd effects-tab-encountered-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -3805,8 +3752,8 @@
         (equal (xr :ms 0 x86-new) nil)
         (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at addr *wc* x86-new)
         ;; Character read in is a byte.
         (unsigned-byte-p 8 (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new)))
@@ -3826,81 +3773,83 @@
    (equal (x86-run 13 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (MV-NTH
-            1
-            (WB
-             4 (+ 16 (XR :RGF *RSP* X86-NEW))
-             :W
-             (LOGHEAD 32
-                      (+ 1
-                         (MV-NTH 1
-                                 (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                     :R X86-NEW))))
-             (MV-NTH
-              1
-              (WB
-               4 (+ 24 (XR :RGF *RSP* X86-NEW))
-               :W 1
-               (MV-NTH
-                1
-                (WB
-                 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                 :W
-                 (LOGHEAD 32
-                          (+ 1
-                             (MV-NTH 1
-                                     (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                         :R X86-NEW))))
-                 (!FLGI
-                  *CF*
-                  (CF-SPEC32 (+ 1
-                                (MV-NTH 1
-                                        (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                            :R X86-NEW))))
-                  (!FLGI
-                   *PF*
-                   (PF-SPEC32
-                    (LOGHEAD 32
-                             (+ 1
-                                (MV-NTH 1
-                                        (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                            :R X86-NEW)))))
-                   (!FLGI
-                    *AF*
-                    (ADD-AF-SPEC32 (MV-NTH 1
-                                           (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                               :R X86-NEW))
-                                   1)
-                    (!FLGI
-                     *ZF*
-                     (ZF-SPEC
-                      (LOGHEAD 32
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS
+             (CF-SPEC32 (+ 1
+                           (MV-NTH 1
+                                   (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                       :R X86-NEW))))
+             (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+             (PF-SPEC32 (LOGHEAD 32
+                                 (+ 1
+                                    (MV-NTH 1
+                                            (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                                :R X86-NEW)))))
+             (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+             (ADD-AF-SPEC32 (MV-NTH 1
+                                    (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                        :R X86-NEW))
+                            1)
+             (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+             (ZF-SPEC (LOGHEAD 32
                                (+ 1
                                   (MV-NTH 1
                                           (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
                                               :R X86-NEW)))))
-                     (!FLGI
-                      *SF*
-                      (SF-SPEC32
-                       (LOGHEAD 32
-                                (+ 1
-                                   (MV-NTH 1
-                                           (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                               :R X86-NEW)))))
-                      (!FLGI
-                       *OF*
-                       (OF-SPEC32
-                        (+ 1
+             (SF-SPEC32 (LOGHEAD 32
+                                 (+ 1
+                                    (MV-NTH 1
+                                            (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                                :R X86-NEW)))))
+             (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+             (OF-SPEC32 (+ 1
                            (LOGEXT 32
                                    (MV-NTH 1
                                            (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
                                                :R X86-NEW)))))
-                       X86-NEW)))))))))))))))
+             (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+             (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+            (MV-NTH
+             1
+             (WB
+              4 (+ 16 (XR :RGF *RSP* X86-NEW))
+              :W
+              (LOGHEAD 32
+                       (+ 1
+                          (MV-NTH 1
+                                  (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                      :R X86-NEW))))
+              (MV-NTH
+               1
+               (WB
+                4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                :W 1
+                (MV-NTH 1
+                        (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                            :W
+                            (LOGHEAD 32
+                                     (+ 1
+                                        (MV-NTH 1
+                                                (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                    :R X86-NEW))))
+                            X86-NEW))))))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (negative-loghead
 
                              one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
@@ -3909,7 +3858,6 @@
                              write-user-rflags
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              select-segment-register
                              wr64
                              wr32
@@ -3917,7 +3865,6 @@
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              write-canonical-address-to-memory
                              riml-size
@@ -3933,7 +3880,6 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -3958,76 +3904,77 @@
            (equal (x86-run 13 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                     :W
-                     (LOGHEAD 32
-                              (+ 1
-                                 (MV-NTH 1
-                                         (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                             :R X86-NEW))))
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                       :W 1
-                       (MV-NTH
-                        1
-                        (WB
-                         4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                         :W
-                         (LOGHEAD 32
-                                  (+ 1
-                                     (MV-NTH 1
-                                             (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                                 :R X86-NEW))))
-                         (!FLGI
-                          *CF*
-                          (CF-SPEC32 (+ 1
-                                        (MV-NTH 1
-                                                (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                                    :R X86-NEW))))
-                          (!FLGI
-                           *PF*
-                           (PF-SPEC32
-                            (LOGHEAD 32
-                                     (+ 1
-                                        (MV-NTH 1
-                                                (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                                    :R X86-NEW)))))
-                           (!FLGI
-                            *AF*
-                            (ADD-AF-SPEC32 (MV-NTH 1
-                                                   (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                                       :R X86-NEW))
-                                           1)
-                            (!FLGI
-                             *ZF*
-                             (ZF-SPEC
-                              (LOGHEAD 32
+                   (XW
+                    :RFLAGS 0
+                    (RFLAGSBITS
+                     (CF-SPEC32 (+ 1
+                                   (MV-NTH 1
+                                           (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                               :R X86-NEW))))
+                     (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                     (PF-SPEC32 (LOGHEAD 32
+                                         (+ 1
+                                            (MV-NTH 1
+                                                    (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                                        :R X86-NEW)))))
+                     (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
+                     (ADD-AF-SPEC32 (MV-NTH 1
+                                            (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                                :R X86-NEW))
+                                    1)
+                     (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                     (ZF-SPEC (LOGHEAD 32
                                        (+ 1
                                           (MV-NTH 1
                                                   (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
                                                       :R X86-NEW)))))
-                             (!FLGI
-                              *SF*
-                              (SF-SPEC32
-                               (LOGHEAD 32
-                                        (+ 1
-                                           (MV-NTH 1
-                                                   (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
-                                                       :R X86-NEW)))))
-                              (!FLGI
-                               *OF*
-                               (OF-SPEC32
-                                (+ 1
+                     (SF-SPEC32 (LOGHEAD 32
+                                         (+ 1
+                                            (MV-NTH 1
+                                                    (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                                        :R X86-NEW)))))
+                     (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                     (OF-SPEC32 (+ 1
                                    (LOGEXT 32
                                            (MV-NTH 1
                                                    (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
                                                        :R X86-NEW)))))
-                               X86-NEW)))))))))))))))
+                     (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                     (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+                    (MV-NTH
+                     1
+                     (WB
+                      4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                      :W
+                      (LOGHEAD 32
+                               (+ 1
+                                  (MV-NTH 1
+                                          (RB 4 (+ 16 (XR :RGF *RSP* X86-NEW))
+                                              :R X86-NEW))))
+                      (MV-NTH
+                       1
+                       (WB
+                        4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                        :W 1
+                        (MV-NTH 1
+                                (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                    :W
+                                    (LOGHEAD 32
+                                             (+ 1
+                                                (MV-NTH 1
+                                                        (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                            :R X86-NEW))))
+                                    X86-NEW))))))))))
   :hints (("Goal" :in-theory
            (e/d (loop-preconditions
                  input
@@ -4063,86 +4010,146 @@
   ;;  addl $0x1,-0x10(%rbp)
   ;;  callq <gc>
 
-  (implies (and (bind-free '((addr . addr)) (addr))
-                (loop-preconditions addr x86)
-                (not (equal (get-char (offset x86) (input x86)) *eof*))
-                (not (equal (get-char (offset x86) (input x86)) *newline*))
-                (not (equal (get-char (offset x86) (input x86)) *space*))
-                (not (equal (get-char (offset x86) (input x86)) *tab*))
-                (equal (word-state x86 x86) *out*))
-           (equal (x86-run (gc-clk-otherwise-out) x86)
-                  (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                     :W
-                     (LOGHEAD 32
-                              (+ 1
-                                 (MV-NTH 1
-                                         (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                             :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                     (MV-NTH
-                      1
-                      (WB
-                       4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                       :W 1
-                       (MV-NTH
-                        1
-                        (WB
-                         4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                         :W
-                         (LOGHEAD 32
-                                  (+ 1
-                                     (MV-NTH 1
-                                             (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                 :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                         (!FLGI
-                          *CF*
-                          (CF-SPEC32 (+ 1
-                                        (MV-NTH 1
-                                                (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                    :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                          (!FLGI
-                           *PF*
-                           (PF-SPEC32
-                            (LOGHEAD 32
-                                     (+ 1
-                                        (MV-NTH 1
-                                                (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                    :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                           (!FLGI
-                            *AF*
-                            (ADD-AF-SPEC32 (MV-NTH 1
-                                                   (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       :R (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                           1)
-                            (!FLGI
-                             *ZF*
-                             (ZF-SPEC
-                              (LOGHEAD 32
-                                       (+ 1
-                                          (MV-NTH 1
-                                                  (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                      :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                             (!FLGI
-                              *SF*
-                              (SF-SPEC32
-                               (LOGHEAD 32
-                                        (+ 1
-                                           (MV-NTH 1
-                                                   (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                              (!FLGI
-                               *OF*
-                               (OF-SPEC32
-                                (+ 1
-                                   (LOGEXT 32
-                                           (MV-NTH 1
-                                                   (RB 4 (+ 16 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                       :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
-                               (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))))))
+  (implies
+   (and (bind-free '((addr . addr)) (addr))
+        (loop-preconditions addr x86)
+        (not (equal (get-char (offset x86) (input x86)) *eof*))
+        (not (equal (get-char (offset x86) (input x86)) *newline*))
+        (not (equal (get-char (offset x86) (input x86)) *space*))
+        (not (equal (get-char (offset x86) (input x86)) *tab*))
+        (equal (word-state x86 x86) *out*))
+   (equal (x86-run (gc-clk-otherwise-out) x86)
+          (XW
+           :RIP 0
+           (+ 58
+              (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+           (XW
+            :RFLAGS 0
+            (RFLAGSBITS
+             (CF-SPEC32 (+ 1
+                           (MV-NTH 1
+                                   (RB 4
+                                       (+ 16
+                                          (XR :RGF
+                                              *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                       :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+             (RFLAGSBITS->RES1 (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (PF-SPEC32
+              (LOGHEAD 32
+                       (+ 1
+                          (MV-NTH 1
+                                  (RB 4
+                                      (+ 16
+                                         (XR :RGF
+                                             *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                      :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
+             (RFLAGSBITS->RES2 (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (ADD-AF-SPEC32 (MV-NTH 1
+                                    (RB 4
+                                        (+ 16
+                                           (XR :RGF
+                                               *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                        :R (X86-RUN (GC-CLK-NO-EOF) X86)))
+                            1)
+             (RFLAGSBITS->RES3 (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (ZF-SPEC
+              (LOGHEAD 32
+                       (+ 1
+                          (MV-NTH 1
+                                  (RB 4
+                                      (+ 16
+                                         (XR :RGF
+                                             *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                      :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
+             (SF-SPEC32
+              (LOGHEAD 32
+                       (+ 1
+                          (MV-NTH 1
+                                  (RB 4
+                                      (+ 16
+                                         (XR :RGF
+                                             *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                      :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
+             (RFLAGSBITS->TF (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->INTF (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->DF (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (OF-SPEC32
+              (+ 1
+                 (LOGEXT 32
+                         (MV-NTH 1
+                                 (RB 4
+                                     (+ 16
+                                        (XR :RGF
+                                            *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                     :R (X86-RUN (GC-CLK-NO-EOF) X86))))))
+             (RFLAGSBITS->IOPL (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->NT (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->RES4 (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->RF (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->VM (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->AC (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->VIF (XR :RFLAGS
+                                  0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->VIP (XR :RFLAGS
+                                  0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->ID (XR :RFLAGS
+                                 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+             (RFLAGSBITS->RES5 (XR :RFLAGS
+                                   0 (X86-RUN (GC-CLK-NO-EOF) X86))))
+            (MV-NTH
+             1
+             (WB
+              4
+              (+ 16
+                 (XR :RGF
+                     *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+              :W
+              (LOGHEAD 32
+                       (+ 1
+                          (MV-NTH 1
+                                  (RB 4
+                                      (+ 16
+                                         (XR :RGF
+                                             *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                      :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+              (MV-NTH
+               1
+               (WB
+                4
+                (+ 24
+                   (XR :RGF
+                       *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                :W 1
+                (MV-NTH
+                 1
+                 (WB
+                  4
+                  (+ 20
+                     (XR :RGF
+                         *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                  :W
+                  (LOGHEAD
+                   32
+                   (+ 1
+                      (MV-NTH 1
+                              (RB 4
+                                  (+ 20
+                                     (XR :RGF
+                                         *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                  :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                  (X86-RUN (GC-CLK-NO-EOF) X86)))))))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(app-view-permissions-dont-matter
@@ -4208,12 +4215,10 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) *out*))
-           (and (equal (ia32_efer-slice
-                        :ia32_efer-sce
+           (and (equal (ia32_eferBits->sce
                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86)))
                        1)
-                (equal (ia32_efer-slice
-                        :ia32_efer-lma
+                (equal (ia32_eferBits->lma
                         (xr :msr *ia32_efer-idx* (x86-run (gc-clk-otherwise-out) x86)))
                        1)))
   :hints (("Goal"
@@ -4232,7 +4237,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (equal (word-state x86 x86) *out*))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-out) x86)) (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* () (word-state)))))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-other-char-encountered-state-out
+                                   word-state))
+           :use ((:instance effects-other-char-encountered-state-out)
+                 (:instance effects-eof-not-encountered-prelim-rip-projection)))))
 
 (defthmd effects-other-char-encountered-state-out-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -4349,7 +4358,6 @@
                                    (word-state
                                     subset-p
                                     (:definition acl2::take-redefinition)
-                                    (:rewrite las-to-pas-values-and-!flgi)
                                     (:rewrite acl2::car-nthcdr)
                                     (:definition nth)
                                     (:type-prescription file-descriptor-fieldp-implies-natp-offset)
@@ -4432,7 +4440,6 @@
   :hints (("Goal"
            :in-theory (e/d* ()
                             (negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -4468,7 +4475,6 @@
                   (loghead 32 (+ 1 (nc x86 x86)))))
   :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
-                                    las-to-pas-values-and-!flgi
                                     las-to-pas
                                     get-prefixes-opener-lemma-group-1-prefix
                                     get-prefixes-opener-lemma-group-2-prefix
@@ -4505,7 +4511,6 @@
                   (loghead 32 (+ 1 (nw x86 x86)))))
   :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
-                                    las-to-pas-values-and-!flgi
                                     las-to-pas
                                     get-prefixes-opener-lemma-group-1-prefix
                                     get-prefixes-opener-lemma-group-2-prefix
@@ -4542,7 +4547,6 @@
                   (nl x86 x86)))
   :hints (("Goal" :in-theory (e/d* (app-view-permissions-dont-matter)
                                    (negative-logand-to-positive-logand-with-integerp-x
-                                    las-to-pas-values-and-!flgi
                                     las-to-pas
                                     get-prefixes-opener-lemma-group-1-prefix
                                     get-prefixes-opener-lemma-group-2-prefix
@@ -4607,8 +4611,8 @@
         (equal (xr :ms 0 x86-new) nil)
         (equal (xr :fault 0 x86-new) nil)
         ;; Enabling the SYSCALL instruction.
-        (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86-new)) 1)
-        (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86-new)) 1)
+        (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86-new)) 1)
         (program-at addr *wc* x86-new)
         ;; Character read in is a byte.
         (unsigned-byte-p 8 (mv-nth 1 (rb 4 (+ -4 (xr :rgf *rbp* x86-new)) :r x86-new)))
@@ -4628,67 +4632,67 @@
    (equal (x86-run 11 x86-new)
           (XW
            :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-           (MV-NTH
-            1
-            (WB
-             4 (+ 20 (XR :RGF *RSP* X86-NEW))
-             :W
-             (LOGHEAD 32
-                      (+ 1
-                         (MV-NTH 1
-                                 (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                     :R X86-NEW))))
-             (!FLGI
-              *CF*
-              (LOGHEAD 1
-                       (BOOL->BIT (< (MV-NTH 1
-                                             (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                                 :R X86-NEW))
-                                     0)))
-              (!FLGI
-               *PF*
-               (PF-SPEC32 (MV-NTH 1
-                                  (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                      :R X86-NEW)))
-               (!FLGI
-                *AF*
+           (XW :RFLAGS 0
+               (RFLAGSBITS
+                0
+                (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                (PF-SPEC32 (MV-NTH 1
+                                   (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                       :R X86-NEW)))
+                (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
                 (SUB-AF-SPEC32 (MV-NTH 1
                                        (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
                                            :R X86-NEW))
                                0)
-                (!FLGI
-                 *ZF* 0
-                 (!FLGI
-                  *SF*
-                  (SF-SPEC32 (MV-NTH 1
-                                     (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                         :R X86-NEW)))
-                  (!FLGI
-                   *OF*
-                   (OF-SPEC32 (LOGEXT 32
-                                      (MV-NTH 1
-                                              (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                                  :R X86-NEW))))
-                   X86-NEW)))))))))))
+                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                0
+                (SF-SPEC32 (MV-NTH 1
+                                   (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                       :R X86-NEW)))
+                (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                (OF-SPEC32 (LOGEXT 32
+                                   (MV-NTH 1
+                                           (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                               :R X86-NEW))))
+                (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+               (MV-NTH 1
+                       (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                           :W
+                           (LOGHEAD 32
+                                    (+ 1
+                                       (MV-NTH 1
+                                               (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                   :R X86-NEW))))
+                           X86-NEW))))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d* (negative-loghead
 
                              one-byte-opcode-execute
                              instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-sub-spec-4
                              gpr-add-spec-4
                              jcc/cmovcc/setcc-spec
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr08
                              rr32
                              rr64
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              select-segment-register
                              write-canonical-address-to-memory
@@ -4705,7 +4709,6 @@
                              x86-run-plus-1)
                             (x86-run-plus
                              negative-logand-to-positive-logand-with-integerp-x
-                             las-to-pas-values-and-!flgi
                              las-to-pas
                              get-prefixes-opener-lemma-group-1-prefix
                              get-prefixes-opener-lemma-group-2-prefix
@@ -4730,48 +4733,49 @@
            (equal (x86-run 11 x86-new)
                   (XW
                    :RIP 0 (+ 58 (XR :RIP 0 X86-NEW))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                     :W
-                     (LOGHEAD 32
-                              (+ 1
-                                 (MV-NTH 1
-                                         (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
-                                             :R X86-NEW))))
-                     (!FLGI
-                      *CF*
-                      (LOGHEAD 1
-                               (BOOL->BIT (< (MV-NTH 1
-                                                     (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                                         :R X86-NEW))
-                                             0)))
-                      (!FLGI
-                       *PF*
-                       (PF-SPEC32 (MV-NTH 1
-                                          (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                              :R X86-NEW)))
-                       (!FLGI
-                        *AF*
+                   (XW :RFLAGS 0
+                       (RFLAGSBITS
+                        0
+                        (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86-NEW))
+                        (PF-SPEC32 (MV-NTH 1
+                                           (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                               :R X86-NEW)))
+                        (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86-NEW))
                         (SUB-AF-SPEC32 (MV-NTH 1
                                                (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
                                                    :R X86-NEW))
                                        0)
-                        (!FLGI
-                         *ZF* 0
-                         (!FLGI
-                          *SF*
-                          (SF-SPEC32 (MV-NTH 1
-                                             (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                                 :R X86-NEW)))
-                          (!FLGI
-                           *OF*
-                           (OF-SPEC32 (LOGEXT 32
-                                              (MV-NTH 1
-                                                      (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
-                                                          :R X86-NEW))))
-                           X86-NEW)))))))))))
+                        (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86-NEW))
+                        0
+                        (SF-SPEC32 (MV-NTH 1
+                                           (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                               :R X86-NEW)))
+                        (RFLAGSBITS->TF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->INTF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->DF (XR :RFLAGS 0 X86-NEW))
+                        (OF-SPEC32 (LOGEXT 32
+                                           (MV-NTH 1
+                                                   (RB 4 (+ 24 (XR :RGF *RSP* X86-NEW))
+                                                       :R X86-NEW))))
+                        (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->NT (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VM (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->AC (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIF (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->VIP (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->ID (XR :RFLAGS 0 X86-NEW))
+                        (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86-NEW)))
+                       (MV-NTH 1
+                               (WB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                   :W
+                                   (LOGHEAD 32
+                                            (+ 1
+                                               (MV-NTH 1
+                                                       (RB 4 (+ 20 (XR :RGF *RSP* X86-NEW))
+                                                           :R X86-NEW))))
+                                   X86-NEW))))))
   :hints (("Goal" :in-theory
            (e/d (loop-preconditions
                  input
@@ -4806,49 +4810,90 @@
                 (not (equal (word-state x86 x86) *out*)))
            (equal (x86-run (gc-clk-otherwise-in) x86)
                   (XW
-                   :RIP 0 (+ 58 (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
-                   (MV-NTH
-                    1
-                    (WB
-                     4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                     :W
-                     (LOGHEAD 32
-                              (+ 1
-                                 (MV-NTH 1
-                                         (RB 4 (+ 20 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                             :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                     (!FLGI
-                      *CF*
-                      (LOGHEAD 1
-                               (BOOL->BIT (< (MV-NTH 1
-                                                     (RB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                         :R (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                             0)))
-                      (!FLGI
-                       *PF*
-                       (PF-SPEC32 (MV-NTH 1
-                                          (RB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                              :R (X86-RUN (GC-CLK-NO-EOF) X86))))
-                       (!FLGI
-                        *AF*
-                        (SUB-AF-SPEC32 (MV-NTH 1
-                                               (RB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                   :R (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                       0)
-                        (!FLGI
-                         *ZF* 0
-                         (!FLGI
-                          *SF*
-                          (SF-SPEC32 (MV-NTH 1
-                                             (RB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                 :R (X86-RUN (GC-CLK-NO-EOF) X86))))
-                          (!FLGI
-                           *OF*
-                           (OF-SPEC32 (LOGEXT 32
-                                              (MV-NTH 1
-                                                      (RB 4 (+ 24 (XR :RGF *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
-                                                          :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
-                           (X86-RUN (GC-CLK-NO-EOF) X86))))))))))))
+                   :RIP 0
+                   (+ 58
+                      (XR :RIP 0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                   (XW
+                    :RFLAGS 0
+                    (RFLAGSBITS
+                     0
+                     (RFLAGSBITS->RES1 (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (PF-SPEC32 (MV-NTH 1
+                                        (RB 4
+                                            (+ 24
+                                               (XR :RGF
+                                                   *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                            :R (X86-RUN (GC-CLK-NO-EOF) X86))))
+                     (RFLAGSBITS->RES2 (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (SUB-AF-SPEC32 (MV-NTH 1
+                                            (RB 4
+                                                (+ 24
+                                                   (XR :RGF
+                                                       *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                                :R (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                    0)
+                     (RFLAGSBITS->RES3 (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     0
+                     (SF-SPEC32 (MV-NTH 1
+                                        (RB 4
+                                            (+ 24
+                                               (XR :RGF
+                                                   *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                            :R (X86-RUN (GC-CLK-NO-EOF) X86))))
+                     (RFLAGSBITS->TF (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->INTF (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->DF (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (OF-SPEC32
+                      (LOGEXT 32
+                              (MV-NTH 1
+                                      (RB 4
+                                          (+ 24
+                                             (XR :RGF
+                                                 *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                          :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                     (RFLAGSBITS->IOPL (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->NT (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->RES4 (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->RF (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->VM (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->AC (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->VIF (XR :RFLAGS
+                                          0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->VIP (XR :RFLAGS
+                                          0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->ID (XR :RFLAGS
+                                         0 (X86-RUN (GC-CLK-NO-EOF) X86)))
+                     (RFLAGSBITS->RES5 (XR :RFLAGS
+                                           0 (X86-RUN (GC-CLK-NO-EOF) X86))))
+                    (MV-NTH
+                     1
+                     (WB
+                      4
+                      (+ 20
+                         (XR :RGF
+                             *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                      :W
+                      (LOGHEAD 32
+                               (+ 1
+                                  (MV-NTH 1
+                                          (RB 4
+                                              (+ 20
+                                                 (XR :RGF
+                                                     *RSP* (X86-RUN (GC-CLK-NO-EOF) X86)))
+                                              :R (X86-RUN (GC-CLK-NO-EOF) X86)))))
+                      (X86-RUN (GC-CLK-NO-EOF) X86)))))))
   :hints (("Goal"
            :in-theory (union-theories
                        '(app-view-permissions-dont-matter
@@ -4926,13 +4971,11 @@
                 (not (equal (get-char (offset x86) (input x86)) *space*))
                 (not (equal (get-char (offset x86) (input x86)) *tab*))
                 (not (equal (word-state x86 x86) *out*)))
-           (and (equal (ia32_efer-slice
-                        :ia32_efer-sce
+           (and (equal (ia32_eferBits->sce
                         (xr :msr *ia32_efer-idx*
                             (x86-run (gc-clk-otherwise-in) x86)))
                        1)
-                (equal (ia32_efer-slice
-                        :ia32_efer-lma
+                (equal (ia32_eferBits->lma
                         (xr :msr *ia32_efer-idx*
                             (x86-run (gc-clk-otherwise-in) x86)))
                        1)))
@@ -4949,7 +4992,11 @@
                 (not (equal (word-state x86 x86) *out*)))
            (equal (xr :rip 0 (x86-run (gc-clk-otherwise-in) x86))
                   (+ 145 addr)))
-  :hints (("Goal" :in-theory (e/d* () (word-state)))))
+  :hints (("Goal" :in-theory (e/d (loop-preconditions)
+                                  (effects-other-char-encountered-state-in
+                                   word-state))
+           :use ((:instance effects-other-char-encountered-state-in)
+                 (:instance effects-eof-not-encountered-prelim-rip-projection)))))
 
 (defthmd effects-other-char-encountered-state-in-ms-projection
   (implies (and (bind-free '((addr . addr)) (addr))
@@ -5062,7 +5109,6 @@
                                    (word-state
                                     loop-preconditions-forward-chain-addresses-info
                                     negative-logand-to-positive-logand-with-integerp-x
-                                    las-to-pas-values-and-!flgi
                                     las-to-pas
                                     get-prefixes-opener-lemma-group-1-prefix
                                     get-prefixes-opener-lemma-group-2-prefix
@@ -6490,8 +6536,8 @@
                 (equal (xr :ms 0 x86) nil)
                 (equal (xr :fault 0 x86) nil)
                 ;; Enabling the SYSCALL instruction.
-                (equal (ia32_efer-slice :ia32_efer-sce (xr :msr *ia32_efer-idx* x86)) 1)
-                (equal (ia32_efer-slice :ia32_efer-lma (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->sce (xr :msr *ia32_efer-idx* x86)) 1)
+                (equal (ia32_eferBits->lma (xr :msr *ia32_efer-idx* x86)) 1)
                 (program-at addr *wc* x86)
                 (canonical-address-p mem-addr)
                 (canonical-address-p (+ -1 n-mem mem-addr))

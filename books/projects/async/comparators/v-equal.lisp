@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; January 2019
 
 ;; An n-bit equality circuit -- An XOR vector and a zero detector.
 
@@ -30,7 +33,7 @@
         '(EQUAL)
         (si 'TV-ZP (tree-number (make-tree n)))
         (sis 'X 0 n)))
- :guard (natp n))
+ (declare (xargs :guard (natp n))))
 
 (defund v-equal$netlist (n)
   (declare (xargs :guard (natp n)))
@@ -57,8 +60,6 @@
       (equal (f$v-equal a (v-threefix b))
              (f$v-equal a b)))
  :hints (("Goal" :in-theory (enable f$v-equal))))
-
-(not-primp-lemma v-equal)
 
 (defthm v-equal$value
   (implies (and (v-equal& netlist n)

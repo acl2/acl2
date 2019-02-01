@@ -12,7 +12,7 @@ import java.util.Map;
  * Representation of ACL2 terms, in translated form.
  * <p>
  * They consist of
- * quoted constants (subclass {@link Acl2Constant},
+ * quoted constants (subclass {@link Acl2QuotedConstant},
  * variables (subclass {@link Acl2Variable},
  * and function applications {@link Acl2FunctionApplication}.
  * No other subclasses can be defined outside this package
@@ -48,7 +48,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
-     * then constants, ordered according to their underlying symbols;
+     * then quoted constants, ordered according to their underlying symbols;
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *

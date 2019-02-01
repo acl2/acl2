@@ -42,8 +42,10 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local (in-theory (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
-                       (unsigned-byte-p signed-byte-p))))
+(local 
+ (in-theory
+  (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
+       (unsigned-byte-p signed-byte-p))))
 
 ;; ======================================================================
 
@@ -166,6 +168,51 @@
                    lin-addr base-addr u/s-acc r/w-acc x/d-acc wp smep smap ac nxe r-w-x cpl x86)
                   (mv t 0 x86)))
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table) ()))))
+
+
+(defthm xlate-equiv-entries-and-ia32e-pdpte-pg-dirbits->pd
+  (implies (xlate-equiv-entries e-1 e-2)
+           (equal (ia32e-pdpte-pg-dirbits->pd e-1)
+                  (ia32e-pdpte-pg-dirbits->pd e-2)))
+  :hints (("goal" :in-theory (e/d* (ia32e-pdpte-pg-dirbits->pd
+                                    ia32e-pdpte-pg-dirbits-fix
+                                    xlate-equiv-entries
+                                    ia32e-page-tablesbits->xd
+                                    ia32e-page-tablesbits->res2
+                                    ia32e-page-tablesbits->reference-addr
+                                    ia32e-page-tablesbits->res1
+                                    ia32e-page-tablesbits->ps
+                                    ia32e-page-tablesbits->pcd
+                                    ia32e-page-tablesbits->pwt
+                                    ia32e-page-tablesbits->u/s
+                                    ia32e-page-tablesbits->r/w
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
+                                   ())))
+  :rule-classes :congruence)
+
+(defthm xlate-equiv-entries-and-ia32e-pdpte-1gb-pagebits->page
+  (implies (xlate-equiv-entries e-1 e-2)
+           (equal (ia32e-pdpte-1gb-pagebits->page e-1)
+                  (ia32e-pdpte-1gb-pagebits->page e-2)))
+  :hints (("goal" :in-theory (e/d* (ia32e-pdpte-1gb-pagebits->page
+                                    ia32e-pdpte-1gb-pagebits-fix
+                                    xlate-equiv-entries
+                                    ia32e-page-tablesbits->xd
+                                    ia32e-page-tablesbits->res2
+                                    ia32e-page-tablesbits->reference-addr
+                                    ia32e-page-tablesbits->res1
+                                    ia32e-page-tablesbits->ps
+                                    ia32e-page-tablesbits->pcd
+                                    ia32e-page-tablesbits->pwt
+                                    ia32e-page-tablesbits->u/s
+                                    ia32e-page-tablesbits->r/w
+                                    ia32e-page-tablesbits->p
+                                    ia32e-page-tablesbits-fix)
+                                   ())           
+           :use ((:instance xlate-equiv-entries-and-logtail
+                            (n 30)))))
+  :rule-classes :congruence)
 
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa-page-dir-ptr-table
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
@@ -368,7 +415,8 @@
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
                wp smep smap ac nxe r-w-x cpl x86))
     (double-rewrite x86)))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table)
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                                    ia32e-pdpte-pg-dirbits->pd)
                                    (bitops::logand-with-negated-bitmask
                                     accessed-bit
                                     dirty-bit
@@ -770,7 +818,9 @@
                lin-addr base-addr u/s-acc r/w-acc x/d-acc
                wp smep smap ac nxe r-w-x cpl x86-2))))
   ;; add the following after adding 64-bit mode hyp to previous theorem:
-  :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
+  :hints (("Goal" :in-theory (e/d (xlate-equiv-memory)
+                                  (xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
+                                   xlate-equiv-structures-and-xlate-equiv-entries-rm-low-64-with-page-dir-ptr-table-entry-addr)))))
 
 (defthm two-page-dir-ptr-table-walks-ia32e-la-to-pa-page-dir-ptr-table
   (implies

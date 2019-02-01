@@ -143,9 +143,7 @@
     :updater-drivers (((XW FLD I :VALUE :BASE)
                        (XR FLD I :BASE))
                       ((WB N ADDR R-W-X :VALUE :BASE)
-                       (RB N ADDR R-W-X :BASE))
-                      ((!FLGI I :VALUE :BASE)
-                       (FLGI I :BASE)))
+                       (RB N ADDR R-W-X :BASE)))
     :constructor-drivers nil
     :state-comps-and-types  nil
     :callp  nil ;; recognizer fn for states with pc on call instruction

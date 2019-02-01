@@ -12,9 +12,12 @@
 
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
+(include-book "char-code-theorems")
 (include-book "char-kinds")
-(include-book "string-kinds")
+(include-book "chars-codes")
+(include-book "hexchars")
 (include-book "hexstrings")
+(include-book "string-kinds")
 (include-book "strings-codes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

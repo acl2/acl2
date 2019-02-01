@@ -340,5 +340,7 @@
     url-encode-chars
     url-encode-string-aux
     url-encode-string
+
+    strrange-equiv
     ))
 

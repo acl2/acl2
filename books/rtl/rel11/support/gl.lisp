@@ -4,6 +4,8 @@
 (include-book "definitions")
 (local (include-book "bits"))
 (local (include-book "log"))
+(local (include-book "float"))
+(include-book "rac")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -66,3 +68,26 @@
    :rule-classes ())
 
 (gl::set-preferred-def binary-cat binary-cat-for-gl)
+
+(defrule expo-for-gl
+  (equal (expo x)
+         (if (integerp x)
+	     (if (= x 0)
+	         0
+	       (1- (integer-length (abs x))))
+           (let ((msg (cw "WARNING: guard violation for the function EXPO during a GL proof.~%")))
+             (declare (ignore msg))
+             (expo x))))
+  :prep-books ((include-book "centaur/bitops/integer-length" :dir :system))
+  :use (:instance expo-unique (n (1- (integer-length (abs x)))))
+  :rule-classes ())
+
+(gl::set-preferred-def expo expo-for-gl)
+
+(gl::gl-set-uninterpreted ag)
+
+(gl::gl-set-uninterpreted as)
+
+(gl::def-gl-rewrite ag-of-as
+  (equal (ag a (as wa v r))
+         (if (equal a wa) v (ag a r))))

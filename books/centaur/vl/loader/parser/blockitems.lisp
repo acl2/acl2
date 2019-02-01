@@ -534,11 +534,7 @@ out some duplication and indirection:</p>
           (b* ((val (make-vl-fwdtypedef :kind :vl-interfaceclass
                                         :name (vl-idtoken->name name)
                                         :loc (vl-token->loc typedef)
-                                        :atts atts))
-               (tokstream
-                (vl-tokstream-update-pstate
-                 (vl-parsestate-add-user-defined-type
-                  (vl-idtoken->name name) (vl-tokstream->pstate)))))
+                                        :atts atts)))
             (mv nil val tokstream))))
 
        (when (vl-is-some-token? '(:vl-kwd-enum :vl-kwd-struct :vl-kwd-union :vl-kwd-class))
@@ -553,11 +549,7 @@ out some duplication and indirection:</p>
                                                   (:vl-kwd-class  :vl-class))
                                           :name (vl-idtoken->name name)
                                           :loc (vl-token->loc typedef)
-                                          :atts atts))
-               (tokstream
-                (vl-tokstream-update-pstate
-                 (vl-parsestate-add-user-defined-type
-                  (vl-idtoken->name name) (vl-tokstream->pstate)))))
+                                          :atts atts)))
             (mv nil val tokstream))))
 
        (return-raw
@@ -609,11 +601,7 @@ out some duplication and indirection:</p>
                                       :type (vl-datatype-update-udims udims datatype)
                                       :minloc (vl-token->loc typedef)
                                       :maxloc (vl-token->loc semi)
-                                      :atts atts))
-                (tokstream
-                (vl-tokstream-update-pstate
-                 (vl-parsestate-add-user-defined-type
-                  (vl-idtoken->name id) (vl-tokstream->pstate)))))
+                                      :atts atts)))
              (mv nil val tokstream)))))
   ///
   (local (defthm tag-of-vl-parse-fwd-typedef

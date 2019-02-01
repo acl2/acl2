@@ -208,18 +208,18 @@
   (if (atom hns)
       fs ;;error case, basically
     (if (atom (cdr hns))
-        (delete-assoc (car hns) fs)
+        (remove1-assoc (car hns) fs)
       (if (atom fs)
           nil
         (let ((sd (assoc (car hns) fs)))
           (if (atom sd)
               fs
             (let ((contents (cdr sd)))
-              (if (stringp (car contents)) 
+              (if (stringp (car contents))
                   fs ;; we still have names but we're at a regular file - error
                 (cons (cons (car sd)
                             (l2-unlink (cdr hns) contents))
-                      (delete-assoc (car hns) fs))))))))
+                      (remove1-assoc (car hns) fs))))))))
     ))
 
 ; This function writes a specified text string to a specified position to a
@@ -252,7 +252,7 @@
                                    (coerce newtext 'string)
                                    newlength))))
                           (l2-wrchs (cdr hns) contents start text)))
-                  (delete-assoc (car hns) fs))))))))
+                  (remove1-assoc (car hns) fs))))))))
 
 (defthm l2-wrchs-returns-fs-lemma-1
   (implies (and (consp (assoc-equal s fs))
@@ -261,7 +261,7 @@
 
 (defthm l2-wrchs-returns-fs-lemma-2
   (implies (l2-fs-p fs)
-           (l2-fs-p (delete-assoc-equal s fs))))
+           (l2-fs-p (remove1-assoc-equal s fs))))
 
 (defthm l2-wrchs-returns-fs-lemma-3
   (implies (and (consp fs) (l2-fs-p fs)
@@ -297,8 +297,8 @@
 
 (defthm l2-wrchs-correctness-1-lemma-1
   (implies (l2-fs-p fs)
-           (equal (delete-assoc-equal name (l2-to-l1-fs fs))
-                  (l2-to-l1-fs (delete-assoc-equal name fs)))))
+           (equal (remove1-assoc-equal name (l2-to-l1-fs fs))
+                  (l2-to-l1-fs (remove1-assoc-equal name fs)))))
 
 (defthm l2-wrchs-correctness-1-lemma-2
   (implies (and (consp fs)
@@ -340,7 +340,7 @@
                       (if (and (consp (cdr sd)) (stringp (cadr sd)))
                           contents ;; file already exists, so leave fs unchanged
                         (l2-create (cdr hns) contents text)))
-                (delete-assoc (car hns) fs))
+                (remove1-assoc (car hns) fs))
           )))))
 
 ;; This theorem shows that the property l2-fs-p is preserved by create.
@@ -537,7 +537,7 @@
 
 (defthm l2-fsck-after-l2-wrchs-lemma-1
   (implies (and (l2-fs-p fs) (l2-fsck fs))
-           (l2-fsck (delete-assoc-equal name fs))))
+           (l2-fsck (remove1-assoc-equal name fs))))
 
 (defthm l2-fsck-after-l2-wrchs-lemma-2
   (implies (and (l2-fs-p fs) (l2-fsck fs))

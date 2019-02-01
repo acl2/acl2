@@ -179,18 +179,54 @@ public final class Acl2Symbol extends Acl2Value {
             else
                 return this.packageName.compareTo(that.packageName);
         }
-        // symbols are less than pairs:
+        // symbols are less than cons pairs:
         return -1;
     }
 
     /**
      * Returns a printable representation of this ACL2 symbol.
-     * This should be improved to return something non-confusing
-     * when the package name or name includes "unusual" characters.
+     * We always include the package prefix,
+     * since there is no notion of "current package" here;
+     * the package name is represented
+     * as explained in {@link Acl2PackageName#toString()}.
+     * The symbol name comes after two colons.
+     * If the symbol name is not empty,
+     * consists of only of uppercase letters, digits, and dashes,
+     * and does not start with a digit,
+     * then the symbol name is used as is;
+     * otherwise, it is preceded and followed by vertical bars,
+     * and any backslash or vertical bar in the symbol name
+     * is preceded by a backslash.
+     * The conditions here under which
+     * the symbol name is surrounded by vertical bars
+     * are more stringent than in ACL2;
+     * future versions of this method may relax those conditions
+     * and match ACL2's conditions more closely.
+     * This scheme should ensure that ACL2 symbols are always printed clearly.
      */
     @Override
     public String toString() {
-        return this.packageName + "::" + this.name;
+        StringBuilder result = new StringBuilder();
+        boolean noBars = true;
+        String jstring = this.name.getJavaString();
+        noBars = noBars && !jstring.isEmpty();
+        for (int i = 0; i < jstring.length(); ++i) {
+            char jchar = jstring.charAt(i);
+            noBars = noBars &&
+                    (('A' <= jchar && jchar <= 'Z') ||
+                            ('0' <= jchar && jchar <= '9' && i != 0) ||
+                            (jchar == '-'));
+            if (jchar == '|')
+                result.append("\\|");
+            else if (jchar == '\\')
+                result.append("\\\\");
+            else result.append(jchar);
+        }
+        if (!noBars) {
+            result.insert(0, '|');
+            result.append('|');
+        }
+        return this.packageName + "::" + result;
     }
 
     /**
@@ -472,6 +508,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol BAD_ATOM_LESS_THAN_OR_EQUAL_TO;
 
+    /**
+     * The ACL2 symbol denoted by {@code acl2::or}.
+     */
+    public static final Acl2Symbol OR;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.make("T");
@@ -513,6 +554,7 @@ public final class Acl2Symbol extends Acl2Value {
         Acl2String stringEqual = Acl2String.make("EQUAL");
         Acl2String stringBadAtomLessThanOrEqualTo =
                 Acl2String.make("BAD-ATOM<=");
+        Acl2String stringOr = Acl2String.make("OR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -555,6 +597,7 @@ public final class Acl2Symbol extends Acl2Value {
         BAD_ATOM_LESS_THAN_OR_EQUAL_TO =
                 new Acl2Symbol(Acl2PackageName.ACL2,
                         stringBadAtomLessThanOrEqualTo);
+        OR = new Acl2Symbol(Acl2PackageName.LISP, stringOr);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -580,7 +623,8 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringCar, CAR);
         initialLispMap.put(stringCdr, CDR);
         initialLispMap.put(stringEqual, EQUAL);
-        // initial inner map for the "ACL2" pacakge:
+        initialLispMap.put(stringOr, OR);
+        // initial inner map for the "ACL2" package:
         Map<Acl2String, Acl2Symbol> initialAcl2Map = new HashMap<>();
         initialAcl2Map.put(stringComplexRationalp, COMPLEX_RATIONALP);
         initialAcl2Map.put(stringAcl2Numberp, ACL2_NUMBERP);

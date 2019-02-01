@@ -27,3 +27,20 @@
 
 (assert-equal (ubyte8s=>hexstring '(70 160 180 255 11))
               "46A0B4FF0B")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (hexstring=>ubyte8s "")
+              nil)
+
+(assert-equal (hexstring=>ubyte8s "00")
+              '(0))
+
+(assert-equal (hexstring=>ubyte8s "010203")
+              '(1 2 3))
+
+(assert-equal (hexstring=>ubyte8s "46A0B4FF0B")
+              '(70 160 180 255 11))
+
+(assert-equal (hexstring=>ubyte8s "46a0b4ff0b")
+              '(70 160 180 255 11))

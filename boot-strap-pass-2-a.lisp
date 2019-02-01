@@ -1074,6 +1074,7 @@
 
 (verify-termination-boot-strap formals) ; and guards
 (verify-termination-boot-strap constraint-info) ; and guards
+(verify-termination-boot-strap unknown-constraints-p) ; and guards
 
 (defund meta-extract-formula (name state)
 
@@ -1093,11 +1094,11 @@
   (let ((wrld (w state)))
     (or (getpropc name 'theorem nil wrld)
         (mv-let (flg prop)
-                (constraint-info name wrld)
-                (cond ((eq prop *unknown-constraints*)
-                       *t*)
-                      (flg (ec-call (conjoin prop)))
-                      (t prop))))))
+          (constraint-info name wrld)
+          (cond ((unknown-constraints-p prop)
+                 *t*)
+                (flg (ec-call (conjoin prop)))
+                (t prop))))))
 
 (verify-termination-boot-strap type-set-quote)
 (verify-guards type-set-quote)

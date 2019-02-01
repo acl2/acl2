@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
+
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; January 2019
 
 ;; A tree based, reducing OR-NOR
 
@@ -48,21 +51,19 @@
                  (if parity 'b-nor 'b-nand)
                  (list 'left-out 'right-out))))))))
 
-(destructuring-lemma
+(module-generator
  t-or-nor* (tree parity)
- (declare (xargs :guard (listp tree)))
- ;; Bindings
- ((a-names (sis 'a 0 (tree-size tree))))
  ;; Name
  (si (if parity 't-nor 't-or) (tree-number tree))
  ;; Inputs
- a-names
+ (sis 'a 0 (tree-size tree))
  ;; Outputs
  (list 'out)
  ;; States
  nil
  ;; Occurrences
- (t-or-nor-body tree parity))
+ (t-or-nor-body tree parity)
+ (declare (xargs :guard (listp tree))))
 
 (defund t-or-nor$netlist (tree parity)
   (declare (xargs :guard (tv-guard tree)))
@@ -212,27 +213,30 @@
 ;; A zero-detector module built from T-OR-NOR*.  The choice of implementation
 ;; is optimized for balanced trees.
 
-(destructuring-lemma
+(module-generator
  tv-zp* (tree)
- (declare (xargs :guard t))
- ;; Bindings
- ((in-names (sis 'in 0 (tree-size tree)))
-  (odd-height (equal (mod (tree-height tree) 2) 1)))
  ;; Name
  (si 'tv-zp (tree-number tree))
  ;; Inputs
- in-names
+ (sis 'in 0 (tree-size tree))
  ;; Output
  '(out)
  ;; States
  nil
  ;; Body
- (if odd-height
+ (if (equal (mod (tree-height tree) 2) 1)
      (list
-      (list 'g0 '(out-) (si 't-or (tree-number tree)) in-names)
-      (list 'g1 '(out)  'b-not                        '(out-)))
+      (list 'g0
+            '(out-)
+            (si 't-or (tree-number tree))
+            (sis 'in 0 (tree-size tree)))
+      (list 'g1 '(out)  'b-not '(out-)))
    (list
-    (list 'g0 '(out) (si 't-nor (tree-number tree)) in-names))))
+    (list 'g0
+          '(out)
+          (si 't-nor (tree-number tree))
+          (sis 'in 0 (tree-size tree)))))
+ (declare (xargs :guard t)))
 
 (defund tv-zp$netlist (tree)
   (declare (xargs :guard (tv-guard tree)))
@@ -257,8 +261,6 @@
         (f-not (tr-or-nor a nil tree))
       (tr-or-nor a t tree))))
 
-(not-primp-lemma tv-zp)
-
 (defthm tv-zp$value
   (implies (and (tv-zp& netlist tree)
                 (equal (len a) (tree-size tree))
@@ -266,11 +268,11 @@
            (equal (se (si 'tv-zp (tree-number tree)) a sts netlist)
                   (list (f$tv-zp a tree))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :expand (se (si 'tv-zp (tree-number tree))
-                       a
-                       sts
-                       netlist)
+           :expand (:free (n)
+                          (se (si 'tv-zp n)
+                              a
+                              sts
+                              netlist))
            :in-theory (e/d (de-rules
                             tv-zp&
                             tv-zp*$destructure

@@ -29,6 +29,19 @@
   :parents (bytes)
   :description "bytes")
 
+(defsection byte-fix-ext
+  :extension byte-fix
+
+  (defrule natp-of-byte-fix
+    (natp (byte-fix x))
+    :rule-classes :type-prescription
+    :enable byte-fix)
+
+  (defrule byte-fix-upper-bound
+    (< (byte-fix x) 256)
+    :rule-classes :linear
+    :enable (byte-fix bytep)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc byte-arrays
@@ -45,39 +58,21 @@
   :pred byte-listp
   :parents (byte-arrays))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defsection byte-listp-ext
+  :extension byte-listp
 
-(fty::defflexsum bytelist/error
-  :parents (basics)
-  :short "Union of <see topic='@(url byte-arrays)'>byte arrays</see>
-          and @(':error')."
-  (:error :fields () :ctor-body ':error :cond (eq x :error))
-  (:bytes :fields ((bytes :type byte-list :acc-body x)) :ctor-body bytes))
+  (defrule nat-listp-when-byte-listp
+    (implies (byte-listp bytes)
+             (nat-listp bytes))))
 
-(defsection bytelist/error-ext
-  :extension bytelist/error
+(defsection byte-list-fix-ext
+  :extension byte-list-fix
 
-  (defruled bytelist/error-p-alt-def
-    (equal (bytelist/error-p x)
-           (or (eq x :error)
-               (byte-listp x)))
-    :enable bytelist/error-p)
+  (defrule car-of-byte-list-fix
+    (implies (consp x)
+             (equal (car (byte-list-fix x))
+                    (byte-fix (car x)))))
 
-  (defrule disjoint-bytelist/error
-    (not (and (eq x :error)
-              (byte-listp x)))
-    :rule-classes nil)
-
-  (defrule bytelist/error-p-when-byte-listp
-    (implies (byte-listp x)
-             (bytelist/error-p x))
-    :enable bytelist/error-p)
-
-  (defrule bytelist/error-p-of-error
-    (bytelist/error-p :error))
-
-  (defrule byte-listp-when-bytelist/error-p-and-not-error
-    (implies (and (bytelist/error-p x)
-                  (not (bytelist/error-case x :error)))
-             (byte-listp x))
-    :enable bytelist/error-p))
+  (defrule cdr-of-byte-list-fix
+    (equal (cdr (byte-list-fix x))
+           (byte-list-fix (cdr x)))))

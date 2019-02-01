@@ -31,6 +31,10 @@
 ;; (ld "coi/util/def-defpkg.lsp" :dir :system)
 ;; (ld "coi/symbol-fns/symbol-fns-defpkg.lsp" :dir :system)
 
+; The following comment line tells the build system that if *acl2-exports*
+; changes, then every book that uses this file should be recertified:
+; (depends-on "build/acl2-exports.certdep" :dir :system)
+
 (defpkg "NARY" (cons 'acl2::val
                      (cons 'acl2::met
                            (append *acl2-exports*

@@ -49,11 +49,7 @@
                          rme-size
                          wime-size
                          wme-size)
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+                        (las-to-pas
                          xr-fault-wb-in-system-level-marking-view
                          xr-fault-wb-in-sys-view))))
 

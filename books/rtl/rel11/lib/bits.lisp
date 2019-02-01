@@ -249,10 +249,8 @@
   :rule-classes ())
 
 (defthm bits-mod-fl
-  (implies (and (integerp x)
-                (integerp i)
-                (integerp j)
-                (>= i j))
+  (implies (and (integerp i)
+                (integerp j))
            (equal (bits x (1- i) j)
                   (mod (fl (/ x (expt 2 j)))
                        (expt 2 (- i j)))))
@@ -739,6 +737,16 @@
     (equal (cat x m (bits y (1- n) 0) n)
 	   (cat x m y n)))
 
+(defthm cat-bits-3
+  (implies (and (integerp i) (integerp m) (>= i (1- m)))
+           (equal (cat (bits x i 0) m y n)
+                  (cat x m y n))))
+
+(defthm cat-bits-4
+  (implies (and (integerp i) (integerp n) (>= i (1- n)))
+           (equal (cat x m (bits y i 0) n)
+                  (cat x m y n))))
+
 (defthm cat-associative
   (implies (and (case-split (<= (+ m n) p))
 		(case-split (<= 0 m))
@@ -952,6 +960,8 @@
 
 (defsection-rtl |Signed Integer Formats| |Bit Vectors|
 
+(defnd ui (r) r)
+
 (defund si (r n)
   (declare (xargs :guard (and (integerp r)
                               (natp n))))
@@ -1005,19 +1015,21 @@
                      (si (mod y (expt 2 n)) n))
                   (- x y))))
 
-(defund ui (r) r)
 
-(defund si (r n)
-  (declare (xargs :guard (and (integerp r)
-                              (natp n))))
-  (if (= (bitn r (1- n)) 1)
-      (- r (expt 2 n))
-    r))
+;;;**********************************************************************
+;;;                      Fixed-Point Registers
+;;;**********************************************************************
 
 (defund uf (r n m)
+  (declare (xargs :guard (and (natp r)
+                              (natp n)
+                              (natp m))))
   (* (expt 2 (- m n)) (ui r)))
 
 (defund sf (r n m)
+  (declare (xargs :guard (and (integerp r)
+                              (natp n)
+                              (natp m))))
   (* (expt 2 (- m n)) (si r n)))
 
 (defthmd bits-uf

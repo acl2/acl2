@@ -58,3 +58,8 @@
   `(make-event (ifdef-fn ,varname ',forms t state)))
   
                
+(defmacro ifdef-define (x)
+  `(value-triple (setenv$ ,x "1")))
+
+(defmacro ifdef-undefine (x)
+  `(value-triple (setenv$ ,x "")))

@@ -79,7 +79,7 @@ public final class Acl2Variable extends Acl2Term {
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
-     * then constants, ordered according to their underlying symbols;
+     * then quoted constants, ordered according to their underlying symbols;
      * finally applications, ordered lexicographically according to
      * the function followed by the arguments.
      *
@@ -95,15 +95,12 @@ public final class Acl2Variable extends Acl2Term {
             Acl2Variable that = (Acl2Variable) o;
             return this.name.compareTo(that.name);
         }
-        // variables are less than constants and applications:
+        // variables are less than quoted constants and applications:
         return -1;
     }
 
     /**
      * Returns a printable representation of this ACL2 variable.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the variable includes "unusual" characters.
      */
     @Override
     public String toString() {

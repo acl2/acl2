@@ -13,15 +13,19 @@
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
 (include-book "add-to-set-theorems")
+(include-book "append-theorems")
 (include-book "index-of-theorems")
 (include-book "intersection-theorems")
 (include-book "intersectp-theorems")
 (include-book "last-theorems")
 (include-book "len-const-theorems")
-(include-book "primitive-theorems")
+(include-book "nthcdr-theorems")
+(include-book "prefixp-theorems")
+(Include-book "primitive-theorems")
 (include-book "rev-theorems")
 (include-book "set-difference-theorems")
 (include-book "set-size")
+(include-book "take-theorems")
 (include-book "union-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

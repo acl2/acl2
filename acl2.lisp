@@ -508,12 +508,17 @@
 #+cmu
 (setq ext:*top-level-auto-declare* nil)
 
-; Turn off compiler verbosity going to error stream, since even >& does not
-; seem to redirect that stream to a file.
-#+(or cmu sbcl)
+; Turn off compiler verbosity.  This is important for CMUCL and SBCL because,
+; apparently, even >& does not seem to redirect the error stream to a file
+; during regressions.  For GCL it is useful simply to reduce rather a lot of
+; output on compilation, even for top-level forms (as opposed to file), which
+; doesn't seem necessary for Allegro CL or LispWorks.
+#+(or cmu sbcl gcl)
 (setq *compile-verbose* nil)
 #+(or cmu sbcl)
 (setq *compile-print* nil)
+#+gcl
+(setq *load-verbose* nil)
 
 ; Turn off gc verbosity (same reason as above).
 #+cmu

@@ -129,12 +129,11 @@ Future Work
   (mv-let (sym x)
           (constraint-info fn wrld)
           (cond
-           ((eq x *unknown-constraints*)
+           ((unknown-constraints-p x)
             (er hard 'constraint
                 "Unable to determine constraints on ~x0!  Presumably this ~
-                 function was introduced with ~
-                 define-trusted-clause-processor; see :DOC ~
-                 define-trusted-clause-processor."))
+                 function was introduced with a partial-encapsulate; see :DOC ~
+                 partial-encapsulate."))
            (sym (conjoin x))
            (t x))))
 

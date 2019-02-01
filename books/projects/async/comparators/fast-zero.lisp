@@ -1,10 +1,13 @@
 ;; Copyright (C) 2017, Regents of the University of Texas
-;; Written by Cuong Chau (derived from the FM9001 verification work of Brock
-;; and Hunt)
-;; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+;; Written by Cuong Chau (derived from the FM9001 work of Brock and Hunt)
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with
+;; ACL2.
+
+;; The ACL2 source code for the FM9001 work is available at
+;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; January 2019
 
 ;; A zero detector optimized for quick detection of the last 2 bits of the
 ;; input vector.  It should save a few nanoseconds in the FM9001.
@@ -60,7 +63,7 @@
         (take (- n 2) (sis 'a 0 n)))
   (list 'result '(z) 'b-nor3
         (list 'zfront (si 'a (- n 2)) (si 'a (1- n)))))
- :guard (and (natp n) (<= 2 n)))
+ (declare (xargs :guard (and (natp n) (<= 2 n)))))
 
 (defund fast-zero$netlist (n)
   (declare (xargs :guard (and (natp n)
@@ -79,8 +82,6 @@
 
 (defthm check-fast-zero$netlist-5
   (fast-zero& (fast-zero$netlist 5) 5))
-
-(not-primp-lemma fast-zero)
 
 (defthm fast-zero$value
   (implies (and (fast-zero& netlist n)
