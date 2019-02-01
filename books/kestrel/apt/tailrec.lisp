@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/named-formulas" :dir :system)
@@ -18,7 +19,6 @@
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -814,35 +814,6 @@
                                              variant$
                                              verify-guards$))))))
 
-(define tailrec-process-hints
-  (hints
-   (app-cond-present-names tailrec-app-cond-name-listp)
-   ctx
-   state)
-  :returns (mv erp
-               (hints$ "A @('symbol-alistp') that is the alist form of
-                        the keyword-value list @('hints').")
-               state)
-  :mode :program
-  :short "Process the @(':hints') input."
-  :long
-  "<p>
-   Here we only check that the input is a keyword-value list
-   whose keywords are unique and include only names of applicability conditions.
-   The values of the keyword-value list
-   are checked to be well-formed hints not here,
-   but implicitly when attempting to prove the applicability conditions.
-   </p>"
-  (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
-       (alist (keyword-value-list-to-alist hints))
-       (keys (strip-cars alist))
-       (description
-        (msg "The list ~x0 of keywords of the :HINTS input" keys))
-       ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys app-cond-present-names
-                                    description t nil)))
-    (value alist)))
-
 (define tailrec-process-inputs (old
                                 variant
                                 domain
@@ -915,7 +886,7 @@
                         the new and wrapper functions
                         should be verified or not,
                         @('hints$') is
-                        the result of @(tsee tailrec-process-hints), and
+                        the result of @(tsee evmac-process-input-hints), and
                         @('app-cond-present-names') is
                         the result of @(tsee tailrec-app-cond-present-names).")
                state)
@@ -939,7 +910,7 @@
    (see @(tsee tailrec-process-old)).
    </p>"
   (b* ((wrld (w state))
-       ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
+       ((er &) (evmac-process-input-print print ctx state))
        (verbose (and (member-eq print '(:info :all)) t))
        ((er (list old$
                   test
@@ -979,9 +950,9 @@
                               "The :NON-EXECUTABLE input" t nil))
        (app-cond-present-names (tailrec-app-cond-present-names
                                 variant verify-guards$))
-       ((er hints$) (tailrec-process-hints
+       ((er hints$) (evmac-process-input-hints
                      hints app-cond-present-names ctx state))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
+       ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
                  test
                  base
@@ -1184,7 +1155,7 @@
                               (r symbolp)
                               (domain$ pseudo-termfnp)
                               (hints$ symbol-alistp)
-                              (print$ print-specifier-p)
+                              (print$ evmac-input-print-p)
                               (names-to-avoid symbol-listp)
                               ctx
                               state)
@@ -1259,7 +1230,7 @@
    (domain$ pseudo-termfnp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
-   (print$ print-specifier-p)
+   (print$ evmac-input-print-p)
    (app-cond-present-names tailrec-app-cond-name-listp)
    (names-to-avoid symbol-listp)
    ctx
@@ -1301,7 +1272,7 @@
       (domain$ pseudo-termfnp)
       (verify-guards$ booleanp)
       (hints$ symbol-alistp)
-      (print$ print-specifier-p)
+      (print$ evmac-input-print-p)
       (names-to-avoid symbol-listp)
       ctx
       state)
@@ -2346,7 +2317,7 @@
    (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
-   (print$ print-specifier-p)
+   (print$ evmac-input-print-p)
    (show-only$ booleanp)
    (app-cond-present-names tailrec-app-cond-name-listp)
    (call pseudo-event-formp)

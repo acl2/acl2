@@ -3858,7 +3858,16 @@
   (let* ((defthm (if (or (eql i 0) (eql i 6) (eql i 7)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
-         (formula (prettyify-clause clause nil nil))
+         (formula
+
+; Notice that we pass nil to the world argument of prettyify-clause below, so
+; that the user cannot affect the formula generated here, for example by
+; setting the 'untranslate or 'untranslate-preprocess entry in the
+; user-defined-functions-table.  We do not rely on this for soundness, however,
+; since ultimately the defthm returned below would be rejected if the formula
+; is unsuitable.
+
+          (prettyify-clause clause nil nil))
          (hints (defevaluator-form/defthm-hints evfn evfn-lst i)))
     `((,defthm ,name
         ,formula

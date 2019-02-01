@@ -4374,6 +4374,15 @@
 ; ; However, in the interest of performance we have decided to avoid a full-blown
 ; ; call of type-set here.  You get what you pay for, perhaps.
 ;
+; However, then Rich Cohen observed that when trying to relieve a hypothesis in
+; a lemma, if the hyp rewrote to an explicit cons expression then we failed to
+; recognize that it is non-nil!  Here is a thm that failed for that reason:
+;
+;  (defstub foo (x a) t)
+;  (defaxiom lemma
+;   (implies (member x a) (equal (foo x a) x)))
+;  (thm (equal (foo x (cons x y)) x))
+;
 ; We have decided to revert to the use of type-set in rewrite-solidify, but
 ; only when we have an objective of t or nil.  Under this condition we use
 ; force-flg nil and dwp t.  We tried the div proofs with force-flg t here

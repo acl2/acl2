@@ -123,6 +123,9 @@
  <p>This library includes some XDOC constructor utilities for the reference
  documentation of event macros.</p>
 
+ <p>This library also includes functions to process inputs common to multiple
+ event macros.</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree

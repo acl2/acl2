@@ -12,10 +12,10 @@
 
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking" :dir :system)
+(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "utilities/print-specifiers")
 (include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,8 +325,8 @@
                    and (iii) the target function is enabled, ~
                    the :THM-ENABLE input cannot be T."
                   old$))
-       ((er &) (ensure-is-print-specifier$ print "The :PRINT input" t nil))
-       ((er &) (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil)))
+       ((er &) (evmac-process-input-print print ctx state))
+       ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
                  static$
                  new-name$
@@ -484,7 +484,7 @@
                                  (thm-name$ symbolp)
                                  (thm-enable$ booleanp)
                                  (verify-guards$ booleanp)
-                                 (print$ print-specifier-p)
+                                 (print$ evmac-input-print-p)
                                  (show-only$ booleanp)
                                  (call pseudo-event-formp)
                                  (wrld plist-worldp))
