@@ -308,7 +308,10 @@
  @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
  str::defcharset).  Added a new predicate.</p>
 
- <p>Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ <p>Added functions @(tsee hexchars=>ubyte8) and @(tsee ubyte8=>hexchars) to
+ convert between single bytes and pairs of hexadecimal digit characters;
+ rephrased @(tsee ubyte8s=>hexchars) in terms of @(tsee ubyte8=>hexchars).
+ Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
  inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
 
  <h4>System Utilities</h4>
