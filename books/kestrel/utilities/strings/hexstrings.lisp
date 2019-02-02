@@ -72,3 +72,26 @@
              (equal (hexstring=>ubyte8s (string-append string1 string2))
                     (append (hexstring=>ubyte8s string1)
                             (hexstring=>ubyte8s string2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ubyte8s<=>hexstring-inverses-theorems
+  :parents (ubyte8s=>hexstring hexstring=>ubyte8s)
+  :short "@(tsee ubyte8s=>hexstring) and @(tsee hexstring=>ubyte8s)
+          are mutual inverses."
+
+  (defrule hexstring=>ubyte8s-of-ubyte8s=>hexstring
+    (equal (hexstring=>ubyte8s (ubyte8s=>hexstring bytes))
+           (unsigned-byte-list-fix 8 bytes))
+    :enable (ubyte8s=>hexstring
+             hexstring=>ubyte8s))
+
+  (defrule ubyte8s=>hexstring-of-hexstring=>ubyte8s
+    (implies (and (stringp string)
+                  (str::hex-digit-listp (explode string))
+                  (evenp (length string)))
+             (equal (ubyte8s=>hexstring (hexstring=>ubyte8s string))
+                    (str::upcase-string string)))
+    :enable (hexstring=>ubyte8s
+             ubyte8s=>hexstring
+             str::upcase-string)))

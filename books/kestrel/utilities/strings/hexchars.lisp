@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/strings/hex" :dir :system)
 (include-book "hex-digit-char-theorems")
 
@@ -64,6 +65,35 @@
   (b* ((hi-digit (str::hex-digit-val hi-char))
        (lo-digit (str::hex-digit-val lo-char)))
     (+ (* 16 hi-digit) lo-digit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ubyte8<=>hexchars-inverses-theorems
+  :parents (ubyte8=>hexchars hexchars=>ubyte8)
+  :short "@(tsee ubyte8=>hexchars) and @(tsee hexchars=>ubyte8)
+          are mutual inverses."
+
+  (defrule hexchars=>ubyte8-of-ubyte8=>hexchars
+    (b* (((mv hi-char lo-char) (ubyte8=>hexchars byte)))
+      (equal (hexchars=>ubyte8 hi-char lo-char)
+             (unsigned-byte-fix 8 byte)))
+    :prep-books ((include-book "arithmetic-5/top" :dir :system))
+    :enable (ubyte8=>hexchars
+             hexchars=>ubyte8)
+    :disable str::hex-digit-to-char)
+
+  (defrule ubyte8=>hexchars-of-hexchars=>ubyte8
+    (implies (and (str::hex-digitp hi-char)
+                  (str::hex-digitp lo-char))
+             (b* ((byte (hexchars=>ubyte8 hi-char lo-char)))
+               (and (equal (mv-nth 0 (ubyte8=>hexchars byte))
+                           (str::upcase-char hi-char))
+                    (equal (mv-nth 1 (ubyte8=>hexchars byte))
+                           (str::upcase-char lo-char)))))
+    :prep-books ((include-book "arithmetic-5/top" :dir :system))
+    :enable (ubyte8=>hexchars
+             hexchars=>ubyte8)
+    :disable str::hex-digit-to-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,3 +199,27 @@
                     (append (hexchars=>ubyte8s chars1)
                             (hexchars=>ubyte8s chars2))))
     :induct (hexchars=>ubyte8s chars1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ubyte8s<=>hexchars-inverses-theorems
+  :parents (ubyte8s=>hexchars hexchars=>ubyte8s)
+  :short "@(tsee ubyte8s=>hexchars) and @(tsee hexchars=>ubyte8s)
+          are mutual inverses."
+
+  (defrule hexchars=>ubyte8s-of-ubyte8s=>hexchars
+    (equal (hexchars=>ubyte8s (ubyte8s=>hexchars bytes))
+           (unsigned-byte-list-fix 8 bytes))
+    :enable (ubyte8s=>hexchars
+             hexchars=>ubyte8s
+             unsigned-byte-list-fix))
+
+  (defrule ubyte8s=>hexchars-of-hexchars=>ubyte8s
+    (implies (and (str::hex-digit-listp chars)
+                  (true-listp chars)
+                  (evenp (len chars)))
+             (equal (ubyte8s=>hexchars (hexchars=>ubyte8s chars))
+                    (str::upcase-charlist chars)))
+    :enable (hexchars=>ubyte8s
+             ubyte8s=>hexchars)
+    :induct (hexchars=>ubyte8s chars)))
