@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 (include-book "std/strings/hex" :dir :system)
+(include-book "hex-digit-char-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,38 +22,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ubyte8=>hexchars ((byte (unsigned-byte-p 8 byte)))
+  :returns (mv (hi-char str::hex-digitp)
+               (lo-char str::hex-digitp))
+  :parents (8bitbytes-hexchars-conversions)
+  :short "Convert an unsigned 8-bit byte to two hexadecimal digit characters."
+  :long
+  (xdoc::topp
+   "The most significant digit comes first,
+    followed by the least significant one.
+    If the byte is below 16, the first digit is zero.
+    The hexadecimal digits above 9 are uppercase letters.")
+  (b* ((byte (mbe :logic (unsigned-byte-fix 8 byte) :exec byte)))
+    (mv (str::hex-digit-to-char (floor byte 16))
+        (str::hex-digit-to-char (mod byte 16))))
+  :verify-guards nil ; done below (needs arithmetic)
+  ///
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (verify-guards ubyte8=>hexchars)
+
+  (defrule mv-nth-0-of-ubyte8=>hexchars-of-unsigned-byte-fix
+    (equal (mv-nth 0 (ubyte8=>hexchars (unsigned-byte-fix 8 byte)))
+           (mv-nth 0 (ubyte8=>hexchars byte))))
+
+  (defrule mv-nth-1-of-ubyte8=>hexchars-of-unsigned-byte-fix
+    (equal (mv-nth 1 (ubyte8=>hexchars (unsigned-byte-fix 8 byte)))
+           (mv-nth 1 (ubyte8=>hexchars byte)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hexchars=>ubyte8 ((hi-char str::hex-digitp) (lo-char str::hex-digitp))
+  :returns (byte (unsigned-byte-p 8 byte))
+  :parents (8bitbytes-hexchars-conversions)
+  :short "Convert two hexadecimal digit characters to an unsigned 8-bit byte."
+  :long
+  (xdoc::topp
+   "The most significant digit comes first,
+    followed by the least significant one.")
+  (b* ((hi-digit (str::hex-digit-val hi-char))
+       (lo-digit (str::hex-digit-val lo-char)))
+    (+ (* 16 hi-digit) lo-digit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ubyte8s=>hexchars ((bytes (unsigned-byte-listp 8 bytes)))
   :returns (chars str::hex-digit-listp)
   :parents (8bitbytes-hexchars-conversions)
-  :short "Convert a list of natural numbers below 256
+  :short "Convert a list of unsigned 8-bit bytes
           to a sequence of hexadecimal digit characters."
   :long
   (xdoc::topp
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
-    The hexadecimal digits above 9 are upper case letters.
+    The hexadecimal digits above 9 are uppercase letters.
     The result is the concatenation of all these digits.
     The result has always an even length.")
   (mbe :logic (cond ((endp bytes) nil)
-                    (t (b* ((byte (unsigned-byte-fix 8 (car bytes)))
-                            (digits (str::natchars16 byte))
-                            (digits (if (= (len digits) 2)
-                                        digits
-                                      (cons #\0 digits))))
-                         (append digits
-                                 (ubyte8s=>hexchars (cdr bytes))))))
+                    (t (b* (((mv hi-char lo-char)
+                             (ubyte8=>hexchars (car bytes))))
+                         (list* hi-char
+                                lo-char
+                                (ubyte8s=>hexchars (cdr bytes))))))
        :exec (ubyte8s=>hexchars-aux bytes nil))
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
                                   (rev-chars str::hex-digit-listp))
      (cond ((endp bytes) (rev rev-chars))
-           (t (b* ((digits (str::natchars16 (car bytes)))
-                   (digits (if (= (len digits) 2)
-                               digits
-                             (cons #\0 digits))))
+           (t (b* (((mv hi-char lo-char) (ubyte8=>hexchars (car bytes))))
                 (ubyte8s=>hexchars-aux (cdr bytes)
-                                       (append (rev digits) rev-chars)))))
+                                       (list* lo-char hi-char rev-chars)))))
      :enabled t))
 
   :verify-guards nil ; done below
@@ -68,30 +109,11 @@
 
   (defrule ubyte8s=>hexchars-of-unsigned-byte-list-fix
     (equal (ubyte8s=>hexchars (unsigned-byte-list-fix 8 bytes))
-           (ubyte8s=>hexchars bytes)))
+           (ubyte8s=>hexchars bytes))
+    :disable unsigned-byte-fix)
 
   (defrule evenp-of-len-of-ubyte8s=>hexchars
-    (evenp (len (ubyte8s=>hexchars bytes)))
-
-    :prep-lemmas
-
-    ((defrule basic-natchars16-lemma
-       (implies (unsigned-byte-p 8 byte)
-                (<= (len (str::basic-natchars16 byte))
-                    2))
-       :rule-classes :linear
-       :enable str::basic-natchars16
-       :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-     (defrule natchars16-lemma
-       (implies (unsigned-byte-p 8 byte)
-                (and (<= 1
-                         (len (str::natchars16 byte)))
-                     (<= (len (str::natchars16 byte))
-                         2)))
-       :rule-classes :linear
-       :enable str::natchars16
-       :prep-books ((include-book "std/lists/len" :dir :system)))))
+    (evenp (len (ubyte8s=>hexchars bytes))))
 
   (defrule ubyte8s=>hexchars-of-append
     (equal (ubyte8s=>hexchars (append bytes1 bytes2))
@@ -106,16 +128,14 @@
   :returns (bytes (unsigned-byte-listp 8 bytes))
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert an even-length sequence of hexadecimal digit characters
-          to a list of natural numbers below 256."
+          to a list of unsigned 8-bit bytes."
   :long
   (xdoc::topp
-   "Each pair of hexadecimal digit characters is turned into sa number.
+   "Each pair of hexadecimal digit characters is turned into a number.
     Each such two-digit hexadecimal notation is treated as big endian,
     i.e. the most significant digit appears first.")
   (mbe :logic (cond ((endp chars) nil)
-                    (t (b* ((hi-digit (str::hex-digit-val (car chars)))
-                            (lo-digit (str::hex-digit-val (cadr chars)))
-                            (byte (+ (* hi-digit 16) lo-digit))
+                    (t (b* ((byte (hexchars=>ubyte8 (car chars) (cadr chars)))
                             (bytes (hexchars=>ubyte8s (cddr chars))))
                          (cons byte bytes))))
        :exec (hexchars=>ubyte8s-aux chars nil))
@@ -126,9 +146,7 @@
                                               (evenp (len chars))))
                                   (rev-bytes (unsigned-byte-listp 8 rev-bytes)))
      (cond ((endp chars) (rev rev-bytes))
-           (t (b* ((hi-digit (str::hex-digit-val (car chars)))
-                   (lo-digit (str::hex-digit-val (cadr chars)))
-                   (byte (+ (* hi-digit 16) lo-digit)))
+           (t (b* ((byte (hexchars=>ubyte8 (car chars) (cadr chars))))
                 (hexchars=>ubyte8s-aux (cddr chars) (cons byte rev-bytes)))))
      :enabled t))
 
