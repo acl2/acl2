@@ -358,10 +358,16 @@
    </p>
    <p>
    As explained in Intel manual, May'18, Volume 3, Sections 3.4.2 and 5.4.1,
-   the null segment selector can be loaded into DS, ES, FS, and GS,
+   a null segment selector can be loaded into DS, ES, FS, and GS,
    but then a memory access through these segment registers causes a #GP.
+   According to AMD manual, Dec'17, Volume 2, Section 4.5.1,
+   a null segment selector has SI = TI = 0,
+   but no explicit constraint is stated on RPL;
+   Intel manual, May'18, Volume 2, POP specification says that
+   a null segment selector has a value from 0 to 3,
+   from which we infer that a null segment selector may have a non-zero RPL.
    In this function,
-   we return an error if the visible portion of the segment register is 0
+   we return an error if the visible portion of the segment register is 0-3,
    and the segment register is not CS or SS.
    Loading a null segment selector into CS and SS is not allowed,
    so it is a state invariant that
@@ -390,7 +396,7 @@
     (#.*compatibility-mode* ;; Maybe also *protected-mode*?
      (b* (((when (and (not (= seg-reg *cs*))
                       (not (= seg-reg *ss*))
-                      (= (seg-visiblei seg-reg x86) 0)))
+                      (< (seg-visiblei seg-reg x86) 4)))
            (mv (list :null-segment-selector seg-reg) 0))
           ((mv (the (unsigned-byte 32) base)
 	       (the (unsigned-byte 33) lower-bound)
