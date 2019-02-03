@@ -33,15 +33,22 @@ public final class Acl2QuotedConstant extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Since a quoted constant contains no variables, this method does nothing.
+     */
+    @Override
+    void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
+    }
+
+    /**
      * Evaluates this ACL2 quoted constant to an ACL2 value,
-     * with respect to the given binding of values to variable symbols.
+     * with respect to the given binding of values to variable indices.
      * The result is the value of the quoted constant,
      * which is actually independent from the bindings.
      * This evaluation never fails.
      */
     @Override
-    Acl2Value eval(Map<Acl2Symbol, Acl2Value> bindings) {
-        assert bindings != null;
+    Acl2Value eval(Acl2Value[] binding) {
+        assert binding != null;
         return this.value;
     }
 

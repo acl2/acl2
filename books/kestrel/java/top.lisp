@@ -99,6 +99,23 @@
       to recognize translated terms of the form @('(if a a b)')
       and to generate Java code to represent them as @('(or a b)').")
     (xdoc::li
+     "The Java representation of ACL2 variables
+      has been optimized to include numeric indices
+      derived from the position of variables
+      in the lists of parameters
+      in named function definitions and lambda expressions.
+      These indices are set in the body of each function definition
+      as the function definition is added to
+      the Java representation of the ACL2 environment.
+      The AIJ evaluator has been optimized to use
+      Java arrays of ACL2 values as bindings,
+      instead of hash maps from ACL2 symbols to values,
+      enabling faster lookup of variables in bindings.
+      These optimizations provide roughly a 2x speedup
+      on the examples in the paper
+      (except for the factorial example,
+      where big integer multiplication dominates).")
+    (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare
       results obtained via evaluation in ACL2
