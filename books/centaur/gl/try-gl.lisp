@@ -473,7 +473,16 @@
   (and (or (eq print :all)
            (member :all print)
            (member pr-name print))
-       (cw message (acl2::prettyify-clause clause t (w state)))))
+       (acl2::fmt-to-comment-window
+        message
+        (list (cons #\0 (acl2::prettyify-clause clause t (w state))))
+        5 
+        #!acl2
+        (term-evisc-tuple t state)
+        #!acl2
+        (cons 
+         (f-get-global 'print-base state)
+         (f-get-global 'print-radix state)))))
 
 (defmacro maybe-print-clause (pr-name message)
   `(maybe-print-clause-fn print ,pr-name ,message clause state))
