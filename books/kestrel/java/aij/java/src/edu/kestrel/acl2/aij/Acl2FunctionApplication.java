@@ -44,14 +44,34 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Sets the indices of all the variables in this function application,
+     * starting with the supplied map from variable symbols to indices.
+     * The supplied map is used for the argument terms.
+     * The function is processed separately:
+     * see {@link Acl2Function#setVariableIndices()}.
+     *
+     * @throws IllegalArgumentException if the term or the map are malformed
+     *                                  in a way that
+     *                                  some valid index cannot be determined
+     * @throws IllegalStateException    if some variable index is already set
+     */
+    @Override
+    void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
+        int len = arguments.length;
+        for (int i = 0; i < len; ++i)
+            arguments[i].setVariableIndices(indices);
+        function.setVariableIndices();
+    }
+
+    /**
      * Evaluates this ACL2 function application to an ACL2 value,
-     * with respect to the given binding of values to variable symbols.
+     * with respect to the given binding of values to variable indices.
      * Unless the function is the ACL2 function {@code if},
      * the argument terms are evaluated,
      * then the function is applied to them.
      * If instead the function is {@code if},
      * the first argument is evaluated first,
-     * then either the second or third one,
+     * then either the second or third one is evaluated,
      * based on the result of evaluating the first argument;
      * {@code if} is the only non-strict function in ACL2.
      * <p>
@@ -83,34 +103,33 @@ public final class Acl2FunctionApplication extends Acl2Term {
      *                                 the function or lambda expression fails
      */
     @Override
-    Acl2Value eval(Map<Acl2Symbol, Acl2Value> bindings)
-            throws Acl2EvaluationException {
-        assert bindings != null;
+    Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException {
+        assert binding != null;
         int len = arguments.length;
         if (function.isIf()) {
-            if (len != 3) // this should never happen
+            if (len != 3) // this should never happen with well-formed terms
                 throw new Acl2EvaluationException
                         ("Called IF on " + len +
                                 (len == 1 ? " argument." : " arguments."));
-            Acl2Value test = arguments[0].eval(bindings);
+            Acl2Value test = arguments[0].eval(binding);
             if (test.equals(Acl2Symbol.NIL))
-                return arguments[2].eval(bindings);
+                return arguments[2].eval(binding);
             else
-                return arguments[1].eval(bindings);
+                return arguments[1].eval(binding);
         } else if (function.isOr()) {
-            if (len != 2) // this should never happen
+            if (len != 2) // this should never happen with well-formed terms
                 throw new Acl2EvaluationException
                         ("Called OR on " + len +
                                 (len == 1 ? " argument." : " arguments."));
-            Acl2Value first = arguments[0].eval(bindings);
+            Acl2Value first = arguments[0].eval(binding);
             if (first.equals(Acl2Symbol.NIL))
-                return arguments[1].eval(bindings);
+                return arguments[1].eval(binding);
             else
                 return first;
         } else {
             Acl2Value[] argumentValues = new Acl2Value[len];
             for (int i = 0; i < len; ++i)
-                argumentValues[i] = this.arguments[i].eval(bindings);
+                argumentValues[i] = this.arguments[i].eval(binding);
             return this.function.apply(argumentValues);
         }
     }

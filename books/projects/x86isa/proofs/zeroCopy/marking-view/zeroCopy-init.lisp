@@ -239,7 +239,7 @@
 (defthm unsigned-byte-p-1-bool->bit
   (unsigned-byte-p 1 (acl2::bool->bit x)))
 
-(def-gl-export canonical-address-p-of-lin-addr+7
+(defthm-using-gl canonical-address-p-of-lin-addr+7
   :hyp (and (canonical-address-p lin-addr)
             (equal (loghead 3 lin-addr) 0))
   :concl (canonical-address-p (+ 7 lin-addr))
@@ -264,7 +264,7 @@
   (implies (unsigned-byte-p 64 x)
            (unsigned-byte-p 52 (ash (loghead 40 (logtail 12 x)) 12))))
 
-(def-gl-export pml4-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl pml4-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (logtail 40 cr3) 0) ;; MBZ
             (unsigned-byte-p 64 cr3))
@@ -274,7 +274,7 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat cr3 64))))
 
-(def-gl-export canonical-address-p-pml4-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl canonical-address-p-pml4-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (logtail 40 cr3) 0) ;; MBZ
             (unsigned-byte-p 64 cr3))
@@ -284,21 +284,21 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat cr3 64))))
 
-(def-gl-export remove-logext-from-pml4-table-entry-addr-to-C-program-optimized-form-1
+(defthm-using-gl remove-logext-from-pml4-table-entry-addr-to-C-program-optimized-form-1
   :hyp (canonical-address-p v-addr)
   :concl (equal (logext 64 (logand 4088 (loghead 28 (logtail 36 v-addr))))
                 (logand 4088 (loghead 28 (logtail 36 v-addr))))
   :g-bindings
   (gl::auto-bindings (:nat v-addr 64)))
 
-(def-gl-export remove-logext-from-pml4-table-entry-addr-to-C-program-optimized-form-2
+(defthm-using-gl remove-logext-from-pml4-table-entry-addr-to-C-program-optimized-form-2
   :hyp (canonical-address-p v-addr)
   :concl (equal (logext 64 (loghead 28 (logtail 36 v-addr)))
                 (loghead 28 (logtail 36 v-addr)))
   :g-bindings
   (gl::auto-bindings (:nat v-addr 64)))
 
-(def-gl-export page-dir-ptr-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (loghead 12 base-addr) 0)
             (unsigned-byte-p #.*physical-address-size* base-addr))
@@ -318,14 +318,14 @@
 ;;             (logior (logand 4088 (loghead 32 (logtail 27 v-addr)))
 ;;                     (ash (loghead 40 (logtail 12 val)) 12)))))
 
-(def-gl-export remove-logext-from-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl remove-logext-from-page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (canonical-address-p v-addr)
   :concl (equal (logext 64 (loghead 32 (logtail 27 v-addr)))
                 (loghead 32 (logtail 27 v-addr)))
   :g-bindings
   (gl::auto-bindings (:nat v-addr 64)))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-1
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-1
   :hyp (and (equal (part-select entry :low 7 :width 1) 1)
             (equal (part-select entry :low 0 :width 1) 1)
             (unsigned-byte-p 64 entry))
@@ -335,7 +335,7 @@
   :g-bindings
   (gl::auto-bindings (:nat entry 64)))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
             (equal (part-select source-entry :low 0 :width 1) 1)
             (equal (part-select destination-entry :low 7 :width 1) 1)
@@ -353,7 +353,7 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-3
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-3
   :hyp (and (unsigned-byte-p 64 source-entry)
             (unsigned-byte-p 64 destination-entry))
   :concl (equal
@@ -366,14 +366,14 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
 
-(def-gl-export remove-logext-from-ash-loghead-40-expr
+(defthm-using-gl remove-logext-from-ash-loghead-40-expr
   :hyp (unsigned-byte-p 64 n)
   :concl (equal (logext 64 (ash (loghead 40 (logtail 12 n)) 12))
                 (ash (loghead 40 (logtail 12 n)) 12))
   :g-bindings
   (gl::auto-bindings (:nat n 64)))
 
-(def-gl-export remove-logext-from-logand-and-ctri
+(defthm-using-gl remove-logext-from-logand-and-ctri
   :hyp (unsigned-byte-p 64 n)
   :concl (equal (logext 64 (logand -4096 (logext 64 n)))
                 (logand -4096 (logext 64 n)))

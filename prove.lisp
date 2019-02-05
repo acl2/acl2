@@ -6011,9 +6011,14 @@
                         ens
                         (getpropc x 'runic-mapping-pairs nil wrld))
                        (enabled-lmi-names ens (cdr lmi-lst) wrld)))
-         ((enabled-runep x ens wrld)
-          (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
-         (t (enabled-lmi-names ens (cdr lmi-lst) wrld)))))))
+         (t (let ((x (if (and (consp x)
+                              (eq (car x) :executable-counterpart))
+                         (list :definition (cadr x))
+                       x)))
+              (cond
+               ((enabled-runep x ens wrld)
+                (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
+               (t (enabled-lmi-names ens (cdr lmi-lst) wrld))))))))))
 
 (defun@par maybe-warn-for-use-hint (pspv cl-id ctx wrld state)
   (cond
@@ -6029,9 +6034,9 @@
       (cond
        (enabled-lmi-names
         (warning$@par ctx ("Use")
-          "It is unusual to :USE an enabled :REWRITE or :DEFINITION rule, so ~
-           you may want to consider disabling ~&0 in the hint provided for ~
-           ~@1.  See :DOC using-enabled-rules."
+          "It is unusual to :USE the formula of an enabled :REWRITE or ~
+           :DEFINITION rule, so you may want to consider disabling ~&0 in the ~
+           hint provided for ~@1.  See :DOC using-enabled-rules."
           enabled-lmi-names
           (tilde-@-clause-id-phrase cl-id)))
        (t (state-mac@par)))))))

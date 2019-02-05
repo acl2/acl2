@@ -17,8 +17,6 @@ import java.util.Map;
  * and function applications {@link Acl2FunctionApplication}.
  * No other subclasses can be defined outside this package
  * because this class provides no public or protected constructors.
- * <p>
- * Instances of this class are immutable.
  */
 public abstract class Acl2Term implements Comparable<Acl2Term> {
 
@@ -33,13 +31,28 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
     }
 
     /**
+     * Sets the indices of all the variables in this term,
+     * starting with the supplied map from variable symbols to indices.
+     * See {@link Acl2Variable} for more information about variable indices.
+     *
+     * @throws IllegalArgumentException if the term or the map are malformed
+     *                                  in a way that
+     *                                  some valid index cannot be determined
+     * @throws IllegalStateException    if some variable index is already set
+     */
+    abstract void setVariableIndices(Map<Acl2Symbol, Integer> indices);
+
+    /**
      * Evaluates this ACL2 term to an ACL2 value,
-     * with respect to the given binding of values to variable symbols.
+     * with respect to the given binding of values to variable indices.
+     * The binding is specified as an array of values:
+     * the value {@code bindings[i]} is bound to
+     * the variable with index {@code i}.
+     * See {@link Acl2Variable} for more information about variable indices.
      *
      * @throws Acl2EvaluationException if evaluation fails
      */
-    abstract Acl2Value eval(Map<Acl2Symbol, Acl2Value> bindings)
-            throws Acl2EvaluationException;
+    abstract Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException;
 
     //////////////////////////////////////// public members:
 

@@ -476,65 +476,65 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-generated :many :one
+   (xdoc::evmac-section-generated
 
-     (xdoc::desc
-      "@('new')"
-      (xdoc::p
-       "Tail-recursive equivalent of @('old'):")
-      (xdoc::code
-       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
-       "(defun new (x1 ... xn r)"
-       "  (if test<x1,...,xn>"
-       "      r"
-       "    (new update-x1<x1,...,xn>"
-       "         ..."
-       "         update-xn<x1,...,xn>"
-       "         combine<r,nonrec<x1,...,xn>>)))"
-       ""
-       ";; when the :variant input of tailrec is :assoc:"
-       "(defun new (x1 ... xn r)"
-       "  (if test<x1,...,xn>"
-       "      combine<r,base<x1,...,xn>>"
-       "    (new update-x1<x1,...,xn>"
-       "         ..."
-       "         update-xn<x1,...,xn>"
-       "         combine<r,nonrec<x1,...,xn>>)))")
-      (xdoc::p
-       "The measure term and well-founded relation of @('new')
+    (xdoc::desc
+     "@('new')"
+     (xdoc::p
+      "Tail-recursive equivalent of @('old'):")
+     (xdoc::code
+      ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
+      "(defun new (x1 ... xn r)"
+      "  (if test<x1,...,xn>"
+      "      r"
+      "    (new update-x1<x1,...,xn>"
+      "         ..."
+      "         update-xn<x1,...,xn>"
+      "         combine<r,nonrec<x1,...,xn>>)))"
+      ""
+      ";; when the :variant input of tailrec is :assoc:"
+      "(defun new (x1 ... xn r)"
+      "  (if test<x1,...,xn>"
+      "      combine<r,base<x1,...,xn>>"
+      "    (new update-x1<x1,...,xn>"
+      "         ..."
+      "         update-xn<x1,...,xn>"
+      "         combine<r,nonrec<x1,...,xn>>)))")
+     (xdoc::p
+      "The measure term and well-founded relation of @('new')
        are the same as @('old').")
-      (xdoc::p
-       "The guard is @('(and old-guard<x1,...,xn> (domain r))'),
-        where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
+     (xdoc::p
+      "The guard is @('(and old-guard<x1,...,xn> (domain r))'),
+       where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
 
-     (xdoc::desc
-      "@('wrapper')"
-      (xdoc::p
-       "Non-recursive wrapper of @('new'):")
-      (xdoc::code
-       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
-       "(defun wrapper (x1 ... xn)"
-       "  (new x1 ... xn base<x1,...,xn>))"
-       ""
-       ";; when the :variant input tailrec is :assoc:"
-       "(defun wrapper (x1 ... xn)"
-       "  (if test<x1,...,xn>"
-       "      base<x1,...,xn>"
-       "    (new update-x1<x1,...,xn>"
-       "         ..."
-       "         update-xn<x1,...,xn>"
-       "         nonrec<x1,...,xn>)))")
-      (xdoc::p
-       "The guard is the same as @('old')."))
+    (xdoc::desc
+     "@('wrapper')"
+     (xdoc::p
+      "Non-recursive wrapper of @('new'):")
+     (xdoc::code
+      ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
+      "(defun wrapper (x1 ... xn)"
+      "  (new x1 ... xn base<x1,...,xn>))"
+      ""
+      ";; when the :variant input tailrec is :assoc:"
+      "(defun wrapper (x1 ... xn)"
+      "  (if test<x1,...,xn>"
+      "      base<x1,...,xn>"
+      "    (new update-x1<x1,...,xn>"
+      "         ..."
+      "         update-xn<x1,...,xn>"
+      "         nonrec<x1,...,xn>)))")
+     (xdoc::p
+      "The guard is the same as @('old')."))
 
-     (xdoc::desc
-      "@('old-to-wrapper')"
-      (xdoc::p
-       "Theorem that relates @('old') to @('wrapper'):")
-      (xdoc::code
-       "(defthm old-to-wrapper"
-       "  (equal (old x1 ... xn)"
-       "         (wrapper x1 ... xn)))")))
+    (xdoc::desc
+     "@('old-to-wrapper')"
+     (xdoc::p
+      "Theorem that relates @('old') to @('wrapper'):")
+     (xdoc::code
+      "(defthm old-to-wrapper"
+      "  (equal (old x1 ... xn)"
+      "         (wrapper x1 ... xn)))")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -50,7 +50,7 @@
 
 ;; Various lemmas for the guard proofs of rm* functions
 
-(def-gl-export rml16-guard-proof-helper
+(defthm-using-gl rml16-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b))
   :concl (< (logior a (ash b 8)) *2^16*)
@@ -59,7 +59,7 @@
    (:mix (:nat a 8) (:nat b 8)))
   :rule-classes :linear)
 
-(def-gl-export rb-and-rvm32-helper
+(defthm-using-gl rb-and-rvm32-helper
   :hyp (and (n08p a)
             (n08p b)
             (n16p c))
@@ -70,7 +70,7 @@
    (:mix (:nat a 8) (:nat b 8)) (:nat c 16))
   :rule-classes :linear)
 
-(def-gl-export rml32-guard-proof-helper
+(defthm-using-gl rml32-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -86,7 +86,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)))
   :rule-classes :linear)
 
-(def-gl-export rml48-guard-proof-helper
+(defthm-using-gl rml48-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n32p c))
   :concl (equal (logior a (ash b 8) (ash c 16))
                 (logior a (ash (logior b (ash c 8)) 8)))
@@ -95,7 +95,7 @@
    (:mix (:nat a 32) (:nat b 32) (:nat c 32)))
   :rule-classes :linear)
 
-(def-gl-export rb-and-rml48-helper-1
+(defthm-using-gl rb-and-rml48-helper-1
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f))
   :concl (equal (logior
@@ -118,7 +118,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8))))
 
-(def-gl-export rb-and-rml48-helper-2
+(defthm-using-gl rb-and-rml48-helper-2
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f))
   :concl (<
@@ -135,7 +135,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8))))
 
-(def-gl-export rb-and-rvm64-helper
+(defthm-using-gl rb-and-rvm64-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -159,7 +159,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rml64-guard-proof-helper
+(defthm-using-gl rml64-guard-proof-helper
   :hyp (and (n32p a) (n32p b))
   :concl (< (logior a (ash b 32)) *2^64*)
   :g-bindings
@@ -167,7 +167,7 @@
    (:mix (:nat a 32) (:nat b 32)))
   :rule-classes :linear)
 
-(def-gl-export rml80-guard-proof-helper
+(defthm-using-gl rml80-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n64p c))
   :concl (equal (logior a (ash b 8) (ash c 16))
                 (logior a (ash (logior b (ash c 8)) 8)))
@@ -176,7 +176,7 @@
    (:mix (:nat a 64) (:nat b 64) (:nat c 64)))
   :rule-classes :linear)
 
-(def-gl-export rml80-in-sys-view-guard-proof-helper
+(defthm-using-gl rml80-in-sys-view-guard-proof-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d) (n08p e)
             (n08p f) (n08p g) (n08p h) (n08p i) (n08p j))
   :concl (<
@@ -223,7 +223,7 @@
                  rml64-guard-proof-helper
                  rml80-in-sys-view-guard-proof-helper)))
 
-(def-gl-export rml32-rb-sys-view-proof-helper
+(defthm-using-gl rml32-rb-sys-view-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -234,7 +234,7 @@
   (gl::auto-bindings
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8))))
 
-;; (def-gl-export rml64-in-sys-view-guard-proof-helper
+;; (defthm-using-gl rml64-in-sys-view-guard-proof-helper
 ;;   :hyp (and (n08p a)
 ;;             (n08p b)
 ;;             (n08p c)
@@ -260,7 +260,7 @@
 ;;                      (:nat g 8)
 ;;                      (:nat h 8))))
 
-(def-gl-export rml64-to-rb-in-sys-view-helper
+(defthm-using-gl rml64-to-rb-in-sys-view-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -284,7 +284,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rml64-in-sys-view-guard-proof-helper
+(defthm-using-gl rml64-in-sys-view-guard-proof-helper
   :hyp (and (n08p a)
             (n08p b)
             (n08p c)
@@ -323,14 +323,14 @@
 
 ;; Far Jump:
 
-(def-gl-export far-jmp-conforming-code-segment-guard-helper-1
+(defthm-using-gl far-jmp-conforming-code-segment-guard-helper-1
   :hyp (unsigned-byte-p 16 val16)
   :concl (equal (bitops::logsquash 2 val16)
                 (logand 65532 val16))
   :g-bindings (gl::auto-bindings
                (:nat val16 16)))
 
-(def-gl-export far-jmp-conforming-code-segment-guard-helper-2
+(defthm-using-gl far-jmp-conforming-code-segment-guard-helper-2
   :hyp (unsigned-byte-p 16 val16)
   :concl (equal (logand -79228162495817593519834398721 (ash val16 96))
                 (logand 5192217630372331810936976494821375 (ash val16 96)))
@@ -338,7 +338,7 @@
                (:nat val16 16)))
 
 
-(def-gl-export far-jmp-non-conforming-code-segment-guard-helper-3
+(defthm-using-gl far-jmp-non-conforming-code-segment-guard-helper-3
   :hyp (and (unsigned-byte-p 80 n80)
             (unsigned-byte-p 64 n64)
             (unsigned-byte-p 16 n16))
@@ -357,7 +357,7 @@
                      (:nat n16 80))))
 
 
-(def-gl-export far-jmp-call-gate-guard-helper-4
+(defthm-using-gl far-jmp-call-gate-guard-helper-4
   :hyp (and (unsigned-byte-p 64 n64)
             (unsigned-byte-p 48 n48)
             (unsigned-byte-p 16 n16))
@@ -386,14 +386,14 @@
 
 ;; LLDT guard helpers:
 
-(def-gl-export x86-lldt-guard-helper-1
+(defthm-using-gl x86-lldt-guard-helper-1
   :hyp (unsigned-byte-p 16 y)
   :concl (equal (logand -79228162495817593519834398721 (ash y 96))
                 (ash y 96))
   :g-bindings `((y (:g-number ,(increasing-list 0 1 17))))
   :rule-classes (:rewrite :linear))
 
-(def-gl-export x86-lldt-guard-helper-2
+(defthm-using-gl x86-lldt-guard-helper-2
   :hyp (and (unsigned-byte-p 128 n128)
             (unsigned-byte-p 16 n16))
   :concl (equal
@@ -426,7 +426,7 @@
                (:mix (:nat n128 128)
                      (:nat n16 128))))
 
-(def-gl-export x86-lldt-guard-helper-3
+(defthm-using-gl x86-lldt-guard-helper-3
   :hyp (and (unsigned-byte-p 128 n128)
             (unsigned-byte-p 16 n16))
   :concl (equal
@@ -458,7 +458,7 @@
 
 ;; SYSRET:
 
-(def-gl-export x86-sysret-guard-helper-1
+(defthm-using-gl x86-sysret-guard-helper-1
   :hyp (unsigned-byte-p 16 seg-visiblei)
   :concl (equal (bitops::logsquash 2 seg-visiblei)
                 (logand 65532 seg-visiblei))
@@ -466,7 +466,7 @@
                (:nat seg-visiblei    16)))
 
 
-(def-gl-export x86-sysret-guard-helper-2
+(defthm-using-gl x86-sysret-guard-helper-2
   :hyp (unsigned-byte-p 64 msri)
   :concl (and
           (equal (logior 3 (+ 16 (logtail 48 msri)))

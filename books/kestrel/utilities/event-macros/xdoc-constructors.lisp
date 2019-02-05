@@ -47,9 +47,13 @@
   :long
   (xdoc::topapp
    (xdoc::def "xdoc::evmac-section-intro"))
+
+  (defconst xdoc::*evmac-section-intro-title*
+    "Introduction")
+
   (defmacro xdoc::evmac-section-intro (&rest content)
     `(xdoc::app
-      (xdoc::h3 "Introduction")
+      (xdoc::h3 xdoc::*evmac-section-intro-title*)
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,9 +64,13 @@
   :long
   (xdoc::topapp
    (xdoc::def "xdoc::evmac-section-form"))
+
+  (defconst xdoc::*evmac-section-form-title*
+    "General Form")
+
   (defmacro xdoc::evmac-section-form (&rest content)
     `(xdoc::app
-      (xdoc::h3 "General Form")
+      (xdoc::h3 xdoc::*evmac-section-form-title*)
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,9 +234,13 @@
   :long
   (xdoc::topapp
    (xdoc::def "xdoc::evmac-section-inputs"))
+
+  (defconst xdoc::*evmac-section-inputs-title*
+    "Inputs")
+
   (defmacro xdoc::evmac-section-inputs (&rest content)
     `(xdoc::app
-      (xdoc::h3 "Inputs")
+      (xdoc::h3 xdoc::*evmac-section-inputs-title*)
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,68 +250,56 @@
           of the reference documentation of an event macro."
   :long
   (xdoc::topapp
-   (xdoc::p
-    "Note that the generated text mentions `above'
-     in reference to the inputs of the event macro.
-     In the reference documentation of the event macro,
-     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
-     section</see> should come before
-     the <see topic='@(url xdoc::evmac-section-appconds)'>applicability
-     conditions section</see>.")
    (xdoc::def "xdoc::evmac-section-appconds"))
+
+  (defconst xdoc::*evmac-section-appconds-title*
+    "Applicability Conditions")
+
   (defmacro xdoc::evmac-section-appconds (macro &rest content)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')")))
+           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (inputs-ref (concatenate 'string
+                                    "`"
+                                    xdoc::*evmac-section-inputs-title*
+                                    "' section")))
       `(xdoc::app
-        (xdoc::h3 "Applicability Conditions")
+        (xdoc::h3 xdoc::*evmac-section-appconds-title*)
         (xdoc::p
-         (concatenate 'string
-                      "In order for "
-                      ,macro-ref
-                      " to apply,
-                       in addition to the requirements on the inputs
-                       stated above,
-                       the following conditions must be proved.
-                       The proofs are attempted when "
-                      ,macro-ref
-                      " is called,
-                       using the hints optionally supplied
-                       as the @(':hints') input above."))
+         (concatenate
+          'string
+          "In order for "
+          ,macro-ref
+          " to apply,
+           in addition to the requirements on the inputs
+           stated in the "
+          ,inputs-ref
+          ", the following conditions must be proved.
+           The proofs are attempted when "
+          ,macro-ref
+          " is called,
+           using the hints optionally supplied as the @(':hints') input
+           described in the "
+          ,inputs-ref
+          ")."))
         ,@content))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection xdoc::evmac-section-generated
-  :short "Construct the generated function(s) and theorem(s) section
+  :short "Construct the generated events section
           of the reference documentation of an event macro."
   :long
   (xdoc::topapp
-   (xdoc::p
-    "The two parameters indicate how many functions and theorems are listed
-     (none, one, more than one).
-     These are used to customize the section title.")
    (xdoc::def "xdoc::evmac-section-generated"))
-  (defmacro xdoc::evmac-section-generated (fns thms &rest content)
-    (declare (xargs :guard (and (member-eq fns '(:none :one :many))
-                                (member-eq thms '(:none :one :many))
-                                (not (and (eq fns :none)
-                                          (eq thms :none))))))
-    (b* ((fn-word (if (eq fns :many) "Functions" "Function"))
-         (thm-word (if (eq thms :many) "Theorems" "Theorem"))
-         (title (cond ((eq fns :none) (concatenate 'string
-                                                   "Generated "
-                                                   thm-word))
-                      ((eq thms :none) (concatenate 'string
-                                                    "Generated "
-                                                    fn-word))
-                      (t (concatenate 'string
-                                      "Generated "
-                                      fn-word
-                                      " and "
-                                      thm-word)))))
-      `(xdoc::app (xdoc::h3 ,title)
-                  ,@content))))
+
+  (defconst xdoc::*evmac-section-generated-title*
+    "Generated Events")
+
+  (defmacro xdoc::evmac-section-generated (&rest content)
+    `(xdoc::app
+      (xdoc::h3 xdoc::*evmac-section-generated-title*)
+      ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,12 +316,16 @@
      to cover event macros that do not have exactly
      those two specific inputs with those specific meanings.")
    (xdoc::def "xdoc::evmac-section-redundancy"))
+
+  (defconst xdoc::*evmac-section-redundancy-title*
+    "Redundancy")
+
   (defmacro xdoc::evmac-section-redundancy (macro)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
            (macro-ref (concatenate 'string "@('" macro-name "')")))
       `(xdoc::app
-        (xdoc::h3 "Redundancy")
+        (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
         (xdoc::p
          (concatenate
           'string
@@ -350,37 +354,42 @@
           for the reference documentation of an event macro."
   :long
   (xdoc::topapp
-   (xdoc::p
-    "Note that the generated text mentions `below'
-     in reference to the applicability conditions.
-     In the reference documentation of the event macro,
-     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
-     section</see> should come before
-     the <see topic='@(url xdoc::evmac-section-appconds)'>applicability
-     conditions section</see>.")
    (xdoc::def "xdoc::evmac-input-hints"))
+
   (defmacro xdoc::evmac-input-hints (&rest additional)
-    `(xdoc::desc
-      "@(':hints') &mdash; default @('nil')"
-      (xdoc::p
-       "Hints to prove the applicability conditions below.")
-      (xdoc::p
-       "It must be a
-        <see topic='@(url acl2::keyword-value-listp)'>keyword-value list</see>
-        @('(appcond1 hints1 ... appcondp hintsp)'),
-        where each @('appcondk') is a keyword
-        that identifies one of the applicability conditions below,
-        and each @('hintsk') consists of hints that may appear
-        just after @(':hints') in a @(tsee defthm).
-        The hints @('hintsk') are used
-        to prove applicability condition @('appcondk').")
-      (xdoc::p
-       "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
-      (xdoc::p
-       "An @('appcondk') keyword is allowed in the @(':hints') input iff
-        the corresponding applicability condition is present,
-        as specified below.")
-      ,@additional)))
+    (let ((appconds-ref (concatenate 'string
+                                     "`"
+                                     xdoc::*evmac-section-appconds-title*
+                                     "' section")))
+      `(xdoc::desc
+        "@(':hints') &mdash; default @('nil')"
+        (xdoc::p
+         "Hints to prove the applicability conditions.")
+        (xdoc::p
+         (concatenate
+          'string
+          "It must be a
+           <see topic='@(url acl2::keyword-value-listp)'>keyword-value
+           list</see> @('(appcond1 hints1 ... appcondp hintsp)'),
+           where each @('appcondk') is a keyword
+           that identifies one of the applicability conditions
+           listed in the "
+          ,appconds-ref
+          ", and each @('hintsk') consists of hints that may appear
+           just after @(':hints') in a @(tsee defthm).
+           The hints @('hintsk') are used
+           to prove applicability condition @('appcondk')."))
+        (xdoc::p
+         "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
+        (xdoc::p
+         (concatenate
+          'string
+          "An @('appcondk') keyword is allowed in the @(':hints') input iff
+           the corresponding applicability condition is present,
+           as specified in the "
+          ,appconds-ref
+          "."))
+        ,@additional))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -389,21 +398,20 @@
           for the reference documentation of an event macro."
   :long
   (xdoc::topapp
-   (xdoc::p
-    "Note that the generated text mentions `below'
-     in reference to the generated events and to redundancy.
-     In the reference documentation of the event macro,
-     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
-     section</see> should come before
-     the <see topic='@(url xdoc::evmac-section-generated)'>generated
-     events section</see> and
-     the <see topic='@(url xdoc::evmac-section-redundancy)'>redundancy
-     section</see>.")
    (xdoc::def "xdoc::evmac-input-print"))
+
   (defmacro xdoc::evmac-input-print (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')")))
+           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (generated-ref (concatenate 'string
+                                       "`"
+                                       xdoc::*evmac-section-generated-title*
+                                       "' section"))
+           (redundancy-ref (concatenate 'string
+                                        "`"
+                                        xdoc::*evmac-section-redundancy-title*
+                                        "' section")))
       `(xdoc::desc
         "@(':print') &mdash; default @(':result')"
         (xdoc::p
@@ -418,8 +426,10 @@
            'string
            "@(':result'), to print,
             besides any error output,
-            also the generated events described below,
-            i.e. the resulting events of "
+            also the generated events described
+            in the "
+           ,generated-ref
+           ", i.e. the resulting events of "
            ,macro-ref
            ". This is the default value of the @(':print') input."))
          (xdoc::li
@@ -449,8 +459,9 @@
           "If the call of "
           ,macro-ref
           " is redundant
-           (as defined in the `Redundancy' section below),
-           a message to that effect is printed on the screen,
+           (as defined in the "
+          ,redundancy-ref
+          "), a message to that effect is printed on the screen,
            unless @(':print') is @('nil')."))
         ,@additional))))
 
@@ -461,19 +472,16 @@
           for the reference documentation of an event macro."
   :long
   (xdoc::topapp
-   (xdoc::p
-    "Note that the generated text mentions `below'
-     in reference to redundancy.
-     In the reference documentation of the event macro,
-     the <see topic='@(url xdoc::evmac-section-inputs)'>inputs
-     section</see> should come before
-     the <see topic='@(url xdoc::evmac-section-redundancy)'>redundancy
-     section</see>.")
    (xdoc::def "xdoc::evmac-input-show-only"))
+
   (defmacro xdoc::evmac-input-show-only (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')")))
+           (macro-ref (concatenate 'string "@('" macro-name "')"))
+           (redundancy-ref (concatenate 'string
+                                        "`"
+                                        xdoc::*evmac-section-redundancy-title*
+                                        "' section")))
       `(xdoc::desc
         "@(':show-only') &mdash; default @('nil')"
         (xdoc::p
@@ -501,6 +509,8 @@
             If the call of "
            ,macro-ref
            " is redundant
-            (as defined in the `Redundancy' section below),
-            the event expansion generated by the existing call is printed.")))
+            (as defined in the "
+           ,redundancy-ref
+           "), the event expansion generated by the existing call
+            is printed.")))
         ,@additional))))

@@ -21,6 +21,19 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Possibly add function-symbolp to the guard of logicp.}}
+
+Currently logicp returns t on a symbol that is not a function symbol, which is
+slightly odd.  Adding function-symbolp to the guard of logicp would eliminate
+this slight oddity, but would require discharging the ensuing guard verification
+obligations.  Note also that some existing ACL2 code may rely on logicp
+returning t on a non-function symbol, e.g., see the following line in the
+definition of sublis-var!:
+
+              (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Perhaps split :doc hints into separate topics.}}
 
 This item was added by Matt K. but is based on correspondence

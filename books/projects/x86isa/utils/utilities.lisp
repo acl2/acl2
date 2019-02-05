@@ -70,7 +70,7 @@
 
   :parents (utilities)
   :short "Macro that can be used to create event names by
-  concatenating strings, symbols, and numbers."
+  concatenating strings, symbols, numbers, and characters."
   :long "@(def mk-name)"
 
   (defmacro mk-name (&rest x)
@@ -79,9 +79,13 @@
 
 ;; ======================================================================
 
-;; Misc.:
+;; The following macro is useful to prove a theorem using GL in a book while
+;; including GL in that book only locally: the local GL::DEF-GL-RULEDL needs
+;; GL, but the non-local DEFTHM does not.  Note that GL::DEF-GL-RULEDL does not
+;; automatically include all of GL already.  This macro is more general than
+;; the x86 ISA model and could be moved to the GL library, perhaps renamed.
 
-(defmacro def-gl-export
+(defmacro defthm-using-gl
   (name &key hyp concl g-bindings rule-classes)
 
   (if (and hyp concl g-bindings)

@@ -212,7 +212,7 @@ ACL2_CUSTOM_TARGETS :=
 ### invoked with INFO=warning; otherwise, same as $(info just a test).
 ## $(eval $$($(INFO) just a test))
 
-RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) ./features.sh > features.out)
+RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) ./features.sh > features.out)
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features

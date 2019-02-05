@@ -40,6 +40,7 @@
    (include-book "bfr-satlink")
    (include-book "bfr-fraig-satlink")
    (include-book "def-gl-rule")
+   (include-book "defthm-using-gl")
 
    (include-book "centaur/glmc/glmc" :dir :system)
    (include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)

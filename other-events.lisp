@@ -16409,7 +16409,7 @@
 ; Step 3: include the book if necessary.
 
                                     (fast-alist-free-on-exit
-                                     cert-data-pass1
+                                     (cdar cert-data-pass1)
                                      (pprogn
                                       (assert$
                                        (listp index/old-wrld)
@@ -16583,7 +16583,7 @@
                                                       include-book-alist-wrld2))
                                                     (t include-book-alist-wrld2))))
                                              (fast-alist-free-on-exit
-                                              cert-data-pass2
+                                              (cdar cert-data-pass2)
                                               (pprogn
                                                (maybe-write-bookdata
                                                 full-book-name wrld2 ctx state)
