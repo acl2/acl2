@@ -85,7 +85,7 @@
 ;; automatically include all of GL already.  This macro is more general than
 ;; the x86 ISA model and could be moved to the GL library, perhaps renamed.
 
-(defmacro def-gl-export
+(defmacro defthm-using-gl
   (name &key hyp concl g-bindings rule-classes)
 
   (if (and hyp concl g-bindings)

@@ -1,9 +1,10 @@
-; X86ISA Library
+; GL - A Symbolic Simulation Framework for ACL2
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,65 +36,47 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
-;; ======================================================================
+; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
+; Matt Kaufmann       <kaufmann@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
-(in-package "ACL2")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "centaur/bitops/portcullis" :dir :system)
-(include-book "centaur/fty/portcullis" :dir :system)
-(include-book "centaur/gl/portcullis" :dir :system)
-(include-book "std/portcullis" :dir :system)
+(in-package "GL")
 
-(defpkg "X86ISA"
-  (union-eq
-   '(
-     binary-logand
-     binary-logior
-     binary-logxor
+(include-book "def-gl-rule")
 
-     ;; Commenting out letters g and s to avoid name clashes, for
-     ;; e.g., acl2::g and x86isa::g would refer to the same function
-     ;; in x86isa/portcullis/records-0.lisp, which would have name
-     ;; clashes with the function acl2::g in misc/records.lisp.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     a b c d e f
-     ;; g
-     h i j k l m n o p q r
-     ;; s
-     t u v w x y z
-     lst
+(defxdoc dethm-using-gl
+  :parents (def-gl-thm)
+  :short "Prove a theorem using GL, including GL only locally."
+  :long
+  "<p>
+   This macro generates
+   (1) a local theorem proved via GL and
+   (2) a non-local theorem proved trivially from the previous one.
+   GL must be included at least locally
+   in order for the first theorem to work,
+   but GL may be included just locally,
+   and the second theorem will work.
+   This helps reduce dependencies among books.
+   </p>
+   @(def defthm-using-gl)")
 
-     definline
-     def-gl-thm
-     gl::defthm-using-gl
-     b*
-     include-raw
-
-     ;; XDOC
-     defsection
-     defxdoc
-     top
-
-     ;; TOOLS
-     fty::defprod
-     fty::defbitstruct
-     def-ruleset
-     def-ruleset!
-     add-to-ruleset
-     ruleset-theory
-     enable*
-     disable*
-     e/d*
-     std::defthm-natp
-     std::defthm-unsigned-byte-p
-     std::defthm-signed-byte-p
-
-     x86isa ; so that top-level :doc topic is also in "ACL2" package
-
-     )
-   (union-eq *acl2-exports*
-             acl2::*bitops-exports*
-             std::*std-exports*
-             *common-lisp-symbols-from-main-lisp-package*)))
-
-;; ======================================================================
+(defmacro defthm-using-gl (name &key hyp concl g-bindings rule-classes)
+  (if (and hyp concl g-bindings)
+      (let ((gl-name (acl2::add-suffix name "-GL")))
+        `(progn
+           (gl::def-gl-ruledl
+            ,gl-name
+            :hyp ,hyp
+            :concl ,concl
+            :g-bindings ,g-bindings)
+           (defthm ,name
+             (implies ,hyp ,concl)
+             :hints (("Goal" :in-theory (theory 'minimal-theory)
+                      :use ((:instance ,gl-name))))
+             :rule-classes ,(or rule-classes :rewrite))))
+    nil))

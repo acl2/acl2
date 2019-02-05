@@ -118,27 +118,27 @@
   ()
   (local (include-book "centaur/gl/gl" :dir :system))
 
-  (def-gl-export loop-clk-measure-helper
+  (defthm-using-gl loop-clk-measure-helper
     :hyp (and (signed-byte-p 64 m)
               (<= 4 m))
     :concl (< (loghead 64 (+ #xfffffffffffffffc m)) m)
     :g-bindings (gl::auto-bindings (:int m 64))
     :rule-classes :linear)
 
-  (def-gl-export effects-copyData-loop-helper-1
+  (defthm-using-gl effects-copyData-loop-helper-1
     :hyp (and (<= 4 m)
               (unsigned-byte-p 34 m))
     :concl (equal (logext 64 (+ #xfffffffffffffffc m))
                   (loghead 64 (+ #xfffffffffffffffc m)))
     :g-bindings (gl::auto-bindings (:nat m 34)))
 
-  (def-gl-export effects-copyData-loop-helper-6
+  (defthm-using-gl effects-copyData-loop-helper-6
     :hyp (canonical-address-p src/dst)
     :concl (equal (logext 64 (+ 4 (loghead 64 src/dst)))
                   (+ 4 src/dst))
     :g-bindings (gl::auto-bindings (:int src/dst 64)))
 
-  (def-gl-export effects-copyData-loop-helper-7
+  (defthm-using-gl effects-copyData-loop-helper-7
     :hyp (and (canonical-address-p src/dst)
               (canonical-address-p (+ m src/dst))
               (< 4 m)
@@ -148,14 +148,14 @@
     :g-bindings (gl::auto-bindings (:mix (:int m 64)
                                          (:int src/dst 64))))
 
-  (def-gl-export effects-copyData-loop-helper-9
+  (defthm-using-gl effects-copyData-loop-helper-9
     :hyp (and (< 4 m)
               (unsigned-byte-p 34 m))
     :concl (not (equal (loghead 64 (+ #xfffffffffffffffc m)) 0))
     :g-bindings (gl::auto-bindings (:nat m 34))
     :rule-classes (:forward-chaining :rewrite))
 
-  (def-gl-export effects-copyData-loop-helper-11
+  (defthm-using-gl effects-copyData-loop-helper-11
     :hyp (and (< 4 m)
               (equal (mod m 4) 0)
               (unsigned-byte-p 34 m))
@@ -163,26 +163,26 @@
                   (+ -4 m))
     :g-bindings (gl::auto-bindings (:nat m 34)))
 
-  (def-gl-export effects-copyData-loop-helper-13
+  (defthm-using-gl effects-copyData-loop-helper-13
     :hyp (and (equal (mod k 4) 0)
               (unsigned-byte-p 34 k))
     :concl (equal (mod (+ 4 k) 4) 0)
     :g-bindings (gl::auto-bindings (:nat k 34)))
 
-  (def-gl-export effects-copyData-loop-helper-14
+  (defthm-using-gl effects-copyData-loop-helper-14
     :hyp (and (< 4 m)
               (equal (mod m 4) 0)
               (unsigned-byte-p 34 m))
     :concl (equal (mod (+ -4 m) 4) 0)
     :g-bindings (gl::auto-bindings (:nat m 34)))
 
-  (def-gl-export effects-copyData-loop-helper-15
+  (defthm-using-gl effects-copyData-loop-helper-15
     :hyp (and (equal (loghead 2 m) 0)
               (canonical-address-p m))
     :concl (equal (loghead 2 (+ 4 m)) 0)
     :g-bindings (gl::auto-bindings (:int m 48)))
 
-  (def-gl-export effects-copyData-loop-helper-16
+  (defthm-using-gl effects-copyData-loop-helper-16
     :hyp (and (equal (loghead 3 m) 0)
               (canonical-address-p m))
     :concl (equal (loghead 3 (+ 8 m)) 0)

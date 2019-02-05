@@ -54,7 +54,7 @@
 ;; Rewriting (mv-nth 1 (rb ...)) to rm-low-64 if the lin-addr is
 ;; direct-mapped:
 
-(def-gl-export rb-and-rm-low-64-for-direct-map-helper-1
+(defthm-using-gl rb-and-rm-low-64-for-direct-map-helper-1
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl
@@ -81,7 +81,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rb-and-rm-low-64-for-direct-map-helper-2
+(defthm-using-gl rb-and-rm-low-64-for-direct-map-helper-2
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal (loghead
@@ -99,7 +99,7 @@
    (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
          (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-(def-gl-export rml64-direct-map-helper
+(defthm-using-gl rml64-direct-map-helper
   :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
             (n08p e) (n08p f) (n08p g) (n08p h))
   :concl (equal
@@ -193,7 +193,7 @@
 ;; in the same 1G page as lin-addr.  We then generalize this result to
 ;; las-to-pas (from ia32e-la-to-pa).
 
-(def-gl-export same-pml4-table-entry-addr-for-n-+-lin-addrs
+(defthm-using-gl same-pml4-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (physical-address-p pml4-table-base-addr)
             (canonical-address-p lin-addr)
             (unsigned-byte-p 30 n)
@@ -205,7 +205,7 @@
   (gl::auto-bindings
    (:mix (:nat pml4-table-base-addr 64) (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export same-pdp-table-entry-addr-for-n-+-lin-addrs
+(defthm-using-gl same-pdp-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (unsigned-byte-p 30 n)
             (physical-address-p pdpt-base-addr)
             (canonical-address-p lin-addr)
@@ -217,7 +217,7 @@
   (gl::auto-bindings
    (:mix (:nat pdpt-base-addr 64) (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n-1
+(defthm-using-gl loghead-30-of-1G-aligned-lin-addr-+-n-1
   :hyp (and (canonical-address-p lin-addr)
             (canonical-address-p (+ n lin-addr))
             (equal (loghead 30 lin-addr) 0)
@@ -225,7 +225,7 @@
   :concl (equal (loghead 30 (+ n lin-addr)) n)
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n-2
+(defthm-using-gl loghead-30-of-1G-aligned-lin-addr-+-n-2
   :hyp (and (equal (loghead 30 (+ n lin-addr)) n)
             (canonical-address-p (+ n lin-addr))
             (canonical-address-p lin-addr)
@@ -233,7 +233,7 @@
   :concl (equal (loghead 30 lin-addr) 0)
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export logior-to-+-for-ash-x-30
+(defthm-using-gl logior-to-+-for-ash-x-30
   :hyp (and (unsigned-byte-p 22 x)
             (unsigned-byte-p 30 n))
   :concl (equal (logior n (ash x 30)) (+ n (ash x 30)))
@@ -435,7 +435,7 @@
 ;; Now generalizing ia32e-la-to-pa-values-for-same-1G-page to
 ;; las-to-pas:
 
-(def-gl-export open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
+(defthm-using-gl open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
   :hyp (and (< iteration m)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ -1 lin-addr m))
@@ -446,7 +446,7 @@
   :concl (equal (loghead 30 (+ iteration lin-addr)) iteration)
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat iteration 64) (:nat m 64))))
 
-(def-gl-export open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
+(defthm-using-gl open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
   :hyp (and (< iteration m)
             (integerp m)
             (<= m *2^30*)
@@ -454,7 +454,7 @@
   :concl (unsigned-byte-p 30 iteration)
   :g-bindings (gl::auto-bindings (:mix (:nat iteration 64) (:nat m 64))))
 
-(def-gl-export open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
+(defthm-using-gl open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
   :hyp (and (< iteration m)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ -1 lin-addr m))
@@ -465,7 +465,7 @@
   :concl (canonical-address-p (+ iteration lin-addr))
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat iteration 64) (:nat m 64))))
 
-(def-gl-export open-mv-nth-1-las-to-pas-for-same-1G-page-general-2
+(defthm-using-gl open-mv-nth-1-las-to-pas-for-same-1G-page-general-2
   :hyp (and (canonical-address-p lin-addr)
             (equal (loghead 30 lin-addr) 0))
   :concl

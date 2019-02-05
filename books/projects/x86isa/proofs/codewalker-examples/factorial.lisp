@@ -161,7 +161,7 @@
 
   (local (include-book "centaur/gl/gl" :dir :system))
 
-  (def-gl-export clk-16-measure-helper
+  (defthm-using-gl clk-16-measure-helper
     :hyp (and (natp rdi)
               (< 0 rdi)
               (< rdi 13)
@@ -170,7 +170,7 @@
                (loghead 32 rdi))
     :g-bindings (gl::auto-bindings (:int rdi 64)))
 
-  (def-gl-export low-32-bits-of-rdi
+  (defthm-using-gl low-32-bits-of-rdi
     :hyp (and (natp rdi)
               (<= 0 rdi)
               (< rdi 13))
