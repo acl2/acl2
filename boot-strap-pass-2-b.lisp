@@ -169,12 +169,12 @@
 ; make ACL2_DEVEL=t
 ; make clean-books
 ; cd books
-; WARNING: Use the following command.  If you certify system/apply/apply.cert
-; before certifying system/top.cert, you might fail; in that case, you might be
-; able to see the problem by looking at the .cert file of a failed
-; include-book.
+; WARNING: Use the following command.  If you certify
+; system/apply/loop-scions.cert before certifying system/top.cert, you might
+; fail; in that case, you might be able to see the problem by looking at the
+; .cert file of a failed include-book.
 ; (time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d \
-;                       system/top.cert system/apply/apply.cert)
+;                       system/top.cert system/apply/loop-scions.cert)
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
@@ -287,6 +287,7 @@
      (META-EXTRACT-RW+-TERM)
      (MSGP)
      (NEWLINE)
+     (OBSERVATION1-CW)
      (OVERRIDE-HINTS)
      (PLAUSIBLE-DCLSP ACL2-COUNT LST)
      (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
@@ -343,16 +344,35 @@
      (WORLD-EVISCERATION-ALIST)
      (WRITE-FOR-READ)
      (ZERO-ONE-OR-MORE))
-    ("system/apply/apply"
+
+; Note that system/apply/apply.lisp is included (indirectly) in
+; system/apply/loop-scions.lisp.
+
+    ("system/apply/loop-scions"
+     (ALWAYS$ ACL2-COUNT LST)
+     (ALWAYS$+ ACL2-COUNT LST)
+     (APPEND$ ACL2-COUNT LST)
+     (APPEND$+ ACL2-COUNT LST)
+     (APPEND$+-AC ACL2-COUNT LST)
+     (APPEND$-AC ACL2-COUNT LST)
      (APPLY$ :? ARGS FN)
      (APPLY$-LAMBDA :? ARGS FN)
      (ARGLISTP)
      (ARGLISTP1 ACL2-COUNT LST)
      (ARITIES-OKP ACL2-COUNT USER-TABLE)
      (ARITY)
+     (CAR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
+     (CDR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
+     (COLLECT$ ACL2-COUNT LST)
+     (COLLECT$+ ACL2-COUNT LST)
+     (COLLECT$+-AC ACL2-COUNT LST)
+     (COLLECT$-AC ACL2-COUNT LST)
+     (EMPTY-LOOP$-AS-TUPLEP ACL2-COUNT TUPLE)
      (EV$ :? A X)
      (EV$-LIST :? A X)
      (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+     (FROM-TO-BY FROM-TO-BY-MEASURE I J)
+     (FROM-TO-BY-AC FROM-TO-BY-MEASURE I J)
      (LAMBDA-KEYWORDP)
      (LEGAL-CONSTANTP)
      (LEGAL-CONSTANTP1)
@@ -364,13 +384,30 @@
      (LOGIC-TERM-LIST-LISTP)
      (LOGIC-TERM-LISTP)
      (LOGIC-TERMP)
+     (LOOP$-AS ACL2-COUNT TUPLE)
+     (LOOP$-AS-AC ACL2-COUNT TUPLE)
      (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+     (REVAPPEND-TRUE-LIST-FIX ACL2-COUNT X)
      (SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
+     (SUM$ ACL2-COUNT LST)
+     (SUM$+ ACL2-COUNT LST)
+     (SUM$+-AC ACL2-COUNT LST)
+     (SUM$-AC ACL2-COUNT LST)
+     (TAILS ACL2-COUNT LST)
+     (TAILS-AC ACL2-COUNT LST)
      (TAMEP ACL2-COUNT X)
      (TAMEP-FUNCTIONP ACL2-COUNT FN)
      (TERM-LIST-LISTP ACL2-COUNT L)
      (TERM-LISTP ACL2-COUNT X)
-     (TERMP ACL2-COUNT X))))
+     (TERMP ACL2-COUNT X)
+     (UNTIL$ ACL2-COUNT LST)
+     (UNTIL$+ ACL2-COUNT LST)
+     (UNTIL$+-AC ACL2-COUNT LST)
+     (UNTIL$-AC ACL2-COUNT LST)
+     (WHEN$ ACL2-COUNT LST)
+     (WHEN$+ ACL2-COUNT LST)
+     (WHEN$+-AC ACL2-COUNT LST)
+     (WHEN$-AC ACL2-COUNT LST))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))
@@ -635,6 +672,84 @@
            (tamep-functionp fn2)
            (apply$-equivalence fn1 fn2))))
 
+(system-events "system/apply/apply"
+(defequiv fn-equal)
+)
+
+(system-events "system/apply/loop-scions"
+(defthm natp-from-to-by-measure
+  (natp (from-to-by-measure i j))
+  :rule-classes :type-prescription)
+)
+
+(defun mempos (e lst)
+
+; Even though it is not necessary to define mempos in order to build ACL2,
+; mempos is built-in: it is used in the special guard conjectures generated for
+; some loop$ scions.  We thus cannot let the user (re-)define it.  It is
+; identically defined in community book books/projects/apply/loop.lisp, which
+; should be included anytime the user is serious about using scions.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) 0)
+        ((equal e (car lst)) 0)
+        (t (+ 1 (mempos e (cdr lst))))))
+
+#-acl2-devel
+(when-pass-2
+
+; The following function symbols must be in :logic mode, and they are, from
+; (system-verify-guards) above.  Moreover, we must restrict to pass 2 since
+; defwarrant is defined within when-pass-2.  Of course, this source file
+; (boot-strap-pass-2-b.lisp) is only given to LD in pass 2 anyhow; but by using
+; when-pass-2, we don't rely on that and more importantly, we do not evaluate
+; these forms in raw Lisp (important because defwarrant is not defined during
+; compilation).
+
+; WARNING.  Note that proofs are skipped for forms in the scope of when-pass-2.
+; So there is a critical invariant: that all of the defwarrant forms below are
+; justified in the books.  As of this writing in late January 2019, that is the
+; case; see the defun$ forms in community book
+; books/system/apply/loop-scions.lisp, whose proof obligations are checked when
+; running #+acl2-devel builds.  Perhaps we should consider using system-events
+; for ensuring this invariant.
+
+ (defwarrant empty-loop$-as-tuplep)
+ (defwarrant car-loop$-as-tuple)
+ (defwarrant cdr-loop$-as-tuple)
+ (defwarrant loop$-as-ac)
+ (defwarrant loop$-as)
+ (defwarrant from-to-by-measure)
+ (defwarrant tails-ac)
+ (defwarrant tails)
+ (defwarrant from-to-by-ac)
+ (defwarrant from-to-by)
+ (defwarrant until$-ac)
+ (defwarrant until$)
+ (defwarrant until$+-ac)
+ (defwarrant until$+)
+ (defwarrant when$-ac)
+ (defwarrant when$)
+ (defwarrant when$+-ac)
+ (defwarrant when$+)
+ (defwarrant sum$-ac)
+ (defwarrant sum$)
+ (defwarrant sum$+-ac)
+ (defwarrant sum$+)
+ (defwarrant always$)
+ (defwarrant always$+)
+ (defwarrant collect$-ac)
+ (defwarrant collect$)
+ (defwarrant collect$+-ac)
+ (defwarrant collect$+)
+ (defwarrant revappend-true-list-fix)
+ (defwarrant append$-ac)
+ (defwarrant append$)
+ (defwarrant append$+-ac)
+ (defwarrant append$+)
+ (defwarrant mempos)
+ )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Memoization
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -815,7 +930,7 @@
 
 (deftheory ground-zero
 
-; We want to Keep this near the end of *acl2-pass-2-files* in order for the
+; We want to keep this near the end of *acl2-pass-2-files* in order for the
 ; ground-zero theory to be as expected; hence the assert$ below.
 
   #-acl2-loop-only ; *acl2-pass-2-files* is only defined in raw Lisp.

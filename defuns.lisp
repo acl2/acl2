@@ -4490,7 +4490,8 @@
             name
             'verify-guards
             wrld
-            state-vars)
+            state-vars
+            nil)
            (declare (ignore bindings))
            (mv erp (if erp val (unquote val)))))))
       (t (er-cmp ctx
@@ -4654,6 +4655,7 @@
               nil ens wrld
               (f-get-global 'safe-mode state)
               (gc-off state)
+              nil
               nil)
              (mv cl-set cl-set-ttree)))
           ((and (consp x)
@@ -4668,6 +4670,7 @@
               nil ens wrld
               (f-get-global 'safe-mode state)
               (gc-off state)
+              nil
               nil)
              (mv cl-set cl-set-ttree)))
           (t (guard-clauses-for-clique
@@ -6234,9 +6237,9 @@
                          (null x))
                      t)
                     (t (er hard 'non-identical-defp
-                           "Internal error: Unexpected value when ~
-                                processing :normalize xargs keyword, ~x0.  ~
-                                Please contact the ACL2 implementors."
+                           "Internal error: Unexpected value when processing ~
+                            :normalize xargs keyword, ~x0.  Please contact ~
+                            the ACL2 implementors."
                            x)))))
             (not (equal (normalize-value
                          (fetch-dcl-field :normalize all-but-body1))
@@ -8014,7 +8017,8 @@
                                      key
                                      ctx
                                      wrld
-                                     *default-state-vars*)
+                                     *default-state-vars*
+                                     nil)
           (declare (ignore bindings))
           (cond
            (erp (er soft ctx
@@ -8141,6 +8145,243 @@
        (chk-acceptable-lambda$-translations2 new-pairs
                                              (global-val 'lambda$-alist wrld)
                                              ctx state)
+       (value new-pairs))))
+   (t (value nil))))
+
+(defrec loop$-alist-entry
+
+; The :flg field is normally nil, but it is t when adding an entry during
+; certification and we are not in the process of including a sub-book.
+
+  (term . flg)
+; Some day we might change the cheap-flg from nil to t.
+  nil)
+
+(defun loop$-alist-term (loop$-form loop$-alist)
+  (let ((pair (assoc-equal loop$-form loop$-alist)))
+    (and pair
+         (access loop$-alist-entry (cdr pair) :term))))
+
+(mutual-recursion
+
+(defun twoify (term wrld)
+
+; This function converts a translated term into something that can be executed
+; in raw Lisp.  The (only?) problem with executing terms in raw Lisp is the
+; difference between how ACL2 handles multiple values and how raw Lisp does it.
+; The fix here is to find every call of a multi-valued function and wrap it in
+; a multiple-value-list which converts it to a list of values as the logic
+; treats it.
+
+; The name ``twoify'' is just the obvious take-off on ``oneify'' which produces
+; *1*fn from fn.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
+  (cond ((variablep term) term)
+        ((fquotep term) term)
+        ((flambdap (ffn-symb term))
+         (cons (list 'lambda (lambda-formals (ffn-symb term))
+                     (twoify (lambda-body (ffn-symb term)) wrld))
+               (twoify-lst (fargs term) wrld)))
+        ((eq (ffn-symb term) 'if)
+         `(if ,(twoify (fargn term 1) wrld)
+              ,(twoify (fargn term 2) wrld)
+            ,(twoify (fargn term 3) wrld)))
+        ((eq (ffn-symb term) 'return-last)
+         (twoify (fargn term 3) wrld))
+        (t (let ((len (len (stobjs-out (ffn-symb term) wrld))))
+             (cond ((not (eql len 1))
+                    `(mv-list
+                      ',len
+                      (,(ffn-symb term)
+                       ,@(twoify-lst (fargs term) wrld))))
+                   (t (cons-with-hint (ffn-symb term)
+                                      (twoify-lst (fargs term) wrld)
+                                      term)))))))
+
+(defun twoify-lst (terms wrld)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (plist-worldp wrld))))
+  (cond ((endp terms) nil)
+        (t (cons-with-hint (twoify (car terms) wrld)
+                           (twoify-lst (cdr terms) wrld)
+                           terms)))))
+
+(defun convert-tagged-loop$s-to-pairs (lst flg wrld)
+
+; Lst is a list of marked loop$ expressions and we return the list of pairs
+; mapping the loop$s to loop$-alist-entry records that record their
+; translations.
+
+  (cond ((endp lst) nil)
+        (t (cons (cons (unquote (fargn (car lst) 2))
+                       (make loop$-alist-entry
+                             :term (twoify (fargn (car lst) 3) wrld)
+                             :flg flg))
+                 (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
+
+(defun chk-acceptable-loop$-translations1 (new-pairs ctx wrld state)
+  (cond
+   ((null new-pairs) (value nil))
+   (t (let* ((key (car (car new-pairs)))
+             (val (cdr (car new-pairs)))
+             (val-term (access loop$-alist-entry val :term)))
+        (mv-let (erp tkey bindings)
+          (translate11-loop$ key
+                             '(nil) ; stobjs-out
+                             nil    ; bindings
+                             nil    ; known-stobjs
+                             nil    ; flet-alist
+                             key
+                             ctx
+                             wrld
+                             *default-state-vars*)
+          (declare (ignore bindings))
+          (cond
+           (erp (er soft ctx
+                    "The attempt to translate a loop$ to be stored as a key ~
+                     on loop$-alist has caused an error, despite the fact ~
+                     that this very same loop$ was successfully translated ~
+                     a moment ago!  The error caused is:~%~@0~%~%The ~
+                     offending loop$ is ~x1.  This is an implementation ~
+                     error and you should contact the ACL2 developers."
+                    tkey ; (really, a msg)
+                    key))
+           ((and (tagged-loop$p tkey)
+                 (equal (twoify (fargn tkey 3) wrld) val-term))
+
+; The error message below makes it seem like the loop$ is expected to translate
+; to val-term.  But that's not true.  The translation of (loop$ ...) is,
+; actually, (RETURN-LAST 'PROGN '(LOOP$ ...) meaning).  And val-term here is
+; supposed to be meaning.
+
+            (chk-acceptable-loop$-translations1 (cdr new-pairs) ctx wrld state))
+           (t (er soft ctx
+                  "Imperfect counterfeit translated loop$, ~x0.  Unless you ~
+                   knowingly tried to construct a translated loop$ (instead ~
+                   of using loop$ and letting ACL2 generate the translation) ~
+                   this is an implementation error.  Please report such ~
+                   errors to the ACL2 developers.~%~%But if you tried to ~
+                   counterfeit a loop$ we should point out that we don't ~
+                   understand why you would do such a thing!  Your ~
+                   counterfeit translated loop$ won't enjoy the same runtime ~
+                   support as our translated loop$ even if you did it ~
+                   perfectly.  Had you written a loop$ it would enter raw ~
+                   Lisp as a CLTL loop statement and run fast.  But the ~
+                   counterfeit term will just use loop$ scions and apply$.  ~
+                   Nevertheless, here's what's wrong with your counterfeit ~
+                   version:  the loop$ expression ~x0 actually translates to ~
+                   ~x1 but your counterfeit claimed it translates to ~x2."
+                  key
+                  tkey
+                  val-term))))))))
+
+(defun chk-acceptable-loop$-translations2 (new-pairs loop$-alist ctx state)
+
+; We check that no key in new-pairs occurs with a different value in either
+; loop$-alist the rest of new-pairs.
+
+  (cond
+   ((null new-pairs) (value nil))
+   (t (let* ((key (car (car new-pairs)))
+             (val (cdr (car new-pairs)))
+             (val-term (access loop$-alist-entry val :term))
+             (loop$-term (loop$-alist-term key loop$-alist)))
+        (cond
+         ((and loop$-term (not (equal val-term loop$-term)))
+          (er soft ctx
+              "A pair about to be added to loop$-alist has the same key ~
+               associated with a different value on loop$-alist already.  ~
+               This is an implementation error.  Please report it to the ACL2 ~
+               developers.  The duplicate key is ~x0.  On loop$-alist that ~
+               key is mapped to the value ~x1.  But we were about to map it ~
+               to the value ~x2.  This shouldn't happen because both values ~
+               are allegedly the translation of the key!"
+              key
+              loop$-term
+              val-term))
+         (t
+          (let ((temp2 (assoc-equal key (cdr new-pairs))))
+            (cond
+             ((and temp2 (not (equal val-term (cdr temp2))))
+              (er soft ctx
+                  "Two pairs about to be added to loop$-alist have the same ~
+                   key but different values.  This is an implementation ~
+                   error.  Please report it to the ACL2 developers.  The key ~
+                   is ~x0 and the two values are ~x1 and ~x2.  This shouldn't ~
+                   happen because both values are allegedly the translation ~
+                   of the key!"
+                  key
+                  (cdr temp2)
+                  val-term))
+             (t (chk-acceptable-loop$-translations2 (cdr new-pairs)
+                                                    loop$-alist
+                                                    ctx state))))))))))
+
+(defun chk-acceptable-loop$-translations
+  (symbol-class guards bodies ctx wrld state)
+
+; This function computes, checks, and returns the new pairs we should add to
+; loop$-alist.  It does not add them.
+
+; To explain what this function does we first have to recap the world global
+; 'loop$-alist.  Loop$-alist maps the loop$ expressions to their logic
+; translations.  For example, if a defun mentioned (loop$ for x in lst collect
+; (cadr x)), whose translation -- modulo our use of lambda$ for brevity -- is
+; (collect$ (lambda$ (x) (car (cdr x))) lst).  The raw Lisp of the defun will
+; contain
+
+; (if *aokp*
+;     (loop$ for x in lst collect (cadr x))
+;     (collect$ (lambda$ (x) (car (cdr x))) lst))
+
+; But where did the Lisp compiler get the collect$ term, given that all that
+; was in the source code was the loop$ and that the compiler doesn't have
+; access to the ACL2 world?  The answer is, it got it (indirectly) from the
+; loop$-alist created by the defun and transferred into the .cert file when the
+; book was certified.
+
+; The first formal above is the symbol-class of the defuns being processed.
+; The next two are the guards and bodies, all of which ultimately get
+; transferred into raw Lisp.  We must find every :top level translated loop$ in
+; these terms and map them to their logic translations.  (We do not need to add
+; sub-loop$s of loop$s since they will never be encountered by the compiler.)
+; These pairs will be added to loop$-alist.  But to guard against the
+; possibility that the user has incorrectly counterfeited a translated loop$,
+; we must check that the alleged translations are actually correct!
+
+  (cond
+   ((and (not (eq symbol-class :program))
+         (not (global-val 'boot-strap-flg wrld)))
+    (let* ((certify-book-info (f-get-global 'certify-book-info state))
+           (new-pairs
+            (convert-tagged-loop$s-to-pairs
+             (collect-certain-tagged-loop$s-lst
+              :top
+              (append guards bodies)
+              nil)
+             (and certify-book-info
+                  (let ((path (global-val 'include-book-path wrld)))
+                    (if (consp path)
+                        (and (null (cdr path))
+                             (equal (car path)
+                                    (access certify-book-info
+                                            certify-book-info
+                                            :full-book-name)))
+                      (null path))))
+             wrld)))
+                                   
+      (er-progn
+
+; Note that we check the terms in new-pairs, not the :flg fields of the
+; associated loop$-alist-entry.  To understand how :flg is used, see Part 3 of
+; the Essay on Hash Table Support for Compilation.
+
+       (chk-acceptable-loop$-translations1 new-pairs ctx wrld state)
+       (chk-acceptable-loop$-translations2 new-pairs
+                                           (global-val 'loop$-alist wrld)
+                                           ctx state)
        (value new-pairs))))
    (t (value nil))))
 
@@ -8438,6 +8679,11 @@
                                  (chk-acceptable-lambda$-translations
                                   symbol-class
                                   guards bodies
+                                  ctx wrld state))
+                                (new-loop$-alist-pairs
+                                 (chk-acceptable-loop$-translations
+                                  symbol-class
+                                  guards bodies
                                   ctx wrld state)))
                         (value (list 'chk-acceptable-defuns
                                      names
@@ -8462,7 +8708,8 @@
                                      guard-debug
                                      measure-debug
                                      split-types-terms
-                                     new-lambda$-alist-pairs)))))))))))))))))
+                                     (list new-lambda$-alist-pairs
+                                           new-loop$-alist-pairs))))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -8539,8 +8786,13 @@
 ;              - list of translated terms, each corresponding to type
 ;                declarations made for a definition with XARGS keyword
 ;                :SPLIT-TYPES T
-;    new-lambda$-alist-pairs
-;              - list of pairs to add to the world global lambda$-alist
+;    new-lambda$-and-loop$-translation-pairs
+;               - a list of two alists
+;                 * new-lambda$-alist-pairs
+;                 * new-loop$-alist-pairs
+;                 each of which maps the obvious untranslated terms to their
+;                 respective translations (actually, to loop$-alist-entry
+;                 records with those translations)
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -8768,7 +9020,7 @@
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
                          guard-hints std-hints otf-flg guard-debug bodies
                          symbol-class normalizeps split-types-terms
-                         new-lambda$-alist-pairs
+                         new-lambda$-and-loop$-translation-pairs
                          non-executablep
                          #+:non-standard-analysis std-p
                          ctx state)
@@ -8830,16 +9082,25 @@
                                        ens wrld5 ttree2 state)
         (er-progn
          (update-w big-mutrec wrld6)
-         (let ((wrld6a (global-set 'lambda$-alist
-                                  (union-equal new-lambda$-alist-pairs
-                                               (global-val 'lambda$-alist
-                                                           wrld6))
-                                  wrld6)))
+         (let* ((wrld6a
+                 (global-set 'lambda$-alist
+                             (union-equal
+                              (car new-lambda$-and-loop$-translation-pairs)
+                              (global-val 'lambda$-alist
+                                          wrld6))
+                             wrld6))
+                (wrld6b
+                 (global-set 'loop$-alist
+                             (union-equal
+                              (cadr new-lambda$-and-loop$-translation-pairs)
+                              (global-val 'loop$-alist
+                                          wrld6a))
+                             wrld6a)))
            (er-progn
-            (update-w big-mutrec wrld6a)
+            (update-w big-mutrec wrld6b)
             (er-let*
                 ((wrld7 (update-w big-mutrec
-                                  (putprop-level-no-lst names wrld6a)))
+                                  (putprop-level-no-lst names wrld6b)))
                  (wrld8 (update-w big-mutrec
                                   (putprop-primitive-recursive-defunp-lst
                                    names wrld7)))
@@ -8910,8 +9171,9 @@
 
 (defun defuns-fn0 (names arglists docs pairs guards measures
                          ruler-extenders-lst mp rel hints guard-hints std-hints
-                         otf-flg guard-debug measure-debug bodies symbol-class
-                         normalizeps split-types-terms new-lambda$-alist-pairs
+                         otf-flg guard-debug measure-debug bodies  symbol-class
+                         normalizeps split-types-terms
+                         new-lambda$-and-loop$-translation-pairs
                          non-executablep
                          #+:non-standard-analysis std-p
                          ctx wrld state)
@@ -8955,7 +9217,7 @@
          symbol-class
          normalizeps
          split-types-terms
-         new-lambda$-alist-pairs
+         new-lambda$-and-loop$-translation-pairs
          non-executablep
          #+:non-standard-analysis std-p
          ctx
@@ -9395,7 +9657,7 @@
                 (guard-debug (nth 20 tuple))
                 (measure-debug (nth 21 tuple))
                 (split-types-terms (nth 22 tuple))
-                (new-lambda$-alist-pairs (nth 23 tuple)))
+                (new-lambda$-and-loop$-translation-pairs (nth 23 tuple)))
             (er-let*
              ((pair (defuns-fn0
                       names
@@ -9417,7 +9679,7 @@
                       symbol-class
                       normalizeps
                       split-types-terms
-                      new-lambda$-alist-pairs
+                      new-lambda$-and-loop$-translation-pairs
                       non-executablep
                       #+:non-standard-analysis std-p
                       ctx

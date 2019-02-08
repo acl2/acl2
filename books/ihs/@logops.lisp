@@ -1251,7 +1251,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 	(integer-saturating-coercion saturating-coercion)
 	(name (pack-intern name "@" name))
 	(saturating-coercion
-	 (when$ saturating-coercion
+	 (when$cl saturating-coercion
 	   (pack-intern saturating-coercion "@" saturating-coercion)))
 	(predicate (pack-intern name name "-P"))
 	(predicate-lemma (pack-intern name predicate "-" name))
@@ -1268,7 +1268,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
        `(ENCAPSULATE ()
 	  (LOCAL (IN-THEORY (ENABLE ,integer-name ,integer-predicate
-				    ,@(when$ saturating-coercion
+				    ,@(when$cl saturating-coercion
 					(list integer-saturating-coercion)))))
 	  (DEFUN ,predicate (X)
 	    (DECLARE (XARGS :GUARD T))
@@ -1276,7 +1276,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 	       (:SIGNED `(@SIGNED-BYTE-P ,size X))
 	       (:UNSIGNED `(@UNSIGNED-BYTE-P ,size X))))
 	  (DEFUN ,name (I)
-	    ,@(when$ doc (list doc))
+	    ,@(when$cl doc (list doc))
 	    (DECLARE (XARGS :GUARD (@INTEGERP I)))
 	    ,(case s/u
 	       (:SIGNED `(@LOGEXT ,size I))
@@ -1303,7 +1303,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 	    (IMPLIES
 	     (INTEGERP I)
 	     (EQUAL (,predicate I) (,integer-predicate I))))
-	  ,@(when$ saturating-coercion
+	  ,@(when$cl saturating-coercion
 	      (list
 	       `(DEFUN ,saturating-coercion (I)
 		  (DECLARE (XARGS :GUARD (@INTEGERP I)))
@@ -1319,15 +1319,15 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 			  (,integer-saturating-coercion I))))))
 	  (IN-THEORY
 	   (DISABLE ,predicate ,name
-		    ,@(when$ saturating-coercion
+		    ,@(when$cl saturating-coercion
 			(list saturating-coercion))))
 	  (DEFTHEORY ,theory
 	    (UNION-THEORIES
 	     (DEFUN-TYPE/EXEC-THEORY
-	       '(,predicate ,name ,@(when$ saturating-coercion
+	       '(,predicate ,name ,@(when$cl saturating-coercion
 				      (list saturating-coercion))))
 	     '(,predicate-lemma ,coercion-lemma ,forward-lemma
 				,type-lemma ,integer-lemma
-				,@(when$ saturating-coercion
+				,@(when$cl saturating-coercion
 				    (list sat-lemma sat-type-lemma
 					  sat-integer-lemma)))))))))

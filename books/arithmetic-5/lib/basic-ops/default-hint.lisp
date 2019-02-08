@@ -18,6 +18,11 @@
 
 (include-book "dynamic-e-d")
 
+; Matt K. mod, Jan. 2019: The following is needed for the #+acl2-devel build,
+; since nonlinearp-default-hint defined below is a :logic mode function that
+; calls observation-cw.
+(include-book "system/observation1-cw" :dir :system)
+
 (table acl2-defaults-table :state-ok t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

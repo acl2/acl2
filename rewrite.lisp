@@ -7475,11 +7475,6 @@
          wrld)
         (t (scan-to-include-book full-book-name (cdr wrld)))))
 
-(defun assoc-equal-cadr (x alist)
-  (cond ((null alist) nil)
-        ((equal x (cadr (car alist))) (car alist))
-        (t (assoc-equal-cadr x (cdr alist)))))
-
 (defun multiple-assoc-terminal-substringp1 (x i alist)
   (cond ((null alist) nil)
         ((terminal-substringp x (caar alist) i (1- (length (caar alist))))

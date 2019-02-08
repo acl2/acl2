@@ -1293,6 +1293,15 @@
   (alistp val))
 
 ;-----------------------------------------------------------------
+; LOOP$-ALIST
+
+; Loop$-alist maps loop$ expressions to their logic translations.  We just
+; insist it is an alist.
+
+(defun loop$-alistp (val)
+  (alistp val))
+
+;-----------------------------------------------------------------
 ; COMMON-LISP-COMPLIANT-LAMBDAS [GLOBAL-VALUE]
 (defun common-lisp-compliant-lambdasp (val)
 ; This is really a list well-formed quoted lambda expressions (all of which
@@ -1812,6 +1821,7 @@
       (pseudo-defined-hereditarily-constrained-fnsp val))
     (WORLD-GLOBALS (world-globalsp val))
     (LAMBDA$-ALIST (lambda$-alistp val))
+    (LOOP$-ALIST (loop$-alistp val))
     (COMMON-LISP-COMPLIANT-LAMBDAS (common-lisp-compliant-lambdasp val))
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (otherwise nil)))

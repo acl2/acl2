@@ -2187,12 +2187,6 @@
                    (find-equivalence-hyp-term term (cdr hyps) target equiv w)))))
     nil))
 
-(defun flatten-ands-in-lit-lst (x)
-  (if (endp x)
-      nil
-    (append (flatten-ands-in-lit (car x))
-            (flatten-ands-in-lit-lst (cdr x)))))
-
 (define-pc-primitive equiv (x y &optional equiv)
   (mv-let
    (current-term governors)
