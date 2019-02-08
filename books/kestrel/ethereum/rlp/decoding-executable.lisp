@@ -47,11 +47,105 @@
      based on the parser.
      These decoders return an error
      if there are extra bytes after the encodings.
-     We prove these decoders equal to the
+     We prove these decoders equivalent to the
      <see topic='@(url rlp-decoding-declarative)'>declaratively defined
      ones</see>,
-     using the left and right inverse properties of the parser."))
+     using the left and right inverse properties of the parser.")
+   (xdoc::p
+    "While the declaratively defined decoders return a boolean error result,
+     which therefore conveys a single kind of error,
+     the executable parser and decoders return more detailed error information.
+     Thus, the equivalence relation for the error result
+     of the declaratively defined decoders and of the executable ones
+     is @(tsee iff) instead of @(tsee equal); see the theorems."))
   :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum rlp-error
+  :parents (rlp-decoding-executable)
+  :short "Possible errors when parsing or decoding RLP encodings."
+  :long
+  "<p>
+   These values provide information about the reason why
+   an RLP encoding is erroneous and cannot be parsed or decoded.
+   </p>
+   <p>
+   The @(':no-bytes') error occurs
+   when starting to parse or decode a (sub)tree but no bytes are available.
+   </p>
+   <p>
+   The @(':fewer-bytes-than-...') errors occur when,
+   after successfully reading a length,
+   there are fewer bytes available than the required length.
+   The length may be a short length (i.e. below 56, part of the first byte),
+   the length of a long length (i.e. between 1 and 8, part of the first byte),
+   or a long length (i.e. a big endian length).
+   In these errors, the @('fragment') field consists of the first byte,
+   possibly followed by the big endian length bytes as applicable.
+   </p>
+   <p>
+   The @(':leading-zeros-in-long-length') errors occurs when
+   a long length has leading zeros.
+   See the discussion in @(tsee rlp-parse-tree).
+   The @('fragment') field consists of the first byte
+   followed by the big endian length.
+   </p>
+   <p>
+   The @(':non-optimal-...') errors occur when
+   the encoding is longer than it must be.
+   See the discussion in @(tsee rlp-parse-tree).
+   The @('fragment') field consists of the first byte,
+   possibly followed by the big endian length bytes as applicable.
+   </p>
+   <p>
+   Since parsing and decoding are recursive,
+   errors from subtree encodings must be propagated upward,
+   because the supertree encodings are therefore erroneous.
+   The @(':error-in-subtree') errors propagate and wrap
+   the error from a subtree.
+   Note that this makes the definition of this fixtype of errors recursive.
+   </p>
+   <p>
+   The @(':extra-bytes') errors occur only in decoding, not in parsing.
+   Parsing always returns any remaining bytes as a result,
+   while decoding requires the input bytes to have the right length.
+   The @('bytes') field of these errors consists of the extra bytes.
+   </p>
+   <p>
+   The @(':non-leaf-tree') errors occur
+   when attempting to decode a byte array (i.e. a leaf tree)
+   results in a non-leaf tree instead.
+   The @('fragment') field contains the starting byte of the encoding.
+   </p>
+   <p>
+   The @(':leading-zeros-in-scalar') errors occur
+   when attempting to decode a scalar results in
+   a byte array with leading zeros.
+   </p>"
+  (:no-bytes ())
+  (:fewer-bytes-than-short-length ((fragment byte-list)
+                                   (required nat)
+                                   (available nat)))
+  (:fewer-bytes-than-length-of-length ((fragment byte-list)
+                                       (required nat)
+                                       (available nat)))
+  (:fewer-bytes-than-long-length ((fragment byte-list)
+                                  (required nat)
+                                  (available nat)))
+  (:leading-zeros-in-long-length ((fragment byte-list)))
+  (:non-optimal-short-length ((fragment byte-list)))
+  (:non-optimal-long-length ((fragment byte-list)))
+  (:subtree ((error rlp-error)))
+  (:extra-bytes ((bytes byte-list)))
+  (:non-leaf-tree ((fragment byte-list)))
+  (:leading-zeros-in-scalar ((bytes byte-list))))
+
+(fty::defoption maybe-rlp-error
+  rlp-error
+  :parents (rlp-decoding-executable)
+  :short "Type of the error result of the parsing and decoding functions
+          (@('nil') if no error).")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,14 +156,14 @@
   :long
   (xdoc::topapp
    (xdoc::p
-    "This function returns a boolean error flag,
+    "This function returns an error result (@('nil') if no error),
      the decoded tree,
      and the remaining unparsed bytes.
-     If the error flag is set,
+     If the error is not @('nil'),
      we return an irrelevant tree as second result
      and @('nil') as remaining bytes.")
    (xdoc::p
-    "This is fairly straightforward,
+    "This parser is fairly straightforward,
      but there is a slight subtlety missed by some implementations,
      including the reference decoding code in [Wiki:RLP]:
      in order to recognize only valid encodings
@@ -131,7 +225,9 @@
      In other words, the termination here depends on functional properties.
      Thus, we use @(tsee mbt) to ensure that the length has in fact decreased,
      which lets us prove termination.
-     Then guard verification ensures that that check is always satisfied.")
+     Then guard verification ensures that that check is always satisfied.
+     Under the negated @(tsee mbt) condition, we must return some error,
+     but it does not matter which error, since this case never happens.")
    (xdoc::p
     "Before verifying guards,
      we need to show that @(tsee rlp-parse-tree)
@@ -162,7 +258,7 @@
      note that there is an @(':expand') hint
      for each possible range of the first byte of the encoding,
      except for the range below 128.
-     It also needs two instances of a theorems that relates
+     It also needs two instances of a theorem that relates
      the length of the big endian lengths to the lengths themselves;
      note that there are two instances,
      one for leaf trees (i.e. byte arrays encoded with long lengths)
@@ -201,69 +297,119 @@
   :verify-guards nil ; done below
 
   (define rlp-parse-tree ((encoding byte-listp))
-    :returns (mv (error? booleanp)
+    :returns (mv (error? maybe-rlp-error-p)
                  (tree rlp-treep)
                  (rest byte-listp))
     (b* ((encoding (mbe :logic (byte-list-fix encoding) :exec encoding))
          (irrelevant (rlp-tree-leaf nil))
-         ((when (endp encoding)) (mv t irrelevant nil))
+         ((when (endp encoding)) (mv (rlp-error-no-bytes) irrelevant nil))
          ((cons first encoding) encoding)
          ((when (< first 128)) (mv nil (rlp-tree-leaf (list first)) encoding))
          ((when (<= first 183))
           (b* ((len (- first 128))
-               ((when (< (len encoding) len)) (mv t irrelevant nil))
+               ((when (< (len encoding) len))
+                (mv (rlp-error-fewer-bytes-than-short-length (list first)
+                                                             len
+                                                             (len encoding))
+                    irrelevant
+                    nil))
                (bytes (take len encoding))
                ((when (and (= len 1)
-                           (< (car bytes) 128))) (mv t irrelevant nil))
+                           (< (car bytes) 128)))
+                (mv (rlp-error-non-optimal-short-length (list first
+                                                              (car bytes)))
+                    irrelevant
+                    nil))
                (encoding (nthcdr len encoding)))
             (mv nil (rlp-tree-leaf bytes) encoding)))
          ((when (< first 192))
           (b* ((lenlen (- first 183))
-               ((when (< (len encoding) lenlen)) (mv t irrelevant nil))
+               ((when (< (len encoding) lenlen))
+                (mv (rlp-error-fewer-bytes-than-length-of-length (list first)
+                                                                 lenlen
+                                                                 (len encoding))
+                    irrelevant
+                    nil))
                (len-bytes (take lenlen encoding))
                ((unless (equal (trim-bendian* len-bytes)
-                               len-bytes)) (mv t irrelevant nil))
+                               len-bytes))
+                (mv (rlp-error-leading-zeros-in-long-length (cons first
+                                                                  len-bytes))
+                    irrelevant
+                    nil))
                (encoding (nthcdr lenlen encoding))
                (len (bendian=>nat 256 len-bytes))
-               ((when (<= len 55)) (mv t irrelevant nil))
-               ((when (< (len encoding) len)) (mv t irrelevant nil))
+               ((when (<= len 55))
+                (mv (rlp-error-non-optimal-long-length (cons first len-bytes))
+                    irrelevant
+                    nil))
+               ((when (< (len encoding) len))
+                (mv (rlp-error-fewer-bytes-than-long-length (cons first
+                                                                  len-bytes)
+                                                            len
+                                                            (len encoding))
+                    irrelevant
+                    nil))
                (bytes (take len encoding))
                (encoding (nthcdr len encoding)))
             (mv nil (rlp-tree-leaf bytes) encoding)))
          ((when (<= first 247))
           (b* ((len (- first 192))
-               ((when (< (len encoding) len)) (mv t irrelevant nil))
+               ((when (< (len encoding) len))
+                (mv (rlp-error-fewer-bytes-than-short-length (list first)
+                                                             len
+                                                             (len encoding))
+                    irrelevant
+                    nil))
                (subencoding (take len encoding))
                (encoding (nthcdr len encoding))
                ((mv error? subtrees) (rlp-parse-tree-list subencoding))
-               ((when error?) (mv t irrelevant nil)))
+               ((when error?) (mv (rlp-error-subtree error?) irrelevant nil)))
             (mv nil (rlp-tree-nonleaf subtrees) encoding)))
          (lenlen (- first 247))
-         ((when (< (len encoding) lenlen)) (mv t irrelevant nil))
+         ((when (< (len encoding) lenlen))
+          (mv (rlp-error-fewer-bytes-than-length-of-length (list first)
+                                                           lenlen
+                                                           (len encoding))
+              irrelevant
+              nil))
          (len-bytes (take lenlen encoding))
          ((unless (equal (trim-bendian* len-bytes)
-                         len-bytes)) (mv t irrelevant nil))
+                         len-bytes))
+          (mv (rlp-error-leading-zeros-in-long-length (cons first len-bytes))
+              irrelevant
+              nil))
          (encoding (nthcdr lenlen encoding))
          (len (bendian=>nat 256 len-bytes))
-         ((when (<= len 55)) (mv t irrelevant nil))
-         ((when (< (len encoding) len)) (mv t irrelevant nil))
+         ((when (<= len 55))
+          (mv (rlp-error-non-optimal-long-length (cons first len-bytes))
+              irrelevant
+              nil))
+         ((when (< (len encoding) len))
+          (mv (rlp-error-fewer-bytes-than-long-length (cons first len-bytes)
+                                                      len
+                                                      (len encoding))
+              irrelevant
+              nil))
          (subencoding (take len encoding))
          (encoding (nthcdr len encoding))
          ((mv error? subtrees) (rlp-parse-tree-list subencoding))
-         ((when error?) (mv t irrelevant nil)))
+         ((when error?)
+          (mv (rlp-error-subtree error?) irrelevant nil)))
       (mv nil (rlp-tree-nonleaf subtrees) encoding))
     :measure (two-nats-measure (len encoding) 0)
     :no-function t)
 
   (define rlp-parse-tree-list ((encoding byte-listp))
-    :returns (mv (error? booleanp)
+    :returns (mv (error? maybe-rlp-error-p)
                  (trees rlp-tree-listp))
     (b* (((when (endp encoding)) (mv nil nil))
          ((mv error? tree encoding1) (rlp-parse-tree encoding))
-         ((when error?) (mv t nil))
-         ((unless (mbt (< (len encoding1) (len encoding)))) (mv t nil))
+         ((when error?) (mv error? nil))
+         ((unless (mbt (< (len encoding1) (len encoding))))
+          (mv (rlp-error-no-bytes) nil))
          ((mv error? trees) (rlp-parse-tree-list encoding1))
-         ((when error?) (mv t nil)))
+         ((when error?) (mv error? nil)))
       (mv nil (cons tree trees)))
     :measure (two-nats-measure (len encoding) 1)
     :no-function t)
@@ -388,7 +534,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rlp-decodex-tree ((encoding byte-listp))
-  :returns (mv (error? booleanp)
+  :returns (mv (error? maybe-rlp-error-p)
                (tree rlp-treep))
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a tree."
@@ -411,8 +557,12 @@
      and so we use it with a @(':use') hint.")
    (xdoc::p
     "Using these left and right inverse theorems,
-     we prove that the executable decoder is equal to @(tsee rlp-decode-tree),
-     i.e. the executable decoder is correct.")
+     we prove that the executable decoder
+     is equivalent to @(tsee rlp-decode-tree),
+     i.e. the executable decoder is correct.
+     The equivalence is @(tsee iff) for the error result,
+     because the executable decoder returns various kinds of errors,
+     while the declaratively defined decoder returns just one kind.")
    (xdoc::p
     "Since @(tsee rlp-decode-tree) is defined
      as a case split on @(tsee rlp-tree-encoding-p),
@@ -445,8 +595,9 @@
      and the fact that both @(tsee rlp-decode-tree) and @(tsee rlp-decodex-tree)
      are right inverses of @(tsee rlp-encode-tree)."))
   (b* (((mv error? tree rest) (rlp-parse-tree encoding))
-       ((when error?) (mv t (rlp-tree-leaf nil)))
-       ((when (consp rest)) (mv t (rlp-tree-leaf nil))))
+       ((when error?) (mv error? (rlp-tree-leaf nil)))
+       ((when (consp rest))
+        (mv (rlp-error-extra-bytes rest) (rlp-tree-leaf nil))))
     (mv nil tree))
   ///
 
@@ -494,30 +645,35 @@
        :disable rlp-decodex-tree-of-rlp-encode-tree)))
 
   (defruled rlp-decode-tree-is-rlp-decodex-tree
-    (equal (rlp-decode-tree encoding)
-           (rlp-decodex-tree encoding))
+    (and (iff (mv-nth 0 (rlp-decode-tree encoding))
+              (mv-nth 0 (rlp-decodex-tree encoding)))
+         (equal (mv-nth 1 (rlp-decode-tree encoding))
+                (mv-nth 1 (rlp-decodex-tree encoding))))
     :cases ((rlp-tree-encoding-p encoding))
-    :enable (equal-when-encoding
-             equal-when-not-encoding)
+    :enable (equivalent-when-not-encoding
+             equivalent-error-when-encoding
+             equivalent-tree-when-encoding)
 
     :prep-lemmas
 
-    ((defruled equal-when-not-encoding
+    ((defruled equivalent-when-not-encoding
        (implies (not (rlp-tree-encoding-p encoding))
-                (equal (rlp-decode-tree encoding)
-                       (rlp-decodex-tree encoding)))
+                (and (iff (mv-nth 0 (rlp-decode-tree encoding))
+                          (mv-nth 0 (rlp-decodex-tree encoding)))
+                     (equal (mv-nth 1 (rlp-decode-tree encoding))
+                            (mv-nth 1 (rlp-decodex-tree encoding)))))
        :enable (rlp-decode-tree
                 rlp-decodex-tree)
        :use rlp-tree-encoding-p-iff-rlp-decodex-tree-not-error)
 
-     (defruled equal-error-when-encoding
+     (defruled equivalent-error-when-encoding
        (implies (rlp-tree-encoding-p encoding)
                 (equal (mv-nth 0 (rlp-decode-tree encoding))
                        (mv-nth 0 (rlp-decodex-tree encoding))))
        :enable rlp-decode-tree
        :use rlp-tree-encoding-p-iff-rlp-decodex-tree-not-error)
 
-     (defruled equal-tree-when-encoding
+     (defruled equivalent-tree-when-encoding
        (implies (rlp-tree-encoding-p encoding)
                 (equal (mv-nth 1 (rlp-decode-tree encoding))
                        (mv-nth 1 (rlp-decodex-tree encoding))))
@@ -525,20 +681,12 @@
              rlp-encode-tree-of-rlp-decodex-tree
              rlp-tree-encoding-p-iff-rlp-decodex-tree-not-error)
        :disable (rlp-encode-tree-of-rlp-decode-tree
-                 rlp-encode-tree-of-rlp-decodex-tree))
-
-     (defruled equal-when-encoding
-       (implies (rlp-tree-encoding-p encoding)
-                (equal (rlp-decode-tree encoding)
-                       (rlp-decodex-tree encoding)))
-       :use (equal-error-when-encoding
-             equal-tree-when-encoding)
-       :enable (rlp-decode-tree rlp-decodex-tree)))))
+                 rlp-encode-tree-of-rlp-decodex-tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rlp-decodex-bytes ((encoding byte-listp))
-  :returns (mv (error? booleanp)
+  :returns (mv (error? maybe-rlp-error-p)
                (bytes byte-listp))
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a byte array."
@@ -551,23 +699,26 @@
      equal (i.e. correct with respect) to @(tsee rlp-decode-bytes),
      using the correctness theorem of @(tsee rlp-decodex-tree)."))
   (b* (((mv error? tree) (rlp-decodex-tree encoding))
-       ((when error?) (mv t nil))
-       ((unless (rlp-tree-case tree :leaf)) (mv t nil))
+       ((when error?) (mv error? nil))
+       ((unless (rlp-tree-case tree :leaf))
+        (mv (rlp-error-non-leaf-tree (list (car encoding))) nil))
        (bytes (rlp-tree-leaf->bytes tree)))
     (mv nil bytes))
   :hooks (:fix)
   ///
 
   (defruled rlp-decode-bytes-is-rlp-decodex-bytes
-    (equal (rlp-decode-bytes encoding)
-           (rlp-decodex-bytes encoding))
+    (and (iff (mv-nth 0 (rlp-decode-bytes encoding))
+              (mv-nth 0 (rlp-decodex-bytes encoding)))
+         (equal (mv-nth 1 (rlp-decode-bytes encoding))
+                (mv-nth 1 (rlp-decodex-bytes encoding))))
     :enable (rlp-decode-bytes-alt-def
              rlp-decode-tree-is-rlp-decodex-tree)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rlp-decodex-scalar ((encoding byte-listp))
-  :returns (mv (error? booleanp)
+  :returns (mv (error? maybe-rlp-error-p)
                (scalar natp))
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a scalar."
@@ -580,8 +731,9 @@
      equal (i.e. correct with respect) to @(tsee rlp-decode-scalar),
      using the correctness theorem of @(tsee rlp-decodex-bytes)."))
   (b* (((mv error? bytes) (rlp-decodex-bytes encoding))
-       ((when error?) (mv t 0))
-       ((unless (equal (trim-bendian* bytes) bytes)) (mv t 0))
+       ((when error?) (mv error? 0))
+       ((unless (equal (trim-bendian* bytes) bytes))
+        (mv (rlp-error-leading-zeros-in-scalar bytes) 0))
        (scalar (bendian=>nat 256 bytes)))
     (mv nil scalar))
   :guard-hints (("Goal"
@@ -590,7 +742,9 @@
   ///
 
   (defruled rlp-decode-scalar-is-rlp-decodex-scalar
-    (equal (rlp-decode-scalar encoding)
-           (rlp-decodex-scalar encoding))
+    (and (iff (mv-nth 0 (rlp-decode-scalar encoding))
+              (mv-nth 0 (rlp-decodex-scalar encoding)))
+         (equal (mv-nth 1 (rlp-decode-scalar encoding))
+                (mv-nth 1 (rlp-decodex-scalar encoding))))
     :enable (rlp-decode-scalar-alt-def
              rlp-decode-bytes-is-rlp-decodex-bytes)))
