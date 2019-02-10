@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Workshop Paper Examples
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,9 @@
 ; Below are the examples in the ACL2-2015 Workshop paper
 ; "Second-Order Functions and Theorems in ACL2".
 ; Comments indicate the sections and subsections of the paper.
+; The examples look slightly different from the paper
+; due to the changes to SOFT since the paper
+; (see :DOC UPDATES-TO-WORKSHOP-MATERIAL).
 
 ; 1  Second-Order Functions and Theorems
 
@@ -42,17 +45,17 @@
         (t (and (?p (car l))
                 (all[?p] (cdr l))))))
 
-(defun2 map[?f_?p] (?f ?p) (l)
+(defun2 map[?f][?p] (?f ?p) (l)
   (declare (xargs :guard (all[?p] l)))
   (cond ((endp l) nil)
         (t (cons (?f (car l))
-                 (map[?f_?p] (cdr l))))))
+                 (map[?f][?p] (cdr l))))))
 
-(defun2 fold[?f_?g] (?f ?g) (bt)
+(defun2 fold[?f][?g] (?f ?g) (bt)
   (declare (xargs :guard t))
   (cond ((atom bt) (?f bt))
-        (t (?g (fold[?f_?g] (car bt))
-               (fold[?f_?g] (cdr bt))))))
+        (t (?g (fold[?f][?g] (car bt))
+               (fold[?f][?g] (cdr bt))))))
 
 ; 1.2.2  Choice Functions
 
@@ -85,10 +88,10 @@
   (all[?p] (?p . octetp)))
 
 (defun-inst map[code-char]
-  (map[?f_?p] (?f . code-char) (?p . octetp)))
+  (map[?f][?p] (?f . code-char) (?p . octetp)))
 
-(defun-inst fold[nfix_plus]
-  (fold[?f_?g] (?f . nfix) (?g . binary-+)))
+(defun-inst fold[nfix][plus]
+  (fold[?f][?g] (?f . nfix) (?g . binary-+)))
 
 (defun twice (x)
   (declare (xargs :guard t))
@@ -104,8 +107,8 @@
 
 ; 1.4  Second-Order Theorems
 
-(defthm len-of-map[?f_?p]
-  (equal (len (map[?f_?p] l))
+(defthm len-of-map[?f][?p]
+  (equal (len (map[?f][?p] l))
          (len l)))
 
 (defthm injective[quad[?f]]-when-injective[?f]
@@ -136,14 +139,14 @@
 
 (defunvar ?io (* *) => *)
 
-(defun-sk2 atom-io[?f_?io] (?f ?io) ()
+(defun-sk2 atom-io[?f][?io] (?f ?io) ()
   (forall x (implies (atom x)
                      (?io x (?f x))))
   :rewrite :direct)
 
-(verify-guards atom-io[?f_?io])
+(verify-guards atom-io[?f][?io])
 
-(defun-sk2 consp-io[?g_?io] (?g ?io) ()
+(defun-sk2 consp-io[?g][?io] (?g ?io) ()
   (forall (x y1 y2)
           (implies (and (consp x)
                         (?io (car x) y1)
@@ -151,17 +154,17 @@
                    (?io x (?g y1 y2))))
   :rewrite :direct)
 
-(verify-guards consp-io[?g_?io])
+(verify-guards consp-io[?g][?io])
 
-(defthm fold-io[?f_?g_?io]
-  (implies (and (atom-io[?f_?io])
-                (consp-io[?g_?io]))
-           (?io x (fold[?f_?g] x))))
+(defthm fold-io[?f][?g][?io]
+  (implies (and (atom-io[?f][?io])
+                (consp-io[?g][?io]))
+           (?io x (fold[?f][?g] x))))
 
 ; 1.5  Instances of Second-Order Theorems
 
 (defthm-inst len-of-map[code-char]
-  (len-of-map[?f_?p] (?f . code-char) (?p . octetp)))
+  (len-of-map[?f][?p] (?f . code-char) (?p . octetp)))
 
 (defun-inst injective[quad[wrap]]
   (injective[quad[?f]] (?f . wrap)))
@@ -210,44 +213,44 @@
 
 ; Step 1
 
-(defun-sk2 def-?h-fold[?f_?g] (?h ?f ?g) ()
+(defun-sk2 def-?h-fold[?f][?g] (?h ?f ?g) ()
   (forall x (equal (?h x)
-                   (fold[?f_?g] x)))
+                   (fold[?f][?g] x)))
   :rewrite :direct)
 
-(defun2 spec1[?h_?f_?g] (?h ?f ?g) ()
-  (and (def-?h-fold[?f_?g])
+(defun2 spec1[?h][?f][?g] (?h ?f ?g) ()
+  (and (def-?h-fold[?f][?g])
        (spec[?h])))
 
 (defthm step1
-  (implies (spec1[?h_?f_?g])
+  (implies (spec1[?h][?f][?g])
            (spec[?h]))
-  :hints (("Goal" :in-theory '(spec1[?h_?f_?g]))))
+  :hints (("Goal" :in-theory '(spec1[?h][?f][?g]))))
 
 ; Step 2
 
 (defun-inst atom-io[?f] (?f)
-  (atom-io[?f_?io] (?io . io)))
+  (atom-io[?f][?io] (?io . io)))
 
 (defun-inst consp-io[?g] (?g)
-  (consp-io[?g_?io] (?io . io)))
+  (consp-io[?g][?io] (?io . io)))
 
-(defthm-inst fold-io[?f_?g]
-  (fold-io[?f_?g_?io] (?io . io)))
+(defthm-inst fold-io[?f][?g]
+  (fold-io[?f][?g][?io] (?io . io)))
 
-(defun2 spec2[?h_?f_?g] (?h ?f ?g) ()
-  (and (def-?h-fold[?f_?g])
+(defun2 spec2[?h][?f][?g] (?h ?f ?g) ()
+  (and (def-?h-fold[?f][?g])
        (atom-io[?f])
        (consp-io[?g])))
 
 (defthm step2
-  (implies (spec2[?h_?f_?g])
-           (spec1[?h_?f_?g]))
-  :hints (("Goal" :in-theory '(spec1[?h_?f_?g]
-                               spec2[?h_?f_?g]
+  (implies (spec2[?h][?f][?g])
+           (spec1[?h][?f][?g]))
+  :hints (("Goal" :in-theory '(spec1[?h][?f][?g]
+                               spec2[?h][?f][?g]
                                spec[?h]
-                               def-?h-fold[?f_?g]-necc
-                               fold-io[?f_?g]))))
+                               def-?h-fold[?f][?g]-necc
+                               fold-io[?f][?g]))))
 
 ; Step 3
 
@@ -266,8 +269,8 @@
   (forall x (equal (?f x) (f x)))
   :rewrite :direct)
 
-(defun2 spec3[?h_?f_?g] (?h ?f ?g) ()
-  (and (def-?h-fold[?f_?g])
+(defun2 spec3[?h][?f][?g] (?h ?f ?g) ()
+  (and (def-?h-fold[?f][?g])
        (def-?f)
        (consp-io[?g])))
 
@@ -280,10 +283,10 @@
                                def-?f-necc))))
 
 (defthm step3
-  (implies (spec3[?h_?f_?g])
-           (spec2[?h_?f_?g]))
-  :hints (("Goal" :in-theory '(spec2[?h_?f_?g]
-                               spec3[?h_?f_?g]
+  (implies (spec3[?h][?f][?g])
+           (spec2[?h][?f][?g]))
+  :hints (("Goal" :in-theory '(spec2[?h][?f][?g]
+                               spec3[?h][?f][?g]
                                step3-lemma))))
 
 ; Step 4
@@ -314,8 +317,8 @@
           (equal (?g y1 y2) (g y1 y2)))
   :rewrite :direct)
 
-(defun2 spec4[?h_?f_?g] (?h ?f ?g) ()
-  (and (def-?h-fold[?f_?g])
+(defun2 spec4[?h][?f][?g] (?h ?f ?g) ()
+  (and (def-?h-fold[?f][?g])
        (def-?f)
        (def-?g)))
 
@@ -328,23 +331,23 @@
                                def-?g-necc))))
 
 (defthm step4
-  (implies (spec4[?h_?f_?g])
-           (spec3[?h_?f_?g]))
-  :hints (("Goal" :in-theory '(spec3[?h_?f_?g]
-                               spec4[?h_?f_?g]
+  (implies (spec4[?h][?f][?g])
+           (spec3[?h][?f][?g]))
+  :hints (("Goal" :in-theory '(spec3[?h][?f][?g]
+                               spec4[?h][?f][?g]
                                step4-lemma))))
 
 ; Step 5
 
 (defun-inst h
-  (fold[?f_?g] (?f . f) (?g . g))
+  (fold[?f][?g] (?f . f) (?g . g))
   :verify-guards nil)
 
 (defun-sk2 def-?h (?h) ()
   (forall x (equal (?h x) (h x)))
   :rewrite :direct)
 
-(defun2 spec5[?h_?f_?g] (?h ?f ?g) ()
+(defun2 spec5[?h][?f][?g] (?h ?f ?g) ()
   (and (def-?h)
        (def-?f)
        (def-?g)))
@@ -352,20 +355,20 @@
 (defthm step5-lemma
   (implies (and (def-?f)
                 (def-?g))
-           (equal (h x) (fold[?f_?g] x)))
-  :hints (("Goal" :in-theory '(h fold[?f_?g] def-?f-necc def-?g-necc))))
+           (equal (h x) (fold[?f][?g] x)))
+  :hints (("Goal" :in-theory '(h fold[?f][?g] def-?f-necc def-?g-necc))))
 
 (defthm step5
-  (implies (spec5[?h_?f_?g])
-           (spec4[?h_?f_?g]))
-  :hints (("Goal" :in-theory '(spec4[?h_?f_?g]
-                               spec5[?h_?f_?g]
-                               def-?h-fold[?f_?g]
+  (implies (spec5[?h][?f][?g])
+           (spec4[?h][?f][?g]))
+  :hints (("Goal" :in-theory '(spec4[?h][?f][?g]
+                               spec5[?h][?f][?g]
+                               def-?h-fold[?f][?g]
                                def-?h-necc
                                step5-lemma))))
 
-(defthm chain[?h_?f_?g]
-  (implies (spec5[?h_?f_?g])
+(defthm chain[?h][?f][?g]
+  (implies (spec5[?h][?f][?g])
            (spec[?h]))
   :hints (("Goal" :in-theory '(step1 step2 step3 step4 step5))))
 
@@ -381,19 +384,19 @@
   (def-?g (?g . g))
   :rewrite :default)
 
-(defun-inst spec5[h_f_g]
-  (spec5[?h_?f_?g] (?h . h) (?f . f) (?g . g)))
+(defun-inst spec5[h][f][g]
+  (spec5[?h][?f][?g] (?h . h) (?f . f) (?g . g)))
 
 (defun-inst spec[h]
   (spec[?h] (?h . h)))
 
-(defthm-inst chain[h_f_g]
-  (chain[?h_?f_?g] (?h . h) (?f . f) (?g . g)))
+(defthm-inst chain[h][f][g]
+  (chain[?h][?f][?g] (?h . h) (?f . f) (?g . g)))
 
-(defthm spec5[h_f_g]!
-  (spec5[h_f_g])
-  :hints (("Goal" :in-theory '(spec5[h_f_g]))))
+(defthm spec5[h][f][g]!
+  (spec5[h][f][g])
+  :hints (("Goal" :in-theory '(spec5[h][f][g]))))
 
 (defthm spec[h]!
   (spec[h])
-  :hints (("Goal" :in-theory '(chain[h_f_g] spec5[h_f_g]!))))
+  :hints (("Goal" :in-theory '(chain[h][f][g] spec5[h][f][g]!))))

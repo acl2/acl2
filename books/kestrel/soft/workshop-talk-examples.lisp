@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Workshop Talk Examples
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,9 @@
 ; Below are examples in the ACL2-2015 Workshop talk
 ; "Second-Order Functions and Theorems in ACL2"
 ; that are not already in the ACL2-2015 Workshop paper with the same title.
+; The examples look slightly different from the sides
+; due to the changes to SOFT since the Workshop
+; (see :DOC UPDATES-TO-WORKSHOP-MATERIAL).
 
 ; Unary function variable.
 
@@ -90,15 +93,15 @@
 
 ; Inverse ?INV for identity ID of operation ?OP.
 
-(defun-sk2 inverse[?op_?inv] (?op ?inv) (id)
+(defun-sk2 inverse[?op][?inv] (?op ?inv) (id)
   (forall x (and (equal (?op x (?inv x)) id)
                  (equal (?op (?inv x) x) id))))
 
-(verify-guards inverse[?op_?inv])
+(verify-guards inverse[?op][?inv])
 
 ; Group with operation ?OP, inverse ?INV, and identity ID.
 
-(defun2 group[?op_?inv] (?op ?inv) (id)
+(defun2 group[?op][?inv] (?op ?inv) (id)
   (declare (xargs :guard t))
   (and (monoid[?op] id)
-       (inverse[?op_?inv] id)))
+       (inverse[?op][?inv] id)))
