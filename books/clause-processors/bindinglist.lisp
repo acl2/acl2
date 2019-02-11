@@ -480,7 +480,7 @@
            (equal (unify-ev x a1)
                   (unify-ev x a2)))
   :hints (("goal" :use ((:functional-instance base-ev-when-eval-alists-agree
-                         (base-ev unify-ev) (base-ev-lst unify-ev-lst)))
+                         (base-ev unify-ev) (base-ev-list unify-ev-lst)))
            :in-theory (enable unify-ev-of-fncall-args))))
 
 (defthm unify-ev-lst-when-eval-alists-agree
@@ -488,8 +488,8 @@
                 (subsetp (simple-term-vars-lst x) vars))
            (equal (unify-ev-lst x a1)
                   (unify-ev-lst x a2)))
-  :hints (("goal" :use ((:functional-instance base-ev-lst-when-eval-alists-agree
-                         (base-ev unify-ev) (base-ev-lst unify-ev-lst))))))
+  :hints (("goal" :use ((:functional-instance base-ev-list-when-eval-alists-agree
+                         (base-ev unify-ev) (base-ev-list unify-ev-lst))))))
   
 
 

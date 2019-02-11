@@ -646,25 +646,41 @@
 
 
 
-(define flexsum-case-macro-spec-prods (prods)
+(define flexsum-kind-case-macro-spec-prods (prods)
   (if (atom prods)
       nil
     (b* (((flexprod prod) (car prods)))
       (cons (list prod.kind prod.ctor-name)
-            (flexsum-case-macro-spec-prods (cdr prods))))))
+            (flexsum-kind-case-macro-spec-prods (cdr prods))))))
 
-(define flexsum-case-macro-spec (sum)
+(define flexsum-kind-case-macro-spec (sum)
   (b* (((flexsum sum))
-       (prods (flexsum-case-macro-spec-prods sum.prods)))
+       (prods (flexsum-kind-case-macro-spec-prods sum.prods)))
     (list* sum.case sum.kind prods)))
+
+(define flexsum-cond-case-macro-spec-prods (prods)
+  (if (atom prods)
+      nil
+    (b* (((flexprod prod) (car prods)))
+      (cons (list prod.kind prod.cond prod.ctor-name)
+            (flexsum-cond-case-macro-spec-prods (cdr prods))))))
+
+(define flexsum-cond-case-macro-spec (sum)
+  (b* (((flexsum sum))
+       (prods (flexsum-cond-case-macro-spec-prods sum.prods)))
+    (list* sum.case sum.xvar prods)))
 
 
 (defun flexsum-def-case-macro (sum)
   (b* (((flexsum sum) sum)
        ((unless sum.case) nil)
-       (case-spec (flexsum-case-macro-spec sum)))
+       (case-spec (if sum.kind
+                      (flexsum-kind-case-macro-spec sum)
+                    (flexsum-cond-case-macro-spec sum))))
     `((defmacro ,sum.case (var-or-expr &rest args)
-        (kind-casemacro-fn var-or-expr args ',case-spec)))))
+        ,(if sum.kind
+             `(kind-casemacro-fn var-or-expr args ',case-spec)
+           `(cond-casemacro-fn var-or-expr args ',case-spec))))))
 
 (defun flextype-def-sum-kinds (sums)
   (if (atom sums)

@@ -251,6 +251,9 @@
  <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
 
+ <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see pseudo-term-fty).</p>
+
  <h4>FTY Types for Bytes</h4>
 
  <p>The @('acl2::defbyte') macro, which generated fixtypes and additional

@@ -34,8 +34,10 @@
 
 (program)
 
-;; Format for case macro specs:
-;; kind-casemacro-spec = (macro-name kind-function-name kind-prod-spec *)
+;; Two formats for case macro specs:
+
+;; When you have a kind function producing a symbol giving the kind:
+;; kind-casemacro-spec = (macro-name kind-function-name kind-case-spec *)
 ;; kind-case-spec = (kind-name ctor-name) | (kind-name (subkind-name +) ctor-name)
 
 ;; This last form of case spec supports cases where the object could be more
@@ -200,4 +202,125 @@
           `(let* ((,var.kind (,kind-fn ,var)))
              (case ,var.kind
                . ,(kind-casemacro-cases var case-specs kind-kwd-alist))))))
+    body))
+
+
+
+;; When you just have various condition expressions determing which kind:
+;; cond-casemacro-spec = (macro-name cond-var cond-case-spec *)
+;; cond-case-spec = (kind-name cond-expr ctor-name)
+
+
+(defun cond-casemacro-casespec-p (spec)
+  (and (consp spec)
+       (symbolp (car spec))
+       (consp (cdr spec))
+       ;; cadr spec is some expression...
+       (consp (cddr spec))
+       (symbolp (caddr spec))
+       (not (cdddr spec))))
+
+(defun cond-casemacro-casespecs-p (specs)
+  (if (atom specs)
+      (eq specs nil)
+    (and (cond-casemacro-casespec-p (car specs))
+         (cond-casemacro-casespecs-p (cdr specs)))))
+
+(defun cond-casemacro-spec-p (spec)
+  (and (consp spec)
+       (symbolp (car spec)) ;; macro-name
+       (consp (cdr spec))
+       (symbolp (cadr spec)) ;; cond-var
+       (cond-casemacro-casespecs-p (cddr spec))))
+
+
+(defun cond-casemacro-cases (var cond-var cases kwd-alist)
+  (declare (xargs :guard (cond-casemacro-casespecs-p cases)))
+  (b* (((when (atom kwd-alist)) nil)
+       ((when (eq (caar kwd-alist) :otherwise))
+        `((otherwise ,(cdar kwd-alist))))
+       (kind (caar kwd-alist))
+       (case-spec (cdr (assoc kind cases)))
+       ((list cond-expr ctor) case-spec))
+    (cons `(,(cond ((atom (cdr kwd-alist)) 'otherwise)
+                   (t `(let ((,cond-var ,var)) ,cond-expr)))
+            (b* (((,ctor ,var :quietp t)))
+              ,(cdar kwd-alist)))
+          (cond-casemacro-cases var cond-var cases (cdr kwd-alist)))))
+
+(defun cond-casemacro-list-conditions (kwds cases)
+  (b* (((when (atom kwds)) nil)
+       (kind (car kwds))
+       (case-spec (cdr (assoc kind cases)))
+       (cond-expr (car case-spec)))
+    (cons cond-expr
+          (cond-casemacro-list-conditions (cdr kwds) cases))))
+
+
+(defun cond-casemacro-fn (var-or-expr rest-args case-spec)
+  (b* (((unless (cond-casemacro-spec-p case-spec))
+        (er hard? 'cond-casemacro-fn "Bad case-spec: ~x0~%" case-spec))
+       ((list* macro-name cond-var case-specs) case-spec)
+       (case-kinds (remove-duplicates-eq (strip-cars case-specs)))
+       ((when (eql (len rest-args) 1))
+        (cond ((and (atom (car rest-args))
+                    (member-eq (car rest-args) case-kinds))
+               ;; Special case: (foo-case expr :kind) becomes (let ((cond-var expr)) cond)
+               `(let ((,cond-var ,var-or-expr))
+                  ,(cadr (assoc (car rest-args) case-specs))))
+              ((and (eq (car rest-args) 'quote)
+                    (true-listp (cadr rest-args))
+                    (subsetp (cadr rest-args) case-kinds))
+               ;; Special case: (foo-case expr '(:kind1 :kind2))
+               ;; becomes (member-eq (foo-kind expr) '(:kind1 :kind2))
+               `(let ((,cond-var ,var-or-expr))
+                  (or . ,(cond-casemacro-list-conditions (cadr rest-args) case-kinds))))
+              (t (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%" 
+                     (car rest-args) case-kinds))))
+       ((when (consp var-or-expr))
+        (er hard? macro-name "Expected a variable, rather than: ~x0" var-or-expr))
+       (var var-or-expr)
+
+       (allowed-keywordlist-keys (append case-kinds '(:otherwise)))
+       (allowed-parenthesized-keys (append case-kinds '(acl2::otherwise :otherwise acl2::&)))
+                     
+       ((mv kwd-alist rest)
+        (extract-keywords macro-name
+                          allowed-keywordlist-keys
+                          rest-args nil))
+
+       ((when (and rest kwd-alist))
+        ;; Note: if we ever want to allow keyword options that aren't themselves cases,
+        ;; change this error condition.
+        ;; For now, only allow one kind of syntax --
+        ;; either :foo bar :baz fuz
+        ;; or    (:foo bar) (:baz fuz)
+        ;; but not :foo bar (:baz fuz).
+        (er hard? macro-name "Inconsistent syntax: ~x0" rest-args))
+
+       ((unless (or kwd-alist
+                    (and (alistp rest)
+                         (true-list-listp rest)
+                         ;; weaken this?
+                         (subsetp (strip-cars rest) allowed-parenthesized-keys))))
+        (er hard? macro-name "Malformed cases: ~x0~%" rest))
+       
+       (kwd-alist (reverse kwd-alist))
+
+       (keys (if kwd-alist
+                 (strip-cars kwd-alist)
+               (sublis '((acl2::otherwise . :otherwise)
+                         (acl2::&         . :otherwise))
+                       (strip-cars rest))))
+       (vals (if kwd-alist
+                 (strip-cdrs kwd-alist)
+               (pairlis$ (make-list (len rest) :initial-element 'progn$)
+                         (strip-cdrs rest))))
+       ((unless (<= (len (member :otherwise keys)) 1))
+        ;; otherwise must be last or not exist
+        (er hard? macro-name "Otherwise case must be last"))
+
+       (kind-kwd-alist (or kwd-alist (pairlis$ keys vals)))
+                   
+       (body `(cond . ,(cond-casemacro-cases var cond-var case-specs kind-kwd-alist))))
     body))
