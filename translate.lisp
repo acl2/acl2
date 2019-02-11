@@ -2947,6 +2947,20 @@
          t)
         (t (member-lambda-objectp (cdr args)))))
 
+(defun warrant-name (fn)
+
+; Warning: Keep this in sync with warrant-name-inverse.
+
+; From fn generate the name APPLY$-WARRANT-fn.
+
+  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
+                  :guard (symbolp fn)))
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "APPLY$-WARRANT-"
+                (symbol-name fn))
+   fn))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3273,7 +3287,15 @@
            (let ((alist (pairlis$ (formals fn w) args))
                  (body (body fn nil w))
                  (attachment (and aok
-                                  (cdr (assoc-eq fn (all-attachments w))))))
+
+; We do not use (all-attachments w) below, because warrants are not in that
+; structure.
+
+                                  (let ((wfn (warrant-name fn)))
+                                    (cdr (assoc-eq
+                                          wfn
+                                          (getpropc wfn 'attachment nil
+                                                    w)))))))
              (mv-let
               (er val latches)
               (ev-rec (if guard-checking-off
@@ -6838,7 +6860,7 @@
 
 ; At the other extreme, we could adopt the Lisp hacker approach and give the
 ; raw Lisp loop$ a slightly different semantics than loop.  For example,
-; we could arrange for 
+; we could arrange for
 
 ; (loop$ for v of-type integer in '(1 2 3 iv) sum (foo 1 v))
 
@@ -6895,7 +6917,7 @@
 
 ; ACL2 !>(time$ (loop$ for i OF-TYPE INTEGER                   ; note type spec
 ;                      in *m* sum (* (if (evenp i) +1 -1) i)))
-; ; (EV-REC *RETURN-LAST-ARG3* . #@127#) took 
+; ; (EV-REC *RETURN-LAST-ARG3* . #@127#) took
 ; ; 0.36 seconds realtime, 0.36 seconds runtime
 ; ; (16,000,032 bytes allocated).
 ; 500000
@@ -6927,7 +6949,7 @@
 ;  BAR
 
 ; ACL2 !>(time$ (bar *m*))
-; ; (EV-REC *RETURN-LAST-ARG3* . #@126#) took 
+; ; (EV-REC *RETURN-LAST-ARG3* . #@126#) took
 ; ; 0.01 seconds realtime, 0.01 seconds runtime
 ; ; (16 bytes allocated).
 ; 500000
@@ -7307,7 +7329,7 @@
 ;       (integer-listp newv)))
 
 ; The mempos hypothesis tells us newv is a member of (when$ ... (until
-; ... (tails lst))).  We know that lst is a list of integers.  Our proof 
+; ... (tails lst))).  We know that lst is a list of integers.  Our proof
 ; of this conjecture involves moving the mempos through the when$ and until$.
 ; This is done with lemmas from the loop$ book:
 
@@ -7343,7 +7365,7 @@
 ; Mempos becomes more important when we consider fancy loop$s.
 
 ; -----------------------------------------------------------------
-; Section 7:  An Example Plain Loop$, the :Guard Clause, 
+; Section 7:  An Example Plain Loop$, the :Guard Clause,
 ;            and Guard Conjectures
 
 ; For this example we define three renamings of integerp: int1p, int2p, and
@@ -10787,7 +10809,7 @@
                (msg
                 "Illegal LOOP$ Syntax.  The form ~X01 cannot be parsed as a ~
                 LOOP$ statement.  The symbol FOR must immediately follow the ~
-                LOOP$ and it does not here." 
+                LOOP$ and it does not here."
                 stmt)))))
 
 (defun make-plain-loop$-lambda-object (v spec carton)
@@ -15533,7 +15555,7 @@
 ; them all.  If flg is :top we do not collect marked loop$ terms occurring in
 ; other marked loop$ terms.  For example, the translation of
 
-; (loop$ for v in lst 
+; (loop$ for v in lst
 ;        collect (loop$ for u in v collect expr))
 
 ; is
