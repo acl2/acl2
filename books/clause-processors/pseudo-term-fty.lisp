@@ -75,8 +75,8 @@ constructor that allows access to the fields using dotted notation; e.g.:</p>
 
 <p>An alternative constructor @('(pseudo-term-call fn args)') can create either
 @(':fncall') or @(':lambda') kinds; its @('fn') argument is of type @(see
-pseudo-fn-p) which can be either a function symbol (@(see pseduo-fnsym-p)) or
-lambda (@(see pseudo-lambda-p)).  The function of a @(':fncall') or
+pseudo-fn) which can be either a function symbol (@(see pseudo-fnsym)) or
+lambda (@(see pseudo-lambda)).  The function of a @(':fncall') or
 @(':lambda') object can also be accessed with @('pseudo-term-call->fn').</p>
 
 <p>The @(':null') and @(':quote') kinds both simply have constant values.  A
