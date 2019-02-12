@@ -12,28 +12,29 @@
   (let* ((th1 (make-sym name 'thm1))
          (th2 (make-sym name 'thm2))
          (th3 (make-sym name 'thm3))
-         (namep (make-symbl `(,name p)))
-         (type (cond ((equal min 0) 'acl2s::nat)
-                     ((< 0 min) 'acl2s::pos)
-                     ((<= max 0) 'acl2s::neg)
-                     (t 'acl2s::integer)))
-         (pred (make-symbl `(,type p)))
-         (rng `(and (,pred a)
-                    (<= ,min a)
-                    (< a ,max))))
-    `(progn
-       (defdata ,name (range integer (,min <= _ < ,max)))
-       (defdata-subtype ,name ,type)
-       (defthm ,th1
-         (implies (,namep a) ,rng)
-         :rule-classes ((:forward-chaining)))
-       (defthm ,th2
-         (implies ,rng (,namep a))
-         :rule-classes ((:rewrite :backchain-limit-lst 1)))
-       (defthm ,th3
-         (equal (,namep a) ,rng)
-         :rule-classes :compound-recognizer)
-       (in-theory (disable ,namep)))))
+         (namep (make-symbl `(,name p))))
+    `(make-event
+      (let* ((type (cond ((equal ,min 0) 'acl2s::nat)
+                         ((< 0 ,min) 'acl2s::pos)
+                         ((<= ,max 0) 'acl2s::neg)
+                         (t 'acl2s::integer)))
+             (pred (make-symbl `(,type p)))
+             (rng `(and (,pred a)
+                        (<= ,,min a)
+                        (< a ,,max))))
+        `(progn
+           (defdata ,',name (range integer (,,min <= _ < ,,max)))
+           (defdata-subtype ,',name ,type)
+           (defthm ,',th1
+             (implies (,',namep a) ,rng)
+             :rule-classes ((:forward-chaining)))
+           (defthm ,',th2
+             (implies ,rng (,',namep a))
+             :rule-classes ((:rewrite :backchain-limit-lst 1)))
+           (defthm ,',th3
+             (equal (,',namep a) ,rng)
+             :rule-classes :compound-recognizer)
+           (in-theory (disable ,',namep)))))))
 
 (defmacro defnatrange (name max)
   "Define a datatype that includes all nats < max"
@@ -57,3 +58,4 @@
 (defintrange foo5 -2 (expt 2 10))
 
 |#
+

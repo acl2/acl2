@@ -356,6 +356,11 @@
                (all-quoteps args)
                (enabled-xfnp (ffn-symb term) ens wrld)
 
+; See the comment in loop$-scion-restriction for an explanation of:
+
+               (not (loop$-scion-restriction (ffn-symb term)
+                                             *loop$-keyword-info*))
+
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).

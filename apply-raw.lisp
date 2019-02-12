@@ -86,17 +86,13 @@
 (defun query-badge-userfn-structure (msgp fn wrld)
 
 ; This function takes a purported function symbol, fn, and determines if it has
-; been assigned a badge by def-warrant.  We return one of three answers:
+; been assigned a badge by defwarrant.  We return one of three answers:
 
 ; - (mv nil badge): fn was found in the badge-table and the badge is badge.
-;      Note that fn may or may not have a warrant!  It does have a warrant if
-;      (access apply$-badge badge :authorization-flg) = (cadr badge) = t, and
-;      it doesn't have a warrant otherwise.  Because we haven't included the
-;      defrec for apply$-badge we have to use the cadr form rather than the
-;      access form.  If fn has a warrant, it is named APPLY$-WARRANT-fn.
+;      Fn's warrant is named APPLY$-WARRANT-fn.
 
 ; - (mv msg nil): there is no entry for fn in the badge-table, so no
-;      def-warrant has been successful on fn; msg is a tilde-@ msg possibly
+;      defwarrant has been successful on fn; msg is a tilde-@ msg possibly
 ;      explaining in a little more detail why fn doesn't have a badge.
 
 ; - (mv t nil): same as above but we don't bother to explain why.
@@ -199,8 +195,7 @@
    (t (mv-let (failure-msg bdg)
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
-         ((and (null failure-msg)
-               (cadr bdg)) ; = (access apply$-badge bdg :authorization-flg)
+         ((null failure-msg)
           bdg)
          (t (let* ((failure-msg
                     (if failure-msg
@@ -359,8 +354,7 @@
    (t (mv-let (failure-msg bdg)
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
-         ((or failure-msg        ; there is no badge for fn
-              (null (cadr bdg))) ; fn is not warranted
+         (failure-msg ; no badge for fn
           (let* ((failure-msg
                   (if failure-msg
                       failure-msg
@@ -397,23 +391,39 @@
                     msg
                     (print-list-without-stobj-arrays
                      (list fn args))))))
-          ((eq (cdddr bdg) t) ; = (access apply$-badge bdg :ilks)
-           (apply (*1*-symbol fn)
-                  (if (= (caddr bdg) ; = (access apply$-badge bdg :arity)
-                         (length args))
-                      args
-                      (take (caddr bdg) ; = (access apply$-badge bdg :arity)
-                            args))))
+          ((eq (cdddr bdg) t)       ; = (access apply$-badge bdg :ilks)
+           (if (int= (caddr bdg) 1) ; = (access apply$-badge bdg :out-arity)
+               (apply (*1*-symbol fn)
+                      (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
+                             (length args))
+                          args
+                          (take (cadr bdg) ; = (access apply$-badge bdg :arity)
+                                args)))
+               (multiple-value-list
+                (apply (*1*-symbol fn)
+                       (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
+                              (length args))
+                           args
+                           (take (cadr bdg) ; = (access apply$-badge bdg :arity)
+                                 args))))))
           ((concrete-check-apply$-hyp-tamep-hyp
             (cdddr bdg) ; = (access apply$-badge bdg :ilks)
             args
             (w *the-live-state*))
-           (apply (*1*-symbol fn)
-                  (if (= (caddr bdg) ; = (access apply$-badge bdg :arity)
-                         (length args))
-                      args
-                      (take (caddr bdg) ; = (access apply$-badge bdg :arity)
-                            args))))
+           (if (int= (caddr bdg) 1) ; = (access apply$-badge bdg :out-arity)
+               (apply (*1*-symbol fn)
+                      (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
+                             (length args))
+                          args
+                          (take (cadr bdg) ; = (access apply$-badge bdg :arity)
+                                args)))
+               (multiple-value-list
+                (apply (*1*-symbol fn)
+                       (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
+                              (length args))
+                           args
+                           (take (cadr bdg) ; = (access apply$-badge bdg :arity)
+                                 args))))))
           (t
            (let ((msg
                   (cond
@@ -473,7 +483,7 @@
 ;             (pairlis$ (lambda-object-formals fn)
 ;                       args)))
 
-; Indeed, it is apply$-lambda-opener in books/projects/apply/apply-lemmas.lisp.
+; Indeed, it is apply$-lambda-opener in books/projects/apply/base.lisp.
 ; The *1* version of apply$-lambda is what we call apply$-lambda-logical,
 ; essentially defined as the right-hand side of the equation above: interpret
 ; the body with ev$ under the alist binding the formals to the actuals.
@@ -490,17 +500,18 @@
 
 ; Essay on the CL-Cache Implementation Details
 
-; The cl-cache is a raw Lisp, not ACL2, structure that stores (by default) the
-; 1000 most recent LAMBDA-expressions applied in this session.  Technically,
-; *cl-cache* is a defrec triple consisting of a size, a circular alist, and a
-; pointer to the ``last'' cell in the alist before it closes the loop.  But
-; intuitively it is just an alist whose maximum size is as given but whose
-; virtual size is the number of entries from the beginning to the first nil.
-; The circularity gives us an extremely efficient way to add new entries at the
-; front without consing.  This abstract view of the *cl-cache* is violated in a
-; very important way: the *cl-cache* is intially a natural number greater than
-; 2 that is the size of the circular alist.  The first time we need to add a
-; lambda to the cache we allocate the full structure.
+; The cl-cache (compliant lambda cache) is a raw Lisp, not ACL2, structure that
+; stores (by default) the 1000 most recent LAMBDA-expressions applied in this
+; session.  Technically, *cl-cache* is a defrec triple consisting of a size, a
+; circular alist, and a pointer to the ``last'' cell in the alist before it
+; closes the loop.  But intuitively it is just an alist whose maximum size is
+; as given but whose virtual size is the number of entries from the beginning
+; to the first nil.  The circularity gives us an extremely efficient way to add
+; new entries at the front without consing.  This abstract view of the
+; *cl-cache* is violated in a very important way: the *cl-cache* is intially a
+; natural number greater than 2 that is the size of the circular alist.  The
+; first time we need to add a lambda to the cache we allocate the full
+; structure.
 
 ; To clear the *cl-cache* just set it to the desired size with (setq *cl-cache*
 ; k).  Initially, k=1000.  [It might be better to implement a function for
@@ -613,7 +624,7 @@
 
 ; The algorithm sketched above is implemented by fetch-cl-cache-line.
 
-; Before Version 8.2, the cache management generated warnings about whether we
+; Through Version-8.1, the cache management generated warnings about whether we
 ; were running *1* apply$-lambda, i.e., Slow APPLY$ Warning.  There was a
 ; rather subtle use of eq versus equal that allowed us to keep these warnings
 ; to a minimum when the very same lambda was repeatedly applied as by a mapping
@@ -1075,17 +1086,17 @@
         (hits (access cl-cache-line line :hits))
         (guard-code (access cl-cache-line line :guard-code))
         (lambda-code (access cl-cache-line line :lambda-code)))
-    (cw "~c0. :lambda-object ~y1
+    (cw "(~c0. :lambda-object ~y1
           ~t2:status         ~x3
           ~t2:abs-event-no   ~x4
           ~t2:extracts       ~y5
           ~t2:problem        ~y6
           ~t2:hits           ~x7~%~
           ~t2:guard-code     ~s8~%~
-          ~t2:lambda-code    ~s9~%~%"
+          ~t2:lambda-code    ~s9)~%"
          (cons i 4)
          lambda-object
-         6
+         7
          status
          absolute-event-number
          extracts
@@ -1094,21 +1105,46 @@
          (if guard-code "<code>" "NIL")
          (if lambda-code "<code>" "NIL"))))
 
-(defun print-cl-cache ()
+(defun print-cl-cache-fn (i j)
 
 ; This is just a debugging utility.  It returns nil but prints to the comment
-; window.  It is the raw Lisp code for the :logic mode constant nil function of
-; the same name, so the user can call (print-cl-cache) in the ACL2 loop and see
-; the cache.  We only print up to the first nil line.
+; window.  It is the raw Lisp workhorse for the :logic mode constant nil
+; ``function'' named print-cl-cache (which is really a macro so the arguments
+; can be optional).  The user can call (print-cl-cache ...) in the ACL2 loop and
+; see the cache.
+
+; I and j, when supplied, must be natural numbers corresponding to cache lines,
+; 0 <= i <= j < size.
+
+; We print all the cache lines between lines i and j (inclusive) or until we
+; see a nil line.  I defaults to 0.  J defaults to i if i was supplied and
+; otherwise to size-1.  If i and/or j are non-nil but not legal cache lines, i
+; defaults to 0 and j to size-1.
+
 
   (let ((cl-cache *cl-cache*))
     (cond ((consp cl-cache)
            (cw "See the defun of print-cl-cache for a comment containing ~
                 reminders about the cache!~%~%")
-           (loop for i from 0 to (- (access cl-cache cl-cache :size) 1)
-                 as line in (access cl-cache cl-cache :alist)
-                 until (null line)
-                 do (print-cl-cache-line i line))
+           (let* ((min
+                   (cond ((and (natp i)
+                               (< i (access cl-cache cl-cache :size)))
+                          i)
+                         (t 0)))
+                  (max
+                   (cond ((and (natp j)
+                               (<= min j)
+                               (< j (access cl-cache cl-cache :size)))
+                          j)
+                         ((and i (null j)) i)
+                         (t (- (access cl-cache cl-cache :size) 1)))))
+; This is a really dumb way to print from min to max but stops at the first
+; nil!
+             (loop for i from 0 to (- (access cl-cache cl-cache :size) 1)
+                   as line in (access cl-cache cl-cache :alist)
+                   until (null line)
+                   when (and (<= min i) (<= i max))
+                   do (print-cl-cache-line i line)))
            nil)
           (t (cw "Cl-cache is uninitialized with size ~x0.~%"
                  *cl-cache*)
@@ -1167,12 +1203,11 @@
 
   (let ((body (lambda-object-body x))
         (dcl (lambda-object-dcl x)))
-    (cond ((lambda$-bodyp body)
-           (compile nil (make-lambda-object
-                         (lambda-object-formals x)
-                         dcl
-                         (remove-guard-holders body))))
-          (t (compile nil x)))))
+    (compile nil (make-lambda-object
+                  (lambda-object-formals x)
+                  dcl
+                  (twoify (remove-guard-holders body)
+                          (w *the-live-state*))))))
 
 (defun invalidate-some-cl-cache-lines (flg wrld)
 
@@ -2376,7 +2411,7 @@
 ; [The following essay is meant as supplementary material to the proof sketch
 ; in the paper ``Limited Second Order Functionality in a First Order Setting''.
 ; It does not necessarily describe the implemented version of apply$,
-; def-warrant, badger, etc., in ACL2 Version_8.0 or later.  However, as always,
+; defwarrant, badger, etc., in ACL2 Version_8.0 or later.  However, as always,
 ; we base our belief that ACL2 is sound on careful coding with attention to
 ; proofs like this.  When new features are added, we work out extensions of
 ; these proofs to explain those features, but we do not always re-write the
@@ -2562,7 +2597,7 @@
 ;   Corollary: f is not used as a function symbol in any quoted tame object in
 ;   a :FN/:EXPR slot of its body.  Clarification 1: A function g may be defun'd
 ;   and not immediately assigned a warrant: no warrant is generated until
-;   (def-warrant g) occurs.  But if g appears in, say, a lambda object in a :FN
+;   (defwarrant g) occurs.  But if g appears in, say, a lambda object in a :FN
 ;   slot in the definition of f after g has been defun'd but before g has been
 ;   warranted, that LAMBDA expression would not be tame and hence the function
 ;   f would not have a badge.  Clarification 2: the notion of the functions
@@ -2574,7 +2609,7 @@
 ;   and thus that they have been defined.
 
 
-; All of these facts (and others) are checked by (def-warrant f) which fails if
+; All of these facts (and others) are checked by (defwarrant f) which fails if
 ; any of the checks fail.
 
 ; We could loosen some of the restrictions.  The insistence that the measure be
@@ -3029,7 +3064,7 @@
 
 ; (max-internal-weight f): maximal weight of the internals: see below
 
-; (chronological-position f): the position of (def-warrant f) in the user's
+; (chronological-position f): the position of (defwarrant f) in the user's
 ;    chronology.  The position of APPLY$ and APPLY$-USERFN is 0, the positions
 ;    of EV$ and EV$-LIST are 1, the position of the first badged user-defined
 ;    function is 2, the next such function 3, etc.
@@ -3044,16 +3079,16 @@
 ; described below:
 
 ; *USER-FNS*                      list of user-defined badged functions in
-;                                  chronological order of their def-warrant
+;                                  chronological order of their defwarrant
 ;                                  events
 
 ; *G2-FNS*                        list of all G2 functions, including APPLY$
 ;                                  and EV$, which are the first two elements,
 ;                                  listed in chronological order of their
-;                                  def-warrants
+;                                  defwarrants
 
 ; *G1-FNS*                        list of all G1 functions in chronological
-;                                  order of their def-warrants
+;                                  order of their defwarrants
 
 ; *TAMENESS-CONDITIONS*           alist pairing each user-defined G2 function
 ;                                  symbol to the list of tameness expressions
@@ -3188,7 +3223,7 @@
 ; and is just ACL2-COUNT except for the symbols bound in the alist.
 
 ; To determine the weights of the G2 symbols we process the G2 functions
-; (except for APPLY$ and EV$) in chronological order of their def-warrants,
+; (except for APPLY$ and EV$) in chronological order of their defwarrants,
 ; binding each symbol to the weight of its beta-reduced body as computed with
 ; respect to the weights of the preceding function symbols.
 

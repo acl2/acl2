@@ -1575,6 +1575,7 @@
                     (attachments-at-ground-zero nil)
                     (proof-supporters-alist nil)
                     (lambda$-alist nil)
+                    (loop$-alist nil)
                     (common-lisp-compliant-lambdas nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
@@ -2969,25 +2970,28 @@
 ; The test above extracts the token of the first rune in the mapping pairs and
 ; this is a function symbol iff it is :DEFINITION.
 
-           (function-theory-fn1 token (cdr lst)
-                                (case token
-                                      (:DEFINITION
-                                       (cons (cdr (car (cddr (car lst)))) ans))
-                                      (:EXECUTABLE-COUNTERPART
+           (function-theory-fn1
+            token
+            (cdr lst)
+            (cond ((eq token :DEFINITION)
+                   (cons (cdr (car (cddr (car lst)))) ans))
+                  (t (let ((rune-exec (cdr (cadr (cddr (car lst))))))
+                       (case token
+                         (:EXECUTABLE-COUNTERPART
 
 ; Note that we might be looking at the result of storing a :definition rule, in
 ; which case there will be no :executable-counterpart rune.  So, we check that
 ; we have something before accumulating it.
 
-                                       (let ((x (cdr (cadr (cddr (car lst))))))
-                                         (if (null x)
-                                             ans
-                                           (cons x ans))))
-                                      (otherwise
-                                       (cons (cdr (car (cddr (car lst))))
-                                             (cons (cdr (cadr (cddr (car lst))))
-                                                   ans))))
-                                redefined))
+                          (if (null rune-exec)
+                              ans
+                            (cons rune-exec ans)))
+                         (otherwise ; :BOTH
+                          (cons (cdr (car (cddr (car lst))))
+                                (if (null rune-exec)
+                                    ans
+                                  (cons rune-exec ans))))))))
+            redefined))
           (t (function-theory-fn1 token (cdr lst) ans redefined))))
         ((and (eq (car (car lst)) 'standard-theories)
               (eq (cadr (car lst)) 'global-value))
@@ -14240,6 +14244,23 @@
                           (subseq file 0 (- len 5))
                           "@expansion.lsp"))))
 
+(defun top-level-loop$-alist-rec (loop$-alist acc)
+  (cond ((endp loop$-alist) acc)
+        (t (top-level-loop$-alist-rec (cdr loop$-alist)
+                                      (if (access loop$-alist-entry
+                                                  (cdar loop$-alist)
+                                                  :flg)
+                                          (acons (caar loop$-alist)
+                                                 (change loop$-alist-entry
+                                                         (cdar loop$-alist)
+                                                         :flg nil)
+                                                 acc)
+                                        acc)))))
+
+(defun top-level-loop$-alist (wrld)
+  (top-level-loop$-alist-rec (global-val 'loop$-alist wrld)
+                             nil))
+
 (defun write-expansion-file (portcullis-cmds declaim-list new-fns-exec
                                              expansion-filename expansion-alist
                                              pkg-names
@@ -14358,6 +14379,19 @@
                                       ch state)
                        (print-object$ `(setq *hcomp-macro-alist*
                                          ',macro-alist)
+                                      ch state)
+                       (print-object$ '(when (eq *readtable*
+                                                 *reckless-acl2-readtable*)
+                                         (setq *set-hcomp-loop$-alist* t))
+                                      ch state)
+                       (print-object$ `(when *set-hcomp-loop$-alist*
+; Debug:
+;                                        (cw "@@ Setting ~
+;                                             *hcomp-loop$-alist*:~%~x0~%"
+;                                            ',expansion-filename)
+                                         (setq *hcomp-loop$-alist*
+                                               ',(top-level-loop$-alist
+                                                  (w *the-live-state*))))
                                       ch state)))
        (print-object$ '(hcomp-init) ch state)
        (newline ch state)
@@ -26782,20 +26816,6 @@
   (declare (xargs :guard t :mode :logic))
   t)
 
-(defun warrant-name (fn)
-
-; Warning: Keep this in sync with warrant-name-inverse.
-
-; From fn generate the name APPLY$-WARRANT-fn.
-
-  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn)))
-  (intern-in-package-of-symbol
-   (concatenate 'string
-                "APPLY$-WARRANT-"
-                (symbol-name fn))
-   fn))
-
 (defun warrant-name-inverse (warrant-fn)
 
 ; Warning: Keep this in sync with warrant-name.
@@ -26827,7 +26847,7 @@
          (cons `(CAR ,var)
                (successive-cadrs (cdr formals) (list 'CDR var))))))
 
-; As described in the ``BTW'' notes in the DEF-WARRANT section of apply.lisp,
+; As described in the ``BTW'' notes in the DEFWARRANT section of apply.lisp,
 ; we need to convert the lemma provided by defun-sk into an effective rewrite
 ; rule.  To do that we need a hint and this function creates that hint.
 
@@ -26849,75 +26869,86 @@
          (cons T (necc-name-ARGS-instance (cdr ilks))))
         (t (cons NIL (necc-name-ARGS-instance (cdr ilks))))))
 
-(defun def-warrant-event (fn formals bdg)
+(defun defwarrant-event (fn formals bdg)
 
-; This function should not be called when (access apply$-badge bdg
-; :authorization-flg) is nil!
+; Bdg must be a legal badge for (fn . formals).
 
 ; This function returns a list of events that add the appropriate defun-sk
 ; event for fn and then proves the necessary rewrite rule.
 
   (declare (xargs :mode :program))
-  (assert$
-   (access apply$-badge bdg :authorization-flg)
-   (let* ((name (warrant-name fn))
-          (rule-name (intern-in-package-of-symbol
-                      (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
-                                      (coerce (symbol-name fn) 'list))
-                              'string)
-                      fn))
-          (necc-name (intern-in-package-of-symbol
-                      (coerce
-                       (append (coerce (symbol-name name) 'list)
-                               '(#\- #\N #\E #\C #\C))
-                       'string)
-                      fn)))
-     (cond
-      ((null (access apply$-badge bdg :authorization-flg))
-       (er hard 'def-warrant-event
-           "We attempted to introduce a warrant for a function, ~x0, whose ~
-            badge has :authorization-flg = NIL!  This is an implementation ~
-            error."
-           fn))
-      ((eq (access apply$-badge bdg :ilks) t)
-       `((defun-sk ,name ()
-           (forall (args)
-             (and (equal (badge-userfn ',fn) ',bdg)
-                  (equal (apply$-userfn ',fn args)
-                         (,fn ,@(successive-cadrs formals 'args)))))
-           :constrain t)
-         (in-theory (disable ,(definition-rule-name name)))
-         (defthm ,rule-name
-           (implies (force (,(warrant-name fn)))
-                    (and (equal (badge ',fn) ',bdg)
-                         (equal (apply$ ',fn args)
-                                (,fn ,@(successive-cadrs formals 'args)))))
-           :hints (("Goal" :use ,necc-name
-                    :expand ((:free (x) (HIDE (badge x))))
-                    :in-theory (e/d (badge apply$)
-                                    (,necc-name)))))))
-      (t
-       (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
-                                             'ARGS))
-              (hyp (if (null (cdr hyp-list))
-                       (car hyp-list)
-                     `(AND ,@hyp-list))))
-         `((defun-sk ,name ()
-             (forall (args)
-               (implies ,hyp
-                        (and (equal (badge-userfn ',fn) ',bdg)
-                             (equal (apply$-userfn ',fn args)
-                                    (,fn ,@(successive-cadrs formals
-                                                             'args))))))
-             :constrain t)
-           (in-theory (disable ,(definition-rule-name name)))
-           (defthm ,rule-name
-             (and (implies (force (,(warrant-name fn)))
-                           (equal (badge ',fn) ',bdg))
-                  (implies (and (force (,(warrant-name fn)))
-                                ,hyp)
-                           (equal (apply$ ',fn args)
-                                  (,fn ,@(successive-cadrs formals 'args)))))
+  (let* ((name (warrant-name fn))
+         (rule-name (intern-in-package-of-symbol
+                     (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
+                                     (coerce (symbol-name fn) 'list))
+                             'string)
+                     fn))
+         (necc-name (intern-in-package-of-symbol
+                     (coerce
+                      (append (coerce (symbol-name name) 'list)
+                              '(#\- #\N #\E #\C #\C))
+                      'string)
+                     fn)))
+    (cond
+     ((eq (access apply$-badge bdg :ilks) t)
+      `((defun-sk ,name ()
+          (forall (args)
+            (and
+             (equal (badge-userfn ',fn) ',bdg)
+             (equal (apply$-userfn ',fn args)
+                    ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                         `(,fn ,@(successive-cadrs formals 'args))
+                         `(mv-list
+                           ',(access apply$-badge bdg :out-arity)
+                           (,fn ,@(successive-cadrs formals 'args)))))))
+          :constrain t)
+        (in-theory (disable ,(definition-rule-name name)))
+        (defthm ,rule-name
+          (implies
+           (force (,(warrant-name fn)))
+           (and (equal (badge ',fn) ',bdg)
+                (equal (apply$ ',fn args)
+                       ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                            `(,fn ,@(successive-cadrs formals 'args))
+                            `(mv-list
+                              ',(access apply$-badge bdg :out-arity)
+                              (,fn ,@(successive-cadrs formals 'args)))))))
+          :hints (("Goal" :use ,necc-name
+                   :expand ((:free (x) (HIDE (badge x))))
+                   :in-theory (e/d (badge apply$)
+                                   (,necc-name)))))))
+     (t
+      (let* ((hyp-list (tameness-conditions (access apply$-badge bdg :ilks)
+                                            'ARGS))
+             (hyp (if (null (cdr hyp-list))
+                      (car hyp-list)
+                      `(AND ,@hyp-list))))
+        `((defun-sk ,name ()
+            (forall (args)
+              (implies
+               ,hyp
+               (and
+                (equal (badge-userfn ',fn) ',bdg)
+                (equal (apply$-userfn ',fn args)
+                       ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                            `(,fn ,@(successive-cadrs formals 'args))
+                            `(mv-list
+                              ',(access apply$-badge bdg :out-arity)
+                              (,fn ,@(successive-cadrs formals 'args))))))))
+            :constrain t)
+          (in-theory (disable ,(definition-rule-name name)))
+          (defthm ,rule-name
+            (and (implies (force (,(warrant-name fn)))
+                          (equal (badge ',fn) ',bdg))
+                 (implies
+                  (and (force (,(warrant-name fn)))
+                       ,hyp)
+                  (equal (apply$ ',fn args)
+                         ,(if (eql (access apply$-badge bdg :out-arity) 1)
+                              `(,fn ,@(successive-cadrs formals 'args))
+                              `(mv-list
+                                ',(access apply$-badge bdg :out-arity)
+                                (,fn ,@(successive-cadrs formals 'args)))))))
 
 ; Notice that the necc-name theorem is of the form (forall (args) (and ...))
 ; but the theorem above is essentially (and ... (forall (args) ...)) because
@@ -26929,15 +26960,15 @@
 ; The first :instance below takes care of the badge conjunct and the second
 ; takes care of the apply$ conjunct.
 
-             :hints
-             (("Goal"
-               :use ((:instance ,necc-name
-                                (ARGS ',(necc-name-ARGS-instance
-                                         (access apply$-badge bdg :ilks))))
-                     (:instance ,necc-name))
-               :expand ((:free (x) (HIDE (badge x))))
-               :in-theory (e/d (badge apply$)
-                               (,necc-name))))))))))))
+            :hints
+            (("Goal"
+              :use ((:instance ,necc-name
+                               (ARGS ',(necc-name-ARGS-instance
+                                        (access apply$-badge bdg :ilks))))
+                    (:instance ,necc-name))
+              :expand ((:free (x) (HIDE (badge x))))
+              :in-theory (e/d (badge apply$)
+                              (,necc-name)))))))))))
 
 (defun warrantp (warrant-fn wrld)
 
@@ -26945,20 +26976,18 @@
 ; sufficient condition is that both of the following hold.  (a) Warrant-fn was
 ; introduced by an encapsulate event that agrees with what is expected: an
 ; encapsulate generated by a defun-sk with :constrain t, which is generated by
-; (def-warrant fn).  (b) Fn is in the badge-table with a true
-; authorization-flg.
+; (defwarrant fn).  (b) Fn is in the badge-table.
 
   (let* ((fn (warrant-name-inverse warrant-fn))
          (badge (and fn
                      (eq warrant-fn (warrant-name fn))
                      (get-badge fn wrld))))
     (and badge
-         (access apply$-badge badge :authorization-flg)
 
 ; If we get this far, then we have condition (b) above.  We now check (a).
 
          (let ((encap-ev (get-event warrant-fn wrld))
-               (defun-sk-ev (car (def-warrant-event
+               (defun-sk-ev (car (defwarrant-event
                                    fn
                                    (formals fn wrld)
                                    badge))))
@@ -27920,7 +27949,7 @@
 ; definitions and then times 1000 corresponding defattach events.  That took
 ; 0.15 seconds.  Then in a new session, we ran (tests+ 1000), which is similar
 ; to (tests 1000) except that it first introduced 1000 defun$ events -- hence,
-; and more to the point, 1000 def-warrant events.  The time reported for the
+; and more to the point, 1000 defwarrant events.  The time reported for the
 ; 1000 defattach events went up from 0.15 seconds to more than 4.5 seconds.
 ; With the change implemented here, the time for (tests+ 1000) went down to
 ; 0.15 seconds, about the same as (tests 1000).
@@ -30523,10 +30552,10 @@
        (and (consp x)
             (eq (car x) 'apply$-badge)
             (consp (cdr x))
-            (booleanp
-             (cadr x)) ; = (access apply$-badge x :authorization-flg)
+            (natp
+             (cadr x)) ; = (access apply$-badge x :arity)
             (consp (cddr x))
-            (natp (caddr x) ; = (access apply$-badge x :arity)
+            (natp (caddr x) ; = (access apply$-badge x :out-arity)
                   )
             (or (eq (cdddr x) ; = (access apply$-badge x :ilks)
                     t)
@@ -30534,7 +30563,7 @@
                       (cdddr x)) ; = (access apply$-badge x :ilks)
                      (equal
                       (len (cdddr x)) ; = (access apply$-badge x :ilks)
-                      (caddr x))      ; = (access apply$-badge x :arity)
+                      (cadr x))      ; = (access apply$-badge x :arity)
                      (not
                       (all-nils
                        (cdddr x)))           ; = (access apply$-badge x :ilks)

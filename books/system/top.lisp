@@ -41,6 +41,7 @@
 (include-book "case-match")
 (include-book "fmx-cw")
 (include-book "all-fnnames")
+(include-book "observation1-cw")
 
 ; The following is commented out only because we aren't currently motivated to
 ; put its functions into ACL2 system constant *system-verify-guards-alist*,

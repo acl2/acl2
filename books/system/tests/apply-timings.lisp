@@ -7,7 +7,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/apply/apply-lemmas" :dir :system)
+(include-book "projects/apply/top" :dir :system)
 
 (defun posps (n acc) ; acc is nil at the top level
   (declare (xargs :guard (natp n)))

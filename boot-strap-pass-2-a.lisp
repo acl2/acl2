@@ -56,11 +56,6 @@
 (verify-termination-boot-strap cons-term) ; and guards
 (verify-termination-boot-strap symbol-class) ; and guards
 
-; observation1-cw
-
-(verify-termination-boot-strap observation1-cw)
-(verify-guards observation1-cw)
-
 ; packn1 and packn
 
 (verify-termination-boot-strap packn1) ; and guards

@@ -1138,7 +1138,7 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
             (:SIGNED `(SIGNED-BYTE-P ,size X))
             (:UNSIGNED `(UNSIGNED-BYTE-P ,size X))))
        (DEFUN ,name (I)
-         ,@(when$ doc (list doc))
+         ,@(when$cl doc (list doc))
          (DECLARE (XARGS :GUARD (INTEGERP I)))
          ,(case s/u
             (:SIGNED `(LOGEXT ,size I))
@@ -1157,22 +1157,22 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
              (:UNSIGNED `(AND (INTEGERP X)
 			      (>= X 0)))))
          :RULE-CLASSES :FORWARD-CHAINING)
-       ,@(when$ saturating-coercion
+       ,@(when$cl saturating-coercion
            (list
             `(DEFUN ,saturating-coercion (I)
                (DECLARE (XARGS :GUARD (INTEGERP I)))
 	       (LOGSAT ,size I))
             `(DEFTHM ,sat-lemma
 	       (,predicate (,saturating-coercion I)))))
-       (IN-THEORY (DISABLE ,predicate ,name ,@(when$ saturating-coercion
+       (IN-THEORY (DISABLE ,predicate ,name ,@(when$cl saturating-coercion
                                                 (list saturating-coercion))))
        (DEFTHEORY ,theory
          (UNION-THEORIES
           (DEFUN-TYPE/EXEC-THEORY
-            '(,predicate ,name ,@(when$ saturating-coercion
+            '(,predicate ,name ,@(when$cl saturating-coercion
                                    (list saturating-coercion))))
           '(,predicate-lemma ,coercion-lemma ,forward-lemma
-			     ,@(when$ saturating-coercion
+			     ,@(when$cl saturating-coercion
 				 (list sat-lemma))))))))
 
 ;;;****************************************************************************

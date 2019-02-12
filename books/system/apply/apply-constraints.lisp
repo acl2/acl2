@@ -61,5 +61,7 @@
   (defthm apply$-userfn-takes-arity-args
     (implies (badge-userfn fn)
              (equal (apply$-userfn fn args)
-                    (apply$-userfn fn (take (caddr (badge-userfn fn)) args))))
+                    (apply$-userfn fn (take (apply$-badge-arity
+                                             (badge-userfn fn))
+                                            args))))
     :rule-classes nil))

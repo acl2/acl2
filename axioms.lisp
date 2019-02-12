@@ -13554,7 +13554,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Found in apply-raw so users can see the *cl-cache*:
 
-    print-cl-cache
+    print-cl-cache-fn
 
 ; mfc functions
 
@@ -13690,6 +13690,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-ld-keyword-alias! set-ld-keyword-aliases!
     with-guard-checking-event
     when-pass-2
+    loop$
     ))
 
 (defmacro with-live-state (form)
@@ -28274,7 +28275,7 @@ Lisp definition."
           (set-compile-fns nil))))
 
 #+acl2-loop-only
-(defun print-cl-cache ()
+(defun print-cl-cache-fn (i j)
 
 ; -----------------------------------------------------------------
 ; Reminders about print-cl-cache:
@@ -28316,6 +28317,9 @@ Lisp definition."
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t)
+           (ignore i j))
   nil)
 
+(defmacro print-cl-cache (&optional i j)
+  `(print-cl-cache-fn ,i ,j))

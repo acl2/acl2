@@ -8,7 +8,7 @@
 
 (in-package "ACL2")
 
-(include-book "apply-lemmas")
+(include-book "top")
 
 (defun$ square (x) (* x x))
 
@@ -270,7 +270,7 @@
                   (collect fn lst)))
   :rule-classes nil)
 
-; We don't store this as rule but prove it to illustrate the point.  As a
+; We don't store this as a rule but prove it to illustrate the point.  As a
 ; rewrite rule, this theorem would rewrite any FOLDR whose second argument is a
 ; quoted LAMBDA expression with any two distinct formals and the body shown.
 ; (Of course, the third argument of the FOLDR must be NIL.)  Even is not fully

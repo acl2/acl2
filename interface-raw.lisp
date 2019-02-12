@@ -1264,7 +1264,8 @@
                                  x
                                  'oneify
                                  w
-                                 *default-state-vars*)
+                                 *default-state-vars*
+                                 nil)
       (declare (ignore bindings))
       (if flg
           (interface-er "Implementation error: Translate11-lambda-object in ~
@@ -1272,6 +1273,26 @@
                          even though it was supposedly translated ~
                          successfully earlier.  Please contact the ACL2 ~
                          implementors."
+                        x)
+          tx)))
+   ((eq (car x) 'loop$)
+    (mv-let (flg tx bindings)
+      (translate11-loop$
+       x
+       '(nil) ; stobjs-out
+       nil ; bindings
+       nil ; known-stobjs
+       nil ; flet-alist
+       x
+       'oneify
+       w
+       *default-state-vars*)
+      (declare (ignore bindings))
+      (if flg
+          (interface-er "Implementation error: translate11-loop$ in oneify ~
+                         encountered an untranslatable LOOP$, ~x0, even ~
+                         though it was supposedly translated successfully ~
+                         earlier.  Please contat the ACL2 implementors."
                         x)
           tx)))
    ((not (symbolp (car x)))
@@ -3866,6 +3887,11 @@
 ; (maybe-introduce-empty-pkg "MY-PKG")
 ;;; Save some information about the fni:
 ; (setq *hcomp-fn-alist* '((fn1 ..) (fn2 ..) ..))
+;;; Support compilation of loop$ forms (see Part 3 below):
+; (when (eq *readtable* *reckless-acl2-readtable*)
+;   (setq *set-hcomp-loop$-alist* t))
+; (when *set-hcomp-loop$-alist*
+;   (setq *hcomp-loop$-alist* '..))
 ;;; Build a hash table associating each fni with its pre-existing
 ;;; symbol-function or special *unbound* mark:
 ; (hcomp-init)
@@ -4591,6 +4617,33 @@
 ; Note that some of these are wrapped together in a progn to maximize sharing
 ; using #n# syntax.
 
+; Note added February, 2019: We have extended the expansion file to support the
+; macroexpansion of loop$ in raw Lisp.  The main idea is to mirror the world
+; global, 'loop$-alist, in a Lisp special variable to be consulted during the
+; early load of compiled files: *hcomp-loop$-alist*.  See loop$.  The
+; discussion below outlines how the expansion file supports the macroexpansion
+; of loop$ in raw Lisp.
+
+; The loop$-alist -- whether the value of world global 'loop$-alist or the
+; value of special variable *hcomp-loop$-alist* -- needs to distinguish entries
+; added for the current book during its certification, because these are the
+; only ones that are placed directly in that book's expansion file.  Thus the
+; loop$-alist-entry record has a field, :flg, that is usually nil but is t when
+; adding an entry during certification and not under include-book (i.e., under
+; a sub-book).  The variable *hcomp-loop$-alist* is set to nil in
+; include-book-raw-top and then populated in expansion files.  Then each
+; expansion file overwrites that variable to the list of loop$-alist-entry
+; records appropriate for loop$ forms introduced in that book, not in
+; sub-books.  But upon exit from the expansion file, the value of that variable
+; from before that overwrite is extended by the final value from the expansion
+; file, using the macro wrapper, handle-hcomp-loop$-alist.
+
+; An optimizbation is that *set-hcomp-loop$-alist* is only true when under some
+; load of an expansion file (where (eq *readtable* *reckless-acl2-readtable*)).
+; In particular, in the normal case that compiled files are loaded,
+; *hcomp-loop$-alist* will remain nil, which is fine since the loop$ macros
+; will have already been expanded.
+
 ; End of Essay on Hash Table Support for Compilation
 
 (defun hcomp-init ()
@@ -5007,8 +5060,39 @@
              (assert$ (member-eq status '(to-be-compiled complete incomplete))
                       status)))))))))
 
+(defvar *set-hcomp-loop$-alist* nil)
+
+(defun extend-hcomp-loop$-alist (new old full-book-name)
+
+; Extend old by new, checking that we never change an existing value.
+
+  (let ((result old))
+    (loop for pair in new
+          when (let ((old-pair (assoc-equal (car pair) old)))
+                 (cond ((null old-pair) t)
+                       ((equal (cdr pair) (cdr old-pair)) nil)
+                       (t (er hard 'extend-hcomp-loop$-alist
+                              "Implementation error: unexpected ~
+                               incompatibility in loop$-alists when ~
+                               processing the book ~x0.~%new:~%~x1~%old~%~x2"
+                              full-book-name new old))))
+          do (push pair result)
+          finally (return result))))
+
+(defmacro handle-hcomp-loop$-alist (form full-book-name)
+  (let ((saved-hcomp-loop$-alist (gensym)))
+    `(let ((,saved-hcomp-loop$-alist *hcomp-loop$-alist*))
+       (prog1 ,form
+         (setq *hcomp-loop$-alist*
+               (extend-hcomp-loop$-alist *hcomp-loop$-alist*
+                                         ,saved-hcomp-loop$-alist
+                                         ,full-book-name))))))
+
 (defun include-book-raw (book-name directory-name load-compiled-file dir ctx
-                                   state)
+                                   state
+                                   &aux ; protect global value
+                                   (*set-hcomp-loop$-alist*
+                                    *set-hcomp-loop$-alist*))
 
 ; This function is generally called on behalf of include-book-fn.  No load
 ; takes place if load-compiled-file is effectively nil (either nil or else
@@ -5149,7 +5233,9 @@
                 ((and book-date
                       ofile-date
                       (<= book-date ofile-date))
-                 (load-compiled ofile t))
+                 (handle-hcomp-loop$-alist
+                  (load-compiled ofile t)
+                  full-book-name))
                 (t (let ((reason (cond (ofile-exists
                                         "the compiled file is not at least as ~
                                          recent as the book")
@@ -5189,7 +5275,10 @@
                                                lfile)
                                           reason)
                                 (cond (efile-p
-                                       (with-reckless-read (load efile)))
+                                       (with-reckless-read
+                                        (handle-hcomp-loop$-alist
+                                         (load efile)
+                                         full-book-name)))
                                       (raw-mode-p (load os-file))))))))))))
       ((let* ((entry (assert$ *hcomp-book-ht* ; not raw mode, e.g.
                               (gethash full-book-name *hcomp-book-ht*)))
@@ -5250,8 +5339,10 @@
 ; Table Support for Compilation.
 
                       *user-stobj-alist*))
-                 (load-compiled-book full-book-name directory-name
-                                     load-compiled-file ctx state))))
+                 (handle-hcomp-loop$-alist
+                  (load-compiled-book full-book-name directory-name
+                                      load-compiled-file ctx state)
+                  full-book-name))))
           (setf (gethash full-book-name *hcomp-book-ht*)
                 (make hcomp-book-ht-entry
                       :status   status
@@ -5294,7 +5385,8 @@
 ; then for acl2-unwind-protect to do the actual cleanup using those saved
 ; values.
 
-     (setq *saved-hcomp-restore-hts* nil)
+     (setq *saved-hcomp-restore-hts* nil
+           *hcomp-loop$-alist* nil)
      (acl2-unwind-protect
       "include-book-raw"
       (unwind-protect
@@ -5317,12 +5409,16 @@
                   (value nil)))
         (setq *saved-hcomp-restore-hts*
               (list* *hcomp-fn-macro-restore-ht*
-                     *hcomp-const-restore-ht*)))
+                     *hcomp-const-restore-ht*)
+              *hcomp-loop$-alist*
+              nil))
       (progn (hcomp-restore-defs)
              (setq *saved-hcomp-restore-hts* nil)
+             (setq *hcomp-loop$-alist* nil)
              state)
       (progn (hcomp-restore-defs)
              (setq *saved-hcomp-restore-hts* nil)
+             (setq *hcomp-loop$-alist* nil)
              state)))))
 
 (defmacro hcomp-ht-from-type (type ctx)
@@ -7357,10 +7453,12 @@
            #+ccl ccl:defstatic
            declaim
            def-basic-type-sets
+           defwarrant
            defattach
            defaxiom
            defconst
            defconstant
+           defequiv
            defg
            define-@par-macros
            define-atomically-modifiable-counter
