@@ -1134,15 +1134,47 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                  '(:in-theory (e/d (bfr-eval bfr-set-var bfr-fix logicman->mode)
                                    ((logicman->mode)))))))
 
+  (local (defthm not-depends-on-0
+           (not (aignet::depends-on id 0 aignet))
+           :hints(("Goal" :in-theory (enable aignet::depends-on)))))
+
+  (local
+   #!aignet
+   (defthm fanin-count-of-lookup-in-extension-when-not-in-orig
+     (implies (and (aignet-extension-p new old)
+                   (< (nfix v) (stype-count stype new))
+                   (<= (stype-count stype old) (nfix v))
+                   (not (equal (ctype stype) (out-ctype))))
+              (< (fanin-count old) (fanin-count (lookup-stype v stype new))))
+     :hints(("Goal" :induct (aignet-extension-p new old)
+             :in-theory (e/d ((:i aignet-extension-p)
+                              fanin-node-p)
+                             (AIGNET::AIGNET-EXTENSION-SIMPLIFY-LOOKUP-STYPE-WHEN-COUNTS-SAME))
+             :expand ((aignet-extension-p new old)
+                      (stype-count stype new)
+                      (lookup-stype v stype new)
+                      (fanin-count new))))))
+
+  (local
+   #!aignet
+   (defthm depends-on-of-out-of-bounds-ci-id
+     (implies (< (fanin-count aignet) (nfix ci-id))
+              (not (aignet::depends-on id ci-id aignet)))
+     :hints(("Goal" :in-theory (enable aignet::depends-on)))))
+
   (defthm bfr-depends-on-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-varname-p v old)
                   (lbfr-p x old))
              (equal (bfr-depends-on v x new)
                     (bfr-depends-on v x old)))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable logicman-extension-p
-                                      bfr-p bfr-varname-p))))))
+                                      bfr-p bfr-varname-p
+                                      aignet::consp-of-lookup-stype)))
+            (and stable-under-simplificationp
+                 '(:cases ((< (nfix v) (aignet::stype-count :pi (logicman->aignet old))))))
+            (and stable-under-simplificationp
+                 '(:cases ((< (nfix v) (aignet::stype-count :pi (logicman->aignet new)))))))))
 
 
 (define bfr-list-depends-on ((v bfr-varname-p) (x lbfr-listp) &optional ((logicman logicman-nvars-ok) 'logicman))
@@ -1168,10 +1200,34 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
   (defthm bfr-list-depends-on-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (bfr-varname-p v old)
                   (lbfr-listp x old))
              (equal (bfr-list-depends-on v x new)
-                    (bfr-list-depends-on v x old)))))
+                    (bfr-list-depends-on v x old))))
+
+  (defthm bfr-list-depends-on-of-nil
+    (not (bfr-list-depends-on v nil)))
+
+  (defthm bfr-list-depends-on-of-append
+    (equal (bfr-list-depends-on v (append a b))
+           (or (bfr-list-depends-on v a)
+               (bfr-list-depends-on v b))))
+
+  (defthm bfr-list-depends-on-of-cons
+    (equal (bfr-list-depends-on v (cons a b))
+           (or (bfr-depends-on v a)
+               (bfr-list-depends-on v b))))
+
+  (defthmd bfr-list-depends-on-when-consp
+    (implies (consp x)
+             (equal (bfr-list-depends-on v x)
+                    (or (bfr-depends-on v (car x))
+                        (bfr-list-depends-on v (cdr x))))))
+
+  (defthm bfr-depends-on-of-car-when-bfr-list-depends-on
+    (implies (not (bfr-list-depends-on v x))
+             (not (bfr-depends-on v (car x))))
+    :hints (("goal" :expand ((bfr-depends-on v nil))
+             :in-theory (enable bfr->aignet-lit)))))
                                 
 
 
@@ -2021,27 +2077,21 @@ logicman stobj.  If no logicman argument is supplied, the variable named
              (equal (gobj-bfr-list-eval x env new)
                     (gobj-bfr-list-eval x env old))))
 
+  (defthm gobj-bfr-list-eval-of-cons
+    (equal (gobj-bfr-list-eval (cons a b) env)
+           (cons (gobj-bfr-eval a env)
+                 (gobj-bfr-list-eval b env))))
+
+  (defthm consp-of-gobj-bfr-list-eval
+    (equal (consp (gobj-bfr-list-eval x env))
+           (consp x)))
+ 
+  (defthm len-of-gobj-bfr-list-eval
+    (equal (len (gobj-bfr-list-eval x env))
+           (len x)))
+
   (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env gl-env-p))))
 
-
-
-  
-
-(defapply base-gl-object-apply 
-    
-(encapsulate
-  (((base-gl-object-apply * *) => *
-    :formals (fn args)
-    :guard (and (symbolp fn)
-                (true-listp args))))
-
-  (local (defun base-gl-object-apply (fn args)
-           (Declare (Xargs :guard (and (Symbolp fn)
-                                       (true-listp args)))
-                    (ignore fn args))
-           nil))
-
-  (fty::deffixequiv base-gl-object-apply :args ((fn symbolp) (args true-listp))))
 
 (define gobj-var-lookup (name (env gl-env-p))
   :prepwork ((local (defthm consp-of-assoc-when-obj-alist-p
@@ -2051,162 +2101,236 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (cdr (assoc-equal name (gl-env->obj-alist env))))
 
 
+(defconst *gl-object-eval-template*
+  '(progn
+     (defapply <name>-apply <fns>)
+
+     (defines <name>-gl-object-eval
+       (define <name>-gl-object-eval ((x lgl-bfr-object-p)
+                                      (env gl-env-p)
+                                      &optional (logicman 'logicman))
+         :measure (gl-object-count x)
+         :verify-guards nil
+         :returns (val)
+         (gl-object-case x
+           :g-concrete x.val
+           :g-boolean (gobj-bfr-eval x.bool env)
+           :g-integer (bools->int (gobj-bfr-list-eval x.bits env))
+           :g-ite (if (<name>-gl-object-eval x.test env)
+                      (<name>-gl-object-eval x.then env)
+                    (<name>-gl-object-eval x.else env))
+           :g-apply (<name>-apply x.fn (<name>-gl-objectlist-eval x.args env))
+           :g-var (gobj-var-lookup x.name env)
+           :g-cons (cons (<name>-gl-object-eval x.car env)
+                         (<name>-gl-object-eval x.cdr env))))
+       (define <name>-gl-objectlist-eval ((x lgl-bfr-objectlist-p)
+                                          (env gl-env-p)
+                                          &optional (logicman 'logicman))
+         :measure (gl-objectlist-count x)
+         :returns (vals true-listp :rule-classes :type-prescription)
+         (if (atom x)
+             nil
+           (cons (<name>-gl-object-eval (car x) env)
+                 (<name>-gl-objectlist-eval (cdr x) env))))
+       ///
+       (verify-guards <name>-gl-object-eval-fn)
+       
+       (defret-mutual <name>-gl-object-eval-of-gl-bfr-object-fix
+        (defret <name>-gl-object-eval-of-gl-bfr-object-fix
+          (equal (<name>-gl-object-eval (lgl-bfr-object-fix x) env)
+                 val)
+          :hints ('(:expand ((lgl-bfr-object-fix x))))
+          :fn <name>-gl-object-eval)
+        (defret <name>-gl-objectlist-eval-of-gl-bfr-objectlist-fix
+          (equal (<name>-gl-objectlist-eval (lgl-bfr-objectlist-fix x) env)
+                 vals)
+          :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
+          :fn <name>-gl-objectlist-eval))
+
+       (defret-mutual <name>-gl-object-eval-of-gl-object-fix
+         (defret <name>-gl-object-eval-of-gl-object-fix
+           (equal (<name>-gl-object-eval (gl-object-fix x) env)
+                  val)
+           :hints ('(:expand ((gl-object-fix x))
+                               :in-theory (e/d (<name>-gl-object-eval))))
+           :fn <name>-gl-object-eval)
+         (defret <name>-gl-objectlist-eval-of-gl-object-fix
+           (equal (<name>-gl-objectlist-eval (gl-objectlist-fix x) env)
+                  vals)
+           :hints ('(:expand ((gl-objectlist-fix x)
+                                        (:free (a b) (<name>-gl-objectlist-eval (cons a b) env))
+                                        (<name>-gl-objectlist-eval nil env)
+                                        (<name>-gl-objectlist-eval x env))))
+           :fn <name>-gl-objectlist-eval))
+
+       (defthm-<name>-gl-object-eval-flag
+         (defthm <name>-gl-object-eval-of-logicman-extension
+           (implies (and (bind-logicman-extension new old)
+                         (lgl-bfr-object-p x old))
+                    (equal (<name>-gl-object-eval x env new)
+                           (<name>-gl-object-eval x env old)))
+           :hints ('(:expand ((:free (logicman) (<name>-gl-object-eval x env logicman))
+                               (gl-bfr-object-p x old))))
+           :flag <name>-gl-object-eval)
+         (defthm <name>-gl-objectlist-eval-of-logicman-extension
+           (implies (and (bind-logicman-extension new old)
+                         (lgl-bfr-objectlist-p x old))
+                    (equal (<name>-gl-objectlist-eval x env new)
+                           (<name>-gl-objectlist-eval x env old)))
+           :hints ('(:expand ((:free (logicman) (<name>-gl-objectlist-eval x env logicman))
+                              (gl-bfr-objectlist-p x old))))
+            :flag <name>-gl-objectlist-eval)
+         :hints (("goal" :induct (<name>-gl-object-eval-flag flag x env old))))
+
+       (defthm <name>-gl-object-eval-when-g-concrete
+         (implies (gl-object-case x :g-concrete)
+                  (equal (<name>-gl-object-eval x env)
+                         (g-concrete->val x)))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-concrete
+         (equal (<name>-gl-object-eval (g-concrete val) env)
+                val))
+
+       (defthm <name>-gl-object-eval-when-g-boolean
+         (implies (gl-object-case x :g-boolean)
+                  (equal (<name>-gl-object-eval x env)
+                         (gobj-bfr-eval (g-boolean->bool x) env)))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-boolean
+         (equal (<name>-gl-object-eval (g-boolean bool) env)
+                (gobj-bfr-eval bool env)))
+
+       (defthm <name>-gl-object-eval-when-g-integer
+         (implies (gl-object-case x :g-integer)
+                  (equal (<name>-gl-object-eval x env)
+                         (bools->int (gobj-bfr-list-eval (g-integer->bits x) env))))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-integer
+         (equal (<name>-gl-object-eval (g-integer bits) env)
+                (bools->int (gobj-bfr-list-eval bits env))))
+
+       (defthm <name>-gl-object-eval-when-g-ite
+         (implies (gl-object-case x :g-ite)
+                  (equal (<name>-gl-object-eval x env)
+                         (if (<name>-gl-object-eval (g-ite->test x) env)
+                             (<name>-gl-object-eval (g-ite->then x) env)
+                           (<name>-gl-object-eval (g-ite->else x) env))))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-ite
+         (equal (<name>-gl-object-eval (g-ite test then else) env)
+                (if (<name>-gl-object-eval test env)
+                    (<name>-gl-object-eval then env)
+                  (<name>-gl-object-eval else env))))
+
+       (defthm <name>-gl-object-eval-when-g-apply
+         (implies (gl-object-case x :g-apply)
+                  (equal (<name>-gl-object-eval x env)
+                         (<name>-apply (g-apply->fn x)
+                                                 (<name>-gl-objectlist-eval (g-apply->args x) env))))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-apply
+         (equal (<name>-gl-object-eval (g-apply fn args) env)
+                (<name>-apply (acl2::symbol-fix fn)
+                                        (<name>-gl-objectlist-eval args env))))
+
+       (defthm <name>-gl-object-eval-when-g-var
+         (implies (gl-object-case x :g-var)
+                  (equal (<name>-gl-object-eval x env)
+                         (gobj-var-lookup (g-var->name x) env)))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-var
+         (equal (<name>-gl-object-eval (g-var name) env)
+                (gobj-var-lookup name env)))
+
+       (defthm <name>-gl-object-eval-when-g-cons
+         (implies (gl-object-case x :g-cons)
+                  (equal (<name>-gl-object-eval x env)
+                         (cons (<name>-gl-object-eval (g-cons->car x) env)
+                               (<name>-gl-object-eval (g-cons->cdr x) env))))
+         :hints (("goal" :expand ((<name>-gl-object-eval x env)))))
+
+       (defthm <name>-gl-object-eval-of-g-cons
+         (equal (<name>-gl-object-eval (g-cons car cdr) env)
+                (cons (<name>-gl-object-eval car env)
+                      (<name>-gl-object-eval cdr env))))
+
+       (fty::deffixequiv-mutual <name>-gl-object-eval))))
+
+(defmacro def-gl-object-eval (name fns)
+  (acl2::template-subst *gl-object-eval-template*
+                        :atom-alist `((<name> . ,name)
+                                      (<fns> . ,fns))
+                        :str-alist `(("<NAME>" . ,(symbol-name name)))
+                        :pkg-sym 'fgl::gl-symbol))
+
+(def-gl-object-eval base nil)
 
 
-(defines base-gl-object-eval
-  (define base-gl-object-eval ((x lgl-bfr-object-p)
-                               (env gl-env-p)
-                               &optional (logicman 'logicman))
-    :measure (gl-object-count x)
-    :verify-guards nil
-    :returns (val)
-    (gl-object-case x
-      :g-concrete x.val
-      :g-boolean (gobj-bfr-eval x.bool env)
-      :g-integer (bools->int (gobj-bfr-list-eval x.bits env))
-      :g-ite (if (base-gl-object-eval x.test env)
-                 (base-gl-object-eval x.then env)
-               (base-gl-object-eval x.else env))
-      :g-apply (base-gl-object-apply x.fn (base-gl-objectlist-eval x.args env))
-      :g-var (gobj-var-lookup x.name env)
-      :g-cons (cons (base-gl-object-eval x.car env)
-                    (base-gl-object-eval x.cdr env))))
-  (define base-gl-objectlist-eval ((x lgl-bfr-objectlist-p)
-                                   (env gl-env-p)
-                                   &optional (logicman 'logicman))
-    :measure (gl-objectlist-count x)
-    :returns (vals true-listp :rule-classes :type-prescription)
-    (if (atom x)
-        nil
-      (cons (base-gl-object-eval (car x) env)
-            (base-gl-objectlist-eval (cdr x) env))))
-  ///
-  (verify-guards base-gl-object-eval-fn)
+(local (include-book "aabf"))
+(local
+ (defthm aabf-trivial-thm
+   (b* ((orig-man man)
+        (notx (aabf-not x man))
+        ((mv yxorz man) (aabf-xor y z man))
+        ((mv res man) (aabf-and notx yxorz man)))
+     (implies (and (aabf-p x orig-man)
+                   (aabf-p y orig-man)
+                   (aabf-p z orig-man))
+              (equal (aabf-eval res env man)
+                     (and (not (aabf-eval x env orig-man))
+                          (xor (aabf-eval y env orig-man)
+                               (aabf-eval z env orig-man))))))))
 
-  (defret-mutual base-gl-object-eval-of-gl-bfr-object-fix
-    (defret base-gl-object-eval-of-gl-bfr-object-fix
-      (equal (base-gl-object-eval (lgl-bfr-object-fix x) env)
-             val)
-      :hints ('(:expand ((lgl-bfr-object-fix x))))
-      :fn base-gl-object-eval)
-    (defret base-gl-objectlist-eval-of-gl-bfr-object-fix
-      (equal (base-gl-objectlist-eval (lgl-bfr-objectlist-fix x) env)
-             vals)
-      :hints ('(:expand ((lgl-bfr-objectlist-fix x))))
-      :fn base-gl-objectlist-eval))
 
-  (defret-mutual base-gl-object-eval-of-gl-object-fix
-    (defret base-gl-object-eval-of-gl-object-fix
-      (equal (base-gl-object-eval (gl-object-fix x) env)
-             val)
-      :hints ('(:expand ((gl-object-fix x))
-                :in-theory (e/d (base-gl-object-eval))))
-      :fn base-gl-object-eval)
-    (defret base-gl-objectlist-eval-of-gl-object-fix
-      (equal (base-gl-objectlist-eval (gl-objectlist-fix x) env)
-             vals)
-      :hints ('(:expand ((gl-objectlist-fix x)
-                         (:free (a b) (base-gl-objectlist-eval (cons a b) env))
-                         (base-gl-objectlist-eval nil env)
-                         (base-gl-objectlist-eval x env))))
-      :fn base-gl-objectlist-eval))
+(local
+ (defthm logicman-aabf-functional-instance-ok
+   t
+   :rule-classes nil
+   :hints (("goal" :use ((:functional-instance aabf-trivial-thm
+                          (aabf-eval acl2::bfr-eval-fn)
+                          (aabf-p (lambda (x man) (bfr-p x (logicman->bfrstate man))))
+                          (aabf-pred (lambda (x man) (bfr-p x (logicman->bfrstate man))))
+                          (aabf-true (lambda () t))
+                          (aabf-false (lambda () nil))
+                          (aabf-not acl2::bfr-not-fn)
+                          (aabf-and acl2::bfr-and-fn)
+                          (aabf-or acl2::bfr-or-fn)
+                          (aabf-xor acl2::bfr-xor-fn)
+                          (aabf-iff acl2::bfr-iff-fn)
+                          (aabf-ite acl2::bfr-ite-fn)
+                          (aabf-syntactically-equal equal)
+                          (aabf-extension-p logicman-extension-p)))))))
 
-  (defthm-base-gl-object-eval-flag
-    (defthm base-gl-object-eval-of-logicman-extension
-      (implies (and (bind-logicman-extension new old)
-                    (lgl-bfr-object-p x old))
-               (equal (base-gl-object-eval x env new)
-                      (base-gl-object-eval x env old)))
-      :hints ('(:expand ((:free (logicman) (base-gl-object-eval x env logicman))
-                         (gl-bfr-object-p x old))))
-      :flag base-gl-object-eval)
-    (defthm base-gl-objectlist-eval-of-logicman-extension
-      (implies (and (bind-logicman-extension new old)
-                    (lgl-bfr-objectlist-p x old))
-               (equal (base-gl-objectlist-eval x env new)
-                      (base-gl-objectlist-eval x env old)))
-      :hints ('(:expand ((:free (logicman) (base-gl-objectlist-eval x env logicman))
-                         (gl-bfr-objectlist-p x old))))
-      :flag base-gl-objectlist-eval)
-    :hints (("goal" :induct (base-gl-object-eval-flag flag x env old))))
+(local (defthm bfr-depends-on-of-nil
+         (not (bfr-depends-on var nil logicman))
+         :hints(("Goal" :in-theory (enable bfr-depends-on)))))
 
-  (defthm base-gl-object-eval-when-g-concrete
-    (implies (gl-object-case x :g-concrete)
-             (equal (base-gl-object-eval x env)
-                    (g-concrete->val x)))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
+(local (defthm bfr-depends-on-of-t
+         (not (bfr-depends-on var t logicman))
+         :hints(("Goal" :in-theory (enable bfr-depends-on)))))
 
-  (defthm base-gl-object-eval-of-g-concrete
-    (equal (base-gl-object-eval (g-concrete val) env)
-           val))
-
-  (defthm base-gl-object-eval-when-g-boolean
-    (implies (gl-object-case x :g-boolean)
-             (equal (base-gl-object-eval x env)
-                    (gobj-bfr-eval (g-boolean->bool x) env)))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-boolean
-    (equal (base-gl-object-eval (g-boolean bool) env)
-           (gobj-bfr-eval bool env)))
-
-  (defthm base-gl-object-eval-when-g-integer
-    (implies (gl-object-case x :g-integer)
-             (equal (base-gl-object-eval x env)
-                    (bools->int (gobj-bfr-list-eval (g-integer->bits x) env))))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-integer
-    (equal (base-gl-object-eval (g-integer bits) env)
-           (bools->int (gobj-bfr-list-eval bits env))))
-
-  (defthm base-gl-object-eval-when-g-ite
-    (implies (gl-object-case x :g-ite)
-             (equal (base-gl-object-eval x env)
-                    (if (base-gl-object-eval (g-ite->test x) env)
-                        (base-gl-object-eval (g-ite->then x) env)
-                      (base-gl-object-eval (g-ite->else x) env))))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-ite
-    (equal (base-gl-object-eval (g-ite test then else) env)
-           (if (base-gl-object-eval test env)
-               (base-gl-object-eval then env)
-             (base-gl-object-eval else env))))
-
-  (defthm base-gl-object-eval-when-g-apply
-    (implies (gl-object-case x :g-apply)
-             (equal (base-gl-object-eval x env)
-                    (base-gl-object-apply (g-apply->fn x)
-                                          (base-gl-objectlist-eval (g-apply->args x) env))))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-apply
-    (equal (base-gl-object-eval (g-apply fn args) env)
-           (base-gl-object-apply fn
-                                 (base-gl-objectlist-eval args env))))
-
-  (defthm base-gl-object-eval-when-g-var
-    (implies (gl-object-case x :g-var)
-             (equal (base-gl-object-eval x env)
-                    (gobj-var-lookup (g-var->name x) env)))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-var
-    (equal (base-gl-object-eval (g-var name) env)
-           (gobj-var-lookup name env)))
-
-  (defthm base-gl-object-eval-when-g-cons
-    (implies (gl-object-case x :g-cons)
-             (equal (base-gl-object-eval x env)
-                    (cons (base-gl-object-eval (g-cons->car x) env)
-                          (base-gl-object-eval (g-cons->cdr x) env))))
-    :hints (("goal" :expand ((base-gl-object-eval x env)))))
-
-  (defthm base-gl-object-eval-of-g-cons
-    (equal (base-gl-object-eval (g-cons car cdr) env)
-           (cons (base-gl-object-eval car env)
-                 (base-gl-object-eval cdr env))))
-
-  (fty::deffixequiv-mutual base-gl-object-eval))
+(local
+ (defthm logicman-aabf-dependency-functional-instance-ok
+   t
+   :rule-classes nil
+   :hints (("goal" :use ((:functional-instance aabf-trivial-thm
+                          (aabf-eval acl2::bfr-eval-fn)
+                          (aabf-p (lambda (x man) (bfr-p x (logicman->bfrstate man))))
+                          (aabf-pred (lambda (x man) (not (bfr-depends-on var x man))))
+                          (aabf-true (lambda () t))
+                          (aabf-false (lambda () nil))
+                          (aabf-not acl2::bfr-not-fn)
+                          (aabf-and acl2::bfr-and-fn)
+                          (aabf-or acl2::bfr-or-fn)
+                          (aabf-xor acl2::bfr-xor-fn)
+                          (aabf-iff acl2::bfr-iff-fn)
+                          (aabf-ite acl2::bfr-ite-fn)
+                          (aabf-syntactically-equal equal)
+                          (aabf-extension-p logicman-extension-p)))))))
 

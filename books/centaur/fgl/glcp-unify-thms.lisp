@@ -32,8 +32,9 @@
 
 (include-book "build/ifdef" :dir :system)
 
-(acl2::ifdef-define "DEFS_ONLY")
+(acl2::ifdef-define "THMS_ONLY")
 
 ; (loads "glcp-unify.lsp")
 (make-event (er-let* ((forms (acl2::read-file "glcp-unify.lsp" state)))
                      (value (cons 'progn forms))))
+

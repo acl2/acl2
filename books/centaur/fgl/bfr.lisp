@@ -396,7 +396,6 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 (std::deflist bfr-listp$ (x bfrstate)
   :guard (bfrstate-p bfrstate)
   (bfr-p x)
-  :true-listp t
   ///
   (defmacro bfr-listp (x &optional (bfrstate 'bfrstate))
     `(bfr-listp$ ,x ,bfrstate))
@@ -465,7 +464,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 (define bfr-list-fix ((x bfr-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :returns (new-x bfr-listp)
   (if (atom x)
-      nil
+      x
     (cons (bfr-fix (car x))
           (bfr-list-fix (cdr x))))
   ///
@@ -949,7 +948,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
   (in-theory (disable* gl-object-bfrlist-when-thms))
 
-  (def-ruleset gl-objectlist-bfrlist-of-thms
+  (def-ruleset gl-object-bfrlist-of-thms
     '(gl-object-bfrlist-of-g-concrete
       gl-object-bfrlist-of-g-boolean
       gl-object-bfrlist-of-g-integer

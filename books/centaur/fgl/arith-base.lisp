@@ -34,6 +34,7 @@
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
+(local (include-book "ihs/logops-lemmas" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (fty::deffixequiv acl2::bool->bit$inline :args ((x booleanp)))
@@ -49,6 +50,40 @@
                    (t (logcons (bool->bit (car x))
                                (bools->int (cdr x))))))
   ///
+  (defthm bools->int-of-true-list-fix
+    (equal (bools->int (true-list-fix x))
+           (bools->int x)))
+
+  (local (in-theory (enable acl2::boolean-list-fix))))
+
+(define bools->uint ((x boolean-listp))
+  :returns (uint natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (logcons (bool->bit (car x))
+             (bools->uint (cdr x))))
+  ///
+  ;; default may be weaker than the one derived by natp-of-bools->uint
+  (in-theory (disable (:type-prescription bools->uint)))
+
+  (defthm bools->uint-of-true-list-fix
+    (equal (bools->uint (true-list-fix x))
+           (bools->uint x)))
+
+  (defthm logcar-of-bools->uint
+    (equal (logcar (bools->uint x))
+           (bool->bit (car x)))
+    :hints(("Goal" :in-theory (e/d (bool->bit) (logcar))
+            :expand ((bools->uint x))
+            :do-not-induct t)))
+
+  (defthm logcdr-of-bools->uint
+    (equal (logcdr (bools->uint x))
+           (bools->uint (cdr x)))
+    :hints(("Goal" :in-theory (e/d (bool->bit) (logcdr))
+            :expand ((bools->uint x))
+            :do-not-induct t)))
+
   (local (in-theory (enable acl2::boolean-list-fix))))
 
 ;; Like logcons, but takes a Boolean as the first element rather than an
@@ -76,5 +111,108 @@
   :returns (val)
   :enabled t
   (- (bool->bit b)))
+
+
+(define intcar ((x integerp))
+  :returns (val)
+  :enabled t
+  (eql (logcar x) 1))
+
+(define intcdr ((x integerp))
+  :returns (val)
+  :enabled t
+  (logcdr x))
+
+(define int-endp ((x integerp))
+  (or (zip x)
+      (eql x -1)))
+
+(define s-endp ((v true-listp))
+  :short "Are we at the end of a signed bit vector?"
+  :inline t
+  ;; MBE just for a simpler logical definition
+  (atom (cdr v))
+  ///
+  (defthm s-endp-of-list-fix
+    (equal (s-endp (acl2::list-fix x))
+           (s-endp x)))
+
+  (defthm not-s-endp-compound-recognizer
+    (implies (not (s-endp x))
+             (consp x))
+    :rule-classes :compound-recognizer))
+
+
+(local (defthm acl2-count-of-list-fix
+         (<= (acl2-count (list-fix x)) (acl2-count x))
+         :rule-classes :linear))
+
+(define scdr ((v true-listp))
+  :returns (cdr true-listp :rule-classes :type-prescription)
+  :short "Like @(see logcdr) for signed bvecs."
+  :long "<p>See @(see bvec).  For a signed bit vector, the final bit is the
+sign bit, which we must implicitly extend out to infinity.</p>"
+  :inline t
+  ;; MBE just for a simpler logical definition
+  (let ((v (llist-fix v)))
+    (if (atom (cdr v))
+        ;; No more bits, so don't CDR the vector any more.
+        v
+      (cdr v)))
+  ///
+
+  (defthm scdr-of-list-fix
+    (equal (scdr (acl2::list-fix x))
+           (acl2::list-fix (scdr x))))
+
+  (defthm scdr-count-weak
+    (<= (acl2-count (scdr v)) (acl2-count v))
+    :hints(("Goal" :in-theory (enable s-endp scdr)))
+    :rule-classes :linear)
+
+  (defthm scdr-count-strong
+    (implies (not (s-endp v))
+             (< (acl2-count (scdr v)) (acl2-count v)))
+    :hints(("Goal" :in-theory (enable s-endp scdr)))
+    :rule-classes :linear)
+
+  (defthm scdr-len-strong
+    (implies (not (s-endp v))
+             (< (len (scdr v)) (len v)))
+    :hints(("Goal" :in-theory (enable s-endp scdr)))
+    :rule-classes :linear)
+
+  (defthm scdr-len-weak
+    (<= (len (scdr v)) (len v))
+    :hints(("Goal" :in-theory (enable s-endp scdr)))
+    :rule-classes :linear)
+
+  (defthm s-endp-of-scdr
+    (implies (s-endp b)
+             (s-endp (scdr b)))
+    :hints(("Goal" :in-theory (enable s-endp scdr))))
+
+  (defthm scdr-when-s-endp
+    (implies (s-endp x)
+             (equal (scdr x) (list-fix x)))
+    :hints(("Goal" :in-theory (enable scdr s-endp)))
+    ;; :rule-classes ((:rewrite :backchain-limit-lst 0))
+    ))
+
+
+(define first/rest/end ((x true-listp))
+  :short "Deconstruct a signed bit vector."
+  :enabled t
+  (declare (xargs :guard t
+                  :guard-hints ('(:in-theory (enable scdr s-endp)))))
+  (mbe :logic (mv (car x) (scdr x) (s-endp x))
+       :exec (cond ((atom x)       (mv nil x t))
+                   ((atom (cdr x)) (mv (car x) x t))
+                   (t              (mv (car x) (cdr x) nil)))))
+
+
+
+
+
 
 
