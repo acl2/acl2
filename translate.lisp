@@ -3291,11 +3291,9 @@
 ; We do not use (all-attachments w) below, because warrants are not in that
 ; structure.
 
-                                  (let ((wfn (warrant-name fn)))
-                                    (cdr (assoc-eq
-                                          wfn
-                                          (getpropc wfn 'attachment nil
-                                                    w)))))))
+                                  (cdr (assoc-eq
+                                        fn
+                                        (getpropc fn 'attachment nil w))))))
              (mv-let
               (er val latches)
               (ev-rec (if guard-checking-off
