@@ -1043,6 +1043,10 @@
           (ARG :OP1 '(G V) :OP2 '(E V))
           '(X86-MOV-OP/EN-RM)
           '((:UD (UD-LOCK-USED))))
+    ;; TODO: For (S w) operands, sensible modr/m.reg values are 0-5
+    ;; because there are 6 segment registers.  Will these
+    ;; instructions #UD when modr/m.reg = 6 or 7? E.g., when modr/m
+    ;; is #x30 or #x38.
     (INST "MOV" (OP :OP #x8C)
           (ARG :OP1 '(E V) :OP2 '(S W))
           'NIL
@@ -1385,6 +1389,15 @@
           (OP :OP #xC3 :SUPERSCRIPTS '(:F64))
           NIL '(X86-RET)
           '((:UD (UD-LOCK-USED))))
+    ;; C4 and C5 are first bytes of the vex prefixes, both
+    ;; in 32-bit and IA-32e modes.  However, in the 32-bit
+    ;; and compatibility modes, the second byte determines
+    ;; whether the instruction is LES/LDS or a VEX
+    ;; instruction.  We use :o64 here because we're sure
+    ;; that an "opcode" of C4 and C5 in the 64-bit mode will
+    ;; not have a modr/m corresponding to it --- basically,
+    ;; we shouldn't be looking up modr/m info. for these
+    ;; opcodes in the 64-bit mode.
     (INST :VEX3-BYTE0 (OP :OP #xC4 :MODE :O64)
           'NIL
           '(:NO-INSTRUCTION)
@@ -2185,6 +2198,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
+          ;; BOZO Rob -- following GP only if executed in VMX root operation!
           '((:GP (GP-CPL-NOT-0))))
     (INST "SIDT"
           (OP :OP #xF01
@@ -3284,6 +3298,15 @@
     (INST "RESERVEDNOP" (OP :OP #xF19)
           NIL 'NIL
           'NIL)
+    ;; Source: BNDLDX-Load Extended Bounds Using Address
+    ;; Translation, Intel Vol. 2 (May 2018 edition)
+    ;; "Any encoding of this instruction that does not specify
+    ;; base or index register will treat those registers as zero
+    ;; (constant)."
+    ;; This leads me to infer that even though the source operand
+    ;; is obtained from the SIB byte, we should not #UD when the
+    ;; SIB byte is not present (i.e., when ModR/M.r/m != #b100 --
+    ;; See Table 2-2 in Intel Vol. 2).    
     (INST "BNDLDX"
           (OP :OP #xF1A
               :MOD :MEM
@@ -3295,14 +3318,28 @@
           'NIL
           '((:UD (UD-LOCK-USED)
                  (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                     ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                     ;; the Intel manuals.  It should be ModRM.reg,
+                     ;; because the latter is used to encode the BND
+                     ;; registers.
+                     ;; "- If ModRM.r/m and REX encodes BND4-BND15 when
+                     ;;    Intel MPX is enabled."
+                     (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (IF (EQL PROC-MODE #x0)
+                     ;; RIP-relative addressing in 64-bit mode
+                     ;; Source: Table 2-7 (RIP-Relative Addressing),
+                     ;; Intel Vol. 2 (May 2018 edition)
+                     ;; "- If ModRM is RIP-relative"
                      (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR (EQL (MODR/M->R/M MODR/M) #x5)
-                              (AND (EQL (MODR/M->R/M MODR/M) #x4)
-                                   (EQL (SIB->BASE SIB) #x5)
-                                   (EQL (SIB->INDEX SIB) #x4))))
+                          (OR ;; SIB Byte not present
+                           (EQL (MODR/M->R/M MODR/M) #x5)
+                           (AND ;; SIB Byte present
+                            (EQL (MODR/M->R/M MODR/M) #x4)
+                            (EQL (SIB->BASE SIB) #x5)
+                            (EQL (SIB->INDEX SIB) #x4))))
+                     ;; In Compatibility/Protected Mode:
+                     ;; "- If 67H prefix is used and CS.D=1.
+                     ;;  - If 67H prefix is not used and CS.D=0."
                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                          (EQL (CS.D) #x1)
                          (EQL (CS.D) #x0))))))
@@ -3326,9 +3363,12 @@
           (ARG :OP1 '(RB) :OP2 '(M))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->R/M MODR/M)
-                                REX-BYTE #x0))
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.                 
+                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
+                 ;; In Compatibility/Protected Mode:
+                 ;; - If 67H prefix is used and CS.D=1.
+                 ;; - If 67H prefix is not used and CS.D=0.
                  (IF (AND (NOT (EQL PROC-MODE #x0))
                           (EQL (PREFIXES->ADR PREFIXES) #x67))
                      (EQL (CS.D) #x1)
@@ -3343,9 +3383,12 @@
           (ARG :OP1 '(RB) :OP2 '(MB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->R/M MODR/M)
-                                REX-BYTE #x0))
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
+                 ;; In Compatibility/Protected Mode:
+                 ;; - If 67H prefix is used and CS.D=1.
+                 ;; - If 67H prefix is not used and CS.D=0.
                  (IF (AND (NOT (EQL PROC-MODE #x0))
                           (EQL (PREFIXES->ADR PREFIXES) #x67))
                      (EQL (CS.D) #x1)
@@ -3359,10 +3402,17 @@
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                 ;; the Intel manuals.  It should be ModRM.reg,
+                 ;; because the latter is used to encode the BND
+                 ;; registers.
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (AND (NOT (EQL PROC-MODE #x0))
+                      ;; In Compatibility/Protected Mode:
+                      ;; - If 67H prefix is used and CS.D=1.
+                      ;; - If 67H prefix is not used and CS.D=0.
                       (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                           (EQL (CS.D) #x1)
                           (EQL (CS.D) #x0))))))
@@ -3375,10 +3425,17 @@
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                 ;; the Intel manuals.  It should be ModRM.reg,
+                 ;; because the latter is used to encode the BND
+                 ;; registers.
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (AND (NOT (EQL PROC-MODE #x0))
+                      ;; In Compatibility/Protected Mode:
+                      ;; - If 67H prefix is used and CS.D=1.
+                      ;; - If 67H prefix is not used and CS.D=0.
                       (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                           (EQL (CS.D) #x1)
                           (EQL (CS.D) #x0))))))
@@ -3387,6 +3444,12 @@
     ;;       NIL 'NIL
     ;;       'NIL)
     (INST "BNDSTX"
+          ;; Source: BNDSTX-Load Extended Bounds Using Address
+          ;; Translation, Intel Vol. 2 (May 2018 edition)
+          ;; "Any encoding of this instruction that does not specify
+          ;; base or index register will treat those registers as zero
+          ;; (constant)."
+          ;; Similar to BNDLDX.
           (OP :OP #xF1B
               :MOD :MEM
               :PFX :NO-PREFIX
@@ -3396,15 +3459,28 @@
           (ARG :OP1 '(M) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                 ;; the Intel manuals.  It should be ModRM.reg,
+                 ;; because the latter is used to encode the BND
+                 ;; registers.
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (IF (EQL PROC-MODE #x0)
+                     ;; RIP-relative addressing in 64-bit mode
+                     ;; Source: Table 2-7 (RIP-Relative Addressing),
+                     ;; Intel Vol. 2 (May 2018 edition)
+                     ;; - If ModRM is RIP-relative
                      (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR (EQL (MODR/M->R/M MODR/M) #x5)
-                              (AND (EQL (MODR/M->R/M MODR/M) #x4)
-                                   (EQL (SIB->BASE SIB) #x5)
-                                   (EQL (SIB->INDEX SIB) #x4))))
+                          (OR ;; SIB Byte not present
+                           (EQL (MODR/M->R/M MODR/M) #x5)
+                           (AND ;; SIB Byte present
+                            (EQL (MODR/M->R/M MODR/M) #x4)
+                            (EQL (SIB->BASE SIB) #x5)
+                            (EQL (SIB->INDEX SIB) #x4))))
+                     ;; In Compatibility/Protected Mode:
+                     ;; - If 67H prefix is used and CS.D=1.
+                     ;; - If 67H prefix is not used and CS.D=0.
                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                          (EQL (CS.D) #x1)
                          (EQL (CS.D) #x0))))))
@@ -3426,9 +3502,12 @@
           (ARG :OP1 '(M) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->R/M MODR/M)
-                                REX-BYTE #x0))
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
+                 ;; In Compatibility/Protected Mode:
+                 ;; - If 67H prefix is used and CS.D=1.
+                 ;; - If 67H prefix is not used and CS.D=0.
                  (IF (AND (NOT (EQL PROC-MODE #x0))
                           (EQL (PREFIXES->ADR PREFIXES) #x67))
                      (EQL (CS.D) #x1)
@@ -3443,9 +3522,12 @@
           (ARG :OP1 '(MB) :OP2 '(RB))
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->R/M MODR/M)
-                                REX-BYTE #x0))
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
+                 ;; In Compatibility/Protected Mode:
+                 ;; - If 67H prefix is used and CS.D=1.
+                 ;; - If 67H prefix is not used and CS.D=0.
                  (IF (AND (NOT (EQL PROC-MODE #x0))
                           (EQL (PREFIXES->ADR PREFIXES) #x67))
                      (EQL (CS.D) #x1)
@@ -3460,19 +3542,33 @@
           (ARG :OP1 '(RB) :OP2 '(M Y))
           'NIL
           '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                 ;; the Intel manuals.  It should be ModRM.reg,
+                 ;; because the latter is used to encode the BND
+                 ;; registers.
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (IF (EQL PROC-MODE #x0)
+                     ;; - If RIP-relative addressing is used.
+                     ;; Source: Table 2-7 (RIP-Relative Addressing),
+                     ;; Intel Vol. 2 (May 2018 edition)
                      (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR (EQL (MODR/M->R/M MODR/M) #x5)
-                              (AND (EQL (MODR/M->R/M MODR/M) #x4)
-                                   (EQL (SIB->BASE SIB) #x5)
-                                   (EQL (SIB->INDEX SIB) #x4))))
+                          (OR ;; SIB Byte not present
+                           (EQL (MODR/M->R/M MODR/M) #x5)
+                           (AND ;; SIB Byte present
+                            (EQL (MODR/M->R/M MODR/M) #x4)
+                            (EQL (SIB->BASE SIB) #x5)
+                            (EQL (SIB->INDEX SIB) #x4))))
+                     ;; In Compatibility/Protected Mode:
+                     ;; - If 67H prefix is used and CS.D=1.
+                     ;; - If 67H prefix is not used and CS.D=0.
                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                          (EQL (CS.D) #x1)
                          (EQL (CS.D) #x0))))))
-    ;; "The reg-reg form of this instruction will remain a NOP."
+    ;; Source: BNDMK-Make Bounds, Intel Vol. 2 (May 2018 Edition)
+    ;; "The reg-reg form of this instruction retains legacy behavior
+    ;; (NOP)."
     (INST "RESERVEDNOP"
           (OP :OP #xF1B
               :MOD #x3
@@ -3489,10 +3585,17 @@
           (ARG :OP1 '(RB) :OP2 '(E Y))
           'NIL
           '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     (REG-INDEX (MODR/M->REG MODR/M)
-                                REX-BYTE #x2))
+                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
+                 ;; the Intel manuals.  It should be ModRM.reg,
+                 ;; because the latter is used to encode the BND
+                 ;; registers.
+                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
+                 ;;   Intel MPX is enabled.
+                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
                  (AND (NOT (EQL PROC-MODE #x0))
+                      ;; In Compatibility/Protected Mode:
+                      ;; - If 67H prefix is used and CS.D=1.
+                      ;; - If 67H prefix is not used and CS.D=0.
                       (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
                           (EQL (CS.D) #x1)
                           (EQL (CS.D) #x0))))))
@@ -3721,8234 +3824,8249 @@
     (INST "CVTSI2SD"
           (OP :OP #xF2A :PFX :F2 :FEAT '(:SSE2))
           (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(E Y))
-       '(X86-CVTSI2S?-OP/EN-RM (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCVTSI2SD"
-       (OP :OP #xF2A
-           :VEX '(:0F :NDS :LIG :F2 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(E Y))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSI2SD"
-       (OP :OP #xF2A
-           :VEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(E Y))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSI2SS"
-       (OP :OP #xF2A
-           :VEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(E Y))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSI2SS"
-       (OP :OP #xF2A
-           :VEX '(:0F :NDS :LIG :F3 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(E Y))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSI2SD"
-       (OP :OP #xF2A
-           :EVEX '(:0F :NDS :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
- (INST "VCVTSI2SD"
-       (OP :OP #xF2A
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
- (INST "VCVTSI2SS"
-       (OP :OP #xF2A
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSI2SS"
-       (OP :OP #xF2A
-           :EVEX '(:0F :NDS :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "MOVNTPS"
-       (OP :OP #xF2B
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(M PS) :OP2 '(V PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-1 (:SSE)))
-         (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "MOVNTPD"
-       (OP :OP #xF2B :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(M PD) :OP2 '(V PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-1 (:SSE2)))
-         (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "VMOVNTPD"
-       (OP :OP #xF2B
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M PD) :OP2 '(V PD))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTPD"
-       (OP :OP #xF2B
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M PD) :OP2 '(V PD))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTPS"
-       (OP :OP #xF2B
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M PS) :OP2 '(V PS))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTPS"
-       (OP :OP #xF2B
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M PS) :OP2 '(V PS))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTPD"
-       (OP :OP #xF2B
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTPD"
-       (OP :OP #xF2B
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTPD"
-       (OP :OP #xF2B
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
- (INST "VMOVNTPS"
-       (OP :OP #xF2B
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTPS"
-       (OP :OP #xF2B
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTPS"
-       (OP :OP #xF2B
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
- (INST "CVTTPS2PI"
-       (OP :OP #xF2C
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P PI) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
- (INST "CVTTPD2PI"
-       (OP :OP #xF2C :PFX :66 :FEAT '(:MMX))
-       (ARG :OP1 '(P PI) :OP2 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
- (INST "CVTTSS2SI"
-       (OP :OP #xF2C :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x0)
-                                         (TRUNC . T))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "CVTTSD2SI"
-       (OP :OP #xF2C :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x1)
-                                         (TRUNC . T))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCVTTSD2SI"
-       (OP :OP #xF2C
-           :VEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTTSD2SI"
-       (OP :OP #xF2C
-           :VEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTTSS2SI"
-       (OP :OP #xF2C
-           :VEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTTSS2SI"
-       (OP :OP #xF2C
-           :VEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTTSD2SI"
-       (OP :OP #xF2C
-           :EVEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSD2SI"
-       (OP :OP #xF2C
-           :EVEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSS2SI"
-       (OP :OP #xF2C
-           :EVEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSS2SI"
-       (OP :OP #xF2C
-           :EVEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "CVTPS2PI"
-       (OP :OP #xF2D
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P PI) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
- (INST "CVTPD2PI"
-       (OP :OP #xF2D :PFX :66 :FEAT '(:MMX))
-       (ARG :OP1 '(Q PI) :OP2 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
- (INST "CVTSS2SI"
-       (OP :OP #xF2D :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x0)
-                                         (TRUNC))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "CVTSD2SI"
-       (OP :OP #xF2D :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x1)
-                                         (TRUNC))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCVTSD2SI"
-       (OP :OP #xF2D
-           :VEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSD2SI"
-       (OP :OP #xF2D
-           :VEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSS2SI"
-       (OP :OP #xF2D
-           :VEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSS2SI"
-       (OP :OP #xF2D
-           :VEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSD2SI"
-       (OP :OP #xF2D
-           :EVEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSD2SI"
-       (OP :OP #xF2D
-           :EVEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSS2SI"
-       (OP :OP #xF2D
-           :EVEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSS2SI"
-       (OP :OP #xF2D
-           :EVEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "UCOMISS"
-       (OP :OP #xF2E
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V SS) :OP2 '(W SS))
-       '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
-                                     (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "UCOMISD"
-       (OP :OP #xF2E :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD) :OP2 '(W SD))
-       '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
-                                     (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VUCOMISD"
-       (OP :OP #xF2E
-           :VEX '(:0F :LIG :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VUCOMISS"
-       (OP :OP #xF2E
-           :VEX '(:0F :LIG :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VUCOMISD"
-       (OP :OP #xF2E
-           :EVEX '(:0F :LIG :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VUCOMISS"
-       (OP :OP #xF2E
-           :EVEX '(:0F :LIG :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "COMISS"
-       (OP :OP #xF2F
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V SS) :OP2 '(W SS))
-       '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
-                                     (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "COMISD"
-       (OP :OP #xF2F :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD) :OP2 '(W SD))
-       '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
-                                     (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCOMISD"
-       (OP :OP #xF2F
-           :VEX '(:0F :LIG :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD) :OP2 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCOMISS"
-       (OP :OP #xF2F
-           :VEX '(:0F :LIG :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS) :OP2 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCOMISD"
-       (OP :OP #xF2F
-           :EVEX '(:0F :LIG :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCOMISS"
-       (OP :OP #xF2F
-           :EVEX '(:0F :LIG :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "WRMSR" (OP :OP #xF30)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "RDTSC" (OP :OP #xF31)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "RDMSR" (OP :OP #xF32)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "RDPMC" (OP :OP #xF33)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))
-         (:GP (AND (GP-CPL-NOT-0)
-                   (GP-CR4-PCE-IS-0)))))
- (INST "SYSENTER" (OP :OP #xF34)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))
-         (:GP (GP-CR0-PE-IS-0))))
- (INST "SYSEXIT" (OP :OP #xF35)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))
-         (:GP (GP-CPL-NOT-0) (GP-CR0-PE-IS-0))))
- (INST "GETSEC" (OP :OP #xF37)
-       NIL 'NIL
-       'NIL)
- (INST :3-BYTE-ESCAPE (OP :OP #xF38)
-       'NIL
-       '(THREE-BYTE-OPCODE-DECODE-AND-EXECUTE (SECOND-ESCAPE-BYTE . OPCODE))
-       'NIL)
- (INST :3-BYTE-ESCAPE (OP :OP #xF3A)
-       'NIL
-       '(THREE-BYTE-OPCODE-DECODE-AND-EXECUTE (SECOND-ESCAPE-BYTE . OPCODE))
-       'NIL)
- (INST "CMOVO" (OP :OP #xF40)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVNO" (OP :OP #xF41)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KANDB"
-       (OP :OP #xF41
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KANDD"
-       (OP :OP #xF41
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KANDQ"
-       (OP :OP #xF41
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KANDW"
-       (OP :OP #xF41
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVB/C/NAE" (OP :OP #xF42)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KANDNB"
-       (OP :OP #xF42
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KANDND"
-       (OP :OP #xF42
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KANDNQ"
-       (OP :OP #xF42
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KANDNW"
-       (OP :OP #xF42
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVAE/NB/NC" (OP :OP #xF43)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVE/Z" (OP :OP #xF44)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KNOTB"
-       (OP :OP #xF44
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KNOTD"
-       (OP :OP #xF44
-           :VEX '(:0F :L0 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KNOTQ"
-       (OP :OP #xF44
-           :VEX '(:0F :L0 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KNOTW"
-       (OP :OP #xF44
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVNE/NZ" (OP :OP #xF45)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KORB"
-       (OP :OP #xF45
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KORD"
-       (OP :OP #xF45
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KORQ"
-       (OP :OP #xF45
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KORW"
-       (OP :OP #xF45
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVBE/NA" (OP :OP #xF46)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KXNORB"
-       (OP :OP #xF46
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KXNORD"
-       (OP :OP #xF46
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KXNORQ"
-       (OP :OP #xF46
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KXNORW"
-       (OP :OP #xF46
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVA/NBE" (OP :OP #xF47)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KXORB"
-       (OP :OP #xF47
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KXORD"
-       (OP :OP #xF47
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KXORQ"
-       (OP :OP #xF47
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KXORW"
-       (OP :OP #xF47
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "CMOVS" (OP :OP #xF48)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVNS" (OP :OP #xF49)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVP/PE" (OP :OP #xF4A)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KADDB"
-       (OP :OP #xF4A
-           :VEX '(:0F :L1 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-VEX B)
-            :OP3 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KADDD"
-       (OP :OP #xF4A
-           :VEX '(:0F :L1 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KADDQ"
-       (OP :OP #xF4A
-           :VEX '(:0F :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KADDW"
-       (OP :OP #xF4A
-           :VEX '(:0F :L1 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "CMOVNP/PO" (OP :OP #xF4B)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KUNPCKBW"
-       (OP :OP #xF4B
-           :VEX '(:0F :NDS :L1 :66 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W)
-            :OP2 '(K-VEX W)
-            :OP3 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "KUNPCKDQ"
-       (OP :OP #xF4B
-           :VEX '(:0F :NDS :L1 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q)
-            :OP2 '(K-VEX Q)
-            :OP3 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KUNPCKWD"
-       (OP :OP #xF4B
-           :VEX '(:0F :NDS :L1 :W0)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-VEX D)
-            :OP3 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "CMOVL/NGE" (OP :OP #xF4C)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVNL/GE" (OP :OP #xF4D)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVLE/NG" (OP :OP #xF4E)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMOVNLE/G" (OP :OP #xF4F)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-CMOVCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "MOVMSKPS"
-       (OP :OP #xF50
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(G Y) :OP2 '(U PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
- (INST "MOVMSKPD"
-       (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(G Y) :OP2 '(U PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "VMOVMSKPD"
-       (OP :OP #xF50
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(U PD))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VMOVMSKPD"
-       (OP :OP #xF50
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(U PD))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VMOVMSKPS"
-       (OP :OP #xF50
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(U PS))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VMOVMSKPS"
-       (OP :OP #xF50
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G Y) :OP2 '(U PS))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "SQRTPS"
-       (OP :OP #xF51
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       '(X86-SQRTPS-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "SQRTPD"
-       (OP :OP #xF51 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD) :OP2 '(W PD))
-       '(X86-SQRTPD-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "SQRTSS"
-       (OP :OP #xF51 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-SQRTS?-OP/EN-RM (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "SQRTSD"
-       (OP :OP #xF51 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-SQRTS?-OP/EN-RM (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VSQRTPD"
-       (OP :OP #xF51
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSQRTPD"
-       (OP :OP #xF51
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSQRTPS"
-       (OP :OP #xF51
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSQRTPS"
-       (OP :OP #xF51
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSQRTSD"
-       (OP :OP #xF51
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VSQRTSS"
-       (OP :OP #xF51
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VSQRTPD"
-       (OP :OP #xF51
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSQRTPD"
-       (OP :OP #xF51
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSQRTPD"
-       (OP :OP #xF51
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VSQRTPS"
-       (OP :OP #xF51
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSQRTPS"
-       (OP :OP #xF51
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSQRTPS"
-       (OP :OP #xF51
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VSQRTSD"
-       (OP :OP #xF51
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VSQRTSS"
-       (OP :OP #xF51
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "RSQRTPS"
-       (OP :OP #xF52
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "RSQRTSS"
-       (OP :OP #xF52 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "VRSQRTPS"
-       (OP :OP #xF52
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VRSQRTPS"
-       (OP :OP #xF52
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VRSQRTSS"
-       (OP :OP #xF52
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "RCPPS"
-       (OP :OP #xF53
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "RCPSS"
-       (OP :OP #xF53 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "VRCPPS"
-       (OP :OP #xF53
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VRCPPS"
-       (OP :OP #xF53
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VRCPSS"
-       (OP :OP #xF53
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "ANDPS"
-       (OP :OP #xF54
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x3))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "ANDPD"
-       (OP :OP #xF54 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x3))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VANDPD"
-       (OP :OP #xF54
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDPD"
-       (OP :OP #xF54
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDPS"
-       (OP :OP #xF54
-           :VEX '(:0F :NDS :128)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDPS"
-       (OP :OP #xF54
-           :VEX '(:0F :NDS :256)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDPD"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDPD"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDPD"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "VANDPS"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDPS"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDPS"
-       (OP :OP #xF54
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "ANDNPS"
-       (OP :OP #xF55
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #xD))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "ANDNPD"
-       (OP :OP #xF55 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #xD))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VANDNPD"
-       (OP :OP #xF55
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDNPD"
-       (OP :OP #xF55
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDNPS"
-       (OP :OP #xF55
-           :VEX '(:0F :NDS :128)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDNPS"
-       (OP :OP #xF55
-           :VEX '(:0F :NDS :256)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VANDNPD"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDNPD"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDNPD"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "VANDNPS"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDNPS"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VANDNPS"
-       (OP :OP #xF55
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "ORPS"
-       (OP :OP #xF56
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x1))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "ORPD"
-       (OP :OP #xF56 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x1))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VORPD"
-       (OP :OP #xF56
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VORPD"
-       (OP :OP #xF56
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VORPS"
-       (OP :OP #xF56
-           :VEX '(:0F :NDS :128)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VORPS"
-       (OP :OP #xF56
-           :VEX '(:0F :NDS :256)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VORPD"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VORPD"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VORPD"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "VORPS"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VORPS"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VORPS"
-       (OP :OP #xF56
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "XORPS"
-       (OP :OP #xF57
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x5))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "XORPD"
-       (OP :OP #xF57 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x5))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VXORPD"
-       (OP :OP #xF57
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VXORPD"
-       (OP :OP #xF57
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VXORPS"
-       (OP :OP #xF57
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VXORPS"
-       (OP :OP #xF57
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VXORPD"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VXORPD"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VXORPD"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "VXORPS"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VXORPS"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
- (INST "VXORPS"
-       (OP :OP #xF57
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
- (INST "ADDPS"
-       (OP :OP #xF58
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x0))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "ADDPD"
-       (OP :OP #xF58 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x0))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "ADDSS"
-       (OP :OP #xF58 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x0)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "ADDSD"
-       (OP :OP #xF58 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x0)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VADDPD"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDPD"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDPS"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDPS"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDSD"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VADDSS"
-       (OP :OP #xF58
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VADDPD"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VADDPD"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VADDPD"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VADDPS"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VADDPS"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VADDPS"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VADDSD"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VADDSS"
-       (OP :OP #xF58
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "MULPS"
-       (OP :OP #xF59
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x1A))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "MULPD"
-       (OP :OP #xF59 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x1A))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "MULSS"
-       (OP :OP #xF59 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1A)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "MULSD"
-       (OP :OP #xF59 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1A)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VMULPD"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMULPD"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMULPS"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMULPS"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMULSD"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VMULSS"
-       (OP :OP #xF59
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VMULPD"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMULPD"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMULPD"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMULPS"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMULPS"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMULPS"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMULSD"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VMULSS"
-       (OP :OP #xF59
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "CVTPS2PD"
-       (OP :OP #xF5A
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD) :OP2 '(W PS))
-       '(X86-CVTPS2PD-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "CVTPD2PS"
-       (OP :OP #xF5A :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PS) :OP2 '(W PD))
-       '(X86-CVTPD2PS-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "CVTSS2SD"
-       (OP :OP #xF5A :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H X)
-            :OP3 '(W SS))
-       '(X86-CVTS?2S?-OP/EN-RM (DP-TO-SP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "CVTSD2SS"
-       (OP :OP #xF5A :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H X)
-            :OP3 '(W SD))
-       '(X86-CVTS?2S?-OP/EN-RM (DP-TO-SP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCVTPD2PS"
-       (OP :OP #xF5A
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTPD2PS"
-       (OP :OP #xF5A
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTPS2PD"
-       (OP :OP #xF5A
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTPS2PD"
-       (OP :OP #xF5A
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSD2SS"
-       (OP :OP #xF5A
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H X)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTSS2SD"
-       (OP :OP #xF5A
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H X)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCVTPD2PS"
-       (OP :OP #xF5A
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2PS"
-       (OP :OP #xF5A
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2PS"
-       (OP :OP #xF5A
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTPS2PD"
-       (OP :OP #xF5A
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512VL :AVX512F)))))
- (INST "VCVTPS2PD"
-       (OP :OP #xF5A
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512VL)))))
- (INST "VCVTPS2PD"
-       (OP :OP #xF5A
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VCVTSD2SS"
-       (OP :OP #xF5A
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VCVTSS2SD"
-       (OP :OP #xF5A
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "CVTDQ2PS"
-       (OP :OP #xF5B
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE2))
-       (ARG :OP1 '(V PS) :OP2 '(W DQ))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "CVTPS2DQ"
-       (OP :OP #xF5B :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "CVTTPS2DQ"
-       (OP :OP #xF5B :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "VCVTDQ2PS"
-       (OP :OP #xF5B
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W DQ))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTDQ2PS"
-       (OP :OP #xF5B
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS) :OP2 '(W DQ))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTPS2DQ"
-       (OP :OP #xF5B
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTPS2DQ"
-       (OP :OP #xF5B
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTTPS2DQ"
-       (OP :OP #xF5B
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTTPS2DQ"
-       (OP :OP #xF5B
-           :VEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ) :OP2 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTDQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTDQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTDQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTQQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :128 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTQQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :256 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTQQ2PS"
-       (OP :OP #xF5B
-           :EVEX '(:0F :512 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :128 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :256 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPS2DQ"
-       (OP :OP #xF5B
-           :EVEX '(:0F :512 :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "SUBPS"
-       (OP :OP #xF5C
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x4))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "SUBPD"
-       (OP :OP #xF5C :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x4))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "SUBSS"
-       (OP :OP #xF5C :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x4)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "SUBSD"
-       (OP :OP #xF5C :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x4)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VSUBPD"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSUBPD"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSUBPS"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSUBPS"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VSUBSD"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VSUBSS"
-       (OP :OP #xF5C
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VSUBPD"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSUBPD"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSUBPD"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VSUBPS"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSUBPS"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VSUBPS"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VSUBSD"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VSUBSS"
-       (OP :OP #xF5C
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "MINPS"
-       (OP :OP #xF5D
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x24))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "MINPD"
-       (OP :OP #xF5D :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x24))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "MINSS"
-       (OP :OP #xF5D :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x24)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "MINSD"
-       (OP :OP #xF5D :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x24)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VMINPD"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMINPD"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMINPS"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMINPS"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMINSD"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VMINSS"
-       (OP :OP #xF5D
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMINPD"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMINPD"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMINPD"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMINPS"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMINPS"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMINPS"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMINSD"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VMINSS"
-       (OP :OP #xF5D
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "DIVPS"
-       (OP :OP #xF5E
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x1C))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "DIVPD"
-       (OP :OP #xF5E :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x1C))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "DIVSS"
-       (OP :OP #xF5E :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1C)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "DIVSD"
-       (OP :OP #xF5E :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1C)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VDIVPD"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VDIVPD"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VDIVPS"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VDIVPS"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VDIVSD"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VDIVSS"
-       (OP :OP #xF5E
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VDIVPD"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VDIVPD"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VDIVPD"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VDIVPS"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VDIVPS"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VDIVPS"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VDIVSD"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VDIVSS"
-       (OP :OP #xF5E
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "MAXPS"
-       (OP :OP #xF5F
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x22))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "MAXPD"
-       (OP :OP #xF5F :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x22))
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "MAXSS"
-       (OP :OP #xF5F :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x22)
-                                                          (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "MAXSD"
-       (OP :OP #xF5F :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x22)
-                                                          (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VMAXPD"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMAXPD"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMAXPS"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMAXPS"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VMAXSD"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VMAXSS"
-       (OP :OP #xF5F
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VMAXPD"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMAXPD"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMAXPD"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMAXPS"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMAXPS"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VMAXPS"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VMAXSD"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VMAXSS"
-       (OP :OP #xF5F
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "PUNPCKLBW"
-       (OP :OP #xF60
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKLBW"
-       (OP :OP #xF60 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKLBW"
-       (OP :OP #xF60
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKLBW"
-       (OP :OP #xF60
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKLBW"
-       (OP :OP #xF60
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKLBW"
-       (OP :OP #xF60
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKLBW"
-       (OP :OP #xF60
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PUNPCKLWD"
-       (OP :OP #xF61
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKLWD"
-       (OP :OP #xF61 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKLWD"
-       (OP :OP #xF61
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKLWD"
-       (OP :OP #xF61
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKLWD"
-       (OP :OP #xF61
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKLWD"
-       (OP :OP #xF61
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKLWD"
-       (OP :OP #xF61
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PUNPCKLDQ"
-       (OP :OP #xF62
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKLDQ"
-       (OP :OP #xF62 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKLDQ"
-       (OP :OP #xF62
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKLDQ"
-       (OP :OP #xF62
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKLDQ"
-       (OP :OP #xF62
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKLDQ"
-       (OP :OP #xF62
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKLDQ"
-       (OP :OP #xF62
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "PACKSSWB"
-       (OP :OP #xF63
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PACKSSWB"
-       (OP :OP #xF63 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPACKSSWB"
-       (OP :OP #xF63
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPACKSSWB"
-       (OP :OP #xF63
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPACKSSWB"
-       (OP :OP #xF63
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPACKSSWB"
-       (OP :OP #xF63
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPACKSSWB"
-       (OP :OP #xF63
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PCMPGTB"
-       (OP :OP #xF64
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPGTB"
-       (OP :OP #xF64 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPGTB"
-       (OP :OP #xF64
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPGTB"
-       (OP :OP #xF64
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPGTB"
-       (OP :OP #xF64
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPGTB"
-       (OP :OP #xF64
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPGTB"
-       (OP :OP #xF64
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PCMPGTW"
-       (OP :OP #xF65
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPGTW"
-       (OP :OP #xF65 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPGTW"
-       (OP :OP #xF65
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPGTW"
-       (OP :OP #xF65
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPGTW"
-       (OP :OP #xF65
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPGTW"
-       (OP :OP #xF65
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPGTW"
-       (OP :OP #xF65
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PCMPGTD"
-       (OP :OP #xF66
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPGTD"
-       (OP :OP #xF66 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPGTD"
-       (OP :OP #xF66
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPGTD"
-       (OP :OP #xF66
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPGTD"
-       (OP :OP #xF66
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPCMPGTD"
-       (OP :OP #xF66
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPCMPGTD"
-       (OP :OP #xF66
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PACKUSWB"
-       (OP :OP #xF67
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PACKUSWB"
-       (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPACKUSWB"
-       (OP :OP #xF67
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPACKUSWB"
-       (OP :OP #xF67
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPACKUSWB"
-       (OP :OP #xF67
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPACKUSWB"
-       (OP :OP #xF67
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPACKUSWB"
-       (OP :OP #xF67
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PUNPCKHBW"
-       (OP :OP #xF68
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKHBW"
-       (OP :OP #xF68 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKHBW"
-       (OP :OP #xF68
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKHBW"
-       (OP :OP #xF68
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKHBW"
-       (OP :OP #xF68
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKHBW"
-       (OP :OP #xF68
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKHBW"
-       (OP :OP #xF68
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PUNPCKHWD"
-       (OP :OP #xF69
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKHWD"
-       (OP :OP #xF69 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKHWD"
-       (OP :OP #xF69
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKHWD"
-       (OP :OP #xF69
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKHWD"
-       (OP :OP #xF69
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKHWD"
-       (OP :OP #xF69
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPUNPCKHWD"
-       (OP :OP #xF69
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PUNPCKHDQ"
-       (OP :OP #xF6A
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PUNPCKHDQ"
-       (OP :OP #xF6A :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKHDQ"
-       (OP :OP #xF6A
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKHDQ"
-       (OP :OP #xF6A
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKHDQ"
-       (OP :OP #xF6A
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKHDQ"
-       (OP :OP #xF6A
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKHDQ"
-       (OP :OP #xF6A
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "PACKSSDW"
-       (OP :OP #xF6B
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PACKSSDW"
-       (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPACKSSDW"
-       (OP :OP #xF6B
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPACKSSDW"
-       (OP :OP #xF6B
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPACKSSDW"
-       (OP :OP #xF6B
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512BW)))))
- (INST "VPACKSSDW"
-       (OP :OP #xF6B
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512BW)))))
- (INST "VPACKSSDW"
-       (OP :OP #xF6B
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512BW)))))
- (INST "PUNPCKLQDQ"
-       (OP :OP #xF6C :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKLQDQ"
-       (OP :OP #xF6C
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKLQDQ"
-       (OP :OP #xF6C
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKLQDQ"
-       (OP :OP #xF6C
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKLQDQ"
-       (OP :OP #xF6C
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKLQDQ"
-       (OP :OP #xF6C
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "PUNPCKHQDQ"
-       (OP :OP #xF6D :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPUNPCKHQDQ"
-       (OP :OP #xF6D
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPUNPCKHQDQ"
-       (OP :OP #xF6D
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPUNPCKHQDQ"
-       (OP :OP #xF6D
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKHQDQ"
-       (OP :OP #xF6D
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPUNPCKHQDQ"
-       (OP :OP #xF6D
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "MOVD/Q"
-       (OP :OP #xF6E
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P D) :OP2 '(E Y))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
- (INST "MOVD/Q"
-       (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V Y) :OP2 '(E Y))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "VMOVQ"
-       (OP :OP #xF6E
-           :VEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VMOVD"
-       (OP :OP #xF6E
-           :VEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VMOVD"
-       (OP :OP #xF6E
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVQ"
-       (OP :OP #xF6E
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "MOVQ"
-       (OP :OP #xF6F
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
- (INST "MOVDQA"
-       (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
- (INST "MOVDQU"
-       (OP :OP #xF6F :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       '(X86-MOVUPS/MOVUPD/MOVDQU-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VMOVDQA"
-       (OP :OP #xF6F
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVDQA"
-       (OP :OP #xF6F
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVDQU"
-       (OP :OP #xF6F
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VMOVDQU"
-       (OP :OP #xF6F
-           :VEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :F2 :W1)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF6F
-           :EVEX '(:0F :128 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF6F
-           :EVEX '(:0F :256 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF6F
-           :EVEX '(:0F :512 :F2 :W0)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "PSHUFW"
-       (OP :OP #xF70
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q)
-            :OP2 '(Q Q)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSHUFD"
-       (OP :OP #xF70 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "PSHUFHW"
-       (OP :OP #xF70 :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "PSHUFLW"
-       (OP :OP #xF70 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSHUFD"
-       (OP :OP #xF70
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSHUFD"
-       (OP :OP #xF70
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSHUFHW"
-       (OP :OP #xF70
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSHUFHW"
-       (OP :OP #xF70
-           :VEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSHUFLW"
-       (OP :OP #xF70
-           :VEX '(:0F :128 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSHUFLW"
-       (OP :OP #xF70
-           :VEX '(:0F :256 :F2 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(W X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSHUFD"
-       (OP :OP #xF70
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSHUFD"
-       (OP :OP #xF70
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSHUFD"
-       (OP :OP #xF70
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPSHUFHW"
-       (OP :OP #xF70
-           :EVEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSHUFHW"
-       (OP :OP #xF70
-           :EVEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSHUFHW"
-       (OP :OP #xF70
-           :EVEX '(:0F :512 :F3 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSHUFLW"
-       (OP :OP #xF70
-           :EVEX '(:0F :128 :F2 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSHUFLW"
-       (OP :OP #xF70
-           :EVEX '(:0F :256 :F2 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSHUFLW"
-       (OP :OP #xF70
-           :EVEX '(:0F :512 :F2 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSRLW"
-       (OP :OP #xF71
-           :REG #x2
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLW"
-       (OP :OP #xF71
-           :REG #x2
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSRAW"
-       (OP :OP #xF71
-           :REG #x4
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRAW"
-       (OP :OP #xF71
-           :REG #x4
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSLLW"
-       (OP :OP #xF71
-           :REG #x6
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLW"
-       (OP :OP #xF71
-           :REG #x6
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-12))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "VPSRLVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSRLVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPSRAVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x4)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSRAVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x4)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPSLLVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSLLVW"
-       (OP :OP #xF71
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPSRLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :512 :66 :WIG)
-           :FEAT '(:AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSRAW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRAW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX512BW)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSRAW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :512 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLW"
-       (OP :OP #xF71
-           :EVEX '(:0F :NDD :512 :66 :WIG)
-           :FEAT '(:AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSRLD"
-       (OP :OP #xF72
-           :REG #x2
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLD"
-       (OP :OP #xF72
-           :REG #x2
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSRAD"
-       (OP :OP #xF72
-           :REG #x4
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRAD"
-       (OP :OP #xF72
-           :REG #x4
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSLLD"
-       (OP :OP #xF72
-           :REG #x6
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLD"
-       (OP :OP #xF72
-           :REG #x6
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-13))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "VPSLLVD"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSLLVD"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPSRAVW"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x4)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSRAVW"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x4)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPSLLVW"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPSLLVW"
-       (OP :OP #xF72
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W0)
-           :FEAT '(:AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPRORD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W1)
-           :FEAT '(:AVX512F)
-           :REG #x0)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W0)
-           :FEAT '(:AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPROLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W1)
-           :FEAT '(:AVX512F)
-           :REG #x1)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPSRLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W0)
-           :FEAT '(:AVX512F)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W0)
-           :FEAT '(:AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W1)
-           :FEAT '(:AVX512F)
-           :REG #x4)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VPSLLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSLLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VPSLLD"
-       (OP :OP #xF72
-           :EVEX '(:0F :NDD :512 :66 :W0)
-           :FEAT '(:AVX512F)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "PSRLQ"
-       (OP :OP #xF73
-           :REG #x2
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLQ"
-       (OP :OP #xF73
-           :REG #x2
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSRLDQ"
-       (OP :OP #xF73
-           :REG #x3
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSLLQ"
-       (OP :OP #xF73
-           :REG #x6
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(N Q) :OP2 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLQ"
-       (OP :OP #xF73
-           :REG #x6
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "PSLLDQ"
-       (OP :OP #xF73
-           :REG #x7
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-14))
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "VPSRLVQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRLVQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x2)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRLDQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x3)
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRLDQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x3)
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSLLQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSLLQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x6)
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSLLDQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :REG #x7)
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSLLDQ"
-       (OP :OP #xF73
-           :VEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX2)
-           :REG #x7)
-       (ARG :OP1 '(H X)
-            :OP2 '(U X)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :512 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :REG #x2)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSRLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x3)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x3)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :512 :66 :WIG)
-           :FEAT '(:AVX512BW)
-           :REG #x3)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSLLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :512 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :REG #x6)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "VPSLLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x7)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW)
-           :REG #x7)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLDQ"
-       (OP :OP #xF73
-           :EVEX '(:0F :NDD :512 :66 :WIG)
-           :FEAT '(:AVX512BW)
-           :REG #x7)
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PCMPEQB"
-       (OP :OP #xF74
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPEQB"
-       (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       '(X86-PCMPEQB-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPEQB"
-       (OP :OP #xF74
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPEQB"
-       (OP :OP #xF74
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPEQB"
-       (OP :OP #xF74
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPEQB"
-       (OP :OP #xF74
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPEQB"
-       (OP :OP #xF74
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PCMPEQW"
-       (OP :OP #xF75
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPEQW"
-       (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPEQW"
-       (OP :OP #xF75
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPEQW"
-       (OP :OP #xF75
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPEQW"
-       (OP :OP #xF75
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPEQW"
-       (OP :OP #xF75
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPCMPEQW"
-       (OP :OP #xF75
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PCMPEQD"
-       (OP :OP #xF76
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PCMPEQD"
-       (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPCMPEQD"
-       (OP :OP #xF76
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPCMPEQD"
-       (OP :OP #xF76
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPCMPEQD"
-       (OP :OP #xF76
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPCMPEQD"
-       (OP :OP #xF76
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPCMPEQD"
-       (OP :OP #xF76
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR0BITS->EM (CR0)) #x1))))
- (INST "VZEROALL"
-       (OP :OP #xF77
-           :VEX '(:0F :256 :WIG)
-           :FEAT '(:AVX))
-       NIL
-       NIL '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
- (INST "VZEROUPPER"
-       (OP :OP #xF77
-           :VEX '(:0F :128 :WIG)
-           :FEAT '(:AVX))
-       NIL
-       NIL '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
- (INST "MREAD" (OP :OP #xF78)
-       (ARG :OP1 '(E Y) :OP2 '(G Y))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "VCVTTPD2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :256 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPD2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :128 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPD2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :512 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTTPD2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPD2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPD2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTTPS2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPS2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPS2UDQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTTPS2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPS2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPS2UQQ"
-       (OP :OP #xF78
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTTSD2USI"
-       (OP :OP #xF78
-           :EVEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSD2USI"
-       (OP :OP #xF78
-           :EVEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSS2USI"
-       (OP :OP #xF78
-           :EVEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTSS2USI"
-       (OP :OP #xF78
-           :EVEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "MWRITE" (OP :OP #xF79)
-       (ARG :OP1 '(E Y) :OP2 '(G Y))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "VCVTPD2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :128 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :256 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :512 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTPD2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPD2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPD2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTPS2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPS2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPS2UDQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTPS2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPS2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPS2UQQ"
-       (OP :OP #xF79
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTSD2USI"
-       (OP :OP #xF79
-           :EVEX '(:0F :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSD2USI"
-       (OP :OP #xF79
-           :EVEX '(:0F :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSS2USI"
-       (OP :OP #xF79
-           :EVEX '(:0F :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTSS2USI"
-       (OP :OP #xF79
-           :EVEX '(:0F :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTTPD2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPD2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPD2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTTPS2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPS2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTTPS2QQ"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTUDQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTUDQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTUDQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTUDQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTUDQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTUDQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTUQQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTUQQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTUQQ2PD"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :F3 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTUQQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :128 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTUQQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :256 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTUQQ2PS"
-       (OP :OP #xF7A
-           :EVEX '(:0F :512 :F2 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTPD2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPD2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPD2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTPS2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPS2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTPS2QQ"
-       (OP :OP #xF7B
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTUSI2SD"
-       (OP :OP #xF7B
-           :EVEX '(:0F :NDS :LIG :F2 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
- (INST "VCVTUSI2SD"
-       (OP :OP #xF7B
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
- (INST "VCVTUSI2SS"
-       (OP :OP #xF7B
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "VCVTUSI2SS"
-       (OP :OP #xF7B
-           :EVEX '(:0F :NDS :LIG :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
- (INST "HADDPD"
-       (OP :OP #xF7C :PFX :66 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
- (INST "HADDPS"
-       (OP :OP #xF7C :PFX :F2 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
- (INST "VHADDPD"
-       (OP :OP #xF7C
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHADDPD"
-       (OP :OP #xF7C
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHADDPS"
-       (OP :OP #xF7C
-           :VEX '(:0F :NDS :128 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHADDPS"
-       (OP :OP #xF7C
-           :VEX '(:0F :NDS :256 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "HSUBPD"
-       (OP :OP #xF7D :PFX :66 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
- (INST "HSUBPS"
-       (OP :OP #xF7D :PFX :F2 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
- (INST "VHSUBPD"
-       (OP :OP #xF7D
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHSUBPD"
-       (OP :OP #xF7D
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHSUBPS"
-       (OP :OP #xF7D
-           :VEX '(:0F :NDS :128 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VHSUBPS"
-       (OP :OP #xF7D
-           :VEX '(:0F :NDS :256 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "MOVD/Q"
-       (OP :OP #xF7E
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(E Y) :OP2 '(P D))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
- (INST "MOVD/Q"
-       (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(E Y) :OP2 '(V Y))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "MOVQ"
-       (OP :OP #xF7E :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "VMOVD"
-       (OP :OP #xF7E
-           :VEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(E Y) :OP2 '(V Y))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VMOVQ"
-       (OP :OP #xF7E
-           :VEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VMOVQ"
-       (OP :OP #xF7E
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VMOVD"
-       (OP :OP #xF7E
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVQ"
-       (OP :OP #xF7E
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVQ"
-       (OP :OP #xF7E
-           :EVEX '(:0F :128 :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "MOVQ"
-       (OP :OP #xF7F
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(Q Q) :OP2 '(P Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
- (INST "MOVDQA"
-       (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(W X) :OP2 '(V X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
- (INST "MOVDQU"
-       (OP :OP #xF7F :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(W X) :OP2 '(V X))
-       '(X86-MOVUPS/MOVUPD/MOVDQU-OP/EN-MR)
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VMOVDQA"
-       (OP :OP #xF7F
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVDQA"
-       (OP :OP #xF7F
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVDQU"
-       (OP :OP #xF7F
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VMOVDQU"
-       (OP :OP #xF7F
-           :VEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQA64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU16"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :F2 :W1)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU32"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
- (INST "VMOVDQU64"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :F3 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF7F
-           :EVEX '(:0F :128 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF7F
-           :EVEX '(:0F :256 :F2 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
- (INST "VMOVDQU8"
-       (OP :OP #xF7F
-           :EVEX '(:0F :512 :F2 :W0)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "JO"
-       (OP :OP #xF80 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNO"
-       (OP :OP #xF81 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JB/NAE/C"
-       (OP :OP #xF82 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNB/AE/NC"
-       (OP :OP #xF83 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JZ/E"
-       (OP :OP #xF84 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNZ/NE"
-       (OP :OP #xF85 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JBE/NA"
-       (OP :OP #xF86 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNBE/A"
-       (OP :OP #xF87 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JS"
-       (OP :OP #xF88 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNS"
-       (OP :OP #xF89 :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JP/PE"
-       (OP :OP #xF8A :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNP/PO"
-       (OP :OP #xF8B :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JL/NGE"
-       (OP :OP #xF8C :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNL/GE"
-       (OP :OP #xF8D :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JLE/NG"
-       (OP :OP #xF8E :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "JNLE/G"
-       (OP :OP #xF8F :SUPERSCRIPTS '(:F64))
-       (ARG :OP1 '(J Z))
-       '(X86-TWO-BYTE-JCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETO" (OP :OP #xF90)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KMOVB"
-       (OP :OP #xF90
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ))
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512DQ)))))
- (INST "KMOVD"
-       (OP :OP #xF90
-           :VEX '(:0F :L0 :66 :W1)
-           :FEAT '(:AVX512BW))
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
- (INST "KMOVQ"
-       (OP :OP #xF90
-           :VEX '(:0F :L0 :W1)
-           :FEAT '(:AVX512BW))
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
- (INST "KMOVW"
-       (OP :OP #xF90
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F))
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512F)))))
- (INST "SETNO" (OP :OP #xF91)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KMOVB"
-       (OP :OP #xF91
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD :MEM)
-       (ARG :OP1 '(K-R/M B)
-            :OP2 '(K-REG B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512DQ)))))
- (INST "KMOVD"
-       (OP :OP #xF91
-           :VEX '(:0F :L0 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD :MEM)
-       (ARG :OP1 '(K-R/M D)
-            :OP2 '(K-REG D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
- (INST "KMOVQ"
-       (OP :OP #xF91
-           :VEX '(:0F :L0 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD :MEM)
-       (ARG :OP1 '(K-R/M Q) :OP2 '(K-REG Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
- (INST "KMOVW"
-       (OP :OP #xF91
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F)
-           :MOD :MEM)
-       (ARG :OP1 '(K-R/M W) :OP2 '(K-REG W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K21 (:AVX512F)))))
- (INST "SETB/NAE/C" (OP :OP #xF92)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KMOVB"
-       (OP :OP #xF92
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KMOVD"
-       (OP :OP #xF92
-           :VEX '(:0F :L0 :F2 :W0)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KMOVQ"
-       (OP :OP #xF92
-           :VEX '(:0F :L0 :F2 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KMOVW"
-       (OP :OP #xF92
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "SETNB/AE/NC" (OP :OP #xF93)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KMOVB"
-       (OP :OP #xF93
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KMOVD"
-       (OP :OP #xF93
-           :VEX '(:0F :L0 :F2 :W0)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KMOVQ"
-       (OP :OP #xF93
-           :VEX '(:0F :L0 :F2 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KMOVW"
-       (OP :OP #xF93
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "SETZ/E" (OP :OP #xF94)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETNZ/NE" (OP :OP #xF95)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETBE/NA" (OP :OP #xF96)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETNBE/A" (OP :OP #xF97)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETS" (OP :OP #xF98)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KORTESTB"
-       (OP :OP #xF98
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KORTESTD"
-       (OP :OP #xF98
-           :VEX '(:0F :L0 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KORTESTQ"
-       (OP :OP #xF98
-           :VEX '(:0F :L0 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KORTESTW"
-       (OP :OP #xF98
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512F)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
- (INST "SETNS" (OP :OP #xF99)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "KTESTB"
-       (OP :OP #xF99
-           :VEX '(:0F :L0 :66 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG B)
-            :OP2 '(K-R/M B))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "KTESTD"
-       (OP :OP #xF99
-           :VEX '(:0F :L0 :66 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG D)
-            :OP2 '(K-R/M D))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KTESTQ"
-       (OP :OP #xF99
-           :VEX '(:0F :L0 :W1)
-           :FEAT '(:AVX512BW)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
- (INST "KTESTW"
-       (OP :OP #xF99
-           :VEX '(:0F :L0 :W0)
-           :FEAT '(:AVX512DQ)
-           :MOD #x3)
-       (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
-       NIL
-       '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
- (INST "SETP/PE" (OP :OP #xF9A)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETNP/PO" (OP :OP #xF9B)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETL/NGE" (OP :OP #xF9C)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETNL/GE" (OP :OP #xF9D)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETLE/NG" (OP :OP #xF9E)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "SETNLE/G" (OP :OP #xF9F)
-       (ARG :OP1 '(E B))
-       '(X86-SETCC)
-       '((:UD (UD-LOCK-USED))))
- (INST "PUSH FS"
-       (OP :OP #xFA0 :SUPERSCRIPTS '(:D64))
-       (ARG :OP1 '(:FS))
-       '(X86-PUSH-SEGMENT-REGISTER)
-       '((:UD (UD-LOCK-USED))))
- (INST "POP"
-       (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
-       (ARG :OP1 '(:FS))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "CPUID" (OP :OP #xFA2)
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BT" (OP :OP #xFA3)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       '(X86-BT-0F-A3)
-       '((:UD (UD-LOCK-USED))))
- (INST "SHLD" (OP :OP #xFA4)
-       (ARG :OP1 '(E V)
-            :OP2 '(G V)
-            :OP3 '(I B))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "SHLD" (OP :OP #xFA5)
-       (ARG :OP1 '(E V)
-            :OP2 '(G V)
-            :OP3 '(:CL))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "PUSH GS"
-       (OP :OP #xFA8 :SUPERSCRIPTS '(:D64))
-       (ARG :OP1 '(:GS))
-       '(X86-PUSH-SEGMENT-REGISTER)
-       '((:UD (UD-LOCK-USED))))
- (INST "POP"
-       (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
-       (ARG :OP1 '(:GS))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "RSM" (OP :OP #xFAA)
-       NIL 'NIL
-       'NIL)
- (INST "BTS" (OP :OP #xFAB)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "SHRD" (OP :OP #xFAC)
-       (ARG :OP1 '(E V)
-            :OP2 '(G V)
-            :OP3 '(I B))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "SHRD" (OP :OP #xFAD)
-       (ARG :OP1 '(E V)
-            :OP2 '(G V)
-            :OP3 '(:CL))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "FXSAVE"
-       (OP :OP #xFAE
-           :REG #x0
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FXSR))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))
-         (:NM (NM-CR0-TS-IS-1)
-              (NM-CR0-EM-IS-1))))
- (INST "RDFSBASE"
-       (OP :OP #xFAE
-           :REG #x0
-           :MOD #x3
-           :PFX :F3
-           :MODE :O64
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FSGSBASE))
-       (ARG :OP1 '(R Y))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
- (INST "FXRSTOR"
-       (OP :OP #xFAE
-           :REG #x1
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FXSR))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))
-         (:NM (NM-CR0-TS-IS-1)
-              (NM-CR0-EM-IS-1))))
- (INST "RDGSBASE"
-       (OP :OP #xFAE
-           :REG #x1
-           :MOD #x3
-           :PFX :F3
-           :MODE :O64
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FSGSBASE))
-       (ARG :OP1 '(R Y))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
- (INST "LDMXCSR"
-       (OP :OP #xFAE
-           :REG #x2
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
-       NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "WRFSBASE"
-       (OP :OP #xFAE
-           :REG #x2
-           :MOD #x3
-           :PFX :F3
-           :MODE :O64
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FSGSBASE))
-       (ARG :OP1 '(R Y))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
- (INST "STMXCSR"
-       (OP :OP #xFAE
-           :REG #x3
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
-       NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "WRGSBASE"
-       (OP :OP #xFAE
-           :REG #x3
-           :MOD #x3
-           :PFX :F3
-           :MODE :O64
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:FSGSBASE))
-       (ARG :OP1 '(R Y))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
- (INST "XSAVE"
-       (OP :OP #xFAE
-           :REG #x4
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:XSAVE))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
-         (:GP (GP-CPL-NOT-0))
-         (:NM (NM-CR0-TS-IS-1))))
- (INST "XRSTOR"
-       (OP :OP #xFAE
-           :REG #x5
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:XSAVE))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
-         (:GP (GP-CPL-NOT-0))
-         (:NM (NM-CR0-TS-IS-1))))
- (INST "LFENCE"
-       (OP :OP #xFAE
-           :REG #x5
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:SSE2))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "XSAVEOPT"
-       (OP :OP #xFAE
-           :REG #x6
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-              (OR (EQUAL (FEATURE-FLAG-MACRO :XSAVE) #x0)
-                  (EQUAL (FEATURE-FLAG-MACRO :XSAVEOPT) #x0)))
-         (:NM (NM-CR0-TS-IS-1))))
- (INST "MFENCE"
-       (OP :OP #xFAE
-           :REG #x6
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:SSE2))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "CLFLUSH"
-       (OP :OP #xFAE
-           :REG #x7
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:CLFSH))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "SFENCE"
-       (OP :OP #xFAE
-           :REG #x7
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15)
-           :FEAT '(:SSE))
-       NIL 'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "VLDMXCSR"
-       (OP :OP #xFAE
-           :VEX '(:0F :LZ :WIG)
-           :FEAT '(:AVX)
-           :REG #x2)
-       (ARG :OP1 '(M D))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VSTMXCSR"
-       (OP :OP #xFAE
-           :VEX '(:0F :LZ :WIG)
-           :FEAT '(:AVX)
-           :REG #x3)
-       (ARG :OP1 '(M D))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "IMUL" (OP :OP #xFAF)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-IMUL-OP/EN-RM)
-       '((:UD (UD-LOCK-USED))))
- (INST "CMPXCHG" (OP :OP #xFB0)
-       (ARG :OP1 '(E B) :OP2 '(G B))
-       '(X86-CMPXCHG)
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "CMPXCHG" (OP :OP #xFB1)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       '(X86-CMPXCHG)
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "LSS" (OP :OP #xFB2)
-       (ARG :OP1 '(G V) :OP2 '(M P))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (UD-SOURCE-OPERAND-IS-A-REGISTER))))
- (INST "BTR" (OP :OP #xFB3)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "LFS" (OP :OP #xFB4)
-       (ARG :OP1 '(G V) :OP2 '(M P))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (UD-SOURCE-OPERAND-IS-A-REGISTER))))
- (INST "LGS" (OP :OP #xFB5)
-       (ARG :OP1 '(G V) :OP2 '(M P))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (UD-SOURCE-OPERAND-IS-A-REGISTER))))
- (INST "MOVZX" (OP :OP #xFB6)
-       (ARG :OP1 '(G V) :OP2 '(E B))
-       '(X86-MOVZX)
-       '((:UD (UD-LOCK-USED))))
- (INST "MOVZX" (OP :OP #xFB7)
-       (ARG :OP1 '(G V) :OP2 '(E W))
-       '(X86-MOVZX)
-       '((:UD (UD-LOCK-USED))))
- (INST "JMPE" (OP :OP #xFB8 :PFX :NO-PREFIX)
-       NIL 'NIL
-       'NIL)
- (INST "POPCNT" (OP :OP #xFB8
-                    :PFX :F3
-                    :FEAT '(:POPCNT))
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "UD1"
-       (OP :OP #xFB9
-           :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-10))
-       NIL
-       '(X86-ILLEGAL-INSTRUCTION (MESSAGE . "UD1 encountered!"))
-       'NIL)
- (INST "BT"
-       (OP :OP #xFBA
-           :REG #x4
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-8))
-       (ARG :OP1 '(E V) :OP2 '(I B))
-       '(X86-BT-0F-BA)
-       '((:UD (UD-LOCK-USED))))
- (INST "BTS"
-       (OP :OP #xFBA
-           :REG #x5
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-8))
-       (ARG :OP1 '(E B) :OP2 '(I B))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "BTR"
-       (OP :OP #xFBA
-           :REG #x6
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-8))
-       (ARG :OP1 '(E B) :OP2 '(I B))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "BTC"
-       (OP :OP #xFBA
-           :REG #x7
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-8))
-       (ARG :OP1 '(E B) :OP2 '(I B))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "BTC" (OP :OP #xFBB)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       '(X86-BSF-OP/EN-RM)
-       '((:UD (UD-LOCK-USED))))
- (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       'NIL
-       'NIL)
- (INST "BSR" (OP :OP #xFBD :PFX :NO-PREFIX)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "LZCNT" (OP :OP #xFBD :PFX :F3)
-       (ARG :OP1 '(G V) :OP2 '(E V))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "MOVSX" (OP :OP #xFBE)
-       (ARG :OP1 '(G V) :OP2 '(E B))
-       '(X86-MOVSXD)
-       '((:UD (UD-LOCK-USED))))
- (INST "MOVSX" (OP :OP #xFBF)
-       (ARG :OP1 '(G V) :OP2 '(E W))
-       '(X86-MOVSXD)
-       '((:UD (UD-LOCK-USED))))
- (INST "XADD" (OP :OP #xFC0)
-       (ARG :OP1 '(E B) :OP2 '(G B))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "XADD" (OP :OP #xFC1)
-       (ARG :OP1 '(E V) :OP2 '(G V))
-       'NIL
-       '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
- (INST "CMPPS"
-       (OP :OP #xFC2
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       '(X86-CMPPS-OP/EN-RMI)
-       '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
- (INST "CMPPD"
-       (OP :OP #xFC2 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       '(X86-CMPPD-OP/EN-RMI)
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "CMPSS"
-       (OP :OP #xFC2 :PFX :F3 :FEAT '(:SSE))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS)
-            :OP4 '(I B))
-       '(X86-CMPSS/CMPSD-OP/EN-RMI (SP/DP . #x0))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
- (INST "CMPSD"
-       (OP :OP #xFC2 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD)
-            :OP4 '(I B))
-       '(X86-CMPSS/CMPSD-OP/EN-RMI (SP/DP . #x1))
-       '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
- (INST "VCMPPD"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCMPPD"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCMPPS"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCMPPS"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCMPSD"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :LIG :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SD)
-            :OP2 '(H SD)
-            :OP3 '(W SD)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCMPSS"
-       (OP :OP #xFC2
-           :VEX '(:0F :NDS :LIG :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V SS)
-            :OP2 '(H SS)
-            :OP3 '(W SS)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
- (INST "VCMPPD"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCMPPD"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCMPPD"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCMPPS"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCMPPS"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCMPPS"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCMPSD"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :LIG :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "VCMPSS"
-       (OP :OP #xFC2
-           :EVEX '(:0F :NDS :LIG :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "MOVNTI" (OP :OP #xFC3
-                    :FEAT '(:SSE2))
-       (ARG :OP1 '(M Y) :OP2 '(G Y))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "PINSRW"
-       (OP :OP #xFC4 :MOD #x3 :PFX :NO-PREFIX)
-       (ARG :OP1 '(P Q)
-            :OP2 '(R Y)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "PINSRW"
-       (OP :OP #xFC4 :MOD :MEM :PFX :NO-PREFIX)
-       (ARG :OP1 '(P Q)
-            :OP2 '(M W)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "PINSRW"
-       (OP :OP #xFC4 :MOD #x3 :PFX :66)
-       (ARG :OP1 '(V DQ)
-            :OP2 '(H DQ)
-            :OP3 '(R Y)
-            :OP4 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "PINSRW"
-       (OP :OP #xFC4 :MOD :MEM :PFX :66)
-       (ARG :OP1 '(V DQ)
-            :OP2 '(H DQ)
-            :OP3 '(M W)
-            :OP4 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "VPINSRW"
-       (OP :OP #xFC4
-           :VEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ)
-            :OP2 '(H DQ)
-            :OP3 '(R Y)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VPINSRW"
-       (OP :OP #xFC4
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "PEXTRW"
-       (OP :OP #xFC5
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(G D)
-            :OP2 '(N Q)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
- (INST "PEXTRW"
-       (OP :OP #xFC5 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(G D)
-            :OP2 '(U DQ)
-            :OP3 '(I B))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "VPEXTRW"
-       (OP :OP #xFC5
-           :VEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G D)
-            :OP2 '(U DQ)
-            :OP3 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VPEXTRW"
-       (OP :OP #xFC5
-           :EVEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
- (INST "SHUFPS"
-       (OP :OP #xFC6
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       '(X86-SHUFPS-OP/EN-RMI)
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "SHUFPD"
-       (OP :OP #xFC6 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       '(X86-SHUFPD-OP/EN-RMI)
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VSHUFPD"
-       (OP :OP #xFC6
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VSHUFPD"
-       (OP :OP #xFC6
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VSHUFPS"
-       (OP :OP #xFC6
-           :VEX '(:0F :NDS :128 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VSHUFPS"
-       (OP :OP #xFC6
-           :VEX '(:0F :NDS :256 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS)
-            :OP4 '(I B))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VSHUFPD"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VSHUFPD"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VSHUFPD"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "VSHUFPS"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :128 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VSHUFPS"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :256 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
- (INST "VSHUFPS"
-       (OP :OP #xFC6
-           :EVEX '(:0F :NDS :512 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
- (INST "CMPXCHG16B"
-       (OP :OP #xFC7
-           :REG #x1
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :REX :W
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M DQ))
-       'NIL
-       '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "CMPXCH8B"
-       (OP :OP #xFC7
-           :REG #x1
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :REX :NOT-W
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M Q))
-       'NIL
-       '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "VMPTRLD"
-       (OP :OP #xFC7
-           :REG #x6
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M Q))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "VMCLEAR"
-       (OP :OP #xFC7
-           :REG #x6
-           :MOD :MEM
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M Q))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "VMXON"
-       (OP :OP #xFC7
-           :REG #x6
-           :MOD :MEM
-           :PFX :F3
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M Q))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "VMPTRLD"
-       (OP :OP #xFC7
-           :REG #x7
-           :MOD :MEM
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
-       (ARG :OP1 '(M Q))
-       'NIL
-       '((:GP (GP-CPL-NOT-0))))
- (INST "RDRAND"
-       (OP :OP #xFC7
-           :REG #x6
-           :MOD #x3
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9)
-           :FEAT '(:RDRAND))
-       (ARG :OP1 '(R V))
-       '(X86-RDRAND)
-       '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED))))
- (INST "RDRAND"
-       (OP :OP #xFC7
-           :REG #x6
-           :MOD #x3
-           :PFX :66
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9)
-           :FEAT '(:RDRAND))
-       (ARG :OP1 '(R W))
-       '(X86-RDRAND)
-       '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED))))
- (INST "RDSEED"
-       (OP :OP #xFC7
-           :REG #x7
-           :PFX :NO-PREFIX
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9)
-           :FEAT '(:RDSEED))
-       (ARG :OP1 '(R V))
-       'NIL
-       '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED))))
- (INST "RDPID"
-       (OP :OP #xFC7
-           :REG #x7
-           :PFX :F3
-           :MODE :O64
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9)
-           :FEAT '(:RDPID))
-       (ARG :OP1 '(R Q))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "RDPID"
-       (OP :OP #xFC7
-           :REG #x7
-           :PFX :F3
-           :MODE :I64
-           :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9)
-           :FEAT '(:RDPID))
-       (ARG :OP1 '(R D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFC8)
-       (ARG :OP1 '(:RAX/EAX/R8/R8D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFC9)
-       (ARG :OP1 '(:RCX/ECX/R9/R9D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCA)
-       (ARG :OP1 '(:RDX/EDX/R10/R10D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCB)
-       (ARG :OP1 '(:RBX/EBX/R11/R11D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCC)
-       (ARG :OP1 '(:RSP/ESP/R12/R12D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCD)
-       (ARG :OP1 '(:RBP/EBP/R13/R13D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCE)
-       (ARG :OP1 '(:RSI/ESI/R14/R14D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "BSWAP" (OP :OP #xFCF)
-       (ARG :OP1 '(:RDI/EDI/R15/R15D))
-       'NIL
-       '((:UD (UD-LOCK-USED))))
- (INST "ADDSUBPD"
-       (OP :OP #xFD0 :PFX :66 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
- (INST "ADDSUBPS"
-       (OP :OP #xFD0 :PFX :F2 :FEAT '(:SSE3))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
- (INST "VADDSUBPD"
-       (OP :OP #xFD0
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDSUBPD"
-       (OP :OP #xFD0
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PD)
-            :OP2 '(H PD)
-            :OP3 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDSUBPS"
-       (OP :OP #xFD0
-           :VEX '(:0F :NDS :128 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VADDSUBPS"
-       (OP :OP #xFD0
-           :VEX '(:0F :NDS :256 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V PS)
-            :OP2 '(H PS)
-            :OP3 '(W PS))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "PSRLW"
-       (OP :OP #xFD1
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLW"
-       (OP :OP #xFD1 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSRLW"
-       (OP :OP #xFD1
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRLW"
-       (OP :OP #xFD1
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRLW"
-       (OP :OP #xFD1
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLW"
-       (OP :OP #xFD1
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLW"
-       (OP :OP #xFD1
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSRLD"
-       (OP :OP #xFD2
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLD"
-       (OP :OP #xFD2 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSRLD"
-       (OP :OP #xFD2
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRLD"
-       (OP :OP #xFD2
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRLD"
-       (OP :OP #xFD2
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLD"
-       (OP :OP #xFD2
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLD"
-       (OP :OP #xFD2
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSRLQ"
-       (OP :OP #xFD3
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRLQ"
-       (OP :OP #xFD3 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSRLQ"
-       (OP :OP #xFD3
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRLQ"
-       (OP :OP #xFD3
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRLQ"
-       (OP :OP #xFD3
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLQ"
-       (OP :OP #xFD3
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRLQ"
-       (OP :OP #xFD3
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PADDQ"
-       (OP :OP #xFD4
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "ADDQ"
-       (OP :OP #xFD4 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDQ"
-       (OP :OP #xFD4
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDQ"
-       (OP :OP #xFD4
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDQ"
-       (OP :OP #xFD4
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPADDQ"
-       (OP :OP #xFD4
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPADDQ"
-       (OP :OP #xFD4
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "PMULLW"
-       (OP :OP #xFD5
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PMULLW"
-       (OP :OP #xFD5 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMULLW"
-       (OP :OP #xFD5
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMULLW"
-       (OP :OP #xFD5
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMULLW"
-       (OP :OP #xFD5
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULLW"
-       (OP :OP #xFD5
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULLW"
-       (OP :OP #xFD5
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "MOVQ"
-       (OP :OP #xFD6 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(W Q) :OP2 '(V Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "MOVQ2DQ"
-       (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V DQ) :OP2 '(N Q))
-       'NIL
-       '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
-              (EQUAL (CR0BITS->EM (CR0)) #x1)
-              (EQUAL (CR4BITS->OSFXSR (CR4)) #x0)
-              (UD-LOCK-USED))))
- (INST "MOVDQ2Q"
-       (OP :OP #xFD6 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(P Q) :OP2 '(U Q))
-       'NIL
-       '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
-              (EQUAL (CR0BITS->EM (CR0)) #x1)
-              (EQUAL (CR4BITS->OSFXSR (CR4)) #x0)
-              (UD-LOCK-USED))))
- (INST "VMOVQ"
-       (OP :OP #xFD6
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V Q) :OP2 '(W Q))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VMOVQ"
-       (OP :OP #xFD6
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
- (INST "PMOVMSKB"
-       (OP :OP #xFD7
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(G D) :OP2 '(N Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
- (INST "PMOVMSKB"
-       (OP :OP #xFD7 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(G D) :OP2 '(U X))
-       '(X86-PMOVMSKB-OP/EN-RM)
-       '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
- (INST "VPMOVMSKB"
-       (OP :OP #xFD7
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(G D) :OP2 '(U X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
- (INST "VPMOVMSKB"
-       (OP :OP #xFD7
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(G D) :OP2 '(U X))
-       NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
- (INST "PSUBUSB"
-       (OP :OP #xFD8
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBUSB"
-       (OP :OP #xFD8 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBUSB"
-       (OP :OP #xFD8
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBUSB"
-       (OP :OP #xFD8
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBUSB"
-       (OP :OP #xFD8
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
- (INST "VPSUBUSB"
-       (OP :OP #xFD8
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
- (INST "VPSUBUSB"
-       (OP :OP #xFD8
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512BW)))))
- (INST "PSUBUSW"
-       (OP :OP #xFD9
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBUSW"
-       (OP :OP #xFD9 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBUSW"
-       (OP :OP #xFD9
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBUSW"
-       (OP :OP #xFD9
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBUSW"
-       (OP :OP #xFD9
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
- (INST "VPSUBUSW"
-       (OP :OP #xFD9
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
- (INST "VPSUBUSW"
-       (OP :OP #xFD9
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512BW)))))
- (INST "PMINUB"
-       (OP :OP #xFDA
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PMINUB"
-       (OP :OP #xFDA :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMINUB"
-       (OP :OP #xFDA
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMINUB"
-       (OP :OP #xFDA
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMINUB"
-       (OP :OP #xFDA
-           :EVEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMINUB"
-       (OP :OP #xFDA
-           :EVEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMINUB"
-       (OP :OP #xFDA
-           :EVEX '(:0F :NDS :512 :66)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PAND"
-       (OP :OP #xFDB
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PAND"
-       (OP :OP #xFDB :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x3))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPAND"
-       (OP :OP #xFDB
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPAND"
-       (OP :OP #xFDB
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPANDD"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPANDQ"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPANDD"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDD"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDQ"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDQ"
-       (OP :OP #xFDB
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "PADDUSB"
-       (OP :OP #xFDC
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDUSB"
-       (OP :OP #xFDC :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDUSB"
-       (OP :OP #xFDC
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDUSB"
-       (OP :OP #xFDC
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDUSB"
-       (OP :OP #xFDC
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDUSB"
-       (OP :OP #xFDC
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDUSB"
-       (OP :OP #xFDC
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PADDUSW"
-       (OP :OP #xFDD
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDUSW"
-       (OP :OP #xFDD :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDUSW"
-       (OP :OP #xFDD
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDUSW"
-       (OP :OP #xFDD
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDUSW"
-       (OP :OP #xFDD
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDUSW"
-       (OP :OP #xFDD
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDUSW"
-       (OP :OP #xFDD
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PMAXUB"
-       (OP :OP #xFDE
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PMAXUB"
-       (OP :OP #xFDE :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMAXUB"
-       (OP :OP #xFDE
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMAXUB"
-       (OP :OP #xFDE
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMAXUB"
-       (OP :OP #xFDE
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMAXUB"
-       (OP :OP #xFDE
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMAXUB"
-       (OP :OP #xFDE
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PANDN"
-       (OP :OP #xFDF
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PANDN"
-       (OP :OP #xFDF :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #xD))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPANDN"
-       (OP :OP #xFDF
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPANDN"
-       (OP :OP #xFDF
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPANDND"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDND"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDND"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPANDNQ"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDNQ"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPANDNQ"
-       (OP :OP #xFDF
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PAVGB"
-       (OP :OP #xFE0
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PAVGB"
-       (OP :OP #xFE0 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPAVGB"
-       (OP :OP #xFE0
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPAVGB"
-       (OP :OP #xFE0
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPAVGB"
-       (OP :OP #xFE0
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPAVGB"
-       (OP :OP #xFE0
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPAVGB"
-       (OP :OP #xFE0
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PSRAW"
-       (OP :OP #xFE1
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRAW"
-       (OP :OP #xFE1 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSRAW"
-       (OP :OP #xFE1
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRAW"
-       (OP :OP #xFE1
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRAW"
-       (OP :OP #xFE1
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRAW"
-       (OP :OP #xFE1
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSRAW"
-       (OP :OP #xFE1
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSRAD"
-       (OP :OP #xFE2
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSRAD"
-       (OP :OP #xFE2 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSRAD"
-       (OP :OP #xFE2
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSRAD"
-       (OP :OP #xFE2
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSRAD"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSRAD"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
- (INST "VPSRAQ"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSRAQ"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSRAQ"
-       (OP :OP #xFE2
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
- (INST "PAVGW"
-       (OP :OP #xFE3
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PAVGW"
-       (OP :OP #xFE3 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPAVGW"
-       (OP :OP #xFE3
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPAVGW"
-       (OP :OP #xFE3
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPAVGW"
-       (OP :OP #xFE3
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPAVGW"
-       (OP :OP #xFE3
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPAVGW"
-       (OP :OP #xFE3
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PMULHUW"
-       (OP :OP #xFE4
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PMULHUW"
-       (OP :OP #xFE4 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMULHUW"
-       (OP :OP #xFE4
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMULHUW"
-       (OP :OP #xFE4
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMULHUW"
-       (OP :OP #xFE4
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULHUW"
-       (OP :OP #xFE4
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULHUW"
-       (OP :OP #xFE4
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PMULHW"
-       (OP :OP #xFE5
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PMULHW"
-       (OP :OP #xFE5 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMULHW"
-       (OP :OP #xFE5
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMULHW"
-       (OP :OP #xFE5
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMULHW"
-       (OP :OP #xFE5
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULHW"
-       (OP :OP #xFE5
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMULHW"
-       (OP :OP #xFE5
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "CVTTPD2DQ"
-       (OP :OP #xFE6 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "CVTDQ2PD"
-       (OP :OP #xFE6 :PFX :F3 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
- (INST "CVTPD2DQ"
-       (OP :OP #xFE6 :PFX :F2 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
- (INST "VCVTDQ2PD"
-       (OP :OP #xFE6
-           :VEX '(:0F :128 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VCVTDQ2PD"
-       (OP :OP #xFE6
-           :VEX '(:0F :256 :F3 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
- (INST "VCVTPD2DQ"
-       (OP :OP #xFE6
-           :VEX '(:0F :128 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTPD2DQ"
-       (OP :OP #xFE6
-           :VEX '(:0F :256 :F2 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTTPD2DQ"
-       (OP :OP #xFE6
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTTPD2DQ"
-       (OP :OP #xFE6
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X) :OP2 '(W PD))
-       NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
- (INST "VCVTDQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :128 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTDQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :256 :F3 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTDQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :512 :F3 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :128 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :256 :F2 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :512 :F2 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "VCVTQQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :128 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTQQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :256 :F3 :W1)
-           :FEAT '(:AVX512VL :AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
- (INST "VCVTQQ2PD"
-       (OP :OP #xFE6
-           :EVEX '(:0F :512 :F3 :W1)
-           :FEAT '(:AVX512DQ))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
- (INST "VCVTTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
- (INST "VCVTTPD2DQ"
-       (OP :OP #xFE6
-           :EVEX '(:0F :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
- (INST "MOVNTQ"
-       (OP :OP #xFE7
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(M Q) :OP2 '(P Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))
-         (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "MOVNTDQ"
-       (OP :OP #xFE7 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(M X) :OP2 '(V X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-1 (:SSE2)))
-         (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "VMOVNTDQ"
-       (OP :OP #xFE7
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M X) :OP2 '(V X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTDQ"
-       (OP :OP #xFE7
-           :VEX '(:0F :256 :66 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(M X) :OP2 '(V X))
-       NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
- (INST "VMOVNTDQ"
-       (OP :OP #xFE7
-           :EVEX '(:0F :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTDQ"
-       (OP :OP #xFE7
-           :EVEX '(:0F :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
- (INST "VMOVNTDQ"
-       (OP :OP #xFE7
-           :EVEX '(:0F :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
- (INST "PSUBSB"
-       (OP :OP #xFE8
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBSB"
-       (OP :OP #xFE8 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBSB"
-       (OP :OP #xFE8
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBSB"
-       (OP :OP #xFE8
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBSB"
-       (OP :OP #xFE8
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBSB"
-       (OP :OP #xFE8
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBSB"
-       (OP :OP #xFE8
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PSUBSW"
-       (OP :OP #xFE9
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBSW"
-       (OP :OP #xFE9 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBSW"
-       (OP :OP #xFE9
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBSW"
-       (OP :OP #xFE9
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBSW"
-       (OP :OP #xFE9
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBSW"
-       (OP :OP #xFE9
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBSW"
-       (OP :OP #xFE9
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PMINSW"
-       (OP :OP #xFEA
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
- (INST "PMINSW"
-       (OP :OP #xFEA :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMINSW"
-       (OP :OP #xFEA
-           :VEX '(:0F :NDS :128 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMINSW"
-       (OP :OP #xFEA
-           :VEX '(:0F :NDS :256 :66)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMINSW"
-       (OP :OP #xFEA
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMINSW"
-       (OP :OP #xFEA
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMINSW"
-       (OP :OP #xFEA
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "POR"
-       (OP :OP #xFEB
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "POR"
-       (OP :OP #xFEB :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x1))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPOR"
-       (OP :OP #xFEB
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPOR"
-       (OP :OP #xFEB
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPORD"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPORD"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPORD"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPORQ"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPORQ"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPORQ"
-       (OP :OP #xFEB
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PADDSB"
-       (OP :OP #xFEC
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDSB"
-       (OP :OP #xFEC :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDSB"
-       (OP :OP #xFEC
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDSB"
-       (OP :OP #xFEC
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDSB"
-       (OP :OP #xFEC
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDSB"
-       (OP :OP #xFEC
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDSB"
-       (OP :OP #xFEC
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PADDSW"
-       (OP :OP #xFED
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDSW"
-       (OP :OP #xFED :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDSW"
-       (OP :OP #xFED
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDSW"
-       (OP :OP #xFED
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDSW"
-       (OP :OP #xFED
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDSW"
-       (OP :OP #xFED
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDSW"
-       (OP :OP #xFED
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PMAXSW"
-       (OP :OP #xFEE
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PMAXSW"
-       (OP :OP #xFEE :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMAXSW"
-       (OP :OP #xFEE
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMAXSW"
-       (OP :OP #xFEE
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMAXSW"
-       (OP :OP #xFEE
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMAXSW"
-       (OP :OP #xFEE
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMAXSW"
-       (OP :OP #xFEE
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PXOR"
-       (OP :OP #xFEF
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PXOR"
-       (OP :OP #xFEF :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
-             (OPERATION . #x5))
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPXOR"
-       (OP :OP #xFEF
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPXOR"
-       (OP :OP #xFEF
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPXORD"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPXORD"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPXORD"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "VPXORQ"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPXORQ"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPXORQ"
-       (OP :OP #xFEF
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "LDDQU"
-       (OP :OP #xFF0 :PFX :F2 :FEAT '(:SSE3))
-       (ARG :OP1 '(V X) :OP2 '(M X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE3)))
-         (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
- (INST "VLDDQU"
-       (OP :OP #xFF0
-           :VEX '(:0F :128 :F2 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(V X) :OP2 '(M X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VLDDQU"
-       (OP :OP #xFF0
-           :VEX '(:0F :256 :F2 :WIG)
-           :FEAT '(:AVX)
-           :MOD :MEM)
-       (ARG :OP1 '(V X) :OP2 '(M X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "PSLLW"
-       (OP :OP #xFF1
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLW"
-       (OP :OP #xFF1 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSLLW"
-       (OP :OP #xFF1
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSLLW"
-       (OP :OP #xFF1
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSLLW"
-       (OP :OP #xFF1
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLW"
-       (OP :OP #xFF1
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSLLW"
-       (OP :OP #xFF1
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSLLD"
-       (OP :OP #xFF2
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLD"
-       (OP :OP #xFF2 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSLLD"
-       (OP :OP #xFF2
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSLLD"
-       (OP :OP #xFF2
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSLLD"
-       (OP :OP #xFF2
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSLLD"
-       (OP :OP #xFF2
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSLLD"
-       (OP :OP #xFF2
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
- (INST "PSLLQ"
-       (OP :OP #xFF3
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSLLQ"
-       (OP :OP #xFF3 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSLLQ"
-       (OP :OP #xFF3
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSLLQ"
-       (OP :OP #xFF3
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSLLQ"
-       (OP :OP #xFF3
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSLLQ"
-       (OP :OP #xFF3
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
- (INST "VPSLLQ"
-       (OP :OP #xFF3
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
- (INST "PMULUDQ"
-       (OP :OP #xFF4
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PMULUDQ"
-       (OP :OP #xFF4 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMULUDQ"
-       (OP :OP #xFF4
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMULUDQ"
-       (OP :OP #xFF4
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMULUDQ"
-       (OP :OP #xFF4
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPMULUDQ"
-       (OP :OP #xFF4
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPMULUDQ"
-       (OP :OP #xFF4
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PMADDWD"
-       (OP :OP #xFF5
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PMADDWD"
-       (OP :OP #xFF5 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPMADDWD"
-       (OP :OP #xFF5
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPMADDWD"
-       (OP :OP #xFF5
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPMADDWD"
-       (OP :OP #xFF5
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMADDWD"
-       (OP :OP #xFF5
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPMADDWD"
-       (OP :OP #xFF5
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "PSADBW"
-       (OP :OP #xFF6
-           :PFX :NO-PREFIX
-           :FEAT '(:SSE))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
- (INST "PSADBW"
-       (OP :OP #xFF6 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSADBW"
-       (OP :OP #xFF6
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSADBW"
-       (OP :OP #xFF6
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSADBW"
-       (OP :OP #xFF6
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSADBW"
-       (OP :OP #xFF6
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSADBW"
-       (OP :OP #xFF6
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
- (INST "MASKMOVQ"
-       (OP :OP #xFF7
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(N Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
- (INST "MASKMOVDQU"
-       (OP :OP #xFF7 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V DQ) :OP2 '(U DQ))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VMASKMOVDQU"
-       (OP :OP #xFF7
-           :VEX '(:0F :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V DQ) :OP2 '(U DQ))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "PSUBB"
-       (OP :OP #xFF8
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBB"
-       (OP :OP #xFF8 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBB"
-       (OP :OP #xFF8
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBB"
-       (OP :OP #xFF8
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBB"
-       (OP :OP #xFF8
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBB"
-       (OP :OP #xFF8
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBB"
-       (OP :OP #xFF8
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PSUBW"
-       (OP :OP #xFF9
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBW"
-       (OP :OP #xFF9 :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBW"
-       (OP :OP #xFF9
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBW"
-       (OP :OP #xFF9
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBW"
-       (OP :OP #xFF9
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBW"
-       (OP :OP #xFF9
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPSUBW"
-       (OP :OP #xFF9
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PSUBD"
-       (OP :OP #xFFA
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBD"
-       (OP :OP #xFFA :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBD"
-       (OP :OP #xFFA
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBD"
-       (OP :OP #xFFA
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBD"
-       (OP :OP #xFFA
-           :EVEX '(:0F :NDS :128 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPSUBD"
-       (OP :OP #xFFA
-           :EVEX '(:0F :NDS :256 :66 :W0)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPSUBD"
-       (OP :OP #xFFA
-           :EVEX '(:0F :NDS :512 :66 :W0)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PSUBQ"
-       (OP :OP #xFFB
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PSUBQ"
-       (OP :OP #xFFB :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPSUBQ"
-       (OP :OP #xFFB
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPSUBQ"
-       (OP :OP #xFFB
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPSUBQ"
-       (OP :OP #xFFB
-           :EVEX '(:0F :NDS :128 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPSUBQ"
-       (OP :OP #xFFB
-           :EVEX '(:0F :NDS :256 :66 :W1)
-           :FEAT '(:AVX512VL :AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
- (INST "VPSUBQ"
-       (OP :OP #xFFB
-           :EVEX '(:0F :NDS :512 :66 :W1)
-           :FEAT '(:AVX512F))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
- (INST "PADDB"
-       (OP :OP #xFFC
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDB"
-       (OP :OP #xFFC :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
- (INST "VPADDB"
-       (OP :OP #xFFC
-           :VEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
- (INST "VPADDB"
-       (OP :OP #xFFC
-           :VEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX2))
-       (ARG :OP1 '(V X)
-            :OP2 '(H X)
-            :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
- (INST "VPADDB"
-       (OP :OP #xFFC
-           :EVEX '(:0F :NDS :128 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDB"
-       (OP :OP #xFFC
-           :EVEX '(:0F :NDS :256 :66 :WIG)
-           :FEAT '(:AVX512VL :AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
- (INST "VPADDB"
-       (OP :OP #xFFC
-           :EVEX '(:0F :NDS :512 :66 :WIG)
-           :FEAT '(:AVX512BW))
-       NIL NIL
-       '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
- (INST "PADDW"
-       (OP :OP #xFFD
-           :PFX :NO-PREFIX
-           :FEAT '(:MMX))
-       (ARG :OP1 '(P Q) :OP2 '(Q Q))
-       'NIL
-       '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
- (INST "PADDW"
-       (OP :OP #xFFD :PFX :66 :FEAT '(:SSE2))
-       (ARG :OP1 '(V X)
+               :OP2 '(H SD)
+               :OP3 '(E Y))
+          '(X86-CVTSI2S?-OP/EN-RM (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCVTSI2SD"
+          (OP :OP #xF2A
+              :VEX '(:0F :NDS :LIG :F2 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(E Y))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSI2SD"
+          (OP :OP #xF2A
+              :VEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(E Y))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSI2SS"
+          (OP :OP #xF2A
+              :VEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(E Y))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSI2SS"
+          (OP :OP #xF2A
+              :VEX '(:0F :NDS :LIG :F3 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(E Y))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSI2SD"
+          (OP :OP #xF2A
+              :EVEX '(:0F :NDS :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
+    (INST "VCVTSI2SD"
+          (OP :OP #xF2A
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
+    (INST "VCVTSI2SS"
+          (OP :OP #xF2A
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSI2SS"
+          (OP :OP #xF2A
+              :EVEX '(:0F :NDS :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "MOVNTPS"
+          (OP :OP #xF2B
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(M PS) :OP2 '(V PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-1 (:SSE)))
+            (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "MOVNTPD"
+          (OP :OP #xF2B :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(M PD) :OP2 '(V PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-1 (:SSE2)))
+            (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "VMOVNTPD"
+          (OP :OP #xF2B
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M PD) :OP2 '(V PD))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTPD"
+          (OP :OP #xF2B
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M PD) :OP2 '(V PD))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTPS"
+          (OP :OP #xF2B
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M PS) :OP2 '(V PS))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTPS"
+          (OP :OP #xF2B
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M PS) :OP2 '(V PS))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTPD"
+          (OP :OP #xF2B
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTPD"
+          (OP :OP #xF2B
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTPD"
+          (OP :OP #xF2B
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
+    (INST "VMOVNTPS"
+          (OP :OP #xF2B
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTPS"
+          (OP :OP #xF2B
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTPS"
+          (OP :OP #xF2B
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
+    (INST "CVTTPS2PI"
+          (OP :OP #xF2C
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P PI) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
+    (INST "CVTTPD2PI"
+          (OP :OP #xF2C :PFX :66 :FEAT '(:MMX))
+          (ARG :OP1 '(P PI) :OP2 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
+    (INST "CVTTSS2SI"
+          (OP :OP #xF2C :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x0)
+                                            (TRUNC . T))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "CVTTSD2SI"
+          (OP :OP #xF2C :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x1)
+                                            (TRUNC . T))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCVTTSD2SI"
+          (OP :OP #xF2C
+              :VEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTTSD2SI"
+          (OP :OP #xF2C
+              :VEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTTSS2SI"
+          (OP :OP #xF2C
+              :VEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTTSS2SI"
+          (OP :OP #xF2C
+              :VEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTTSD2SI"
+          (OP :OP #xF2C
+              :EVEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSD2SI"
+          (OP :OP #xF2C
+              :EVEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSS2SI"
+          (OP :OP #xF2C
+              :EVEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSS2SI"
+          (OP :OP #xF2C
+              :EVEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "CVTPS2PI"
+          (OP :OP #xF2D
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P PI) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
+    (INST "CVTPD2PI"
+          (OP :OP #xF2D :PFX :66 :FEAT '(:MMX))
+          (ARG :OP1 '(Q PI) :OP2 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
+    (INST "CVTSS2SI"
+          (OP :OP #xF2D :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x0)
+                                            (TRUNC))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "CVTSD2SI"
+          (OP :OP #xF2D :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          '(X86-CVTS?2SI/CVTTS?2SI-OP/EN-RM (SP/DP . #x1)
+                                            (TRUNC))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCVTSD2SI"
+          (OP :OP #xF2D
+              :VEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSD2SI"
+          (OP :OP #xF2D
+              :VEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSS2SI"
+          (OP :OP #xF2D
+              :VEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSS2SI"
+          (OP :OP #xF2D
+              :VEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSD2SI"
+          (OP :OP #xF2D
+              :EVEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSD2SI"
+          (OP :OP #xF2D
+              :EVEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSS2SI"
+          (OP :OP #xF2D
+              :EVEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSS2SI"
+          (OP :OP #xF2D
+              :EVEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "UCOMISS"
+          (OP :OP #xF2E
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V SS) :OP2 '(W SS))
+          '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
+                                        (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "UCOMISD"
+          (OP :OP #xF2E :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD) :OP2 '(W SD))
+          '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
+                                        (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VUCOMISD"
+          (OP :OP #xF2E
+              :VEX '(:0F :LIG :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VUCOMISS"
+          (OP :OP #xF2E
+              :VEX '(:0F :LIG :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VUCOMISD"
+          (OP :OP #xF2E
+              :EVEX '(:0F :LIG :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VUCOMISS"
+          (OP :OP #xF2E
+              :EVEX '(:0F :LIG :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "COMISS"
+          (OP :OP #xF2F
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V SS) :OP2 '(W SS))
+          '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
+                                        (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "COMISD"
+          (OP :OP #xF2F :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD) :OP2 '(W SD))
+          '(X86-COMIS?/UCOMIS?-OP/EN-RM (OPERATION . #x9)
+                                        (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCOMISD"
+          (OP :OP #xF2F
+              :VEX '(:0F :LIG :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD) :OP2 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCOMISS"
+          (OP :OP #xF2F
+              :VEX '(:0F :LIG :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS) :OP2 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCOMISD"
+          (OP :OP #xF2F
+              :EVEX '(:0F :LIG :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCOMISS"
+          (OP :OP #xF2F
+              :EVEX '(:0F :LIG :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "WRMSR" (OP :OP #xF30)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "RDTSC" (OP :OP #xF31)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "RDMSR" (OP :OP #xF32)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "RDPMC" (OP :OP #xF33)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))
+            (:GP (AND (GP-CPL-NOT-0)
+                      (GP-CR4-PCE-IS-0)))))
+    (INST "SYSENTER" (OP :OP #xF34)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CR0-PE-IS-0))))
+    (INST "SYSEXIT" (OP :OP #xF35)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0) (GP-CR0-PE-IS-0))))
+    (INST "GETSEC" (OP :OP #xF37)
+          NIL 'NIL
+          ;; TODO: Lock Used? Feature flag info?
+          'NIL)
+    (INST :3-BYTE-ESCAPE (OP :OP #xF38)
+          'NIL
+          '(THREE-BYTE-OPCODE-DECODE-AND-EXECUTE (SECOND-ESCAPE-BYTE . OPCODE))
+          'NIL)
+    (INST :3-BYTE-ESCAPE (OP :OP #xF3A)
+          'NIL
+          '(THREE-BYTE-OPCODE-DECODE-AND-EXECUTE (SECOND-ESCAPE-BYTE . OPCODE))
+          'NIL)
+    (INST "CMOVO" (OP :OP #xF40)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVNO" (OP :OP #xF41)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KANDB"
+          (OP :OP #xF41
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KANDD"
+          (OP :OP #xF41
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KANDQ"
+          (OP :OP #xF41
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KANDW"
+          (OP :OP #xF41
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVB/C/NAE" (OP :OP #xF42)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KANDNB"
+          (OP :OP #xF42
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KANDND"
+          (OP :OP #xF42
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KANDNQ"
+          (OP :OP #xF42
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KANDNW"
+          (OP :OP #xF42
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVAE/NB/NC" (OP :OP #xF43)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVE/Z" (OP :OP #xF44)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KNOTB"
+          (OP :OP #xF44
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KNOTD"
+          (OP :OP #xF44
+              :VEX '(:0F :L0 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KNOTQ"
+          (OP :OP #xF44
+              :VEX '(:0F :L0 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KNOTW"
+          (OP :OP #xF44
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVNE/NZ" (OP :OP #xF45)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KORB"
+          (OP :OP #xF45
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KORD"
+          (OP :OP #xF45
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KORQ"
+          (OP :OP #xF45
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KORW"
+          (OP :OP #xF45
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVBE/NA" (OP :OP #xF46)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KXNORB"
+          (OP :OP #xF46
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KXNORD"
+          (OP :OP #xF46
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KXNORQ"
+          (OP :OP #xF46
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KXNORW"
+          (OP :OP #xF46
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVA/NBE" (OP :OP #xF47)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KXORB"
+          (OP :OP #xF47
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KXORD"
+          (OP :OP #xF47
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KXORQ"
+          (OP :OP #xF47
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KXORW"
+          (OP :OP #xF47
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "CMOVS" (OP :OP #xF48)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVNS" (OP :OP #xF49)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVP/PE" (OP :OP #xF4A)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KADDB"
+          (OP :OP #xF4A
+              :VEX '(:0F :L1 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-VEX B)
+               :OP3 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KADDD"
+          (OP :OP #xF4A
+              :VEX '(:0F :L1 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KADDQ"
+          (OP :OP #xF4A
+              :VEX '(:0F :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KADDW"
+          (OP :OP #xF4A
+              :VEX '(:0F :L1 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "CMOVNP/PO" (OP :OP #xF4B)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KUNPCKBW"
+          (OP :OP #xF4B
+              :VEX '(:0F :NDS :L1 :66 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W)
+               :OP2 '(K-VEX W)
+               :OP3 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "KUNPCKDQ"
+          (OP :OP #xF4B
+              :VEX '(:0F :NDS :L1 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q)
+               :OP2 '(K-VEX Q)
+               :OP3 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KUNPCKWD"
+          (OP :OP #xF4B
+              :VEX '(:0F :NDS :L1 :W0)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-VEX D)
+               :OP3 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "CMOVL/NGE" (OP :OP #xF4C)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVNL/GE" (OP :OP #xF4D)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVLE/NG" (OP :OP #xF4E)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMOVNLE/G" (OP :OP #xF4F)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-CMOVCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "MOVMSKPS"
+          (OP :OP #xF50
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(G Y) :OP2 '(U PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
+    (INST "MOVMSKPD"
+          (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(G Y) :OP2 '(U PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "VMOVMSKPD"
+          (OP :OP #xF50
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(U PD))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VMOVMSKPD"
+          (OP :OP #xF50
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(U PD))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VMOVMSKPS"
+          (OP :OP #xF50
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(U PS))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VMOVMSKPS"
+          (OP :OP #xF50
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G Y) :OP2 '(U PS))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "SQRTPS"
+          (OP :OP #xF51
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          '(X86-SQRTPS-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "SQRTPD"
+          (OP :OP #xF51 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD) :OP2 '(W PD))
+          '(X86-SQRTPD-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "SQRTSS"
+          (OP :OP #xF51 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-SQRTS?-OP/EN-RM (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "SQRTSD"
+          (OP :OP #xF51 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-SQRTS?-OP/EN-RM (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VSQRTPD"
+          (OP :OP #xF51
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSQRTPD"
+          (OP :OP #xF51
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSQRTPS"
+          (OP :OP #xF51
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSQRTPS"
+          (OP :OP #xF51
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSQRTSD"
+          (OP :OP #xF51
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VSQRTSS"
+          (OP :OP #xF51
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VSQRTPD"
+          (OP :OP #xF51
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSQRTPD"
+          (OP :OP #xF51
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSQRTPD"
+          (OP :OP #xF51
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VSQRTPS"
+          (OP :OP #xF51
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSQRTPS"
+          (OP :OP #xF51
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSQRTPS"
+          (OP :OP #xF51
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VSQRTSD"
+          (OP :OP #xF51
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VSQRTSS"
+          (OP :OP #xF51
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "RSQRTPS"
+          (OP :OP #xF52
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "RSQRTSS"
+          (OP :OP #xF52 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "VRSQRTPS"
+          (OP :OP #xF52
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VRSQRTPS"
+          (OP :OP #xF52
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VRSQRTSS"
+          (OP :OP #xF52
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "RCPPS"
+          (OP :OP #xF53
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "RCPSS"
+          (OP :OP #xF53 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "VRCPPS"
+          (OP :OP #xF53
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VRCPPS"
+          (OP :OP #xF53
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VRCPSS"
+          (OP :OP #xF53
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "ANDPS"
+          (OP :OP #xF54
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x3))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "ANDPD"
+          (OP :OP #xF54 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x3))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VANDPD"
+          (OP :OP #xF54
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDPD"
+          (OP :OP #xF54
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDPS"
+          (OP :OP #xF54
+              :VEX '(:0F :NDS :128)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDPS"
+          (OP :OP #xF54
+              :VEX '(:0F :NDS :256)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDPD"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDPD"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDPD"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "VANDPS"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDPS"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDPS"
+          (OP :OP #xF54
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "ANDNPS"
+          (OP :OP #xF55
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #xD))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "ANDNPD"
+          (OP :OP #xF55 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #xD))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VANDNPD"
+          (OP :OP #xF55
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDNPD"
+          (OP :OP #xF55
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDNPS"
+          (OP :OP #xF55
+              :VEX '(:0F :NDS :128)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDNPS"
+          (OP :OP #xF55
+              :VEX '(:0F :NDS :256)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VANDNPD"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDNPD"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDNPD"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "VANDNPS"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDNPS"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VANDNPS"
+          (OP :OP #xF55
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "ORPS"
+          (OP :OP #xF56
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x1))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "ORPD"
+          (OP :OP #xF56 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x1))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VORPD"
+          (OP :OP #xF56
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VORPD"
+          (OP :OP #xF56
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VORPS"
+          (OP :OP #xF56
+              :VEX '(:0F :NDS :128)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VORPS"
+          (OP :OP #xF56
+              :VEX '(:0F :NDS :256)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VORPD"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VORPD"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VORPD"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "VORPS"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VORPS"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VORPS"
+          (OP :OP #xF56
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "XORPS"
+          (OP :OP #xF57
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x5))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "XORPD"
+          (OP :OP #xF57 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x5))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VXORPD"
+          (OP :OP #xF57
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VXORPD"
+          (OP :OP #xF57
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VXORPS"
+          (OP :OP #xF57
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VXORPS"
+          (OP :OP #xF57
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VXORPD"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VXORPD"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VXORPD"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "VXORPS"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VXORPS"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512DQ)))))
+    (INST "VXORPS"
+          (OP :OP #xF57
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512DQ)))))
+    (INST "ADDPS"
+          (OP :OP #xF58
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x0))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "ADDPD"
+          (OP :OP #xF58 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x0))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "ADDSS"
+          (OP :OP #xF58 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x0)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "ADDSD"
+          (OP :OP #xF58 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x0)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VADDPD"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDPD"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDPS"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDPS"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDSD"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VADDSS"
+          (OP :OP #xF58
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VADDPD"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VADDPD"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VADDPD"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VADDPS"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VADDPS"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VADDPS"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VADDSD"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VADDSS"
+          (OP :OP #xF58
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "MULPS"
+          (OP :OP #xF59
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x1A))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "MULPD"
+          (OP :OP #xF59 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x1A))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "MULSS"
+          (OP :OP #xF59 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1A)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "MULSD"
+          (OP :OP #xF59 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1A)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VMULPD"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMULPD"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMULPS"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMULPS"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMULSD"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VMULSS"
+          (OP :OP #xF59
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VMULPD"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMULPD"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMULPD"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMULPS"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMULPS"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMULPS"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMULSD"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VMULSS"
+          (OP :OP #xF59
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "CVTPS2PD"
+          (OP :OP #xF5A
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD) :OP2 '(W PS))
+          '(X86-CVTPS2PD-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "CVTPD2PS"
+          (OP :OP #xF5A :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PS) :OP2 '(W PD))
+          '(X86-CVTPD2PS-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "CVTSS2SD"
+          (OP :OP #xF5A :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H X)
+               :OP3 '(W SS))
+          '(X86-CVTS?2S?-OP/EN-RM (DP-TO-SP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "CVTSD2SS"
+          (OP :OP #xF5A :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H X)
+               :OP3 '(W SD))
+          '(X86-CVTS?2S?-OP/EN-RM (DP-TO-SP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCVTPD2PS"
+          (OP :OP #xF5A
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTPD2PS"
+          (OP :OP #xF5A
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTPS2PD"
+          (OP :OP #xF5A
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTPS2PD"
+          (OP :OP #xF5A
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSD2SS"
+          (OP :OP #xF5A
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H X)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTSS2SD"
+          (OP :OP #xF5A
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H X)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCVTPD2PS"
+          (OP :OP #xF5A
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2PS"
+          (OP :OP #xF5A
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2PS"
+          (OP :OP #xF5A
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTPS2PD"
+          (OP :OP #xF5A
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPS2PD"
+          (OP :OP #xF5A
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512VL)))))
+    (INST "VCVTPS2PD"
+          (OP :OP #xF5A
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VCVTSD2SS"
+          (OP :OP #xF5A
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VCVTSS2SD"
+          (OP :OP #xF5A
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "CVTDQ2PS"
+          (OP :OP #xF5B
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE2))
+          (ARG :OP1 '(V PS) :OP2 '(W DQ))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "CVTPS2DQ"
+          (OP :OP #xF5B :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "CVTTPS2DQ"
+          (OP :OP #xF5B :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "VCVTDQ2PS"
+          (OP :OP #xF5B
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W DQ))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTDQ2PS"
+          (OP :OP #xF5B
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS) :OP2 '(W DQ))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTPS2DQ"
+          (OP :OP #xF5B
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTPS2DQ"
+          (OP :OP #xF5B
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTTPS2DQ"
+          (OP :OP #xF5B
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTTPS2DQ"
+          (OP :OP #xF5B
+              :VEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ) :OP2 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTDQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTDQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTDQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTQQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :128 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTQQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :256 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTQQ2PS"
+          (OP :OP #xF5B
+              :EVEX '(:0F :512 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :128 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :256 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPS2DQ"
+          (OP :OP #xF5B
+              :EVEX '(:0F :512 :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "SUBPS"
+          (OP :OP #xF5C
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x4))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "SUBPD"
+          (OP :OP #xF5C :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x4))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "SUBSS"
+          (OP :OP #xF5C :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x4)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "SUBSD"
+          (OP :OP #xF5C :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x4)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VSUBPD"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSUBPD"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSUBPS"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSUBPS"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VSUBSD"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VSUBSS"
+          (OP :OP #xF5C
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VSUBPD"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSUBPD"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSUBPD"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VSUBPS"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSUBPS"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VSUBPS"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VSUBSD"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VSUBSS"
+          (OP :OP #xF5C
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "MINPS"
+          (OP :OP #xF5D
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x24))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "MINPD"
+          (OP :OP #xF5D :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x24))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "MINSS"
+          (OP :OP #xF5D :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x24)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "MINSD"
+          (OP :OP #xF5D :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x24)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VMINPD"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMINPD"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMINPS"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMINPS"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMINSD"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VMINSS"
+          (OP :OP #xF5D
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMINPD"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMINPD"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMINPD"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMINPS"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMINPS"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMINPS"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMINSD"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VMINSS"
+          (OP :OP #xF5D
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "DIVPS"
+          (OP :OP #xF5E
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x1C))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "DIVPD"
+          (OP :OP #xF5E :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x1C))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "DIVSS"
+          (OP :OP #xF5E :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1C)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "DIVSD"
+          (OP :OP #xF5E :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x1C)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VDIVPD"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VDIVPD"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VDIVPS"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VDIVPS"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VDIVSD"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VDIVSS"
+          (OP :OP #xF5E
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VDIVPD"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VDIVPD"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VDIVPD"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VDIVPS"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VDIVPS"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VDIVPS"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VDIVSD"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VDIVSS"
+          (OP :OP #xF5E
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "MAXPS"
+          (OP :OP #xF5F
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          '(X86-ADDPS/SUBPS/MULPS/DIVPS/MAXPS/MINPS-OP/EN-RM (OPERATION . #x22))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "MAXPD"
+          (OP :OP #xF5F :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          '(X86-ADDPD/SUBPD/MULPD/DIVPD/MAXPD/MINPD-OP/EN-RM (OPERATION . #x22))
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "MAXSS"
+          (OP :OP #xF5F :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x22)
+                                                             (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "MAXSD"
+          (OP :OP #xF5F :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          '(X86-ADDS?/SUBS?/MULS?/DIVS?/MAXS?/MINS?-OP/EN-RM (OPERATION . #x22)
+                                                             (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VMAXPD"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMAXPD"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMAXPS"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMAXPS"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VMAXSD"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VMAXSS"
+          (OP :OP #xF5F
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VMAXPD"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMAXPD"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMAXPD"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMAXPS"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMAXPS"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VMAXPS"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VMAXSD"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VMAXSS"
+          (OP :OP #xF5F
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "PUNPCKLBW"
+          (OP :OP #xF60
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKLBW"
+          (OP :OP #xF60 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKLBW"
+          (OP :OP #xF60
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKLBW"
+          (OP :OP #xF60
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKLBW"
+          (OP :OP #xF60
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKLBW"
+          (OP :OP #xF60
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKLBW"
+          (OP :OP #xF60
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PUNPCKLWD"
+          (OP :OP #xF61
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKLWD"
+          (OP :OP #xF61 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKLWD"
+          (OP :OP #xF61
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKLWD"
+          (OP :OP #xF61
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKLWD"
+          (OP :OP #xF61
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKLWD"
+          (OP :OP #xF61
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKLWD"
+          (OP :OP #xF61
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PUNPCKLDQ"
+          (OP :OP #xF62
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKLDQ"
+          (OP :OP #xF62 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKLDQ"
+          (OP :OP #xF62
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKLDQ"
+          (OP :OP #xF62
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKLDQ"
+          (OP :OP #xF62
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKLDQ"
+          (OP :OP #xF62
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKLDQ"
+          (OP :OP #xF62
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "PACKSSWB"
+          (OP :OP #xF63
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PACKSSWB"
+          (OP :OP #xF63 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPACKSSWB"
+          (OP :OP #xF63
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPACKSSWB"
+          (OP :OP #xF63
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPACKSSWB"
+          (OP :OP #xF63
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPACKSSWB"
+          (OP :OP #xF63
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPACKSSWB"
+          (OP :OP #xF63
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PCMPGTB"
+          (OP :OP #xF64
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPGTB"
+          (OP :OP #xF64 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPGTB"
+          (OP :OP #xF64
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPGTB"
+          (OP :OP #xF64
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPGTB"
+          (OP :OP #xF64
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPGTB"
+          (OP :OP #xF64
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPGTB"
+          (OP :OP #xF64
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PCMPGTW"
+          (OP :OP #xF65
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPGTW"
+          (OP :OP #xF65 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPGTW"
+          (OP :OP #xF65
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPGTW"
+          (OP :OP #xF65
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPGTW"
+          (OP :OP #xF65
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPGTW"
+          (OP :OP #xF65
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPGTW"
+          (OP :OP #xF65
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PCMPGTD"
+          (OP :OP #xF66
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPGTD"
+          (OP :OP #xF66 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPGTD"
+          (OP :OP #xF66
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPGTD"
+          (OP :OP #xF66
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPGTD"
+          (OP :OP #xF66
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPCMPGTD"
+          (OP :OP #xF66
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPCMPGTD"
+          (OP :OP #xF66
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PACKUSWB"
+          (OP :OP #xF67
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PACKUSWB"
+          (OP :OP #xF67 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPACKUSWB"
+          (OP :OP #xF67
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPACKUSWB"
+          (OP :OP #xF67
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPACKUSWB"
+          (OP :OP #xF67
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPACKUSWB"
+          (OP :OP #xF67
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPACKUSWB"
+          (OP :OP #xF67
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PUNPCKHBW"
+          (OP :OP #xF68
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKHBW"
+          (OP :OP #xF68 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKHBW"
+          (OP :OP #xF68
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKHBW"
+          (OP :OP #xF68
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKHBW"
+          (OP :OP #xF68
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKHBW"
+          (OP :OP #xF68
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKHBW"
+          (OP :OP #xF68
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PUNPCKHWD"
+          (OP :OP #xF69
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKHWD"
+          (OP :OP #xF69 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKHWD"
+          (OP :OP #xF69
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKHWD"
+          (OP :OP #xF69
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKHWD"
+          (OP :OP #xF69
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKHWD"
+          (OP :OP #xF69
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPUNPCKHWD"
+          (OP :OP #xF69
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PUNPCKHDQ"
+          (OP :OP #xF6A
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PUNPCKHDQ"
+          (OP :OP #xF6A :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKHDQ"
+          (OP :OP #xF6A
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKHDQ"
+          (OP :OP #xF6A
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKHDQ"
+          (OP :OP #xF6A
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKHDQ"
+          (OP :OP #xF6A
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKHDQ"
+          (OP :OP #xF6A
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "PACKSSDW"
+          (OP :OP #xF6B
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PACKSSDW"
+          (OP :OP #xF6B :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPACKSSDW"
+          (OP :OP #xF6B
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPACKSSDW"
+          (OP :OP #xF6B
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPACKSSDW"
+          (OP :OP #xF6B
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512BW)))))
+    (INST "VPACKSSDW"
+          (OP :OP #xF6B
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512BW)))))
+    (INST "VPACKSSDW"
+          (OP :OP #xF6B
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512BW)))))
+    (INST "PUNPCKLQDQ"
+          (OP :OP #xF6C :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKLQDQ"
+          (OP :OP #xF6C
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKLQDQ"
+          (OP :OP #xF6C
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKLQDQ"
+          (OP :OP #xF6C
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKLQDQ"
+          (OP :OP #xF6C
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKLQDQ"
+          (OP :OP #xF6C
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "PUNPCKHQDQ"
+          (OP :OP #xF6D :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPUNPCKHQDQ"
+          (OP :OP #xF6D
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPUNPCKHQDQ"
+          (OP :OP #xF6D
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPUNPCKHQDQ"
+          (OP :OP #xF6D
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKHQDQ"
+          (OP :OP #xF6D
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPUNPCKHQDQ"
+          (OP :OP #xF6D
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "MOVD/Q"
+          (OP :OP #xF6E
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P D) :OP2 '(E Y))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
+    (INST "MOVD/Q"
+          (OP :OP #xF6E :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V Y) :OP2 '(E Y))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "VMOVQ"
+          (OP :OP #xF6E
+              :VEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VMOVD"
+          (OP :OP #xF6E
+              :VEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VMOVD"
+          (OP :OP #xF6E
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVQ"
+          (OP :OP #xF6E
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "MOVQ"
+          (OP :OP #xF6F
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
+    (INST "MOVDQA"
+          (OP :OP #xF6F :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
+    (INST "MOVDQU"
+          (OP :OP #xF6F :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          '(X86-MOVUPS/MOVUPD/MOVDQU-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VMOVDQA"
+          (OP :OP #xF6F
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVDQA"
+          (OP :OP #xF6F
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVDQU"
+          (OP :OP #xF6F
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VMOVDQU"
+          (OP :OP #xF6F
+              :VEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :F2 :W1)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF6F
+              :EVEX '(:0F :128 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF6F
+              :EVEX '(:0F :256 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF6F
+              :EVEX '(:0F :512 :F2 :W0)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "PSHUFW"
+          (OP :OP #xF70
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q)
+               :OP2 '(Q Q)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSHUFD"
+          (OP :OP #xF70 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "PSHUFHW"
+          (OP :OP #xF70 :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "PSHUFLW"
+          (OP :OP #xF70 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSHUFD"
+          (OP :OP #xF70
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSHUFD"
+          (OP :OP #xF70
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSHUFHW"
+          (OP :OP #xF70
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSHUFHW"
+          (OP :OP #xF70
+              :VEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSHUFLW"
+          (OP :OP #xF70
+              :VEX '(:0F :128 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSHUFLW"
+          (OP :OP #xF70
+              :VEX '(:0F :256 :F2 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(W X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSHUFD"
+          (OP :OP #xF70
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSHUFD"
+          (OP :OP #xF70
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSHUFD"
+          (OP :OP #xF70
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPSHUFHW"
+          (OP :OP #xF70
+              :EVEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSHUFHW"
+          (OP :OP #xF70
+              :EVEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSHUFHW"
+          (OP :OP #xF70
+              :EVEX '(:0F :512 :F3 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSHUFLW"
+          (OP :OP #xF70
+              :EVEX '(:0F :128 :F2 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSHUFLW"
+          (OP :OP #xF70
+              :EVEX '(:0F :256 :F2 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSHUFLW"
+          (OP :OP #xF70
+              :EVEX '(:0F :512 :F2 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSRLW"
+          (OP :OP #xF71
+              :REG #x2
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLW"
+          (OP :OP #xF71
+              :REG #x2
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSRAW"
+          (OP :OP #xF71
+              :REG #x4
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRAW"
+          (OP :OP #xF71
+              :REG #x4
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSLLW"
+          (OP :OP #xF71
+              :REG #x6
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLW"
+          (OP :OP #xF71
+              :REG #x6
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-12))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "VPSRLVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSRLVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPSRAVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x4)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSRAVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x4)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPSLLVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSLLVW"
+          (OP :OP #xF71
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPSRLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :512 :66 :WIG)
+              :FEAT '(:AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSRAW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRAW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX512BW)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSRAW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :512 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLW"
+          (OP :OP #xF71
+              :EVEX '(:0F :NDD :512 :66 :WIG)
+              :FEAT '(:AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSRLD"
+          (OP :OP #xF72
+              :REG #x2
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLD"
+          (OP :OP #xF72
+              :REG #x2
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSRAD"
+          (OP :OP #xF72
+              :REG #x4
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRAD"
+          (OP :OP #xF72
+              :REG #x4
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSLLD"
+          (OP :OP #xF72
+              :REG #x6
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLD"
+          (OP :OP #xF72
+              :REG #x6
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-13))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "VPSLLVD"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSLLVD"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPSRAVW"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x4)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSRAVW"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x4)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPSLLVW"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPSLLVW"
+          (OP :OP #xF72
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W0)
+              :FEAT '(:AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPRORD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W1)
+              :FEAT '(:AVX512F)
+              :REG #x0)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W0)
+              :FEAT '(:AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPROLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W1)
+              :FEAT '(:AVX512F)
+              :REG #x1)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPSRLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W0)
+              :FEAT '(:AVX512F)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W0)
+              :FEAT '(:AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W1)
+              :FEAT '(:AVX512F)
+              :REG #x4)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VPSLLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSLLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VPSLLD"
+          (OP :OP #xF72
+              :EVEX '(:0F :NDD :512 :66 :W0)
+              :FEAT '(:AVX512F)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "PSRLQ"
+          (OP :OP #xF73
+              :REG #x2
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLQ"
+          (OP :OP #xF73
+              :REG #x2
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSRLDQ"
+          (OP :OP #xF73
+              :REG #x3
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSLLQ"
+          (OP :OP #xF73
+              :REG #x6
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(N Q) :OP2 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLQ"
+          (OP :OP #xF73
+              :REG #x6
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "PSLLDQ"
+          (OP :OP #xF73
+              :REG #x7
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-14))
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "VPSRLVQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRLVQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x2)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRLDQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x3)
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRLDQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x3)
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSLLQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSLLQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x6)
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSLLDQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :REG #x7)
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSLLDQ"
+          (OP :OP #xF73
+              :VEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX2)
+              :REG #x7)
+          (ARG :OP1 '(H X)
+               :OP2 '(U X)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :512 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :REG #x2)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSRLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x3)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x3)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :512 :66 :WIG)
+              :FEAT '(:AVX512BW)
+              :REG #x3)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSLLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :512 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :REG #x6)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "VPSLLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x7)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW)
+              :REG #x7)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLDQ"
+          (OP :OP #xF73
+              :EVEX '(:0F :NDD :512 :66 :WIG)
+              :FEAT '(:AVX512BW)
+              :REG #x7)
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PCMPEQB"
+          (OP :OP #xF74
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPEQB"
+          (OP :OP #xF74 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          '(X86-PCMPEQB-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPEQB"
+          (OP :OP #xF74
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPEQB"
+          (OP :OP #xF74
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPEQB"
+          (OP :OP #xF74
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPEQB"
+          (OP :OP #xF74
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPEQB"
+          (OP :OP #xF74
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PCMPEQW"
+          (OP :OP #xF75
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPEQW"
+          (OP :OP #xF75 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPEQW"
+          (OP :OP #xF75
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPEQW"
+          (OP :OP #xF75
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPEQW"
+          (OP :OP #xF75
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPEQW"
+          (OP :OP #xF75
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPCMPEQW"
+          (OP :OP #xF75
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PCMPEQD"
+          (OP :OP #xF76
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PCMPEQD"
+          (OP :OP #xF76 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPCMPEQD"
+          (OP :OP #xF76
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPCMPEQD"
+          (OP :OP #xF76
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPCMPEQD"
+          (OP :OP #xF76
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPCMPEQD"
+          (OP :OP #xF76
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPCMPEQD"
+          (OP :OP #xF76
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "EMMS" (OP :OP #xF77 :PFX :NO-PREFIX)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR0BITS->EM (CR0)) #x1))))
+    (INST "VZEROALL"
+          (OP :OP #xF77
+              :VEX '(:0F :256 :WIG)
+              :FEAT '(:AVX))
+          NIL
+          NIL '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
+    (INST "VZEROUPPER"
+          (OP :OP #xF77
+              :VEX '(:0F :128 :WIG)
+              :FEAT '(:AVX))
+          NIL
+          NIL '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
+    (INST "MREAD" (OP :OP #xF78)
+          (ARG :OP1 '(E Y) :OP2 '(G Y))
+          'NIL
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "VCVTTPD2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :256 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPD2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :128 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPD2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :512 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTTPD2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPD2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPD2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTTPS2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPS2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPS2UDQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTTPS2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPS2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPS2UQQ"
+          (OP :OP #xF78
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTTSD2USI"
+          (OP :OP #xF78
+              :EVEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSD2USI"
+          (OP :OP #xF78
+              :EVEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSS2USI"
+          (OP :OP #xF78
+              :EVEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTSS2USI"
+          (OP :OP #xF78
+              :EVEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "MWRITE" (OP :OP #xF79)
+          (ARG :OP1 '(E Y) :OP2 '(G Y))
+          'NIL
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "VCVTPD2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :128 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :256 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :512 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTPD2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPD2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPD2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTPS2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPS2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPS2UDQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTPS2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPS2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPS2UQQ"
+          (OP :OP #xF79
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTSD2USI"
+          (OP :OP #xF79
+              :EVEX '(:0F :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSD2USI"
+          (OP :OP #xF79
+              :EVEX '(:0F :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSS2USI"
+          (OP :OP #xF79
+              :EVEX '(:0F :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTSS2USI"
+          (OP :OP #xF79
+              :EVEX '(:0F :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTTPD2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPD2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPD2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTTPS2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPS2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTTPS2QQ"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTUDQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTUDQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTUDQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTUDQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTUDQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTUDQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTUQQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTUQQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTUQQ2PD"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :F3 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTUQQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :128 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTUQQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :256 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTUQQ2PS"
+          (OP :OP #xF7A
+              :EVEX '(:0F :512 :F2 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTPD2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPD2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPD2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTPS2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPS2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTPS2QQ"
+          (OP :OP #xF7B
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTUSI2SD"
+          (OP :OP #xF7B
+              :EVEX '(:0F :NDS :LIG :F2 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
+    (INST "VCVTUSI2SD"
+          (OP :OP #xF7B
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E10NF (:AVX512F)))))
+    (INST "VCVTUSI2SS"
+          (OP :OP #xF7B
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "VCVTUSI2SS"
+          (OP :OP #xF7B
+              :EVEX '(:0F :NDS :LIG :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3NF (:AVX512F)))))
+    (INST "HADDPD"
+          (OP :OP #xF7C :PFX :66 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
+    (INST "HADDPS"
+          (OP :OP #xF7C :PFX :F2 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
+    (INST "VHADDPD"
+          (OP :OP #xF7C
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHADDPD"
+          (OP :OP #xF7C
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHADDPS"
+          (OP :OP #xF7C
+              :VEX '(:0F :NDS :128 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHADDPS"
+          (OP :OP #xF7C
+              :VEX '(:0F :NDS :256 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "HSUBPD"
+          (OP :OP #xF7D :PFX :66 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
+    (INST "HSUBPS"
+          (OP :OP #xF7D :PFX :F2 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE3)))))
+    (INST "VHSUBPD"
+          (OP :OP #xF7D
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHSUBPD"
+          (OP :OP #xF7D
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHSUBPS"
+          (OP :OP #xF7D
+              :VEX '(:0F :NDS :128 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VHSUBPS"
+          (OP :OP #xF7D
+              :VEX '(:0F :NDS :256 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "MOVD/Q"
+          (OP :OP #xF7E
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(E Y) :OP2 '(P D))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
+    (INST "MOVD/Q"
+          (OP :OP #xF7E :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(E Y) :OP2 '(V Y))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "MOVQ"
+          (OP :OP #xF7E :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "VMOVD"
+          (OP :OP #xF7E
+              :VEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(E Y) :OP2 '(V Y))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VMOVQ"
+          (OP :OP #xF7E
+              :VEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VMOVQ"
+          (OP :OP #xF7E
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VMOVD"
+          (OP :OP #xF7E
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVQ"
+          (OP :OP #xF7E
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVQ"
+          (OP :OP #xF7E
+              :EVEX '(:0F :128 :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "MOVQ"
+          (OP :OP #xF7F
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(Q Q) :OP2 '(P Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
+    (INST "MOVDQA"
+          (OP :OP #xF7F :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(W X) :OP2 '(V X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-1 (:SSE2)))))
+    (INST "MOVDQU"
+          (OP :OP #xF7F :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(W X) :OP2 '(V X))
+          '(X86-MOVUPS/MOVUPD/MOVDQU-OP/EN-MR)
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VMOVDQA"
+          (OP :OP #xF7F
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVDQA"
+          (OP :OP #xF7F
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVDQU"
+          (OP :OP #xF7F
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VMOVDQU"
+          (OP :OP #xF7F
+              :VEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQA64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU16"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :F2 :W1)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU32"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVDQU64"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :F3 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF7F
+              :EVEX '(:0F :128 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF7F
+              :EVEX '(:0F :256 :F2 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512VL :AVX512BW)))))
+    (INST "VMOVDQU8"
+          (OP :OP #xF7F
+              :EVEX '(:0F :512 :F2 :W0)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "JO"
+          (OP :OP #xF80 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNO"
+          (OP :OP #xF81 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JB/NAE/C"
+          (OP :OP #xF82 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNB/AE/NC"
+          (OP :OP #xF83 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JZ/E"
+          (OP :OP #xF84 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNZ/NE"
+          (OP :OP #xF85 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JBE/NA"
+          (OP :OP #xF86 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNBE/A"
+          (OP :OP #xF87 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JS"
+          (OP :OP #xF88 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNS"
+          (OP :OP #xF89 :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JP/PE"
+          (OP :OP #xF8A :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNP/PO"
+          (OP :OP #xF8B :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JL/NGE"
+          (OP :OP #xF8C :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNL/GE"
+          (OP :OP #xF8D :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JLE/NG"
+          (OP :OP #xF8E :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JNLE/G"
+          (OP :OP #xF8F :SUPERSCRIPTS '(:F64))
+          (ARG :OP1 '(J Z))
+          '(X86-TWO-BYTE-JCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETO" (OP :OP #xF90)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KMOVB"
+          (OP :OP #xF90
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ))
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512DQ)))))
+    (INST "KMOVD"
+          (OP :OP #xF90
+              :VEX '(:0F :L0 :66 :W1)
+              :FEAT '(:AVX512BW))
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
+    (INST "KMOVQ"
+          (OP :OP #xF90
+              :VEX '(:0F :L0 :W1)
+              :FEAT '(:AVX512BW))
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
+    (INST "KMOVW"
+          (OP :OP #xF90
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F))
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512F)))))
+    (INST "SETNO" (OP :OP #xF91)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KMOVB"
+          (OP :OP #xF91
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD :MEM)
+          (ARG :OP1 '(K-R/M B)
+               :OP2 '(K-REG B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512DQ)))))
+    (INST "KMOVD"
+          (OP :OP #xF91
+              :VEX '(:0F :L0 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD :MEM)
+          (ARG :OP1 '(K-R/M D)
+               :OP2 '(K-REG D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
+    (INST "KMOVQ"
+          (OP :OP #xF91
+              :VEX '(:0F :L0 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD :MEM)
+          (ARG :OP1 '(K-R/M Q) :OP2 '(K-REG Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512BW)))))
+    (INST "KMOVW"
+          (OP :OP #xF91
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F)
+              :MOD :MEM)
+          (ARG :OP1 '(K-R/M W) :OP2 '(K-REG W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K21 (:AVX512F)))))
+    (INST "SETB/NAE/C" (OP :OP #xF92)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KMOVB"
+          (OP :OP #xF92
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KMOVD"
+          (OP :OP #xF92
+              :VEX '(:0F :L0 :F2 :W0)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KMOVQ"
+          (OP :OP #xF92
+              :VEX '(:0F :L0 :F2 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KMOVW"
+          (OP :OP #xF92
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "SETNB/AE/NC" (OP :OP #xF93)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KMOVB"
+          (OP :OP #xF93
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KMOVD"
+          (OP :OP #xF93
+              :VEX '(:0F :L0 :F2 :W0)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KMOVQ"
+          (OP :OP #xF93
+              :VEX '(:0F :L0 :F2 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KMOVW"
+          (OP :OP #xF93
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "SETZ/E" (OP :OP #xF94)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETNZ/NE" (OP :OP #xF95)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETBE/NA" (OP :OP #xF96)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETNBE/A" (OP :OP #xF97)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETS" (OP :OP #xF98)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KORTESTB"
+          (OP :OP #xF98
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KORTESTD"
+          (OP :OP #xF98
+              :VEX '(:0F :L0 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KORTESTQ"
+          (OP :OP #xF98
+              :VEX '(:0F :L0 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KORTESTW"
+          (OP :OP #xF98
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512F)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512F)))))
+    (INST "SETNS" (OP :OP #xF99)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "KTESTB"
+          (OP :OP #xF99
+              :VEX '(:0F :L0 :66 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG B)
+               :OP2 '(K-R/M B))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "KTESTD"
+          (OP :OP #xF99
+              :VEX '(:0F :L0 :66 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG D)
+               :OP2 '(K-R/M D))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KTESTQ"
+          (OP :OP #xF99
+              :VEX '(:0F :L0 :W1)
+              :FEAT '(:AVX512BW)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG Q) :OP2 '(K-R/M Q))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512BW)))))
+    (INST "KTESTW"
+          (OP :OP #xF99
+              :VEX '(:0F :L0 :W0)
+              :FEAT '(:AVX512DQ)
+              :MOD #x3)
+          (ARG :OP1 '(K-REG W) :OP2 '(K-R/M W))
+          NIL
+          '((:EX (CHK-EXC :TYPE-K20 (:AVX512DQ)))))
+    (INST "SETP/PE" (OP :OP #xF9A)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETNP/PO" (OP :OP #xF9B)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETL/NGE" (OP :OP #xF9C)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETNL/GE" (OP :OP #xF9D)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETLE/NG" (OP :OP #xF9E)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SETNLE/G" (OP :OP #xF9F)
+          (ARG :OP1 '(E B))
+          '(X86-SETCC)
+          '((:UD (UD-LOCK-USED))))
+    (INST "PUSH FS"
+          (OP :OP #xFA0 :SUPERSCRIPTS '(:D64))
+          (ARG :OP1 '(:FS))
+          '(X86-PUSH-SEGMENT-REGISTER)
+          '((:UD (UD-LOCK-USED))))
+    (INST "POP"
+          (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
+          (ARG :OP1 '(:FS))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "CPUID" (OP :OP #xFA2)
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BT" (OP :OP #xFA3)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          '(X86-BT-0F-A3)
+          '((:UD (UD-LOCK-USED))))
+    (INST "SHLD" (OP :OP #xFA4)
+          (ARG :OP1 '(E V)
+               :OP2 '(G V)
+               :OP3 '(I B))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "SHLD" (OP :OP #xFA5)
+          (ARG :OP1 '(E V)
+               :OP2 '(G V)
+               :OP3 '(:CL))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "PUSH GS"
+          (OP :OP #xFA8 :SUPERSCRIPTS '(:D64))
+          (ARG :OP1 '(:GS))
+          '(X86-PUSH-SEGMENT-REGISTER)
+          '((:UD (UD-LOCK-USED))))
+    (INST "POP"
+          (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
+          (ARG :OP1 '(:GS))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "RSM" (OP :OP #xFAA)
+          NIL 'NIL
+          'NIL)
+    (INST "BTS" (OP :OP #xFAB)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "SHRD" (OP :OP #xFAC)
+          (ARG :OP1 '(E V)
+               :OP2 '(G V)
+               :OP3 '(I B))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "SHRD" (OP :OP #xFAD)
+          (ARG :OP1 '(E V)
+               :OP2 '(G V)
+               :OP3 '(:CL))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "FXSAVE"
+          (OP :OP #xFAE
+              :REG #x0
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FXSR))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "RDFSBASE"
+          (OP :OP #xFAE
+              :REG #x0
+              :MOD #x3
+              :PFX :F3
+              :MODE :O64
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FSGSBASE))
+          (ARG :OP1 '(R Y))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
+    (INST "FXRSTOR"
+          (OP :OP #xFAE
+              :REG #x1
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FXSR))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "RDGSBASE"
+          (OP :OP #xFAE
+              :REG #x1
+              :MOD #x3
+              :PFX :F3
+              :MODE :O64
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FSGSBASE))
+          (ARG :OP1 '(R Y))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
+    (INST "LDMXCSR"
+          (OP :OP #xFAE
+              :REG #x2
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15))
+          NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "WRFSBASE"
+          (OP :OP #xFAE
+              :REG #x2
+              :MOD #x3
+              :PFX :F3
+              :MODE :O64
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FSGSBASE))
+          (ARG :OP1 '(R Y))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
+    (INST "STMXCSR"
+          (OP :OP #xFAE
+              :REG #x3
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15))
+          NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "WRGSBASE"
+          (OP :OP #xFAE
+              :REG #x3
+              :MOD #x3
+              :PFX :F3
+              :MODE :O64
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:FSGSBASE))
+          (ARG :OP1 '(R Y))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
+    (INST "XSAVE"
+          (OP :OP #xFAE
+              :REG #x4
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:XSAVE))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
+            (:GP (GP-CPL-NOT-0))
+            (:NM (NM-CR0-TS-IS-1))))
+    (INST "XRSTOR"
+          (OP :OP #xFAE
+              :REG #x5
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:XSAVE))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
+            (:GP (GP-CPL-NOT-0))
+            (:NM (NM-CR0-TS-IS-1))))
+    (INST "LFENCE"
+          (OP :OP #xFAE
+              :REG #x5
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:SSE2))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "XSAVEOPT"
+          (OP :OP #xFAE
+              :REG #x6
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED)
+                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
+                 (OR (EQUAL (FEATURE-FLAG-MACRO :XSAVE) #x0)
+                     (EQUAL (FEATURE-FLAG-MACRO :XSAVEOPT) #x0)))
+            (:NM (NM-CR0-TS-IS-1))))
+    (INST "MFENCE"
+          (OP :OP #xFAE
+              :REG #x6
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:SSE2))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "CLFLUSH"
+          (OP :OP #xFAE
+              :REG #x7
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:CLFSH))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "SFENCE"
+          (OP :OP #xFAE
+              :REG #x7
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-15)
+              :FEAT '(:SSE))
+          NIL 'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "VLDMXCSR"
+          (OP :OP #xFAE
+              :VEX '(:0F :LZ :WIG)
+              :FEAT '(:AVX)
+              :REG #x2)
+          (ARG :OP1 '(M D))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VSTMXCSR"
+          (OP :OP #xFAE
+              :VEX '(:0F :LZ :WIG)
+              :FEAT '(:AVX)
+              :REG #x3)
+          (ARG :OP1 '(M D))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "IMUL" (OP :OP #xFAF)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-IMUL-OP/EN-RM)
+          '((:UD (UD-LOCK-USED))))
+    (INST "CMPXCHG" (OP :OP #xFB0)
+          (ARG :OP1 '(E B) :OP2 '(G B))
+          '(X86-CMPXCHG)
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "CMPXCHG" (OP :OP #xFB1)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          '(X86-CMPXCHG)
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "LSS" (OP :OP #xFB2)
+          (ARG :OP1 '(G V) :OP2 '(M P))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (UD-SOURCE-OPERAND-IS-A-REGISTER))))
+    (INST "BTR" (OP :OP #xFB3)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "LFS" (OP :OP #xFB4)
+          (ARG :OP1 '(G V) :OP2 '(M P))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (UD-SOURCE-OPERAND-IS-A-REGISTER))))
+    (INST "LGS" (OP :OP #xFB5)
+          (ARG :OP1 '(G V) :OP2 '(M P))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (UD-SOURCE-OPERAND-IS-A-REGISTER))))
+    (INST "MOVZX" (OP :OP #xFB6)
+          (ARG :OP1 '(G V) :OP2 '(E B))
+          '(X86-MOVZX)
+          '((:UD (UD-LOCK-USED))))
+    (INST "MOVZX" (OP :OP #xFB7)
+          (ARG :OP1 '(G V) :OP2 '(E W))
+          '(X86-MOVZX)
+          '((:UD (UD-LOCK-USED))))
+    (INST "JMPE" (OP :OP #xFB8 :PFX :NO-PREFIX)
+          ;; Reserved for emulator on IPF (Itanium Processor Family).
+          NIL 'NIL
+          'NIL)
+    (INST "POPCNT" (OP :OP #xFB8
+                       :PFX :F3
+                       :FEAT '(:POPCNT))
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "UD1"
+          (OP :OP #xFB9
+              :SUPERSCRIPTS '(:1A :1C)
+              :GROUP '(:GROUP-10))
+          NIL
+          '(X86-ILLEGAL-INSTRUCTION (MESSAGE . "UD1 encountered!"))
+          'NIL)
+    (INST "BT"
+          (OP :OP #xFBA
+              :REG #x4
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-8))
+          (ARG :OP1 '(E V) :OP2 '(I B))
+          '(X86-BT-0F-BA)
+          '((:UD (UD-LOCK-USED))))
+    (INST "BTS"
+          (OP :OP #xFBA
+              :REG #x5
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-8))
+          (ARG :OP1 '(E B) :OP2 '(I B))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "BTR"
+          (OP :OP #xFBA
+              :REG #x6
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-8))
+          (ARG :OP1 '(E B) :OP2 '(I B))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "BTC"
+          (OP :OP #xFBA
+              :REG #x7
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-8))
+          (ARG :OP1 '(E B) :OP2 '(I B))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "BTC" (OP :OP #xFBB)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          '(X86-BSF-OP/EN-RM)
+          '((:UD (UD-LOCK-USED))))
+    (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          'NIL
+          'NIL)
+    (INST "BSR" (OP :OP #xFBD :PFX :NO-PREFIX)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "LZCNT" (OP :OP #xFBD :PFX :F3)
+          (ARG :OP1 '(G V) :OP2 '(E V))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "MOVSX" (OP :OP #xFBE)
+          (ARG :OP1 '(G V) :OP2 '(E B))
+          '(X86-MOVSXD)
+          '((:UD (UD-LOCK-USED))))
+    (INST "MOVSX" (OP :OP #xFBF)
+          (ARG :OP1 '(G V) :OP2 '(E W))
+          '(X86-MOVSXD)
+          '((:UD (UD-LOCK-USED))))
+    (INST "XADD" (OP :OP #xFC0)
+          (ARG :OP1 '(E B) :OP2 '(G B))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "XADD" (OP :OP #xFC1)
+          (ARG :OP1 '(E V) :OP2 '(G V))
+          'NIL
+          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+    (INST "CMPPS"
+          (OP :OP #xFC2
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          '(X86-CMPPS-OP/EN-RMI)
+          '((:EX (CHK-EXC :TYPE-2 (:SSE)))))
+    (INST "CMPPD"
+          (OP :OP #xFC2 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          '(X86-CMPPD-OP/EN-RMI)
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "CMPSS"
+          (OP :OP #xFC2 :PFX :F3 :FEAT '(:SSE))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS)
+               :OP4 '(I B))
+          '(X86-CMPSS/CMPSD-OP/EN-RMI (SP/DP . #x0))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE)))))
+    (INST "CMPSD"
+          (OP :OP #xFC2 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD)
+               :OP4 '(I B))
+          '(X86-CMPSS/CMPSD-OP/EN-RMI (SP/DP . #x1))
+          '((:EX (CHK-EXC :TYPE-3 (:SSE2)))))
+    (INST "VCMPPD"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCMPPD"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCMPPS"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCMPPS"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCMPSD"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :LIG :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SD)
+               :OP2 '(H SD)
+               :OP3 '(W SD)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCMPSS"
+          (OP :OP #xFC2
+              :VEX '(:0F :NDS :LIG :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V SS)
+               :OP2 '(H SS)
+               :OP3 '(W SS)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-3 (:AVX)))))
+    (INST "VCMPPD"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCMPPD"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCMPPD"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCMPPS"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCMPPS"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCMPPS"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCMPSD"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :LIG :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "VCMPSS"
+          (OP :OP #xFC2
+              :EVEX '(:0F :NDS :LIG :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
+    (INST "MOVNTI" (OP :OP #xFC3
+                       :FEAT '(:SSE2))
+          (ARG :OP1 '(M Y) :OP2 '(G Y))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "PINSRW"
+          (OP :OP #xFC4 :MOD #x3 :PFX :NO-PREFIX)
+          (ARG :OP1 '(P Q)
+               :OP2 '(R Y)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "PINSRW"
+          (OP :OP #xFC4 :MOD :MEM :PFX :NO-PREFIX)
+          (ARG :OP1 '(P Q)
+               :OP2 '(M W)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "PINSRW"
+          (OP :OP #xFC4 :MOD #x3 :PFX :66)
+          (ARG :OP1 '(V DQ)
+               :OP2 '(H DQ)
+               :OP3 '(R Y)
+               :OP4 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "PINSRW"
+          (OP :OP #xFC4 :MOD :MEM :PFX :66)
+          (ARG :OP1 '(V DQ)
+               :OP2 '(H DQ)
+               :OP3 '(M W)
+               :OP4 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "VPINSRW"
+          (OP :OP #xFC4
+              :VEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ)
+               :OP2 '(H DQ)
+               :OP3 '(R Y)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VPINSRW"
+          (OP :OP #xFC4
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "PEXTRW"
+          (OP :OP #xFC5
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(G D)
+               :OP2 '(N Q)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
+    (INST "PEXTRW"
+          (OP :OP #xFC5 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(G D)
+               :OP2 '(U DQ)
+               :OP3 '(I B))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "VPEXTRW"
+          (OP :OP #xFC5
+              :VEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G D)
+               :OP2 '(U DQ)
+               :OP3 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VPEXTRW"
+          (OP :OP #xFC5
+              :EVEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
+    (INST "SHUFPS"
+          (OP :OP #xFC6
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          '(X86-SHUFPS-OP/EN-RMI)
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "SHUFPD"
+          (OP :OP #xFC6 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          '(X86-SHUFPD-OP/EN-RMI)
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VSHUFPD"
+          (OP :OP #xFC6
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VSHUFPD"
+          (OP :OP #xFC6
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VSHUFPS"
+          (OP :OP #xFC6
+              :VEX '(:0F :NDS :128 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VSHUFPS"
+          (OP :OP #xFC6
+              :VEX '(:0F :NDS :256 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS)
+               :OP4 '(I B))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VSHUFPD"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VSHUFPD"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VSHUFPD"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "VSHUFPS"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :128 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VSHUFPS"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :256 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
+    (INST "VSHUFPS"
+          (OP :OP #xFC6
+              :EVEX '(:0F :NDS :512 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
+    (INST "CMPXCHG16B"
+          (OP :OP #xFC7
+              :REG #x1
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              ;; This opcode is obviously not encodable in non 64-bit modes, but I
+              ;; won't bother to include that here --- REX bytes shouldn't even be
+              ;; detected in that mode.
+              :REX :W
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M DQ))
+          'NIL
+          '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "CMPXCH8B"
+          (OP :OP #xFC7
+              :REG #x1
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              ;; :NOT-W also includes the case where the rex byte is absent.
+              :REX :NOT-W
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M Q))
+          'NIL
+          '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "VMPTRLD"
+          (OP :OP #xFC7
+              :REG #x6
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M Q))
+          'NIL
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "VMCLEAR"
+          (OP :OP #xFC7
+              :REG #x6
+              :MOD :MEM
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M Q))
+          'NIL
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "VMXON"
+          (OP :OP #xFC7
+              :REG #x6
+              :MOD :MEM
+              :PFX :F3
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M Q))
+          'NIL
+          ;; BOZO Rob -- following GP only if executed outside VMX operation!
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "VMPTRLD"
+          (OP :OP #xFC7
+              :REG #x7
+              :MOD :MEM
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9))
+          (ARG :OP1 '(M Q))
+          'NIL
+          '((:GP (GP-CPL-NOT-0))))
+    (INST "RDRAND"
+          (OP :OP #xFC7
+              :REG #x6
+              :MOD #x3
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9)
+              :FEAT '(:RDRAND))
+          (ARG :OP1 '(R V))
+          '(X86-RDRAND)
+          '((:UD (UD-LOCK-USED)
+                 (UD-REPS-USED))))
+    ;; [Shilpi] RDRAND, with #x66 prefix, isn't listed in the Intel manuals (May
+    ;; 2018 edition).  This is because all opcodes in this table other than RDRAND
+    ;; throw an error if they're used with a SIMD prefix that's not listed as an
+    ;; allowed mandatory prefix for that opcode.  RDRAND can be used with
+    ;; :no-prefix and :66, but not :F2 or :F3 (see (ud-Reps-used) in :ud listing).
+    (INST "RDRAND"
+          (OP :OP #xFC7
+              :REG #x6
+              :MOD #x3
+              :PFX :66
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9)
+              :FEAT '(:RDRAND))
+          (ARG :OP1 '(R W))
+          '(X86-RDRAND)
+          '((:UD (UD-LOCK-USED)
+                 (UD-REPS-USED))))
+    (INST "RDSEED"
+          (OP :OP #xFC7
+              :REG #x7
+              :PFX :NO-PREFIX
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9)
+              :FEAT '(:RDSEED))
+          (ARG :OP1 '(R V))
+          'NIL
+          '((:UD (UD-LOCK-USED)
+                 (UD-REPS-USED))))
+    (INST "RDPID"
+          (OP :OP #xFC7
+              :REG #x7
+              :PFX :F3
+              :MODE :O64
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9)
+              :FEAT '(:RDPID))
+          (ARG :OP1 '(R Q))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "RDPID"
+          (OP :OP #xFC7
+              :REG #x7
+              :PFX :F3
+              :MODE :I64
+              :SUPERSCRIPTS '(:1A)
+              :GROUP '(:GROUP-9)
+              :FEAT '(:RDPID))
+          (ARG :OP1 '(R D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFC8)
+          (ARG :OP1 '(:RAX/EAX/R8/R8D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFC9)
+          (ARG :OP1 '(:RCX/ECX/R9/R9D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCA)
+          (ARG :OP1 '(:RDX/EDX/R10/R10D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCB)
+          (ARG :OP1 '(:RBX/EBX/R11/R11D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCC)
+          (ARG :OP1 '(:RSP/ESP/R12/R12D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCD)
+          (ARG :OP1 '(:RBP/EBP/R13/R13D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCE)
+          (ARG :OP1 '(:RSI/ESI/R14/R14D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "BSWAP" (OP :OP #xFCF)
+          (ARG :OP1 '(:RDI/EDI/R15/R15D))
+          'NIL
+          '((:UD (UD-LOCK-USED))))
+    (INST "ADDSUBPD"
+          (OP :OP #xFD0 :PFX :66 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
+    (INST "ADDSUBPS"
+          (OP :OP #xFD0 :PFX :F2 :FEAT '(:SSE3))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
+    (INST "VADDSUBPD"
+          (OP :OP #xFD0
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDSUBPD"
+          (OP :OP #xFD0
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PD)
+               :OP2 '(H PD)
+               :OP3 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDSUBPS"
+          (OP :OP #xFD0
+              :VEX '(:0F :NDS :128 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VADDSUBPS"
+          (OP :OP #xFD0
+              :VEX '(:0F :NDS :256 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V PS)
+               :OP2 '(H PS)
+               :OP3 '(W PS))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "PSRLW"
+          (OP :OP #xFD1
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLW"
+          (OP :OP #xFD1 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSRLW"
+          (OP :OP #xFD1
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRLW"
+          (OP :OP #xFD1
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRLW"
+          (OP :OP #xFD1
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLW"
+          (OP :OP #xFD1
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLW"
+          (OP :OP #xFD1
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSRLD"
+          (OP :OP #xFD2
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLD"
+          (OP :OP #xFD2 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSRLD"
+          (OP :OP #xFD2
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRLD"
+          (OP :OP #xFD2
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRLD"
+          (OP :OP #xFD2
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLD"
+          (OP :OP #xFD2
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLD"
+          (OP :OP #xFD2
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSRLQ"
+          (OP :OP #xFD3
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRLQ"
+          (OP :OP #xFD3 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSRLQ"
+          (OP :OP #xFD3
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRLQ"
+          (OP :OP #xFD3
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRLQ"
+          (OP :OP #xFD3
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLQ"
+          (OP :OP #xFD3
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRLQ"
+          (OP :OP #xFD3
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PADDQ"
+          (OP :OP #xFD4
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "ADDQ"
+          (OP :OP #xFD4 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDQ"
+          (OP :OP #xFD4
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDQ"
+          (OP :OP #xFD4
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDQ"
+          (OP :OP #xFD4
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPADDQ"
+          (OP :OP #xFD4
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPADDQ"
+          (OP :OP #xFD4
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "PMULLW"
+          (OP :OP #xFD5
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PMULLW"
+          (OP :OP #xFD5 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMULLW"
+          (OP :OP #xFD5
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMULLW"
+          (OP :OP #xFD5
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMULLW"
+          (OP :OP #xFD5
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULLW"
+          (OP :OP #xFD5
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULLW"
+          (OP :OP #xFD5
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "MOVQ"
+          (OP :OP #xFD6 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(W Q) :OP2 '(V Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "MOVQ2DQ"
+          (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V DQ) :OP2 '(N Q))
+          'NIL
+          '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
+                 (EQUAL (CR0BITS->EM (CR0)) #x1)
+                 (EQUAL (CR4BITS->OSFXSR (CR4)) #x0)
+                 (UD-LOCK-USED))))
+    (INST "MOVDQ2Q"
+          (OP :OP #xFD6 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(P Q) :OP2 '(U Q))
+          'NIL
+          '((:UD (EQUAL (CR0BITS->TS (CR0)) #x1)
+                 (EQUAL (CR0BITS->EM (CR0)) #x1)
+                 (EQUAL (CR4BITS->OSFXSR (CR4)) #x0)
+                 (UD-LOCK-USED))))
+    (INST "VMOVQ"
+          (OP :OP #xFD6
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V Q) :OP2 '(W Q))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VMOVQ"
+          (OP :OP #xFD6
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E9NF (:AVX512F)))))
+    (INST "PMOVMSKB"
+          (OP :OP #xFD7
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(G D) :OP2 '(N Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
+    (INST "PMOVMSKB"
+          (OP :OP #xFD7 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(G D) :OP2 '(U X))
+          '(X86-PMOVMSKB-OP/EN-RM)
+          '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
+    (INST "VPMOVMSKB"
+          (OP :OP #xFD7
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(G D) :OP2 '(U X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+    (INST "VPMOVMSKB"
+          (OP :OP #xFD7
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(G D) :OP2 '(U X))
+          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
+    (INST "PSUBUSB"
+          (OP :OP #xFD8
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBUSB"
+          (OP :OP #xFD8 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBUSB"
+          (OP :OP #xFD8
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBUSB"
+          (OP :OP #xFD8
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBUSB"
+          (OP :OP #xFD8
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBUSB"
+          (OP :OP #xFD8
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBUSB"
+          (OP :OP #xFD8
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512BW)))))
+    (INST "PSUBUSW"
+          (OP :OP #xFD9
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBUSW"
+          (OP :OP #xFD9 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBUSW"
+          (OP :OP #xFD9
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBUSW"
+          (OP :OP #xFD9
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBUSW"
+          (OP :OP #xFD9
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBUSW"
+          (OP :OP #xFD9
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBUSW"
+          (OP :OP #xFD9
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512BW)))))
+    (INST "PMINUB"
+          (OP :OP #xFDA
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PMINUB"
+          (OP :OP #xFDA :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMINUB"
+          (OP :OP #xFDA
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMINUB"
+          (OP :OP #xFDA
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMINUB"
+          (OP :OP #xFDA
+              :EVEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMINUB"
+          (OP :OP #xFDA
+              :EVEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMINUB"
+          (OP :OP #xFDA
+              :EVEX '(:0F :NDS :512 :66)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PAND"
+          (OP :OP #xFDB
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PAND"
+          (OP :OP #xFDB :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x3))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPAND"
+          (OP :OP #xFDB
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPAND"
+          (OP :OP #xFDB
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPANDD"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPANDQ"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPANDD"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDD"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDQ"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDQ"
+          (OP :OP #xFDB
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "PADDUSB"
+          (OP :OP #xFDC
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDUSB"
+          (OP :OP #xFDC :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDUSB"
+          (OP :OP #xFDC
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDUSB"
+          (OP :OP #xFDC
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDUSB"
+          (OP :OP #xFDC
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDUSB"
+          (OP :OP #xFDC
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDUSB"
+          (OP :OP #xFDC
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PADDUSW"
+          (OP :OP #xFDD
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDUSW"
+          (OP :OP #xFDD :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDUSW"
+          (OP :OP #xFDD
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDUSW"
+          (OP :OP #xFDD
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDUSW"
+          (OP :OP #xFDD
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDUSW"
+          (OP :OP #xFDD
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDUSW"
+          (OP :OP #xFDD
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PMAXUB"
+          (OP :OP #xFDE
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PMAXUB"
+          (OP :OP #xFDE :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMAXUB"
+          (OP :OP #xFDE
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMAXUB"
+          (OP :OP #xFDE
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMAXUB"
+          (OP :OP #xFDE
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMAXUB"
+          (OP :OP #xFDE
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMAXUB"
+          (OP :OP #xFDE
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PANDN"
+          (OP :OP #xFDF
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PANDN"
+          (OP :OP #xFDF :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #xD))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPANDN"
+          (OP :OP #xFDF
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPANDN"
+          (OP :OP #xFDF
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPANDND"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDND"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDND"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPANDNQ"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDNQ"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPANDNQ"
+          (OP :OP #xFDF
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PAVGB"
+          (OP :OP #xFE0
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PAVGB"
+          (OP :OP #xFE0 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPAVGB"
+          (OP :OP #xFE0
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPAVGB"
+          (OP :OP #xFE0
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPAVGB"
+          (OP :OP #xFE0
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPAVGB"
+          (OP :OP #xFE0
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPAVGB"
+          (OP :OP #xFE0
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PSRAW"
+          (OP :OP #xFE1
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRAW"
+          (OP :OP #xFE1 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSRAW"
+          (OP :OP #xFE1
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRAW"
+          (OP :OP #xFE1
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRAW"
+          (OP :OP #xFE1
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRAW"
+          (OP :OP #xFE1
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSRAW"
+          (OP :OP #xFE1
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSRAD"
+          (OP :OP #xFE2
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSRAD"
+          (OP :OP #xFE2 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSRAD"
+          (OP :OP #xFE2
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSRAD"
+          (OP :OP #xFE2
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSRAD"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSRAD"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
+    (INST "VPSRAQ"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSRAQ"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSRAQ"
+          (OP :OP #xFE2
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
+    (INST "PAVGW"
+          (OP :OP #xFE3
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PAVGW"
+          (OP :OP #xFE3 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPAVGW"
+          (OP :OP #xFE3
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPAVGW"
+          (OP :OP #xFE3
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPAVGW"
+          (OP :OP #xFE3
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPAVGW"
+          (OP :OP #xFE3
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPAVGW"
+          (OP :OP #xFE3
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PMULHUW"
+          (OP :OP #xFE4
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PMULHUW"
+          (OP :OP #xFE4 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMULHUW"
+          (OP :OP #xFE4
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMULHUW"
+          (OP :OP #xFE4
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMULHUW"
+          (OP :OP #xFE4
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULHUW"
+          (OP :OP #xFE4
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULHUW"
+          (OP :OP #xFE4
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PMULHW"
+          (OP :OP #xFE5
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PMULHW"
+          (OP :OP #xFE5 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMULHW"
+          (OP :OP #xFE5
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMULHW"
+          (OP :OP #xFE5
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMULHW"
+          (OP :OP #xFE5
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULHW"
+          (OP :OP #xFE5
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMULHW"
+          (OP :OP #xFE5
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "CVTTPD2DQ"
+          (OP :OP #xFE6 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "CVTDQ2PD"
+          (OP :OP #xFE6 :PFX :F3 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
+    (INST "CVTPD2DQ"
+          (OP :OP #xFE6 :PFX :F2 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-2 (:SSE2)))))
+    (INST "VCVTDQ2PD"
+          (OP :OP #xFE6
+              :VEX '(:0F :128 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VCVTDQ2PD"
+          (OP :OP #xFE6
+              :VEX '(:0F :256 :F3 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
+    (INST "VCVTPD2DQ"
+          (OP :OP #xFE6
+              :VEX '(:0F :128 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTPD2DQ"
+          (OP :OP #xFE6
+              :VEX '(:0F :256 :F2 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTTPD2DQ"
+          (OP :OP #xFE6
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTTPD2DQ"
+          (OP :OP #xFE6
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(W PD))
+          NIL '((:EX (CHK-EXC :TYPE-2 (:AVX)))))
+    (INST "VCVTDQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :128 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTDQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :256 :F3 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTDQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :512 :F3 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :128 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :256 :F2 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :512 :F2 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "VCVTQQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :128 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTQQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :256 :F3 :W1)
+              :FEAT '(:AVX512VL :AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512DQ)))))
+    (INST "VCVTQQ2PD"
+          (OP :OP #xFE6
+              :EVEX '(:0F :512 :F3 :W1)
+              :FEAT '(:AVX512DQ))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512DQ)))))
+    (INST "VCVTTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512VL :AVX512F)))))
+    (INST "VCVTTPD2DQ"
+          (OP :OP #xFE6
+              :EVEX '(:0F :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E2 (:AVX512F)))))
+    (INST "MOVNTQ"
+          (OP :OP #xFE7
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(M Q) :OP2 '(P Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))
+            (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "MOVNTDQ"
+          (OP :OP #xFE7 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(M X) :OP2 '(V X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-1 (:SSE2)))
+            (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "VMOVNTDQ"
+          (OP :OP #xFE7
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M X) :OP2 '(V X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTDQ"
+          (OP :OP #xFE7
+              :VEX '(:0F :256 :66 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(M X) :OP2 '(V X))
+          NIL '((:EX (CHK-EXC :TYPE-1 (:AVX)))))
+    (INST "VMOVNTDQ"
+          (OP :OP #xFE7
+              :EVEX '(:0F :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTDQ"
+          (OP :OP #xFE7
+              :EVEX '(:0F :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512VL :AVX512F)))))
+    (INST "VMOVNTDQ"
+          (OP :OP #xFE7
+              :EVEX '(:0F :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E1NF (:AVX512F)))))
+    (INST "PSUBSB"
+          (OP :OP #xFE8
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBSB"
+          (OP :OP #xFE8 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBSB"
+          (OP :OP #xFE8
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBSB"
+          (OP :OP #xFE8
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBSB"
+          (OP :OP #xFE8
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBSB"
+          (OP :OP #xFE8
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBSB"
+          (OP :OP #xFE8
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PSUBSW"
+          (OP :OP #xFE9
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBSW"
+          (OP :OP #xFE9 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBSW"
+          (OP :OP #xFE9
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBSW"
+          (OP :OP #xFE9
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBSW"
+          (OP :OP #xFE9
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBSW"
+          (OP :OP #xFE9
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBSW"
+          (OP :OP #xFE9
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PMINSW"
+          (OP :OP #xFEA
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE)))))
+    (INST "PMINSW"
+          (OP :OP #xFEA :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMINSW"
+          (OP :OP #xFEA
+              :VEX '(:0F :NDS :128 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMINSW"
+          (OP :OP #xFEA
+              :VEX '(:0F :NDS :256 :66)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMINSW"
+          (OP :OP #xFEA
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMINSW"
+          (OP :OP #xFEA
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMINSW"
+          (OP :OP #xFEA
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "POR"
+          ;; Note: Table 22-7 does not list POR in the
+          ;; "Applicable Instructions" section, but it does
+          ;; list PXOR.  So this is a guess.
+          (OP :OP #xFEB
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "POR"
+          (OP :OP #xFEB :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x1))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPOR"
+          (OP :OP #xFEB
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPOR"
+          (OP :OP #xFEB
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPORD"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPORD"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPORD"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPORQ"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPORQ"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPORQ"
+          (OP :OP #xFEB
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PADDSB"
+          (OP :OP #xFEC
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDSB"
+          (OP :OP #xFEC :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDSB"
+          (OP :OP #xFEC
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDSB"
+          (OP :OP #xFEC
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDSB"
+          (OP :OP #xFEC
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDSB"
+          (OP :OP #xFEC
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDSB"
+          (OP :OP #xFEC
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PADDSW"
+          (OP :OP #xFED
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDSW"
+          (OP :OP #xFED :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDSW"
+          (OP :OP #xFED
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDSW"
+          (OP :OP #xFED
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDSW"
+          (OP :OP #xFED
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDSW"
+          (OP :OP #xFED
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDSW"
+          (OP :OP #xFED
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PMAXSW"
+          (OP :OP #xFEE
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PMAXSW"
+          (OP :OP #xFEE :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMAXSW"
+          (OP :OP #xFEE
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMAXSW"
+          (OP :OP #xFEE
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMAXSW"
+          (OP :OP #xFEE
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMAXSW"
+          (OP :OP #xFEE
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMAXSW"
+          (OP :OP #xFEE
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PXOR"
+          (OP :OP #xFEF
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PXOR"
+          (OP :OP #xFEF :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          '(X86-ANDP?/ANDNP?/ORP?/XORP?/PAND/PANDN/POR/PXOR-OP/EN-RM
+            (OPERATION . #x5))
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPXOR"
+          (OP :OP #xFEF
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPXOR"
+          (OP :OP #xFEF
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPXORD"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPXORD"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPXORD"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "VPXORQ"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPXORQ"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPXORQ"
+          (OP :OP #xFEF
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "LDDQU"
+          (OP :OP #xFF0 :PFX :F2 :FEAT '(:SSE3))
+          (ARG :OP1 '(V X) :OP2 '(M X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE3)))
+            (:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    (INST "VLDDQU"
+          (OP :OP #xFF0
+              :VEX '(:0F :128 :F2 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(V X) :OP2 '(M X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VLDDQU"
+          (OP :OP #xFF0
+              :VEX '(:0F :256 :F2 :WIG)
+              :FEAT '(:AVX)
+              :MOD :MEM)
+          (ARG :OP1 '(V X) :OP2 '(M X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "PSLLW"
+          (OP :OP #xFF1
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLW"
+          (OP :OP #xFF1 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSLLW"
+          (OP :OP #xFF1
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSLLW"
+          (OP :OP #xFF1
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSLLW"
+          (OP :OP #xFF1
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLW"
+          (OP :OP #xFF1
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSLLW"
+          (OP :OP #xFF1
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSLLD"
+          (OP :OP #xFF2
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLD"
+          (OP :OP #xFF2 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSLLD"
+          (OP :OP #xFF2
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSLLD"
+          (OP :OP #xFF2
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSLLD"
+          (OP :OP #xFF2
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSLLD"
+          (OP :OP #xFF2
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSLLD"
+          (OP :OP #xFF2
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
+    (INST "PSLLQ"
+          (OP :OP #xFF3
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSLLQ"
+          (OP :OP #xFF3 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSLLQ"
+          (OP :OP #xFF3
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSLLQ"
+          (OP :OP #xFF3
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSLLQ"
+          (OP :OP #xFF3
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSLLQ"
+          (OP :OP #xFF3
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512F)))))
+    (INST "VPSLLQ"
+          (OP :OP #xFF3
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512F)))))
+    (INST "PMULUDQ"
+          (OP :OP #xFF4
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PMULUDQ"
+          (OP :OP #xFF4 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMULUDQ"
+          (OP :OP #xFF4
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMULUDQ"
+          (OP :OP #xFF4
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMULUDQ"
+          (OP :OP #xFF4
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPMULUDQ"
+          (OP :OP #xFF4
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPMULUDQ"
+          (OP :OP #xFF4
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PMADDWD"
+          (OP :OP #xFF5
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PMADDWD"
+          (OP :OP #xFF5 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPMADDWD"
+          (OP :OP #xFF5
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPMADDWD"
+          (OP :OP #xFF5
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPMADDWD"
+          (OP :OP #xFF5
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMADDWD"
+          (OP :OP #xFF5
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPMADDWD"
+          (OP :OP #xFF5
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "PSADBW"
+          (OP :OP #xFF6
+              :PFX :NO-PREFIX
+              :FEAT '(:SSE))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
+    (INST "PSADBW"
+          (OP :OP #xFF6 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSADBW"
+          (OP :OP #xFF6
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSADBW"
+          (OP :OP #xFF6
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSADBW"
+          (OP :OP #xFF6
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSADBW"
+          (OP :OP #xFF6
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSADBW"
+          (OP :OP #xFF6
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
+    (INST "MASKMOVQ"
+          (OP :OP #xFF7
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(N Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
+    (INST "MASKMOVDQU"
+          (OP :OP #xFF7 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V DQ) :OP2 '(U DQ))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VMASKMOVDQU"
+          (OP :OP #xFF7
+              :VEX '(:0F :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V DQ) :OP2 '(U DQ))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "PSUBB"
+          (OP :OP #xFF8
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBB"
+          (OP :OP #xFF8 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBB"
+          (OP :OP #xFF8
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBB"
+          (OP :OP #xFF8
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBB"
+          (OP :OP #xFF8
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBB"
+          (OP :OP #xFF8
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBB"
+          (OP :OP #xFF8
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PSUBW"
+          (OP :OP #xFF9
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBW"
+          (OP :OP #xFF9 :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBW"
+          (OP :OP #xFF9
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBW"
+          (OP :OP #xFF9
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBW"
+          (OP :OP #xFF9
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBW"
+          (OP :OP #xFF9
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPSUBW"
+          (OP :OP #xFF9
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PSUBD"
+          (OP :OP #xFFA
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBD"
+          (OP :OP #xFFA :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBD"
+          (OP :OP #xFFA
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBD"
+          (OP :OP #xFFA
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBD"
+          (OP :OP #xFFA
+              :EVEX '(:0F :NDS :128 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPSUBD"
+          (OP :OP #xFFA
+              :EVEX '(:0F :NDS :256 :66 :W0)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPSUBD"
+          (OP :OP #xFFA
+              :EVEX '(:0F :NDS :512 :66 :W0)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PSUBQ"
+          (OP :OP #xFFB
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PSUBQ"
+          (OP :OP #xFFB :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPSUBQ"
+          (OP :OP #xFFB
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPSUBQ"
+          (OP :OP #xFFB
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPSUBQ"
+          (OP :OP #xFFB
+              :EVEX '(:0F :NDS :128 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPSUBQ"
+          (OP :OP #xFFB
+              :EVEX '(:0F :NDS :256 :66 :W1)
+              :FEAT '(:AVX512VL :AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
+    (INST "VPSUBQ"
+          (OP :OP #xFFB
+              :EVEX '(:0F :NDS :512 :66 :W1)
+              :FEAT '(:AVX512F))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    (INST "PADDB"
+          (OP :OP #xFFC
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDB"
+          (OP :OP #xFFC :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
+    (INST "VPADDB"
+          (OP :OP #xFFC
+              :VEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+    (INST "VPADDB"
+          (OP :OP #xFFC
+              :VEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX2))
+          (ARG :OP1 '(V X)
+               :OP2 '(H X)
+               :OP3 '(W X))
+          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+    (INST "VPADDB"
+          (OP :OP #xFFC
+              :EVEX '(:0F :NDS :128 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDB"
+          (OP :OP #xFFC
+              :EVEX '(:0F :NDS :256 :66 :WIG)
+              :FEAT '(:AVX512VL :AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
+    (INST "VPADDB"
+          (OP :OP #xFFC
+              :EVEX '(:0F :NDS :512 :66 :WIG)
+              :FEAT '(:AVX512BW))
+          NIL NIL
+          '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
+    (INST "PADDW"
+          (OP :OP #xFFD
+              :PFX :NO-PREFIX
+              :FEAT '(:MMX))
+          (ARG :OP1 '(P Q) :OP2 '(Q Q))
+          'NIL
+          '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
+    (INST "PADDW"
+          (OP :OP #xFFD :PFX :66 :FEAT '(:SSE2))
+          (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
        'NIL
@@ -12037,6 +12155,7 @@
        '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))))
 
 (defconst *pre-0F-38-three-byte-opcode-map*
+  ;; BOZO Rob question -- should these be UD in 64-bit mode? or just ignored..
   '((INST "PSHUFB"
           (OP :OP #xF3800
               :PFX :NO-PREFIX
@@ -13186,6 +13305,7 @@
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
+    ;; BOZO Rob -- do the following have UD?
     (INST "PMOVSXBW"
           (OP :OP #xF3820 :MOD :MEM :PFX :66)
           (ARG :OP1 '(V X) :OP2 '(M Q))
@@ -18684,6 +18804,14 @@
                  (UD-REPNE-F2-V86-CPUID-CASE)
                  (UD-REP-F3-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
+    ;; A note about the two mandatory prefixes listed for CRC (0F 38 F0) in the
+    ;; Intel Opcode Map: The first three-byte opcode map lists CRC under 66 &
+    ;; F2 separately, even though CRC is already listed under F2 and MOVBE
+    ;; under 66.  Essentially, 66 is just a modifier prefix for CRC in this
+    ;; case.  So we ignore that opcode row in our representation, because
+    ;; opcode dispatch, modr/m determination, opcode coverage, etc. (which is
+    ;; what these tables are used for) will still work as expected for CRC,
+    ;; irrespective of whether 66 is present as a modifier or not.
     (INST "CRC32" (OP :OP #xF38F0 :PFX :F2
                       :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E B))
