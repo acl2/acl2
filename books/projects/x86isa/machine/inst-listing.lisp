@@ -56,9 +56,6 @@
 
 ;; ----------------------------------------------------------------------
 
-;; TODO: Remove CPUID-FLAG in exception info. and add appropriate feature flags
-;; in :FEAT.
-
 (defconst *pre-one-byte-opcode-map*
   '((INST "ADD" (OP :OP #x0)
           (ARG :OP1 '(E B) :OP2 '(G B))
@@ -1133,18 +1130,12 @@
           NIL '(X86-SAHF)
           '((:UD (UD-LOCK-USED)
                  (AND (EQUAL PROC-MODE #x0)
-                      (EQUAL (CPUID-FLAG #x80000001
-                                         :REG #x1
-                                         :BIT #x0)
-                             #x0)))))
+                      (EQUAL (FEATURE-FLAG-MACRO :LAHF-SAHF) #x0)))))
     (INST "LAHF" (OP :OP #x9F)
           NIL '(X86-LAHF)
           '((:UD (UD-LOCK-USED)
                  (AND (EQUAL PROC-MODE #x0)
-                      (EQUAL (CPUID-FLAG #x80000001
-                                         :REG #x1
-                                         :BIT #x0)
-                             #x0)))))
+                      (EQUAL (FEATURE-FLAG-MACRO :LAHF-SAHF) #x0)))))
     (INST "MOV" (OP :OP #xA0)
           (ARG :OP1 '(:AL) :OP2 '(O B))
           '(X86-MOV-OP/EN-FD)
@@ -1426,15 +1417,11 @@
               :MOD #x3
               :R/M #x0
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-11))
+              :GROUP '(:GROUP-11)
+              :FEAT '(:RTM))
           (ARG :OP1 '(I B))
           'NIL
-          '((:UD (UD-LOCK-USED)
-                 (EQUAL (CPUID-FLAG #x7
-                                    :ECX #x0
-                                    :REG #x3
-                                    :BIT #xB)
-                        #x0))))
+          '((:UD (UD-LOCK-USED))))
     (INST "MOV"
           (OP :OP #xC7
               :REG #x0
@@ -1449,15 +1436,11 @@
               :MOD #x3
               :R/M #x0
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-11))
+              :GROUP '(:GROUP-11)
+              :FEAT '(:RTM))
           (ARG :OP1 '(J Z))
           'NIL
-          '((:UD (UD-LOCK-USED)
-                 (EQUAL (CPUID-FLAG #x7
-                                    :ECX #x0
-                                    :REG #x3
-                                    :BIT #xB)
-                        #x0))))
+          '((:UD (UD-LOCK-USED))))
     (INST "ENTER" (OP :OP #xC8)
           (ARG :OP1 '(I W) :OP2 '(I B))
           'NIL
@@ -2220,22 +2203,20 @@
               :MOD #x3
               :R/M #x0
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:MONITOR))
           NIL 'NIL
-          '((:UD (UD-CPL-IS-NOT-ZERO)
-                 (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x3)
-                        #x0))))
+          '((:UD (UD-CPL-IS-NOT-ZERO))))
     (INST "MWAIT"
           (OP :OP #xF01
               :REG #x1
               :MOD #x3
               :R/M #x1
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:MONITOR))
           NIL 'NIL
-          '((:UD (UD-CPL-IS-NOT-ZERO)
-                 (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x3)
-                        #x0))))
+          '((:UD (UD-CPL-IS-NOT-ZERO))))
     (INST "CLAC"
           (OP :OP #xF01
               :REG #x1
@@ -2253,15 +2234,11 @@
               :MOD #x3
               :R/M #x3
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:SMAP))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
-                 (UD-CPL-IS-NOT-ZERO)
-                 (EQUAL (CPUID-FLAG #x7
-                                    :ECX #x0
-                                    :REG #x3
-                                    :BIT #x14)
-                        #x0))))
+                 (UD-CPL-IS-NOT-ZERO))))
     (INST "ENCLS"
           (OP :OP #xF01
               :REG #x1
@@ -2297,24 +2274,22 @@
               :MOD #x3
               :R/M #x0
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:XSAVE))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-                 (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1A)
-                        #x0))))
+                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))))
     (INST "XSETBV"
           (OP :OP #xF01
               :REG #x3
               :MOD #x3
               :R/M #x1
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:XSAVE))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
-                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-                 (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1A)
-                        #x0))))
+                 (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))))
     (INST "VMFUNC"
           (OP :OP #xF01
               :REG #x3
@@ -2330,35 +2305,22 @@
               :MOD #x3
               :R/M #x5
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:RTM))
           NIL 'NIL
           '((:UD (UD-LOCK-USED)
                  (UD-OPR-USED)
-                 (UD-REPS-USED)
-                 (EQUAL (CPUID-FLAG #x7
-                                    :ECX #x0
-                                    :REG #x3
-                                    :BIT #xB)
-                        #x0))))
+                 (UD-REPS-USED))))
     (INST "XTEST"
           (OP :OP #xF01
               :REG #x3
               :MOD #x3
               :R/M #x6
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:HLE :RTM))
           NIL 'NIL
-          '((:UD (UD-LOCK-USED)
-                 (AND (EQUAL (CPUID-FLAG #x7
-                                         :ECX #x0
-                                         :REG #x3
-                                         :BIT #x7)
-                             #x0)
-                      (EQUAL (CPUID-FLAG #x7
-                                         :ECX #x0
-                                         :REG #x3
-                                         :BIT #xB)
-                             #x0)))))
+          '((:UD (UD-LOCK-USED))))
     (INST "ENCLU"
           (OP :OP #xF01
               :REG #x3
@@ -2427,13 +2389,10 @@
               :MOD #x3
               :R/M #x1
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-7))
+              :GROUP '(:GROUP-7)
+              :FEAT '(:RDTSCP))
           NIL 'NIL
-          '((:UD (UD-LOCK-USED)
-                 (EQUAL (CPUID-FLAG #x80000001
-                                    :REG #x2
-                                    :BIT #x1B)
-                        #x0))))
+          '((:UD (UD-LOCK-USED))))
     (INST "LAR" (OP :OP #xF02)
           (ARG :OP1 '(G V) :OP2 '(E W))
           'NIL
@@ -8990,11 +8949,10 @@
            :MOD :MEM
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FXSR))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
-                     #x0))
+       '((:UD (UD-LOCK-USED))
          (:NM (NM-CR0-TS-IS-1)
               (NM-CR0-EM-IS-1))))
  (INST "RDFSBASE"
@@ -9004,27 +8962,22 @@
            :PFX :F3
            :MODE :O64
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FSGSBASE))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x3
-                                 :BIT #x0)
-                     #x0))))
+              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
  (INST "FXRSTOR"
        (OP :OP #xFAE
            :REG #x1
            :MOD :MEM
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FXSR))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x18)
-                     #x0))
+       '((:UD (UD-LOCK-USED))
          (:NM (NM-CR0-TS-IS-1)
               (NM-CR0-EM-IS-1))))
  (INST "RDGSBASE"
@@ -9034,16 +8987,12 @@
            :PFX :F3
            :MODE :O64
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FSGSBASE))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x3
-                                 :BIT #x0)
-                     #x0))))
+              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
  (INST "LDMXCSR"
        (OP :OP #xFAE
            :REG #x2
@@ -9060,16 +9009,12 @@
            :PFX :F3
            :MODE :O64
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FSGSBASE))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x3
-                                 :BIT #x0)
-                     #x0))))
+              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
  (INST "STMXCSR"
        (OP :OP #xFAE
            :REG #x3
@@ -9086,28 +9031,23 @@
            :PFX :F3
            :MODE :O64
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:FSGSBASE))
        (ARG :OP1 '(R Y))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x3
-                                 :BIT #x0)
-                     #x0))))
+              (EQUAL (CR4BITS->FSGSBASE (CR4)) #x0))))
  (INST "XSAVE"
        (OP :OP #xFAE
            :REG #x4
            :MOD :MEM
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:XSAVE))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1A)
-                     #x0))
+              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
          (:GP (GP-CPL-NOT-0))
          (:NM (NM-CR0-TS-IS-1))))
  (INST "XRSTOR"
@@ -9116,12 +9056,11 @@
            :MOD :MEM
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:XSAVE))
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
-              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-              (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1A)
-                     #x0))
+              (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0))
          (:GP (GP-CPL-NOT-0))
          (:NM (NM-CR0-TS-IS-1))))
  (INST "LFENCE"
@@ -9130,11 +9069,10 @@
            :MOD #x3
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:SSE2))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "XSAVEOPT"
        (OP :OP #xFAE
            :REG #x6
@@ -9145,13 +9083,8 @@
        NIL 'NIL
        '((:UD (UD-LOCK-USED)
               (EQUAL (CR4BITS->OSXSAVE (CR4)) #x0)
-              (OR (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1A)
-                         #x0)
-                  (EQUAL (CPUID-FLAG #xD
-                                     :ECX #x1
-                                     :REG #x0
-                                     :BIT #x0)
-                         #x0)))
+              (OR (EQUAL (FEATURE-FLAG-MACRO :XSAVE) #x0)
+                  (EQUAL (FEATURE-FLAG-MACRO :XSAVEOPT) #x0)))
          (:NM (NM-CR0-TS-IS-1))))
  (INST "MFENCE"
        (OP :OP #xFAE
@@ -9159,33 +9092,30 @@
            :MOD #x3
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:SSE2))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "CLFLUSH"
        (OP :OP #xFAE
            :REG #x7
            :MOD :MEM
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:CLFSH))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x13)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "SFENCE"
        (OP :OP #xFAE
            :REG #x7
            :MOD #x3
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A :1C)
-           :GROUP '(:GROUP-15))
+           :GROUP '(:GROUP-15)
+           :FEAT '(:SSE))
        NIL 'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x19)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "VLDMXCSR"
        (OP :OP #xFAE
            :VEX '(:0F :LZ :WIG)
@@ -9242,12 +9172,12 @@
  (INST "JMPE" (OP :OP #xFB8 :PFX :NO-PREFIX)
        NIL 'NIL
        'NIL)
- (INST "POPCNT" (OP :OP #xFB8 :PFX :F3)
+ (INST "POPCNT" (OP :OP #xFB8
+                    :PFX :F3
+                    :FEAT '(:POPCNT))
        (ARG :OP1 '(G V) :OP2 '(E V))
        'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x17)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "UD1"
        (OP :OP #xFB9
            :SUPERSCRIPTS '(:1A :1C)
@@ -9459,13 +9389,12 @@
            :FEAT '(:AVX512F))
        NIL NIL
        '((:EX (CHK-EXC :TYPE-E3 (:AVX512F)))))
- (INST "MOVNTI" (OP :OP #xFC3)
+ (INST "MOVNTI" (OP :OP #xFC3
+                    :FEAT '(:SSE2))
        (ARG :OP1 '(M Y) :OP2 '(G Y))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (UD-MODR/M.MOD-INDICATES-REGISTER)
-              (EQUAL (CPUID-FLAG #x1 :REG #x2 :BIT #x1A)
-                     #x0))))
+              (UD-MODR/M.MOD-INDICATES-REGISTER))))
  (INST "PINSRW"
        (OP :OP #xFC4 :MOD #x3 :PFX :NO-PREFIX)
        (ARG :OP1 '(P Q)
@@ -9699,71 +9628,57 @@
            :MOD #x3
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
+           :GROUP '(:GROUP-9)
+           :FEAT '(:RDRAND))
        (ARG :OP1 '(R V))
        '(X86-RDRAND)
        '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1E)
-                     T))))
+              (UD-REPS-USED))))
  (INST "RDRAND"
        (OP :OP #xFC7
            :REG #x6
            :MOD #x3
            :PFX :66
            :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
+           :GROUP '(:GROUP-9)
+           :FEAT '(:RDRAND))
        (ARG :OP1 '(R W))
        '(X86-RDRAND)
        '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED)
-              (EQUAL (CPUID-FLAG #x1 :REG #x1 :BIT #x1E)
-                     T))))
+              (UD-REPS-USED))))
  (INST "RDSEED"
        (OP :OP #xFC7
            :REG #x7
            :PFX :NO-PREFIX
            :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
+           :GROUP '(:GROUP-9)
+           :FEAT '(:RDSEED))
        (ARG :OP1 '(R V))
        'NIL
        '((:UD (UD-LOCK-USED)
-              (UD-REPS-USED)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x3
-                                 :BIT #x12)
-                     #x0))))
+              (UD-REPS-USED))))
  (INST "RDPID"
        (OP :OP #xFC7
            :REG #x7
            :PFX :F3
            :MODE :O64
            :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
+           :GROUP '(:GROUP-9)
+           :FEAT '(:RDPID))
        (ARG :OP1 '(R Q))
        'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x1
-                                 :BIT #x16)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "RDPID"
        (OP :OP #xFC7
            :REG #x7
            :PFX :F3
            :MODE :I64
            :SUPERSCRIPTS '(:1A)
-           :GROUP '(:GROUP-9))
+           :GROUP '(:GROUP-9)
+           :FEAT '(:RDPID))
        (ARG :OP1 '(R D))
        'NIL
-       '((:UD (UD-LOCK-USED)
-              (EQUAL (CPUID-FLAG #x7
-                                 :ECX #x0
-                                 :REG #x1
-                                 :BIT #x16)
-                     #x0))))
+       '((:UD (UD-LOCK-USED))))
  (INST "BSWAP" (OP :OP #xFC8)
        (ARG :OP1 '(:RAX/EAX/R8/R8D))
        'NIL
@@ -18803,7 +18718,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W1)
@@ -18812,7 +18727,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     ;; BLSR, BLSMSK, BLSI are VEX-only instructions.
     ;; (INST "BLSR"
     ;;       (OP :OP #xF38F3
@@ -18822,7 +18737,7 @@
     ;;           :GROUP '(:GROUP-17))
     ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
     ;;       'NIL
-    ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+    ;;       '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     ;; (INST "BLSMSK"
     ;;       (OP :OP #xF38F3
     ;;           :REG #x2
@@ -18831,7 +18746,7 @@
     ;;           :GROUP '(:GROUP-17))
     ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
     ;;       'NIL
-    ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+    ;;       '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     ;; (INST "BLSI"
     ;;       (OP :OP #xF38F3
     ;;           :REG #x3
@@ -18839,7 +18754,7 @@
     ;;           :FEAT '(:BMI2 :AVX))
     ;;       (ARG :OP1 '(B Y) :OP2 '(E Y))
     ;;       'NIL
-    ;;       '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+    ;;       '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "BLSR"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
@@ -18848,7 +18763,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSR"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
@@ -18857,7 +18772,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSMSK"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
@@ -18866,7 +18781,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSMSK"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
@@ -18875,7 +18790,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
@@ -18884,7 +18799,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
@@ -18893,7 +18808,7 @@
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :W0)
@@ -18902,7 +18817,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :W1)
@@ -18911,7 +18826,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "PDEP"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F2 :W0)
@@ -18920,7 +18835,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "PDEP"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F2 :W1)
@@ -18929,7 +18844,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "PEXT"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F3 :W0)
@@ -18938,7 +18853,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "PEXT"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :F3 :W1)
@@ -18947,7 +18862,7 @@
                :OP2 '(B Y)
                :OP3 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "ADCX"
           (OP :OP #xF38F6
               :PFX :66
@@ -18971,7 +18886,7 @@
                :OP3 '(:RDX)
                :OP4 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "MULX"
           (OP :OP #xF38F6
               :VEX '(:0F38 :NDD :LZ :F2 :W1)
@@ -18981,7 +18896,7 @@
                :OP3 '(:RDX)
                :OP4 '(E Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "BEXTR"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :W0)
@@ -18990,7 +18905,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BEXTR"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :W1)
@@ -18999,7 +18914,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W0)
@@ -19008,7 +18923,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W1)
@@ -19017,7 +18932,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W0)
@@ -19026,7 +18941,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W1)
@@ -19035,7 +18950,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W0)
@@ -19044,7 +18959,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W1)
@@ -19053,7 +18968,7 @@
                :OP2 '(E Y)
                :OP3 '(B Y))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))))
 
 (defconst *pre-0f-3a-three-byte-opcode-map*
   '((INST "VPERMQ"
@@ -20774,7 +20689,7 @@
                :OP2 '(E Y)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "RORX"
           (OP :OP #xF3AF0
               :VEX '(:0F3A :LZ :F2 :W1)
@@ -20783,7 +20698,7 @@
                :OP2 '(E Y)
                :OP3 '(I B))
           NIL
-          '((:EX (CHK-EXC :TYPE-VEX-GPR (:BMI2 :AVX)))))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -20870,6 +20785,16 @@
 ;; have proper CPUID feature flags.  Thus, for now, we can do selection of AVX
 ;; instructions using the functions remove-insts-with-feat and
 ;; keep-insts-with-feat below.
+
+;; I've tried to store all CPUID feature flag information in the :feat field of
+;; the opcode, but there are a few cases where that information is in the
+;; :excep field of inst instead (just three at this count: SAHF, LAHF, and
+;; XSAVEOPT).  The reason they're separate is that in these cases, the absence
+;; of one feature flag by itself is not enough to cause a #UD --- either we
+;; need at least one flag to be present (and the dispatch functions check
+;; whether ALL the flags are present in :FEAT) or the #UD also depends on the
+;; mode of operation of the processor. Search for FEATURE-FLAG-MACRO in the
+;; inst-listings to see those cases.
 
 (define remove-insts-with-feat ((inst-lst inst-list-p)
                                 (feat acl2::keyword-listp))
