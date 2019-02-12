@@ -384,7 +384,7 @@ defwitness/definstantiate rules for it.</p>")
 
 
 
-(defevaluator-fast witness-ev witness-ev-lst
+(defevaluator witness-ev witness-ev-lst
   ((if a b c)
    (not a)
    (equal a b)

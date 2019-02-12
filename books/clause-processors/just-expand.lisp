@@ -49,7 +49,7 @@
   x)
 (in-theory (disable (expand-me-with) (:t expand-me-with)))
 
-(defevaluator-fast expev expev-lst
+(defevaluator expev expev-lst
   ((if a b c) (equal a b) (not a) (use-by-hint a)
    (cons a b) (binary-+ a b)
    (typespec-check ts x)
