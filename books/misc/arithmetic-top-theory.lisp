@@ -8,5 +8,6 @@
 
 (include-book "arithmetic/top" :dir :system)
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
 (deftheory-static arithmetic-top-theory
   (current-theory :here))

@@ -52,6 +52,7 @@
 (deftheory minimal-start-a
   (current-theory :here))
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
 (deftheory-static arithmetic-5-minimal-start-a
   (current-theory :here))
 
