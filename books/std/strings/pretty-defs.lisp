@@ -30,6 +30,7 @@
 
 (in-package "STR")
 (include-book "defs")
+(include-book "centaur/fty/fty-sum-casemacro" :dir :system)
 
 (encapsulate ()
   (local (include-book "pretty"))

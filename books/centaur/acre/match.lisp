@@ -68,12 +68,12 @@
   :enabled t
   :returns (new-x true-listp)
   (if (atom x)
-      (rev-keys acc nil)
+      (rev-keys (fast-alist-free acc) nil)
     (undup-exec (cdr x)
-                          (b* ((x1 (car x)))
-                            (if (hons-get x1 acc)
-                                acc
-                              (hons-acons x1 nil acc))))))
+                (b* ((x1 (car x)))
+                  (if (hons-get x1 acc)
+                      acc
+                    (hons-acons x1 nil acc))))))
 
 
 

@@ -234,7 +234,7 @@
 
 
 
-(defevaluator base-ev base-ev-lst () :namedp t)
+(defevaluator base-ev base-ev-list () :namedp t)
 
 
 (local (in-theory (enable lookup-when-eval-alists-agree)))
@@ -269,11 +269,11 @@
             (and stable-under-simplificationp
                  '(:in-theory (enable base-ev-of-fncall-args))))
     :flag simple-term-vars)
-  (defthm base-ev-lst-when-eval-alists-agree
+  (defthm base-ev-list-when-eval-alists-agree
     (implies (and (eval-alists-agree vars a1 a2)
                   (subsetp (simple-term-vars-lst x) vars))
-             (equal (base-ev-lst x a1)
-                    (base-ev-lst x a2)))
+             (equal (base-ev-list x a1)
+                    (base-ev-list x a2)))
     :hints ('(:expand ((simple-term-vars-lst x))))
     :flag simple-term-vars-lst))
 
@@ -287,10 +287,10 @@
                  '(:in-theory (enable base-ev-of-fncall-args))))
     :flag simple-term-vars
     :rule-classes :congruence)
-  (defthm base-ev-lst-when-eval-alist-equiv
+  (defthm base-ev-list-when-eval-alist-equiv
     (implies (eval-alist-equiv a1 a2)
-             (equal (base-ev-lst x a1)
-                    (base-ev-lst x a2)))
+             (equal (base-ev-list x a1)
+                    (base-ev-list x a2)))
     :flag simple-term-vars-lst
     :rule-classes :congruence))
 

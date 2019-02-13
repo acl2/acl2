@@ -135,4 +135,8 @@
                            (f-get-global 'acl2-version state)
                            state)
 
+(write-file-if-obj-differs "ground-zero-theory.certdep"
+                           (let ((world (w state))) (current-theory 'acl2::ground-zero))
+                           state)
+
 (good-bye 0)
