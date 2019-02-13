@@ -18,6 +18,7 @@
 (include-book "auto-termination")
 (include-book "copy-def")
 (include-book "define-sk")
+(include-book "defset")
 (include-book "defthmr")
 (include-book "defmacroq")
 (include-book "defmax-nat/top")
