@@ -175,7 +175,8 @@ is accepted by ACL2s, but this is not
 
 (defun nth-var-builtin (n)
 ;  (declare (xargs :guard (natp n)))
-  (intern-in-package-of-symbol (nth-var-string n) 'acl2::acl2-pkg-witness))
+;  (intern-in-package-of-symbol (nth-var-string n) 'acl2::acl2-pkg-witness))
+  (intern$ (nth-var-string n) "ACL2S"))
 
 (defun varp (x)
   (declare (xargs :guard t))
