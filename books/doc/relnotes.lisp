@@ -444,6 +444,9 @@
 
  <h3>Miscellaneous</h3>
 
+ <p>We now avoid causing an error when building the manual in the case that the
+ @('zip') program is not installed; that causes a warning instead.</p>
+
  ")
 
 (defxdoc note-8-1-books

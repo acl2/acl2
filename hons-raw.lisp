@@ -913,7 +913,17 @@
 ; is fixed in CCL, in which case this code could be simplified.
 
   (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
-; We could specify :lock-free t, but perhaps it's faster with default nil.
+
+; (Feb. 2019) Rob Sumners has told us that Centaur has run into an apparent bug
+; in how CCL resizes :weak :key hash-tables with :lock-free nil.  He and the
+; Centaur folks suggested, after he did some timing tests, that we work around
+; that issue by using :lock-free t here.  Our own stress test (see the comment
+; in mf-mht about an experiment in directory books/centaur/esim/tutorial/)
+; showed about 1/2% slowdown with :lock-free t here.  We could perhaps use
+; :lock-free t in other Lisps too, but we haven't thought (at least recently)
+; about whether that's supported and efficient.
+
+                       #+ccl :lock-free #+ccl t
                        :weak :key)))
     #+ccl
     ;; This isn't necessary with lock-free, but doesn't hurt.  Note that T is
