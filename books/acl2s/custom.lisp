@@ -255,8 +255,6 @@
    (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
    (acl2s::acl2s-defaults :set acl2s::num-trials 500)
 
-   
-
 ))
 
 
