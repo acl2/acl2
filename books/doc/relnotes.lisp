@@ -126,6 +126,12 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
+ <h4>Fixtypes for Osets</h4>
+
+ <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
+ topic='@(url set::std/osets)'>osets</see> of elements of specified fixtypes.
+ This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -437,6 +443,9 @@
  <h3>Testing</h3>
 
  <h3>Miscellaneous</h3>
+
+ <p>We now avoid causing an error when building the manual in the case that the
+ @('zip') program is not installed; that causes a warning instead.</p>
 
  ")
 

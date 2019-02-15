@@ -263,22 +263,22 @@
 ; ... with when
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (and (<= x 6) (<= (car rattail) 7))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
           sum (+ x (length rattail)))
    (loop$ for x of-type (satisfies true-listp)
           on (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= (length x) 6) (<= (car rattail) 7))
-          sum (+ (length x) (car rattail)))
+          when (and (<= (length x) 6) rattail (<= (car rattail) 7))
+          sum :guard rattail (+ (length x) (car rattail)))
    (loop$ for x of-type integer
           from 1 to n
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= x 6) (<= (car rattail) 7))
-          sum (+ x (car rattail)))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
+          sum :guard rattail (+ x (car rattail)))
 
 ; ... with until and when
    (loop$ for x of-type integer in (make-list n :initial-element 1)
@@ -286,14 +286,14 @@
           until (equal x 9)
           when (not (equal y 7))
           sum x)
-   (loop$ for x of-type (and (satisfies rational-listp) (satisfies identity))
+   (loop$ for x of-type (satisfies rational-listp)
               on (make-list n :initial-element 1)
           as
-          y of-type (and (satisfies rational-listp) (satisfies identity))
+          y of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/3)
-          until (equal (car x) 9)
-          when (not (equal (car x) 1/3))
-          sum (+ (length x) (car y)))
+          until :guard x (equal (car x) 9)
+          when :guard x (not (equal (car x) 1/3))
+          sum :guard y (+ (length x) (car y)))
    (loop$ for x of-type integer from 1 to n
           as y of-type rational in (make-list n :initial-element 1)
           until (equal x 9)
@@ -368,22 +368,22 @@
 ; ... with when
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (and (<= x 6) (<= (car rattail) 7))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
           collect (+ x (length rattail)))
    (loop$ for x of-type (satisfies true-listp)
           on (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= (length x) 6) (<= (car rattail) 7))
-          collect (+ (length x) (car rattail)))
+          when (and (<= (length x) 6) rattail (<= (car rattail) 7))
+          collect :guard rattail (+ (length x) (car rattail)))
    (loop$ for x of-type integer
           from 1 to n
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= x 6) (<= (car rattail) 7))
-          collect (+ x (car rattail)))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
+          collect :guard rattail (+ x (car rattail)))
 
 ; ... with until and when
    (loop$ for x of-type integer in (make-list n :initial-element 1)
@@ -391,14 +391,14 @@
           until (equal x 9)
           when (not (equal y 7))
           collect x)
-   (loop$ for x of-type (and (satisfies rational-listp) (satisfies identity))
+   (loop$ for x of-type (satisfies rational-listp)
               on (make-list n :initial-element 1)
           as
-          y of-type (and (satisfies rational-listp) (satisfies identity))
+          y of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/3)
-          until (equal (car x) 9)
-          when (not (equal (car x) 1/3))
-          collect (+ (length x) (car y)))
+          until :guard x (equal (car x) 9)
+          when :guard x (not (equal (car x) 1/3))
+          collect :guard y (+ (length x) (car y)))
    (loop$ for x of-type integer from 1 to n
           as y of-type rational in (make-list n :initial-element 1)
           until (equal x 9)
@@ -440,21 +440,21 @@
 ; ... with when
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (and (<= x 6) (<= (car rattail) 7))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
           append (cons x rattail))
    (loop$ for x of-type (satisfies true-listp)
           on (make-list n :initial-element 1)
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= (length x) 6) (<= (car rattail) 7))
+          when (and (<= (length x) 6) rattail (<= (car rattail) 7))
           append (append x rattail))
    (loop$ for x of-type integer
           from 1 to n
-          as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+          as rattail of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/2)
-          when (or (<= x 6) (<= (car rattail) 7))
+          when (and (<= x 6) rattail (<= (car rattail) 7))
           append (cons x rattail))
 
 ; ... with until and when
@@ -463,13 +463,13 @@
           until (equal x 9)
           when (not (equal y 7))
           append (list x))
-   (loop$ for x of-type (and (satisfies rational-listp) (satisfies identity))
+   (loop$ for x of-type (satisfies rational-listp)
               on (make-list n :initial-element 1)
           as
-          y of-type (and (satisfies rational-listp) (satisfies identity))
+          y of-type (satisfies rational-listp)
              on (make-list n :initial-element 1/3)
-          until (equal (car x) 9)
-          when (not (equal (car x) 1/3))
+          until :guard x (equal (car x) 9)
+          when :guard x (not (equal (car x) 1/3))
           append (append x y))
    (loop$ for x of-type integer from 1 to n
           as y of-type rational in (make-list n :initial-element 1)
@@ -496,12 +496,10 @@
   (("Goal" :in-theory (disable loop$-as) ; <---- This is important! ***
     :do-not-induct t)))
 
-#+ccl ; There are problems with SBCL and loop tails that we plan to deal with.
 (make-event
  `(defconst *test-15-b*
     ',(test 15)))
 
-#+ccl ; There are problems with SBCL and loop tails that we plan to deal with.
 (assert-event (equal *test-15-a* *test-15-b*))
 
 ; -----------------------------------------------------------------
@@ -524,11 +522,10 @@
                                  :do-not-induct t))))
   (loop$ for x of-type (satisfies true-listp)
          on (make-list n :initial-element 1)
-         as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+         as rattail of-type (satisfies rational-listp)
          on (make-list n :initial-element 1/2)
-         when (or (<= (length x) 6) (<= (car rattail) 7))
-         append (append x rattail)))
-)
+         when (and (<= (length x) 6) rattail (<= (car rattail) 7))
+         append (append x rattail))))
 
 ; Note that x is known to satisfy true-listp and rattail satisfies rational-listp.
 ; The special guard on the append loop$ op is true-listp.  So in one sense
@@ -539,20 +536,21 @@
 ;               (true-listp (append a b))))
 
 ; which in fact we can.  But the guard verification of boohoo fails with the
-; following checkpoint (which I've simplified by dropping a big irrelevant
-; apply$ term that comes from the when clause):
+; following checkpoint.
 
 (thm
- (IMPLIES
-  (AND
-   (INTEGERP N)
-   (<= 0 N)
-   (< (MEMPOS NEWV
-              (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
-                              (TAILS (MAKE-LIST-AC N 1/2 NIL)))))
-      (LEN (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
-                           (TAILS (MAKE-LIST-AC N 1/2 NIL)))))))
-  (TRUE-LISTP (APPEND (CAR NEWV) (CADR NEWV)))))
+ (IMPLIES (AND (INTEGERP N)
+               (<= 0 N)
+               (< (MEMPOS NEWV
+                          (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
+                                          (TAILS (MAKE-LIST-AC N 1/2 NIL)))))
+                  (LEN (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
+                                       (TAILS (MAKE-LIST-AC N 1/2 NIL))))))
+               (NOT (STRINGP (CAR NEWV)))
+               (<= (LEN (CAR NEWV)) 6)
+               (CADR NEWV)
+               (<= (CAR (CADR NEWV)) 7))
+          (TRUE-LISTP (APPEND (CAR NEWV) (CADR NEWV)))))
 
 ; To prove this with our machinery we need to rely on fancy-uqi-true-list-2.
 ; All the uqi rules target the (< (mempos ...) ...) and contain the negation of
@@ -584,17 +582,18 @@
                                  :do-not-induct t))))
   (loop$ for x of-type (satisfies true-listp)
          on (make-list n :initial-element 1)
-         as rattail of-type (and (satisfies rational-listp) (satisfies identity))
+         as rattail of-type (satisfies rational-listp)
          on (make-list n :initial-element 1/2)
-         when (or (<= (length x) 6) (<= (car rattail) 7))
+         when (and (<= (length x) 6) rattail (<= (car rattail) 7))
          append (append x rattail)))
 
-; The moral is that our lemma machine is great for proving the guards on the
+; The moral is that our lemma machine is ok for proving the guards on the
 ; components of LOCALS but lousy for proving the guards on the output of the
 ; body.
 
 ; Here is a little example that illustrates the need to make code executable in
-; the loop$-alist (with a process that we sometimes call "twoify").
+; the loop$-alist (with a process that we used to call "twoify" and now
+; call "logic-code-to-runnable-code").
 
 (defun$ my-mv (x)
   (declare (xargs :guard t))
@@ -608,3 +607,51 @@
          collect x))
 
 (thm (equal (loop-with-my-mv-target) '(1 2 3 1 2 3)))
+
+; The following example used to succeed because we evaluated away the ground
+; loop$ and did not generate Special Conjectures.  But then when we evaluated
+; (bug1) in ACL2 it caused a hard error in raw Lisp if running CCL with
+
+; (declaim (optimize (safety 3)))
+
+; because not every member of the target is below 3!
+
+(defun below-3p (x)
+  (declare (xargs :guard t))
+  (and (natp x) (< x 3)))
+
+(must-fail
+ (defun bug1 ()
+   (declare (xargs :guard t))
+   (loop$ for x of-type (satisfies below-3p) in '(1 2 3 4 5) collect x)))
+
+; This example used to succeed before because we did not realize that we needed
+; Special Conjecture (c).  After the guard verified bug2 was admitted, (bug2
+; '(1 2 3)) caused a hard error because NIL is a tail of '(1 2 3).  CCL tests
+; the type-spec on every tail of the target of an ON-iteration, not just the
+; non-empty tails!  If this example succeeds, it indicates that we are failing
+; to generate Special Conjecture (c).
+
+(must-fail
+ (defun bug2 (lst)
+   (declare (xargs :guard (integer-listp lst)))
+   (loop$ for x of-type (and (satisfies integer-listp) (not (satisfies null)))
+          on lst
+	  collect x)))
+
+; This example used to succeed because we thought from-to-by iteration stayed
+; within the obvious bounds and didn't test the type-spec on the first value of
+; the iteration variable strictly larger than the max, i.e., on (+ i k (* k
+; (floor (- j i) k))), for (from-to-by i j k).  After mistakenly guard
+; verifying bug3, (bug3) caused a hard error on 13.
+
+(defun below-11p (x)
+  (declare (xargs :guard t))
+  (and (natp x) (< x 11)))
+
+(must-fail
+ (defun bug3 ()
+   (declare (xargs :guard t))
+   (loop$ for i of-type (satisfies below-11p) from 1 to 10 by 3
+          collect i)))
+

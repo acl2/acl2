@@ -279,7 +279,11 @@
 
 (mutual-recursion
 
-(defun eval-ground-subexpressions1 (term ens wrld safe-mode gc-off ttree)
+(defun eval-ground-subexpressions1 (term ens wrld safe-mode gc-off ttree
+                                         hands-off-fns)
+; We do not evaluate ground calls of the function symbols listed in
+; hands-off-fns.
+
   (cond
    ((or (variablep term)
         (fquotep term)
@@ -289,7 +293,8 @@
     (mv-let
       (flg args ttree)
       (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
-                                       ttree)
+                                       ttree
+                                       hands-off-fns)
       (cond
        ((all-quoteps args)
         (mv-let
@@ -297,7 +302,7 @@
           (eval-ground-subexpressions1
            (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
                        (lambda-body (ffn-symb term)))
-           ens wrld safe-mode gc-off ttree)
+           ens wrld safe-mode gc-off ttree hands-off-fns)
           (declare (ignore flg))
           (mv t val ttree)))
        (flg
@@ -314,30 +319,30 @@
     (mv-let
       (flg1 arg1 ttree)
       (eval-ground-subexpressions1 (fargn term 1) ens wrld safe-mode gc-off
-                                   ttree)
+                                   ttree hands-off-fns)
       (cond
        ((quotep arg1)
         (if (cadr arg1)
             (mv-let
               (flg2 arg2 ttree)
               (eval-ground-subexpressions1 (fargn term 2) ens wrld safe-mode
-                                           gc-off ttree)
+                                           gc-off ttree hands-off-fns)
               (declare (ignore flg2))
               (mv t arg2 ttree))
           (mv-let
             (flg3 arg3 ttree)
             (eval-ground-subexpressions1 (fargn term 3) ens wrld safe-mode
-                                         gc-off ttree)
+                                         gc-off ttree hands-off-fns)
             (declare (ignore flg3))
             (mv t arg3 ttree))))
        (t (mv-let
             (flg2 arg2 ttree)
             (eval-ground-subexpressions1 (fargn term 2) ens wrld safe-mode
-                                         gc-off ttree)
+                                         gc-off ttree hands-off-fns)
             (mv-let
               (flg3 arg3 ttree)
               (eval-ground-subexpressions1 (fargn term 3) ens wrld safe-mode
-                                           gc-off ttree)
+                                           gc-off ttree hands-off-fns)
               (mv (or flg1 flg2 flg3)
                   (if (or flg1 flg2 flg3)
                       (fcons-term* 'if arg1 arg2 arg3)
@@ -346,7 +351,7 @@
    (t (mv-let
         (flg args ttree)
         (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
-                                         ttree)
+                                         ttree hands-off-fns)
         (cond
 
 ; The following test was taken from rewrite with a few modifications
@@ -355,11 +360,7 @@
          ((and (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
                (all-quoteps args)
                (enabled-xfnp (ffn-symb term) ens wrld)
-
-; See the comment in loop$-scion-restriction for an explanation of:
-
-               (not (loop$-scion-restriction (ffn-symb term)
-                                             *loop$-keyword-info*))
+               (not (member-eq (ffn-symb term) hands-off-fns))
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
@@ -389,16 +390,17 @@
          (flg (mv t (cons-term (ffn-symb term) args) ttree))
          (t (mv nil term ttree)))))))
 
-(defun eval-ground-subexpressions1-lst (lst ens wrld safe-mode gc-off ttree)
+(defun eval-ground-subexpressions1-lst (lst ens wrld safe-mode gc-off ttree
+                                            hands-off-fns)
   (cond ((null lst) (mv nil nil ttree))
         (t (mv-let
             (flg1 x ttree)
             (eval-ground-subexpressions1 (car lst) ens wrld safe-mode gc-off
-                                         ttree)
+                                         ttree hands-off-fns)
             (mv-let
              (flg2 y ttree)
              (eval-ground-subexpressions1-lst (cdr lst) ens wrld safe-mode
-                                              gc-off ttree)
+                                              gc-off ttree hands-off-fns)
              (mv (or flg1 flg2)
                  (if (or flg1 flg2)
                      (cons x y)
@@ -410,13 +412,15 @@
   (eval-ground-subexpressions1 term ens wrld
                                (f-get-global 'safe-mode state)
                                (gc-off state)
-                               ttree))
+                               ttree
+                               nil))
 
 (defun eval-ground-subexpressions-lst (lst ens wrld state ttree)
   (eval-ground-subexpressions1-lst lst ens wrld
                                    (f-get-global 'safe-mode state)
                                    (gc-off state)
-                                   ttree))
+                                   ttree
+                                   nil))
 
 (defun poly-set (op poly1 poly2)
 

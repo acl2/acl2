@@ -732,7 +732,7 @@
   (always$ 'identity (tails lst)))
 
 ; The need for either of the following lemmas disturbs me.  See the
-; discussion after the big test.
+; discussion after the big test in books/system/tests/loop-tests.lisp.
 
 (defthm true-listp-append-rewrite
   (equal (true-listp (append a b)) (true-listp b)))
@@ -742,4 +742,19 @@
 ; (defthm boohoo-lemma
 ;   (implies (not (true-listp (append a b)))
 ;            (not (true-listp b))))
+
+; These plain-uqi lemmas were left out above...
+
+(defthm general-plain-uqi-integer-listp-tails
+  (implies (and (integer-listp lst)
+                (not (integer-listp newv)))
+           (not (< (mempos newv (tails lst)) (len (tails lst)))))
+  :rule-classes nil)
+
+(defthm plain-uqi-integer-listp-tails
+  (implies (and (integer-listp lst)
+                (not (integer-listp newv))
+                (<= xxx (len (tails lst))))
+           (not (< (mempos newv (tails lst)) xxx)))
+  :hints (("Goal" :use general-plain-uqi-integer-listp-tails)))
 

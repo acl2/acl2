@@ -374,7 +374,7 @@
 ; t than with :lock-free t.  In fact :shared t may rival performance with
 ; :shared nil.
 
-;   cd books/centaur/tutorial/
+;   cd books/centaur/esim/tutorial/
 ;   (include-book "alu16-book")
 ;   (time$ (def-gl-thm foo
 ;            :hyp (and (alu16-test-vector-autohyps)
