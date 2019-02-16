@@ -1,6 +1,6 @@
 ; Bitcoin Library -- Base58 Encoding and Decoding
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,14 +10,11 @@
 
 (in-package "BITCOIN")
 
-(include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/utilities/digits-any-base/pow2-8" :dir :system)
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "std/lists/index-of" :dir :system)
+(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
+(include-book "kestrel/utilities/lists/index-of-theorems" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
-(local (include-book "library-extensions"))
+(include-book "bytes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,7 +345,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define base58-encode ((bytes ubyte8-listp))
+(define base58-encode ((bytes byte-listp))
   :returns (chars base58-character-listp)
   :short "Turn a list of bytes into
           the corresponding list of Base58 characters."
@@ -385,7 +382,7 @@
        (vals (nat=>bendian* 58 nat))
        (number-of-zeros (- (len bytes)
                            (len (trim-bendian*
-                                 (mbe :logic (ubyte8-list-fix bytes)
+                                 (mbe :logic (byte-list-fix bytes)
                                       :exec bytes)))))
        (chars (append (repeat number-of-zeros *base58-zero*)
                       (base58-vals=>chars vals))))
@@ -394,14 +391,14 @@
                  :in-theory
                  (enable
                   acl2::unsigned-byte-listp-rewrite-dab-digit-listp
-                  acl2::ubyte8-listp-rewrite-unsigned-byte-listp
+                  byte-listp-rewrite-unsigned-byte-listp
                   base58-value-listp-rewrite-dab-digit-listp-58)))
   ///
 
   (fty::deffixequiv base58-encode
     :hints (("Goal"
              :in-theory
-             (enable acl2::ubyte8-list-fix-rewrite-dab-digit-list-fix-256))))
+             (enable byte-list-fix-rewrite-dab-digit-list-fix-256))))
 
   (defruled base58-encode-same-natural-number
     (equal (bendian=>nat 58 (base58-chars=>vals (base58-encode bytes)))
@@ -410,7 +407,7 @@
              base58-value-listp-rewrite-dab-digit-listp-58)))
 
 (define base58-decode ((chars base58-character-listp))
-  :returns (bytes ubyte8-listp)
+  :returns (bytes byte-listp)
   :short "Turn a list of Base58 characters
           into the corresponding list of bytes."
   :long
@@ -466,14 +463,14 @@
 
   (defrule base58-decode-of-base58-encode
     (equal (base58-decode (base58-encode bytes))
-           (ubyte8-list-fix bytes))
+           (byte-list-fix bytes))
     :enable (base58-encode
              base58-decode
              base58-value-list-fix-rewrite-dab-digit-list-fix-58
              acl2::bendian=>nat-of-append
-             acl2::ubyte8-list-fix-rewrite-dab-digit-list-fix-256)
+             byte-list-fix-rewrite-dab-digit-list-fix-256)
     :use (:instance acl2::append-of-repeat-and-trim-bendian*
-          (acl2::digits (ubyte8-list-fix bytes)))
+          (acl2::digits (byte-list-fix bytes)))
     :disable acl2::append-of-repeat-and-trim-bendian*
     :prep-books ((include-book "arithmetic/top" :dir :system)))
 

@@ -178,9 +178,11 @@
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>Improved the documentation of the Bitcoin library.</p>
+ <p>Improved the documentation.</p>
 
  <p>Added fixtypes for bytes and byte sequences.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
  <h4>Bytes</h4>
 

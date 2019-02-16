@@ -1,6 +1,6 @@
 ; Bitcoin Library -- Base58Check Encoding
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,8 +12,6 @@
 
 (include-book "base58")
 (include-book "crypto")
-
-(local (include-book "library-extensions"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define base58check-encode ((version ubyte8-listp) (payload ubyte8-listp))
+(define base58check-encode ((version byte-listp) (payload byte-listp))
   :guard (and (consp version)
               (< (+ (len version) (len payload))
                  (expt 2 61)))
