@@ -187,6 +187,9 @@
  <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Add
  placeholders for HMAC-SHA-512 and the secp256k1 elliptic curve.</p>
 
+ <p>Added a formalization BIP (Bitcoin Improvement Proposal) 32 key
+ derivation.</p>
+
  <h4>Bytes</h4>
 
  <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee

@@ -16,6 +16,7 @@
 (include-book "crypto")
 (include-book "base58")
 (include-book "base58check")
+(include-book "bip32")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,6 +39,13 @@
     (xdoc::li
      "The <a href=\"https://en.bitcoin.it\">Bitcoin Wiki</a>,
       referenced as `[Wiki]' in the documentation of this library.")
+    (xdoc::li
+     "The <a href=\"https://github.com/bitcoin/bips\"
+      >Bitcoin Improvement Proposals (BIPs) repository</a>,
+      particularly the @('.mediawiki') files.
+      In the documentation of this library,
+      we reference individual BIPs as `[BIP<n>]',
+      where @('<n>') is the number of the BIP.")
     (xdoc::li
      "The <a href=\"https://bitcoin.org/bitcoin.pdf\">Bitcoin White Paper</a>,
       referenced as `[WP]' in the documentation of this library.")
