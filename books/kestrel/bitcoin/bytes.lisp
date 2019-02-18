@@ -73,7 +73,7 @@
            (byte-listp x))
     :enable (dab-digit-listp dab-digitp byte-listp bytep))
 
-  (acl2::defthm-dab-return-types
+  (defthm-dab-return-types
     dab-digit-listp-of-256-rewrite-byte-listp
     byte-listp-of))
 

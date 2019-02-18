@@ -53,10 +53,10 @@
       with point @(tsee secp256k1-generator);
       when the argument is a private key, we use @(tsee secp256-priv-to-pub).")
     (xdoc::li
-     "@($\\mathsf{ser}_{32}$) is @(tsee acl2::nat=>bendian)
+     "@($\\mathsf{ser}_{32}$) is @(tsee nat=>bendian)
       with base 256 and width 4.")
     (xdoc::li
-     "@($\\mathsf{ser}_{256}$) is @(tsee acl2::nat=>bendian)
+     "@($\\mathsf{ser}_{256}$) is @(tsee nat=>bendian)
       with base 256 and width 32.")
     (xdoc::li
      "@($\\mathsf{ser}_\\mathsf{P}$) is @(tsee secp256k1-point-to-bytes)
@@ -145,7 +145,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bip32-ckd-priv ((parent bip32-ext-priv-key-p) (i acl2::ubyte32p))
+(define bip32-ckd-priv ((parent bip32-ext-priv-key-p) (i ubyte32p))
   :returns (mv (error? booleanp)
                (child bip32-ext-priv-key-p))
   :short "Private child key derivation."
@@ -161,15 +161,15 @@
      Otherwise, the first result is @('nil'), meaning no error."))
   (b* (((bip32-ext-priv-key parent) parent)
        (irrelevant-child (bip32-ext-priv-key-fix parent))
-       (i (mbe :logic (acl2::ubyte32-fix i) :exec i))
+       (i (mbe :logic (ubyte32-fix i) :exec i))
        (data (if (>= i (expt 2 31))
                  (append (list 0)
-                         (acl2::nat=>bendian 256 32 parent.key)
-                         (acl2::nat=>bendian 256 4 i))
+                         (nat=>bendian 256 32 parent.key)
+                         (nat=>bendian 256 4 i))
                (append (secp256k1-point-to-bytes
                         (secp256k1-priv-to-pub parent.key)
                         t)
-                       (acl2::nat=>bendian 256 4 i))))
+                       (nat=>bendian 256 4 i))))
        (big-i (hmac-sha-512 parent.chain-code data))
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
@@ -182,7 +182,7 @@
     (mv nil (bip32-ext-priv-key child.key child.chain-code)))
   :no-function t
   :guard-hints (("Goal"
-                 :in-theory (e/d (acl2::ubyte32p
+                 :in-theory (e/d (ubyte32p
                                   dab-digit-listp-of-256-rewrite-byte-listp
                                   bip32-chain-code-p
                                   secp256k1-priv-key-p)
@@ -193,7 +193,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bip32-ckd-pub ((parent bip32-ext-pub-key-p) (i acl2::ubyte32p))
+(define bip32-ckd-pub ((parent bip32-ext-pub-key-p) (i ubyte32p))
   :returns (mv (error? booleanp)
                (child bip32-ext-pub-key-p))
   :short "Public child key derivation from public parent key."
@@ -215,10 +215,10 @@
      so we do the same here."))
   (b* (((bip32-ext-pub-key parent) parent)
        (irrelevant-child (bip32-ext-pub-key-fix parent))
-       (i (mbe :logic (acl2::ubyte32-fix i) :exec i))
+       (i (mbe :logic (ubyte32-fix i) :exec i))
        ((when (>= i (expt 2 31))) (mv t irrelevant-child))
        (data (append (secp256k1-point-to-bytes parent.key t)
-                     (acl2::nat=>bendian 256 4 i)))
+                     (nat=>bendian 256 4 i)))
        (big-i (hmac-sha-512 parent.chain-code data))
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
@@ -257,7 +257,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bip32-ckd-priv-pub ((parent bip32-ext-priv-key-p) (i acl2::ubyte32p))
+(define bip32-ckd-priv-pub ((parent bip32-ext-priv-key-p) (i ubyte32p))
   :returns (mv (error? booleanp)
                (child bip32-ext-pub-key-p))
   :short "Public child key derivation from private parent key,
@@ -285,7 +285,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bip32-ckd-priv-pub-nh ((parent bip32-ext-priv-key-p) (i acl2::ubyte32p))
+(define bip32-ckd-priv-pub-nh ((parent bip32-ext-priv-key-p) (i ubyte32p))
   :short "Public child key derivation from private parent key,
           for non-hardedned child keys only."
   :long

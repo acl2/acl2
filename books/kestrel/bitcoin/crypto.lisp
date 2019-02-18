@@ -494,10 +494,10 @@
                     (equal point (secp256k1-generator)))
                (secp256k1-pub-key-p (secp256k1-mul k point)))))
 
-  (defcong acl2::nat-equiv equal (secp256k1-mul nat point) 1
+  (defcong nat-equiv equal (secp256k1-mul nat point) 1
     :hints (("Goal"
              :use (secp256k1-fixes-input-nat
-                   (:instance secp256k1-fixes-input-nat (nat acl2::nat-equiv)))
+                   (:instance secp256k1-fixes-input-nat (nat nat-equiv)))
              :in-theory (disable secp256k1-fixes-input-nat))))
 
   (defcong secp256k1-point-equiv equal (secp256k1-mul nat point) 2
@@ -532,9 +532,9 @@
   (b* (((secp256k1-point point) point))
     (cond ((secp256k1-infinityp point) (list 0))
           (compressp (cons (if (evenp point.y) 2 3)
-                           (acl2::nat=>bendian 256 32 point.x)))
-          (t (cons 4 (append (acl2::nat=>bendian 256 32 point.x)
-                             (acl2::nat=>bendian 256 32 point.y))))))
+                           (nat=>bendian 256 32 point.x)))
+          (t (cons 4 (append (nat=>bendian 256 32 point.x)
+                             (nat=>bendian 256 32 point.y))))))
   :no-function t
   :hooks (:fix)
   ///
