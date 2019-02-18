@@ -184,7 +184,8 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
- <p>Renamed `cryptographic interface' to `cryptographic placeholder'.</p>
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Add a
+ placeholder for HMAC-SHA-512.</p>
 
  <h4>Bytes</h4>
 
