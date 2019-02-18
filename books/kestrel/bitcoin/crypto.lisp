@@ -138,7 +138,6 @@
    (xdoc::p
     "According to FIPS PUB 180-4,
      the output of SHA-512 is a sequence of exactly 512 bits, or 64 bytes.
-     a sequence of exactly 512 bits, or 32 bytes.
      We constrain our function to return a list of 64 bytes unconditionally.")
    (xdoc::p
     "We also constrain our function to fix its arguments to lists of bytes.")
@@ -230,7 +229,7 @@
     :no-function t
     ///
 
-    (make-event
+    (make-event ; to avoid expanding SECP256K1-PRIME manually
      `(defrule natp-and-below-prime-when-secp256k1-fieldp
         (implies (secp256k1-fieldp x)
                  (and (natp x)
@@ -321,7 +320,7 @@
     :no-function t
     ///
 
-    (make-event
+    (make-event ; to avoid expanding SECP256K1-ORDER manually
      `(defrule posp-and-below-order-when-secp256k1-priv-key-p
         (implies (secp256k1-priv-key-p privkey)
                  (and (posp privkey)
