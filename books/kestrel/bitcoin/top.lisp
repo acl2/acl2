@@ -44,7 +44,7 @@
       >Bitcoin Improvement Proposals (BIPs) repository</a>,
       particularly the @('.mediawiki') files.
       In the documentation of this library,
-      we reference individual BIPs as `[BIP<i>n</i>>]',
+      we reference individual BIPs as `[BIP<i>n</i>]',
       where <i>n</i> is the number of the BIP.")
     (xdoc::li
      "The <a href=\"https://bitcoin.org/bitcoin.pdf\">Bitcoin White Paper</a>,
