@@ -33,7 +33,7 @@
 (in-package "ACL2")
 
 (include-book "std/util/defines" :dir :system)
-;; (include-book "std/lists/sets" :dir :system)
+(local (include-book "std/lists/sets" :dir :system))
 
 (local (defthm member-of-union
          (iff (member x (union-eq a b))
@@ -175,3 +175,130 @@
       :hints ((and stable-under-simplificationp
                    '(:expand ((simple-term-vars-lst x)))))
       :flag simple-term-vars-lst)))
+
+(defines simple-free-vars-acc
+  (define simple-free-vars-acc ((x pseudo-termp)
+                                (bound-vars symbol-listp)
+                                (acc symbol-listp))
+    :returns (vars symbol-listp :hyp :guard)
+    :verify-guards nil
+    (cond ((atom x)
+           (if (and x (mbt (symbolp x))
+                    (not (member-eq x bound-vars)))
+               (add-to-set-eq x acc)
+             acc))
+          ((eq (car x) 'quote) acc)
+          (t (simple-free-vars-lst-acc (cdr x) bound-vars acc))))
+  (define simple-free-vars-lst-acc ((x pseudo-term-listp)
+                                    (bound-vars symbol-listp)
+                                    (acc symbol-listp))
+    :returns (vars symbol-listp :hyp :guard)
+    (if (atom x)
+        acc
+      (simple-free-vars-lst-acc (cdr x)
+                                bound-vars
+                                (simple-free-vars-acc
+                                 (car x) bound-vars acc))))
+  ///
+  (verify-guards simple-free-vars-acc))
+
+
+(defines simple-free-vars
+  :verify-guards nil
+  :flag-local nil
+  (define simple-free-vars ((x pseudo-termp)
+                            (bound-vars symbol-listp))
+    :returns (vars symbol-listp :hyp :guard)
+    (mbe :logic (cond ((atom x)
+                       (and x
+                            (mbt (symbolp x))
+                            (not (member-eq x bound-vars))
+                            (list x)))
+                      ((null x) nil)
+                      ((eq (car x) 'quote) nil)
+                      (t (simple-free-vars-lst (cdr x) bound-vars)))
+         :exec (simple-free-vars-acc x bound-vars nil)))
+  (define simple-free-vars-lst ((x pseudo-term-listp)
+                                (bound-vars symbol-listp))
+    :returns (vars symbol-listp :hyp :guard)
+    (mbe :logic (if (atom x)
+                    nil
+                  (union-eq (simple-free-vars-lst (cdr x) bound-vars)
+                            (simple-free-vars (car x) bound-vars)))
+         :exec (simple-free-vars-lst-acc x bound-vars nil)))
+  ///
+
+
+  (local (defun-sk simple-free-vars-acc-is-simple-free-vars-sk (x bound-vars)
+           (forall acc
+                   (equal (simple-free-vars-acc x bound-vars acc)
+                          (union-eq (simple-free-vars x bound-vars) acc)))
+           :rewrite :direct))
+  (local (defun-sk simple-free-vars-lst-acc-is-simple-free-vars-lst-sk (x bound-vars)
+           (forall acc
+                   (equal (simple-free-vars-lst-acc x bound-vars acc)
+                          (union-eq (simple-free-vars-lst x bound-vars) acc)))
+           :rewrite :direct))
+  (local (in-theory (disable simple-free-vars-acc-is-simple-free-vars-sk
+                             simple-free-vars-lst-acc-is-simple-free-vars-lst-sk)))
+
+  (local
+   (defthm-simple-free-vars-flag
+     (defthm simple-free-vars-acc-is-simple-free-vars-lemma
+       (simple-free-vars-acc-is-simple-free-vars-sk x bound-vars)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               (simple-free-vars x bound-vars)
+                               (:free (acc) (simple-free-vars-acc x bound-vars acc))
+                               (:free (acc) (simple-free-vars-acc nil bound-vars acc))))))
+       :flag simple-free-vars
+       :rule-classes nil)
+     (defthm simple-free-vars-lst-acc-is-simple-free-vars-lst-lemma
+       (simple-free-vars-lst-acc-is-simple-free-vars-lst-sk x bound-vars)
+       :hints ((and stable-under-simplificationp
+                    `(:expand (,(car (last clause))
+                               (simple-free-vars-lst x bound-vars)
+                               (:free (acc) (simple-free-vars-lst-acc x bound-vars acc))))))
+       :flag simple-free-vars-lst
+       :rule-classes nil)))
+
+  (defthm simple-free-vars-acc-is-simple-free-vars
+    (equal (simple-free-vars-acc x bound-vars acc)
+           (union-eq (simple-free-vars x bound-vars) acc))
+    :hints (("goal" :use simple-free-vars-acc-is-simple-free-vars-lemma)))
+  (defthm simple-free-vars-lst-acc-is-simple-free-vars-lst
+    (equal (simple-free-vars-lst-acc x bound-vars acc)
+           (union-eq (simple-free-vars-lst x bound-vars) acc))
+    :hints (("goal" :use simple-free-vars-lst-acc-is-simple-free-vars-lst-lemma)))
+
+  (defthm-simple-free-vars-flag
+    (defthm true-listp-of-simple-free-vars
+      (true-listp (simple-free-vars x bound-vars))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-free-vars x bound-vars)))))
+      :flag simple-free-vars
+      :rule-classes :type-prescription)
+    (defthm true-listp-of-simple-free-vars-lst
+      (true-listp (simple-free-vars-lst x bound-vars))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((simple-free-vars-lst x bound-vars)))))
+      :flag simple-free-vars-lst
+      :rule-classes :type-prescription))
+
+  (local (defthm union-equal-nil
+           (implies (true-listp x)
+                    (equal (union-equal x nil) x))))
+
+  (verify-guards simple-free-vars)
+
+  (defthm-simple-free-vars-flag
+    (defthm simple-free-vars-in-terms-of-simple-term-vars
+      (equal (simple-free-vars x bound-vars)
+             (set-difference-eq (simple-term-vars x) bound-vars))
+      :hints ('(:expand ((simple-term-vars x))))
+      :flag simple-free-vars)
+    (defthm simple-free-vars-lst-in-terms-of-simple-term-vars
+      (equal (simple-free-vars-lst x bound-vars)
+             (set-difference-eq (simple-term-vars-lst x) bound-vars))
+      :hints ('(:expand ((simple-term-vars-lst x))))
+      :flag simple-free-vars-lst)))

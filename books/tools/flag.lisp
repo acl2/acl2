@@ -850,7 +850,12 @@ one such form may affect what you might think of as the proof of another.</p>
                           flag-fncall     ; call of the flag function
                           )
   `(defmacro ,real-macro-name (&rest args) ;; was (name &rest args)
-     (flag-defthm-fn args ',real-macro-name ',alist ',flag-var ',flag-fncall)))
+     `(make-event
+       (flag-defthm-fn ',args
+                       ',',real-macro-name
+                       ',',alist
+                       ',',flag-var
+                       ',',flag-fncall))))
 
 
 (defun make-cases-for-equiv (alist world)

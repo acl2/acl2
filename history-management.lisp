@@ -12209,16 +12209,17 @@
 ; satisfied.
 
 (defun eval-ground-subexpressions1-lst-lst (lst-lst ens wrld safe-mode gc-off
-                                                    ttree)
+                                                    ttree hands-off-fns)
   (cond ((null lst-lst) (mv nil nil ttree))
         (t (mv-let
             (flg1 x ttree)
             (eval-ground-subexpressions1-lst (car lst-lst) ens wrld safe-mode
-                                             gc-off ttree)
+                                             gc-off ttree hands-off-fns)
             (mv-let
              (flg2 y ttree)
              (eval-ground-subexpressions1-lst-lst (cdr lst-lst) ens wrld
-                                                  safe-mode gc-off ttree)
+                                                  safe-mode gc-off ttree
+                                                  hands-off-fns)
              (mv (or flg1 flg2)
                  (if (or flg1 flg2)
                      (cons x y)
@@ -12226,10 +12227,16 @@
                  ttree))))))
 
 (defun eval-ground-subexpressions-lst-lst (lst-lst ens wrld state ttree)
+
+; Note: This function does not support hands-off-fns but we could add that as a
+; new formal and pass it instead of nil below.
+
   (eval-ground-subexpressions1-lst-lst lst-lst ens wrld
                                        (f-get-global 'safe-mode state)
                                        (gc-off state)
-                                       ttree))
+                                       ttree
+                                       nil  ; hands-off-fns
+                                       ))
 
 (defun sublis-var-lst-lst (alist clauses)
   (cond ((null clauses) nil)
@@ -12358,11 +12365,343 @@
         wrld
         (lambda-object-formals fn))))))
 
+; The following block of code culminates in the definition of
+; special-loop-guard-clauses, which generates Special Conjectures (a), (b), and
+; (c) described in the Essay on Loop$.  Most of the development work below is
+; on Special Conjectures (c).
+
+(defun recover-type-spec-exprs1 (term)
+
+; Term is possibly a nest that looks like this
+; (return-last 'progn (check-dcl-guardian guard1 &)
+;               (return-last 'progn (check-dcl-guardian guard2 &)
+;                             ...
+;                             body))
+; and we return (guard1 guard2 ...)
+
+  (case-match term
+    (('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN guard &) rest)
+     (cons guard (recover-type-spec-exprs1 rest)))
+    (('CHECK-DCL-GUARDIAN guard &)
+     (cons guard nil))
+    (& nil)))
+
+(defun recover-type-spec-exprs (term)
+  (case-match term
+    (('RETURN-LAST ''PROGN ('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN & &) &) &)
+     (recover-type-spec-exprs1 (fargn term 2)))
+    (('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN guard &) &)
+     (list guard))
+    (t nil)))
+
+(defun terms-in-var (var terms)
+  (cond
+   ((endp terms) nil)
+   ((occur var (car terms))
+    (cons (car terms) (terms-in-var var (cdr terms))))
+   (t (terms-in-var var (cdr terms)))))
+
+(defun type-specs-for-var (var type-spec-exprs)
+  (conjoin (terms-in-var var type-spec-exprs)))
+
+(defun recover-fancy-targets (term)
+  (case-match term
+    (('CONS target rest)
+     (cons target (recover-fancy-targets rest)))
+    (& nil)))
+
+(defun recover-deep-targets (term)
+
+; Dig down into a loop$ scion nest representing a loop$ statement and recover
+; the list of targets appearing the original loop$ statement, e.g., from (sum$
+; ... (when$ ... (until$ ... target))) recover (list target), or in the case of
+; a fancy nest, (target1 target2 ...).  Note also that the length of our answer
+; is the number of iteration variables in the loop$ statement.  Note also that
+; the length can be 1 even in the case of fancy loop$s.
+
+  (let ((style (and (nvariablep term)
+                    (not (fquotep term))
+                    (loop$-scion-style (ffn-symb term)
+                                       *loop$-keyword-info*))))
+    (cond
+     ((null style)
+      (cond ((and (nvariablep term)
+                  (not (fquotep term))
+                  (eq (ffn-symb term) 'LOOP$-AS))
+             (recover-fancy-targets (fargn term 1)))
+            (t (list term))))
+     (t (recover-deep-targets
+         (if (eq style :plain) (fargn term 2) (fargn term 3)))))))
+
+(defun vars-specs-and-targets1 (vars type-spec-exprs targets)
+  (cond
+   ((endp vars) nil)
+   (t (cons (list (car vars)
+                  (type-specs-for-var (car vars) type-spec-exprs)
+                  (car targets))
+            (vars-specs-and-targets1 (cdr vars) type-spec-exprs (cdr targets))))))
+
+(defun vars-specs-and-targets (scion-term wrld)
+
+; This function is the workhorse for recognizing the need for Special
+; Conjectures (c).
+
+; Scion-term is a loop$ scion call of :plain or :fancy style.  Consider the
+; loop$ statement from which scion-term arose:
+
+; (loop$ for v1 of-type spec1 in/on/from-to-by target1
+;         as v2 of-type spec2 in/on/from-to-by target2
+;         ...
+;         until ... when ... op ...)
+
+; We return a list of triplets ((v1 spec1-expr target1) ...), listing every
+; iteration variable in the loop$ statement that has an of-type specification.
+; The speci-expr is the term expressing the type spec, not the type spec
+; itself, e.g., (INTEGERP v1) not INTEGER.
+
+; This is harder than you might think because we have to dig the vars and
+; type-specs out of the LAMBDA objects!
+
+; Note that to recover the targets we have to dig down through UNTIL and WHEN
+; terms.  I.e., the :plain scion-term corresponding to a loop$ might be: (sum$
+; ... (when$ ... (until$ ... target))).  Since every LAMBDA object in the nest
+; of loop$ scions includes the same type specs, we could get these triplets
+; from the innermost term rather than the outermost but it seems slightly
+; simpler to do it this way.
+
+; Keep this function in sync with both make-plain-loop$-lambda-object and
+; make-fancy-loop$-lambda-object!
+
+; Note on another way to do things:  This function must recognize every
+; translated loop$ that uses either ... FROM i TO j ... or ON ... iteration
+; because those are the cases that require Special Conjectures (c).
+; We may find it too onerous to keep tracking that.  There is another
+; way.  Abandon Special Conjecture (c) and instead change the translation of
+; those loop$ statements to explicitly include THE terms.  For example,
+; instead of translating
+
+; (loop for x of-type spec on lst collect (foo x))
+
+; to
+
+; (collect$ (lambda$ (x) (declare (type spec x)) (foo x)) (tails lst))
+
+; we could translate it to
+
+; (prog2$ (the spec NIL)
+;         (collect$ (lambda$ (x) (declare (type spec x)) (foo x)) (tails lst)))
+
+; and instead of translating
+
+; (loop$ for x of-type spec from i to j by k collect (foo x))
+
+; to
+
+; (collect$ (lambda$ (x) (declare (type spec x)) (foo x)) (from-to-by i j k))
+
+; we could use
+
+; (prog2$ (the spec (+ i k (* k (floor (- j i) k))))
+;         (collect$ (lambda$ (x) (declare (type spec x)) (foo x))
+;                   (from-to-by (the spec i)
+;                               (the spec j)
+;                               (the spec k))))
+
+; (Of course, the collect$s would be properly tagged as loop$s as now.)
+
+; This translation would obviate the need to recognize the translated terms
+; corresponding to such loop$s.
+
+  (cond
+   ((and (loop$-operator-scionp (ffn-symb scion-term) *loop$-keyword-info*)
+         (quotep (fargn scion-term 1))
+         (well-formed-lambda-objectp
+          (unquote (fargn scion-term 1))
+          wrld))
+    (let* ((targets (recover-deep-targets scion-term))
+           (n (length targets))
+           (fn (unquote (fargn scion-term 1))))
+      (mv-let (style vars type-spec-exprs)
+        (case-match fn
+          (('LAMBDA (var) ('DECLARE ('IGNORABLE . &) . &) &)
+           (mv :plain (list var) (list *t*)))
+          (('LAMBDA (var) ('DECLARE ('TYPE spec &) ('IGNORABLE . &) . &) &)
+           (mv :plain
+               (list var)
+               (list (conjoin (get-guards2 `((TYPE ,spec ,var)) '(types)
+                                           t wrld nil nil)))))
+          (('LAMBDA '(LOCALS GLOBALS)
+                    ('DECLARE ('XARGS ':GUARD & ':SPLIT-TYPES 'T) . &)
+                    ('RETURN-LAST
+                     ''PROGN
+                     ('QUOTE ('LAMBDA$ . &))
+                     (('LAMBDA locals-and-globals optionally-marked-body)
+                      . &)))
+           (cond
+            ((<= n (length locals-and-globals))
+             (mv :fancy
+                 (first-n-ac n locals-and-globals nil)
+                 (recover-type-spec-exprs optionally-marked-body)))
+            (t (mv nil nil nil))))
+          (& (mv nil nil nil)))
+        (cond
+         ((eq style nil) nil)
+         (t (vars-specs-and-targets1 vars type-spec-exprs targets))))))
+   (t nil)))
+
+; This macro tests the extraction of locals and their type-specs from the
+; lambdas generated by loop$.  See the er-let* just below for some
+; sample calls and their expected returns.
+
+; (defmacro tester (stmt)
+;   `(mv-let (erp term bindings)
+;      (translate11-loop$ ',stmt '(nil) nil nil nil nil 'tester (w state)
+;                         (default-state-vars state))
+;      (declare (ignore bindings))
+;      (cond
+;       (erp (er soft 'tester "~@0" term))
+;       (t (value (vars-specs-and-targets
+;                  (fargn term 3)
+;                  (w state)))))))
+
+; The form below should return (value t).
+
+; (er-let*
+;     ((test1
+;       (tester
+;        (loop$ for x in lst collect x)))
+;      (test2
+;       (tester
+;        (loop$ for x of-type integer in lst collect x)))
+;      (test3
+;       (tester
+;        (loop$ for x of-type (and integer (satisfies evenp)) in lst collect x)))
+;      (test4
+;       (tester
+;        (loop$ for x of-type integer in xlst as y in ylst collect (list x y))))
+;      (test5
+;       (tester
+;        (loop$ for x in xlst as y of-type integer in ylst collect (list x y))))
+;      (test6
+;       (tester
+;        (loop$ for x of-type symbol in xlst
+;               as y of-type integer in ylst
+;               as u in ulst
+;               as z of-type rational in zlst
+;               when (> y z)
+;               collect :guard (> u (+ y z)) (list x y u z a b c))))
+;      (test7
+;       (tester
+;        (loop$ for x of-type (and symbol (not (satisfies null))) in xlst
+;               as y of-type (and integer (satisfies evenp)) in ylst
+;               as u in ulst
+;               as z of-type (and rational (satisfies posp)) in zlst
+;               when (> y z)
+;               collect :guard (> u (+ y z)) (list x y u z a b c)))))
+;   (value (and (equal test1 '((X 'T LST)))
+;               (equal test2 '((X (INTEGERP X) LST)))
+;               (equal test3
+;                      '((X (IF (INTEGERP X) (EVENP X) 'NIL)
+;                           LST)))
+;               (equal test4
+;                      '((X (INTEGERP X) XLST) (Y 'T YLST)))
+;               (equal test5
+;                      '((X 'T XLST) (Y (INTEGERP Y) YLST)))
+;               (equal test6
+;                      '((X (SYMBOLP X) XLST)
+;                        (Y (INTEGERP Y) YLST)
+;                        (U 'T ULST)
+;                        (Z (RATIONALP Z) ZLST)))
+;               (equal test7
+;                      '((X (IF (SYMBOLP X) (NOT (NULL X)) 'NIL)
+;                           XLST)
+;                        (Y (IF (INTEGERP Y) (EVENP Y) 'NIL)
+;                           YLST)
+;                        (U 'T ULST)
+;                        (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
+;                           ZLST))))))
+
+(defun special-loop$-guard-clauses-c2 (clause var type-expr target)
+; See special-loop$-guard-clauses-c.
+  (cond
+   ((equal type-expr *t*) nil)
+   (t (case-match target
+        (('TAILS &)
+         (conjoin-clause-to-clause-set
+          (add-literal-smart
+           (subst-var *nil* var type-expr)
+           clause
+           t)
+          nil))
+        (('FROM-TO-BY i j k)
+         (conjoin-clause-to-clause-set
+          (add-literal-smart
+           (subst-var i var type-expr)
+           clause
+           t)
+          (conjoin-clause-to-clause-set
+           (add-literal-smart
+            (subst-var j var type-expr)
+            clause
+            t)
+           (conjoin-clause-to-clause-set
+            (add-literal-smart
+             (subst-var k var type-expr)
+             clause
+             t)
+            (conjoin-clause-to-clause-set
+             (add-literal-smart
+              (subst-var
+               `(BINARY-+ ,i
+                          (BINARY-+
+                           ,k
+                           (BINARY-* ,k
+                                     (FLOOR (BINARY-+ ,j (UNARY-- ,i))
+                                            ,k))))
+               var type-expr)
+              clause
+              t)
+             nil)))))
+        (& nil)))))
+
+(defun special-loop$-guard-clauses-c1 (clause vars-specs-and-targets)
+; See special-loop$-guard-clauses-c.
+  (cond
+   ((null vars-specs-and-targets) nil)
+   (t (conjoin-clause-sets
+       (special-loop$-guard-clauses-c2
+        clause
+        (car (car vars-specs-and-targets))
+        (cadr (car vars-specs-and-targets))
+        (caddr (car vars-specs-and-targets)))
+       (special-loop$-guard-clauses-c1 clause
+                                       (cdr vars-specs-and-targets))))))
+
+(defun special-loop$-guard-clauses-c (clause term wrld)
+
+; If term is a loop$ scion term corresponding to the operator of a loop$
+; statement, e.g., a call of sum$ or perhaps collect$+ but not a call of when$,
+; we get the triplets (vari type-expri targeti) corresponding to the iteration
+; variables, their type spec expressions, and their targets, and generate
+; Special Conjectures (c) for each one, as a function of each target.
+
+; For a (FROM-TO-BY i j k) target, the generated clauses insist that
+; i, j, k, and (+ i (* k (floor (- j i) k)) k) each satisfy the type-expr.
+
+; For a (TAILS lst) target, the generated clauses insist that NIL
+; satisfies the type-expr.
+
+; No other targets generate Special Conjectures (c).
+
+  (special-loop$-guard-clauses-c1
+   clause
+   (vars-specs-and-targets term wrld)))
+
 (defun special-loop$-scion-callp (term wrld)
 
-; We recognize calls of *loop$-keyword-info* scions on quoted function objects, e.g.,
-; (sum$ (quote fn) lst) or (when$+ (quote fn) globals lst) that might have come
-; from translations of loop$ statements.
+; We recognize calls of *loop$-keyword-info* scions on quoted LAMBDA objects,
+; e.g., (sum$ (quote (LAMBDA ...)) lst) or (when$+ (quote (LAMBDA ...)) globals
+; lst) that might have come from translations of loop$ statements.
 
 ; Motivation: We generate special guard conjectures for each such a call,
 ; presuming that it WAS generated by a loop$ and that the loop$ is lying in
@@ -12374,28 +12713,16 @@
 ; protective here: there may be no loop$ in the raw Lisp.  C'est la vie.
 
 ; We do not build in much about what such calls look like except that we know
-; the function argument is a quoted tame (indeed, well-formed) function object
-; (symbol or lambda) of the right arity for the style of the loop$ scion.  It
-; could be that (loop$ for v in lst collect (foo v)) generates (collect$ 'foo
-; lst) or (collect$ '(lambda (v) (foo v)) lst), but we recognize both just in
-; case.  But even if the loop$ macro cleans up the quoted LAMBDA to just 'foo,
-; we know foo is a function of the right arity because the original loop$
-; statement would have contained a call of foo which got translated.
+; the function argument is a quoted well-formed LAMBDA object of the right
+; arity for the style of the loop$ scion.
 
   (case-match term
-    ((loop-scion ('quote fn) . &)
+    ((loop-scion ('quote obj) . &)
      (let ((style (loop$-scion-style loop-scion *loop$-keyword-info*)))
        (and style ; a :plain  or :fancy loop$ scion
-            (or (and (symbolp fn) ; fn is a logic mode function symbol
-                     (let ((badge (executable-badge fn wrld)))
-                       (and badge
-                            (eql (access apply$-badge badge :out-arity) 1)
-                            (eql (access apply$-badge badge :arity)
-                                 (if (eq style :plain) 1 2))
-                            (eq (access apply$-badge badge :ilks) t))))
-                (and (well-formed-lambda-objectp fn wrld)
-                     (equal (length (lambda-object-formals fn))
-                            (if (eq style :plain) 1 2)))))))
+            (and (well-formed-lambda-objectp obj wrld)
+                 (equal (length (lambda-object-formals obj))
+                        (if (eq style :plain) 1 2))))))
     (t nil)))
 
 (defun special-loop$-guard-clauses (clause term wrld newvar ttree)
@@ -12409,79 +12736,11 @@
 ; functions or lambdas being defined.  Newvar is nil when we're generating
 ; guards for theorems and ordinary terms.
 
-; To explain what ``special loop$ guard clauses'' are we'll look at two
-; examples, a plain sum loop$ and a fancy sum loop$.  We choose to look at sum
-; because it imposes a restriction on the output of the fn being apply$'d,
-; whereas, say, collect does not.  In particular, conjecture (a), described
-; below, for sum is non-trivial but for collect would be trivial.
+; Note: As of this writing, ttree is just passed through and returned; it is
+; not used or modified.
 
-; By the way, the function mempos used below is like member-equal except it
-; returns the position (0-based) of the element in the list or the len of the
-; lst when newvar isn't in it.  Mempos is more useful in reasoning about when$,
-; until$, and loop$-as, because we can use linear arithmetic and relate the
-; mempos of newvar in, say (when$ p globals lst) to the mempos newvar in lst.
-;
-; In particular, if (mempos newv (LOOP$-AS (list x y))) = n and n < (len
-; (loop$-as (list x y))), then (car newv) is (nth n x) and (cadr newvar) is
-; (nth n y).
-
-; Plain sum:  Consider
-
-; (loop$ for x in lst sum (fn x))
-
-; This translates to (sum$ '(lambda (x) (fn x)) lst) or perhaps (sum$ 'fn lst)
-; if fn has a guard of t.  The guard on sum$ just requires that fn be a symbol
-; (or LAMBDA object of arity 1) and that lst be a true-listp.  Our recognition
-; that a term is of this special form (i.e., special-loop$-scion-callp)
-; guarantees that fn is of arity 1.  But the loop$ actually makes two other
-; requirements.  In the following, let newvar be a new variable, let var1 be
-; the formal of fn, and let fngp be the guard term of fn, which we know is a
-; term in var1.
-
-; (a) every element of lst must satisfy the guard of fn.
-;     (implies (and <hyps from clause>
-;                  (< (mempos newvar lst) (len lst)))
-;             fngp/{var1 <-- newvar})
-
-; (b) fn must return an acl2-numberp on every element of lst:
-;     (implies (and <hyps from clause>
-;                   (< (mempos newvar lst) (len lst)))
-;              (acl2-numberp (apply$ 'fn (list newvar))))
-
-; Here, acl2-numberp is really the loop$-scion-restriction (the entry in the
-; 4th column of *loop$-keyword-info*) for fn, which is T for collect.
-
-; Fancy sum: Now consider
-
-; (loop$ for x in xtarg as y in ytarg sum (+ x y c))
-
-; This translates to
-
-; (sum$+ '(lambda (locals globals) (declare (xargs :guard fngp ...)) body)
-;        (list c)
-;        lst)
-
-; If the loop$ scion call was generated by loop$, then the names of the two
-; locals are indeed locals and globals.  But since the user could have typed
-; this term, we don't know that.  We do know, again by
-; special-loop$-scion-callp, that the fn has arity 2 in this case.  Lst here is
-; (loop$-as (list xtarg ytarg)) but may be something else.  Recall that sum$+
-; apply$s its fn argument to two things, successive elements of lst and the
-; list of ``global'' variables, here (list c).
-
-; So
-
-; (a) every element of lst must satisfy the guard of fn.
-;     (implies (and <hyps from clause>
-;                  (< (mempos newvar lst) (len lst)))
-;             fngp/{locals <-- newvar, globals <-- (list c)}
-
-; (b) fn must return an acl2-numberp on every element of lst:
-;     (implies (and <hyps from clause>
-;                   (< (mempos newvar lst) (len lst)))
-;              (acl2-numberp (apply$ 'fn (list newvar (list c)))))
-
-; We generate clauses (a) and (b) here if term is a call of a loop$ scion.
+; See the Essay on Loop$ for an explanation of Special Conjectures (a) (b) and
+; (c).
 
   (cond
    ((null newvar) (mv nil ttree))
@@ -12489,6 +12748,9 @@
     (let* ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*))
            (test-b (loop$-scion-restriction (ffn-symb term)
                                             *loop$-keyword-info*))
+; Test-b is either NIL or a monadic predicate like ACL2-NUMBERP that the
+; output of the apply$ must satisfy.
+
            (fn (unquote (fargn term 1)))
            (globals (if (eq style :plain)
                         nil
@@ -12513,42 +12775,42 @@
                           `((,var1 . ,newvar)
                             (,var2 . ,globals))))
                (special-conjecture-a
-               (if (equal fngp *t*)
-                   *true-clause*
-                   (add-literal-smart
-                    (sublis-var subst fngp)
+                (if (equal fngp *t*)
+                    *true-clause*
                     (add-literal-smart
-                     `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
-                     clause
-                     t)
-                    t)))
-              (special-conjecture-b
-               (if test-b
-                   (add-literal-smart
-                    `(,test-b
-                      (APPLY$ ',fn
-                              ,(if (eq style :plain)
-                                   `(CONS ,newvar 'NIL)
-                                   `(CONS ,newvar
-                                          (CONS ,globals
-                                                'NIL)))))
+                     (sublis-var subst fngp)
+                     (add-literal-smart
+                      `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
+                      clause
+                      t)
+                     t)))
+               (special-conjecture-b
+                (if test-b
                     (add-literal-smart
-                     `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
-                     clause
+                     `(,test-b
+                       (APPLY$ ',fn
+                               ,(if (eq style :plain)
+                                    `(CONS ,newvar 'NIL)
+                                    `(CONS ,newvar
+                                           (CONS ,globals
+                                                 'NIL)))))
+                     (add-literal-smart
+                      `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
+                      clause
+                      t)
                      t)
-                    t)
-                   *true-clause*)))
-          (cond
-           ((equal special-conjecture-a *true-clause*)
-            (cond
-             ((equal special-conjecture-b *true-clause*)
-              (mv nil ttree))
-             (t (mv (list special-conjecture-b) ttree))))
-           ((equal special-conjecture-b *true-clause*)
-            (mv (list special-conjecture-a) ttree))
-           (t (mv (list special-conjecture-a
-                        special-conjecture-b)
-                  ttree)))))))
+                    *true-clause*))
+               (special-conjectures-c
+                (special-loop$-guard-clauses-c clause term wrld)))
+          (mv (append (if (equal special-conjecture-a *true-clause*)
+                          nil
+                          (list special-conjecture-a))
+                      (if (equal special-conjecture-b *true-clause*)
+                          nil
+                          (list special-conjecture-b))
+                      special-conjectures-c
+                      )
+              ttree)))))
    (t (mv nil ttree))))
 
 (mutual-recursion
@@ -12843,7 +13105,8 @@
                  (mv clause-lst0 ttree))
                 (t (mv-let (flg clause-lst ttree)
                      (eval-ground-subexpressions1-lst-lst
-                      clause-lst0 ens wrld safe-mode gc-off ttree)
+                      clause-lst0 ens wrld safe-mode gc-off ttree
+                      *loop$-special-function-symbols*)
                      (declare (ignore flg))
                      (mv clause-lst ttree))))))
 
@@ -13006,7 +13269,8 @@
                    (mv nil unnormalized-body nil))
                   (t (eval-ground-subexpressions1
                       unnormalized-body
-                      ens wrld safe-mode gc-off ttree)))
+                      ens wrld safe-mode gc-off ttree
+                      *loop$-special-function-symbols*)))
             (declare (ignore changedp))
             (let ((hyp-segments
 

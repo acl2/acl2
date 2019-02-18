@@ -126,6 +126,12 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
+ <h4>Fixtypes for Osets</h4>
+
+ <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
+ topic='@(url set::std/osets)'>osets</see> of elements of specified fixtypes.
+ This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -172,9 +178,17 @@
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>Improved the documentation of the Bitcoin library.</p>
+ <p>Improved the documentation.</p>
 
  <p>Added fixtypes for bytes and byte sequences.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Add
+ placeholders for HMAC-SHA-512 and the secp256k1 elliptic curve.</p>
+
+ <p>Added a formalization BIP (Bitcoin Improvement Proposal) 32 key
+ derivation.</p>
 
  <h4>Bytes</h4>
 
@@ -250,6 +264,9 @@
 
  <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see pseudo-term-fty).</p>
 
  <h4>FTY Types for Bytes</h4>
 
@@ -439,6 +456,9 @@
  <h3>Testing</h3>
 
  <h3>Miscellaneous</h3>
+
+ <p>We now avoid causing an error when building the manual in the case that the
+ @('zip') program is not installed; that causes a warning instead.</p>
 
  ")
 

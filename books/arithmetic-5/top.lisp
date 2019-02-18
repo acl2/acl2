@@ -18,6 +18,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
+
 (deftheory-static arithmetic-5-current-base
   ;; Presumably the same as 'ground-zero
   (current-theory :here))

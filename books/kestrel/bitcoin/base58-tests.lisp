@@ -1,6 +1,6 @@
-; Bitcoin Library -- Base58 Encoding and Decoding -- Tests
+; Bitcoin -- Base58 Encoding and Decoding -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,9 +21,9 @@
 
 (acl2::assert-equal
  (base58-encode
-  (acl2::nat=>bendian 256
-                      25
-                      #x00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31c7f18fe8))
+  (nat=>bendian 256
+                25
+                #x00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31c7f18fe8))
  (explode "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs"))
 
 (acl2::assert-equal

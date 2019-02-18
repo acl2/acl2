@@ -240,6 +240,7 @@
 (include-book "acl2s/doc" :dir :system)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
 ;; especially related to consp-append.

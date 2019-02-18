@@ -18,7 +18,7 @@
 ; "Second-Order Functions and Theorems in ACL2".
 ; Comments indicate the sections and subsections of the paper.
 ; The examples look slightly different from the paper
-; due to the changes to SOFT since the paper
+; due to the changes to SOFT since the Workshop
 ; (see :DOC UPDATES-TO-WORKSHOP-MATERIAL).
 
 ; 1  Second-Order Functions and Theorems

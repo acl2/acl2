@@ -429,7 +429,7 @@
         (and (acl2::f-boundp-global 'xdoc-get-event-table state)
               (list (f-get-global 'xdoc-get-event-table state))))
        (state (f-put-global 'xdoc-get-event-table (make-get-event*-table (w state) nil) state))
-        
+
        (topics-fal (time$ (topics-fal topics0)))
 
        (- (cw "; Preprocessing ~x0 topics.~%" (len topics0)))
@@ -487,7 +487,7 @@
 
        (orphans (find-orphaned-topics topics topics-fal nil))
 
-       
+
         (- (fast-alist-free (@ xdoc-get-event-table)))
         (state (if prev-event-table-binding
                    (f-put-global 'xdoc-get-event-table (car prev-event-table-binding) state)
@@ -567,10 +567,10 @@
         (time$ (acl2::tshell-call cmd :print t)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
        ((unless (equal exit-status 0))
-        (er hard? 'run-fancy-zip
-            "zip.sh failed (exit code ~x0).  ~x1."
-            exit-status lines)
-        state))
+        (acl2::warning$ 'run-fancy-zip "run-fancy-zip"
+                        "zip.sh failed to create a zip file for directory ~x0 ~
+                         (exit code ~x1).  ~x2."
+                        dir-fix exit-status lines)))
     state))
 
 (defun save-fancy (all-topics dir zip-p logo-image broken-links-limit state)

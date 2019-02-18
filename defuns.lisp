@@ -8045,11 +8045,12 @@
                    it perfectly.  The lambda object you created would be ~
                    interpreted by *1*apply even in a guard-verified raw Lisp ~
                    function while our lambda$ translation would produce ~
-                   compiled code.  Nevertheless, here's what's wrong with ~
-                   your counterfeit version:  the lambda$ expression ~x0 ~
-                   actually translates to ~x1 but your counterfeit claimed it ~
-                   translates to ~x2."
+                   compiled code.~%~%Nevertheless, here's what's wrong with ~
+                   your counterfeit version:  the lambda$ expression~%~Y01 ~
+                   actually translates to~%~Y21 but your counterfeit claimed it ~
+                   translates to~%~Y31."
                   key
+                  nil
                   (unquote tkey)
                   val))))))))
 
@@ -8109,6 +8110,16 @@
 ; marked, untranslated lambda$ expression it will use lambda$-alist to map it
 ; to its logical counterpart so we can do guard verification etc.
 
+; Lambda$-alist is also used by authenticate-tagged-lambda$ to confirm that a
+; quoted LAMBDA object tagged as having come from a lambda$ is actually
+; produced by translating the lambda$.  That check can be made without
+; re-translating if the quoted LAMBDA object appears as a cdr of a pair on
+; lambda$-alist.
+
+; Warning: Don't change the format or content of these pairs without inspecting
+; authenticate-tagged-lambda$ since failure to find the LAMBDA object just
+; causes a silent (slower) re-translation.
+
 ; The first formal above is the symbol-class of the defuns being processed.
 ; The next two are the guards and bodies, all of which ultimately get
 ; transferred into raw Lisp.  We must find every translated lambda$ in these
@@ -8162,51 +8173,223 @@
     (and pair
          (access loop$-alist-entry (cdr pair) :term))))
 
+; The following is akin to untrans-table but limited to CLTL primitives that
+; are translated into ACL2 versions.  This table is used to transform logically
+; translated terms into raw Lisp runnable terms.  Those transformed terms are
+; compiled and run, possibly during the reduction of ground subexpressions to
+; constants.  So it is important that this table be a trusted constant and not
+; something the user might augment as with untrans-table.
+
+(defconst *primitive-untranslate-alist*
+
+; Warning: It is important that none of these functions return multiple values!
+
+  '((binary-+ . +)
+    (binary-* . *)
+    (binary-append . append)
+    (binary-logand . logand)
+    (binary-logior . logior)
+    (binary-logxor . logxor)
+    (binary-logeqv . logeqv)
+    (unary-- . -)
+    (unary-/ . /)))
+
 (mutual-recursion
 
-(defun twoify (term wrld)
+(defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
+
+; Note: This function used to be called ``twoify''.
 
 ; This function converts a translated term into something that can be executed
-; in raw Lisp.  The (only?) problem with executing terms in raw Lisp is the
-; difference between how ACL2 handles multiple values and how raw Lisp does it.
-; The fix here is to find every call of a multi-valued function and wrap it in
-; a multiple-value-list which converts it to a list of values as the logic
-; treats it.
-
-; The name ``twoify'' is just the obvious take-off on ``oneify'' which produces
-; *1*fn from fn.
+; in raw Lisp.  The logic translation of an mv is a list, with the comcommitant
+; translation of mv-let into bindings expressed in terms of car/cdr nests.  A
+; minor problem is that + and other primitive arithmetic expressions are turned
+; into binary-+, etc., which if allowed to persist would prevent the compiler
+; from making routine optimizations if TYPE declarations allow.  The fix here
+; is to find every call of a multi-valued function and wrap it in a
+; multiple-value-list which converts it to a list of values as the logic treats
+; it.  While we're at it we turn calls of binary-+ into + so Lisp can recognize
+; the chance to optimize arithmetic.  In a simple test of CCL we saw no
+; significant difference between the assembly produced for a well-declared (+ x
+; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
+; calls of the machine's +.
 
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
   (cond ((variablep term) term)
-        ((fquotep term) term)
+        ((fquotep term)
+
+; Should we transform quoted LAMBDA objects?  No.  First, they may not be in
+; :FN slots and changing them would simply be wrong.  Second, even if they are in
+; :FN slots they are applied with apply$, which can't execute raw Lisp.  It's just
+; wrongheaded to think about transforming quoted LAMBDA objects!
+
+         term)
         ((flambdap (ffn-symb term))
          (cons (list 'lambda (lambda-formals (ffn-symb term))
-                     (twoify (lambda-body (ffn-symb term)) wrld))
-               (twoify-lst (fargs term) wrld)))
+                     (logic-code-to-runnable-code nil
+                                                  (lambda-body (ffn-symb term))
+                                                  wrld))
+               (logic-code-to-runnable-code-lst (fargs term) wrld)))
         ((eq (ffn-symb term) 'if)
-         `(if ,(twoify (fargn term 1) wrld)
-              ,(twoify (fargn term 2) wrld)
-            ,(twoify (fargn term 3) wrld)))
+         `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
         ((eq (ffn-symb term) 'return-last)
-         (twoify (fargn term 3) wrld))
-        (t (let ((len (len (stobjs-out (ffn-symb term) wrld))))
-             (cond ((not (eql len 1))
-                    `(mv-list
-                      ',len
-                      (,(ffn-symb term)
-                       ,@(twoify-lst (fargs term) wrld))))
-                   (t (cons-with-hint (ffn-symb term)
-                                      (twoify-lst (fargs term) wrld)
-                                      term)))))))
+         (logic-code-to-runnable-code nil (fargn term 3) wrld))
+        ((eq (ffn-symb term) 'mv-list)
 
-(defun twoify-lst (terms wrld)
+; Since term is a fully translated term, we know it is of the form (mv-list 'k
+; expr) where k is an explicit integer greater than 1 and the out-arity of expr
+; is k.  Thus, there is no need to wrap another mv-list around expr!  But we do
+; have to transform its subterms.
+         `(mv-list ,(fargn term 1)
+                   ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
+
+        (t (let ((out-arity (length (stobjs-out (ffn-symb term) wrld))))
+             (cond
+              ((and (not already-in-mv-listp)
+                    (not (int= out-arity 1)))
+               `(mv-list
+                 ',out-arity
+                 (,(ffn-symb term)
+                  ,@(logic-code-to-runnable-code-lst (fargs term) wrld))))
+              (t (let ((temp (assoc-eq (ffn-symb term)
+                                       *primitive-untranslate-alist*)))
+                   (cons-with-hint (if temp
+                                       (cdr temp)
+                                       (ffn-symb term))
+                                   (logic-code-to-runnable-code-lst
+                                    (fargs term) wrld)
+                                   term))))))))
+
+(defun logic-code-to-runnable-code-lst (terms wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld))))
   (cond ((endp terms) nil)
-        (t (cons-with-hint (twoify (car terms) wrld)
-                           (twoify-lst (cdr terms) wrld)
+        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) wrld)
+                           (logic-code-to-runnable-code-lst (cdr terms) wrld)
                            terms)))))
+
+(defun authenticate-tagged-lambda$ (x state)
+
+; X is a well-formed LAMBDA object.  If it is tagged as having come from a
+; lambda$, we check that it is authentic, i.e., that the lambda$ expression it
+; allegedly comes from actually translates to the LAMBDA object x.  In general
+; we do this by re-translating the lambda$.  But there is a short-cut.  The
+; world global lambda$-alist contains every lambda$ expression ever seen by
+; defun and only lambda$ expressions seen by defun.  Lambda$ expressions,
+; paired with their tagged translations, are stored there by defun, basically
+; immediately after translation.  So we know that the cdr of every pair on
+; lambda$-alist is an authentic translation of a lambda$.  Of course, this
+; short-cut does not handle lambda$s in top-level type-in, or in theorems or
+; other events, just defuns.  So we still have do re-translation on some tagged
+; LAMBDA objects we encounter.
+
+  (cond
+   ((lambda$-bodyp (lambda-object-body x))
+; X is tagged as having been a lambda$.  If we find it among the cdrs of
+; lambda$-alist, we know it is authentic.  Otherwise, we translate the lambda$
+; and check.
+    (cond
+     ((assoc-equal-cdr x (global-val 'lambda$-alist (w state)))
+      t)
+     (t (mv-let (erp obj bindings)
+          (translate11-lambda-object
+           (unquote (fargn (lambda-object-body x) 2))
+           '(nil) ; stobjs-out
+           nil    ; bindings
+           nil    ; known-stobjs
+           nil    ; flet-alist
+           nil    ; cform
+           'authenticate-tagged-lambda$-expression
+           (w state)
+           (default-state-vars state)
+           t) ; allow-counterfeitsp
+          (declare (ignore bindings))
+          (cond (erp nil)
+                ((equal (unquote obj) x) t)
+                (t nil))))))
+   (t nil)))
+
+(defun make-compileable-guard-and-body-lambdas (x state)
+
+; X is a well-formed LAMBDA object.  We want to create two new LAMBDA objects,
+; one that, when applied in raw Lisp, will test the guard of x and the other to
+; run the body of x.  These created lambdas will be compiled and executed in
+; raw Lisp when the guards of x have been verified and checked.  So, in so far
+; as possible, we want them to be fast raw Lisp lambda expressions.  The
+; challenge is that x is in translated form.  Thus, for example, LOOP$s will
+; have been converted to scion calls and multiple-value functions will be
+; handled like they return lists.  If x was generated by translating a lambda$
+; we can recover the original type-in from the tagging -- after authenticating
+; it.  But if x was a quoted LAMBDA we have no choice but to do our best to
+; convert the translated logic code into runnable lisp with
+; logic-code-to-runnable-code.
+
+  (let ((formals (lambda-object-formals x))
+        (dcl (lambda-object-dcl x))
+        (body (lambda-object-body x)))
+; Note: dcl and body are in fully translated form.
+    (cond
+     ((authenticate-tagged-lambda$ x state)
+
+; X came from a lambda$, i.e., the quoted lambda$ expression found (in the
+; second arg of the return-last) in the lambda-object-body really does
+; translate to the quotation of x.  So we can trust the original lambda$ to
+; give us the user's code for this object.
+
+      (let* ((lambda$-expr
+              (unquote (fargn (lambda-object-body x) 2)))
+             (edcls
+              (edcls-from-lambda-object-dcls-short-cut (cddr lambda$-expr)))
+             (guard-lst
+              (get-guards2 edcls '(types guards) nil (w state) nil nil)))
+
+; Guard-lst is the list of untranslated conjuncts in the guard (plus any TYPE
+; declarations) typed in the original lambda$.  It can be run directly in raw
+; Lisp (when x is guard verified).  Note that the guard of the guard is T, but
+; we don't bother to declare it below because the compiler can't make use of
+; that.
+
+; We'll create the lambda expression for the body by just re-using the whole
+; lambda$-expr, after replacing the 'lambda$ by 'lambda.  The right
+; declarations are already in it.
+
+        (mv `(LAMBDA ,formals
+                     (DECLARE (IGNORABLE ,@formals))
+                     ,(cond ((null guard-lst) 'T)
+                            ((null (cdr guard-lst)) (car guard-lst))
+                            (t `(AND ,@guard-lst))))
+            `(LAMBDA ,@(cdr lambda$-expr)))))
+     (t
+
+; If x is not an authentic lambda$ all we can do is use
+; logic-code-to-runnable-code to transform the already-translated guard and
+; body of the x.  There are two main drawbacks.  One is that the results of
+; multiple valued functions are coerced to lists and then torn apart with
+; car/cdr -- less efficiently than our raw Lisp can handle multiple values.
+; The other is that LOOP$ statements run as calls of loop$ scions on LAMBDA
+; objects rather than as raw Lisp loops.  But if x is not from a lambda$ it was
+; typed by the user and he or she couldn't have used mv-let or loop$ in it
+; anyway because quoted LAMBDA objects are not translated.
+
+      (mv `(LAMBDA ,formals
+                   (DECLARE (IGNORABLE ,@formals))
+                   ,(logic-code-to-runnable-code
+                     nil
+                     (remove-guard-holders
+                      (or (cadr (assoc-keyword :guard
+                                               (cdr (assoc-eq 'xargs
+                                                              (cdr dcl)))))
+                          *t*))
+                     (w state)))
+          `(LAMBDA ,formals
+                   ,dcl
+                   ,(logic-code-to-runnable-code
+                     nil
+                     (remove-guard-holders body)
+                     (w state))))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 
@@ -8217,7 +8400,10 @@
   (cond ((endp lst) nil)
         (t (cons (cons (unquote (fargn (car lst) 2))
                        (make loop$-alist-entry
-                             :term (twoify (fargn (car lst) 3) wrld)
+                             :term (logic-code-to-runnable-code
+                                    nil
+                                    (fargn (car lst) 3)
+                                    wrld)
                              :flg flg))
                  (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
 
@@ -8249,7 +8435,11 @@
                     tkey ; (really, a msg)
                     key))
            ((and (tagged-loop$p tkey)
-                 (equal (twoify (fargn tkey 3) wrld) val-term))
+                 (equal (logic-code-to-runnable-code
+                         nil
+                         (fargn tkey 3)
+                         wrld)
+                        val-term))
 
 ; The error message below makes it seem like the loop$ is expected to translate
 ; to val-term.  But that's not true.  The translation of (loop$ ...) is,
@@ -8268,13 +8458,21 @@
                    counterfeit translated loop$ won't enjoy the same runtime ~
                    support as our translated loop$ even if you did it ~
                    perfectly.  Had you written a loop$ it would enter raw ~
-                   Lisp as a CLTL loop statement and run fast.  But the ~
-                   counterfeit term will just use loop$ scions and apply$.  ~
-                   Nevertheless, here's what's wrong with your counterfeit ~
-                   version:  the loop$ expression ~x0 actually translates to ~
-                   ~x1 but your counterfeit claimed it translates to ~x2."
+                   Lisp as a CLTL loop statement and run fast when guard ~
+                   verified.  But the counterfeit term will just use the ~
+                   logically translated term you claimed was the semantics ~
+                   of the loop$.~%~%Nevertheless, here's what's wrong with ~
+                   your counterfeit version:  the loop$ expression~%~Y01 ~
+                   actually translates to~%~Y21, which when converted to ~
+                   runnable raw Lisp is~%~Y31, but your counterfeit claimed the ~
+                   runnable raw Lisp of its tranlation is~%~Y41."
                   key
+                  nil
                   tkey
+                  (logic-code-to-runnable-code
+                   nil
+                   (fargn tkey 3)
+                   wrld)
                   val-term))))))))
 
 (defun chk-acceptable-loop$-translations2 (new-pairs loop$-alist ctx state)
@@ -8371,7 +8569,6 @@
                                             :full-book-name)))
                       (null path))))
              wrld)))
-                                   
       (er-progn
 
 ; Note that we check the terms in new-pairs, not the :flg fields of the
@@ -8790,9 +8987,11 @@
 ;               - a list of two alists
 ;                 * new-lambda$-alist-pairs
 ;                 * new-loop$-alist-pairs
-;                 each of which maps the obvious untranslated terms to their
-;                 respective translations (actually, to loop$-alist-entry
-;                 records with those translations)
+;                 the first of which maps the obvious untranslated terms to
+;                 their respective translations and the second of which maps
+;                 untranslated loop$ statements to loop$-alist-entry records
+;                 containing those translations after converting them from
+;                 logic to runnable code.
 
   (er-let*
    ((fives (chk-defuns-tuples lst nil ctx wrld state))
@@ -9734,15 +9933,40 @@
                                     (access type-prescription tp :corollary)
                                     t wrld))
                                (t nil)))
-                  (constraint (mv-let
-                               (some-name constraint-lst)
-                               (constraint-info name wrld)
-                               (cond ((unknown-constraints-p constraint-lst)
-                                      '[UNKNOWN-CONSTRAINTS])
-                                     (some-name
-                                      (untranslate (conjoin constraint-lst)
-                                                   t wrld))
-                                     (t t)))))
+                  (badge (executable-badge name wrld))
+
+; If we're in boot-strap, executable-badge just caused a hard error.  So if
+; we're here we know that (getpropc '*badge-prim-falist* 'const nil wrld) is
+; non-nil and is, in fact, a quoted constant.  But we can't just use
+; *badge-prim-falist* because it will not be known to the compiler during the
+; boot-strapping.
+
+                  (warrant (cond ((assoc-eq name
+                                            (unquote
+                                             (getpropc '*badge-prim-falist*
+                                                       'const nil wrld)))
+                                  t)
+                                 (badge
+                                  (list (intern-in-package-of-symbol
+                                         (concatenate 'string
+                                                      "APPLY$-WARRANT-"
+                                                      (symbol-name name))
+                                         name)))
+                                 (t nil)))
+                  (constraint-msg
+                   (mv-let
+                     (some-name constraint-lst)
+                     (constraint-info name wrld)
+                     (cond ((unknown-constraints-p constraint-lst)
+                            "[UNKNOWN-CONSTRAINTS]")
+                           (t (let ((constraint
+                                     (if some-name
+                                         (untranslate (conjoin constraint-lst)
+                                                      t wrld)
+                                       t)))
+                                (if (eq constraint t)
+                                    ""
+                                  (msg "~y0" constraint))))))))
              (pprogn
               (fms "Function         ~x0~|~
                Formals:         ~y1~|~
@@ -9752,7 +9976,9 @@
                Guards Verified: ~y5~|~
                Defun-Mode:      ~@6~|~
                Type:            ~#7~[built-in (or unrestricted)~/~q8~]~|~
-               ~#9~[~/Constraint:  ~qa~|~]~
+               Badge:           ~#b~[built-in to apply$~/~yc~/none~]~|~
+               Warrant:         ~#b~[none needed~/~yd~/none~]~|~
+               ~#9~[~/Constraint:      ~@a~|~]~
                ~%"
                    (list (cons #\0 name)
                          (cons #\1 formals)
@@ -9765,8 +9991,11 @@
                          (cons #\6 (defun-mode-string (fdefun-mode name wrld)))
                          (cons #\7 (if tpthm 1 0))
                          (cons #\8 tpthm)
-                         (cons #\9 (if (eq constraint t) 0 1))
-                         (cons #\a constraint))
+                         (cons #\9 (if (equal constraint-msg "") 0 1))
+                         (cons #\a constraint-msg)
+                         (cons #\b (if (eq warrant t) 0 (if warrant 1 2)))
+                         (cons #\c badge)
+                         (cons #\d warrant))
                    channel state nil)
               (value name))))
           ((and (symbolp name)

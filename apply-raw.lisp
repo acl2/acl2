@@ -1186,29 +1186,6 @@
       (setf (cdr last) new-alist))
     line))
 
-(defun compile-lambda-object (x)
-
-; We know x is a well-formed lambda object and we compile it after stripping
-; off the lambda$-bodyp tag if present.  This might be made more efficient: If
-; the body is tagged as having come from a lambda$, e.g., is (RETURN-LAST
-; 'PROGN '(LAMBDA$ ...) body), we might be tempted to compile the (LAMBDA$ ...)
-; as a LAMBDA, rather than to compiler the body.  The (LAMBDA$ ...) is what the
-; user typed whereas the body is fully translated, e.g., the former might use *
-; where the latter uses binary-*.  This would be ok since we only run the
-; compiled code if the guards are verified and hold on the actuals.  But there
-; is a major problem with this attempt at efficiency: how do we know that the
-; tagged body actually corresponds to the (LAMBDA ...) given that the user can
-; counterfeit a tagged lambda?  Rather than think that out, we just use the
-; body!
-
-  (let ((body (lambda-object-body x))
-        (dcl (lambda-object-dcl x)))
-    (compile nil (make-lambda-object
-                  (lambda-object-formals x)
-                  dcl
-                  (twoify (remove-guard-holders body)
-                          (w *the-live-state*))))))
-
 (defun invalidate-some-cl-cache-lines (flg wrld)
 
 ; Flg is either EXTENSION or RETRACTION.  Wrld is the about-to-be-installed
@@ -1350,7 +1327,7 @@
                  (access cl-cache-line line :lambda-object)
                  nil ; debug-p
                  ens w
-                 nil nil nil)) ; safe-mode gc-off ttree
+                 nil nil nil))       ; safe-mode gc-off ttree
             (declare (ignore ttree)) ; assumption-free ttree
             (mv-let (cl-set1 ttree calist)
               (tau-clausep-lst cl-set ens w nil nil state nil)
@@ -1362,19 +1339,19 @@
 ; line's :absolute-event-number to the most recent such number in w, and set
 ; :status to :GOOD.
 
-                (setf (access-cl-cache-line line :guard-code)
-                      (compile-lambda-object
-                       (make-lambda-object formals
-                                           `(DECLARE (IGNORABLE ,@formals))
-                                           guard)))
-                (setf (access-cl-cache-line line :lambda-code)
-                      (compile-lambda-object
-                       (access-cl-cache-line line :lambda-object)))
-                (setf (access-cl-cache-line line :problem) nil)
-                (setf (access-cl-cache-line line :absolute-event-number)
-                      (max-absolute-event-number w))
-                (setf (access-cl-cache-line line :status) :GOOD)
-                line)
+                (mv-let (guard-lambda body-lambda)
+                  (make-compileable-guard-and-body-lambdas
+                   (access cl-cache-line line :lambda-object)
+                   state)
+                  (setf (access-cl-cache-line line :guard-code)
+                        (compile nil guard-lambda))
+                  (setf (access-cl-cache-line line :lambda-code)
+                        (compile nil body-lambda))
+                  (setf (access-cl-cache-line line :problem) nil)
+                  (setf (access-cl-cache-line line :absolute-event-number)
+                        (max-absolute-event-number w))
+                  (setf (access-cl-cache-line line :status) :GOOD)
+                  line))
 
 ; All other exits set the status to :BAD but we attribute that to different
 ; problems.
@@ -1616,8 +1593,7 @@
                      :hits 1
                      :guard-code nil
                      :lambda-code nil))))
-       ((or (eq status :GOOD)
-            (eq status :BAD))
+       ((eq status :GOOD)
 
 ; For status = :GOOD, the fn should be well-formed in w and w must be able to
 ; prove the guard conjectures, and for status = :BAD, there should (probably)
@@ -1625,26 +1601,35 @@
 ; in this w.  We don't check these things because we assume the caller knows
 ; what it's doing.
 
+        (mv-let (guard-lambda body-lambda)
+          (make-compileable-guard-and-body-lambdas fn state)
+          (make cl-cache-line
+                :lambda-object fn
+                :status status
+                :absolute-event-number (+ 1 (max-absolute-event-number w))
+                :extracts (list satisfies-exprs guard body)
+                :problem nil
+                :hits 1
+                :guard-code (compile nil guard-lambda)
+                :lambda-code (compile nil body-lambda))))
+       ((eq status :BAD)
+
+; For status = :GOOD, the fn should be well-formed in w and w must be able to
+; prove the guard conjectures, and for status = :BAD, there should (probably)
+; exist a world in which fn is well-formed and guard-verifiable but it is not
+; in this w.  We don't check these things because we assume the caller knows
+; what it's doing.
+
+
         (make cl-cache-line
               :lambda-object fn
-              :status status
-              :absolute-event-number
-              (if (eq status :GOOD)
-                  (+ 1 (max-absolute-event-number w))
-                  nil)
+              :status :BAD
+              :absolute-event-number nil
               :extracts (list satisfies-exprs guard body)
               :problem nil
               :hits 1
-              :guard-code (if (eq status :GOOD)
-                              (compile-lambda-object
-                               (make-lambda-object
-                                formals
-                                `(DECLARE (IGNORABLE ,@formals))
-                                guard))
-                              nil)
-              :lambda-code (if (eq status :GOOD)
-                               (compile-lambda-object fn)
-                               nil)))
+              :guard-code nil
+              :lambda-code nil))
 
 ; Otherwise, the caller says the status is :UNKNOWN.
 
@@ -1929,7 +1914,6 @@
 ; changed, but it indicates the idea!
 
 ; (trace
-;  (compile-lambda-object :exit (list 'code))
 ;  (syntactically-plausible-lambda-objectp)
 ;  (well-formed-lambda-objectp1)
 ;  (maybe-re-validate-cl-cache-line
