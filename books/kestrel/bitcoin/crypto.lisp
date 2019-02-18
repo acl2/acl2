@@ -48,20 +48,15 @@
      >FIPS PUB 180-4 standard</a>.")
    (xdoc::p
     "According to FIPS PUB 180-4,
-     the input of SHA-256 is a sequence of less than @($2^{64}$) bits.
-     Since Bitcoin uses SHA-256 on byte sequences,
-     our SHA-256 interface function operates on bytes directly,
-     by taking as input a list of less than @($2^{61}$) such bytes.
+     the input of SHA-256 is a sequence of less than @($2^{64}$) bits,
+     or less than @($2^{61}$) bytes.
      This is formalized by the guard of the constrained function.")
    (xdoc::p
     "According to FIPS PUB 180-4,
-     the output of SHA-256 is a sequence of exactly 256 bits.
-     Since Bitcoin treats SHA-256 outputs as byte sequences,
-     our SHA-256 interface funtion returns 32 bytes.")
+     the output of SHA-256 is a sequence of exactly 256 bits, or 32 bytes.
+     We constrain our function to return a list of 32 bytes unconditionally.")
    (xdoc::p
-    "We assume that the SHA-256 function fixes its argument to its guard.
-     This involves not only fixing it to a true list of bytes,
-     but also capping its length to be below @($2^{61}$).")
+    "We also constrain our function to fix its argument to a list of bytes.")
    (xdoc::def "sha-256"))
 
   (encapsulate
@@ -83,12 +78,8 @@
       (equal (len (sha-256 bytes))
              32))
 
-    (defrule sha-256-fixes-input-type
+    (defrule sha-256-fixes-input
       (equal (sha-256 (byte-list-fix bytes))
-             (sha-256 bytes)))
-
-    (defrule sha-256-fixes-input-length
-      (equal (sha-256 (take (1- (expt 2 61)) bytes))
              (sha-256 bytes))))
 
   (defrule true-listp-of-sha-256
@@ -103,6 +94,6 @@
 
   (defcong byte-list-equiv equal (sha-256 bytes) 1
     :hints (("Goal"
-             :use (sha-256-fixes-input-type
-                   (:instance sha-256-fixes-input-type (bytes bytes-equiv)))
-             :in-theory (disable sha-256-fixes-input-type)))))
+             :use (sha-256-fixes-input
+                   (:instance sha-256-fixes-input (bytes bytes-equiv)))
+             :in-theory (disable sha-256-fixes-input)))))
