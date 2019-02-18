@@ -1,4 +1,4 @@
-; Bitcoin -- Cryptographic Interface
+; Bitcoin -- Cryptographic Placeholders
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,42 +14,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ crypto-interface
+(defxdoc+ crypto-placeholders
   :parents (bitcoin)
-  :short "Cryptographic interface for Bitcoin."
+  :short "Cryptographic placeholders for Bitcoin."
   :long
   (xdoc::topapp
    (xdoc::p
-    "Bitcoin uses a number of cryptographic functions
-     that are described in external standards.
-     These cryptographic functions are largely black boxes,
+    "Bitcoin uses a number of cryptographic functions.
+     These are largely black boxes,
      in the sense that most of their details
-     are not needed in order to describe the behavior of Bitcoin.
-     In other words, the formal model of Bitcoin
-     can be parameterized over most of those details.")
+     are not needed in order to describe the behavior of Bitcoin.")
    (xdoc::p
-    "We introduce (weakly) constrained ACL2 functions
-     to represent these cryptographic functions.
-     The collection of these functions forms
-     a cryptographic interface for (i.e. used by) Bitcoin.")
+    "We introduce placeholders for these cryptographic functions,
+     mostly as (weakly) constrained functions.
+     Some of the simpler ones are defined instead of constrained,
+     because it is actually easier to define than constrain them,
+     and/or because we actually need complete definitions to describe Bitcoin.")
    (xdoc::p
-    "Of course,
-     complete specifications and/or implementations of these functions
-     are needed to obtain
-     a complete specification and/or implementation of Bitcoin.
-     Such complete specifications/implementations can replace,
-     or be <see topic='@(url defattach)'>attached</see> to,
-     the constrained functions introduced here.")
-   (xdoc::p
-    "We start with just a function for SHA-256.
-     We will add others as needed."))
+    "These placeholders will be replaced with fully defined functions
+     from upcoming cryptographic libraries."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection sha-256
-  :short "SHA-256 interface."
+  :short "SHA-256 placeholder."
   :long
   (xdoc::topapp
    (xdoc::p
