@@ -184,6 +184,8 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
+ <p>Renamed `cryptographic interface' to `cryptographic placeholder'.</p>
+
  <h4>Bytes</h4>
 
  <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
