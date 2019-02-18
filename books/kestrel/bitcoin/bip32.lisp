@@ -51,7 +51,8 @@
     (xdoc::li
      "@($\\mathsf{point}$) is @(tsee secp256k1-mul)
       with point @(tsee secp256k1-generator);
-      when the argument is a private key, we use @(tsee secp256-priv-to-pub).")
+      when the argument is a private key,
+      we use @(tsee secp256k1-priv-to-pub).")
     (xdoc::li
      "@($\\mathsf{ser}_{32}$) is @(tsee nat=>bendian)
       with base 256 and width 4.")
