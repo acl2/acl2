@@ -1,4 +1,4 @@
-; Bitcoin Library -- Cryptographic Interface
+; Bitcoin -- Cryptographic Interface
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

@@ -1,4 +1,4 @@
-; Bitcoin Library -- Base58Check Encoding
+; Bitcoin -- Base58Check Encoding
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
