@@ -263,7 +263,7 @@
   (index-of (base58-character-fix char) *base58-characters*)
   :hooks (:fix))
 
-(defsection base58-val<=>char-inversion-theorems
+(defsection base58-val<=>char-inverses-theorems
   :parents (base58-val=>char base58-char=>val)
   :short "@(tsee base58-val=>char) and @(tsee base58-char=>val)
           are mutual inverses."
@@ -328,7 +328,7 @@
            (repeat n (base58-char=>val char)))
     :enable (base58-chars=>vals repeat)))
 
-(defsection base58-vals<=>chars-inversion-theorems
+(defsection base58-vals<=>chars-inverses-theorems
   :parents (base58-vals=>chars base58-chars=>vals)
   :short "@(tsee base58-vals=>chars) and @(tsee base58-chars=>vals)
           are mutual inverses."
@@ -456,7 +456,7 @@
            (bendian=>nat 58 (base58-chars=>vals chars)))
     :enable acl2::bendian=>nat-of-append))
 
-(defsection base58-encode/decode-inversion-theorems
+(defsection base58-encode/decode-inverses-theorems
   :parents (base58-encode base58-decode)
   :short "@(tsee base58-encode) and @(tsee base58-decode)
           are mutual inverses."
