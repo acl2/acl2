@@ -96,7 +96,27 @@ both expand into
                      :input-contract ,ic
                      :output-contract ,oc
                      ,@(cddr ',args))))
-         `(with-output :stack :pop ,defunc)))))
+       `(with-output :stack :pop ,defunc)))))
+
+(defmacro definedc (name &rest args)
+  `(with-output
+    :stack :push :off :all
+    (make-event
+     (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+          (pkg (current-package state))
+          (f-args ',(car args))
+          (f-type (intern$ ,(symbol-name (second args)) pkg))
+          (d-args (evens f-args))
+          (d-arg-types (odds f-args))
+          (d-arg-preds (map-preds d-arg-types pkg tbl))
+          (f-type-pred (pred-of-type f-type tbl))
+          (ic (make-input-contract d-args d-arg-preds))
+          (oc (make-output-contract ',name d-args f-type-pred))
+          (defunc `(defundc ,',name ,d-args
+                     :input-contract ,ic
+                     :output-contract ,oc
+                     ,@(cddr ',args))))
+       `(with-output :stack :pop ,defunc)))))
 
 #|
 
@@ -238,3 +258,21 @@ bells and whistles of @('acl2s::defunc').
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
     (definecd ,name ,@args)))
+
+
+
+(defmacro definedcd (name &rest args)
+  (let ((defname (make-symbl `(,name -DEFINITION-RULE))))
+    `(progn
+       (definedc ,name ,@args)
+       (in-theory (disable ,defname)))))
+
+(defmacro definedc-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (definedc ,name ,@args)))
+
+(defmacro definedcd-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (definedcd ,name ,@args)))
