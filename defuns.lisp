@@ -8358,9 +8358,9 @@
 
         (mv `(LAMBDA ,formals
                      (DECLARE (IGNORABLE ,@formals))
-                     ,@(cond ((null guard-lst) nil)
-                             ((null (cdr guard-lst)) guard-lst)
-                             (t `((AND ,@guard-lst)))))
+                     ,(cond ((null guard-lst) 'T)
+                            ((null (cdr guard-lst)) (car guard-lst))
+                            (t `(AND ,@guard-lst))))
             `(LAMBDA ,@(cdr lambda$-expr)))))
      (t
 

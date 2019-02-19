@@ -238,16 +238,3 @@ macros to generate @('defval') forms, you will need to be careful.</p>")
        (make-event
         `(progn ,(defval-fn ',name ',body ',kwd-alist ',other-events state)
                 (value-triple '(defval ,',name)))))))
-
-
-(defun fib (n)
-  (declare (xargs :guard (natp n)))
-  (cond ((zp n) 1)
-        ((eql n 1) 1)
-        (t (+ (fib (- n 1)) (fib (- n 2))))))
-
-(defval *defval-example-number*
-  :parents (defval)
-  :short "Example of a constant for @(see defval)."
-  :long "<p>This number is not very important.</p>"
-  (fib 5))

@@ -1,6 +1,6 @@
-; Bitcoin Library -- Bytes
+; Bitcoin -- Bytes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "BITCOIN")
 
+(include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,7 +40,12 @@
   (defrule byte-fix-upper-bound
     (< (byte-fix x) 256)
     :rule-classes :linear
-    :enable (byte-fix bytep)))
+    :enable (byte-fix bytep))
+
+  (defruled byte-fix-rewrite-dab-digit-fix-256
+    (equal (byte-fix digits)
+           (dab-digit-fix 256 digits))
+    :enable (byte-fix dab-digit-fix dab-digitp bytep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,7 +66,16 @@
 
   (defrule nat-listp-when-byte-listp
     (implies (byte-listp bytes)
-             (nat-listp bytes))))
+             (nat-listp bytes)))
+
+  (defruled dab-digit-listp-of-256-rewrite-byte-listp
+    (equal (dab-digit-listp 256 x)
+           (byte-listp x))
+    :enable (dab-digit-listp dab-digitp byte-listp bytep))
+
+  (defthm-dab-return-types
+    dab-digit-listp-of-256-rewrite-byte-listp
+    byte-listp-of))
 
 (defsection byte-list-fix-ext
   :extension byte-list-fix
@@ -72,4 +87,18 @@
 
   (defrule cdr-of-byte-list-fix
     (equal (cdr (byte-list-fix x))
-           (byte-list-fix (cdr x)))))
+           (byte-list-fix (cdr x))))
+
+  (defruled byte-list-fix-rewrite-dab-digit-list-fix-256
+    (equal (byte-list-fix digits)
+           (dab-digit-list-fix 256 digits))
+    :enable (dab-digit-list-fix
+             byte-list-fix
+             byte-fix-rewrite-dab-digit-fix-256)))
+
+(defsection byte-list-equiv-ext
+  :extension byte-list-equiv
+
+  (defcong byte-list-equiv byte-list-equiv (append x y) 1)
+
+  (defcong byte-list-equiv byte-list-equiv (append x y) 2))
