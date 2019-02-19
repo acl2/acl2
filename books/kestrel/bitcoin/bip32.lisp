@@ -30,12 +30,12 @@
      >Page `BIP 0032' of [Wiki]</a>.
      We refer to the document at the first URL as `[BIP32]'
      in the documentation below."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ bip32-conventions
-  :parents (bip32)
+(defxdoc bip32-conventions
   :short "BIP 32 conventions."
   :long
   (xdoc::topapp
@@ -63,9 +63,7 @@
      "@($\\mathsf{ser}_\\mathsf{P}$) is @(tsee secp256k1-point-to-bytes)
       with the compression flag set.")
     (xdoc::li
-     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256.")))
-  :order-subtopics t
-  :default-parent t)
+     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +313,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc bip32-tree-path
-  :short "Paths in a key tree."
+  :short "Paths in a tree of keys."
   :long
   (xdoc::topapp
    (xdoc::p
