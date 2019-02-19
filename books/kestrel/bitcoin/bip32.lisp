@@ -10,7 +10,7 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/utilities/fixbytes/ubyte32" :dir :system)
+(include-book "kestrel/utilities/fixbytes/ubyte32-list" :dir :system)
 
 (include-book "crypto")
 
@@ -310,4 +310,65 @@
      Thus, this proof will be done later."))
   (bip32-ckd-pub (bip32-n parent) i)
   :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc bip32-tree-path
+  :short "Paths in a key tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Each key in a tree is designated by
+     a list of zero or more unsigned 32-bit bytes,
+     each of which is a key index @('i')
+     as used in the child key derivation functions.
+     The empty path designates the root of the tree.")
+   (xdoc::p
+    "This kind of path corresponds to the notation
+     @($\\mathsf{a/b/c}$) used in [BIP32].
+     However, we do not use any explicit @($\\mathsf{H}$) subscripts
+     to denote indices of hardened keys;
+     we simply use indices whose most significant bit is set,
+     e.g. @($3_\\mathsf{H}$) is index @($2^{31}+3$).")
+   (xdoc::p
+    "Below we define functions that lift
+     @(tsee bip32-ckd-priv) and @(tsee bip32-ckd-pub)
+     from single indices to paths.
+     These key derivation functions on paths designate keys in a tree,
+     starting with a root.
+     All the derivations in the path must be valid (i.e. return no error)
+     in order for a path to designate a valid key;
+     otherwise, as stated in [BIP32], the corresponding key is skipped.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-ckd-priv* ((root bip32-ext-priv-key-p) (path ubyte32-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-priv-key-p))
+  :short "Private key designated by
+          a specified path in the tree with the specified root private key."
+  (b* ((root (mbe :logic (bip32-ext-priv-key-fix root) :exec root))
+       ((when (endp path)) (mv nil root))
+       ((mv error? next) (bip32-ckd-priv root (car path)))
+       ((when error?) (mv t root)))
+    (bip32-ckd-priv* next (cdr path)))
+  :no-function t
+  :measure (len path)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-ckd-pub* ((root bip32-ext-pub-key-p) (path ubyte32-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-pub-key-p))
+  :short "Public key designated by
+          a specified path in the tree with the specified root public key."
+  (b* ((root (mbe :logic (bip32-ext-pub-key-fix root) :exec root))
+       ((when (endp path)) (mv nil root))
+       ((mv error? next) (bip32-ckd-pub root (car path)))
+       ((when error?) (mv t root)))
+    (bip32-ckd-pub* next (cdr path)))
+  :no-function t
+  :measure (len path)
   :hooks (:fix))

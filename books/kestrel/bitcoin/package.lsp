@@ -26,14 +26,15 @@
                             explode
                             implode
                             index-of
+                            nat-equiv
                             nat=>bendian
                             nat=>bendian*
-                            nat-equiv
                             trim-bendian*
+                            ubyte32-fix
+                            ubyte32-listp
+                            ubyte32p
                             ubyte8-fix
                             ubyte8-list-equiv
                             ubyte8-list-fix
                             ubyte8-listp
-                            ubyte8p
-                            ubyte32-fix
-                            ubyte32p)))
+                            ubyte8p)))
