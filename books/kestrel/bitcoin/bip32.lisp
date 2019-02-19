@@ -285,6 +285,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip32-ckd-priv-pub-nh ((parent bip32-ext-priv-key-p) (i ubyte32p))
+  :returns (mv (error? booleanp)
+               (child bip32-ext-pub-key-p))
   :short "Public child key derivation from private parent key,
           for non-hardedned child keys only."
   :long
@@ -312,7 +314,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc bip32-tree-path
+(defxdoc bip32-path
   :short "Paths in a tree of keys."
   :long
   (xdoc::topapp
@@ -330,14 +332,17 @@
      we simply use indices whose most significant bit is set,
      e.g. @($3_\\mathsf{H}$) is index @($2^{31}+3$).")
    (xdoc::p
-    "Below we define functions that lift
-     @(tsee bip32-ckd-priv) and @(tsee bip32-ckd-pub)
+    "The functions @(tsee bip32-ckd-priv*) and @(tsee bip32-ckd-pub*)
+     lift @(tsee bip32-ckd-priv) and @(tsee bip32-ckd-pub)
      from single indices to paths.
      These key derivation functions on paths designate keys in a tree,
      starting with a root.
      All the derivations in the path must be valid (i.e. return no error)
      in order for a path to designate a valid key;
-     otherwise, as stated in [BIP32], the corresponding key is skipped.")))
+     otherwise, as stated in [BIP32], the corresponding key is skipped.")
+   (xdoc::p
+    "In our formalization of BIP 32,
+     we use the library fixtype @(tsee ubyte32-list) for paths.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
