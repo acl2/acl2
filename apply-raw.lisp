@@ -355,14 +355,7 @@
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
          (failure-msg ; no badge for fn
-          (let* ((failure-msg
-                  (if failure-msg
-                      failure-msg
-; Error {[8.5]}
-                      (msg "~x0 returns multiple values, so it has a badge ~
-                            but no warrant"
-                           fn)))
-                 (msg (cond
+          (let* ((msg (cond
                        ((eq *aokp* 'apply$-userfn)
 ; Error {[6]}
                         (msg "The value of APPLY$-USERFN is not specified on ~
@@ -391,79 +384,71 @@
                     msg
                     (print-list-without-stobj-arrays
                      (list fn args))))))
-          ((eq (cdddr bdg) t)       ; = (access apply$-badge bdg :ilks)
-           (if (int= (caddr bdg) 1) ; = (access apply$-badge bdg :out-arity)
-               (apply (*1*-symbol fn)
-                      (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
-                             (length args))
-                          args
-                          (take (cadr bdg) ; = (access apply$-badge bdg :arity)
-                                args)))
-               (multiple-value-list
-                (apply (*1*-symbol fn)
-                       (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
-                              (length args))
-                           args
-                           (take (cadr bdg) ; = (access apply$-badge bdg :arity)
-                                 args))))))
-          ((concrete-check-apply$-hyp-tamep-hyp
-            (cdddr bdg) ; = (access apply$-badge bdg :ilks)
-            args
-            (w *the-live-state*))
-           (if (int= (caddr bdg) 1) ; = (access apply$-badge bdg :out-arity)
-               (apply (*1*-symbol fn)
-                      (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
-                             (length args))
-                          args
-                          (take (cadr bdg) ; = (access apply$-badge bdg :arity)
-                                args)))
-               (multiple-value-list
-                (apply (*1*-symbol fn)
-                       (if (= (cadr bdg) ; = (access apply$-badge bdg :arity)
-                              (length args))
-                           args
-                           (take (cadr bdg) ; = (access apply$-badge bdg :arity)
-                                 args))))))
-          (t
-           (let ((msg
-                  (cond
-                   ((eq *aokp* 'apply$-userfn)
-; Error {[9]}
-                    (msg "The value of APPLY$-USERFN is not specified~ ~
-                          when the first argument, fn, is ~x0, and the ~
-                          second argument, args, is ~x1.  Fn has badge ~x2 ~
-                          and args is not known to satisfy the tameness ~
-                          requirement of that badge."
-                         fn args bdg))
-                   ((eq *aokp* t)
-; Error {[10]}
-                    (msg "The value of CONCRETE-APPLY$-USERFN is not ~
-                          specified when the first argument, fn, is ~x0, and ~
-                          the second argument, args, is ~x1.  Fn has badge ~
-                          ~x2 and args is not known to satisfy the tameness ~
-                          requirement of that badge."
-                         fn args bdg))
-                   (t
-; Error {[11]}
-                    (msg "The value of ~x0 is not specified. ~x0 is a ~
-                          constrained function with ~x1 as its attachment and ~
-                          in this instance that attachment calls ~
-                          CONCRETE-APPLY$-USERFN with first argument, fn, ~
-                          being ~x2 and second argument, args, being ~x3.  ~
-                          But fn has badge ~x4 and args is not known to ~
-                          satisfy the tameness requirement of fn's badge."
-                         *aokp*
-                         (symbol-value
-                          (attachment-symbol *aokp*))
-                         fn
+         ((eq (access apply$-badge bdg :ilks) t)
+          (if (int= (access apply$-badge bdg :out-arity) 1)
+              (apply (*1*-symbol fn)
+                     (if (= (access apply$-badge bdg :arity) (length args))
                          args
-                         bdg)))))
-              (throw-raw-ev-fncall
-               (list* 'ev-fncall-null-body-er
-                      nil
-                      msg
-                      (print-list-without-stobj-arrays
-                       (list fn args)))))))))))
+                       (take (access apply$-badge bdg :arity) args)))
+            (multiple-value-list
+             (apply (*1*-symbol fn)
+                    (if (= (access apply$-badge bdg :arity) (length args))
+                        args
+                      (take (access apply$-badge bdg :arity) args))))))
+         ((concrete-check-apply$-hyp-tamep-hyp
+           (access apply$-badge bdg :ilks)
+           args
+           (w *the-live-state*))
+          (if (int= (access apply$-badge bdg :out-arity) 1)
+              (apply (*1*-symbol fn)
+                     (if (= (access apply$-badge bdg :arity) (length args))
+                         args
+                       (take (access apply$-badge bdg :arity) args)))
+            (multiple-value-list
+             (apply (*1*-symbol fn)
+                    (if (= (access apply$-badge bdg :arity) (length args))
+                        args
+                      (take (access apply$-badge bdg :arity) args))))))
+         (t
+          (let ((msg
+                 (cond
+                  ((eq *aokp* 'apply$-userfn)
+; Error {[9]}
+                   (msg "The value of APPLY$-USERFN is not specified~ when ~
+                         the first argument, fn, is ~x0, and the second ~
+                         argument, args, is ~x1.  Fn has badge ~x2 and args ~
+                         is not known to satisfy the tameness requirement of ~
+                         that badge."
+                        fn args bdg))
+                  ((eq *aokp* t)
+; Error {[10]}
+                   (msg "The value of CONCRETE-APPLY$-USERFN is not specified ~
+                         when the first argument, fn, is ~x0, and the second ~
+                         argument, args, is ~x1.  Fn has badge ~x2 and args ~
+                         is not known to satisfy the tameness requirement of ~
+                         that badge."
+                        fn args bdg))
+                  (t
+; Error {[11]}
+                   (msg "The value of ~x0 is not specified. ~x0 is a ~
+                         constrained function with ~x1 as its attachment and ~
+                         in this instance that attachment calls ~
+                         CONCRETE-APPLY$-USERFN with first argument, fn, ~
+                         being ~x2 and second argument, args, being ~x3.  But ~
+                         fn has badge ~x4 and args is not known to satisfy ~
+                         the tameness requirement of fn's badge."
+                        *aokp*
+                        (symbol-value
+                         (attachment-symbol *aokp*))
+                        fn
+                        args
+                        bdg)))))
+            (throw-raw-ev-fncall
+             (list* 'ev-fncall-null-body-er
+                    nil
+                    msg
+                    (print-list-without-stobj-arrays
+                     (list fn args)))))))))))
 
 (defun-*1* concrete-apply$-userfn (fn args)
   (concrete-apply$-userfn fn args))

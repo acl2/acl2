@@ -2021,8 +2021,12 @@
                                 (union-eq (event-tuple-fn-names (cddr trip))
                                           fns)))
                          ((and aokp
-                               (eq (car trip) 'attachment-records)
-                               (eq (cadr trip) 'global-value))
+
+; At one time we considered a change here in the world global,
+; attachment-records.  However, warrants do not change that global (at least,
+; as of this writing), so we use this safer (more inclusive) check.
+
+                               (eq (cadr trip) 'attachment))
                           (return-from raw-ev-fncall-okp nil))))
                    finally
                    (cond (tail (setf (car fncall-cache) nil
@@ -2688,12 +2692,16 @@
 ; We originally defined the apply$-badge and the commonly used generic badges in
 ; apply-prim.lisp but they're needed earlier now.
 
+; We evaluate the defrec below in :logic mode so that the its accessors can be
+; used in concrete-badge-userfn.
+(encapsulate () (logic)
 (defrec apply$-badge
 
 ; Warning: Keep this in sync with apply$-badge-arity, below.
 
   (arity out-arity . ilks)
   nil)
+)
 
 (defmacro apply$-badge-arity (x)
 
@@ -2959,6 +2967,21 @@
               (eq (car (unquote (car args))) 'lambda))
          t)
         (t (member-lambda-objectp (cdr args)))))
+
+(defun attachment-alist (fn wrld)
+  (let ((prop (getpropc fn 'attachment nil wrld)))
+    (and prop
+         (cond ((symbolp prop)
+                (getpropc prop 'attachment nil wrld))
+               ((eq (car prop) :attachment-disallowed)
+                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
+               (t prop)))))
+
+(defun attachment-pair (fn wrld)
+  (let ((attachment-alist (attachment-alist fn wrld)))
+    (and attachment-alist
+         (not (eq (car attachment-alist) :attachment-disallowed))
+         (assoc-eq fn attachment-alist))))
 
 (mutual-recursion
 
@@ -3290,9 +3313,7 @@
 ; We do not use (all-attachments w) below, because warrants are not in that
 ; structure.
 
-                                  (cdr (assoc-eq
-                                        fn
-                                        (getpropc fn 'attachment nil w))))))
+                                  (cdr (attachment-pair fn w)))))
              (mv-let
               (er val latches)
               (ev-rec (if guard-checking-off

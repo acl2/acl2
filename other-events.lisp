@@ -30561,27 +30561,15 @@
     (or
      (null (concrete-badge-userfn fn))
      (let ((x (concrete-badge-userfn fn)))
-; Body of apply$-badgep, from apply-prim.lisp, with the access-terms
-; replaced by car/cdr nests:
-       (and (consp x)
-            (eq (car x) 'apply$-badge)
-            (consp (cdr x))
-            (natp
-             (cadr x)) ; = (access apply$-badge x :arity)
-            (consp (cddr x))
-            (natp (caddr x) ; = (access apply$-badge x :out-arity)
-                  )
-            (or (eq (cdddr x) ; = (access apply$-badge x :ilks)
-                    t)
-                (and (true-listp
-                      (cdddr x)) ; = (access apply$-badge x :ilks)
-                     (equal
-                      (len (cdddr x)) ; = (access apply$-badge x :ilks)
-                      (cadr x))      ; = (access apply$-badge x :arity)
-                     (not
-                      (all-nils
-                       (cdddr x)))           ; = (access apply$-badge x :ilks)
-                     (subsetp (cdddr x)      ; = (access apply$-badge x :ilks)
+       (and (weak-apply$-badge-p x)
+            (natp (access apply$-badge x :arity))
+            (natp (access apply$-badge x :out-arity))
+            (or (eq (access apply$-badge x :ilks) t)
+                (and (true-listp (access apply$-badge x :ilks))
+                     (equal (len (access apply$-badge x :ilks))
+                            (access apply$-badge x :arity))
+                     (not (all-nils (access apply$-badge x :ilks)))
+                     (subsetp (access apply$-badge x :ilks)
                               '(nil :fn :expr)))))))
 
 ; If badge-userfn has the requirement that it is nil on the built-ins, then you

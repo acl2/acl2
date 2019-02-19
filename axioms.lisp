@@ -2785,7 +2785,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; See the comment after ILLEGAL (below) for a discussion of an earlier,
 ; inadequate handling of these issues.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   #-acl2-loop-only
   (when (not *hard-error-returns-nilp*)
 
@@ -3953,7 +3953,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 129))
+  (let ((x 132))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -25033,7 +25033,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         '(CDR (CAR (CDR (CDR (CDR (CDR CURRENT-CLAUSE))))))))
 
 (defun record-error (name rec)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (er hard? 'record-error
       "An attempt was made to treat ~x0 as a record of type ~x1."
       rec name))

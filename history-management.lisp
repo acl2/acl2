@@ -3806,21 +3806,6 @@
       nil))
     (with-prover-step-limit! :START ,form)))
 
-(defun attachment-alist (fn wrld)
-  (let ((prop (getpropc fn 'attachment nil wrld)))
-    (and prop
-         (cond ((symbolp prop)
-                (getpropc prop 'attachment nil wrld))
-               ((eq (car prop) :attachment-disallowed)
-                prop) ; (cdr prop) follows "because", e.g., (msg "it is bad")
-               (t prop)))))
-
-(defun attachment-pair (fn wrld)
-  (let ((attachment-alist (attachment-alist fn wrld)))
-    (and attachment-alist
-         (not (eq (car attachment-alist) :attachment-disallowed))
-         (assoc-eq fn attachment-alist))))
-
 (defconst *protected-system-state-globals*
   (let ((val
          (set-difference-eq

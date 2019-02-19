@@ -356,11 +356,8 @@
 
 (defun apply$-badgep (x)
   (declare (xargs :guard t))
-  (and (consp x)
-       (eq (car x) 'apply$-badge)
-       (consp (cdr x))
+  (and (weak-apply$-badge-p x)
        (natp (access apply$-badge x :arity))
-       (consp (cddr x))
        (natp (access apply$-badge x :out-arity))
        (or (eq (access apply$-badge x :ilks) t)
            (and (true-listp (access apply$-badge x :ilks))
