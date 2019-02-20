@@ -180,12 +180,21 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun c-is-t (c)
   (or (equal c 't) (equal c ''t)))
 
-(defun type-of-pred (pred tbl)
+(defun type-of-pred-aux (pred tbl)
   (cond ((endp tbl) nil)
         ((equal pred (get-alist :predicate (cdar tbl)))
          (caar tbl))
-        (t (type-of-pred pred (cdr tbl)))))
+        (t (type-of-pred-aux pred (cdr tbl)))))
 
+(defun type-of-pred (pred tbl)
+  (cond ((equal pred 'intp) 'integer)
+        ((equal pred 'boolp) 'boolean)
+        ((equal pred 'tlp) 'true-list)
+        (t (type-of-pred-aux pred tbl))))
+
+; (type-of-pred 'boolp (table-alist 'defdata::type-metadata-table (w state)))
+; (type-of-pred 'tlp (table-alist 'defdata::type-metadata-table (w state)))
+; (type-of-pred 'intp (table-alist 'defdata::type-metadata-table (w state)))
 ; (type-of-pred 'integerp (table-alist 'defdata::type-metadata-table (w state)))
 ; (type-of-pred nil (table-alist 'defdata::type-metadata-table (w state)))
 
