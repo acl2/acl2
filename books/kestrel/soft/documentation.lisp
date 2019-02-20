@@ -30,7 +30,7 @@
    (xdoc::p
     "In SOFT,
      second-order functions are mimicked
-     by first-order functions that reference
+     by first-order functions that depend on
      explicitly designated uninterpreted functions
      that mimic function variables.
      First-order theorems over these second-order functions
