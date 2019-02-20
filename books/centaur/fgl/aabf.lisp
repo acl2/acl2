@@ -30,7 +30,7 @@
 
 (in-package "FGL")
 
-(include-book "and-star")
+(include-book "centaur/misc/starlogic" :dir :system)
 (include-book "tools/templates" :dir :system)
 (include-book "centaur/misc/prev-stobj-binding" :dir :system)
 
