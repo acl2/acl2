@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1357,10 +1357,10 @@
     (xdoc::p
      "An
       <see topic='@(url function-variable-instantiation)'>instantiation</see>,
-     which specifies how to generate @('thm') from @('sothm').
-     @('sothm') must
-     <see topic='@(url function-variable-dependency)'>depend</see>
-     on at least the function variables @('fvar1'), ..., @('fvarN')."))
+      which specifies how to generate @('thm') from @('sothm').
+      @('sothm') must
+      <see topic='@(url function-variable-dependency)'>depend</see>
+      on at least the function variables @('fvar1'), ..., @('fvarN')."))
 
    (xdoc::desc
     "@(':rule-classes')"
@@ -1371,10 +1371,10 @@
     "@(':print ...')"
     (xdoc::p
      "An option to customize the screen output:
-     @(':all') to print all the output;
-     @('nil') to print only any error output;
-     @(':result') (the default) to print only
-     the generated theorem form and any error output."))
+      @(':all') to print all the output;
+      @('nil') to print only any error output;
+      @(':result') (the default) to print only
+      the generated theorem form and any error output."))
 
    (xdoc::h3 "Generated Events")
 
