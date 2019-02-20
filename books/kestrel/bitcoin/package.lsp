@@ -21,16 +21,21 @@
                             dab-digit-list-fix
                             dab-digit-listp
                             dab-digitp
+                            define-sk
                             defthm-dab-return-types
                             defxdoc+
                             explode
                             implode
                             index-of
+                            nat
                             nat-equiv
                             nat=>bendian
                             nat=>bendian*
+                            prefixp
                             trim-bendian*
+                            ubyte32
                             ubyte32-fix
+                            ubyte32-list
                             ubyte32-listp
                             ubyte32p
                             ubyte8-fix
