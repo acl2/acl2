@@ -717,7 +717,8 @@ introduced by it.</p>")
        :exec (cdr x))
   ///
   (defthm acl2-count-of-pseudo-term-call->args
-    (implies (member (pseudo-term-kind x) '(:fncall :lambda))
+    (implies (or (equal (pseudo-term-kind x) :lambda)
+                 (equal (pseudo-term-kind x) :fncall))
              (< (acl2-count (pseudo-term-call->args x)) (acl2-count (pseudo-term-fix x))))
     :hints(("Goal" :in-theory (enable pseudo-term-kind)))
     :rule-classes ((:linear :trigger-terms ((acl2-count (pseudo-term-call->args x)))))))
@@ -790,11 +791,12 @@ introduced by it.</p>")
     :hints(("Goal" :in-theory (enable base-ev-of-fncall-args))))
 
   (defthm base-ev-when-pseudo-term-fncall
-    (implies (equal (pseudo-term-kind x) :fncall)
+    (implies (and (equal (pseudo-term-kind x) :fncall)
+                  (equal new-x (cons (pseudo-term-fncall->fn x)
+                                   (pseudo-term-call->args x)))
+                  (syntaxp (not (equal new-x x))))
              (equal (base-ev x a)
-                    (base-ev (cons (pseudo-term-fncall->fn x)
-                                   (pseudo-term-call->args x))
-                             a)))
+                    (base-ev new-x a)))
     :hints (("goal" :use ((:instance base-ev-of-pseudo-term-fix))
              :in-theory (e/d (pseudo-term-kind
                               pseudo-term-fncall->fn
@@ -1176,7 +1178,34 @@ introduced by it.</p>")
                                         (pseudo-lambda->body fn)
                                         args))))
 
+  (local (defthm kind-when-consp-of-pseudo-term-call->fn
+           (implies (consp (pseudo-term-call->fn x))
+                    (equal (pseudo-term-kind x) :lambda))
+           :hints(("Goal" :in-theory (enable pseudo-term-call->fn
+                                             pseudo-term-kind)))))
 
+  (local (defthm kind-when-not-consp-of-pseudo-term-call->fn
+           (implies (and (not (consp (pseudo-term-call->fn x)))
+                         (consp (pseudo-term-fix x))
+                         (not (equal (car (pseudo-term-fix x)) 'quote)))
+                    (equal (pseudo-term-kind x) :fncall))
+           :hints(("Goal" :in-theory (enable pseudo-term-call->fn
+                                             pseudo-term-kind
+                                             pseudo-term-fix)))))
+
+  (defthm pseudo-term-call-of-accessors
+    (implies (or (equal (pseudo-term-kind x) :lambda)
+                 (equal (pseudo-term-kind x) :fncall))
+             (equal (pseudo-term-call (pseudo-term-call->fn x)
+                                      (pseudo-term-call->args x))
+                    (pseudo-term-fix x)))
+    :hints(("Goal" :in-theory (enable ;; pseudo-term-call->fn ;; pseudo-term-call->args
+                                      pseudo-term-kind
+                                      ;; pseudo-term-fncall
+                                      ;; pseudo-term-lambda
+                                      ;; pseudo-lambda->formals
+                                      ;; pseudo-lambda->body
+                                      ))))
 
   (defthmd base-ev-of-pseudo-term-call
     (implies (syntaxp (not (equal a ''nil)))
@@ -1185,6 +1214,20 @@ introduced by it.</p>")
                                                (kwote-lst (base-ev-list args a)))
                              nil)))
     :hints(("Goal" :in-theory (enable base-ev-of-fncall-args))))
+
+  (defthmd base-ev-when-pseudo-term-call
+    (implies (and (or (equal (pseudo-term-kind x) :lambda)
+                      (equal (pseudo-term-kind x) :fncall))
+                  (syntaxp (not (and (consp x) (eq (car x) 'pseudo-term-call)))))
+             (equal (base-ev x a)
+                    (base-ev (pseudo-term-call (pseudo-term-call->fn x)
+                                               (kwote-lst
+                                                (base-ev-list (pseudo-term-call->args x) a)))
+                             nil)))
+    :hints (("goal" :use ((:instance base-ev-of-pseudo-term-call
+                           (fn (pseudo-term-call->fn x))
+                           (args (pseudo-term-call->args x))))
+             :in-theory (disable base-ev-of-pseudo-term-call pseudo-term-call))))
 
   (def-b*-binder pseudo-term-call
     :body
@@ -1297,8 +1340,9 @@ all the cases and all the accessors that can be used in each case.</p>
     :rule-classes :linear)
 
   (defthm pseudo-term-list-count-of-pseudo-term-call->args
-    (implies (member (pseudo-term-kind x) '(:fncall :lambda))
-             (< (pseudo-term-list-count (pseudo-term-call->args x))
+    (implies (or (equal (pseudo-term-kind x) :lambda)
+                 (equal (pseudo-term-kind x) :fncall))
+             (< (pseudo-term-list-count (acl2::pseudo-term-call->args x))
                 (pseudo-term-count x)))
     :hints (("goal" :expand ((pseudo-term-count x))))
     :rule-classes :linear)
@@ -1419,11 +1463,12 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
                               (base-ev-list <ev-list>))))))
 
      (defthm <ev>-when-pseudo-term-fncall
-       (implies (equal (pseudo-term-kind x) :fncall)
+       (implies (and (equal (pseudo-term-kind x) :fncall)
+                     (equal new-x (cons (pseudo-term-fncall->fn x)
+                                        (pseudo-term-call->args x)))
+                     (syntaxp (not (equal new-x x))))
                 (equal (<ev> x a)
-                       (<ev> (cons (pseudo-term-fncall->fn x)
-                                   (pseudo-term-call->args x))
-                             a)))
+                       (<ev> new-x a)))
        :hints (("goal" :use ((:functional-instance base-ev-when-pseudo-term-fncall
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))
@@ -1451,7 +1496,7 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
        :hints (("goal" :use ((:functional-instance base-ev-of-pseudo-term-lambda
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))
-
+     
      (defthmd <ev>-of-pseudo-term-call
        (implies (syntaxp (not (equal a ''nil)))
                 (equal (<ev> (pseudo-term-call fn args) a)
@@ -1459,6 +1504,19 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
                                                (kwote-lst (<ev-list> args a)))
                              nil)))
        :hints (("goal" :use ((:functional-instance base-ev-of-pseudo-term-call
+                              (base-ev <ev>)
+                              (base-ev-list <ev-list>))))))
+
+     (defthmd <ev>-when-pseudo-term-call
+       (implies (and (or (equal (pseudo-term-kind x) :lambda)
+                         (equal (pseudo-term-kind x) :fncall))
+                     (syntaxp (not (and (consp x) (eq (car x) 'pseudo-term-call)))))
+                (equal (<ev> x a)
+                       (<ev> (pseudo-term-call (pseudo-term-call->fn x)
+                                                  (kwote-lst
+                                                   (<ev-list> (pseudo-term-call->args x) a)))
+                                nil)))
+       :hints (("goal" :use ((:functional-instance base-ev-when-pseudo-term-call
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))))
 
