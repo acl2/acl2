@@ -30636,13 +30636,14 @@
 
 ; Below we introduce concrete-badge-userfn and concrete-apply$-userfn as
 ; constrained functions.  See the Essay on the APPLY$ Integration in
-; apply-prim.lisp for an overview.  Note that in an ACL2 current-theory, all we
-; know about concrete-badge-userfn and concrete-apply$-userfn are the theorems
-; exported from these encapsulates.  Any extra properties are only known in the
-; evaluation theory; note that *aokp* is explicitly required to be true by the
-; raw Lisp definitions of those two functions.  Therefore, it is not necessary
-; to introduce these with partial-encapsulate; instead, we simply use
-; encapsulate.
+; apply-prim.lisp for an overview.  These functions are intended to be the
+; doppelgangers of badge-userfn and apply$-userfn, so we introduce them each
+; with partial-encapsulate since the explicit constraints do not comprehend all
+; properties of the doppelgangers.  Moreover, these doppelgangers change as the
+; world changes, so they are each really a class of functions; therefore we
+; make them each untouchable, so that users cannot take advantage of their
+; changing nature to prove nil.  Also see the Essay on Memoization with
+; Attachments.
 
 #+acl2-loop-only
 (partial-encapsulate
