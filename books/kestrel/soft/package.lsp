@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Package
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -48,6 +48,7 @@
                          make-event-terse
                          make-lambda
                          maybe-msgp
+                         maybe-pseudo-event-formp
                          measure
                          o<
                          pseudo-event-formp

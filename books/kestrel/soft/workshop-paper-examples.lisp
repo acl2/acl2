@@ -35,23 +35,23 @@
 
 ; 1.2.1   Plain Functions
 
-(defun2 quad[?f] (?f) (x)
+(defun2 quad[?f] (x)
   (declare (xargs :guard t))
   (?f (?f (?f (?f x)))))
 
-(defun2 all[?p] (?p) (l)
+(defun2 all[?p] (l)
   (declare (xargs :guard t))
   (cond ((atom l) (null l))
         (t (and (?p (car l))
                 (all[?p] (cdr l))))))
 
-(defun2 map[?f][?p] (?f ?p) (l)
+(defun2 map[?f][?p] (l)
   (declare (xargs :guard (all[?p] l)))
   (cond ((endp l) nil)
         (t (cons (?f (car l))
                  (map[?f][?p] (cdr l))))))
 
-(defun2 fold[?f][?g] (?f ?g) (bt)
+(defun2 fold[?f][?g] (bt)
   (declare (xargs :guard t))
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f][?g] (car bt))
@@ -59,12 +59,12 @@
 
 ; 1.2.2  Choice Functions
 
-(defchoose2 fixpoint[?f] x (?f) ()
+(defchoose2 fixpoint[?f] x ()
   (equal (?f x) x))
 
 ; 1.2.3  Quantifier Functions
 
-(defun-sk2 injective[?f] (?f) ()
+(defun-sk2 injective[?f] ()
   (forall (x y)
           (implies (equal (?f x) (?f y))
                    (equal x y))))
@@ -100,7 +100,7 @@
 (defun-inst fixpoint[twice]
   (fixpoint[?f] (?f . twice)))
 
-(defun-inst injective[quad[?f]] (?f)
+(defun-inst injective[quad[?f]]
   (injective[?f] (?f . quad[?f])))
 
 (verify-guards injective[quad[?f]])
@@ -139,14 +139,14 @@
 
 (defunvar ?io (* *) => *)
 
-(defun-sk2 atom-io[?f][?io] (?f ?io) ()
+(defun-sk2 atom-io[?f][?io] ()
   (forall x (implies (atom x)
                      (?io x (?f x))))
   :rewrite :direct)
 
 (verify-guards atom-io[?f][?io])
 
-(defun-sk2 consp-io[?g][?io] (?g ?io) ()
+(defun-sk2 consp-io[?g][?io] ()
   (forall (x y1 y2)
           (implies (and (consp x)
                         (?io (car x) y1)
@@ -198,7 +198,7 @@
                       (natp e))))
   :rewrite :direct)
 
-(defun-sk2 spec[?h] (?h) ()
+(defun-sk2 spec[?h] ()
   (forall x (io x (?h x)))
   :rewrite :direct)
 
@@ -213,12 +213,12 @@
 
 ; Step 1
 
-(defun-sk2 def-?h-fold[?f][?g] (?h ?f ?g) ()
+(defun-sk2 def-?h-fold[?f][?g] ()
   (forall x (equal (?h x)
                    (fold[?f][?g] x)))
   :rewrite :direct)
 
-(defun2 spec1[?h][?f][?g] (?h ?f ?g) ()
+(defun2 spec1[?h][?f][?g]  ()
   (and (def-?h-fold[?f][?g])
        (spec[?h])))
 
@@ -229,16 +229,16 @@
 
 ; Step 2
 
-(defun-inst atom-io[?f] (?f)
+(defun-inst atom-io[?f]
   (atom-io[?f][?io] (?io . io)))
 
-(defun-inst consp-io[?g] (?g)
+(defun-inst consp-io[?g]
   (consp-io[?g][?io] (?io . io)))
 
 (defthm-inst fold-io[?f][?g]
   (fold-io[?f][?g][?io] (?io . io)))
 
-(defun2 spec2[?h][?f][?g] (?h ?f ?g) ()
+(defun2 spec2[?h][?f][?g] ()
   (and (def-?h-fold[?f][?g])
        (atom-io[?f])
        (consp-io[?g])))
@@ -265,11 +265,11 @@
 (defthm atom-io[f]!
   (atom-io[f]))
 
-(defun-sk2 def-?f (?f) ()
+(defun-sk2 def-?f ()
   (forall x (equal (?f x) (f x)))
   :rewrite :direct)
 
-(defun2 spec3[?h][?f][?g] (?h ?f ?g) ()
+(defun2 spec3[?h][?f][?g] ()
   (and (def-?h-fold[?f][?g])
        (def-?f)
        (consp-io[?g])))
@@ -312,12 +312,12 @@
   (consp-io[g])
   :hints (("Goal" :in-theory (disable g))))
 
-(defun-sk2 def-?g (?g) ()
+(defun-sk2 def-?g ()
   (forall (y1 y2)
           (equal (?g y1 y2) (g y1 y2)))
   :rewrite :direct)
 
-(defun2 spec4[?h][?f][?g] (?h ?f ?g) ()
+(defun2 spec4[?h][?f][?g] ()
   (and (def-?h-fold[?f][?g])
        (def-?f)
        (def-?g)))
@@ -343,11 +343,11 @@
   (fold[?f][?g] (?f . f) (?g . g))
   :verify-guards nil)
 
-(defun-sk2 def-?h (?h) ()
+(defun-sk2 def-?h ()
   (forall x (equal (?h x) (h x)))
   :rewrite :direct)
 
-(defun2 spec5[?h][?f][?g] (?h ?f ?g) ()
+(defun2 spec5[?h][?f][?g] ()
   (and (def-?h)
        (def-?f)
        (def-?g)))

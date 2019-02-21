@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,7 +25,7 @@
 
  (defunvar ?p (*) => *)
 
- (defun-sk2 exists[?p] (?p) ()
+ (defun-sk2 exists[?p] ()
    (exists x (?p x)))
 
  (verify-guards exists[?p])
@@ -115,19 +115,7 @@
 ; DEFUN2:
 
 (must-fail ; bad name
- (defun2 "h" (?f ?g) (x y) (cons (?f x) (?g x y)))
- :with-output-off nil)
-
-(must-fail ; bad function parameters
- (defun2 h (1 2 3) (x y) (cons (?f x) (?g x y)))
- :with-output-off nil)
-
-(must-fail ; extra function parameters
- (defun2 h (?f ?g ?many) (x y) (cons (?f x) (?g x y)))
- :with-output-off nil)
-
-(must-fail ; missing function parameters
- (defun2 h (?f) (x y) (cons (?f x) (?g x y)))
+ (defun2 "h" (x y) (cons (?f x) (?g x y)))
  :with-output-off nil)
 
 (must-succeed*
@@ -144,7 +132,7 @@
    :rule-classes :well-founded-relation)
  ;; well-founded relation is not O<
  (must-fail
-  (defun2 h (?f) (x)
+  (defun2 h (x)
     (declare (xargs :well-founded-relation o<$))
     (if (zp x)
         (?f x)
@@ -153,20 +141,20 @@
  :with-output-off nil)
 
 (must-fail ; bad :PRINT option
- (defun2 h (?f) (x) (?f x) :print 456)
+ (defun2 h (x) (?f x) :print 456)
  :with-output-off nil)
 
-(defun2 nonrec (?f ?g) (x y)
+(defun2 nonrec (x y)
   (cons (?f x) (?g x y)))
 
-(defun2 rec (?f) (x)
+(defun2 rec (x)
   (if (consp x) (rec (car x)) (?f x)))
 
-(defun2 fvguard (?f ?g) (x y)
+(defun2 fvguard (x y)
   (declare (xargs :guard (?g x y)))
   (list (?f (cons x y))))
 
-(defun2 fvmeas (?f) (x)
+(defun2 fvmeas (x)
   (declare (xargs :measure (acl2-count (?f x))))
   (if (and (consp x)
            (< (acl2-count (?f (cdr x)))
@@ -174,40 +162,40 @@
       (fvmeas (cdr x))
     0))
 
-(defun2 call-nonrec (?f ?g) (z)
+(defun2 call-nonrec (z)
   (if (consp z) (nonrec (car z) (cdr z)) nil))
 
 ;; Example 1 in :DOC DEFUN2:
-(defun2 quad[?f] (?f) (x)
+(defun2 quad[?f] (x)
   (?f (?f (?f (?f x)))))
 
 ;; Example 2 in :DOC DEFUN2:
-(defun2 all[?p] (?p) (l)
+(defun2 all[?p] (l)
   (declare (xargs :guard t))
   (cond ((atom l) (null l))
         (t (and (?p (car l)) (all[?p] (cdr l))))))
 
 ;; Example 3 in :DOC DEFUN2:
-(defun2 map[?f][?p] (?f ?p) (l)
+(defun2 map[?f][?p] (l)
   (declare (xargs :guard (all[?p] l)))
   (cond ((endp l) nil)
         (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))
 
 ;; Example 4 in :DOC DEFUN2:
-(defun2 fold[?f][?g] (?f ?g) (bt)
+(defun2 fold[?f][?g] (bt)
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
 
 (must-succeed ; print everything
- (defun2 h (?f) (x) (?f x) :print :all)
+ (defun2 h (x) (?f x) :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defun2 h (?f) (x) (?f x) :print nil)
+ (defun2 h (x) (?f x) :print nil)
  :with-output-off nil)
 
 (must-succeed ; print the function output only
- (defun2 h (?f) (x) (?f x) :print :fn-output)
+ (defun2 h (x) (?f x) :print :fn-output)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,73 +203,58 @@
 ; DEFCHOOSE2:
 
 (must-fail ; bad name
- (defchoose2 #\h (b) (?f ?g) (x y)
-   (< (fix b) (fix (?f (?g x y)))))
- :with-output-off nil)
-
-(must-fail ; bad function parameters
- (defchoose2 h (b) 789 (x y)
-   (< (fix b) (fix (?f (?g x y)))))
- :with-output-off nil)
-
-(must-fail ; extra function parameters
- (defchoose2 h (b) (?nullary ?g ?f) (x y)
-   (< (fix b) (fix (?f (?g x y)))))
- :with-output-off nil)
-
-(must-fail ; missing function paramters
- (defchoose2 h (b) (?g) (x y)
+ (defchoose2 #\h (b) (x y)
    (< (fix b) (fix (?f (?g x y)))))
  :with-output-off nil)
 
 (must-fail ; bad :PRINT option
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :print "all")
  :with-output-off nil)
 
-(defchoose2 choose (b) (?g ?f) (x y)
+(defchoose2 choose (b) (x y)
   (< (fix b) (fix (?f (?g x y)))))
 
-(defchoose2 choose1 (b) (?g ?f) (x y)
+(defchoose2 choose1 (b) (x y)
   (< (fix b) (fix (?f (?g x y))))
   :strengthen t)
 
-(defchoose2 choose2 (b) (?g ?f) (x y)
+(defchoose2 choose2 (b) (x y)
   (< (fix b) (fix (?f (?g x y))))
   :strengthen nil)
 
 ;; Example 1 in :DOC DEFCHOOSE2:
-(defchoose2 fixpoint[?f] x (?f) ()
+(defchoose2 fixpoint[?f] x ()
   (equal (?f x) x))
 
 (must-succeed ; print everything
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; print the function output only
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :print :fn-output)
  :with-output-off nil)
 
 (must-succeed ; :PRINT after another option
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :strengthen t
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; :PRINT before another option
- (defchoose2 h (b) (?f) (x)
+ (defchoose2 h (b) (x)
    (equal b (?f x))
    :print :all
    :strengthen t)
@@ -292,135 +265,113 @@
 ; DEFUN-SK2:
 
 (must-fail ; bad name
- (defun-sk2 (h 1) (?f ?g) (x y)
+ (defun-sk2 (h 1) (x y)
    (forall (z w) (equal (?f (?g x y)) (cons z w))))
- :with-output-off nil)
-
-(must-fail ; bad function parameters
- (defun-sk2 h ("?f" ?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w))))
- :with-output-off nil)
-
-(must-fail ; extra function parameters
- (defun-sk2 h (?f ?many ?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w))))
- :with-output-off nil)
-
-(must-fail ; missing function parameters (used in body)
- (defun-sk2 h (?g) (x y)
-   (forall (z w) (equal (?f (?g x y)) (cons z w))))
- :with-output-off nil)
-
-(must-fail ; missing function parameters (used in custom rewrite rule)
- (defun-sk2 h (?g) (x y)
-   (forall (z w) (equal (?g x y) (cons z w)))
-   :rewrite (implies (and (?f x) (h x y))
-                     (equal (?g x y) (cons z w))))
  :with-output-off nil)
 
 (must-fail ; bad :PRINT option
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :print (1 2 2))
  :with-output-off nil)
 
-(defun-sk2 ex (?f ?g) (x y)
+(defun-sk2 ex (x y)
   (exists (z w) (equal (?f (?g x y)) (cons z w))))
 
-(defun-sk2 fa (?f ?g) (x y)
+(defun-sk2 fa (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w))))
 
-(defun-sk2 fa-rw1 (?f ?g) (x y)
+(defun-sk2 fa-rw1 (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :rewrite :default)
 
-(defun-sk2 fa-rw2 (?f ?g) (x y)
+(defun-sk2 fa-rw2 (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :rewrite :direct)
 
-(defun-sk2 fa-rw3 (?f ?g) (x y)
+(defun-sk2 fa-rw3 (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :rewrite (implies (and (atom x) (fa-rw3 x y))
                     (equal (?f (?g x y)) (cons z w))))
 
-(defun-sk2 qok (?f ?g) (x y)
+(defun-sk2 qok (x y)
   (forall (exists w) (equal (?f (?g x y)) (cons exists w)))
   :quant-ok t)
 
-(defun-sk2 not-qok (?f ?g) (x y)
+(defun-sk2 not-qok (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :quant-ok nil)
 
 (progn
-  (defun-sk2 sk-name (?f ?g) (x y)
+  (defun-sk2 sk-name (x y)
     (exists (z w) (equal (?f (?g x y)) (cons z w)))
     :skolem-name wit)
   (assert! (function-namep 'wit (w state))))
 
 (progn
-  (defun-sk2 thm-name (?f ?g) (x y)
+  (defun-sk2 thm-name (x y)
     (exists (z w) (equal (?f (?g x y)) (cons z w)))
     :thm-name th)
   (assert! (theorem-namep 'th (w state))))
 
-(defun-sk2 wit-dcl (?f ?g) (x y)
+(defun-sk2 wit-dcl (x y)
   (exists (z w) (equal (?f (?g x y)) (cons z w)))
   :witness-dcls ((declare (xargs :guard (natp (?f x))))))
 
-(defun-sk2 strong (?f ?g) (x y)
+(defun-sk2 strong (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :strengthen t)
 
-(defun-sk2 not-strong (?f ?g) (x y)
+(defun-sk2 not-strong (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :strengthen nil)
 
-(defun-sk2 constrained (?f ?g) (x y)
+(defun-sk2 constrained (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :constrain t)
 
-(defun-sk2 not-constrained (?f ?g) (x y)
+(defun-sk2 not-constrained (x y)
   (forall (z w) (equal (?f (?g x y)) (cons z w)))
   :constrain nil)
 
 ;; Example 1 in :DOC DEFUN-SK2:
-(defun-sk2 injective[?f] (?f) ()
+(defun-sk2 injective[?f] ()
   (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
 
 (must-succeed ; print everything
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; print the function output only
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :print :fn-output)
  :with-output-off nil)
 
 (must-succeed ; :PRINT after another option
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :skolem-name h-wit
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; :PRINT before another option
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :print :all
    :skolem-name h-wit)
  :with-output-off nil)
 
 (must-succeed ; :PRINT between two options
- (defun-sk2 h (?f) (x)
+ (defun-sk2 h (x)
    (forall y (equal y (?f x)))
    :thm-name h-thm
    :print :all
@@ -432,92 +383,72 @@
 ; DEFUN-INST:
 
 (must-fail ; bad name
- (defun-inst "i" (?f) (nonrec (?g . cons)))
- :with-output-off nil)
-
-(must-fail ; bad function parameters or 2nd-order function with instantiation
- (defun-inst i (1 2) (nonrec (?g . cons)))
+ (defun-inst "i" (nonrec (?g . cons)))
  :with-output-off nil)
 
 (must-fail ; bad reference to 2nd-order function to instantiate
- (defun-inst i (?f) (nonrec$ (?g . cons)))
+ (defun-inst i (nonrec$ (?g . cons)))
  :with-output-off nil)
 
 (must-fail ; bad instantiation
- (defun-inst i (?f) (nonrec "abc"))
+ (defun-inst i (nonrec "abc"))
  :with-output-off nil)
 
 (must-fail ; no instantiation
- (defun-inst i (?f) (nonrec))
+ (defun-inst i (nonrec))
  :with-output-off nil)
 
 (must-fail ; bad function variable in instantiation
- (defun-inst i (?f) (nonrec (?gg . cons)))
+ (defun-inst i (nonrec (?gg . cons)))
  :with-output-off nil)
 
 (must-fail ; trivial pair in instantiation
- (defun-inst i (?f) (nonrec (?g . ?g)))
+ (defun-inst i (nonrec (?g . ?g)))
  :with-output-off nil)
 
 (must-fail ; extra function variable in instantiation
- (defun-inst i (?f) (nonrec (?g . cons) (?p . atom)))
- :with-output-off nil)
-
-(must-fail ; extra function parameters
- (defun-inst i (?f) (nonrec (?g . cons) (?f . atom)))
- :with-output-off nil)
-
-(must-fail ; missing function parameters (not instantiated)
- (defun-inst i (nonrec (?g . cons)))
- :with-output-off nil)
-
-(must-fail ; missing function parameters (introduced by instantiation)
- (defun-inst i (?g) (nonrec (?f . ?p)))
- :with-output-off nil)
-
-(must-fail ; missing 2nd-order function with instantiation
- (defun-inst i (?g))
+ (defun-inst i (nonrec (?g . cons) (?p . atom)))
  :with-output-off nil)
 
 (must-fail ; bad option
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :bad 3)
  :with-output-off nil)
 
 (must-fail ; bad :PRINT option
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :print "ALL")
  :with-output-off nil)
 
 (must-fail ; bad option for plain 2nd-order function
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :skolem-name wit)
  :with-output-off nil)
 
 (must-fail ; bad option for plain 2nd-order function
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :thm-name th)
  :with-output-off nil)
 
 (must-fail ; bad option for plain 2nd-order function
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :rewrite :direct)
  :with-output-off nil)
 
 (must-fail ; duplicate options
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :verify-guards nil :print :all :verify-guards nil)
  :with-output-off nil)
 
-(defun-inst nonrec-i (?f) (nonrec (?g . cons)))
+(defun-inst nonrec-i (nonrec (?g . cons)))
 
-(defun-inst nonrec-j (?g) (nonrec (?f . atom)))
+(defun-inst nonrec-j (nonrec (?f . atom)))
 
 (progn
   (defun-inst nonrec-k (nonrec (?f . atom) (?g . cons)))
   (assert-equal (nonrec-k 3 'a) (cons t (cons 3 'a))))
 
-(defun-inst nonrec-l (?p) (nonrec (?f . ?p) (?g . cons)))
+(defun-inst nonrec-l (nonrec (?f . ?p) (?g . cons)))
 
 (progn
   (defun-inst rec-i (rec (?f . fix)))
@@ -526,14 +457,14 @@
 (progn
   (assert! (guard-verified-p 'fvguard (w state)))
   (progn
-    (defun-inst fvguard-i (?f) (fvguard (?g . cons)))
+    (defun-inst fvguard-i (fvguard (?g . cons)))
     (assert! (guard-verified-p 'fvguard-i (w state))))
   (progn
-    (defun-inst fvguard-i-t (?f) (fvguard (?g . cons))
+    (defun-inst fvguard-i-t (fvguard (?g . cons))
       :verify-guards t)
     (assert! (guard-verified-p 'fvguard-i-t (w state))))
   (progn
-    (defun-inst fvguard-i-n (?f) (fvguard (?g . cons))
+    (defun-inst fvguard-i-n (fvguard (?g . cons))
       :verify-guards nil)
     (assert! (not (guard-verified-p 'fvguard-i-n (w state))))))
 
@@ -552,12 +483,12 @@
     (assert! (not (guard-verified-p 'fvmeas-i-n (w state))))))
 
 (must-fail ; missing ((?F . LEN)) instance of nonrec
- (defun-inst call-nonrec-i (?g) (call-nonrec (?f . len)))
+ (defun-inst call-nonrec-i (call-nonrec (?f . len)))
  :with-output-off nil)
 
 (progn
-  (defun-inst nonrec-len (?g) (nonrec (?f . len)))
-  (defun-inst call-nonrec-i (?g) (call-nonrec (?f . len))))
+  (defun-inst nonrec-len (nonrec (?f . len)))
+  (defun-inst call-nonrec-i (call-nonrec (?f . len))))
 
 ;; Example 1 in :DOC DEFUN-INST:
 (progn
@@ -580,69 +511,69 @@
   (fold[?f][?g] (?f . nfix) (?g . binary-+)))
 
 (must-succeed ; print everything
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; print result
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :print :result)
  :with-output-off nil)
 
 (must-succeed ; print result
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :print :result)
  :with-output-off nil)
 
 (must-succeed ; :PRINT after another option
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
    :verify-guards nil
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; :PRINT before another option
- (defun-inst i (?f) (nonrec (?g . cons))
+ (defun-inst i (nonrec (?g . cons))
     :print nil
     :verify-guards nil)
  :with-output-off nil)
 
 (must-fail ; bad option for choice 2nd-order function
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :verify-guards nil)
  :with-output-off nil)
 
 (must-fail ; bad option for choice 2nd-order function
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :skolem-name wit)
  :with-output-off nil)
 
 (must-fail ; bad option for choice 2nd-order function
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :thm-name wit)
  :with-output-off nil)
 
 (must-fail ; bad option for choice 2nd-order function
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :rewrite :direct)
  :with-output-off nil)
 
 (must-fail ; duplicate options
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :print :all :print :all)
  :with-output-off nil)
 
-(defun-inst choose-i (?f) (choose (?g . cons)))
+(defun-inst choose-i (choose (?g . cons)))
 
-(defun-inst choose-j (?g) (choose (?f . atom)))
+(defun-inst choose-j (choose (?f . atom)))
 
 (defun-inst choose-k (choose (?f . atom) (?g . cons)))
 
-(defun-inst choose-l (?p ?g) (choose (?f . ?p)))
+(defun-inst choose-l (choose (?f . ?p)))
 
 (defun-inst choose1-i (choose1 (?f . atom) (?g . cons)))
 
@@ -655,45 +586,45 @@
     (fixpoint[?f] (?f . twice))))
 
 (must-succeed ; print everything
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; print result
- (defun-inst i (?f) (choose (?g . cons))
+ (defun-inst i (choose (?g . cons))
    :print :result)
  :with-output-off nil)
 
 (must-fail ; bad option for quantifier 2nd-order function
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :verify-guards nil)
  :with-output-off nil)
 
 (must-fail ; duplicate options
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :thm-name ex-thm :thm-name thm-ex)
  :with-output-off nil)
 
-(defun-inst ex-i (?f) (ex (?g . cons)))
+(defun-inst ex-i (ex (?g . cons)))
 
-(defun-inst ex-j (?g) (ex (?f . atom)))
+(defun-inst ex-j (ex (?f . atom)))
 
 (defun-inst ex-k (ex (?f . atom) (?g . cons)))
 
-(defun-inst ex-l (?p) (ex (?f . ?p) (?g . cons)))
+(defun-inst ex-l (ex (?f . ?p) (?g . cons)))
 
-(defun-inst fa-i (?f) (fa (?g . cons)))
+(defun-inst fa-i (fa (?g . cons)))
 
-(defun-inst fa-j (?g) (fa (?f . atom)))
+(defun-inst fa-j (fa (?f . atom)))
 
 (defun-inst fa-k (fa (?f . atom) (?g . cons)))
 
-(defun-inst fa-l (?p) (fa (?f . ?p) (?g . cons)))
+(defun-inst fa-l (fa (?f . ?p) (?g . cons)))
 
 (defun-inst fa-rw1-i (fa-rw1 (?f . atom) (?g . cons)))
 
@@ -707,51 +638,51 @@
   :rewrite (implies (and (consp z) (fa-rw1-l x y))
                     (equal (atom (cons x y)) (cons z w))))
 
-(defun-inst fa-rw2-i (?g) (fa-rw2 (?f . atom)))
+(defun-inst fa-rw2-i (fa-rw2 (?f . atom)))
 
-(defun-inst fa-rw2-j (?g) (fa-rw2 (?f . atom))
+(defun-inst fa-rw2-j (fa-rw2 (?f . atom))
   :rewrite :default)
 
-(defun-inst fa-rw2-k (?g) (fa-rw2 (?f . atom))
+(defun-inst fa-rw2-k (fa-rw2 (?f . atom))
   :rewrite :direct)
 
-(defun-inst fa-rw2-l (?g) (fa-rw2 (?f . atom))
+(defun-inst fa-rw2-l (fa-rw2 (?f . atom))
   :rewrite (implies (and (consp z) (fa-rw2-l x y))
                     (equal (atom (cons x y)) (cons z w))))
 
-(defun-inst fa-rw3-i (?p ?g) (fa-rw2 (?f . ?p)))
+(defun-inst fa-rw3-i (fa-rw2 (?f . ?p)))
 
-(defun-inst fa-rw3-j (?p ?g) (fa-rw2 (?f . ?p))
+(defun-inst fa-rw3-j (fa-rw2 (?f . ?p))
   :rewrite :default)
 
-(defun-inst fa-rw3-k (?p ?g) (fa-rw2 (?f . ?p))
+(defun-inst fa-rw3-k (fa-rw2 (?f . ?p))
   :rewrite :direct)
 
-(defun-inst fa-rw3-l (?p ?g) (fa-rw2 (?f . ?p))
+(defun-inst fa-rw3-l (fa-rw2 (?f . ?p))
   :rewrite (implies (and (consp z) (fa-rw3-l x y))
                     (equal (?p (?g x y)) (cons z w))))
 
-(defun-inst qok-i (?g) (qok (?f . len)))
+(defun-inst qok-i (qok (?f . len)))
 
 (defun-inst not-qok-i (not-qok (?f . atom) (?g . cons)))
 
-(defun-inst sk-name-i (?f) (sk-name (?g . cons)))
+(defun-inst sk-name-i (sk-name (?g . cons)))
 
 (progn
-  (defun-inst sk-name-j (?f) (sk-name (?g . cons))
+  (defun-inst sk-name-j (sk-name (?g . cons))
     :skolem-name wit-j)
   (assert! (function-namep 'wit-j (w state))))
 
-(defun-inst thm-name-i (?f) (sk-name (?g . cons)))
+(defun-inst thm-name-i (sk-name (?g . cons)))
 
 (progn
-  (defun-inst thm-name-j (?f) (thm-name (?g . cons))
+  (defun-inst thm-name-j (thm-name (?g . cons))
     :thm-name th-j)
   (assert! (theorem-namep 'th-j (w state))))
 
 (defun-inst wit-dcl-i (wit-dcl (?f . atom) (?g . cons)))
 
-(defun-inst strong-i (?p ?g) (strong (?f . ?p)))
+(defun-inst strong-i (strong (?f . ?p)))
 
 (defun-inst not-strong-i (not-strong (?f . atom) (?g . cons)))
 
@@ -772,38 +703,38 @@
   :constrain nil)
 
 ;; Example 6 in :DOC DEFUN-INST:
-(defun-inst injective[quad[?f]] (?f)
+(defun-inst injective[quad[?f]]
   (injective[?f] (?f . quad[?f])))
 
 (must-succeed ; print everything
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; print nothing
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :print nil)
  :with-output-off nil)
 
 (must-succeed ; print result
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :print :result)
  :with-output-off nil)
 
 (must-succeed ; :PRINT after another option
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :thm-name ithm
    :print :all)
  :with-output-off nil)
 
 (must-succeed ; :PRINT before another option
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :print :all
    :thm-name ithm)
  :with-output-off nil)
 
 (must-succeed ; :PRINT between two options
- (defun-inst i (?f) (ex (?g . cons))
+ (defun-inst i (ex (?g . cons))
    :skolem-name iwit
    :print :all
    :thm-name ithm)
@@ -863,10 +794,10 @@
 ;; Example 3 in :DOC DEFTHM-2ND-ORDER:
 (progn
   (defunvar ?io (* *) => *)
-  (defun-sk2 atom-io[?f][?io] (?f ?io) ()
+  (defun-sk2 atom-io[?f][?io] ()
     (forall x (implies (atom x) (?io x (?f x))))
     :rewrite :direct)
-  (defun-sk2 consp-io[?g][?io] (?g ?io) ()
+  (defun-sk2 consp-io[?g][?io] ()
     (forall (x y1 y2)
             (implies (and (consp x) (?io (car x) y1) (?io (cdr x) y2))
                      (?io x (?g y1 y2))))
