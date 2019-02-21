@@ -17426,6 +17426,8 @@
                           ,(cdr (assoc-eq :aokp val))
                           ,(cdr (assoc-eq :stats val)))))
              (t `(unmemoize ,key))))
+      #+hons
+      (badge-table *special-cltl-cmd-attachment-mark*)
       (t nil))))
 
 (defun table-fn1 (name key val op term ctx wrld ens state event-form)

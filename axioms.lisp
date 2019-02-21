@@ -21038,6 +21038,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
+; See the Essay on Memoization with Attachments for why concrete-apply$-userfn
+; and concrete-badge-userfn are untouchable.
+
+    concrete-apply$-userfn concrete-badge-userfn
+
     when-pass-2
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the

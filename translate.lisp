@@ -989,6 +989,10 @@
                     acc)))))
 
 (defun all-attachments (wrld)
+
+; This function returns all attachment pairs except for attachments to warrants
+; and possibly attachments made with non-nil :skip-checks.
+
   (attachment-record-pairs (global-val 'attachment-records wrld)
                            nil))
 

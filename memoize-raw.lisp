@@ -5068,7 +5068,7 @@
   (setq *record-pons-calls* nil)
   (setq *record-time* nil))
 
-(defun update-memo-entry-for-attachments (fns entry wrld)
+(defun update-memo-entry-for-attachments (fns entry special-name wrld)
 
 ; See the Essay on Memoization with Attachments.
 
@@ -5083,8 +5083,8 @@
           (if (eq fns :clear)
               :clear
             (or (null ext-anc-attachments)
-                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld
-                                             t)))))
+                (ext-anc-attachments-valid-p fns ext-anc-attachments
+                                             special-name wrld t)))))
     (cond ((eq valid-p t) (mv nil entry))
           (t
            (mv (if (eq valid-p nil) t valid-p)
@@ -5113,7 +5113,8 @@
                  :clear
                (strict-merge-sort-symbol-<
                 (loop for fn in fns
-                      collect (canonical-sibling fn wrld))))))
+                      collect (canonical-sibling fn wrld)))))
+        (special-name *special-cltl-cmd-attachment-mark-name*))
     (when (eq fns :clear)
       (observation ctx
                    "Memoization tables for functions memoized with :AOKP T ~
@@ -5124,15 +5125,26 @@
         (lambda (k entry)
           (when (symbolp k)
             (mv-let (changedp new-entry)
-                    (update-memo-entry-for-attachments fns entry wrld)
+                    (update-memo-entry-for-attachments fns entry special-name
+                                                       wrld)
                     (when changedp
                       (when (not (or (eq changedp t)
                                      (eq fns :clear)))
+
+; Note that the following observation won't be printed when executing :u, which
+; suppresses observations.  But it should show up when executing :ubt.
+
                         (observation ctx
                                      "Memoization table for function ~x0 is ~
-                                      being cleared because attachment to ~
-                                      function ~x1 has changed."
-                                     k changedp)
+                                      being cleared because ~@1."
+                                     k
+                                     (if (eq changedp special-name)
+                                         "it depends on apply$-userfn or ~
+                                          badge-userfn and at least one badge ~
+                                          has changed"
+                                       (msg "the attachment to function ~x0 ~
+                                             has changed"
+                                            changedp)))
                         (clear-one-memo-and-pons-hash entry :auto))
                       (mf-sethash k new-entry *memoize-info-ht*)))))
         *memoize-info-ht*)))))
