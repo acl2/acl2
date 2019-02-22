@@ -730,7 +730,8 @@
    (root-index ubyte32 :reqfix (if (equal root-depth 0)
                                    0
                                  root-index))
-   (root-parent byte-list :reqfix (if (equal root-depth 0)
+   (root-parent byte-list :reqfix (if (or (equal root-depth 0)
+                                          (not (equal (len root-parent) 4)))
                                       (list 0 0 0 0)
                                     root-parent))
    (index-tree bip32-index-tree :reqfix (if (and (bip32-valid-keys-p root-key
@@ -743,6 +744,7 @@
                 (bip32-valid-depths-p root-depth index-tree)
                 (implies (equal root-depth 0)
                          (equal root-index 0))
+                (equal (len root-parent) 4)
                 (implies (equal root-depth 0)
                          (equal root-parent (list 0 0 0 0))))
   :layout :list
