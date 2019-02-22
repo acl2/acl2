@@ -125,7 +125,11 @@
 
   (defrule posp-of-bip32-ext-priv-key->key
     (posp (bip32-ext-priv-key->key extprivkey))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defrule len-of-bip32-ext-priv-key->chain-code
+    (equal (len (bip32-ext-priv-key->chain-code key))
+           32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +152,12 @@
    This is the (disjoint) union of extended private and public keys.
    </p>"
   (:priv ((get bip32-ext-priv-key)))
-  (:pub ((get bip32-ext-pub-key))))
+  (:pub ((get bip32-ext-pub-key)))
+  ///
+
+  (defrule len-of-bip32-ext-pub-key->chain-code
+    (equal (len (bip32-ext-pub-key->chain-code key))
+           32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -771,6 +780,8 @@
                 :pub (bip32-ext-pub-key->key key.get)))
        (serialized (secp256k1-point-to-bytes pubkey t)))
     (hash160 serialized))
+  :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -788,7 +799,262 @@
      says that the first 32 bits (i.e. 4 bytes) of a key identifier
      are the key fingerprint."))
   (take 4 (bip32-key-identifier key))
+  :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (fp (equal (len fp) 4) :name len-of-bip32-key-fingerprint)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bip32-serialization-versions
+  :short "Versions bytes for serializing extended keys."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "These are for private or public keys, for mainnet or testnet:
+     four possible combinations.")
+   (xdoc::p
+    "The values are specified in [BIP32],
+     as hexadecimal integers,
+     so we introduce them as such here.
+     Even though [BIP32] does not explicitly say
+     how these (32-bit) integers are converted to bytes,
+     it seems reasonable that they are converted as big endian.
+     This could be also confirmed by verifying that,
+     after Base58 encoding,
+     the serialized keys start with
+     @('xprv'), @('xpub'), @('tprv'), and @('tpub')."))
+
+  (defval *bip32-version-priv-main* #x0488ADE4
+    ///
+    (assert-event (ubyte32p *bip32-version-priv-main*)))
+
+  (defval *bip32-version-pub-main* #x0488B21E
+    ///
+    (assert-event (ubyte32p *bip32-version-pub-main*)))
+
+  (defval *bip32-version-priv-test* #x04358394
+    ///
+    (assert-event (ubyte32p *bip32-version-priv-test*)))
+
+  (defval *bip32-version-pub-test* #x043587CF
+    ///
+    (assert-event (ubyte32p *bip32-version-pub-test*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-serialize-key ((key bip32-ext-key-p)
+                             (depth bytep)
+                             (index ubyte32p)
+                             (parent (and (byte-listp parent)
+                                          (equal (len parent) 4)))
+                             (mainnet booleanp))
+  :guard (implies (equal depth 0)
+                  (and (equal index 0)
+                       (equal parent (list 0 0 0 0))))
+  :returns (bytes byte-listp)
+  :short "Serialize an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Besides the key, from which chain code and key data are obtained,
+     this function takes additional arguments necessary for
+     a complete serialization as specified in [BIP32].")
+   (xdoc::p
+    "If the depth is 0, this is the master key and thus
+     the child number and the parent's fingerprint
+     must be 0 too [BIP32].
+     This is expressed by the guard.")
+   (xdoc::p
+    "A boolean argument says whether the key is being serialized for
+     the mainnet (if @('t')) or for the testnet (if @('nil'))."))
+  (b* ((depth (mbe :logic (byte-fix depth) :exec depth))
+       (index (mbe :logic (ubyte32-fix index) :exec index))
+       (parent (mbe :logic (byte-list-fix parent) :exec parent))
+       (parent (mbe :logic (if (= (len parent) 4)
+                               parent
+                             (list 0 0 0 0))
+                    :exec parent))
+       ((mv key-data chain-code version)
+        (bip32-ext-key-case
+         key
+         :priv (mv (cons 0 (nat=>bendian
+                            256 32 (bip32-ext-priv-key->key key.get)))
+                   (bip32-ext-priv-key->chain-code key.get)
+                   (if mainnet
+                       *bip32-version-priv-main*
+                     *bip32-version-priv-test*))
+         :pub (mv (secp256k1-point-to-bytes
+                   (bip32-ext-pub-key->key key.get) t)
+                  (bip32-ext-pub-key->chain-code key.get)
+                  (if mainnet
+                      *bip32-version-pub-main*
+                    *bip32-version-pub-test*)))))
+    (append (nat=>bendian 256 4 version)
+            (list depth)
+            parent
+            (nat=>bendian 256 4 index)
+            chain-code
+            key-data))
+  :guard-hints (("Goal" :in-theory (enable ubyte32p)))
+  :no-function t
+  :hooks (:fix)
+
+  ///
+  (more-returns
+   (bytes (equal (len bytes) 78) :name len-of-bip32-serialize-key)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk bip32-serialized-key-p ((bytes byte-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of bytes is a serialized extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which essentially characterizes the image of @(tsee bip32-serialize-key)
+     over arguments that satisfy that function's guard.")
+   (xdoc::p
+    "By definition,
+     the witness function is the right inverse of @(tsee bip32-serialize-key),
+     over valid serialized keys."))
+  (exists (key depth index parent mainnet)
+          (and (bip32-ext-key-p key)
+               (bytep depth)
+               (ubyte32p index)
+               (byte-listp parent)
+               (equal (len parent) 4)
+               (booleanp mainnet)
+               (implies (equal depth 0)
+                        (and (equal index 0)
+                             (equal parent (list 0 0 0 0))))
+               (equal (bip32-serialize-key key depth index parent mainnet)
+                      (byte-list-fix bytes))))
+  :skolem-name bip32-serialized-key-witness
+  ///
+
+  (fty::deffixequiv bip32-serialized-key-p
+    :args ((bytes byte-listp))
+    :hints (("Goal"
+             :in-theory (disable bip32-serialized-key-p-suff)
+             :use ((:instance bip32-serialized-key-p-suff
+                    (key (mv-nth 0 (bip32-serialized-key-witness
+                                    (byte-list-fix bytes))))
+                    (depth (mv-nth 1 (bip32-serialized-key-witness
+                                      (byte-list-fix bytes))))
+                    (index (mv-nth 2 (bip32-serialized-key-witness
+                                      (byte-list-fix bytes))))
+                    (parent (mv-nth 3 (bip32-serialized-key-witness
+                                       (byte-list-fix bytes))))
+                    (mainnet (mv-nth 4 (bip32-serialized-key-witness
+                                        (byte-list-fix bytes)))))
+                   (:instance bip32-serialized-key-p-suff
+                    (key (mv-nth 0 (bip32-serialized-key-witness bytes)))
+                    (depth (mv-nth 1 (bip32-serialized-key-witness bytes)))
+                    (index (mv-nth 2 (bip32-serialized-key-witness bytes)))
+                    (parent (mv-nth 3 (bip32-serialized-key-witness bytes)))
+                    (mainnet (mv-nth 4 (bip32-serialized-key-witness bytes)))
+                    (bytes (byte-list-fix bytes)))))))
+
+  (defrule bip32-ext-key-p-of-mv-nth-0-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (bip32-ext-key-p
+              (mv-nth 0 (bip32-serialized-key-witness bytes)))))
+
+  (defrule bytep-of-mv-nth-1-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (bytep
+              (mv-nth 1 (bip32-serialized-key-witness bytes)))))
+
+  (defrule ubyte32p-of-mv-nth-2-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (ubyte32p
+              (mv-nth 2 (bip32-serialized-key-witness bytes)))))
+
+  (defrule byte-listp-of-mv-nth-3-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (byte-listp
+              (mv-nth 3 (bip32-serialized-key-witness bytes)))))
+
+  (defrule len-of-mv-nth-3-of-bip32-serialize-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (equal (len (mv-nth 3 (bip32-serialized-key-witness bytes)))
+                    4)))
+
+  (defrule booleanp-of-mv-nth-4-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (booleanp
+              (mv-nth 4 (bip32-serialized-key-witness bytes)))))
+
+  (defrule bip32-serialize-key-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (b* (((mv key depth index parent mainnet)
+                   (bip32-serialized-key-witness bytes)))
+               (equal (bip32-serialize-key key depth index parent mainnet)
+                      (byte-list-fix bytes)))))
+
+  (defrule bip32-serialized-key-p-of-bip32-serialize-key
+    (implies (and (bip32-ext-key-p key)
+                  (bytep depth)
+                  (ubyte32p index)
+                  (byte-listp parent)
+                  (equal (len parent) 4)
+                  (booleanp mainnet)
+                  (implies (equal depth 0)
+                           (and (equal index 0)
+                                (equal parent (list 0 0 0 0)))))
+             (bip32-serialized-key-p
+              (bip32-serialize-key key depth index parent mainnet)))
+    :use (:instance bip32-serialized-key-p-suff
+          (bytes (bip32-serialize-key key depth index parent mainnet)))
+    :disable (bip32-serialized-key-p bip32-serialized-key-p-suff)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-deserialize-key ((bytes byte-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-key-p)
+               (depth bytep)
+               (index ubyte32p)
+               (parent (and (byte-listp parent)
+                            (equal (len parent) 4)))
+               (mainnet booleanp))
+  :short "Deserialize an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is declaratively specified as the inverse of serialization.")
+   (xdoc::p
+    "The first result is @('t')
+     if the input bytes are not a serialized key;
+     in this case, the other results are irrelevant.
+     Otherwise, the first result is @('nil') (i.e. no error)
+     and the constituents of the the serialized key are returned;
+     these correspond to the inputs of @(tsee bip32-serialize-key).")
+   (xdoc::p
+    "We prove that deserialization is the right inverse of serialization.
+     To prove that it is also left inverse,
+     we need to prove the injectivity of serialization first.
+     This will be done soon."))
+  (b* ((bytes (byte-list-fix bytes)))
+    (if (bip32-serialized-key-p bytes)
+        (b* (((mv key depth index parent mainnet)
+              (bip32-serialized-key-witness bytes)))
+          (mv nil key depth index parent mainnet))
+      (b* ((irrelevant-key
+            (bip32-ext-key-priv (bip32-ext-priv-key 1 (repeat 32 0)))))
+        (mv t irrelevant-key 0 0 (list 0 0 0 0) nil))))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-serialize-key-of-bip32-deserialize-key
+    (implies (bip32-serialized-key-p bytes)
+             (b* (((mv error? key depth index parent mainnet)
+                   (bip32-deserialize-key bytes)))
+               (and (not error?)
+                    (equal (bip32-serialize-key key depth index parent mainnet)
+                           (byte-list-fix bytes)))))))
