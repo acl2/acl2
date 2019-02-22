@@ -33,16 +33,7 @@
      <a href=\"https://en.bitcoin.it/wiki/BIP_0032\"
      >Page `BIP 0032' of [Wiki]</a>.
      We refer to the document at the first URL as `[BIP32]'
-     in the documentation below."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc bip32-conventions
-  :short "BIP 32 conventions."
-  :long
-  (xdoc::topapp
+     in the documentation below.")
    (xdoc::p
     "As stated in the 'Conventions' section of [BIP32],
      the elliptic curve cryptography is based on the secp256k1 curve.
@@ -50,7 +41,7 @@
      @(tsee secp256k1-priv-key-p) and @(tsee secp256k1-pub-key-p).")
    (xdoc::p
     "The conversion functions described in the 'Conventions' section of [BIP32]
-     are formalized as follows in our model:")
+     are formalized as follows in our model of Bitcoin:")
    (xdoc::ul
     (xdoc::li
      "@($\\mathsf{point}$) is @(tsee secp256k1-mul)
@@ -67,7 +58,9 @@
      "@($\\mathsf{ser}_\\mathsf{P}$) is @(tsee secp256k1-point-to-bytes)
       with the compression flag set.")
     (xdoc::li
-     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256."))))
+     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256.")))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
