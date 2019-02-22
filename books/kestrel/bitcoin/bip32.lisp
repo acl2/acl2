@@ -82,8 +82,7 @@
 
     (defrule byte-listp-when-bip32-chain-code-p
       (implies (bip32-chain-code-p cc)
-               (byte-listp cc))
-      :rule-classes :tau-system)
+               (byte-listp cc)))
 
     (defrule len-when-bip32-chain-code-p
       (implies (bip32-chain-code-p x)
