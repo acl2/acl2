@@ -431,7 +431,7 @@
                    (new-alist glcp-unify-alist-p))
       :measure (pseudo-term-list-count pat)
       (b* (((when (atom pat))
-            (if (eq x nil)
+            (if (mbe :logic (atom x) :exec (eq x nil))
                 (mv t (glcp-unify-alist-fix alist))
               (mv nil nil)))
            ((when (atom x)) (mv nil nil))
@@ -450,6 +450,8 @@
                       (not (member b (scdr x))))
              :hints(("Goal" :in-theory (enable scdr)))))
     
+
+    (fty::deffixequiv-mutual glcp-unify-term/gobj)
 
     (defret-mutual bfrlist-of-<fn>
       (defret bfrlist-of-<fn>

@@ -34,6 +34,7 @@
 (include-book "aignet-pathcond-stobj")
 (include-book "centaur/aignet/deps" :dir :System)
 (local (include-book "theory"))
+(local (include-book "std/util/termhints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (acl2::defstobj-clone pathcond-memo eba :prefix "PCMEMO-")
@@ -104,6 +105,30 @@
     :hints(("Goal" :in-theory (enable nbalist-lookup nbalistp)))))
 
 (local (in-theory (disable nbalist-fix-of-acons)))
+
+
+(defsection aignet-pathcond-p
+  (defun-sk aignet-pathcond-p (nbalist aignet)
+    (forall id
+            (implies (nbalist-lookup id nbalist)
+                     (aignet-idp id aignet)))
+    :rewrite :direct)
+
+  (in-theory (disable aignet-pathcond-p))
+
+  (defthm aignet-pathcond-p-of-aignet-extension
+    (implies (and (aignet-extension-binding)
+                  (aignet-pathcond-p nbalist orig))
+             (aignet-pathcond-p nbalist new))
+    :hints (("goal" :expand ((aignet-pathcond-p nbalist new)))))
+
+  (defthm aignet-pathcond-p-of-nbalist-fix
+    (iff (aignet-pathcond-p (nbalist-fix nbalist) aignet)
+         (aignet-pathcond-p nbalist aignet))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (assoc 'aignet-pathcond-p clause)))
+                   `(:expand (,lit)))))))
+
 
 (defsection aignet-pathcond-eval
   (defun-sk aignet-pathcond-eval (aignet
@@ -193,7 +218,17 @@
                      :use ((:instance aignet-pathcond-eval-necc
                             (id (aignet-pathcond-eval-witness . ,(cdr lit)))
                             (invals ,other-invals)))
-                     :in-theory (disable aignet-pathcond-eval-necc)))))))
+                     :in-theory (disable aignet-pathcond-eval-necc))))))
+
+  (defthm aignet-pathcond-eval-of-aignet-extension
+    (implies (and (aignet-extension-binding)
+                  (aignet-pathcond-p nbalist orig))
+             (equal (aignet-pathcond-eval new nbalist invals regvals)
+                    (aignet-pathcond-eval orig nbalist invals regvals)))
+    :hints (("goal" :cases ((aignet-pathcond-eval new nbalist invals regvals)))
+            (and stable-under-simplificationp
+                 (let ((lit (assoc 'aignet-pathcond-eval clause)))
+                   `(:expand (,lit)))))))
 
 
 
@@ -324,7 +359,7 @@
     '((fnname . aignet-pathcond-implies-logic) ;; fnname: obvious
       (memo-args . nil) ;; memo-args: memo tables to pass around
       (memo-guard . nil) ;; memo-guard: list of conjuncts for guard of memo-args
-      (returns . (ans acl2::maybe-bitp :rule-classes :type-prescription)) ;; returns: :returns entry
+      (returns . (ans acl2::maybe-bitp :rule-classes ((:type-prescription :typed-term ans)))) ;; returns: :returns entry
       (return-unmemo . ans) ;; return-unmemo: return ANS (and memo table if applicable) without updating memo table
       (return-memo . ans) ;; return-memo: return ANS while updating memo table
       (bind . ans) ;; bind: bind ANS (and memo table if applicable) to return of recursive call
@@ -581,39 +616,84 @@
                             (nbalist ,lit-nbalist)
                             (id (nbalist-depends-on-witness . ,(cdr other-lit)))))
                      :in-theory (disable nbalist-depends-on-suff)))))
-    :otf-flg t))
+    :otf-flg t)
+
+  ;; (local
+  ;;  #!aignet
+  ;;  (defthm depends-on-of-out-of-bounds-ci-id
+  ;;    (implies (< (fanin-count aignet) (nfix ci-id))
+  ;;             (not (aignet::depends-on id ci-id aignet)))
+  ;;    :hints(("Goal" :in-theory (enable aignet::depends-on)))))
 
 
+  (local (defthm not-depends-on-0
+           (not (aignet::depends-on id 0 aignet))
+           :hints(("Goal" :in-theory (enable aignet::depends-on)))))
 
-;; (define nbalist-depends-on ((v natp "The input number, in this case")
-;;                             (x nbalistp)
-;;                             aignet)
-;;   :guard (and (< (nfix v) (num-ins aignet))
-;;               (< (nbalist-bound x) (num-fanins aignet)))
-;;   :guard-hints (("goal" :in-theory (enable nbalist-bound)))
-;;   :measure (len (nbalist-fix x))
-;;   (b* ((x (nbalist-fix x))
-;;        ((when (atom x)) nil))
-;;     (or (depends-on (caar x) (innum->id v aignet) aignet)
-;;         (nbalist-depends-on v (cdr x) aignet)))
-;;   ///
+  (local
+   #!aignet
+   (defthm depends-on-when-ci-id-greater
+     (implies (< (nfix id) (nfix ci-id))
+              (not (depends-on id ci-id aignet)))
+     :hints(("Goal" :in-theory (enable depends-on)))))
 
-;;   (defthm aignet-pathcond-eval-of-set-var-when-not-depends-on
-;;     (implies (not (nbalist-depends-on v nbalist aignet))
-;;              (equal (aignet-pathcond-eval nbalist aignet (update-nth v val invals) regvals)
-;;                     (aignet-pathcond-eval nbalist aignet invals regvals)))
-;;     :hints (("goal" :cases ((aignet-pathcond-eval aignet nbalist invals regvals))
-;;              :do-not-induct t)
-;;             (and stable-under-simplificationp
-;;                  (b* ((lit (assoc 'aignet-pathcond-eval clause)))
-;;                    (and lit
-;;                         `(:expand (,lit)
-;;                           :use ((:instance aignet-pathcond-eval-necc
-;;                                  (id (aignet-pathcond-eval-witness . ,(cdr lit)))
-;;                                  (nbalist ,(if (eq (fourth lit) 'invals)
-;;                                                '(update-nth v val invals)
-;;                                              'invals))))
-;;                           :in-theory (disable aignet-pathcond-eval-necc))))))))
+  (local
+   #!aignet
+   (defthmd fanin-count-of-lookup-in-extension-when-not-in-orig
+     (implies (and (aignet-extension-p new old)
+                   (< (nfix v) (stype-count stype new))
+                   (<= (stype-count stype old) (nfix v))
+                   (not (equal (ctype stype) (out-ctype))))
+              (< (fanin-count old) (fanin-count (lookup-stype v stype new))))
+     :hints(("Goal" :induct (aignet-extension-p new old)
+             :in-theory (e/d ((:i aignet-extension-p)
+                              fanin-node-p)
+                             (AIGNET::AIGNET-EXTENSION-SIMPLIFY-LOOKUP-STYPE-WHEN-COUNTS-SAME))
+             :expand ((aignet-extension-p new old)
+                      (stype-count stype new)
+                      (lookup-stype v stype new)
+                      (fanin-count new))))))
+
+  (defthm nbalist-depends-on-of-aignet-extension
+    (implies (and (aignet-extension-binding)
+                  (aignet-pathcond-p nbalist orig))
+             (equal (nbalist-depends-on v nbalist new)
+                    (nbalist-depends-on v nbalist orig)))
+    :hints ((acl2::use-termhint
+             (b* (((mv does doesnt)
+                   (if (nbalist-depends-on v nbalist new)
+                       (mv new orig)
+                     (mv orig new)))
+                  (witness (nbalist-depends-on-witness v nbalist does)))
+               `(:expand ((nbalist-depends-on v nbalist ,(acl2::hq does)))
+                 :use ((:instance nbalist-depends-on-suff
+                        (aignet ,(acl2::hq doesnt))
+                        (id ,(acl2::hq witness)))
+                       (:instance aignet-pathcond-p-necc
+                        (aignet orig)
+                        (id ,(acl2::hq witness)))
+                       (:instance fanin-count-of-lookup-in-extension-when-not-in-orig
+                        (old orig) (stype :pi)))
+                 :cases ((< (nfix v) (stype-count :pi orig)))
+                 :in-theory (e/d (aignet-idp)
+                                 (aignet-pathcond-p-necc
+                                     nbalist-depends-on-suff)))))))
+
+  (defthm nbalist-depends-on-of-nfix
+    (equal (nbalist-depends-on (nfix v) nbalist aignet)
+           (nbalist-depends-on v nbalist aignet))
+    :hints ((acl2::use-termhint
+             (b* (((mv does doesnt)
+                   (if (nbalist-depends-on v nbalist aignet)
+                       (mv v (nfix v))
+                     (mv (nfix v) v)))
+                  (witness (nbalist-depends-on-witness does nbalist aignet)))
+               `(:expand ((nbalist-depends-on ,(acl2::hq does) nbalist aignet))
+                 :use ((:instance nbalist-depends-on-suff
+                        (v ,(acl2::hq doesnt))
+                        (id ,(acl2::hq witness))))
+                 :in-theory (disable nbalist-depends-on-suff)))))))
+
 
 (define aignet-pathcond-assume-logic ((lit litp)
                                 aignet

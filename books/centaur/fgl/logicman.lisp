@@ -34,10 +34,10 @@
 (include-book "centaur/aignet/construction" :dir :system)
 ;; Critpath: factor out sat-lits stobj definition from aignet/cnf and include that + ipasir-logic instead
 (include-book "centaur/aignet/ipasir" :dir :system)
-(include-book "bvar-db")
+;; (include-book "bvar-db")
 (include-book "bfr")
 (include-book "arith-base")
-(include-book "pathcond-stobj")
+;; (include-book "pathcond-stobj")
 (include-book "centaur/ubdds/deps" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
 (include-book "defapply")
@@ -45,15 +45,7 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
 
-(fty::defalist nat-nat-alist :key-type natp :val-type natp :true-listp t)
 
-(defstobj interp-profiler
-  (prof-enabledp :type (satisfies booleanp))
-  (prof-indextable)
-  (prof-totalcount :type (integer 0 *) :initially 0)
-  (prof-nextindex :type (integer 0 *) :initially 0)
-  (prof-array :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
-  (prof-stack :type (satisfies nat-nat-alist-p)))
 
 
 (defconst *logicman-fields*
@@ -62,9 +54,9 @@
     (strash :type aignet::strash)
     (ipasir :type ipasir::ipasir)
     (sat-lits :type aignet::sat-lits)
-    (pathcond :type pathcond)
-    (bvar-db :type bvar-db)
-    (prof :type interp-profiler)
+    ;; (pathcond :type pathcond)
+    ;; (bvar-db :type bvar-db)
+    ;; (prof :type interp-profiler)
     (mode :type (satisfies bfr-mode-p) :initially 0)))
 
 
@@ -101,9 +93,9 @@
   (implies (logicmanp logicman)
            (bfr-mode-p (logicman->mode logicman))))
 
-(defthm logicmanp-implies-pathcondp
-  (implies (logicmanp logicman)
-           (pathcondp (logicman->pathcond logicman))))
+;; (defthm logicmanp-implies-pathcondp
+;;   (implies (logicmanp logicman)
+;;            (pathcondp (logicman->pathcond logicman))))
 
 (in-theory (disable logicmanp))
 
@@ -252,15 +244,15 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   :verify-guards nil
   (and (aignet::aignet-extension-p (logicman->aignet new)
                                    (logicman->aignet old))
-       (bvar-db-extension-p (logicman->bvar-db new)
-                            (logicman->bvar-db old))
+       ;; (bvar-db-extension-p (logicman->bvar-db new)
+       ;;                      (logicman->bvar-db old))
        (equal (logicman->mode new) (logicman->mode old)))
   ///
   (def-updater-independence-thm logicman-extension-p-updater-independence-1
     (implies (and (equal (logicman-get :aignet new)
                          (logicman-get :aignet old))
-                  (equal (logicman-get :bvar-db new)
-                         (logicman-get :bvar-db old))
+                  ;; (equal (logicman-get :bvar-db new)
+                  ;;        (logicman-get :bvar-db old))
                   (equal (logicman-get :mode new)
                          (logicman-get :mode old))
                   (logicman-extension-p old other))
@@ -269,8 +261,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (def-updater-independence-thm logicman-extension-p-updater-independence-2
     (implies (and (equal (logicman-get :aignet new)
                          (logicman-get :aignet old))
-                  (equal (logicman-get :bvar-db new)
-                         (logicman-get :bvar-db old))
+                  ;; (equal (logicman-get :bvar-db new)
+                  ;;        (logicman-get :bvar-db old))
                   (equal (logicman-get :mode new)
                          (logicman-get :mode old))
                   (logicman-extension-p other old))
@@ -279,8 +271,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (def-updater-independence-thm logicman-extension-p-updater-independence-2
     (implies (and (equal (logicman-get :aignet new)
                          (logicman-get :aignet old))
-                  (equal (logicman-get :bvar-db new)
-                         (logicman-get :bvar-db old))
+                  ;; (equal (logicman-get :bvar-db new)
+                  ;;        (logicman-get :bvar-db old))
                   (equal (logicman-get :mode new)
                          (logicman-get :mode old))
                   (logicman-extension-p other old))
@@ -309,8 +301,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defthm logicman-extension-when-same
     (implies (and (equal (logicman-get :aignet new)
                          (logicman-get :aignet old))
-                  (equal (logicman-get :bvar-db new)
-                         (logicman-get :bvar-db old))
+                  ;; (equal (logicman-get :bvar-db new)
+                  ;;        (logicman-get :bvar-db old))
                   (equal (logicman-get :mode new)
                          (logicman-get :mode old)))
              (logicman-extension-p new old)))
@@ -672,7 +664,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defthm id-eval-of-alist-to-bitarr-aignet-extension
     (implies (and (syntaxp (not (equal new old)))
                   (aignet-extension-p new old)
-                  (aignet-idp x old))
+                  ;; (aignet-idp x old)
+                  )
              (equal (id-eval x (fgl::alist-to-bitarr (stype-count :pi new) env bitarr) regvals old)
                     (id-eval x (fgl::alist-to-bitarr (stype-count :pi old) env bitarr) regvals old)))
     :hints (("goal" :induct (id-eval-ind x old)
@@ -684,7 +677,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defthm lit-eval-of-alist-to-bitarr-aignet-extension
     (implies (and (syntaxp (not (equal new old)))
                   (aignet-extension-p new old)
-                  (aignet-litp x old))
+                  ;; (aignet-litp x old)
+                  )
              (equal (lit-eval x (fgl::alist-to-bitarr (stype-count :pi new) env bitarr) regvals old)
                     (lit-eval x (fgl::alist-to-bitarr (stype-count :pi old) env bitarr) regvals old)))
     :hints (("goal" 
@@ -800,70 +794,63 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 
-(define logicman-nvars-ok (&optional (logicman 'logicman))
-  (lbfr-case
-    :bdd t
-    :aig t
-    :aignet
-    (stobj-let
-     ((aignet (logicman->aignet logicman))
-      (bvar-db (logicman->bvar-db logicman)))
-     (ok)
-     (equal (next-bvar bvar-db)
-            (aignet::num-ins aignet))
-     ok))
-  ///
-  (def-updater-independence-thm logicman-nvars-ok-updater-independence
-    (implies (and (equal (logicman->mode new)
-                         (logicman->mode old))
-                  (equal (next-bvar (logicman->bvar-db new))
-                         (next-bvar (logicman->bvar-db old)))
-                  (equal (aignet::num-ins (logicman->aignet new))
-                         (aignet::num-ins (logicman->aignet old))))
-             (equal (logicman-nvars-ok new)
-                    (logicman-nvars-ok old)))))
+;; (define logicman-nvars-ok (&optional (logicman 'logicman))
+;;   (lbfr-case
+;;     :bdd t
+;;     :aig t
+;;     :aignet
+;;     (stobj-let
+;;      ((aignet (logicman->aignet logicman))
+;;       (bvar-db (logicman->bvar-db logicman)))
+;;      (ok)
+;;      (equal (next-bvar bvar-db)
+;;             (aignet::num-ins aignet))
+;;      ok))
+;;   ///
+;;   (def-updater-independence-thm logicman-nvars-ok-updater-independence
+;;     (implies (and (equal (logicman->mode new)
+;;                          (logicman->mode old))
+;;                   (equal (next-bvar (logicman->bvar-db new))
+;;                          (next-bvar (logicman->bvar-db old)))
+;;                   (equal (aignet::num-ins (logicman->aignet new))
+;;                          (aignet::num-ins (logicman->aignet old))))
+;;              (equal (logicman-nvars-ok new)
+;;                     (logicman-nvars-ok old)))))
 
 
 (define bfr-nvars (&optional (logicman 'logicman))
-  :guard (logicman-nvars-ok)
-  :prepwork ((local (in-theory (enable logicman-nvars-ok))))
-  (mbe :logic (non-exec (next-bvar$a (logicman->bvar-db logicman)))
+  ;; :guard (logicman-nvars-ok)
+;;  :prepwork ((local (in-theory (enable logicman-nvars-ok))))
+  (mbe :logic (non-exec (aignet::num-ins (logicman->aignet logicman)))
        :exec (stobj-let
-              ((bvar-db (logicman->bvar-db logicman)))
+              ((aignet (logicman->aignet logicman)))
               (nvars)
-              (next-bvar bvar-db)
+              (aignet::num-ins aignet)
               nvars))
   ///
-  (def-updater-independence-thm bfr-nvars-updater-independenc
-    (implies (equal (next-bvar (logicman->bvar-db new))
-                    (next-bvar (logicman->bvar-db old)))
+  (def-updater-independence-thm bfr-nvars-updater-independence
+    (implies (equal (aignet::num-ins (logicman->aignet new))
+                    (aignet::num-ins (logicman->aignet old)))
              (equal (bfr-nvars new) (bfr-nvars old))))
 
   (defthm bfr-nvars-of-logicman-extension
     (implies (bind-logicman-extension new old)
              (<= (bfr-nvars old) (bfr-nvars new)))
-    :hints(("Goal" :in-theory (enable logicman-extension-p
-                                      bvar-db-extension-p)))
+    :hints(("Goal" :in-theory (enable logicman-extension-p)))
     :rule-classes ((:linear :trigger-terms ((bfr-nvars new)))))
 
-  (defthm logicman-nvars-ok-implies
-    (implies (and (logicman-nvars-ok)
-                  (lbfr-mode-is :aignet))
-             (equal (aignet::stype-count :pi (logicman->aignet logicman))
-                    (bfr-nvars)))))
+  ;; (defthm logicman-nvars-ok-implies
+  ;;   (implies (and (logicman-nvars-ok)
+  ;;                 (lbfr-mode-is :aignet))
+  ;;            (equal (aignet::stype-count :pi (logicman->aignet logicman))
+  ;;                   (bfr-nvars))))
+  )
                     
 (define logicman-init ((base-nvars natp)
                        (bfr-mode bfr-mode-p)
                        &optional (logicman 'logicman))
-  :returns (new-logicman logicman-nvars-ok
-                         :hints(("Goal" :in-theory (enable logicman-nvars-ok))))
+  :returns (new-logicman)
   (b* ((logicman (update-logicman->mode (bfr-mode-fix bfr-mode) logicman))
-       (logicman
-        (stobj-let
-         ((bvar-db (logicman->bvar-db logicman)))
-         (bvar-db)
-         (init-bvar-db base-nvars bvar-db)
-         logicman))
        ((unless (bfr-mode-is :aignet))
         logicman))
     (stobj-let
@@ -874,19 +861,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
      logicman)))
    
 
-(define logicman-add-var ((obj gl-object-p)
+(define logicman-add-var (;; (obj gl-object-p)
                           &optional (logicman 'logicman))
-  :returns (new-logicman
-            (implies (logicman-nvars-ok logicman)
-                     (logicman-nvars-ok new-logicman))
-            :hints(("Goal" :in-theory (enable logicman-nvars-ok))))
-  (b* ((logicman
-        (stobj-let
-         ((bvar-db (logicman->bvar-db logicman)))
-         (bvar-db)
-         (add-term-bvar (gl-object-fix obj) bvar-db)
-         logicman))
-       ((unless (lbfr-mode-is :aignet))
+  :returns (new-logicman)
+  (b* (((unless (lbfr-mode-is :aignet))
         logicman))
     (stobj-let
      ((aignet (logicman->aignet logicman)))
@@ -895,20 +873,22 @@ logicman stobj.  If no logicman argument is supplied, the variable named
      logicman))
   ///
   (defret bfr-nvars-of-<fn>
-    (equal (bfr-nvars new-logicman)
-           (+ 1 (bfr-nvars logicman)))
+    (implies (lbfr-mode-is :aignet)
+             (equal (bfr-nvars new-logicman)
+                    (+ 1 (bfr-nvars logicman))))
     :hints(("Goal" :in-theory (enable bfr-nvars)))))
 
 
 
 
-(define bfr-varname-p (x &optional (logicman 'logicman))
-  :guard (logicman-nvars-ok)
+(define bfr-varname-p ((x natp) &optional (logicman 'logicman))
+  ;; :guard (logicman-nvars-ok)
   ;; :guard-hints (("goal" :in-theory (enable logicman-nvars-ok bfr-nvars)))
-  (and (natp x)
-       (< x (bfr-nvars))
-       (mbt (or (not (lbfr-mode-is :aignet))
-                (non-exec (< x (aignet::num-ins (logicman->aignet logicman)))))))
+  ;;; (and (natp x)
+       ;; (< x (bfr-nvars))
+       (or (not (lbfr-mode-is :aignet))
+           (< (lnfix x) (bfr-nvars)))
+                ;; (non-exec (< x (aignet::num-ins (logicman->aignet logicman)))))))
   ///
   ;; (def-updater-independence-thm bfr-varname-p-updater-independence
   ;;   (implies (and (bfr-varname-p x old)
@@ -918,10 +898,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   ;;                        (aignet::num-ins (logicman->aignet old))))
   ;;            (bfr-varname-p x new)))
 
-  (defthm bfr-varname-p-implies-natp
-    (implies (bfr-varname-p x)
-             (natp x))
-    :rule-classes :forward-chaining)
+  ;; (defthm bfr-varname-p-implies-natp
+  ;;   (implies (bfr-varname-p x)
+  ;;            (natp x))
+  ;;   :rule-classes :forward-chaining)
 
   (defthm bfr-varname-p-of-extension
     (implies (and (bind-logicman-extension new old)
@@ -929,6 +909,20 @@ logicman stobj.  If no logicman argument is supplied, the variable named
              (bfr-varname-p x new))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable logicman-extension-p))))))
+
+;; (define bfr-varname-p (x)
+;;   (natp x)
+;;   ///
+;;   (defthm bfr-varname-p-compound-recognizer
+;;     (equal (bfr-varname-p x)
+;;            (natp x))
+;;     :rule-classes :compound-recognizer)
+
+;;   (define bfr-varname-fix ((x bfr-varname-p))
+;;     :enabled t
+;;     (mbe :logic (nfix x) :exec x))
+
+;;   (fty::deffixtype bfr-varname :pred bfr-varname-p :fix bfr-varname-fix :equiv acl2::nat-equiv))
              
 
 
@@ -981,8 +975,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 ;;       :hints(("Goal" :in-theory (enable bfr-varname-p))))))
 
 
-(define bfr-lookup ((n (bfr-varname-p n logicman)) env &optional ((logicman logicman-nvars-ok) 'logicman))
-  :prepwork ((local (in-theory (enable bfr-varname-p))))
+(define bfr-lookup ((n natp) env &optional (logicman 'logicman))
+  ;; :prepwork ((local (in-theory (enable bfr-varname-p))))
   (lbfr-case
     :bdd (and (nth n (list-fix env)) t)
     :aig (acl2::aig-env-lookup (lnfix n) env)
@@ -993,7 +987,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
              (equal (bfr-lookup n env new)
                     (bfr-lookup n env old)))))
 
-(define bfr-set-var ((n bfr-varname-p) val env &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-set-var ((n natp) val env &optional (logicman 'logicman))
   :short "Set the @('n')th BFR variable to some value in an AIG/BDD environment."
   (lbfr-case :bdd (acl2::with-guard-checking
                    nil
@@ -1065,7 +1059,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
      (boolean-listp (ubdd-deps x))
      :hints(("Goal" :in-theory (enable ubdd-deps))))))
 
-(define bfr-depends-on ((v bfr-varname-p) (x lbfr-p) &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-depends-on ((v natp) (x lbfr-p) &optional (logicman 'logicman))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable bfr-varname-p))))
   :returns (val booleanp :rule-classes :type-prescription)
@@ -1081,9 +1075,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
       (b* ((lit (bfr->aignet-lit x)))
         (stobj-let ((aignet (logicman->aignet logicman)))
                    (depends-on)
-                   (aignet::depends-on (satlink::lit->var lit)
-                                       (aignet::innum->id v aignet)
-                                       aignet)
+                   (and (< (lnfix v) (aignet::num-ins aignet))
+                        (aignet::depends-on (satlink::lit->var lit)
+                                            (aignet::innum->id v aignet)
+                                            aignet))
                    depends-on))))
   ///
   ;; (local (defthm alist-to-bitarr-aux-of-update-less
@@ -1177,7 +1172,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                  '(:cases ((< (nfix v) (aignet::stype-count :pi (logicman->aignet new)))))))))
 
 
-(define bfr-list-depends-on ((v bfr-varname-p) (x lbfr-listp) &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-list-depends-on ((v natp) (x lbfr-listp) &optional (logicman 'logicman))
   :returns (val booleanp :rule-classes :type-prescription)
   (if (atom x)
       nil
@@ -1231,13 +1226,14 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                 
 
 
-(define bfr-var ((n bfr-varname-p) &optional ((logicman logicman-nvars-ok) 'logicman))
+(define bfr-var ((n natp) &optional (logicman 'logicman))
+  :guard (bfr-varname-p n)
   :returns (bfr lbfr-p :hints((acl2::use-termhint
                                (lbfr-case
                                  :aignet nil
                                  :otherwise
                                  '(:in-theory (enable bfr-p aig-p))))))
-  :guard-hints (("goal" :in-theory (enable bfr-varname-p)))
+  :guard-hints (("goal" :in-theory (enable bfr-varname-p bfr-nvars)))
   (b* ((bfrstate (logicman->bfrstate)))
     (bfrstate-case
       :bdd (acl2::qv n)
@@ -1269,7 +1265,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
            (acl2::use-termhint
             (lbfr-case
               :aignet '(:in-theory (enable bfr-eval ;; logicman->bfrstate
-                                           bfr-lookup bfr-varname-p)
+                                           bfr-lookup bfr-varname-p bfr-nvars)
                         :expand ((:free (id invals regvals aignet)
                                   (aignet::lit-eval (aignet::make-lit id 0) invals regvals aignet))
                                  (:free (id invals regvals aignet)
@@ -1289,7 +1285,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     :hints((acl2::use-termhint
             (lbfr-case old
               :aignet '(:in-theory (enable ;; logicman->bfrstate
-                                           logicman-extension-p bfr-varname-p
+                                           logicman-extension-p bfr-varname-p bfr-nvars
                                            aignet-lit->bfr bounded-lit-fix))
               :otherwise '(:in-theory (enable logicman-extension-p aignet-lit->bfr
                                               bfr-varname-p))))))
@@ -1299,7 +1295,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (bfr-varname-p n))
              (iff (bfr-depends-on v (bfr-var n))
                   (equal (nfix v) (nfix n))))
-    :hints(("Goal" :in-theory (enable bfr-depends-on bfr-varname-p bfr-fix aig-fix
+    :hints(("Goal" :in-theory (enable bfr-depends-on bfr-varname-p bfr-nvars bfr-fix aig-fix
                                       bounded-lit-fix ;; logicman->bfrstate
                                       )
             :expand ((:free (ci x) (aignet::depends-on
@@ -2093,12 +2089,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env gl-env-p))))
 
 
-(define gobj-var-lookup (name (env gl-env-p))
+(define gobj-var-lookup ((name pseudo-var-p) (env gl-env-p))
   :prepwork ((local (defthm consp-of-assoc-when-obj-alist-p
                       (implies (obj-alist-p x)
                                (iff (consp (assoc key x))
                                     (assoc key x))))))
-  (cdr (assoc-equal name (gl-env->obj-alist env))))
+  (cdr (assoc-equal (pseudo-var-fix name) (gl-env->obj-alist env))))
 
 
 (defconst *gl-object-eval-template*
@@ -2235,8 +2231,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
        (defthm <name>-gl-object-eval-of-g-apply
          (equal (<name>-gl-object-eval (g-apply fn args) env)
-                (<name>-apply (acl2::symbol-fix fn)
-                                        (<name>-gl-objectlist-eval args env))))
+                (<name>-apply (pseudo-fnsym-fix fn)
+                              (<name>-gl-objectlist-eval args env))))
 
        (defthm <name>-gl-object-eval-when-g-var
          (implies (gl-object-case x :g-var)

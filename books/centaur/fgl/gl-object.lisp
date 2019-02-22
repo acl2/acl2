@@ -32,6 +32,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 (fty::deftypes gl-object
   (fty::defflexsum gl-object
@@ -88,13 +89,13 @@
     (:g-apply
      :cond (eq (car x) :g-apply)
      :shape (consp (cdr x))
-     :fields ((fn :type symbol :acc-body (cadr x))
+     :fields ((fn :type pseudo-fnsym :acc-body (cadr x))
               (args :type gl-objectlist :acc-body (cddr x)))
      :ctor-body (cons :g-apply (cons fn args))
      :type-name g-apply)
     (:g-var
      :cond (eq (car x) :g-var)
-     :fields ((name :acc-body (cdr x)))
+     :fields ((name :type pseudo-var :acc-body (cdr x)))
      :ctor-body (cons :g-var name)
      :type-name g-var)
     (:g-cons
