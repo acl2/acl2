@@ -748,3 +748,46 @@
                          (equal root-parent (list 0 0 0 0))))
   :layout :list
   :pred bip32-key-treep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-key-identifier ((key bip32-ext-key-p))
+  :returns (id byte-listp)
+  :short "Identifier of an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The section `Key identifiers' of [BIP32] says that
+     an extended key is identified by
+     the Hash160 of the serialized elliptic curve public key,
+     ignoring the chain code..")
+   (xdoc::p
+    "This should apply to both private and public keys.
+     If given a private key, we calculate the corresponding public key."))
+  (b* ((pubkey (bip32-ext-key-case
+                key
+                :priv (secp256k1-priv-to-pub (bip32-ext-priv-key->key key.get))
+                :pub (bip32-ext-pub-key->key key.get)))
+       (serialized (secp256k1-point-to-bytes pubkey t)))
+    (hash160 serialized))
+  ///
+
+  (more-returns
+   (id (equal (len id) 20) :name len-of-bip32-key-identifier)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-key-fingerprint ((key bip32-ext-key-p))
+  :returns (fp byte-listp)
+  :short "Fingerprint of an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The section `Key identifiers' of [BIP32]
+     says that the first 32 bits (i.e. 4 bytes) of a key identifier
+     are the key fingerprint."))
+  (take 4 (bip32-key-identifier key))
+  ///
+
+  (more-returns
+   (fp (equal (len fp) 4) :name len-of-bip32-key-fingerprint)))
