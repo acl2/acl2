@@ -185,7 +185,7 @@
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
  <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
- placeholders for RIPEMD-160, HMAC-SHA-512, and the secp256k1 elliptic
+ placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
  curve.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 key

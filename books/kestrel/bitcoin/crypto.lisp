@@ -605,3 +605,22 @@
            (cond ((secp256k1-infinityp point) 1)
                  (compressp 33)
                  (t 65)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hash160 ((bytes byte-listp))
+  :guard (< (len bytes) (expt 2 61))
+  :returns (hash byte-listp)
+  :short "Hash160 function."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is SHA-256 followed by RIPEMD-160.
+     It is sometimes called `Hash160',
+     e.g. see the @('OP_HASH160') opcode,
+     or see the documentation of BIP 32."))
+  (ripemd-160 (sha-256 bytes))
+  ///
+
+  (more-returns
+   (hash (equal (len hash) 20) :name len-of-hash160)))
