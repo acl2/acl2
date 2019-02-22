@@ -827,19 +827,27 @@
      the serialized keys start with
      @('xprv'), @('xpub'), @('tprv'), and @('tpub')."))
 
-  (defval *bip32-version-priv-main* #x0488ADE4
+  (defval *bip32-version-priv-main*
+    :parents (bip32-serialization-versions)
+    #x0488ADE4
     ///
     (assert-event (ubyte32p *bip32-version-priv-main*)))
 
-  (defval *bip32-version-pub-main* #x0488B21E
+  (defval *bip32-version-pub-main*
+    :parents (bip32-serialization-versions)
+    #x0488B21E
     ///
     (assert-event (ubyte32p *bip32-version-pub-main*)))
 
-  (defval *bip32-version-priv-test* #x04358394
+  (defval *bip32-version-priv-test*
+    :parents (bip32-serialization-versions)
+    #x04358394
     ///
     (assert-event (ubyte32p *bip32-version-priv-test*)))
 
-  (defval *bip32-version-pub-test* #x043587CF
+  (defval *bip32-version-pub-test*
+    :parents (bip32-serialization-versions)
+    #x043587CF
     ///
     (assert-event (ubyte32p *bip32-version-pub-test*))))
 
