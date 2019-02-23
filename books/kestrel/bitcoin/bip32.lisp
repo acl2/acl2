@@ -16,7 +16,16 @@
 
 (include-book "crypto")
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/prefixp" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule ubyte32-list-fix-of-take ; TODO: move to library
+  (implies (<= (nfix n) (len x))
+           (equal (ubyte32-list-fix (take n x))
+                  (take n (ubyte32-list-fix x))))
+  :enable ubyte32-list-fix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -659,20 +668,19 @@
   (forall (path)
           (b* ((tree (bip32-index-tree-fix tree)))
             (implies (set::in path tree)
-                     (< (+ (byte-fix init) (len path))
-                        256))))
+                     (bytep (+ (byte-fix init) (len path))))))
   ///
 
   (fty::deffixequiv bip32-valid-depths-p
-    :args ((init natp) (tree bip32-index-treep))
+    :args ((init bytep) (tree bip32-index-treep))
     :hints (("Goal"
              :in-theory (disable bip32-valid-depths-p-necc)
              :use (;; for INIT:
                    (:instance bip32-valid-depths-p-necc
-                    (init (nfix init))
+                    (init (byte-fix init))
                     (path (bip32-valid-depths-p-witness init tree)))
                    (:instance bip32-valid-depths-p-necc
-                    (path (bip32-valid-depths-p-witness (nfix init) tree)))
+                    (path (bip32-valid-depths-p-witness (byte-fix init) tree)))
                    ;; for TREE:
                    (:instance bip32-valid-depths-p-necc
                     (tree (bip32-index-tree-fix tree))
@@ -758,6 +766,68 @@
                          (equal root-parent (list 0 0 0 0))))
   :layout :list
   :pred bip32-key-treep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-path-in-tree-p ((path ubyte32-listp) (tree bip32-key-treep))
+  :returns (yes/no booleanp)
+  :short "Check if a path designates a key in a key tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The empty path always designates a key: the one at the root.")
+   (xdoc::p
+    "If a path designates a key, every prefix of it (taken with @(tsee take))
+     also designates an (ancestor) key.")
+   (xdoc::p
+    "If a path designates a key,
+     that key can be successfully derived from the root.")
+   (xdoc::p
+    "If a path designates a key,
+     the total depth of that key (including the root's depth)
+     does not exceed 255."))
+  (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path)))
+    (set::in path (bip32-key-tree->index-tree tree)))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-path-in-tree-p-of-nil
+    (implies (bip32-key-treep tree)
+             (bip32-path-in-tree-p nil tree))
+    :enable (bip32-key-treep
+             bip32-index-treep
+             bip32-path-set-closedp
+             bip32-key-tree->index-tree))
+
+  (defrule bip32-path-in-tree-p-of-take
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree)
+                  (<= (nfix n) (len path)))
+             (bip32-path-in-tree-p (take n path) tree))
+    :use (:instance bip32-path-set-closedp-necc
+          (paths (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path))
+          (prefix (take n (ubyte32-list-fix path)))))
+
+  (defrule valid-key-when-bip32-path-in-tree-p
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree))
+             (not (mv-nth 0 (bip32-ckd* (bip32-key-tree->root-key tree) path))))
+    :use (:instance bip32-valid-keys-p-necc
+          (root (bip32-key-tree->root-key tree))
+          (tree (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path))))
+
+  (defrule valid-depth-when-bip32-path-in-tree-p
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree))
+             (bytep (+ (bip32-key-tree->root-depth tree)
+                       (len path))))
+    :use (:instance bip32-valid-depths-p-necc
+          (init (bip32-key-tree->root-depth tree))
+          (tree (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -997,6 +1067,15 @@
              (booleanp
               (mv-nth 4 (bip32-serialized-key-witness bytes)))))
 
+  (defrule depth-index-parent-constraint-of-bip32-serialized-key-witness
+    (implies (and (bip32-serialized-key-p bytes)
+                  (equal (mv-nth 1 (bip32-serialized-key-witness bytes))
+                         0))
+             (and (equal (mv-nth 2 (bip32-serialized-key-witness bytes))
+                         0)
+                  (equal (mv-nth 3 (bip32-serialized-key-witness bytes))
+                         (list 0 0 0 0)))))
+
   (defrule bip32-serialize-key-of-bip32-serialized-key-witness
     (implies (bip32-serialized-key-p bytes)
              (b* (((mv key depth index parent mainnet)
@@ -1059,6 +1138,37 @@
   :hooks (:fix)
   ///
 
+  (defrule not-mv-nth-0-of-bip32-deserialize-key-when-bip32-serialized-key-p
+    (implies (bip32-serialized-key-p bytes)
+             (not (mv-nth 0 (bip32-deserialize-key bytes)))))
+
+  (defrule bip32-ext-key-p-of-mv-nth-1-of-bip32-deserialize-key
+    (bip32-ext-key-p (mv-nth 1 (bip32-deserialize-key bytes))))
+
+  (defrule bytep-of-mv-nth-2-of-bip32-deserialize-key
+    (bytep (mv-nth 2 (bip32-deserialize-key bytes))))
+
+  (defrule ubyte32p-of-mv-nth-3-of-bip32-deserialize-key
+    (ubyte32p (mv-nth 3 (bip32-deserialize-key bytes))))
+
+  (defrule byte-listp-of-mv-nth-4-of-bip32-deserialize-key
+    (byte-listp (mv-nth 4 (bip32-deserialize-key bytes))))
+
+  (defrule len-of-mv-nth-4-of-bip32-serialize-key-witness
+    (equal (len (mv-nth 4 (bip32-deserialize-key bytes)))
+           4))
+
+  (defrule booleanp-of-mv-nth-5-of-bip32-deserialize-key
+    (booleanp (mv-nth 5 (bip32-deserialize-key bytes))))
+
+  (defrule depth-index-parent-constraint-of-bip32-deserialize-key
+    (implies (equal (mv-nth 2 (bip32-deserialize-key bytes))
+                    0)
+             (and (equal (mv-nth 3 (bip32-deserialize-key bytes))
+                         0)
+                  (equal (mv-nth 4 (bip32-deserialize-key bytes))
+                         (list 0 0 0 0)))))
+
   (defrule bip32-serialize-key-of-bip32-deserialize-key
     (implies (bip32-serialized-key-p bytes)
              (b* (((mv error? key depth index parent mainnet)
@@ -1066,3 +1176,97 @@
                (and (not error?)
                     (equal (bip32-serialize-key key depth index parent mainnet)
                            (byte-list-fix bytes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-export-key
+  ((tree bip32-key-treep) (path ubyte32-listp) (mainnet booleanp))
+  :guard (bip32-path-in-tree-p path tree)
+  :returns (exported byte-listp)
+  :short "Export a key from a tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The key to export is designated by a path,
+     which must be a valid path in the tree.")
+   (xdoc::p
+    "The boolean argument specified whether the key is
+     for the mainnet or for the testnet.")
+   (xdoc::p
+    "We first derive the key at the path from the root, via @(tsee bip32-ckd*).
+     Since the key tree satisfies @(tsee bip32-valid-keys-p)
+     and the path is in the tree,
+     this never returns an error, as proved via @(tsee mbt) below.")
+   (xdoc::p
+    "We calculate the total depth of the key
+     by adding the length of the path to the root's depth.
+     Since the key tree satisfies @(tsee bip32-valid-depths-p)
+     and the path is in the tree,
+     this never exceeds 255 (i.e. always fits in a byte),
+     as proved via @(tsee mbt) below.")
+   (xdoc::p
+    "The index of the key is
+     the last element of the path if the path is not empty.
+     Otherwise, it is the index of the root.")
+   (xdoc::p
+    "The parent key's fingerprint is
+     calculated from the parent key if the path is not empty.
+     The path of the parent is obtained
+     by removing the last element from the path of the key:
+     since this is also a path in the tree,
+     the call of @(tsee bip32-ckd*) on the parent's path
+     does not return an error either, as proved via @(tsee mbt) below.
+     Otherwise, if the path is empty,
+     we obtain the parent's fingerprint from the root of the tree.")
+   (xdoc::p
+    "With all the above pieces of data in hand,
+     we serialize the key, completing the export."))
+  (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path))
+       ((bip32-key-tree tree) tree)
+       ((mv error? key) (bip32-ckd* tree.root-key path))
+       ((unless (mbt (not error?))) nil)
+       (depth (+ tree.root-depth (len path)))
+       ((unless (mbt (bytep depth))) nil)
+       (index (if (consp path)
+                  (car (last path))
+                tree.root-index))
+       (parent (if (consp path)
+                   (b* ((parent-path (butlast path 1))
+                        ((mv error? parent-key)
+                         (bip32-ckd* tree.root-key parent-path))
+                        ((unless (mbt (not error?))) nil))
+                     (bip32-key-fingerprint parent-key))
+                 tree.root-parent)))
+    (bip32-serialize-key key depth index parent mainnet))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-import-key ((bytes byte-listp))
+  :returns (mv (error? booleanp)
+               (tree bip32-key-treep)
+               (mainnet booleanp))
+  :short "Import a key into a tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "We deserialize the key into its components,
+     which we use to construct a singleton key tree
+     that contains just that key.")
+   (xdoc::p
+    "The boolean flag that distinguishes mainnet from testnet,
+     returned by serialization,
+     is not used to construct the tree.
+     We return this flag as an additional result.")
+   (xdoc::p
+    "If deserialization fails,
+     the first result is @('t'),
+     which signals an error.
+     In this case, the second and third results are irrelevant."))
+  (b* (((mv error? key depth index parent mainnet)
+        (bip32-deserialize-key bytes))
+       (tree (bip32-key-tree key depth index parent '(nil))))
+    (mv error? tree mainnet))
+  :no-function t
+  :hooks (:fix))

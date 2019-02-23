@@ -189,7 +189,8 @@
  curve.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 key
- derivation, key trees, and key serialization/deserialization.</p>
+ derivation, key trees, key serialization/deserialization, and key
+ export/import.</p>
 
  <h4>Bytes</h4>
 
