@@ -32,6 +32,7 @@
                             nat=>bendian
                             nat=>bendian*
                             prefixp
+                            string=>nats
                             trim-bendian*
                             ubyte32
                             ubyte32-fix

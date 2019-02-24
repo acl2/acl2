@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/defset" :dir :system)
 (include-book "kestrel/utilities/fixbytes/ubyte32-list" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (include-book "crypto")
 
@@ -1268,5 +1269,82 @@
         (bip32-deserialize-key bytes))
        (tree (bip32-key-tree key depth index parent '(nil))))
     (mv error? tree mainnet))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-master-key ((seed byte-listp))
+  :guard (and (<= 16 (len seed))
+              (<= (len seed) 64))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-priv-key-p))
+  :short "Generate a master key from a seed."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The exact generation of the seed is not specified in [BIP32],
+     so it is an input to this function.")
+   (xdoc::p
+    "[BIP32] constrains the length of the seed in bits,
+     namely to be between 128 and 512 bits.
+     In principle, the seed could consist of a number of bits
+     that is not a multiple of 8,
+     but this seems unlikely in practice:
+     that is, the seed will likey consist of a number of whole bytes.
+     The number of whole bytes must be therefore between 16 and 64.")
+   (xdoc::p
+    "The key for HMAC-SHA-512 is shown as the string
+     @('\"Bitcoin seed\"') in [BIP32].
+     It seems reasonable to regard that as the list of bytes
+     consisting of the ASCII codes of the characters in the string,
+     in the order in which they appear in the string.")
+   (xdoc::p
+    "If the calculated private key is invalid as specified in [BIP32],
+     we return an error flag as the first result;
+     in this case, the second result (the key) is irrelevant).
+     Otherwise, the first result is @('nil'), i.e. no error."))
+  (b* ((hmac-key (acl2::string=>nats "Bitcoin seed"))
+       (hmac-data seed)
+       (big-i (hmac-sha-512 hmac-key hmac-data))
+       (big-i-l (take 32 big-i))
+       (big-i-r (nthcdr 32 big-i))
+       (parsed-big-i-l (bendian=>nat 256 big-i-l))
+       (n (secp256k1-order))
+       ((when (or (= parsed-big-i-l 0)
+                  (>= parsed-big-i-l n)))
+        (b* ((irrelevant-ext-key (bip32-ext-priv-key 1 big-i-r)))
+          (mv t irrelevant-ext-key)))
+       (ext-key (bip32-ext-priv-key parsed-big-i-l big-i-r)))
+    (mv nil ext-key))
+  :no-function t
+  :prepwork ((local (include-book "std/lists/nthcdr" :dir :system)))
+  :guard-hints (("Goal"
+                 :in-theory (enable secp256k1-priv-key-p
+                                    bip32-chain-code-p
+                                    dab-digit-listp-of-256-rewrite-byte-listp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-master-tree ((seed byte-listp))
+  :guard (and (<= 16 (len seed))
+              (<= (len seed) 64))
+  :returns (mv (error? booleanp)
+               (tree bip32-key-treep))
+  :short "Generate a key tree with (just) a master key from a seed."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This lifts @(tsee bip32-master-key) from a single key
+     to a singleton tree containing the key at the root,
+     as a master key."))
+  (b* (((mv error? key) (bip32-master-key seed))
+       (tree (bip32-key-tree (bip32-ext-key-priv key)
+                             0
+                             0
+                             (list 0 0 0 0)
+                             '(nil))))
+    (mv error? tree))
   :no-function t
   :hooks (:fix))
