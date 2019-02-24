@@ -22,14 +22,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule ubyte32-list-fix-of-take ; TODO: move to library
-  (implies (<= (nfix n) (len x))
-           (equal (ubyte32-list-fix (take n x))
-                  (take n (ubyte32-list-fix x))))
-  :enable ubyte32-list-fix)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ bip32
   :parents (bitcoin)
   :short "Bitcoin Improvement Proposal (BIP) 32."
@@ -69,6 +61,28 @@
       with the compression flag set.")
     (xdoc::li
      "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256.")))
+  :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bip32-library-extensions
+  :parents (bip32)
+  :short "Library extensions for BIP 32."
+  :long
+  (xdoc::topp
+   "These will be moved to the appropriate libraries.")
+
+  (defrule ubyte32-list-fix-of-take
+    (implies (<= (nfix n) (len x))
+             (equal (ubyte32-list-fix (take n x))
+                    (take n (ubyte32-list-fix x))))
+    :enable ubyte32-list-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-extended-keys
+  :parents (bip32)
+  :short "Extended keys."
   :order-subtopics t
   :default-parent t)
 
@@ -168,6 +182,14 @@
   (defrule len-of-bip32-ext-pub-key->chain-code
     (equal (len (bip32-ext-pub-key->chain-code key))
            32)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-key-derivation
+  :parents (bip32)
+  :short "Key derivation functions."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,6 +382,14 @@
   (bip32-ckd-pub (bip32-n parent) i)
   :no-function t
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-key-trees
+  :parents (bip32)
+  :short "Key trees."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -832,6 +862,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ bip32-key-serialization
+  :parents (bip32)
+  :short "Key serialization."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define bip32-key-identifier ((key bip32-ext-key-p))
   :returns (id byte-listp)
   :short "Identifier of an extended key."
@@ -1271,6 +1309,14 @@
     (mv error? tree mainnet))
   :no-function t
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-master-key-generation
+  :parents (bip32)
+  :short "Master key generation."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
