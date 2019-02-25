@@ -27,7 +27,7 @@
 
 ; Apply function to elements of list.
 
-(defun2 map[?f] (?f) (l)
+(defun2 map[?f] (l)
   (declare (xargs :guard t))
   (cond ((atom l) nil)
         (t (cons (?f (car l))
@@ -69,7 +69,7 @@
 
 ; Semigroup with operation ?OP.
 
-(defun-sk2 semigroup[?op] (?op) ()
+(defun-sk2 semigroup[?op] ()
   (forall (x y z)
           (equal (?op (?op x y) z)
                  (?op x (?op y z)))))
@@ -78,7 +78,7 @@
 
 ; Identity ID for operation ?OP.
 
-(defun-sk2 identity[?op] (?op) (id)
+(defun-sk2 identity[?op] (id)
   (forall x (and (equal (?op id x) x)
                  (equal (?op x id) x))))
 
@@ -86,14 +86,14 @@
 
 ; Monoid with operation ?OP and identity ID.
 
-(defun2 monoid[?op] (?op) (id)
+(defun2 monoid[?op] (id)
   (declare (xargs :guard t))
   (and (semigroup[?op])
        (identity[?op] id)))
 
 ; Inverse ?INV for identity ID of operation ?OP.
 
-(defun-sk2 inverse[?op][?inv] (?op ?inv) (id)
+(defun-sk2 inverse[?op][?inv] (id)
   (forall x (and (equal (?op x (?inv x)) id)
                  (equal (?op (?inv x) x) id))))
 
@@ -101,7 +101,7 @@
 
 ; Group with operation ?OP, inverse ?INV, and identity ID.
 
-(defun2 group[?op][?inv] (?op ?inv) (id)
+(defun2 group[?op][?inv] (id)
   (declare (xargs :guard t))
   (and (monoid[?op] id)
        (inverse[?op][?inv] id)))
