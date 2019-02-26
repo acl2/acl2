@@ -184,11 +184,13 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
- <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Add
- placeholders for HMAC-SHA-512 and the secp256k1 elliptic curve.</p>
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
+ placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
+ curve.</p>
 
- <p>Added a formalization BIP (Bitcoin Improvement Proposal) 32 key
- derivation.</p>
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 key
+ derivation, key trees, key serialization/deserialization, key export/import,
+ and master key generation.</p>
 
  <h4>Bytes</h4>
 
@@ -299,6 +301,13 @@
  <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
  required in the verification of an Arm FPU currently under development.  This
  in turn required some minor modifications of @('projects/arm/*/').</p>
+
+ <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
+
+ <p>The @(tsee soft::defun2), @(tsee soft::defchoose2), @(tsee
+ soft::defun-sk2), and @(tsee soft::defun-inst) macros no longer include an
+ explicit list of function parameters.  The function is implicitly
+ parameterized over the function variables that it depends on.</p>
 
  <h4>@(csee std/io)</h4>
 

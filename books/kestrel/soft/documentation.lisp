@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) -- Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,7 +30,7 @@
    (xdoc::p
     "In SOFT,
      second-order functions are mimicked
-     by first-order functions that reference
+     by first-order functions that depend on
      explicitly designated uninterpreted functions
      that mimic function variables.
      First-order theorems over these second-order functions
@@ -115,8 +115,7 @@
      @(tsee defchoose2), and
      @(tsee defun-sk2)
      are wrappers of existing events
-     that explicate function variable dependencies
-     and record additional information.
+     that record function variables and dependencies on them.
      They set the stage for @(tsee defun-inst) and @(tsee defthm-inst).")
 
    (xdoc::p
@@ -171,12 +170,10 @@
      that <see topic='@(url function-variable-dependency)'>depends</see> on
      one or more <see topic='@(url function-variables)'>function variables</see>
      and that is introduced via
-     @(tsee defun2), @(tsee defchoose2), or @(tsee defun-sk2).
-     These macros specify the function parameters of the second-order function,
-     i.e. the function variables that the second-order function depends on.")
+     @(tsee defun2), @(tsee defchoose2), or @(tsee defun-sk2).")
 
    (xdoc::p
-    "The function variables of the second-order function
+    "The function variables that the second-order function depends on
      may be replaced by functions of matching arities,
      obtaining a new function that is an
      <see topic='@(url second-order-function-instances)'>instance</see>
@@ -227,7 +224,7 @@
    (xdoc::p
     "An instance of a second-order function is an ACL2 function
      introduced via @(tsee defun-inst),
-     which replaces function variables in a specified second-order function
+     which replaces function variables that the second-order function depends on
      with functions with matching arities.
      This macro specifies the replacement as an
      <see topic='@(url function-variable-instantiation)'>instantiation</see>,
@@ -261,7 +258,7 @@
    (xdoc::p
     "An instance of a second-order theorem is an ACL2 theorem
      introduced via @(tsee defthm-inst),
-     which replaces function variables in a specified second-order theorem
+     which replaces function variables that the second-order theorem depends on
      with functions of matching arities.
      This macro specifies the replacement as an
      <see topic='@(url function-variable-instantiation)'>instantiation</see>,
@@ -280,7 +277,7 @@
 
   :parents (soft-notions)
 
-  :short "Notion of dependency of terms on function variables."
+  :short "Notion of dependency on function variables."
 
   :long
 
@@ -289,22 +286,57 @@
    (xdoc::p
     "A <see topic='@(url acl2::term)'>term</see> @('term') depends on
      a <see topic='@(url function-variables)'>function variable</see> @('fvar')
-     iff
-     @('fvar') occurs in @('term')
-     or @('fvar') is a function parameter
-     of a <see topic='@(url second-order-functions)'>second-order function</see>
-     that occurs in @('term').")
+     iff @('fvar') occurs in @('term')
+     or @('fvar') is one of the function variables that
+     a <see topic='@(url second-order-functions)'>second-order
+     function</see> that occurs in @('term') depends on..")
 
-   (xdoc::h4 "Example")
+   (xdoc::p
+    "A <see topic='@(url second-order-functions)'>second-order function</see>
+     @('sofun') depends on a function variable @('fvar')
+     iff its body, guard, or (if present) measure depends on @('fvar').")
+
+   (xdoc::p
+    "A <see topic='@(url second-order-theorems)'>second-order theorem</see>
+     @('sothm') depends on a function variable @('fvar')
+     iff its formula depends on @('fvar').")
+
+   (xdoc::h3 "Examples")
+
+   (xdoc::h4 "Example 1")
 
    (xdoc::p
     "Given")
    (xdoc::code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
-    "(defun2 h[?f] (?f) (x) ...)")
+    "(defun2 h[?f] (x) (?f (cons x 3)))")
    (xdoc::p
-    "the term @('(h[?f] (?g a))') depends exactly on @('?g') and @('?f').")))
+    "the term @('(h[?f] (?g a))') depends exactly on @('?g') and @('?f').")
+
+   (xdoc::h4 "Example 2")
+
+   (xdoc::p
+    "Given")
+   (xdoc::code
+    "(defunvar ?f (*) => *)"
+    "(defunvar ?g (*) => *)"
+    "(defun2 h[?f] (x) (?f (cons x 3)))"
+    "(defun2 k[?f][?g] (a) (h[?f] (?g a)))")
+   (xdoc::p
+    "the function @('k[?f][?g]') depends exactly on @('?g') and @('?f').")
+
+   (xdoc::h4 "Example 3")
+
+   (xdoc::p
+    "Given")
+   (xdoc::code
+    "(defunvar ?f (*) => *)"
+    "(defunvar ?g (*) => *)"
+    "(defun2 h[?f] (x) (?f (cons x 3)))"
+    "(defthm th (h[?f] (?g a)))")
+   (xdoc::p
+    "the theorem @('th') depends exactly on @('?g') and @('?f').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,23 +372,25 @@
      to a <see topic='@(url acl2::term)'>term</see> @('term')
      by replacing each @('fvarI') with @('funI').
      This involves not only explicit occurrences of @('fvarI'),
-     but also implicit occurrences as function parameters
-     of second-order functions occurring in @('term').
+     but also implicit occurrences as function variables upon which
+     second-order functions occurring in @('term') depend on.
      For the latter kind of occurrences,
      suitable
      <see topic='@(url second-order-function-instances)'>instances</see>
      of such second-order functions must exist;
      if they do not exist, the application of the instantiation fails.")
 
-   (xdoc::h4 "Example")
+   (xdoc::h3 "Examples")
+
+   (xdoc::h4 "Example 1")
 
    (xdoc::p
     "Given")
    (xdoc::code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
-    "(defun2 h[?f] (?f) (x) ...)"
-    "(defun2 k[?f] (?f) (x) ...)"
+    "(defun2 h[?f] (x) ...)"
+    "(defun2 k[?f] (x) ...)"
     "(defun-inst h[consp] (h[?f] (?f . consp)))")
    (xdoc::p
     "the alist @('((?f . consp) (?g . k[?f]))') is an instantiation,
@@ -455,7 +489,7 @@
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defun2 sofun (fvar1 ... fvarN) (var1 ... varM)"
+    "(defun2 sofun (var1 ... varM)"
     "  doc-string"
     "  declaration ... declaration"
     "  body"
@@ -471,20 +505,9 @@
       It must be a valid function name that is not already in use."))
 
    (xdoc::desc
-    "@('(fvar1 ... fvarN)')"
-    (xdoc::p
-     "A non-empty list without duplicates
-      of <see topic='@(url function-variables)'>function variables</see>,
-      whose order is immaterial.
-      These are the function parameters of @('sofun').
-      They must be all and only the function variables that
-      the body, measure (if recursive), and guard of @('sofun')
-      <see topic='@(url function-variable-dependency)'>depend</see> on."))
-
-   (xdoc::desc
     "@('(var1 ... varM)')"
     (xdoc::p
-     "A list of individual parameters, as in @(tsee defun)."))
+     "A list of parameters, as in @(tsee defun)."))
 
    (xdoc::desc
     "@('doc-string')"
@@ -510,7 +533,9 @@
       @(':all') to print all the output;
       @('nil') to print only any error output;
       @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defun)."))
+      the (possibly error) output from the generated @(tsee defun).
+      In all cases, the function variables that the function depends on
+      are printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -521,8 +546,8 @@
     "  body)")
 
    (xdoc::p
-    "@('sofun') is introduced as a first-order function using @(tsee defun),
-     removing the list of function parameters.")
+    "@('sofun') is introduced as a first-order function using @(tsee defun).
+     The function variables that @('sofun') depends on are also recorded.")
 
    (xdoc::h3 "Examples")
 
@@ -531,7 +556,7 @@
    (xdoc::code
     ";; A non-recursive function that applies four times"
     ";; its function parameter to its individual parameter:"
-    "(defun2 quad[?f] (?f) (x)"
+    "(defun2 quad[?f] (x)"
     "  (?f (?f (?f (?f x)))))")
 
    (xdoc::h4 "Example 2")
@@ -539,7 +564,7 @@
    (xdoc::code
     ";; A recursive predicate that recognizes true lists"
     ";; whose elements satisfy the predicate parameter:"
-    "(defun2 all[?p] (?p) (l)"
+    "(defun2 all[?p] (l)"
     "  (cond ((atom l) (null l))"
     "        (t (and (?p (car l)) (all[?p] (cdr l))))))")
 
@@ -548,7 +573,7 @@
    (xdoc::code
     ";; A recursive function that homomorphically lifts ?F"
     ";; to operate on true lists whose elements satisfy ?P:"
-    "(defun2 map[?f][?p] (?f ?p) (l)"
+    "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
     "        (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))"
@@ -558,7 +583,7 @@
 
    (xdoc::code
     ";; A generic folding function on values as binary trees:"
-    "(defun2 fold[?f][?g] (?f ?g) (bt)"
+    "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
     "        (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))")
 
@@ -566,13 +591,11 @@
 
    (xdoc::p
     "Ending second-order function names
-     with the function parameters enclosed in square brackets
+     with the function variables it depends on (in any order),
+     enclosed in square brackets
      (as in the examples above)
-     conveys the dependency on the function parameters
-     and provides a visual cue for the implicit presence
-     of the function parameters
-     when the second-order function is applied
-     (see the recursive calls in the examples above).
+     conveys the dependency on the function variables
+     and provides a visual cue for their implicit presence.
      However, SOFT does not enforce this naming convention.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -591,7 +614,7 @@
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defchoose2 sofun (bvar1 ... bvarP) (fvar1 ... fvarN) (var1 ... varM)"
+    "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
     "  body"
     "  :strengthen ..."
     "  :print ...)")
@@ -612,21 +635,9 @@
       as in @(tsee defchoose)."))
 
    (xdoc::desc
-    "@('(fvar1 ... fvarN)')"
-    (xdoc::p
-     "A non-empty list without duplicates
-      of <see topic='@(url function-variables)'>function variables</see>,
-      whose order is immaterial.
-      These are the function parameters of @('sofun').
-      They must be all and only the function variables
-      that the body of @('sofun')
-      <see topic='@(url function-variable-dependency)'>depends</see> on."))
-
-   (xdoc::desc
     "@('(var1 ... varM)')"
     (xdoc::p
-     "A list of individual parameters of @('sofun'),
-      as in @(tsee defchoose)."))
+     "A list of parameters, as in @(tsee defchoose)."))
 
    (xdoc::desc
     "@('body')"
@@ -645,7 +656,9 @@
       @(':all') to print all the output;
       @('nil') to print only any error output;
       @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defchoose)."))
+      the (possibly error) output from the generated @(tsee defchoose).
+      In all cases, the function variables that the function depends on
+      are printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -655,8 +668,8 @@
     "  :strengthen ...)")
 
    (xdoc::p
-    "@('sofun') is introduced as a first-order function using @(tsee defchoose),
-     removing the list of function parameters.")
+    "@('sofun') is introduced as a first-order function using @(tsee defchoose).
+     The function variables that @('sofun') depends on are also recorded.")
 
    (xdoc::h3 "Examples")
 
@@ -664,7 +677,7 @@
 
    (xdoc::code
     ";; A function constrained to return a fixed point of ?F, if any exists:"
-    "(defchoose2 fixpoint[?f] x (?f) ()"
+    "(defchoose2 fixpoint[?f] x ()"
     "  (equal (?f x) x))")
 
    (xdoc::h3 "Naming Conventions")
@@ -689,7 +702,7 @@
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defun-sk sofun (fvar1 ... fvarN) (var1 ... varM)"
+    "(defun-sk sofun (var1 ... varM)"
     "  body"
     "  :rewrite ..."
     "  :quant-ok ..."
@@ -710,20 +723,9 @@
       It must be a valid function name that is not already in use."))
 
    (xdoc::desc
-    "@('(fvar1 ... fvarN)')"
-    (xdoc::p
-     "A non-empty list without duplicates
-      of <see topic='@(url function-variables)'>function variables</see>,
-      whose order is immaterial.
-      These are the function parameters of @('sofun').
-      They must be all and only the function variables that
-      the body and guard of @('sofun')
-      <see topic='@(url function-variable-dependency)'>depend</see> on."))
-
-   (xdoc::desc
     "@('(var1 ... varM)')"
     (xdoc::p
-     "A list of individual parameters of @('sofun'), as in @(tsee defun-sk)."))
+     "A list of parameters, as in @(tsee defun-sk)."))
 
    (xdoc::desc
     "@('body')"
@@ -785,7 +787,9 @@
       @(':all') to print all the output;
       @('nil') to print only any error output;
       @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defun-sk)."))
+      the (possibly error) output from the generated @(tsee defun-sk).
+      In all cases, the function variables that the function depends on
+      are printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -800,8 +804,8 @@
     "  :strengthen ...)")
 
    (xdoc::p
-    "@('sofun') is introduced as a first-order function using @(tsee defun-sk),
-     removing the list of function parameters.")
+    "@('sofun') is introduced as a first-order function using @(tsee defun-sk).
+     The function variables that @('sofun') depends on are also recorded.")
 
    (xdoc::h3 "Examples")
 
@@ -809,7 +813,7 @@
 
    (xdoc::code
     ";; A predicate that recognizes injective functions:"
-    "(defun-sk2 injective[?f] (?f) ()"
+    "(defun-sk2 injective[?f] ()"
     " (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))")
 
    (xdoc::h3 "Naming Conventions")
@@ -833,8 +837,8 @@
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defun-inst fun (fvar1 ... fvarN)"
-    "  (sofun (ffvar1 . fun1) ... (ffvarM . funM))"
+    "(defun-inst fun"
+    "  (sofun (fvar1 . fun1) ... (fvarN . funN))"
     "  :verify-guards ..."
     "  :skolem-name ..."
     "  :thm-name ..."
@@ -858,30 +862,12 @@
      "Name of the second-order function to instantiate."))
 
    (xdoc::desc
-    "@('(fvar1 ... fvarN)')"
-    (xdoc::p
-     "An optional non-empty list without duplicates
-      of <see topic='@(url function-variables)'>function variables</see>,
-      whose order is immaterial.
-      These are the function parameters of the instance @('fun') of @('sofun').
-      They must be all and only the function variables that
-      the body, measure (if recursive), and guard (if present) of @('fun')
-      <see topic='@(url function-variable-dependency)'>depend</see> on.
-      (The guard is absent iff
-      @('sofun') was introduced via @(tsee defchoose2).)")
-    (xdoc::p
-     "If the list of function parameters is present, @('fun') is second-order;
-      otherwise, it is first-order.
-      The function parameters @('fvar1'), ..., @('fvarN') of @('fun')
-      are generally unrelated to the function parameters of @('sofun')."))
-
-   (xdoc::desc
-    "@('((ffvar1 . fun1) ... (ffvarM . funM))')"
+    "@('((fvar1 . fun1) ... (fvarN . funN))')"
     (xdoc::p
      "An
       <see topic='@(url function-variable-instantiation)'>instantiation</see>,
       which specifies how to generate @('fun') from @('sofun').
-      The function variables @('ffvar1'), ..., @('ffvarM')
+      The function variables @('fvar1'), ..., @('fvarN')
       must be function parameters of @('sofun')."))
 
    (xdoc::desc
@@ -965,7 +951,11 @@
       @(':all') to print all the output;
       @('nil') to print only any error output;
       @(':result') (the default) to print only
-      the generated function form and any error output."))
+      the generated function form and any error output.
+      In all cases, the function variables that the new function depends on
+      are printed;
+      if the new function is first-order,
+      its dependence on no function variables is also printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -976,11 +966,9 @@
 
     (xdoc::li*
      (xdoc::code
-      "(defun2 fun (fvar1 ... fvarN) ...)")
+      "(defun2 fun ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun2)
-       and @('fun') is second-order
-       (i.e. the list @('(fvar1 ... fvarN)') is present).
+      "if @('sofun') was introduced via @(tsee defun2).
        The body, measure (if recursive), and guard of @('fun')
        are obtained by
        <see topic='@(url function-variable-instantiation)'>applying
@@ -995,30 +983,9 @@
 
     (xdoc::li*
      (xdoc::code
-      "(defun fun ...)")
+      "(defchoose2 fun (bvar1 ... bvarP) ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun2)
-       and @('fun') is first-order
-       (i.e. the list @('(fvar1 ... fvarN)') is absent).
-       The body, measure (if recursive), and guard of @('fun')
-       are obtained by
-       <see topic='@(url function-variable-instantiation)'>applying
-       the instantiation</see>
-       to the body, measure (if recursive), and guard of @('sofun').
-       If @('fun') is recursive,
-       its termination proof uses
-       a <see topic='@(url acl2::functional-instantiation)'>functional
-       instance</see> of the
-       <see topic='@(url termination-theorem)'>termination theorem</see>
-       of @('sofun')."))
-
-    (xdoc::li*
-     (xdoc::code
-      "(defchoose2 fun (bvar1 ... bvarP) (fvar1 ... fvarN) ...)")
-     (xdoc::p
-      "if @('sofun') was introduced via @(tsee defchoose2)
-       and @('fun') is second-order
-       (i.e. the list @('(fvar1 ... fvarN)') is present).
+      "if @('sofun') was introduced via @(tsee defchoose2).
        The body of @('fun')
        is obtained by
        <see topic='@(url function-variable-instantiation)'>applying
@@ -1028,41 +995,9 @@
 
     (xdoc::li*
      (xdoc::code
-      "(defchoose fun (bvar1 ... bvarP) ...)")
+      "(defun-sk2 fun ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defchoose2)
-       and @('fun') is first-order
-       (i.e. the list @('(fvar1 ... fvarN)') is absent).
-       The body of @('fun')
-       is obtained by
-       <see topic='@(url function-variable-instantiation)'>applying
-       the instantiation</see>
-       to the body of @('sofun').
-       The @(':strengthen') value of @('fun') is the same as @('sofun')."))
-
-    (xdoc::li*
-     (xdoc::code
-      "(defun-sk2 fun (fvar1 ... fvarN) ...)")
-     (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun-sk2)
-       and @('fun') is second-order
-       (i.e. the list @('(fvar1 ... fvarN)') is present).
-       The body and guard of @('fun')
-       are obtained by
-       <see topic='@(url function-variable-instantiation)'>applying
-       the instantiation</see>
-       to the body and guard of @('sofun').
-       The guard of @('fun') is not verified.
-       The @(':strengthen') value of @('fun') is the same as @('sofun').
-       The @(':quant-ok') value of @('fun') is @('t')."))
-
-    (xdoc::li*
-     (xdoc::code
-      "(defun-sk fun ...)")
-     (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun-sk2)
-       and @('fun') is first-order
-       (i.e. the list @('(fvar1 ... fvarN)') is absent).
+      "if @('sofun') was introduced via @(tsee defun-sk2).
        The body and guard of @('fun')
        are obtained by
        <see topic='@(url function-variable-instantiation)'>applying
@@ -1078,7 +1013,7 @@
 
    (xdoc::code
     ";; Apply ?F four times to X:"
-    "(defun2 quad[?f] (?f) (x)"
+    "(defun2 quad[?f] (x)"
     "  (?f (?f (?f (?f x)))))"
     ""
     ";; Wrap a value into a singleton list:"
@@ -1092,7 +1027,7 @@
 
    (xdoc::code
     ";; Recognize true lists of values that satisfy ?P:"
-    "(defun2 all[?p] (?p) (l)"
+    "(defun2 all[?p] (l)"
     "  (cond ((atom l) (null l))"
     "        (t (and (?p (car l)) (all[?p] (cdr l))))))"
     ""
@@ -1107,7 +1042,7 @@
 
    (xdoc::code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
-    "(defun2 map[?f][?p] (?f ?p) (l)"
+    "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
     "        (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))"
@@ -1126,7 +1061,7 @@
 
    (xdoc::code
     ";; Folding function on binary trees:"
-    "(defun2 fold[?f][?g] (?f ?g) (bt)"
+    "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
     "        (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))"
     ""
@@ -1138,7 +1073,7 @@
 
    (xdoc::code
     ";; Return a fixed point of ?F, if any exists:"
-    "(defchoose2 fixpoint[?f] x (?f) ()"
+    "(defchoose2 fixpoint[?f] x ()"
     "  (equal (?f x) x))"
     ""
     ";; Double a value:"
@@ -1152,7 +1087,7 @@
 
    (xdoc::code
     ";; Recognize injective functions:"
-    "(defun-sk2 injective[?f] (?f) ()"
+    "(defun-sk2 injective[?f] ()"
     "  (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))"
     ""
     ";; Recognize functions whose four-fold application is injective:"
@@ -1197,7 +1132,8 @@
 
    (xdoc::p
     "This is a normal @(tsee defthm).
-     SOFT does not provide macros for introducing second-order theorems.")
+     SOFT does not provide macros for introducing second-order theorems,
+     at this time.")
 
    (xdoc::h3 "Inputs")
 
@@ -1248,7 +1184,7 @@
 
    (xdoc::code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
-    "(defun2 map[?f][?p] (?f ?p) (l)"
+    "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
     "        (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))"
@@ -1263,7 +1199,7 @@
 
    (xdoc::code
     ";; Recognize injective functions:"
-    "(defun-sk2 injective[?f] (?f) ()"
+    "(defun-sk2 injective[?f] ()"
     "  (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))"
     ""
     ";; The four-fold application of an injective function is injective:"
@@ -1275,7 +1211,7 @@
 
    (xdoc::code
     ";; Folding function on binary trees:"
-    "(defun2 fold[?f][?g] (?f ?g) (bt)"
+    "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
     "        (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))"
     ""
@@ -1283,14 +1219,14 @@
     "(defunvar ?io (* *) => *)"
     ""
     ";; Recognize functions ?F that satisfy the input/output relation on atoms:"
-    "(defun-sk2 atom-io[?f][?io] (?f ?io) ()"
+    "(defun-sk2 atom-io[?f][?io] ()"
     "  (forall x (implies (atom x) (?io x (?f x))))"
     "  :rewrite :direct)"
     ""
     ";; Recognize functions ?G that satisfy"
     ";; the input/output relation on CONSP pairs"
     ";; when the arguments are valid outputs for the CAR and CDR components:"
-    "(defun-sk2 consp-io[?g][?io] (?g ?io) ()"
+    "(defun-sk2 consp-io[?g][?io] ()"
     "  (forall (x y1 y2)"
     "          (implies (and (consp x) (?io (car x) y1) (?io (cdr x) y2))"
     "                   (?io x (?g y1 y2))))"
@@ -1306,7 +1242,8 @@
    (xdoc::h3 "Naming Conventions")
 
    (xdoc::p
-    "Including in the name of a second-order theorem, between square brackets,
+    "Including in the name of a second-order theorem,
+     between square brackets (in any order),
      the function variables that the theorem depends on,
      makes the dependency more explicit when referencing the theorem.
      This naming convention may arise naturally
@@ -1357,10 +1294,10 @@
     (xdoc::p
      "An
       <see topic='@(url function-variable-instantiation)'>instantiation</see>,
-     which specifies how to generate @('thm') from @('sothm').
-     @('sothm') must
-     <see topic='@(url function-variable-dependency)'>depend</see>
-     on at least the function variables @('fvar1'), ..., @('fvarN')."))
+      which specifies how to generate @('thm') from @('sothm').
+      @('sothm') must
+      <see topic='@(url function-variable-dependency)'>depend</see>
+      on at least the function variables @('fvar1'), ..., @('fvarN')."))
 
    (xdoc::desc
     "@(':rule-classes')"
@@ -1371,10 +1308,10 @@
     "@(':print ...')"
     (xdoc::p
      "An option to customize the screen output:
-     @(':all') to print all the output;
-     @('nil') to print only any error output;
-     @(':result') (the default) to print only
-     the generated theorem form and any error output."))
+      @(':all') to print all the output;
+      @('nil') to print only any error output;
+      @(':result') (the default) to print only
+      the generated theorem form and any error output."))
 
    (xdoc::h3 "Generated Events")
 
@@ -1402,7 +1339,7 @@
 
    (xdoc::code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
-    "(defun2 map[?f][?p] (?f ?p) (l)"
+    "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
     "  (cond ((endp l) nil)"
     "        (t (cons (?f (car l)) (map[?f][?p] (cdr l))))))"
@@ -1424,11 +1361,11 @@
 
    (xdoc::code
     ";; Apply ?F four times to X:"
-    "(defun2 quad[?f] (?f) (x)"
+    "(defun2 quad[?f] (x)"
     "  (?f (?f (?f (?f x)))))"
     ""
     ";; Recognize injective functions:"
-    "(defun-sk2 injective[?f] (?f) ()"
+    "(defun-sk2 injective[?f] ()"
     "  (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))"
     ""
     ";; Recognize functions whose four-fold application is injective:"
@@ -1483,7 +1420,24 @@
      e.g. @('sofun[?f_?g_?h]').
      This manual instead suggests
      to enclose each function variable in square brackets,
-     e.g. @('sofun[?f][?g][?h]').")))
+     e.g. @('sofun[?f][?g][?h]').")
+
+   (xdoc::h4 "Implicit Function Parameters")
+
+   (xdoc::p
+    "The @(tsee defun2),
+     @(tsee defchoose2),
+     @(tsee defun-sk2),
+     and @(tsee defun-inst)
+     macros no longer include an explicit list of function parameters.
+     The function is implicitly parameterized over
+     the function variables that it depends on.
+     This simplifies the implementation.
+     It also avoids the repetition of the function variables
+     when using the naming convention of including,
+     in the name of a second-order function,
+     the function variables that it depends on
+     (enclosed in square brackets).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -100,6 +100,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ripemd-160
+  :short "RIPEMD-160 placeholder."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "RIPEMD-160 is specified in
+     <a href=\"https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf\"
+     >the `RIPEMD-160: A Strengthened Version of RIPEMD' document</a>.")
+   (xdoc::p
+    "According to the aforementioned document,
+     the input of RIPEMD-256 is a sequence of any number of bits,
+     or any number of bytes.
+     This is formalized by the guard of the constrained function.")
+   (xdoc::p
+    "According to the aforementioned document,
+     the output of RIPEMD-160 is a sequence of exactly 160 bits, or 20 bytes.
+     We constrain our function to return a list of 20 bytes unconditionally.")
+   (xdoc::p
+    "We also constrain our function to fix its argument to a list of bytes.")
+   (xdoc::def "ripemd-160"))
+
+  (encapsulate
+
+    (((ripemd-160 *) => *
+      :formals (bytes)
+      :guard (byte-listp bytes)))
+
+    (local
+     (defun ripemd-160 (bytes)
+       (declare (ignore bytes))
+       (make-list 20 :initial-element 0)))
+
+    (defrule byte-listp-of-ripemd-160
+      (byte-listp (ripemd-160 bytes)))
+
+    (defrule len-of-ripemd-160
+      (equal (len (ripemd-160 bytes))
+             20))
+
+    (defrule ripemd-160-fixes-input
+      (equal (ripemd-160 (byte-list-fix bytes))
+             (ripemd-160 bytes))))
+
+  (defrule true-listp-of-ripemd-160
+    (true-listp (ripemd-160 bytes))
+    :rule-classes :type-prescription)
+
+  (defrule consp-of-ripemd-160
+    (consp (ripemd-160 bytes))
+    :rule-classes :type-prescription
+    :use len-of-ripemd-160
+    :disable len-of-ripemd-160)
+
+  (defcong byte-list-equiv equal (ripemd-160 bytes) 1
+    :hints (("Goal"
+             :use (ripemd-160-fixes-input
+                   (:instance ripemd-160-fixes-input (bytes bytes-equiv)))
+             :in-theory (disable ripemd-160-fixes-input)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection hmac-sha-512
   :short "HMAC-SHA-512 placeholder."
   :long
@@ -544,3 +605,22 @@
            (cond ((secp256k1-infinityp point) 1)
                  (compressp 33)
                  (t 65)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hash160 ((bytes byte-listp))
+  :guard (< (len bytes) (expt 2 61))
+  :returns (hash byte-listp)
+  :short "Hash160 function."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is SHA-256 followed by RIPEMD-160.
+     It is sometimes called `Hash160',
+     e.g. see the @('OP_HASH160') opcode,
+     or see the documentation of BIP 32."))
+  (ripemd-160 (sha-256 bytes))
+  ///
+
+  (more-returns
+   (hash (equal (len hash) 20) :name len-of-hash160)))
