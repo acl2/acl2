@@ -910,6 +910,17 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable logicman-extension-p))))))
 
+(define logicman-check-nvars ((n natp) &optional (logicman 'logicman))
+  (or (not (lbfr-mode-is :aignet))
+      (equal (bfr-nvars) (lnfix n)))
+  ///
+  (defthm bfr-varname-p-when-logicman-check-nvars
+    (implies (and (logicman-check-nvars n)
+                  (< (nfix v) (nfix n)))
+             (bfr-varname-p v))
+    :hints(("Goal" :in-theory (enable bfr-varname-p)))))
+             
+
 ;; (define bfr-varname-p (x)
 ;;   (natp x)
 ;;   ///

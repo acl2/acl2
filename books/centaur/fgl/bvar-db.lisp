@@ -33,6 +33,7 @@
 (include-book "std/stobjs/absstobjs" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "centaur/misc/prev-stobj-binding" :dir :system)
+(include-book "gl-object")
 ;; (include-book "std/lists/index-of" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/final-cdr" :dir :system))
@@ -44,41 +45,68 @@
 
 (local (in-theory (disable nth update-nth acl2::nth-when-zp)))
 
+(local (std::add-default-post-define-hook :fix))
+
+(fty::defmap term-bvars :key-type gl-object :val-type natp :true-listp t)
+(fty::defmap term-equivs :key-type gl-object :val-type nat-listp :true-listp t)
 
 ;; ----------- Implementation ----------------
 ;; The "terms" stored in the bvar-db$c are really g-apply objects
 (defstobj bvar-db$c
   (base-bvar$c :type (integer 0 *) :initially 0)
   (next-bvar$c :type (integer 0 *) :initially 0)
-  (bvar-terms$c :type (array t (0)) :resizable t)
-  (term-bvars$c :type t)
-  (term-equivs$c :type t))
+  (bvar-terms$c :type (array (satisfies gl-object-p) (0)) :resizable t)
+  (term-bvars$c :type (satisfies term-bvars-p))
+  (term-equivs$c :type (satisfies term-equivs-p)))
 
-(defun get-term->bvar$c (x bvar-db$c)
-  (declare (xargs :stobjs bvar-db$c))
-  (cdr (hons-get x (term-bvars$c bvar-db$c))))
+(defthm bvar-terms$cp-is-gl-objectlist-p
+  (equal (bvar-terms$cp x)
+         (gl-objectlist-p x)))
 
-(defun bvar-db-wfp$c (bvar-db$c)
+(defthm gl-object-p-nth-of-gl-objectlist-p
+  (implies (gl-objectlist-p x)
+           (gl-object-p (nth n x)))
+  :hints(("Goal" :in-theory (enable nth))))
+
+(define get-term->bvar$c ((x gl-object-p) bvar-db$c)
+  :returns (bvar acl2::maybe-natp :rule-classes ((:type-prescription :typed-term bvar)))
+  (cdr (hons-get (gl-object-fix x)
+                 (term-bvars-fix (term-bvars$c bvar-db$c))))
+  ///
+  (defthm get-term->bvar$c-of-update-term-equivs$c
+    (equal (get-term->bvar$c x (update-term-equivs$c q bvar-db$c))
+           (get-term->bvar$c x bvar-db$c))))
+
+(define bvar-db-wfp$c (bvar-db$c)
   (declare (xargs :stobjs bvar-db$c))
   (and (<= (lnfix (base-bvar$c bvar-db$c))
            (lnfix (next-bvar$c bvar-db$c)))
        (<= (- (lnfix (next-bvar$c bvar-db$c))
               (lnfix (base-bvar$c bvar-db$c)))
-           (bvar-terms$c-length bvar-db$c))))
+           (bvar-terms$c-length bvar-db$c)))
+  ///
+  (defthm bvar-db-wfp$c-of-update-term-equivs$c
+    (implies (bvar-db-wfp$c bvar-db$c)
+             (bvar-db-wfp$c (update-term-equivs$c q bvar-db$c)))))
 
-(defun get-bvar->term$c (n bvar-db$c)
-  (declare (type (integer 0 *) n)
-           (xargs :stobjs bvar-db$c
-                  :guard (and (<= (base-bvar$c bvar-db$c) n)
-                              (< n (next-bvar$c bvar-db$c))
-                              (bvar-db-wfp$c bvar-db$c))))
-  (bvar-terms$ci (- (lnfix n) (lnfix (base-bvar$c bvar-db$c))) bvar-db$c))
+(define get-bvar->term$c ((n natp :type (integer 0 *)) bvar-db$c)
+  :guard (and (<= (base-bvar$c bvar-db$c) n)
+              (< n (next-bvar$c bvar-db$c))
+              (bvar-db-wfp$c bvar-db$c))
+  :split-types t
+  :returns (term gl-object-p)
+  :guard-hints (("goal" :in-theory (enable bvar-db-wfp$c)))
+  (gl-object-fix (bvar-terms$ci (- (lnfix n) (lnfix (base-bvar$c bvar-db$c))) bvar-db$c))
+  ///
+  (defthm get-bvar->term$c-of-update-term-equivs$c
+    (equal (get-bvar->term$c x (update-term-equivs$c q bvar-db$c))
+           (get-bvar->term$c x bvar-db$c))))
 
-(defcong acl2::nat-equiv equal (get-bvar->term$c n bvar-db$c) 1)
 
-(defun add-term-bvar$c (x bvar-db$c)
-  (declare (xargs :stobjs bvar-db$c
-                  :guard (bvar-db-wfp$c bvar-db$c)))
+(define add-term-bvar$c ((x gl-object-p) bvar-db$c)
+  :guard (bvar-db-wfp$c bvar-db$c)
+  :guard-hints (("goal" :in-theory (enable bvar-db-wfp$c)))
+  :returns new-bvar-db$c
   (b* ((next (the (integer 0 *) (lnfix (next-bvar$c bvar-db$c))))
        (idx (the (integer 0 *) (lnfix (- next (lnfix (base-bvar$c bvar-db$c))))))
        (terms-len (the (integer 0 *) (bvar-terms$c-length bvar-db$c)))
@@ -87,44 +115,47 @@
                       (resize-bvar-terms$c
                        (max 16 (* 2 terms-len)) bvar-db$c)
                     bvar-db$c))
+       (x (hons-copy (gl-object-fix x)))
        (bvar-db$c (update-bvar-terms$ci idx x bvar-db$c))
        (bvar-db$c (update-next-bvar$c (+ 1 next) bvar-db$c)))
     (update-term-bvars$c
-     (hons-acons (hons-copy x) next (term-bvars$c bvar-db$c))
-     bvar-db$c)))
+     (hons-acons x next (term-bvars$c bvar-db$c))
+     bvar-db$c))
+  ///
 
-(defthm get-term->bvar$c-of-add-term-bvar$c
-  (equal (get-term->bvar$c x (add-term-bvar$c y bvar-db$c))
-         (if (equal x y)
-             (nfix (next-bvar$c bvar-db$c))
-           (get-term->bvar$c x bvar-db$c))))
+  (defthm get-term->bvar$c-of-add-term-bvar$c
+    (equal (get-term->bvar$c x (add-term-bvar$c y bvar-db$c))
+           (if (gl-object-equiv x y)
+               (nfix (next-bvar$c bvar-db$c))
+             (get-term->bvar$c x bvar-db$c)))
+    :hints(("Goal" :in-theory (enable get-term->bvar$c))))
 
-(defthm term-equivs$c-of-add-term-bvar$c
-  (equal (term-equivs$c (add-term-bvar$c y bvar-db$c))
-         (term-equivs$c bvar-db$c)))
+  (defthm term-equivs$c-of-add-term-bvar$c
+    (equal (term-equivs$c (add-term-bvar$c y bvar-db$c))
+           (term-equivs$c bvar-db$c)))
 
-(defthm get-bvar->term$c-of-add-term-bvar$c
-  (implies (and (<= (nfix (base-bvar$c bvar-db$c)) (nfix n))
-                (<= (nfix (base-bvar$c bvar-db$c))
-                    (nfix (next-bvar$c bvar-db$c))))
-           (equal (get-bvar->term$c n (add-term-bvar$c x bvar-db$c))
-                  (if (equal (nfix n) (nfix (next-bvar$c bvar-db$c)))
-                      x
-                    (get-bvar->term$c n bvar-db$c)))))
+  (defthm get-bvar->term$c-of-add-term-bvar$c
+    (implies (and (<= (nfix (base-bvar$c bvar-db$c)) (nfix n))
+                  (<= (nfix (base-bvar$c bvar-db$c))
+                      (nfix (next-bvar$c bvar-db$c))))
+             (equal (get-bvar->term$c n (add-term-bvar$c x bvar-db$c))
+                    (if (equal (nfix n) (nfix (next-bvar$c bvar-db$c)))
+                        (gl-object-fix x)
+                      (get-bvar->term$c n bvar-db$c))))
+    :hints(("Goal" :in-theory (enable get-bvar->term$c))))
 
+  (defthm base-bvar$c-of-add-term-bvar$c
+    (equal (nth *base-bvar$c* (add-term-bvar$c x bvar-db$c))
+           (nth *base-bvar$c* bvar-db$c)))
 
+  (defthm next-bvar$c-of-add-term-bvar$c
+    (equal (nth *next-bvar$c* (add-term-bvar$c x bvar-db$c))
+           (+ 1 (nfix (nth *next-bvar$c* bvar-db$c)))))
 
-(defthm base-bvar$c-of-add-term-bvar$c
-  (equal (nth *base-bvar$c* (add-term-bvar$c x bvar-db$c))
-         (nth *base-bvar$c* bvar-db$c)))
-
-(defthm next-bvar$c-of-add-term-bvar$c
-  (equal (nth *next-bvar$c* (add-term-bvar$c x bvar-db$c))
-         (+ 1 (nfix (nth *next-bvar$c* bvar-db$c)))))
-
-(defthm bvar-db-wfp$c-of-add-term-bvar$c
-  (implies (bvar-db-wfp$c bvar-db$c)
-           (bvar-db-wfp$c (add-term-bvar$c x bvar-db$c))))
+  (defthm bvar-db-wfp$c-of-add-term-bvar$c
+    (implies (bvar-db-wfp$c bvar-db$c)
+             (bvar-db-wfp$c (add-term-bvar$c x bvar-db$c)))
+    :hints(("Goal" :in-theory (enable bvar-db-wfp$c)))))
 
 ;; (defun add-term-equiv$c (x n bvar-db$c)
 ;;   (declare (xargs :stobjs bvar-db$c
@@ -137,9 +168,6 @@
 ;;                                       term-equivs)
 ;;                           bvar-db$c)))
 
-(defthm get-term->bvar$c-of-update-term-equivs$c
-  (equal (get-term->bvar$c x (update-term-equivs$c q bvar-db$c))
-         (get-term->bvar$c x bvar-db$c)))
 
 (defthm term-equivs$c-of-update-term-equivs$c
   (equal (term-equivs$c (update-term-equivs$c q bvar-db$c))
@@ -154,9 +182,7 @@
 ;;                      (term-equivs$c bvar-db$c))))
 
 
-(defthm get-bvar->term$c-of-update-term-equivs$c
-  (equal (get-bvar->term$c x (update-term-equivs$c q bvar-db$c))
-         (get-bvar->term$c x bvar-db$c)))
+
 
 (defthm base-bvar$c-of-update-term-equivs$c
   (equal (nth *base-bvar$c* (update-term-equivs$c q bvar-db$c))
@@ -167,9 +193,7 @@
          (nth *next-bvar$c* bvar-db$c)))
 
 
-(defthm bvar-db-wfp$c-of-update-term-equivs$c
-  (implies (bvar-db-wfp$c bvar-db$c)
-           (bvar-db-wfp$c (update-term-equivs$c q bvar-db$c))))
+
 
 
 
@@ -192,32 +216,34 @@
 
 
 
-(defun init-bvar-db$c (base-bvar bvar-db$c)
-  (declare (type (integer 0 *) base-bvar)
-           (xargs :stobjs bvar-db$c))
+(define init-bvar-db$c ((base-bvar natp :type (integer 0 *)) bvar-db$c)
+  :split-types t
   (b* ((bvar-db$c (update-base-bvar$c (lnfix base-bvar) bvar-db$c))
        (bvar-db$c (update-next-bvar$c (lnfix base-bvar) bvar-db$c))
        (bvar-db$c (update-term-equivs$c nil bvar-db$c)))
-    (update-term-bvars$c nil bvar-db$c)))
+    (update-term-bvars$c nil bvar-db$c))
+  ///
 
-(defthm base-bvar$c-of-init-bvar-db$c
-  (equal (nth *base-bvar$c* (init-bvar-db$c base bvar-db$c))
-         (nfix base)))
+  (defthm base-bvar$c-of-init-bvar-db$c
+    (equal (nth *base-bvar$c* (init-bvar-db$c base bvar-db$c))
+           (nfix base)))
 
-(defthm term-equivs$c-of-init-bvar-db$c
-  (equal (term-equivs$c (init-bvar-db$c base-bvar bvar-db$c))
-         nil))
+  (defthm term-equivs$c-of-init-bvar-db$c
+    (equal (term-equivs$c (init-bvar-db$c base-bvar bvar-db$c))
+           nil))
 
-(defthm next-bvar$c-of-init-bvar-db$c
-  (equal (nth *next-bvar$c* (init-bvar-db$c base bvar-db$c))
-         (nfix base)))
+  (defthm next-bvar$c-of-init-bvar-db$c
+    (equal (nth *next-bvar$c* (init-bvar-db$c base bvar-db$c))
+           (nfix base)))
 
-(defthm get-term->bvar-of-init-bvar-db$c
-  (equal (get-term->bvar$c x (init-bvar-db$c base bvar-db$c))
-         nil))
+  (defthm get-term->bvar-of-init-bvar-db$c
+    (equal (get-term->bvar$c x (init-bvar-db$c base bvar-db$c))
+           nil)
+    :hints(("Goal" :in-theory (enable get-term->bvar$c))))
 
-(defthm bvar-db-wfp$c-of-init-bvar-db$c
-  (bvar-db-wfp$c (init-bvar-db$c base bvar-db$c)))
+  (defthm bvar-db-wfp$c-of-init-bvar-db$c
+    (bvar-db-wfp$c (init-bvar-db$c base bvar-db$c))
+    :hints(("Goal" :in-theory (enable bvar-db-wfp$c)))))
 
 
 (defthm create-bvar-db$c-rewrite
@@ -227,22 +253,26 @@
 (local (in-theory (disable (create-bvar-db$c) create-bvar-db$c)))
 
 
-(defund bvar-listp$c (x bvar-db$c)
-  (declare (xargs :stobjs bvar-db$c))
-  (if (atom x)
-      (eq x nil)
-    (and (natp (car x))
-         (<= (base-bvar$c bvar-db$c) (car x))
-         (< (car x) (next-bvar$c bvar-db$c))
-         (bvar-listp$c (cdr x) bvar-db$c))))
 
-(defund term-equivsp$c (equivs bvar-db$c)
+
+
+(define bvar-list-okp$c ((x nat-listp) bvar-db$c)
+  (if (atom x)
+      t
+    (and (<= (base-bvar$c bvar-db$c) (lnfix (car x)))
+         (< (lnfix (car x)) (next-bvar$c bvar-db$c))
+         (bvar-list-okp$c (cdr x) bvar-db$c))))
+
+(define term-equivs-okp$c ((equivs term-equivs-p) bvar-db$c)
   (declare (xargs :stobjs bvar-db$c))
   (if (atom equivs)
-      (eq equivs nil)
-    (and (consp (car equivs))
-         (bvar-listp$c (cdar equivs) bvar-db$c)
-         (term-equivsp$c (cdr equivs) bvar-db$c))))
+      t
+    (and (or (not (mbt (and (consp (car equivs))
+                            (gl-object-p (caar equivs)))))
+             (bvar-list-okp$c (cdar equivs) bvar-db$c))
+         (term-equivs-okp$c (cdr equivs) bvar-db$c)))
+  ///
+  (local (in-theory (enable term-equivs-fix))))
 
 ;; ------------------ Logic ----------------
 
@@ -394,22 +424,23 @@
                 (< n (next-bvar$a bvar-db$a))))
    ((get-term->bvar$a * *) => *
     :formals (x bvar-db$a)
-    :guard t)
+    :guard (gl-object-p x))
    ((add-term-bvar$a * *) => *
     :formals (x bvar-db$a)
-    :guard t)
+    :guard (gl-object-p x))
    ((term-equivs$a *) => *
     :formals (bvar-db$a)
     :guard t)
-   ((bvar-listp$a * *) => *
+   ((bvar-list-okp$a * *) => *
     :formals (x bvar-db$a)
-    :guard t)
-   ((term-equivsp$a * *) => *
+    :guard (nat-listp x))
+   ((term-equivs-okp$a * *) => *
     :formals (equivs bvar-db$a)
-    :guard t)
+    :guard (term-equivs-p equivs))
    ((update-term-equivs$a * *) => *
     :formals (equivs bvar-db$a)
-    :guard (term-equivsp$a equivs bvar-db$a))
+    :guard (and (term-equivs-p equivs)
+                (term-equivs-okp$a equivs bvar-db$a)))
    ((init-bvar-db$a * *) => *
     :formals (base bvar-db$a)
     :guard (natp base)))
@@ -418,7 +449,7 @@
    (progn
 
 
-     (defund init-bvar-db$a (base bvar-db$a)
+     (define init-bvar-db$a ((base natp) bvar-db$a)
        (declare (ignore bvar-db$a)
                 (xargs :guard t))
        (cons (nfix base) nil))
@@ -431,90 +462,101 @@
        (declare (xargs :guard t))
        (+ (base-bvar$a bvar-db$a) (len (ec-call (car bvar-db$a)))))
 
-     (defund filter-bvars (x bvar-db$a)
+     (define filter-bvars ((x nat-listp) bvar-db$a)
        (declare (xargs :guard t))
        (if (atom x)
            nil
-         (if (and (natp (car x))
-                  (<= (base-bvar$a bvar-db$a) (car x))
-                  (< (car x) (next-bvar$a bvar-db$a)))
-             (cons (car x) (filter-bvars (cdr x) bvar-db$a))
+         (if (and (<= (base-bvar$a bvar-db$a) (nfix (car x)))
+                  (< (nfix (car x)) (next-bvar$a bvar-db$a)))
+             (cons (nfix (car x)) (filter-bvars (cdr x) bvar-db$a))
            (filter-bvars (cdr x) bvar-db$a))))
 
-     (defund filter-equivs (x bvar-db$a)
-       (declare (xargs :guard t))
+     (define filter-equivs ((x term-equivs-p) bvar-db$a)
        (if (atom x)
            nil
-         (if (consp (car x))
+         (if (mbt (and (consp (car x))
+                       (gl-object-p (caar x))))
              (cons (cons (caar x) (filter-bvars (cdar x) bvar-db$a))
                    (filter-equivs (cdr x) bvar-db$a))
-           (filter-equivs (cdr x) bvar-db$a))))
+           (filter-equivs (cdr x) bvar-db$a)))
+       ///
+       (local (in-theory (enable term-equivs-fix))))
 
-     (defund get-bvar->term$a (n bvar-db$a)
-       (declare (xargs :guard (and (natp n)
-                                   (<= (base-bvar$a bvar-db$a) n)
+     (define get-bvar->term$a ((n natp) bvar-db$a)
+       (declare (xargs :guard (and (<= (base-bvar$a bvar-db$a) n)
                                    (< n (next-bvar$a bvar-db$a)))))
        (and (< (nfix n) (next-bvar$a bvar-db$a))
-            (ec-call (nth (+ -1 (len (ec-call (car bvar-db$a))) (base-bvar$a bvar-db$a) (- (nfix n) ))
-                          (ec-call (car bvar-db$a))))))
+            (ec-call (gl-object-fix
+                      (ec-call (nth (+ -1 (len (ec-call (car bvar-db$a))) (base-bvar$a bvar-db$a) (- (nfix n) ))
+                                    (ec-call (car bvar-db$a))))))))
 
      (defund term-equivs$a (bvar-db$a)
        (declare (xargs :guard t))
-       (filter-equivs (ec-call (cdr bvar-db$a)) bvar-db$a))
+       (filter-equivs (ec-call (term-equivs-fix (ec-call (cdr bvar-db$a)))) bvar-db$a))
 
 
-     (defund bvar-listp$a (x bvar-db$a)
+     (define bvar-list-okp$a ((x nat-listp) bvar-db$a)
        (declare (xargs :guard t))
        (if (atom x)
-           (eq x nil)
-         (and (natp (car x))
-              (<= (base-bvar$a bvar-db$a) (car x))
-              (< (car x) (next-bvar$a bvar-db$a))
-              (bvar-listp$a (cdr x) bvar-db$a))))
+           t
+         (and (<= (base-bvar$a bvar-db$a) (lnfix (car x)))
+              (< (lnfix (car x)) (next-bvar$a bvar-db$a))
+              (bvar-list-okp$a (cdr x) bvar-db$a))))
 
-     (defund term-equivsp$a (equivs bvar-db$a)
-       (declare (xargs :guard t))
+     (define term-equivs-okp$a ((equivs term-equivs-p) bvar-db$a)
        (if (atom equivs)
-           (eq equivs nil)
-         (and (consp (car equivs))
-              (bvar-listp$a (cdar equivs) bvar-db$a)
-              (term-equivsp$a (cdr equivs) bvar-db$a))))
+           t
+         (and (or (not (mbt (and (consp (car equivs))
+                                 (gl-object-p (caar equivs)))))
+                  (bvar-list-okp$a (cdar equivs) bvar-db$a))
+              (term-equivs-okp$a (cdr equivs) bvar-db$a)))
+       ///
+       (local (in-theory (enable term-equivs-fix))))
 
-     (defund update-term-equivs$a (equivs bvar-db$a)
-       (declare (xargs :guard (term-equivsp$a equivs bvar-db$a)))
+     (define update-term-equivs$a ((equivs term-equivs-p) bvar-db$a)
+       :guard (term-equivs-okp$a equivs bvar-db$a)
        (cons (ec-call (car bvar-db$a))
-             (filter-equivs equivs bvar-db$a)))
+             (filter-equivs (term-equivs-fix equivs) bvar-db$a)))
 
-     (defund get-term->bvar$a (x bvar-db$a)
+     (define get-term->bvar$a ((x gl-object-p) bvar-db$a)
        (declare (xargs :guard t))
-       (let ((suff (ec-call (member-equal x (ec-call (car bvar-db$a))))))
+       (let ((suff (ec-call (member-equal (gl-object-fix x)
+                                          (ec-call (gl-objectlist-fix (ec-call (car bvar-db$a))))))))
          (and suff (+ -1 (len suff) (base-bvar$a bvar-db$a)))))
 
-     (defund add-term-bvar$a (x bvar-db$a)
+     (define add-term-bvar$a ((x gl-object-p) bvar-db$a)
        (declare (xargs :guard t))
-       (cons (cons x (ec-call (car bvar-db$a)))
-             (filter-equivs (ec-call (cdr bvar-db$a)) bvar-db$a)))))
+       (cons (cons (gl-object-fix x) (ec-call (car bvar-db$a)))
+             (filter-equivs (ec-call (term-equivs-fix (ec-call (cdr bvar-db$a)))) bvar-db$a)))))
 
-  (defthm bvar-listp$a-def
-    (equal (bvar-listp$a x bvar-db$a)
+  (fty::deffixequiv init-bvar-db$a)
+  (fty::deffixequiv get-bvar->term$a)
+  (fty::deffixequiv bvar-list-okp$a)
+  (fty::deffixequiv term-equivs-okp$a)
+  (fty::deffixequiv update-term-equivs$a)
+  (fty::deffixequiv get-term->bvar$a)
+  (fty::deffixequiv add-term-bvar$a)
+
+  (defthm bvar-list-okp$a-def
+    (equal (bvar-list-okp$a x bvar-db$a)
            (if (atom x)
-               (eq x nil)
-             (and (natp (car x))
-                  (<= (base-bvar$a bvar-db$a) (car x))
-                  (< (car x) (next-bvar$a bvar-db$a))
-                  (bvar-listp$a (cdr x) bvar-db$a))))
-    :hints(("Goal" :in-theory (enable bvar-listp$a)))
-    :rule-classes ((:definition :controller-alist ((bvar-listp$a t nil)))))
+               t
+             (and (<= (base-bvar$a bvar-db$a) (nfix (car x)))
+                  (< (nfix (car x)) (next-bvar$a bvar-db$a))
+                  (bvar-list-okp$a (cdr x) bvar-db$a))))
+    :hints(("Goal" :in-theory (enable bvar-list-okp$a)))
+    :rule-classes ((:definition :controller-alist ((bvar-list-okp$a t nil)))))
 
-  (defthm term-equivsp$a-def
-    (equal (term-equivsp$a equivs bvar-db$a)
+  (defthm term-equivs-okp$a-def
+    (equal (term-equivs-okp$a equivs bvar-db$a)
            (if (atom equivs)
-               (eq equivs nil)
-             (and (consp (car equivs))
-                  (bvar-listp$a (cdar equivs) bvar-db$a)
-                  (term-equivsp$a (cdr equivs) bvar-db$a))))
-    :hints(("Goal" :in-theory (enable term-equivsp$a)))
-    :rule-classes ((:definition :controller-alist ((term-equivsp$a t nil)))))
+               t
+             (and (or (not (mbt (and (consp (car equivs))
+                                     (gl-object-p (caar equivs)))))
+                      (bvar-list-okp$a (cdar equivs) bvar-db$a))
+                  (term-equivs-okp$a (cdr equivs) bvar-db$a))))
+    :hints(("Goal" :in-theory (enable term-equivs-okp$a)))
+    :rule-classes ((:definition :controller-alist ((term-equivs-okp$a t nil)))))
 
 
   (local (in-theory (enable init-bvar-db$a
@@ -526,8 +568,6 @@
                             term-equivs$a
                             update-term-equivs$a)))
 
-  (defcong acl2::nat-equiv equal (get-bvar->term$a n bvar-db$a) 1)
-  (defcong acl2::nat-equiv equal (init-bvar-db$a n bvar-db$a) 1)
 
   (defthm type-of-base-bvar$a
     (natp (base-bvar$a bvar-db$a))
@@ -546,21 +586,25 @@
         (natp (get-term->bvar$a x bvar-db$a)))
     :rule-classes :type-prescription)
 
-  (local (defthm bvar-listp$a-of-filter-bvars
-           (bvar-listp$a (filter-bvars x bvar-db$a) bvar-db$a)
+  (defthm type-of-get-bvar->term$a
+    (gl-object-p (get-bvar->term$a n bvar-db$a)))
+
+  (local (defthm bvar-list-okp$a-of-filter-bvars
+           (bvar-list-okp$a (filter-bvars x bvar-db$a) bvar-db$a)
            :hints(("Goal" :in-theory (enable filter-bvars)))))
 
   (local (defthm nat-listp-of-filter-bvars
            (acl2::nat-listp (filter-bvars x bvar-db$a))
            :hints(("Goal" :in-theory (enable filter-bvars)))))
 
-  (local (defthm term-equivsp$a-of-filter-equivs
-           (term-equivsp$a (filter-equivs x bvar-db$a) bvar-db$a)
+  (local (defthm term-equivs-okp$a-of-filter-equivs
+           (term-equivs-okp$a (filter-equivs x bvar-db$a) bvar-db$a)
            :hints(("Goal" :in-theory (enable filter-equivs)))))
 
   (local (defthm lookup-of-filter-equivs
-           (equal (cdr (hons-assoc-equal x (filter-equivs y bvar-db$a)))
-                  (filter-bvars (cdr (hons-assoc-equal x y)) bvar-db$a))
+           (implies (gl-object-p x)
+                    (equal (cdr (hons-assoc-equal x (filter-equivs y bvar-db$a)))
+                           (filter-bvars (cdr (hons-assoc-equal x y)) bvar-db$a)))
            :hints(("Goal" :in-theory (enable filter-equivs)
                    :induct t)
                   (and stable-under-simplificationp
@@ -586,12 +630,21 @@
                 (next-bvar$a bvar-db$a)))
     :rule-classes (:rewrite :linear))
 
-  (defthm term-equivsp$a-of-term-equivs$a
-    (term-equivsp$a (term-equivs$a bvar-db) bvar-db))
+  (local (defthm term-equivs-p-of-filter-equivs
+           (term-equivs-p (filter-equivs x bvar-db))
+           :hints(("Goal" :in-theory (enable filter-equivs)))))
 
-  (defthm bvar-listp$a-of-lookup
-    (implies (term-equivsp$a q bvar-db$a)
-             (bvar-listp$a (cdr (hons-assoc-equal x q)) bvar-db$a)))
+  (defthm term-equivsp-of-term-equivs$a
+    (term-equivs-p (term-equivs$a bvar-db)))
+
+  (defthm term-equivs-okp$a-of-term-equivs$a
+    (term-equivs-okp$a (term-equivs$a bvar-db) bvar-db))
+
+  (defthm bvar-list-okp$a-of-lookup
+    (implies (and (term-equivs-okp$a q bvar-db$a)
+                  (gl-object-p x))
+             (bvar-list-okp$a (cdr (hons-assoc-equal x q)) bvar-db$a))
+    :hints(("Goal" :in-theory (enable term-equivs-okp$a))))
 
   ;; (local (defun nth-filter-ind (n x bvar-db$a)
   ;;          (if (atom x)
@@ -680,24 +733,25 @@
            :hints(("Goal" :in-theory (enable base-bvar$a next-bvar$a
                                              filter-bvars)))))
 
-  (local (defthm filter-bvars-when-bvar-listp$a
-           (implies (and (bvar-listp$a q bvar-db2)
+  (local (defthm filter-bvars-when-bvar-list-okp$a
+           (implies (and (bvar-list-okp$a q bvar-db2)
                          (equal (car bvar-db2) (car bvar-db$a)))
                     (equal (filter-bvars q bvar-db$a)
-                           q))
+                           (acl2::nat-list-fix q)))
            :hints(("Goal" :in-theory (enable filter-bvars)))))
 
-  (local (defthm filter-equivs-when-term-equivsp$a
-           (implies (and (term-equivsp$a q bvar-db2)
+  (local (defthm filter-equivs-when-term-equivs-okp$a
+           (implies (and (term-equivs-okp$a q bvar-db2)
                          (equal (car bvar-db2) (car bvar-db$a)))
                     (equal (filter-equivs q bvar-db$a)
-                           q))
-           :hints(("Goal" :in-theory (enable filter-equivs)))))
+                           (term-equivs-fix q)))
+           :hints(("Goal" :in-theory (enable filter-equivs
+                                             term-equivs-fix)))))
 
   (defthm term-equivs-of-update-term-equiv1$a
-    (implies (term-equivsp$a q bvar-db$a)
+    (implies (term-equivs-okp$a q bvar-db$a)
              (equal (term-equivs$a (update-term-equivs$a q bvar-db$a))
-                    q)))
+                    (term-equivs-fix q))))
 
 
   ;; (local (defthm member-remove-duplicates
@@ -718,7 +772,7 @@
     ;; (implies (<= (base-bvar$a bvar-db$a) (nfix n))
     (equal (get-bvar->term$a n (add-term-bvar$a x bvar-db$a))
            (if (equal (nfix n) (next-bvar$a bvar-db$a))
-               x
+               (gl-object-fix x)
              (get-bvar->term$a n bvar-db$a))))
 
   ;; (defthm get-bvar->term$a-of-add-term-bvar$a-existing
@@ -735,7 +789,7 @@
 
   (defthm get-term->bvar$a-of-add-term-bvar$a-split
     (equal (get-term->bvar$a y (add-term-bvar$a x bvar-db$a))
-           (if (equal x y)
+           (if (gl-object-equiv x y)
                (next-bvar$a bvar-db$a)
              (get-term->bvar$a y bvar-db$a))))
 
@@ -778,12 +832,25 @@
                            x))
            :hints(("Goal" :in-theory (enable nth member)))))
 
+  (local (defthm nth-by-member-gl-object-fix
+           (implies (member (gl-object-fix x)
+                            (gl-objectlist-fix z))
+                    (gl-object-equiv (nth (+ (len z)
+                                             (- (len (member (gl-object-fix x)
+                                                             (gl-objectlist-fix z)))))
+                                          z)
+                                     x))
+           :hints(("Goal" :use ((:instance nth-by-member
+                                 (x (gl-object-fix x))
+                                 (z (gl-objectlist-fix z))))
+                   :in-theory (disable nth-by-member)))))
+
 
   (defthm get-bvar->term$a-of-get-term->bvar
     (let ((bvar (get-term->bvar$a x bvar-db$a)))
       (implies bvar
                (equal (get-bvar->term$a bvar bvar-db$a)
-                      x))))
+                      (gl-object-fix x)))))
 
   ;; (local (defthm no-duplicatesp-of-remove-duplicates
   ;;          (no-duplicatesp (remove-duplicates-equal x))))
@@ -794,6 +861,19 @@
   ;;                   (equal (len (member (nth n x) x))
   ;;                          (- (len x) (nfix n))))
   ;;          :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (defthm nth-of-gl-objectlist-fix
+           (equal (nth n (gl-objectlist-fix x))
+                  (gl-object-fix (nth n x)))
+           :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (defthm member-of-nth-gl-object-fix
+           (implies (< (nfix n) (len x))
+                    (member (gl-object-fix (nth n x))
+                            (gl-objectlist-fix x)))
+           :hints (("goal" :use ((:instance acl2::member-of-nth
+                                  (n n) (x (gl-objectlist-fix x))))
+                    :in-theory (disable acl2::member-of-nth)))))
 
   (defthm get-term->bvar$a-of-get-bvar->term
     (let ((term (get-bvar->term$a n bvar-db$a)))
@@ -839,27 +919,27 @@
        (bvar-dbs-terms-corr bvar-db$c bvar-db$a)
        (bvar-db-wfp$c bvar-db$c)))
 
-(defthm bvar-listp$c-is-$a
+(defthm bvar-list-okp$c-is-$a
   (implies (and (bind-free '((bvar-db . bvar-db)) (bvar-db))
                 (equal (base-bvar$c bvar-db$c)
                        (base-bvar$a bvar-db))
                 (equal (next-bvar$c bvar-db$c)
                        (next-bvar$a bvar-db)))
-           (equal (bvar-listp$c x bvar-db$c)
-                  (bvar-listp$a x bvar-db)))
-  :hints (("goal" :induct (bvar-listp$c x bvar-db$c)
-           :in-theory (enable bvar-listp$c))))
+           (equal (bvar-list-okp$c x bvar-db$c)
+                  (bvar-list-okp$a x bvar-db)))
+  :hints (("goal" :induct (bvar-list-okp$c x bvar-db$c)
+           :in-theory (enable bvar-list-okp$c))))
 
-(defthm term-equivsp$c-is-$a
+(defthm term-equivs-okp$c-is-$a
   (implies (and (bind-free '((bvar-db . bvar-db)) (bvar-db))
                 (equal (base-bvar$c bvar-db$c)
                        (base-bvar$a bvar-db))
                 (equal (next-bvar$c bvar-db$c)
                        (next-bvar$a bvar-db)))
-           (equal (term-equivsp$c x bvar-db$c)
-                  (term-equivsp$a x bvar-db)))
-  :hints (("goal" :induct (term-equivsp$c x bvar-db$c)
-           :in-theory (enable term-equivsp$c))))
+           (equal (term-equivs-okp$c x bvar-db$c)
+                  (term-equivs-okp$a x bvar-db)))
+  :hints (("goal" :induct (term-equivs-okp$c x bvar-db$c)
+           :in-theory (enable term-equivs-okp$c))))
 
 
 (encapsulate nil
@@ -886,8 +966,8 @@
               (get-term->bvar :logic get-term->bvar$a :exec get-term->bvar$c)
               (get-bvar->term :logic get-bvar->term$a :exec get-bvar->term$c)
               (term-equivs :logic term-equivs$a :exec term-equivs$c)
-              (bvar-listp :logic bvar-listp$a :exec bvar-listp$c)
-              (term-equivsp :logic term-equivsp$a :exec term-equivsp$c)
+              (bvar-list-okp :logic bvar-list-okp$a :exec bvar-list-okp$c)
+              (term-equivs-okp :logic term-equivs-okp$a :exec term-equivs-okp$c)
               (add-term-bvar :logic add-term-bvar$a :exec add-term-bvar$c :protect t)
               (update-term-equivs :logic update-term-equivs$a :exec update-term-equivs$c)
               (init-bvar-db :logic init-bvar-db$a :exec init-bvar-db$c :protect t))))
@@ -991,72 +1071,65 @@
 
 
 
-(defund add-term-bvar-unique (x bvar-db)
-  (declare (xargs :stobjs bvar-db))
+(define add-term-bvar-unique ((x gl-object-p) bvar-db)
   (let ((look (get-term->bvar x bvar-db)))
     (if look
         (mv look bvar-db)
       (b* ((next (next-bvar bvar-db))
            (bvar-db (add-term-bvar x bvar-db)))
-        (mv next bvar-db)))))
+        (mv next bvar-db))))
+  ///
 
-(defthm bvar-db-extension-p-of-add-term-bvar-unique
-  (bvar-db-extension-p (mv-nth 1 (add-term-bvar-unique x bvar-db)) bvar-db)
-  :hints(("Goal" :in-theory (enable add-term-bvar-unique))))
+  (defthm bvar-db-extension-p-of-add-term-bvar-unique
+    (bvar-db-extension-p (mv-nth 1 (add-term-bvar-unique x bvar-db)) bvar-db))
 
-(defthm natp-bvar-of-add-term-bvar-unique
-  (natp (mv-nth 0 (add-term-bvar-unique x bvar-db)))
-  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
-  :rule-classes :type-prescription)
+  (defthm natp-bvar-of-add-term-bvar-unique
+    (natp (mv-nth 0 (add-term-bvar-unique x bvar-db)))
+    :rule-classes :type-prescription)
 
-(defthm add-term-bvar-unique-bvar-upper-bound
-  (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
-    (< bvar (next-bvar$a new-bvar-db)))
-  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
-  :rule-classes (:rewrite :linear))
+  (defthm add-term-bvar-unique-bvar-upper-bound
+    (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
+      (< bvar (next-bvar$a new-bvar-db)))
+    :rule-classes (:rewrite :linear))
 
-(defthm add-term-bvar-unique-bvar-lower-bound
-  (b* (((mv bvar ?new-bvar-db) (add-term-bvar-unique x bvar-db)))
-    (<= (base-bvar$a bvar-db) bvar))
-  :hints(("Goal" :in-theory (enable add-term-bvar-unique)))
-  :rule-classes (:rewrite :linear))
+  (defthm add-term-bvar-unique-bvar-lower-bound
+    (b* (((mv bvar ?new-bvar-db) (add-term-bvar-unique x bvar-db)))
+      (<= (base-bvar$a bvar-db) bvar))
+    :rule-classes (:rewrite :linear))
 
-(defthm get-bvar->term-of-add-term-bvar-unique
-  (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
-    (equal (get-bvar->term$a v new-bvar-db)
-           (if (equal (nfix v) (nfix bvar))
-               x
-             (get-bvar->term$a v bvar-db))))
-  :hints(("Goal" :in-theory (e/d (add-term-bvar-unique)
-                                 (get-bvar->term$a-of-get-term->bvar))
-          :use ((:instance get-bvar->term$a-of-get-term->bvar
-                 (bvar-db$a bvar-db))))))
+  (defthm get-bvar->term-of-add-term-bvar-unique
+    (b* (((mv bvar new-bvar-db) (add-term-bvar-unique x bvar-db)))
+      (equal (get-bvar->term$a v new-bvar-db)
+             (if (equal (nfix v) (nfix bvar))
+                 (gl-object-fix x)
+               (get-bvar->term$a v bvar-db))))
+    :hints(("Goal" :in-theory (e/d ()
+                                   (get-bvar->term$a-of-get-term->bvar))
+            :use ((:instance get-bvar->term$a-of-get-term->bvar
+                   (bvar-db$a bvar-db)))))))
 
-(defsection get-term->equivs
-
-  (defund get-term->equivs (x bvar-db)
-    (declare (xargs :stobjs bvar-db))
-    (cdr (hons-get x (term-equivs bvar-db))))
-
+(define get-term->equivs ((x gl-object-p) bvar-db)
+  (declare (xargs :stobjs bvar-db))
+  :returns (equivs nat-listp :rule-classes (:rewrite (:type-prescription :typed-term equivs)))
+  (cdr (hons-get (gl-object-fix x) (term-equivs bvar-db)))
+  ///
   (local (in-theory (enable get-term->equivs)))
 
-  (defthm bvar-listp-get-term->equivs
-    (bvar-listp$a (get-term->equivs x bvar-db) bvar-db)
+  (defthm bvar-list-okp-get-term->equivs
+    (bvar-list-okp$a (get-term->equivs x bvar-db) bvar-db)
     :hints(("Goal" :in-theory (enable get-term->equivs)))))
 
 
-(defsection add-term-equiv
-  (defund add-term-equiv (x n bvar-db)
-    (declare (xargs :guard (and (integerp n)
-                                (<= (base-bvar bvar-db) n)
-                                (< n (next-bvar bvar-db)))
-                    :stobjs bvar-db))
-    (update-term-equivs (hons-acons x
-                                    (cons n (get-term->equivs x bvar-db))
-                                    (term-equivs bvar-db))
-                        bvar-db))
-
-  (local (in-theory (enable add-term-equiv)))
+(define add-term-equiv ((x gl-object-p)
+                        (n natp)
+                        bvar-db)
+  :guard (and (<= (base-bvar bvar-db) n)
+              (< n (next-bvar bvar-db)))
+  (update-term-equivs (hons-acons (gl-object-fix x)
+                                  (cons (lnfix n) (get-term->equivs x bvar-db))
+                                  (term-equivs bvar-db))
+                      bvar-db)
+  ///
 
   (defthm bvar-db-extension-p-of-add-term-equiv
     (bvar-db-extension-p (add-term-equiv x n bvar-db) bvar-db)
@@ -1083,17 +1156,16 @@
 
 
 
-(defun bvar-db-debug-aux (n bvar-db)
+(define bvar-db-debug-aux ((n natp) bvar-db)
   (declare (xargs :stobjs bvar-db
-                  :guard (and (integerp n)
-                              (<= (base-bvar bvar-db) n)
+                  :guard (and (<= (base-bvar bvar-db) n)
                               (<= n (next-bvar bvar-db)))
-                  :measure (nfix (- (next-bvar bvar-db) (ifix n)))))
-  (if (mbe :logic (zp (- (next-bvar bvar-db) (ifix n)))
+                  :measure (nfix (- (next-bvar bvar-db) (nfix n)))))
+  (if (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
            :exec (eql (next-bvar bvar-db) n))
       nil
-    (cons (cons n (get-bvar->term n bvar-db))
-          (bvar-db-debug-aux (1+ (lifix n)) bvar-db))))
+    (cons (cons (lnfix n) (get-bvar->term n bvar-db))
+          (bvar-db-debug-aux (1+ (lnfix n)) bvar-db))))
 
 (defun bvar-db-debug (bvar-db)
   (declare (xargs :stobjs bvar-db))

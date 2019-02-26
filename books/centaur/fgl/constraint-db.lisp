@@ -178,8 +178,8 @@
   :layout :fulltree)
 
 ;;(fty::deflist pseudo-term-substlist :elt-type pseudo-term-subst :true-listp t)
-(fty::deflist glcp-unify-alistlist :elt-type glcp-unify-alist :true-listp t)
-(fty::defmap sig-table :key-type gl-objectlist :val-type glcp-unify-alistlist :true-listp t)
+(fty::deflist gl-object-alistlist :elt-type gl-object-alist :true-listp t)
+(fty::defmap sig-table :key-type gl-objectlist :val-type gl-object-alistlist :true-listp t)
 
 
 
@@ -448,45 +448,45 @@ prior to introducing the constraint rule above, but succeed after:</p>
                          (hons-assoc-equal k x)))))
 
 (define gbc-signature ((common-vars pseudo-var-list-p)
-                       (subst glcp-unify-alist-p))
+                       (subst gl-object-alist-p))
   :returns (sig gl-objectlist-p)
   (if (atom common-vars)
       nil
     (hons (cdr (assoc (pseudo-var-fix (car common-vars))
-                      (glcp-unify-alist-fix subst)))
+                      (gl-object-alist-fix subst)))
           (gbc-signature (cdr common-vars) subst))))
 
-(define gbc-extend-substs ((lit-subst glcp-unify-alist-p)
-                           (partial-substs glcp-unify-alistlist-p))
-  :returns (new-substs glcp-unify-alistlist-p)
+(define gbc-extend-substs ((lit-subst gl-object-alist-p)
+                           (partial-substs gl-object-alistlist-p))
+  :returns (new-substs gl-object-alistlist-p)
   (if (atom partial-substs)
       nil
     ;; is append good enough? I think so
-    (cons (append (glcp-unify-alist-fix lit-subst)
-                  (glcp-unify-alist-fix (car partial-substs)))
+    (cons (append (gl-object-alist-fix lit-subst)
+                  (gl-object-alist-fix (car partial-substs)))
           (gbc-extend-substs lit-subst (cdr partial-substs)))))
 
-(local (defthm symbol-alistp-when-glcp-unify-alist-p
-         (implies (glcp-unify-alist-p x)
+(local (defthm symbol-alistp-when-gl-object-alist-p
+         (implies (gl-object-alist-p x)
                   (symbol-alistp x))
-         :hints(("Goal" :in-theory (enable glcp-unify-alist-p)))))
+         :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
 
 (local (in-theory (disable symbol-alistp)))
 
 (defprod constraint-instance
   ((thmname symbolp)
-   (subst glcp-unify-alist-p))
+   (subst gl-object-alist-p))
   :layout :tree)
 
 (fty::deflist constraint-instancelist :elt-type constraint-instance :true-listp t)
 
-(define gbc-substs-check-syntaxp ((substs glcp-unify-alistlist-p)
+(define gbc-substs-check-syntaxp ((substs gl-object-alistlist-p)
                                   (thmname symbolp)
                                   (syntaxp pseudo-termp)
                                   state)
   :returns (insts constraint-instancelist-p)
   (b* (((when (atom substs)) nil)
-       (subst (glcp-unify-alist-fix (car substs)))
+       (subst (gl-object-alist-fix (car substs)))
        ((mv err ok) (acl2::magic-ev (pseudo-term-fix syntaxp) subst state t t))
        ((when (or err (not ok)))
         (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
@@ -494,12 +494,12 @@ prior to introducing the constraint rule above, but succeed after:</p>
           (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state))))
 
 
-(define gbc-sort-substs-into-sigtable ((substs glcp-unify-alistlist-p)
+(define gbc-sort-substs-into-sigtable ((substs gl-object-alistlist-p)
                                        (common-vars pseudo-var-list-p)
                                        (sigtable sig-table-p))
   :returns (new-sigtable sig-table-p)
   (b* (((when (atom substs)) (sig-table-fix sigtable))
-       (subst (glcp-unify-alist-fix (car substs)))
+       (subst (gl-object-alist-fix (car substs)))
        (sig (gbc-signature common-vars subst))
        (sig-substs (cdr (hons-get sig (sig-table-fix sigtable))))
        (sigtable (hons-acons sig (cons subst sig-substs) sigtable)))
@@ -517,7 +517,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-add-substs-to-existing-tuple ((rule constraint-rule-p)
                                           (existing-lits pseudo-var-set-p)
                                           (lit pseudo-var-p)
-                                          (substs glcp-unify-alistlist-p)
+                                          (substs gl-object-alistlist-p)
                                           (tuples constraint-tuplelist-p))
   :returns (mv found
                (new-tuples constraint-tuplelist-p))
@@ -546,7 +546,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                               (rule constraint-rule-p)
                                               (existing-lits pseudo-var-set-p)
                                               (existing-vars pseudo-var-set-p)
-                                              (substs glcp-unify-alistlist-p)
+                                              (substs gl-object-alistlist-p)
                                               (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (b* ((ccat (constraint-db-fix ccat))
@@ -576,7 +576,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                                (rule constraint-rule-p)
                                                (existing-lits pseudo-var-set-p)
                                                (existing-vars pseudo-var-set-p)
-                                               (substs glcp-unify-alistlist-p)
+                                               (substs gl-object-alistlist-p)
                                                (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (if (atom unmatched-litvars)
@@ -586,17 +586,17 @@ prior to introducing the constraint rule above, but succeed after:</p>
      (gbc-add-new-substs-for-unmatched-lit
       (car unmatched-litvars) rule existing-lits existing-vars substs ccat))))
 
-(local (defthm pseudo-var-list-p-strip-cars-of-glcp-unify-alist
-         (implies (glcp-unify-alist-p x)
+(local (defthm pseudo-var-list-p-strip-cars-of-gl-object-alist
+         (implies (gl-object-alist-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           glcp-unify-alist-p)))))
+                                           gl-object-alist-p)))))
 
 (local (defthm pseudo-var-list-p-strip-cars-of-pseudo-term-subst
          (implies (pseudo-term-subst-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           glcp-unify-alist-p)))))
+                                           gl-object-alist-p)))))
 
 (local (defthm symbol-listp-when-pseudo-var-list-p
          (implies (pseudo-var-list-p x)

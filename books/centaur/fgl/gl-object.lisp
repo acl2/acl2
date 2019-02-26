@@ -126,3 +126,6 @@ auto-bindings).</p>"
                                 (acl2-numberp by)
                                 (natp n))))
     (g-integer (numlist start by n))))
+
+
+(fty::defmap gl-object-alist :key-type pseudo-var-p :val-type gl-object :true-listp t)

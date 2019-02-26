@@ -34,6 +34,8 @@
 (include-book "bvar-db")
 (include-book "constraint-db")
 (include-book "glcp-config")
+(include-book "contexts")
+(include-book "stack")
 
 (fty::defalist nat-nat-alist :key-type natp :val-type natp :true-listp t)
 
@@ -47,15 +49,16 @@
 
 (make-event
  `(defconst *interp-st-fields*
-    '((logicman :type logicman)
+    '((stack :type stack)
+      (logicman :type logicman)
       (bvar-db :type bvar-db)
       (pathcond :type pathcond)
       (constraint :type pathcond)
       (constraint-db :type (satisfies constraint-db-p))
       (prof :type interp-profiler)
-      (debug-stack :type t)
       (backchain-limit :type (or (integer 0 *) null))
       (bvar-mode :type t)
+      (equiv-contexts :type (satisfies equiv-contexts-p))
       (reclimit :type (integer 0 *) :initially 0)
       (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config)))))
 
