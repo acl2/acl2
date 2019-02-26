@@ -204,6 +204,49 @@
                        (not res)))))
     (mv already-defined true-listp)))
 
+(define check-flexlist-fix-already-defined (fix kwd-alist our-fixtypes ctx state)
+  (declare (ignorable kwd-alist))
+  ;; Special function for inferring already-definedp
+  (b* (((when (< 1 (len our-fixtypes)))
+        ;; Defining more than one fixtype.  We don't currently support this for
+        ;; already-defined lists/alists, so assume we're not already-defined.
+        nil)
+       (fix$inline (acl2::add-suffix fix acl2::*inline-suffix*))
+       (existing-formals (fgetprop fix$inline 'acl2::formals t (w state)))
+       (already-defined (not (eq existing-formals t)))
+       (- (and already-defined
+               (cw "NOTE: Using existing definition of ~x0.~%" fix)))
+       (- (or (not already-defined)
+              (eql (len existing-formals) 1)
+              (er hard? ctx
+                  "~x0 is already defined in an incompatible manner: it ~
+                   should take exactly 1 input, but its formals are ~x1"
+                  fix existing-formals)))
+       ;; It isn't convenient to do a check like this for the fixing function,
+       ;; because usually its guard requires that the input be already
+       ;; well-formed.  We could use with-guard-checking-error-triple but then
+       ;; we'd have to return state.  For now, if the fix has the wrong
+       ;; definition, we'll most likely just fail on one of the theorems.
+       ;; (true-listp (if (not already-defined)
+       ;;                 (getarg :true-listp nil kwd-alist)
+       ;;               (b* (((mv err res) (acl2::magic-ev-fncall
+       ;;                                   fix '(t) state t nil))
+       ;;                    ((when err)
+       ;;                     (er hard? ctx
+       ;;                         "Couldn't run ~x0 to figure out if it required true-listp: ~@1"
+       ;;                         pred res))
+       ;;                    (option (assoc :true-listp kwd-alist))
+       ;;                    ((unless (or (atom option) (eq (cdr option) (not res))))
+       ;;                     (er hard? ctx
+       ;;                         "The existing definition of ~x0 ~s1 its input ~
+       ;;                          to be a true-list, but the :true-listp option ~
+       ;;                          given was ~x2."
+       ;;                         pred (if res "does not require" "requires")
+       ;;                         (cdr option))))
+       ;;                 (not res))))
+       )
+    already-defined))
+
 (defun extra-binder-names->acc-alist (names type-name)
   (if (atom names)
       nil

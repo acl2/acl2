@@ -390,7 +390,8 @@
        :inline t
        (mbe :logic (case (tag ,x.xvar)
                      ,@(flextranssum-fix-cases x.members x.xvar))
-            :exec ,x.xvar))))
+            :exec ,x.xvar)
+       ///)))
 
 (define flextranssum-fix-postevents (x)
   ;; (defthm tag-of-vl-genelement-fix-forward

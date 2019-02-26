@@ -84,7 +84,9 @@
                  (intern-in-package-of-symbol "X" name)))
        (measure (getarg! :measure `(acl2-count ,xvar) kwd-alist))
        ((mv already-defined true-listp)
-        (check-flexlist-already-defined pred kwd-alist our-fixtypes 'deflist state)))
+        (check-flexlist-already-defined pred kwd-alist our-fixtypes 'deflist state))
+       (fix-already-defined
+        (check-flexlist-fix-already-defined fix kwd-alist our-fixtypes 'deflist state)))
 
     (make-flexlist :name name
                    :pred pred
@@ -105,7 +107,8 @@
                                 kwd-alist)
                    :xvar xvar
                    :recp recp
-                   :already-definedp already-defined)))
+                   :already-definedp already-defined
+                   :fix-already-definedp fix-already-defined)))
 
 
 
@@ -201,46 +204,49 @@
 
 (define flexlist-fix-def (x flagp)
   (b* (((flexlist x)))
-    `(define ,x.fix ((,x.xvar ,x.pred))
-       :parents (,x.name)
-       :short ,(cat "@(call " (xdoc::full-escape-symbol x.fix)
-                    ") is a usual @(see fty::fty) list fixing function.")
-       :long ,(cat "<p>In the logic, we apply @(see? "
-                   (xdoc::full-escape-symbol x.elt-fix)
-                   ") to each member of the x.  In the execution, none of
+    (if x.fix-already-definedp
+        '(progn)
+      `(define ,x.fix ((,x.xvar ,x.pred))
+         :parents (,x.name)
+         :short ,(cat "@(call " (xdoc::full-escape-symbol x.fix)
+                      ") is a usual @(see fty::fty) list fixing function.")
+         :long ,(cat "<p>In the logic, we apply @(see? "
+                     (xdoc::full-escape-symbol x.elt-fix)
+                     ") to each member of the x.  In the execution, none of
                     that is actually necessary and this is just an inlined
                     identity function.</p>")
-       :measure ,x.measure
-       ,@(and (getarg :measure-debug nil x.kwd-alist)
-              `(:measure-debug t))
-       ,@(and flagp `(:flag ,x.name))
-       :returns (newx ,x.pred
-                      :hints('(:in-theory (disable ,x.fix ,x.pred)
-                               :expand ((,x.fix ,x.xvar)
-                                        (:free (a b) (,x.pred (cons a b)))
-                                        (,x.pred ,x.xvar)
-                                        (,x.pred nil)))))
-       :verify-guards nil
-       :progn t
-       ;; [Jared]: inlining this since it's just an identity function
-       :inline t
-       (mbe :logic
-            ,(if x.non-emptyp
-                 ;; ugly def to avoid needing ruler-extenders
-                 `(if (consp (cdr ,x.xvar))
+         :measure ,x.measure
+         ,@(and (getarg :measure-debug nil x.kwd-alist)
+                `(:measure-debug t))
+         ,@(and flagp `(:flag ,x.name))
+         :returns (newx ,x.pred
+                        :hints('(:in-theory (disable ,x.fix ,x.pred)
+                                 :expand ((,x.fix ,x.xvar)
+                                          (:free (a b) (,x.pred (cons a b)))
+                                          (,x.pred ,x.xvar)
+                                          (,x.pred nil)))))
+         :verify-guards nil
+         :progn t
+         ;; [Jared]: inlining this since it's just an identity function
+         :inline t
+         (mbe :logic
+              ,(if x.non-emptyp
+                   ;; ugly def to avoid needing ruler-extenders
+                   `(if (consp (cdr ,x.xvar))
+                        (cons (,x.elt-fix (car ,x.xvar))
+                              (,x.fix (cdr ,x.xvar)))
                       (cons (,x.elt-fix (car ,x.xvar))
-                            (,x.fix (cdr ,x.xvar)))
+                            ,(if x.true-listp
+                                 nil
+                               `(cdr ,x.xvar))))
+                 `(if (atom ,x.xvar)
+                      ,(if x.true-listp
+                           nil
+                         x.xvar)
                     (cons (,x.elt-fix (car ,x.xvar))
-                          ,(if x.true-listp
-                               nil
-                             `(cdr ,x.xvar))))
-               `(if (atom ,x.xvar)
-                    ,(if x.true-listp
-                         nil
-                       x.xvar)
-                  (cons (,x.elt-fix (car ,x.xvar))
-                        (,x.fix (cdr ,x.xvar)))))
-            :exec ,x.xvar))))
+                          (,x.fix (cdr ,x.xvar)))))
+              :exec ,x.xvar)
+         ///))))
 
 (define flexlist-fix-postevents (x)
   (b* (((flexlist x))

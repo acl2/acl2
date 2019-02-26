@@ -790,7 +790,8 @@
             ;; `(let* ((,sum.xvar (,fixprep ,sum.xvar)))
             ;;         ,body)
             ,body
-            :exec ,sum.xvar))))
+            :exec ,sum.xvar)
+       ///)))
 
 ;; ------------------ Fixing function post-events -----------------------
 (defun flexsum-fix-postevents (x)

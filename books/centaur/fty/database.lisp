@@ -127,6 +127,7 @@
    cheap              ;; passed to std::deflist
    recp               ;; is .elt-type part of the mutual recursion?
    already-definedp
+   fix-already-definedp
    )
   :tag :list)
 
@@ -152,7 +153,8 @@
    true-listp         ;; boolean -- should we require a nil final cdr?
    unique-keys        ;; boolean -- require keys to be unique
    recp               ;; is this alist type part of the mutual recursion?
-   already-definedp)
+   already-definedp
+   fix-already-definedp)
   :tag :alist)
 
 (def-primitive-aggregate flextranssum-member

@@ -300,9 +300,10 @@
                       ,@(and sum-kind-calls
                              `(:hints ((and stable-under-simplificationp
                                             '(:expand ,sum-kind-calls)))))
-                      . ,defs)
+                      ,@defs
+                      ///)
                  (car defs))
-               `(///
+               `(
                  (local (in-theory (disable . ,(pairlis$
                                                 (make-list (len x.types) :initial-element :d)
                                                 (pairlis$ (flextypelist-fixes x.types) nil)))))
@@ -314,7 +315,7 @@
                          (car fix-when-pred-thms))
                       (car fix-when-pred-thms)))
 
-                 (verify-guards+ ,(cadr (car defs))
+                 (verify-guards+ ,(with-flextype-bindings (x (car x.types)) x.fix)
                    :hints (("goal"
                             :expand (,@(append (flextypelist-pred-calls x.types)
                                                sum-kind-calls)))))
