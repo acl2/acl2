@@ -33,6 +33,7 @@
 (include-book "term-vars")
 (include-book "std/alists/alist-fix" :dir :system)
 (include-book "clause-processors/eval-alist-equiv" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "assoc-is-hons-assoc"))
@@ -88,6 +89,8 @@
 ;; B* bindings.  It is also more flexible with respect to inner terms with
 ;; unpredictable free variables -- at each stage we only really need to list
 ;; bindings that are updated; variables bound to themselves are redundant.
+
+(local (std::add-default-post-define-hook :fix))
 
 (local (defthm symbol-listp-when-pseudo-var-list-p
          (implies (pseudo-var-list-p x)
@@ -178,7 +181,9 @@
   :inline t
   :returns (formals pseudo-var-list-p :rule-classes (:rewrite (:type-prescription :typed-term formals))
                     :hints(("Goal" :in-theory (enable binding-fix))))
-  (car (binding-fix x)))
+  (car (binding-fix x))
+  ///
+  (deffixequiv binding->formals))
 
 (define binding->args ((x binding-p))
   :inline t
@@ -189,7 +194,9 @@
   (defthm len-of-binding->args
     (equal (len (binding->args x))
            (len (binding->formals x)))
-    :hints(("Goal" :in-theory (enable binding->formals binding-fix)))))
+    :hints(("Goal" :in-theory (enable binding->formals binding-fix))))
+
+  (deffixequiv binding->args))
 
 (define binding ((formals pseudo-var-list-p)
                  (args pseudo-term-listp))
@@ -198,6 +205,7 @@
   :returns (x binding-p
               :rule-classes (:rewrite (:type-prescription :typed-term x))
               :hints(("Goal" :in-theory (enable binding-p))))
+  :hooks nil
   (mbe :logic (cons (remove-non-pseudo-vars formals)
                     (remove-corresp-non-pseudo-vars formals (pseudo-term-list-fix args)))
        :exec (cons formals args))
@@ -780,9 +788,9 @@
 
 (define bindinglist-to-lambda-nest ((x bindinglist-p)
                                     (body pseudo-termp))
-  :returns (term pseudo-termp :hyp :guard)
+  :returns (term pseudo-termp)
   :verify-guards nil
-  (b* (((when (atom x)) body)
+  (b* (((when (atom x)) (pseudo-term-fix body))
        ((binding x1) (car x))
        (free-vars (union-eq (bindinglist-free-vars (cdr x))
                             (set-difference-eq (term-vars body)
@@ -922,7 +930,7 @@
   :returns (mv (term)
                (free-vars))
   :verify-guards nil
-  (b* (((when (atom x)) (mv body (term-vars body)))
+  (b* (((when (atom x)) (mv (pseudo-term-fix body) (term-vars body)))
        ((mv rest-body free-vars)
         (bindinglist-to-lambda-nest-aux (cdr x) body))
        ((binding x1) (car x))
@@ -1021,6 +1029,13 @@
     (mv nil bindings)))
 
 
+
+
+
+
+
+
+
 (make-event
  ;; assert-event doesn't work here b/c of program mode
  (b* (((mv err bindings)
@@ -1040,9 +1055,241 @@
          "Check failed!~%"))))
 
 
+(define pseudo-term-list-max-count ((x pseudo-term-listp))
+  :returns (max-count natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (max (pseudo-term-count (car x))
+         (pseudo-term-list-max-count (cdr x)))))
+
+(local
+ (defsection pseudo-term-list-max-count
+
+   (local (in-theory (enable pseudo-term-list-max-count)))
+
+   (defthm pseudo-term-list-max-count-car
+     (implies (consp x)
+              (<= (pseudo-term-count (car x))
+                  (pseudo-term-list-max-count x)))
+     :rule-classes :linear)
+
+   (defthm pseudo-term-list-max-count-cdr
+     (<= (pseudo-term-list-max-count (cdr x))
+         (pseudo-term-list-max-count x))
+     :rule-classes :linear)
+
+   (defthm pseudo-term-list-max-count-of-remove-corresp-non-pseudo-vars
+     (implies (equal (len x) (len y))
+              (<= (pseudo-term-list-max-count
+                   (remove-corresp-non-pseudo-vars x y))
+                  (pseudo-term-list-max-count y)))
+     :hints(("Goal" :in-theory (enable remove-corresp-non-pseudo-vars)))
+     :rule-classes :linear)
+
+   (defthm pseudo-term-list-max-count-of-append-1
+     (equal (pseudo-term-list-max-count (append a b))
+            (max (pseudo-term-list-max-count a) (pseudo-term-list-max-count b))))
+
+   (defthm pseudo-term-list-max-count-of-remove-self-bindings
+     (implies (equal (len x) (len y))
+              (<= (pseudo-term-list-max-count (mv-nth 1 (remove-self-bindings x y seen)))
+                  (pseudo-term-list-max-count y)))
+     :hints(("Goal" :in-theory (enable remove-self-bindings)))
+     :rule-classes :linear)
+
+   (defthm pseudo-term-list-max-count-of-repeat
+     (equal (pseudo-term-list-max-count (repeat n x))
+            (if (zp n) 0 (pseudo-term-count x)))
+     :hints(("Goal" :in-theory (enable repeat))))
+
+   (defthm pseudo-term-list-max-count-of-true-list-fix
+     (equal (pseudo-term-list-max-count (true-list-fix x))
+            (pseudo-term-list-max-count x)))
+
+   (defthm pseudo-term-list-max-count-lte-pseudo-term-list-count
+     (< (pseudo-term-list-max-count x) (pseudo-term-list-count x))
+     :rule-classes :linear)
+
+   (fty::deffixequiv pseudo-term-list-max-count)))
+
+(define bindinglist-max-count ((x bindinglist-p))
+  :returns (max-count natp :rule-classes :type-prescription)
+  (if (atom x)
+      0
+    (max (pseudo-term-list-max-count (binding->args (car x)))
+         (bindinglist-max-count (cdr x)))))
+
+(local
+ (defsection bindinglist-max-count
+   (local (in-theory (enable bindinglist-max-count)))
+
+   (defthm bindinglist-max-count-car
+     (implies (consp x)
+              (<= (pseudo-term-list-max-count (binding->args (car x)))
+                  (bindinglist-max-count x)))
+     :rule-classes :linear)
+
+   (defthm bindinglist-max-count-cdr
+     (<= (bindinglist-max-count (cdr x))
+         (bindinglist-max-count x))
+     :rule-classes :linear)
+
+   (fty::deffixequiv bindinglist-max-count
+     :hints(("Goal" :in-theory (enable bindinglist-fix))))
+
+   (local (defthm pseudo-term-list-max-count-of-remove-corresp-non-pseudo-vars-rw
+            ;; gross, for some reason linear wasn't doing the trick
+            (implies (equal (len x) (len y))
+                     (equal (pseudo-term-list-max-count
+                             (remove-corresp-non-pseudo-vars x y))
+                            (min (pseudo-term-list-max-count y)
+                                 (hide (pseudo-term-list-max-count
+                                        (remove-corresp-non-pseudo-vars x y))))))
+            :hints(("Goal" :expand ((:free (x) (hide x)))))))
+
+   (defthm bindinglist-max-count-of-lambda-nest-to-bindinglist
+     (b* (((mv bindings body) (lambda-nest-to-bindinglist x)))
+       (<= (+ (bindinglist-max-count bindings) (pseudo-term-count body))
+           (pseudo-term-count x)))
+     :hints(("Goal" :in-theory (enable lambda-nest-to-bindinglist)
+             :induct (lambda-nest-to-bindinglist x)
+             :expand ((pseudo-term-count x))))
+     :rule-classes
+     ((:linear :trigger-terms
+       ((bindinglist-max-count (mv-nth 0 (lambda-nest-to-bindinglist x)))
+        (pseudo-term-count (mv-nth 1 (lambda-nest-to-bindinglist x)))))))
+
+   (defthm body-count-of-lambda-nest-to-bindinglist
+     (b* (((mv ?bindings body) (lambda-nest-to-bindinglist x)))
+       (implies (pseudo-term-case x :lambda)
+                (< (pseudo-term-count body)
+                   (pseudo-term-count x))))
+     :hints(("Goal" :in-theory (enable lambda-nest-to-bindinglist)
+             :induct (lambda-nest-to-bindinglist x)
+             :expand ((pseudo-term-count x))))
+     :rule-classes :linear)))
+
+
+
+
+(defines pseudo-term-binding-count
+  (define pseudo-term-binding-count ((x pseudo-termp))
+    :Returns (count posp :rule-classes :type-prescription)
+    :measure (list (pseudo-term-count x) 1 0 0)
+    :well-founded-relation acl2::nat-list-<
+    :measure-debug t
+    (pseudo-term-case x
+      :const 1
+      :var 1
+      :fncall (+ 1 (pseudo-term-list-binding-count x.args))
+      :lambda (b* (((mv bindings body) (lambda-nest-to-bindinglist x)))
+                (+ 1
+                   (bindinglist-count bindings)
+                   (pseudo-term-binding-count body)))))
+
+  (define pseudo-term-list-binding-count ((x pseudo-term-listp))
+    :measure (list (pseudo-term-list-max-count x) 2 (len x) 0)
+    :Returns (count posp :rule-classes :type-prescription)
+    (if (atom x)
+        1
+      (+ 1 (pseudo-term-binding-count (car x))
+         (pseudo-term-list-binding-count (cdr x)))))
+
+  (define bindinglist-count ((x bindinglist-p))
+    :measure (list (bindinglist-max-count x) 3 (len x) 0)
+    :Returns (count posp :rule-classes :type-prescription)
+    (if (atom x)
+        2
+      (+ 1 (binding-count (car x))
+         (bindinglist-count (cdr x)))))
+
+  (define binding-count ((x binding-p))
+    :measure (list (pseudo-term-list-max-count (binding->args x))
+                   3 0 0)
+    :Returns (count posp :rule-classes :type-prescription)
+    (+ 1 (pseudo-term-list-binding-count (binding->args x))))
+  ///
+  (fty::deffixequiv-mutual pseudo-term-binding-count)
+
+  
+  (defthm pseudo-term-binding-count-of-bindinglist-body
+    (b* (((mv ?bindings body) (lambda-nest-to-bindinglist x)))
+      (implies (equal (pseudo-term-kind x) :lambda)
+               (< (pseudo-term-binding-count body)
+                  (pseudo-term-binding-count x))))
+    :hints (("goal" :expand ((pseudo-term-binding-count x))))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-binding-count-of-bindinglist-bindings
+    (b* (((mv bindings ?body) (lambda-nest-to-bindinglist x)))
+      (implies (equal (pseudo-term-kind x) :lambda)
+               (< (bindinglist-count bindings)
+                  (pseudo-term-binding-count x))))
+    :hints (("goal" :expand ((pseudo-term-binding-count x))))
+    :rule-classes :linear)
+  
+  (defthm pseudo-term-list-binding-count-of-pseudo-term-call->args
+    (implies (equal (pseudo-term-kind x) :fncall)
+             (< (pseudo-term-list-binding-count (acl2::pseudo-term-call->args x))
+                (pseudo-term-binding-count x)))
+    :hints (("goal" :expand ((pseudo-term-binding-count x))))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-list-binding-count-of-binding->args
+    (< (pseudo-term-list-binding-count (binding->args x))
+       (binding-count x))
+    :rule-classes :linear)
+
+  (defthm binding-count-of-car-weak
+    (<= (binding-count (car x))
+        (bindinglist-count x))
+    :hints (("goal" :expand ((bindinglist-count x))))
+    :rule-classes :linear)
+
+  (defthm binding-count-of-car
+    (implies (consp x)
+             (< (binding-count (car x))
+                (bindinglist-count x)))
+    :rule-classes :linear)
+
+  (defthm bindinglist-count-of-cdr-weak
+    (<= (bindinglist-count (cdr x))
+        (bindinglist-count x))
+    :rule-classes :linear)
+
+  (defthm bindinglist-count-of-cdr
+    (implies (consp x)
+             (< (bindinglist-count (cdr x))
+                (bindinglist-count x)))
+    :rule-classes :linear)
+
+  (defthm bindinglist-count-of-cons
+    (< (+ (binding-count x) (bindinglist-count y))
+       (bindinglist-count (cons x y)))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-list-binding-count-of-cdr-weak
+    (<= (pseudo-term-list-binding-count (cdr x)) (pseudo-term-list-binding-count x))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-list-binding-count-of-cdr
+    (implies (consp x)
+             (< (pseudo-term-list-binding-count (cdr x)) (pseudo-term-list-binding-count x)))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-binding-count-of-car-weak
+    (<= (pseudo-term-binding-count (car x)) (pseudo-term-list-binding-count x))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-binding-count-of-car
+    (implies (consp x)
+             (< (pseudo-term-binding-count (car x)) (pseudo-term-list-binding-count x)))
+    :rule-classes :linear)
+
+  (defthm pseudo-term-list-binding-count-of-cons
+    (< (+ (pseudo-term-binding-count x) (pseudo-term-list-binding-count y)) (pseudo-term-list-binding-count (cons x y)))
+    :hints (("goal" :expand ((pseudo-term-list-binding-count (cons x y)))))
+    :rule-classes :linear))
+
 
                        
-                       
-       
-
-         
