@@ -229,12 +229,21 @@
      pseudo-term-list pseudo-term-list-fix pseudo-term-list-equiv pseudo-term-list-count
      pseudo-term-null pseudo-term-quote pseudo-term-var pseudo-term-fncall pseudo-term-lambda
      pseudo-term-call pseudo-term-const
+
+     rev str-fix
+
+     def-b*-binder args forms rest-expr
      )
    #!CMR
    '(term-vars termlist-vars
      term-free-vars termlist-free-vars
 
-     pseudo-var-list pseudo-var-list-p pseudo-var-list-fix pseudo-var-list-equiv)))
+     pseudo-var-list pseudo-var-list-p pseudo-var-list-fix pseudo-var-list-equiv
+     pseudo-term-binding-count
+     pseudo-term-list-binding-count
+     binding-count
+     bindinglist-count
+     lambda-nest-to-bindinglist)))
 
 (defpkg "FGL-SYM" nil)
 (defpkg "FGL-THM" nil)

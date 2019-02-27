@@ -36,6 +36,8 @@
 (include-book "glcp-config")
 (include-book "contexts")
 (include-book "stack")
+(include-book "centaur/fty/bitstruct" :dir :system)
+
 
 (fty::defalist nat-nat-alist :key-type natp :val-type natp :true-listp t)
 
@@ -47,6 +49,10 @@
   (prof-array :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
   (prof-stack :type (satisfies nat-nat-alist-p)))
 
+(fty::defbitstruct interp-flags
+  ((intro-bvars booleanp)
+   (intro-synvars booleanp)))
+
 (make-event
  `(defconst *interp-st-fields*
     '((stack :type stack)
@@ -56,11 +62,14 @@
       (constraint :type pathcond)
       (constraint-db :type (satisfies constraint-db-p))
       (prof :type interp-profiler)
-      (backchain-limit :type (or (integer 0 *) null))
+      (backchain-limit :type integer)
       (bvar-mode :type t)
-      (equiv-contexts :type (satisfies equiv-contexts-p))
+      (equiv-contexts :type (satisfies equiv-contextsp))
       (reclimit :type (integer 0 *) :initially 0)
-      (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config)))))
+      (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config))
+      (flags :type (and (unsigned-byte 60)
+                        (satisfies interp-flags-p))
+             :initially ,(make-interp-flags)))))
 
 
 (local (defun interp-st-fields-to-templates (fields)
@@ -155,3 +164,43 @@
   :subsubsts `((fields . ,*interp-st-field-templates*))))
 
 
+
+(defthm interp-st-implies-natp-reclimit
+  (implies (interp-stp interp-st)
+           (natp (interp-st->reclimit interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->reclimit)))
+  :rule-classes :type-prescription)
+
+(defthm interp-st-implies-constraint-db-p-constraint-db
+  (implies (interp-stp interp-st)
+           (constraint-db-p (interp-st->constraint-db interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->constraint-db))))
+
+(defthm interp-st-implies-integerp-backchain-limit
+  (implies (interp-stp interp-st)
+           (integerp (interp-st->backchain-limit interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->backchain-limit)))
+  :rule-classes :type-prescription)
+
+(defthm interp-st-implies-equiv-contextsp-equiv-contexts
+  (implies (interp-stp interp-st)
+           (equiv-contextsp (interp-st->equiv-contexts interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->equiv-contexts))))
+
+(defthm interp-st-implies-glcp-config-p-config
+  (implies (interp-stp interp-st)
+           (glcp-config-p (interp-st->config interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->config))))
+
+(defthm interp-st-implies-natp-flags
+  (implies (interp-stp interp-st)
+           (natp (interp-st->flags interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->flags)))
+  :rule-classes :type-prescription)
+
+(defthm interp-st-implies-interp-flags-p-flags
+  (implies (interp-stp interp-st)
+           (interp-flags-p (interp-st->flags interp-st)))
+  :hints(("Goal" :in-theory (enable interp-st->flags))))
+
+(in-theory (disable interp-stp))

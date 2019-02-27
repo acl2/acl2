@@ -52,7 +52,13 @@
    (scratch gl-objectlist-p)
    (debug)))
 
-(fty::deflist stack$a :elt-type stack-frame :true-listp t)
+(fty::deflist stack$a :elt-type stack-frame :true-listp t :non-emptyp t
+  ///
+  (defthm stack$a-p-of-cons-cdr
+    (implies (and (stack$a-p x)
+                  (stack-frame-p a))
+             (stack$a-p (cons a (cdr x))))
+    :hints(("Goal" :in-theory (enable stack$a-p)))))
 
 (define stack$a-push-frame ((x stack$a-p))
   :enabled t
@@ -62,50 +68,87 @@
   :enabled t
   (len x))
 
+
+(local (defthm gl-object-alist-p-of-append
+           (implies (and (gl-object-alist-p x)
+                         (gl-object-alist-p y))
+                    (gl-object-alist-p (append x y)))))
+
+(define stack$a-set-bindings ((bindings gl-object-alist-p)
+                              (x stack$a-p))
+  :enabled t
+  (stack$a-fix (cons (change-stack-frame (car x) :bindings bindings)
+                     (cdr x))))
+
 (define stack$a-add-bindings ((bindings gl-object-alist-p)
                               (x stack$a-p))
-  :guard (not (eql (stack$a-len x) 0))
   :enabled t
   (b* (((stack-frame frame) (car x)))
-    (cons (change-stack-frame frame :bindings (append bindings frame.bindings))
-          (stack$a-fix (cdr x)))))
+    (stack$a-fix (cons (change-stack-frame frame :bindings (append bindings frame.bindings))
+                       (cdr x)))))
 
 (define stack$a-push-scratch ((obj gl-object-p)
                               (x stack$a-p))
-  :guard (not (eql (stack$a-len x) 0))
   :enabled t
   (b* (((stack-frame frame) (car x)))
-    (cons (change-stack-frame frame :scratch (cons obj frame.scratch))
-          (cdr x))))
+    (stack$a-fix (cons (change-stack-frame frame :scratch (cons obj frame.scratch))
+                       (cdr x)))))
 
 (define stack$a-set-debug ((debug)
                            (x stack$a-p))
-  :guard (not (eql (stack$a-len x) 0))
   :enabled t
   (b* ((frame (car x)))
-    (cons (change-stack-frame frame :debug debug)
-          (stack$a-fix (cdr x)))))
+    (stack$a-fix (cons (change-stack-frame frame :debug debug)
+                       (cdr x)))))
 
 (define stack$a-bindings ((x stack$a-p))
   :enabled t
-  :guard (not (eql (stack$a-len x) 0))
   (stack-frame->bindings (car x)))
 
 (define stack$a-scratchlen ((x stack$a-p))
   :enabled t
-  :guard (not (eql (stack$a-len x) 0))
   (len (stack-frame->scratch (car x))))
+
+
+(define revappend-take ((n natp) (x true-listp) acc)
+  (if (zp n)
+      acc
+    (revappend-take (1- n) (cdr x) (cons (car x) acc)))
+  ///
+  (defthm revappend-take-elim
+    (equal (revappend-take n x acc)
+           (revappend (take n x) acc))))
+
+(define rev-take ((n natp) (x true-listp))
+  :inline t
+  (revappend-take n x nil)
+  ///
+  (defthm rev-take-elim
+    (equal (rev-take n x)
+           (rev (take n x)))))
+
+(define stack$a-peek-scratch ((n natp)
+                              (x stack$a-p))
+  :guard (<= n (stack$a-scratchlen x))
+  :enabled t
+  (b* (((stack-frame frame) (car x)))
+    (rev-take n frame.scratch)))
 
 
 (define stack$a-pop-scratch ((n natp)
                              (x stack$a-p))
-  :guard (and (not (eql (stack$a-len x) 0))
-              (<= n (stack$a-scratchlen x)))
+  :guard (<= n (stack$a-scratchlen x))
   :enabled t
   (b* (((stack-frame frame) (car x)))
-    (mv (take n frame.scratch)
-        (cons (change-stack-frame frame :scratch (nthcdr n frame.scratch))
-              (stack$a-fix (cdr x))))))
+    (stack$a-fix (cons (change-stack-frame frame :scratch (nthcdr n frame.scratch))
+                       (cdr x)))))
+
+(local
+ (defthm stack-frame-p-of-nth-when-stack$a-p
+   (implies (and (stack$a-p x)
+                 (< (nfix n) (len x)))
+            (stack-frame-p (nth n x)))
+   :hints(("Goal" :in-theory (enable stack$a-p nth)))))
 
 (define stack$a-nth-frame ((n natp)
                            (x stack$a-p))
@@ -113,21 +156,28 @@
   :enabled t
   :guard (< n (stack$a-len x))
   (stack-frame-fix (nth n x)))
+
+(defthm stack$a-p-of-cdr
+  (implies (and (stack$a-p x)
+                (< 1 (len x)))
+           (stack$a-p (cdr x)))
+  :hints(("Goal" :in-theory (enable stack$a-p))))
+                  
        
 (define stack$a-pop-frame ((x stack$a-p))
   :enabled t
-  :guard (not (eql 0 (stack$a-len x)))
+  :guard (< 1 (stack$a-len x))
   (stack$a-fix (cdr x)))
 
 (define create-stack$a ()
   :enabled t
-  nil)
+  (list (make-stack-frame)))
 
 
 
 (defstobj stack$c
-  (stack$c-array :type (array t (0)) :resizable t)
-  (stack$c-nframes :type (integer 0 *) :initially 0))
+  (stack$c-array :type (array t (3)) :resizable t)
+  (stack$c-nframes :type (integer 1 *) :initially 1))
 
 
 (defun-sk stack$c-welltyped (stack$c)
@@ -184,9 +234,13 @@
   :enabled t
   (stack$c-nframes stack$c))
 
+(define stack$c-set-bindings ((bindings gl-object-alist-p)
+                              (stack$c stack$c-okp))
+  :enabled t
+  (update-stack$c-arrayi (- (* 3 (stack$c-nframes stack$c)) 3) bindings stack$c))
+
 (define stack$c-add-bindings ((bindings gl-object-alist-p)
                               (stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
   :enabled t
   (b* ((index (- (* 3 (stack$c-nframes stack$c)) 3))
        (curr-bindings (stack$c-arrayi index stack$c)))
@@ -194,7 +248,6 @@
 
 (define stack$c-push-scratch ((obj gl-object-p)
                               (stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
   :enabled t
   (b* ((index (- (* 3 (stack$c-nframes stack$c)) 2))
        (curr-scratch (stack$c-arrayi index stack$c)))
@@ -202,18 +255,15 @@
 
 (define stack$c-set-debug ((obj)
                            (stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
   :enabled t
   (b* ((index (- (* 3 (stack$c-nframes stack$c)) 1)))
     (update-stack$c-arrayi index obj stack$c)))
 
 (define stack$c-bindings ((stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
   :enabled t
   (stack$c-arrayi (- (* 3 (stack$c-nframes stack$c)) 3) stack$c))
 
 (define stack$c-scratchlen ((stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
   :enabled t
   (len (stack$c-arrayi (- (* 3 (stack$c-nframes stack$c)) 2) stack$c)))
 
@@ -221,16 +271,18 @@
          (implies (gl-objectlist-p x)
                   (true-listp x))))
 
+(define stack$c-peek-scratch ((n natp)
+                              (stack$c stack$c-okp))
+  :guard (<= n (stack$c-scratchlen stack$c))
+  :enabled t
+  (rev-take n (stack$c-arrayi (- (* 3 (stack$c-nframes stack$c)) 2) stack$c)))
+
 (define stack$c-pop-scratch ((n natp)
                              (stack$c stack$c-okp))
-  :guard (and (not (eql (stack$c-len stack$c) 0))
-              (<= n (stack$c-scratchlen stack$c)))
+  :guard (<= n (stack$c-scratchlen stack$c))
   :enabled t
-  (b* ((index (- (* 3 (stack$c-nframes stack$c)) 2))
-       (curr-scratch (stack$c-arrayi index stack$c))
-       (popped (take n curr-scratch))
-       (stack$c (update-stack$c-arrayi index (nthcdr n curr-scratch) stack$c)))
-    (mv popped stack$c)))
+  (b* ((index (- (* 3 (stack$c-nframes stack$c)) 2)))
+    (update-stack$c-arrayi index (nthcdr n (stack$c-arrayi index stack$c)) stack$c)))
 
 
 ;; (local
@@ -286,7 +338,7 @@
                       :debug (stack$c-arrayi (- offset 1) stack$c))))
 
 (define stack$c-pop-frame ((stack$c stack$c-okp))
-  :guard (not (eql (stack$c-len stack$c) 0))
+  :guard (< 1 (stack$c-len stack$c))
   :enabled t
   (b* ((offset (* 3 (stack$c-nframes stack$c)))
        (stack$c (update-stack$c-arrayi (- offset 1) nil stack$c))
@@ -335,6 +387,20 @@
            :hints (("goal" :use ((:instance stack-frames-corr-necc (n (1- (+ n m)))))
                     :in-theory (disable stack-frames-corr-necc)))))
 
+  (local (defthm stack-frames-corr-zero-offset
+           (implies (and (stack-frames-corr stack$c stack$a)
+                         (integerp m) (integerp n)
+                         (posp (+ n m))
+                         (<= (+ n m) (len stack$a)))
+                    (and (equal (nth 0 (nth *stack$c-arrayi* stack$c))
+                                (stack-frame->bindings (nth (- (len stack$a) 1) stack$a)))
+                         (equal (nth 1 (nth *stack$c-arrayi* stack$c))
+                                (stack-frame->scratch (nth (- (len stack$a) 1) stack$a)))
+                         (equal (nth 2 (nth *stack$c-arrayi* stack$c))
+                                (stack-frame->debug (nth (- (len stack$a) 1) stack$a)))))
+           :hints (("goal" :use ((:instance stack-frames-corr-necc (n 0)))
+                    :in-theory (disable stack-frames-corr-necc)))))
+
   (local (define stack-corr (stack$c stack$a)
            :non-executable t
            :enabled t
@@ -361,10 +427,7 @@
                     (nth (+ -1 n) b)))
            :hints(("Goal" :in-theory (enable nth)))))
 
-  (local (defthm gl-object-alist-p-of-append
-           (implies (and (gl-object-alist-p x)
-                         (gl-object-alist-p y))
-                    (gl-object-alist-p (append x y)))))
+  
 
   (local (defthm equal-plus-consts
            (implies (syntaxp (and (quotep a) (quotep b)))
@@ -410,6 +473,12 @@
                              append
                              acl2::nthcdr-when-zp)))
 
+  (local (defthm len-when-stack$a-p
+           (implies (stack$a-p x)
+                    (posp (len x)))
+           :hints(("Goal" :in-theory (enable stack$a-p)))
+           :rule-classes :forward-chaining))
+
 
   (local (set-default-hints
           '((and stable-under-simplificationp
@@ -431,14 +500,17 @@
                            :exec create-stack$c)
     :exports ((stack-push-frame :logic stack$a-push-frame :exec stack$c-push-frame :protect t)
               (stack-len :logic stack$a-len :exec stack$c-len)
+              (stack-set-bindings :logic stack$a-set-bindings :exec stack$c-set-bindings)
               (stack-add-bindings :logic stack$a-add-bindings :exec stack$c-add-bindings)
               (stack-push-scratch :logic stack$a-push-scratch :exec stack$c-push-scratch)
               (stack-set-debug :logic stack$a-set-debug :exec stack$c-set-debug)
               (stack-bindings :logic stack$a-bindings :exec stack$c-bindings)
               (stack-scratchlen :logic stack$a-scratchlen :exec stack$c-scratchlen)
+              (stack-peek-scratch :logic stack$a-peek-scratch :exec stack$c-peek-scratch)
               (stack-pop-scratch :logic stack$a-pop-scratch :exec stack$c-pop-scratch)
               (stack-nth-frame :logic stack$a-nth-frame :exec stack$c-nth-frame)
               (stack-pop-frame :logic stack$a-pop-frame :exec stack$c-pop-frame :protect t)
               )))
+
 
        
