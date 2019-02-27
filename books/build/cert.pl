@@ -132,6 +132,8 @@ my %certlib_opts = ( "debugging" => 0,
                      "pcert_all" => 0 );
 my $target_ext = "cert";
 my $cache_file = 0;
+my $cache_read_only = 0;
+my $cache_write_only = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
 my $params_file = 0;
 # Remove trailing slash from and canonicalize bin_dir
@@ -471,6 +473,12 @@ COMMAND LINE OPTIONS
           events.  File modification times are used to determine when
           the cached information about a file must be updated.
 
+   --cache-read-only
+          Only read from the cache file, don\'t update it.
+
+   --cache-write-only
+          Only write out a cache file, don\'t read from it.
+
    --write-sources <filename>
           Dump the list of all source files, one per line, into filename.
 
@@ -625,6 +633,8 @@ GetOptions ("help|h"               => sub { print $summary_str;
                                         },
             "debug"                => \$certlib_opts{"debugging"},
             "cache=s"              => \$cache_file,
+            "cache-read-only"      => \$cache_read_only,
+            "cache-write-only"     => \$cache_write_only,
             "accept-cache"         => \$certlib_opts{"believe_cache"},
             "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
             "params=s"             => \$params_file,
@@ -645,7 +655,7 @@ sub remove_trailing_slash {
 
 certlib_set_opts(\%certlib_opts);
 
-my $cache = retrieve_cache($cache_file);
+my $cache = $cache_write_only ? {} : retrieve_cache($cache_file);
 
 # If $acl2 is still not set, then set it based on the location of acl2
 # in the path, if available
@@ -794,7 +804,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 }
 
 
-store_cache($cache, $cache_file);
+store_cache($cache, $cache_file) if (! $cache_read_only);
 
 my @sources = sort(keys %{$depdb->sources});
 my @otherdeps = sort(keys %{$depdb->others});

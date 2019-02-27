@@ -10,9 +10,15 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/utilities/fixbytes/ubyte32" :dir :system)
+(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "kestrel/utilities/defset" :dir :system)
+(include-book "kestrel/utilities/fixbytes/ubyte32-list" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (include-book "crypto")
+
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/lists/prefixp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,16 +35,7 @@
      <a href=\"https://en.bitcoin.it/wiki/BIP_0032\"
      >Page `BIP 0032' of [Wiki]</a>.
      We refer to the document at the first URL as `[BIP32]'
-     in the documentation below."))
-  :order-subtopics t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ bip32-conventions
-  :parents (bip32)
-  :short "BIP 32 conventions."
-  :long
-  (xdoc::topapp
+     in the documentation below.")
    (xdoc::p
     "As stated in the 'Conventions' section of [BIP32],
      the elliptic curve cryptography is based on the secp256k1 curve.
@@ -46,7 +43,7 @@
      @(tsee secp256k1-priv-key-p) and @(tsee secp256k1-pub-key-p).")
    (xdoc::p
     "The conversion functions described in the 'Conventions' section of [BIP32]
-     are formalized as follows in our model:")
+     are formalized as follows in our model of Bitcoin:")
    (xdoc::ul
     (xdoc::li
      "@($\\mathsf{point}$) is @(tsee secp256k1-mul)
@@ -64,13 +61,35 @@
       with the compression flag set.")
     (xdoc::li
      "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256.")))
+  :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bip32-library-extensions
+  :parents (bip32)
+  :short "Library extensions for BIP 32."
+  :long
+  (xdoc::topp
+   "These will be moved to the appropriate libraries.")
+
+  (defrule ubyte32-list-fix-of-take
+    (implies (<= (nfix n) (len x))
+             (equal (ubyte32-list-fix (take n x))
+                    (take n (ubyte32-list-fix x))))
+    :enable ubyte32-list-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-extended-keys
+  :parents (bip32)
+  :short "Extended keys."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bip32-chain-code
-  :short "Fixtype of chain codes."
+  :short "Chain codes."
   :long
   (xdoc::topp
    "A chain code consists of 32 bytes.
@@ -87,8 +106,7 @@
 
     (defrule byte-listp-when-bip32-chain-code-p
       (implies (bip32-chain-code-p cc)
-               (byte-listp cc))
-      :rule-classes :tau-system)
+               (byte-listp cc)))
 
     (defrule len-when-bip32-chain-code-p
       (implies (bip32-chain-code-p x)
@@ -103,6 +121,7 @@
          :exec x)
     :no-function t
     ///
+
     (defrule bip32-chain-code-fix-when-bip32-chain-code-p
       (implies (bip32-chain-code-p x)
                (equal (bip32-chain-code-fix x)
@@ -118,7 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bip32-ext-priv-key
-  :short "Fixtype of extended private keys."
+  :short "Extended private keys."
   :long
   "<p>
    An extended private key consists of a private key and a chain code.
@@ -130,12 +149,16 @@
 
   (defrule posp-of-bip32-ext-priv-key->key
     (posp (bip32-ext-priv-key->key extprivkey))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defrule len-of-bip32-ext-priv-key->chain-code
+    (equal (len (bip32-ext-priv-key->chain-code key))
+           32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bip32-ext-pub-key
-  :short "Fixtype of extended public keys."
+  :short "Extended public keys."
   :long
   "<p>
    An extended public key consists of a public key and a chain code.
@@ -143,6 +166,30 @@
   ((key secp256k1-pub-key)
    (chain-code bip32-chain-code))
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bip32-ext-key
+  :short "Extended keys (private or public)."
+  :long
+  "<p>
+   This is the (disjoint) union of extended private and public keys.
+   </p>"
+  (:priv ((get bip32-ext-priv-key)))
+  (:pub ((get bip32-ext-pub-key)))
+  ///
+
+  (defrule len-of-bip32-ext-pub-key->chain-code
+    (equal (len (bip32-ext-pub-key->chain-code key))
+           32)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-key-derivation
+  :parents (bip32)
+  :short "Key derivation functions."
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,6 +289,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define bip32-ckd ((parent bip32-ext-key-p) (i ubyte32p))
+  :returns (mv (error? booleanp)
+               (child bip32-ext-key-p))
+  :short "Child key derivation from parent key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is the sum of @(tsee bip32-ckd-priv) and @(tsee bip32-ckd-pub).
+     It maps (extended) parent private keys to (extended) child private keys
+     and (extended) parent public keys to (extended) child public keys.
+     This function does not appear in [BIP32]."))
+  (bip32-ext-key-case
+   parent
+   :priv (b* (((mv error? child) (bip32-ckd-priv parent.get i)))
+           (mv error? (bip32-ext-key-priv child)))
+   :pub (b* (((mv error? child) (bip32-ckd-pub parent.get i)))
+          (mv error? (bip32-ext-key-pub child))))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define bip32-n ((private bip32-ext-priv-key-p))
   :returns (extpubkey bip32-ext-pub-key-p)
   :short "Calculate an extended public key from an extended private key."
@@ -287,6 +356,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip32-ckd-priv-pub-nh ((parent bip32-ext-priv-key-p) (i ubyte32p))
+  :returns (mv (error? booleanp)
+               (child bip32-ext-pub-key-p))
   :short "Public child key derivation from private parent key,
           for non-hardedned child keys only."
   :long
@@ -309,5 +380,1017 @@
      that are currently not formalized in the secp256k1 placeholder.
      Thus, this proof will be done later."))
   (bip32-ckd-pub (bip32-n parent) i)
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-key-trees
+  :parents (bip32)
+  :short "Key trees."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc bip32-path
+  :short "Paths in key trees."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "As explained in [BIP32],
+     the derivation of child keys from parent keys give rise to key trees.
+     Each key in a tree is designated by
+     a list of zero or more unsigned 32-bit bytes,
+     each of which is a key index @('i')
+     as used in the child key derivation functions;
+     the empty path designates the root of the tree.")
+   (xdoc::p
+    "This kind of path corresponds to the notation
+     @($\\mathsf{a/b/c}$) used in [BIP32].
+     However, we do not use any explicit @($\\mathsf{H}$) subscripts
+     to denote indices of hardened keys;
+     we simply use indices whose most significant bit is set,
+     e.g. @($3_\\mathsf{H}$) is index @($2^{31}+3$).")
+   (xdoc::p
+    "Below we lift the key derivation functions from single indices to paths.
+     These key derivation functions on paths designate keys in a tree,
+     starting with a root.
+     All the derivations in the path must be valid (i.e. return no error)
+     in order for a path to designate a valid key;
+     otherwise, as stated in [BIP32], the corresponding key is skipped.")
+   (xdoc::p
+    "In our formalization of BIP 32,
+     we use the library type @(tsee ubyte32-list) for paths.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-ckd-priv* ((root bip32-ext-priv-key-p) (path ubyte32-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-priv-key-p))
+  :short "Private key designated by
+          a specified path in the tree with the specified root private key."
+  (b* ((root (mbe :logic (bip32-ext-priv-key-fix root) :exec root))
+       ((when (endp path)) (mv nil root))
+       ((mv error? next) (bip32-ckd-priv root (car path)))
+       ((when error?) (mv t root)))
+    (bip32-ckd-priv* next (cdr path)))
+  :no-function t
+  :measure (len path)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-ckd-pub* ((root bip32-ext-pub-key-p) (path ubyte32-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-pub-key-p))
+  :short "Public key designated by
+          a specified path in the tree with the specified root public key."
+  (b* ((root (mbe :logic (bip32-ext-pub-key-fix root) :exec root))
+       ((when (endp path)) (mv nil root))
+       ((mv error? next) (bip32-ckd-pub root (car path)))
+       ((when error?) (mv t root)))
+    (bip32-ckd-pub* next (cdr path)))
+  :no-function t
+  :measure (len path)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-ckd* ((root bip32-ext-key-p) (path ubyte32-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-key-p))
+  :short "Key designated by
+          a specified path in the tree with the specified root key."
+  (bip32-ext-key-case
+   root
+   :priv (b* (((mv error? key) (bip32-ckd-priv* root.get path)))
+           (mv error? (bip32-ext-key-priv key)))
+   :pub (b* (((mv error? key) (bip32-ckd-pub* root.get path)))
+          (mv error? (bip32-ext-key-pub key))))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset bip32-path-set
+  :elt-type ubyte32-list
+  :pred bip32-path-setp
+  :short "Osets of paths in key trees."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "At any point in time, a system (e.g. wallet) contains
+     a relatively small subset
+     of the complete tree of possible keys derived from a root.
+     We represent the current tree as a finite set of paths
+     that satisfies additional conditions explicated later.")))
+
+(defsection bip32-path-set-ext
+  :extension bip32-path-set
+
+  (defrule bip32-path-setp-of-tail
+    (implies (bip32-path-setp x)
+             (bip32-path-setp (set::tail x)))
+    :enable (bip32-path-setp set::tail))
+
+  (defrule ubyte32-listp-when-in-bip32-path-setp
+    (implies (and (bip32-path-setp x)
+                  (set::in a x))
+             (ubyte32-listp a))
+    :enable (bip32-path-setp set::in set::head)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk bip32-path-set-closedp ((paths bip32-path-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a set of key tree paths is closed under prefix."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The set of paths of a tree is closed under prefix:
+     if a path is in the tree, every prefix path is in the tree too.
+     Thus, in order to represent a tree (of keys),
+     a set of paths must satisfy this condition.")
+   (xdoc::p
+    "The condition that the prefix is a true list
+     is needed because @(tsee prefixp) ignores the final @(tsee cdr)s.
+     Without this condition, prefixed that are not true lists
+     would be required to be in the set,
+     which would be impossible because the set's elements are all true lists.")
+   (xdoc::p
+    "A closed non-empty set of paths always contains the empty path,
+     because the empty path is a prefix of every path.")
+   (xdoc::p
+    "The singleton set consisting of the empty path is closed."))
+  (forall (path prefix)
+          (b* ((paths (bip32-path-set-fix paths)))
+            (implies (and (set::in path paths)
+                          (true-listp prefix)
+                          (prefixp prefix path))
+                     (set::in prefix paths))))
+  ///
+
+  (fty::deffixequiv bip32-path-set-closedp
+    :args ((paths bip32-path-setp))
+    :hints (("Goal"
+             :in-theory (disable bip32-path-set-closedp-necc)
+             :use ((:instance bip32-path-set-closedp-necc
+                    (paths (bip32-path-set-fix paths))
+                    (path (mv-nth 0 (bip32-path-set-closedp-witness paths)))
+                    (prefix (mv-nth 1 (bip32-path-set-closedp-witness paths))))
+                   (:instance bip32-path-set-closedp-necc
+                    (path (mv-nth 0 (bip32-path-set-closedp-witness
+                                     (bip32-path-set-fix paths))))
+                    (prefix (mv-nth 1 (bip32-path-set-closedp-witness
+                                       (bip32-path-set-fix paths)))))))))
+
+  (defrule empty-path-in-closed-nonempty-bip32-path-set
+    (implies (and (bip32-path-setp paths)
+                  (not (set::empty paths))
+                  (bip32-path-set-closedp paths))
+             (set::in nil paths))
+    :use (:instance bip32-path-set-closedp-necc
+          (prefix nil)
+          (path (set::head paths))))
+
+  (defrule bip32-path-set-closedp-of-singleton-empty-path
+    (bip32-path-set-closedp '(nil))
+    :enable set::in)
+
+  (in-theory (disable (:e bip32-path-set-closedp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bip32-index-tree
+  :short "Index trees underlying key trees."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "As defined later, a key tree includes a tree of indices,
+     represented as a closed non-empty set of paths."))
+
+  (define bip32-index-treep (x)
+    :returns (yes/no booleanp)
+    :parents (bip32-index-tree)
+    :short "Recognizer for @(tsee bip32-index-tree)."
+    (and (bip32-path-setp x)
+         (not (set::empty x))
+         (bip32-path-set-closedp x))
+    :no-function t
+    ///
+
+    (defrule bip32-path-setp-when-bip32-index-treep
+      (implies (bip32-index-treep x)
+               (bip32-path-setp x))
+      :rule-classes (:rewrite :forward-chaining))
+
+    (defrule bip32-index-treep-of-singleton-empty-path
+      (bip32-index-treep '(nil))
+      :disable ((bip32-index-treep)))
+
+    (in-theory (disable (:e bip32-index-treep))))
+
+  (define bip32-index-tree-fix ((x bip32-index-treep))
+    :returns (fixed-x bip32-index-treep)
+    :parents (bip32-index-tree)
+    :short "Fixer for @(tsee bip32-index-tree)."
+    (mbe :logic (if (bip32-index-treep x) x (list nil))
+         :exec x)
+    :no-function t
+    ///
+
+    (defrule bip32-index-tree-fix-when-bip32-index-treep
+      (implies (bip32-index-treep x)
+               (equal (bip32-index-tree-fix x)
+                      x)))
+
+    (in-theory (disable (:e bip32-index-tree-fix))))
+
+  (fty::deffixtype bip32-index-tree
+    :pred bip32-index-treep
+    :fix bip32-index-tree-fix
+    :equiv bip32-index-tree-equiv
+    :define t
+    :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk bip32-valid-keys-p ((root bip32-ext-key-p) (tree bip32-index-treep))
+  :returns (yes/no booleanp)
+  :short "Check if all the derived keys in a tree are valid."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Given a root key, every path in a tree must correspond to a valid key.
+     That is, all the key derivations along the path must be valid.")
+   (xdoc::p
+    "This function checks this condition.
+     This function is used to define key trees later.")
+   (xdoc::p
+    "The singleton tree consisting of just the root
+     (represented as the singleton set consisting of the empty path)
+     trivially satisfies this key validity condition."))
+  (forall (path)
+          (b* ((tree (bip32-index-tree-fix tree)))
+            (implies (set::in path tree)
+                     (not (mv-nth 0 (bip32-ckd* root path))))))
+  ///
+
+  (fty::deffixequiv bip32-valid-keys-p
+    :args ((root bip32-ext-key-p) (tree bip32-index-treep))
+    :hints (("Goal"
+             :in-theory (disable bip32-valid-keys-p-necc)
+             :use (;; for ROOT:
+                   (:instance bip32-valid-keys-p-necc
+                    (root (bip32-ext-key-fix root))
+                    (path (bip32-valid-keys-p-witness root tree)))
+                   (:instance bip32-valid-keys-p-necc
+                    (path (bip32-valid-keys-p-witness
+                           (bip32-ext-key-fix root) tree)))
+                   ;; for TREE:
+                   (:instance bip32-valid-keys-p-necc
+                    (tree (bip32-index-tree-fix tree))
+                    (path (bip32-valid-keys-p-witness root tree)))
+                   (:instance bip32-valid-keys-p-necc
+                    (path (bip32-valid-keys-p-witness
+                           root (bip32-index-tree-fix tree))))))))
+
+  (defrule bip32-valid-keys-p-of-singleton-empty-path
+    (bip32-valid-keys-p root '(nil))
+    :enable (bip32-valid-keys-p
+             set::in
+             bip32-ckd*
+             bip32-ckd-priv*
+             bip32-ckd-pub*))
+
+  (in-theory (disable (:e bip32-valid-keys-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk bip32-valid-depths-p ((init bytep) (tree bip32-index-treep))
+  :returns (yes/no booleanp)
+  :short "Check if all the key depths in a tree are valid."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "When a key is serialized, its depth in the tree is represented in 1 byte.
+     Thus, in order for keys to be serializable, the maximum depth must be 255.
+     Since the master key has depth 0 [BIP32],
+     the depth of a key is the length of the key's path.")
+   (xdoc::p
+    "When sharing key subtrees as explained in the use cases in [BIP32],
+     the root key is not the master key,
+     but some descendant of the master key.
+     That descendant has a non-0 depth
+     in the supertree rooted at the master key.
+     Thus, the ``real'' depth of each key in the subtree
+     is the depth within the subtree plus the depth of the subtree's root;
+     this ``real'' depth is the one in the supertree rooted at the master key.
+     The @('init') argument of this function is the depth of the root
+     (i.e. the ``initial'' depth);
+     this function checks that the depth in the subtree plus @('init')
+     does not exceed 255.
+     If the subtree coincides with the supertree, then @('init') is 0.")
+   (xdoc::p
+    "The singleton tree consisting of just the root
+     (represented as the singleton set consisting of the empty path),
+     trivially satisfies this depth validity condition."))
+  (forall (path)
+          (b* ((tree (bip32-index-tree-fix tree)))
+            (implies (set::in path tree)
+                     (bytep (+ (byte-fix init) (len path))))))
+  ///
+
+  (fty::deffixequiv bip32-valid-depths-p
+    :args ((init bytep) (tree bip32-index-treep))
+    :hints (("Goal"
+             :in-theory (disable bip32-valid-depths-p-necc)
+             :use (;; for INIT:
+                   (:instance bip32-valid-depths-p-necc
+                    (init (byte-fix init))
+                    (path (bip32-valid-depths-p-witness init tree)))
+                   (:instance bip32-valid-depths-p-necc
+                    (path (bip32-valid-depths-p-witness (byte-fix init) tree)))
+                   ;; for TREE:
+                   (:instance bip32-valid-depths-p-necc
+                    (tree (bip32-index-tree-fix tree))
+                    (path (bip32-valid-depths-p-witness init tree)))
+                   (:instance bip32-valid-depths-p-necc
+                    (path (bip32-valid-depths-p-witness
+                           init (bip32-index-tree-fix tree))))))))
+
+  (defrule bip32-valid-depths-p-of-singleton-empty-path
+    (bip32-valid-depths-p init '(nil))
+    :enable (bip32-valid-depths-p set::in))
+
+  (in-theory (disable (:e bip32-valid-depths-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod bip32-key-tree
+  :short "Key trees."
+  :long
+  "<p>
+   In a key tree, each node is labeled by a key derived from the root key.
+   Thus, at the specification level, it suffices to have
+   the root key and the underlying index tree,
+   since all the non-root keys can be derived.
+   We require each non-root key to be valid,
+   as defined by @(tsee bip32-valid-keys-p).
+   </p>
+   <p>
+   In addition to a root key and an index tree,
+   our formalization of root keys includes a few other components.
+   These are needed in order for the keys in the tree to be serializable
+   in the manner specified in [BIP32].
+   </p>
+   <p>
+   One of these components is the depth of the root key
+   with respect to the (super)tree rooted at the master key.
+   This is 0 if this tree is rooted at the master key.
+   We require each key in this (sub)tree to have a depth below 256,
+   taking into account the depth of the root.
+   We pass the root depth to @(tsee bip32-valid-depths-p)
+   to check this condition.
+   </p>
+   <p>
+   Another component is the index of the root of this tree
+   within the (super)tree rooted at the master key.
+   This must be 0 if this tree's root is master key.
+   Otherwise, the root of this subtree is some child within the supertree,
+   and this component is the index of that child.
+   Without this component,
+   we would be unable to serialize the root of this subtree.
+   Note that the non-root nodes in the tree have known indices.
+   </p>
+   <p>
+   Yet another component is the fingerprint (consisting of 4 bytes [BIP32])
+   of the parent of the key at the root of this tree.
+   This must consist of four zeros if this root key is the master key.
+   Without this component,
+   we would be unable to serialize the root of this subtree.
+   Note that the non-root nodes in the tree have parent fingerprints
+   that can be calculated from their parent key.
+   </p>"
+  ((root-key bip32-ext-key)
+   (root-depth byte)
+   (root-index ubyte32 :reqfix (if (equal root-depth 0)
+                                   0
+                                 root-index))
+   (root-parent byte-list :reqfix (if (or (equal root-depth 0)
+                                          (not (equal (len root-parent) 4)))
+                                      (list 0 0 0 0)
+                                    root-parent))
+   (index-tree bip32-index-tree :reqfix (if (and (bip32-valid-keys-p root-key
+                                                                     index-tree)
+                                                 (bip32-valid-depths-p root-depth
+                                                                       index-tree))
+                                            index-tree
+                                          (list nil))))
+  :require (and (bip32-valid-keys-p root-key index-tree)
+                (bip32-valid-depths-p root-depth index-tree)
+                (implies (equal root-depth 0)
+                         (equal root-index 0))
+                (equal (len root-parent) 4)
+                (implies (equal root-depth 0)
+                         (equal root-parent (list 0 0 0 0))))
+  :layout :list
+  :pred bip32-key-treep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-path-in-tree-p ((path ubyte32-listp) (tree bip32-key-treep))
+  :returns (yes/no booleanp)
+  :short "Check if a path designates a key in a key tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The empty path always designates a key: the one at the root.")
+   (xdoc::p
+    "If a path designates a key, every prefix of it (taken with @(tsee take))
+     also designates an (ancestor) key.")
+   (xdoc::p
+    "If a path designates a key,
+     that key can be successfully derived from the root.")
+   (xdoc::p
+    "If a path designates a key,
+     the total depth of that key (including the root's depth)
+     does not exceed 255."))
+  (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path)))
+    (set::in path (bip32-key-tree->index-tree tree)))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-path-in-tree-p-of-nil
+    (implies (bip32-key-treep tree)
+             (bip32-path-in-tree-p nil tree))
+    :enable (bip32-key-treep
+             bip32-index-treep
+             bip32-path-set-closedp
+             bip32-key-tree->index-tree))
+
+  (defrule bip32-path-in-tree-p-of-take
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree)
+                  (<= (nfix n) (len path)))
+             (bip32-path-in-tree-p (take n path) tree))
+    :use (:instance bip32-path-set-closedp-necc
+          (paths (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path))
+          (prefix (take n (ubyte32-list-fix path)))))
+
+  (defrule valid-key-when-bip32-path-in-tree-p
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree))
+             (not (mv-nth 0 (bip32-ckd* (bip32-key-tree->root-key tree) path))))
+    :use (:instance bip32-valid-keys-p-necc
+          (root (bip32-key-tree->root-key tree))
+          (tree (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path))))
+
+  (defrule valid-depth-when-bip32-path-in-tree-p
+    (implies (and (bip32-key-treep tree)
+                  (bip32-path-in-tree-p path tree))
+             (bytep (+ (bip32-key-tree->root-depth tree)
+                       (len path))))
+    :use (:instance bip32-valid-depths-p-necc
+          (init (bip32-key-tree->root-depth tree))
+          (tree (bip32-key-tree->index-tree tree))
+          (path (ubyte32-list-fix path)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-key-serialization
+  :parents (bip32)
+  :short "Key serialization."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-key-identifier ((key bip32-ext-key-p))
+  :returns (id byte-listp)
+  :short "Identifier of an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The section `Key identifiers' of [BIP32] says that
+     an extended key is identified by
+     the Hash160 of the serialized elliptic curve public key,
+     ignoring the chain code..")
+   (xdoc::p
+    "This should apply to both private and public keys.
+     If given a private key, we calculate the corresponding public key."))
+  (b* ((pubkey (bip32-ext-key-case
+                key
+                :priv (secp256k1-priv-to-pub (bip32-ext-priv-key->key key.get))
+                :pub (bip32-ext-pub-key->key key.get)))
+       (serialized (secp256k1-point-to-bytes pubkey t)))
+    (hash160 serialized))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (more-returns
+   (id (equal (len id) 20) :name len-of-bip32-key-identifier)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-key-fingerprint ((key bip32-ext-key-p))
+  :returns (fp byte-listp)
+  :short "Fingerprint of an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The section `Key identifiers' of [BIP32]
+     says that the first 32 bits (i.e. 4 bytes) of a key identifier
+     are the key fingerprint."))
+  (take 4 (bip32-key-identifier key))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (more-returns
+   (fp (equal (len fp) 4) :name len-of-bip32-key-fingerprint)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bip32-serialization-versions
+  :short "Versions bytes for serializing extended keys."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "These are for private or public keys, for mainnet or testnet:
+     four possible combinations.")
+   (xdoc::p
+    "The values are specified in [BIP32],
+     as hexadecimal integers,
+     so we introduce them as such here.
+     Even though [BIP32] does not explicitly say
+     how these (32-bit) integers are converted to bytes,
+     it seems reasonable that they are converted as big endian.
+     This could be also confirmed by verifying that,
+     after Base58 encoding,
+     the serialized keys start with
+     @('xprv'), @('xpub'), @('tprv'), and @('tpub')."))
+
+  (defval *bip32-version-priv-main*
+    :parents (bip32-serialization-versions)
+    #x0488ADE4
+    ///
+    (assert-event (ubyte32p *bip32-version-priv-main*)))
+
+  (defval *bip32-version-pub-main*
+    :parents (bip32-serialization-versions)
+    #x0488B21E
+    ///
+    (assert-event (ubyte32p *bip32-version-pub-main*)))
+
+  (defval *bip32-version-priv-test*
+    :parents (bip32-serialization-versions)
+    #x04358394
+    ///
+    (assert-event (ubyte32p *bip32-version-priv-test*)))
+
+  (defval *bip32-version-pub-test*
+    :parents (bip32-serialization-versions)
+    #x043587CF
+    ///
+    (assert-event (ubyte32p *bip32-version-pub-test*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-serialize-key ((key bip32-ext-key-p)
+                             (depth bytep)
+                             (index ubyte32p)
+                             (parent (and (byte-listp parent)
+                                          (equal (len parent) 4)))
+                             (mainnet booleanp))
+  :guard (implies (equal depth 0)
+                  (and (equal index 0)
+                       (equal parent (list 0 0 0 0))))
+  :returns (bytes byte-listp)
+  :short "Serialize an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "Besides the key, from which chain code and key data are obtained,
+     this function takes additional arguments necessary for
+     a complete serialization as specified in [BIP32].")
+   (xdoc::p
+    "If the depth is 0, this is the master key and thus
+     the child number and the parent's fingerprint
+     must be 0 too [BIP32].
+     This is expressed by the guard.")
+   (xdoc::p
+    "A boolean argument says whether the key is being serialized for
+     the mainnet (if @('t')) or for the testnet (if @('nil'))."))
+  (b* ((depth (mbe :logic (byte-fix depth) :exec depth))
+       (index (mbe :logic (ubyte32-fix index) :exec index))
+       (parent (mbe :logic (byte-list-fix parent) :exec parent))
+       (parent (mbe :logic (if (= (len parent) 4)
+                               parent
+                             (list 0 0 0 0))
+                    :exec parent))
+       ((mv key-data chain-code version)
+        (bip32-ext-key-case
+         key
+         :priv (mv (cons 0 (nat=>bendian
+                            256 32 (bip32-ext-priv-key->key key.get)))
+                   (bip32-ext-priv-key->chain-code key.get)
+                   (if mainnet
+                       *bip32-version-priv-main*
+                     *bip32-version-priv-test*))
+         :pub (mv (secp256k1-point-to-bytes
+                   (bip32-ext-pub-key->key key.get) t)
+                  (bip32-ext-pub-key->chain-code key.get)
+                  (if mainnet
+                      *bip32-version-pub-main*
+                    *bip32-version-pub-test*)))))
+    (append (nat=>bendian 256 4 version)
+            (list depth)
+            parent
+            (nat=>bendian 256 4 index)
+            chain-code
+            key-data))
+  :guard-hints (("Goal" :in-theory (enable ubyte32p)))
+  :no-function t
+  :hooks (:fix)
+
+  ///
+  (more-returns
+   (bytes (equal (len bytes) 78) :name len-of-bip32-serialize-key)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk bip32-serialized-key-p ((bytes byte-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of bytes is a serialized extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which essentially characterizes the image of @(tsee bip32-serialize-key)
+     over arguments that satisfy that function's guard.")
+   (xdoc::p
+    "By definition,
+     the witness function is the right inverse of @(tsee bip32-serialize-key),
+     over valid serialized keys."))
+  (exists (key depth index parent mainnet)
+          (and (bip32-ext-key-p key)
+               (bytep depth)
+               (ubyte32p index)
+               (byte-listp parent)
+               (equal (len parent) 4)
+               (booleanp mainnet)
+               (implies (equal depth 0)
+                        (and (equal index 0)
+                             (equal parent (list 0 0 0 0))))
+               (equal (bip32-serialize-key key depth index parent mainnet)
+                      (byte-list-fix bytes))))
+  :skolem-name bip32-serialized-key-witness
+  ///
+
+  (fty::deffixequiv bip32-serialized-key-p
+    :args ((bytes byte-listp))
+    :hints (("Goal"
+             :in-theory (disable bip32-serialized-key-p-suff)
+             :use ((:instance bip32-serialized-key-p-suff
+                    (key (mv-nth 0 (bip32-serialized-key-witness
+                                    (byte-list-fix bytes))))
+                    (depth (mv-nth 1 (bip32-serialized-key-witness
+                                      (byte-list-fix bytes))))
+                    (index (mv-nth 2 (bip32-serialized-key-witness
+                                      (byte-list-fix bytes))))
+                    (parent (mv-nth 3 (bip32-serialized-key-witness
+                                       (byte-list-fix bytes))))
+                    (mainnet (mv-nth 4 (bip32-serialized-key-witness
+                                        (byte-list-fix bytes)))))
+                   (:instance bip32-serialized-key-p-suff
+                    (key (mv-nth 0 (bip32-serialized-key-witness bytes)))
+                    (depth (mv-nth 1 (bip32-serialized-key-witness bytes)))
+                    (index (mv-nth 2 (bip32-serialized-key-witness bytes)))
+                    (parent (mv-nth 3 (bip32-serialized-key-witness bytes)))
+                    (mainnet (mv-nth 4 (bip32-serialized-key-witness bytes)))
+                    (bytes (byte-list-fix bytes)))))))
+
+  (defrule bip32-ext-key-p-of-mv-nth-0-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (bip32-ext-key-p
+              (mv-nth 0 (bip32-serialized-key-witness bytes)))))
+
+  (defrule bytep-of-mv-nth-1-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (bytep
+              (mv-nth 1 (bip32-serialized-key-witness bytes)))))
+
+  (defrule ubyte32p-of-mv-nth-2-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (ubyte32p
+              (mv-nth 2 (bip32-serialized-key-witness bytes)))))
+
+  (defrule byte-listp-of-mv-nth-3-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (byte-listp
+              (mv-nth 3 (bip32-serialized-key-witness bytes)))))
+
+  (defrule len-of-mv-nth-3-of-bip32-serialize-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (equal (len (mv-nth 3 (bip32-serialized-key-witness bytes)))
+                    4)))
+
+  (defrule booleanp-of-mv-nth-4-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (booleanp
+              (mv-nth 4 (bip32-serialized-key-witness bytes)))))
+
+  (defrule depth-index-parent-constraint-of-bip32-serialized-key-witness
+    (implies (and (bip32-serialized-key-p bytes)
+                  (equal (mv-nth 1 (bip32-serialized-key-witness bytes))
+                         0))
+             (and (equal (mv-nth 2 (bip32-serialized-key-witness bytes))
+                         0)
+                  (equal (mv-nth 3 (bip32-serialized-key-witness bytes))
+                         (list 0 0 0 0)))))
+
+  (defrule bip32-serialize-key-of-bip32-serialized-key-witness
+    (implies (bip32-serialized-key-p bytes)
+             (b* (((mv key depth index parent mainnet)
+                   (bip32-serialized-key-witness bytes)))
+               (equal (bip32-serialize-key key depth index parent mainnet)
+                      (byte-list-fix bytes)))))
+
+  (defrule bip32-serialized-key-p-of-bip32-serialize-key
+    (implies (and (bip32-ext-key-p key)
+                  (bytep depth)
+                  (ubyte32p index)
+                  (byte-listp parent)
+                  (equal (len parent) 4)
+                  (booleanp mainnet)
+                  (implies (equal depth 0)
+                           (and (equal index 0)
+                                (equal parent (list 0 0 0 0)))))
+             (bip32-serialized-key-p
+              (bip32-serialize-key key depth index parent mainnet)))
+    :use (:instance bip32-serialized-key-p-suff
+          (bytes (bip32-serialize-key key depth index parent mainnet)))
+    :disable (bip32-serialized-key-p bip32-serialized-key-p-suff)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-deserialize-key ((bytes byte-listp))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-key-p)
+               (depth bytep)
+               (index ubyte32p)
+               (parent (and (byte-listp parent)
+                            (equal (len parent) 4)))
+               (mainnet booleanp))
+  :short "Deserialize an extended key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This is declaratively specified as the inverse of serialization.")
+   (xdoc::p
+    "The first result is @('t')
+     if the input bytes are not a serialized key;
+     in this case, the other results are irrelevant.
+     Otherwise, the first result is @('nil') (i.e. no error)
+     and the constituents of the the serialized key are returned;
+     these correspond to the inputs of @(tsee bip32-serialize-key).")
+   (xdoc::p
+    "We prove that deserialization is the right inverse of serialization.
+     To prove that it is also left inverse,
+     we need to prove the injectivity of serialization first.
+     This will be done soon."))
+  (b* ((bytes (byte-list-fix bytes)))
+    (if (bip32-serialized-key-p bytes)
+        (b* (((mv key depth index parent mainnet)
+              (bip32-serialized-key-witness bytes)))
+          (mv nil key depth index parent mainnet))
+      (b* ((irrelevant-key
+            (bip32-ext-key-priv (bip32-ext-priv-key 1 (repeat 32 0)))))
+        (mv t irrelevant-key 0 0 (list 0 0 0 0) nil))))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule not-mv-nth-0-of-bip32-deserialize-key-when-bip32-serialized-key-p
+    (implies (bip32-serialized-key-p bytes)
+             (not (mv-nth 0 (bip32-deserialize-key bytes)))))
+
+  (defrule bip32-ext-key-p-of-mv-nth-1-of-bip32-deserialize-key
+    (bip32-ext-key-p (mv-nth 1 (bip32-deserialize-key bytes))))
+
+  (defrule bytep-of-mv-nth-2-of-bip32-deserialize-key
+    (bytep (mv-nth 2 (bip32-deserialize-key bytes))))
+
+  (defrule ubyte32p-of-mv-nth-3-of-bip32-deserialize-key
+    (ubyte32p (mv-nth 3 (bip32-deserialize-key bytes))))
+
+  (defrule byte-listp-of-mv-nth-4-of-bip32-deserialize-key
+    (byte-listp (mv-nth 4 (bip32-deserialize-key bytes))))
+
+  (defrule len-of-mv-nth-4-of-bip32-serialize-key-witness
+    (equal (len (mv-nth 4 (bip32-deserialize-key bytes)))
+           4))
+
+  (defrule booleanp-of-mv-nth-5-of-bip32-deserialize-key
+    (booleanp (mv-nth 5 (bip32-deserialize-key bytes))))
+
+  (defrule depth-index-parent-constraint-of-bip32-deserialize-key
+    (implies (equal (mv-nth 2 (bip32-deserialize-key bytes))
+                    0)
+             (and (equal (mv-nth 3 (bip32-deserialize-key bytes))
+                         0)
+                  (equal (mv-nth 4 (bip32-deserialize-key bytes))
+                         (list 0 0 0 0)))))
+
+  (defrule bip32-serialize-key-of-bip32-deserialize-key
+    (implies (bip32-serialized-key-p bytes)
+             (b* (((mv error? key depth index parent mainnet)
+                   (bip32-deserialize-key bytes)))
+               (and (not error?)
+                    (equal (bip32-serialize-key key depth index parent mainnet)
+                           (byte-list-fix bytes)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-export-key
+  ((tree bip32-key-treep) (path ubyte32-listp) (mainnet booleanp))
+  :guard (bip32-path-in-tree-p path tree)
+  :returns (exported byte-listp)
+  :short "Export a key from a tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The key to export is designated by a path,
+     which must be a valid path in the tree.")
+   (xdoc::p
+    "The boolean argument specified whether the key is
+     for the mainnet or for the testnet.")
+   (xdoc::p
+    "We first derive the key at the path from the root, via @(tsee bip32-ckd*).
+     Since the key tree satisfies @(tsee bip32-valid-keys-p)
+     and the path is in the tree,
+     this never returns an error, as proved via @(tsee mbt) below.")
+   (xdoc::p
+    "We calculate the total depth of the key
+     by adding the length of the path to the root's depth.
+     Since the key tree satisfies @(tsee bip32-valid-depths-p)
+     and the path is in the tree,
+     this never exceeds 255 (i.e. always fits in a byte),
+     as proved via @(tsee mbt) below.")
+   (xdoc::p
+    "The index of the key is
+     the last element of the path if the path is not empty.
+     Otherwise, it is the index of the root.")
+   (xdoc::p
+    "The parent key's fingerprint is
+     calculated from the parent key if the path is not empty.
+     The path of the parent is obtained
+     by removing the last element from the path of the key:
+     since this is also a path in the tree,
+     the call of @(tsee bip32-ckd*) on the parent's path
+     does not return an error either, as proved via @(tsee mbt) below.
+     Otherwise, if the path is empty,
+     we obtain the parent's fingerprint from the root of the tree.")
+   (xdoc::p
+    "With all the above pieces of data in hand,
+     we serialize the key, completing the export."))
+  (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path))
+       ((bip32-key-tree tree) tree)
+       ((mv error? key) (bip32-ckd* tree.root-key path))
+       ((unless (mbt (not error?))) nil)
+       (depth (+ tree.root-depth (len path)))
+       ((unless (mbt (bytep depth))) nil)
+       (index (if (consp path)
+                  (car (last path))
+                tree.root-index))
+       (parent (if (consp path)
+                   (b* ((parent-path (butlast path 1))
+                        ((mv error? parent-key)
+                         (bip32-ckd* tree.root-key parent-path))
+                        ((unless (mbt (not error?))) nil))
+                     (bip32-key-fingerprint parent-key))
+                 tree.root-parent)))
+    (bip32-serialize-key key depth index parent mainnet))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-import-key ((bytes byte-listp))
+  :returns (mv (error? booleanp)
+               (tree bip32-key-treep)
+               (mainnet booleanp))
+  :short "Import a key into a tree."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "We deserialize the key into its components,
+     which we use to construct a singleton key tree
+     that contains just that key.")
+   (xdoc::p
+    "The boolean flag that distinguishes mainnet from testnet,
+     returned by serialization,
+     is not used to construct the tree.
+     We return this flag as an additional result.")
+   (xdoc::p
+    "If deserialization fails,
+     the first result is @('t'),
+     which signals an error.
+     In this case, the second and third results are irrelevant."))
+  (b* (((mv error? key depth index parent mainnet)
+        (bip32-deserialize-key bytes))
+       (tree (bip32-key-tree key depth index parent '(nil))))
+    (mv error? tree mainnet))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bip32-master-key-generation
+  :parents (bip32)
+  :short "Master key generation."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-master-key ((seed byte-listp))
+  :guard (and (<= 16 (len seed))
+              (<= (len seed) 64))
+  :returns (mv (error? booleanp)
+               (key bip32-ext-priv-key-p))
+  :short "Generate a master key from a seed."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The exact generation of the seed is not specified in [BIP32],
+     so it is an input to this function.")
+   (xdoc::p
+    "[BIP32] constrains the length of the seed in bits,
+     namely to be between 128 and 512 bits.
+     In principle, the seed could consist of a number of bits
+     that is not a multiple of 8,
+     but this seems unlikely in practice:
+     that is, the seed will likey consist of a number of whole bytes.
+     The number of whole bytes must be therefore between 16 and 64.")
+   (xdoc::p
+    "The key for HMAC-SHA-512 is shown as the string
+     @('\"Bitcoin seed\"') in [BIP32].
+     It seems reasonable to regard that as the list of bytes
+     consisting of the ASCII codes of the characters in the string,
+     in the order in which they appear in the string.")
+   (xdoc::p
+    "If the calculated private key is invalid as specified in [BIP32],
+     we return an error flag as the first result;
+     in this case, the second result (the key) is irrelevant).
+     Otherwise, the first result is @('nil'), i.e. no error."))
+  (b* ((hmac-key (acl2::string=>nats "Bitcoin seed"))
+       (hmac-data seed)
+       (big-i (hmac-sha-512 hmac-key hmac-data))
+       (big-i-l (take 32 big-i))
+       (big-i-r (nthcdr 32 big-i))
+       (parsed-big-i-l (bendian=>nat 256 big-i-l))
+       (n (secp256k1-order))
+       ((when (or (= parsed-big-i-l 0)
+                  (>= parsed-big-i-l n)))
+        (b* ((irrelevant-ext-key (bip32-ext-priv-key 1 big-i-r)))
+          (mv t irrelevant-ext-key)))
+       (ext-key (bip32-ext-priv-key parsed-big-i-l big-i-r)))
+    (mv nil ext-key))
+  :no-function t
+  :prepwork ((local (include-book "std/lists/nthcdr" :dir :system)))
+  :guard-hints (("Goal"
+                 :in-theory (enable secp256k1-priv-key-p
+                                    bip32-chain-code-p
+                                    dab-digit-listp-of-256-rewrite-byte-listp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-master-tree ((seed byte-listp))
+  :guard (and (<= 16 (len seed))
+              (<= (len seed) 64))
+  :returns (mv (error? booleanp)
+               (tree bip32-key-treep))
+  :short "Generate a key tree with (just) a master key from a seed."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "This lifts @(tsee bip32-master-key) from a single key
+     to a singleton tree containing the key at the root,
+     as a master key."))
+  (b* (((mv error? key) (bip32-master-key seed))
+       (tree (bip32-key-tree (bip32-ext-key-priv key)
+                             0
+                             0
+                             (list 0 0 0 0)
+                             '(nil))))
+    (mv error? tree))
   :no-function t
   :hooks (:fix))

@@ -184,11 +184,13 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
- <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Add
- placeholders for HMAC-SHA-512 and the secp256k1 elliptic curve.</p>
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
+ placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
+ curve.</p>
 
- <p>Added a formalization BIP (Bitcoin Improvement Proposal) 32 key
- derivation.</p>
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 key
+ derivation, key trees, key serialization/deserialization, key export/import,
+ and master key generation.</p>
 
  <h4>Bytes</h4>
 
@@ -257,6 +259,11 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <h4>FTY Type Aliases</h4>
+
+ <p>Added a macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
+ existing fixtype, as well as of its recognizer, fixer, and equivalence.</p>
+
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -266,7 +273,8 @@
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
 
  <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
- for treating pseudo-terms as an FTY sum-of-products type; see @(see pseudo-term-fty).</p>
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see
+ pseudo-term-fty).</p>
 
  <h4>FTY Types for Bytes</h4>
 
@@ -299,6 +307,13 @@
  <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
  required in the verification of an Arm FPU currently under development.  This
  in turn required some minor modifications of @('projects/arm/*/').</p>
+
+ <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
+
+ <p>The @(tsee soft::defun2), @(tsee soft::defchoose2), @(tsee
+ soft::defun-sk2), and @(tsee soft::defun-inst) macros no longer include an
+ explicit list of function parameters.  The function is implicitly
+ parameterized over the function variables that it depends on.</p>
 
  <h4>@(csee std/io)</h4>
 
