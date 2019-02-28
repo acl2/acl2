@@ -1095,7 +1095,7 @@
                              (index ubyte32p)
                              (parent (and (byte-listp parent)
                                           (equal (len parent) 4)))
-                             (mainnet booleanp))
+                             (mainnet? booleanp))
   :guard (implies (equal depth 0)
                   (and (equal index 0)
                        (equal parent (list 0 0 0 0))))
@@ -1128,13 +1128,13 @@
          :priv (mv (cons 0 (nat=>bendian
                             256 32 (bip32-ext-priv-key->key key.get)))
                    (bip32-ext-priv-key->chain-code key.get)
-                   (if mainnet
+                   (if mainnet?
                        *bip32-version-priv-main*
                      *bip32-version-priv-test*))
          :pub (mv (secp256k1-point-to-bytes
                    (bip32-ext-pub-key->key key.get) t)
                   (bip32-ext-pub-key->chain-code key.get)
-                  (if mainnet
+                  (if mainnet?
                       *bip32-version-pub-main*
                     *bip32-version-pub-test*)))))
     (append (nat=>bendian 256 4 version)
@@ -1166,17 +1166,17 @@
     "By definition,
      the witness function is the right inverse of @(tsee bip32-serialize-key),
      over valid serialized keys."))
-  (exists (key depth index parent mainnet)
+  (exists (key depth index parent mainnet?)
           (and (bip32-ext-key-p key)
                (bytep depth)
                (ubyte32p index)
                (byte-listp parent)
                (equal (len parent) 4)
-               (booleanp mainnet)
+               (booleanp mainnet?)
                (implies (equal depth 0)
                         (and (equal index 0)
                              (equal parent (list 0 0 0 0))))
-               (equal (bip32-serialize-key key depth index parent mainnet)
+               (equal (bip32-serialize-key key depth index parent mainnet?)
                       (byte-list-fix bytes))))
   :skolem-name bip32-serialized-key-witness
   ///
@@ -1194,14 +1194,14 @@
                                       (byte-list-fix bytes))))
                     (parent (mv-nth 3 (bip32-serialized-key-witness
                                        (byte-list-fix bytes))))
-                    (mainnet (mv-nth 4 (bip32-serialized-key-witness
-                                        (byte-list-fix bytes)))))
+                    (mainnet? (mv-nth 4 (bip32-serialized-key-witness
+                                         (byte-list-fix bytes)))))
                    (:instance bip32-serialized-key-p-suff
                     (key (mv-nth 0 (bip32-serialized-key-witness bytes)))
                     (depth (mv-nth 1 (bip32-serialized-key-witness bytes)))
                     (index (mv-nth 2 (bip32-serialized-key-witness bytes)))
                     (parent (mv-nth 3 (bip32-serialized-key-witness bytes)))
-                    (mainnet (mv-nth 4 (bip32-serialized-key-witness bytes)))
+                    (mainnet? (mv-nth 4 (bip32-serialized-key-witness bytes)))
                     (bytes (byte-list-fix bytes)))))))
 
   (defrule bip32-ext-key-p-of-mv-nth-0-of-bip32-serialized-key-witness
@@ -1245,9 +1245,9 @@
 
   (defrule bip32-serialize-key-of-bip32-serialized-key-witness
     (implies (bip32-serialized-key-p bytes)
-             (b* (((mv key depth index parent mainnet)
+             (b* (((mv key depth index parent mainnet?)
                    (bip32-serialized-key-witness bytes)))
-               (equal (bip32-serialize-key key depth index parent mainnet)
+               (equal (bip32-serialize-key key depth index parent mainnet?)
                       (byte-list-fix bytes)))))
 
   (defrule bip32-serialized-key-p-of-bip32-serialize-key
@@ -1256,14 +1256,14 @@
                   (ubyte32p index)
                   (byte-listp parent)
                   (equal (len parent) 4)
-                  (booleanp mainnet)
+                  (booleanp mainnet?)
                   (implies (equal depth 0)
                            (and (equal index 0)
                                 (equal parent (list 0 0 0 0)))))
              (bip32-serialized-key-p
-              (bip32-serialize-key key depth index parent mainnet)))
+              (bip32-serialize-key key depth index parent mainnet?)))
     :use (:instance bip32-serialized-key-p-suff
-          (bytes (bip32-serialize-key key depth index parent mainnet)))
+          (bytes (bip32-serialize-key key depth index parent mainnet?)))
     :disable (bip32-serialized-key-p bip32-serialized-key-p-suff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1275,7 +1275,7 @@
                (index ubyte32p)
                (parent (and (byte-listp parent)
                             (equal (len parent) 4)))
-               (mainnet booleanp))
+               (mainnet? booleanp))
   :short "Deserialize an extended key."
   :long
   (xdoc::topapp
@@ -1295,9 +1295,9 @@
      This will be done soon."))
   (b* ((bytes (byte-list-fix bytes)))
     (if (bip32-serialized-key-p bytes)
-        (b* (((mv key depth index parent mainnet)
+        (b* (((mv key depth index parent mainnet?)
               (bip32-serialized-key-witness bytes)))
-          (mv nil key depth index parent mainnet))
+          (mv nil key depth index parent mainnet?))
       (b* ((irrelevant-key
             (bip32-ext-key-priv (bip32-ext-priv-key 1 (repeat 32 0)))))
         (mv t irrelevant-key 0 0 (list 0 0 0 0) nil))))
@@ -1338,16 +1338,16 @@
 
   (defrule bip32-serialize-key-of-bip32-deserialize-key
     (implies (bip32-serialized-key-p bytes)
-             (b* (((mv error? key depth index parent mainnet)
+             (b* (((mv error? key depth index parent mainnet?)
                    (bip32-deserialize-key bytes)))
                (and (not error?)
-                    (equal (bip32-serialize-key key depth index parent mainnet)
+                    (equal (bip32-serialize-key key depth index parent mainnet?)
                            (byte-list-fix bytes)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip32-export-key
-  ((tree bip32-key-treep) (path ubyte32-listp) (mainnet booleanp))
+  ((tree bip32-key-treep) (path ubyte32-listp) (mainnet? booleanp))
   :guard (bip32-path-in-tree-p path tree)
   :returns (exported byte-listp)
   :short "Export a key from a tree."
@@ -1404,7 +1404,7 @@
                         ((unless (mbt (not error?))) nil))
                      (bip32-key-fingerprint parent-key))
                  tree.root-parent)))
-    (bip32-serialize-key key depth index parent mainnet))
+    (bip32-serialize-key key depth index parent mainnet?))
   :no-function t
   :hooks (:fix))
 
@@ -1413,7 +1413,7 @@
 (define bip32-import-key ((bytes byte-listp))
   :returns (mv (error? booleanp)
                (tree bip32-key-treep)
-               (mainnet booleanp))
+               (mainnet? booleanp))
   :short "Import a key into a tree."
   :long
   (xdoc::topapp
@@ -1431,10 +1431,10 @@
      the first result is @('t'),
      which signals an error.
      In this case, the second and third results are irrelevant."))
-  (b* (((mv error? key depth index parent mainnet)
+  (b* (((mv error? key depth index parent mainnet?)
         (bip32-deserialize-key bytes))
        (tree (bip32-key-tree key depth index parent '(nil))))
-    (mv error? tree mainnet))
+    (mv error? tree mainnet?))
   :no-function t
   :hooks (:fix))
 
