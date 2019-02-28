@@ -1357,7 +1357,7 @@
     "The key to export is designated by a path,
      which must be a valid path in the tree.")
    (xdoc::p
-    "The boolean argument specified whether the key is
+    "The boolean argument specifies whether the key is
      for the mainnet or for the testnet.")
    (xdoc::p
     "We first derive the key at the path from the root, via @(tsee bip32-ckd*).
