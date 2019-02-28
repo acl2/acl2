@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 (include-book "std/lists/prefixp" :dir :system)
+(include-book "std/lists/rcons" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "std/lists/take" :dir :system))
@@ -40,4 +41,10 @@
   (defrule prefixp-of-cdr-cdr
     (implies (and (prefixp x y)
                   (consp x))
-             (prefixp (cdr x) (cdr y)))))
+             (prefixp (cdr x) (cdr y))))
+
+  (defrule prefixp-of-rcons
+    (equal (prefixp x (rcons a y))
+           (or (list-equiv x (rcons a y))
+               (prefixp x y)))
+    :enable (prefixp rcons)))

@@ -17,6 +17,7 @@
 
 (include-book "crypto")
 
+(local (include-book "kestrel/utilities/lists/prefixp-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/prefixp" :dir :system))
 
@@ -76,13 +77,7 @@
     (implies (<= (nfix n) (len x))
              (equal (ubyte32-list-fix (take n x))
                     (take n (ubyte32-list-fix x))))
-    :enable ubyte32-list-fix)
-
-  (defrule prefixp-of-rcons
-    (equal (prefixp x (rcons a y))
-           (or (list-equiv x (rcons a y))
-               (prefixp x y)))
-    :enable (prefixp rcons)))
+    :enable ubyte32-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
