@@ -879,6 +879,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define bip32-key-tree-priv-p ((tree bip32-key-treep))
+  :returns (yes/no booleanp)
+  :short "Check if a key tree consists of private keys."
+  :long
+  (xdoc::topp
+   "We check whether the root is an extended private key.")
+  (bip32-ext-key-case (bip32-key-tree->root-key tree) :priv)
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define bip32-path-in-tree-p ((path ubyte32-listp) (tree bip32-key-treep))
   :returns (yes/no booleanp)
   :short "Check if a path designates a key in a key tree."
