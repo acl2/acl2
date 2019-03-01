@@ -1002,6 +1002,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define bip32-get-priv-key-at-path ((tree bip32-key-treep) (path ubyte32-listp))
+  :guard (and (bip32-path-in-tree-p path tree)
+              (bip32-key-tree-priv-p tree))
+  :returns (key secp256k1-priv-key-p)
+  :short "Retrieve the private key designated by a path in a key tree."
+  :long
+  (xdoc::topp
+   "The tree must consist of private keys, as expressed by the guard.")
+  (b* ((root-extkey (bip32-key-tree->root-key tree))
+       (root-extprivkey (bip32-ext-key-priv->get root-extkey))
+       ((mv error? extprivkey) (bip32-ckd-priv* root-extprivkey path))
+       ((unless (mbt (not error?))) (b* ((irrelevant 1)) irrelevant))
+       (privkey (bip32-ext-priv-key->key extprivkey)))
+    privkey)
+  :no-function t
+  :guard-hints (("Goal"
+                 :use valid-key-when-bip32-path-in-tree-p
+                 :in-theory (enable bip32-ckd* bip32-key-tree-priv-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-get-pub-key-at-path ((tree bip32-key-treep) (path ubyte32-listp))
+  :guard (bip32-path-in-tree-p path tree)
+  :returns (key secp256k1-pub-key-p)
+  :short "Retrieven the public key designated by a path in a key tree."
+  :long
+  (xdoc::topp
+   "The tree may consist of private or public keys.")
+  (b* ((root-extkey (bip32-key-tree->root-key tree))
+       ((mv error? extkey) (bip32-ckd* root-extkey path))
+       ((unless (mbt (not error?)))
+        (b* ((irrelevant (secp256k1-priv-to-pub 1))) irrelevant)))
+    (bip32-ext-key-case
+     extkey
+     :priv (b* ((extprivkey (bip32-ext-key-priv->get extkey))
+                (privkey (bip32-ext-priv-key->key extprivkey))
+                (pubkey (secp256k1-priv-to-pub privkey)))
+             pubkey)
+     :pub (b* ((extpubkey (bip32-ext-key-pub->get extkey))
+               (pubkey (bip32-ext-pub-key->key extpubkey)))
+            pubkey)))
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ bip32-key-serialization
   :parents (bip32)
   :short "Key serialization."
