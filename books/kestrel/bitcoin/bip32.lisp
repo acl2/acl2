@@ -61,7 +61,36 @@
      "@($\\mathsf{ser}_\\mathsf{P}$) is @(tsee secp256k1-point-to-bytes)
       with the compression flag set.")
     (xdoc::li
-     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256.")))
+     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256."))
+   (xdoc::p
+    "The operations defined below should suffice to cover
+     the use cases that BIP 32 should cater to:")
+   (xdoc::ul
+    (xdoc::li
+     "Given a seed, @(tsee bip32-master-tree) is used to generate
+      a singleton tree with the master private key at the root.")
+    (xdoc::li
+     "This master tree is extended as needed,
+      via @(tsee bip32-extend-tree).")
+    (xdoc::li
+     "For signing, private keys can be retrieved from the tree
+      via @(tsee bip32-get-priv-key-at-path).
+      For calculating addresses, auditing, etc.,
+      public keys can be retrieved from the tree
+      via @(tsee bip32-get-pub-key-at-path).")
+    (xdoc::li
+     "For sharing (subtrees of) the master tree,
+      @(tsee bip32-export-key) is used to serialize a (private or public) key.
+      Then @(tsee bip32-import-key) is used to
+      construct a separate (sub)tree rooted at that key.")
+    (xdoc::li
+     "(Sub)trees shared as just explained can be then operated upon via
+      @(tsee bip32-extend-tree) for deriving more keys,
+      @(tsee bip32-get-priv-key-at-path) for signing
+      (unless the tree consists of public keys),
+      @(tsee bip32-get-pub-key-at-path) for
+      calculating addresses, auditing, etc.,
+      and @(tsee bip32-export-key) for further sharing.")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
