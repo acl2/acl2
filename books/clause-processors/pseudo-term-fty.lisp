@@ -34,6 +34,7 @@
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/fty-sum-casemacro" :dir :system)
 (include-book "tools/templates" :dir :system)
+(include-book "ev-find-rules")
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "ev-ind"))
 (local (std::add-default-post-define-hook :fix))
@@ -313,7 +314,6 @@ of term and access the fields; see its documentation for examples.</p>
 (defthm base-ev-list-of-kwote-lst
   (equal (base-ev-list (kwote-lst x) a)
          (true-list-fix x)))
-
 
 
 (defxdoc def-ev-pseudo-term-congruence
@@ -1402,22 +1402,12 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
  @({
  (def-ev-pseudo-term-fty-support my-eval my-eval-list)
  })
-<p>This requires that several of the rules introduced by @('defevaluator') are enabled, including three that are not enabled by default.  For evaluators introduced using the @(':namedp t') defevaluator option, those not enabled by default are:</p>
- @({
-  my-eval-of-fncall-args
-  my-eval-of-nonsymbol-atom
-  my-eval-of-bad-fncall
- })
-<p>For those introduced without @(':namedp t'), they are:</p>
- @({
-  my-eval-constraint-0
-  my-eval-constraint-6
-  my-eval-constraint-7
- })
 ")
 
 (defconst *def-ev-pseudo-term-fty-support-template*
-  '(progn
+  '(encapsulate nil
+     (local (in-theory (enable . <disabled-ev-rules>)))
+
      (def-ev-pseudo-term-congruence <ev> <ev-list>)
 
      (defthm <ev>-when-pseudo-term-null
@@ -1520,31 +1510,35 @@ operates over FTY-style pseudo-term accessors and constructors:</p>
                               (base-ev <ev>)
                               (base-ev-list <ev-list>))))))))
 
+(defun def-ev-pseudo-term-fty-support-fn (ev ev-list world)
+  (declare (Xargs :mode :program))
+  (b* ((bad-fncall-rule (ev-find-bad-fncall-rule ev world))
+       (nonsymbol-atom-rule (ev-find-nonsymbol-atom-rule ev world))
+       (fncall-rule (ev-find-fncall-generic-rule ev world))
+       ((unless (and bad-fncall-rule nonsymbol-atom-rule fncall-rule))
+        (er hard? 'def-ev-pseudo-term-fty-support-fn
+            "Couldn't find the right rules to enable -- is ~x0 an evaluator?" ev)))
+    (acl2::template-subst
+     *def-ev-pseudo-term-fty-support-template*
+     :atom-alist `((<ev> . ,ev)
+                   (<ev-list> . ,ev-list)
+                   (<disabled-ev-rules> . ,(list fncall-rule bad-fncall-rule nonsymbol-atom-rule)))
+     :str-alist `(("<EV>" . ,(symbol-name ev))
+                  ("<EV-LIST>" . ,(symbol-name ev-list)))
+     :pkg-sym ev)))
+
 (defmacro def-ev-pseudo-term-fty-support (ev ev-list)
-  (acl2::template-subst
-   *def-ev-pseudo-term-fty-support-template*
-   :atom-alist `((<ev> . ,ev)
-                 (<ev-list> . ,ev-list))
-   :str-alist `(("<EV>" . ,(symbol-name ev))
-                ("<EV-LIST>" . ,(symbol-name ev-list)))
-   :pkg-sym ev))
+  `(make-event
+    (def-ev-pseudo-term-fty-support-fn ',ev ',ev-list (w state))))
 
 
 
 (local
  (progn
    (defevaluator next-ev next-ev-lst ((if a b c) (return-last a b c) (equal x y)) :namedp t)
-   (encapsulate nil
-     (local (in-theory (enable next-ev-of-fncall-args
-                               next-ev-of-nonsymbol-atom
-                               next-ev-of-bad-fncall)))
-     (def-ev-pseudo-term-fty-support next-ev next-ev-lst))))
+   (def-ev-pseudo-term-fty-support next-ev next-ev-lst)))
 
 (local
  (progn
    (defevaluator other-ev other-ev-lst ((if a b c) (return-last a b c) (equal x y)) :namedp nil)
-   (encapsulate nil
-     (local (in-theory (enable other-ev-constraint-0
-                               other-ev-constraint-6
-                               other-ev-constraint-7)))
-     (def-ev-pseudo-term-fty-support other-ev other-ev-lst))))
+   (def-ev-pseudo-term-fty-support other-ev other-ev-lst)))
