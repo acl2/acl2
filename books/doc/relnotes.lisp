@@ -259,6 +259,11 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <h4>FTY Type Aliases</h4>
+
+ <p>Added a macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
+ existing fixtype, as well as of its recognizer, fixer, and equivalence.</p>
+
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -268,7 +273,8 @@
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
 
  <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
- for treating pseudo-terms as an FTY sum-of-products type; see @(see pseudo-term-fty).</p>
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see
+ pseudo-term-fty).</p>
 
  <h4>FTY Types for Bytes</h4>
 

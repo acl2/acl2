@@ -17,6 +17,7 @@
 
 (include-book "crypto")
 
+(local (include-book "kestrel/utilities/lists/prefixp-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/prefixp" :dir :system))
 
@@ -498,7 +499,13 @@
     (implies (and (bip32-path-setp x)
                   (set::in a x))
              (ubyte32-listp a))
-    :enable (bip32-path-setp set::in set::head)))
+    :enable (bip32-path-setp set::in set::head))
+
+  (defrule bip32-path-setp-of-insert
+    (implies (and (bip32-path-setp x)
+                  (ubyte32-listp a))
+             (bip32-path-setp (set::insert a x)))
+    :enable (bip32-path-setp insert empty head tail)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,7 +529,16 @@
     "A closed non-empty set of paths always contains the empty path,
      because the empty path is a prefix of every path.")
    (xdoc::p
-    "The singleton set consisting of the empty path is closed."))
+    "The singleton set consisting of the empty path is closed.")
+   (xdoc::p
+    "If a set of paths is closed under prefix,
+     extending a path in the set
+     (more precisely, extending the set with the path obtained by
+     extending an existing path in the set)
+     results in a set of paths that is still closed under prefix.
+     This is because every strict prefix of the new path
+     is also a prefix of the existing path,
+     and therefore already in the set by hypothesis."))
   (forall (path prefix)
           (b* ((paths (bip32-path-set-fix paths)))
             (implies (and (set::in path paths)
@@ -558,6 +574,26 @@
     (bip32-path-set-closedp '(nil))
     :enable set::in)
 
+  (defrule bip32-path-set-closedp-of-insert-of-rcons
+    (implies (and (bip32-path-setp paths)
+                  (bip32-path-set-closedp paths)
+                  (set::in path paths)
+                  (ubyte32p index))
+             (bip32-path-set-closedp (set::insert (rcons index path) paths)))
+    :enable (list-equiv bip32-path-set-closedp)
+    :use ((:instance bip32-path-set-closedp-necc
+           (path (mv-nth 0 (bip32-path-set-closedp-witness
+                            (set::insert (rcons index path) paths))))
+           (prefix (mv-nth 1 (bip32-path-set-closedp-witness
+                              (set::insert (rcons index path) paths)))))
+          (:instance bip32-path-set-closedp-necc
+           (prefix (mv-nth 1 (bip32-path-set-closedp-witness
+                              (set::insert (rcons index path) paths))))))
+    :cases ((equal (mv-nth 1 (bip32-path-set-closedp-witness
+                              (set::insert (rcons index path) paths)))
+                   (mv-nth 0 (bip32-path-set-closedp-witness
+                              (set::insert (rcons index path) paths))))))
+
   (in-theory (disable (:e bip32-path-set-closedp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -568,7 +604,11 @@
   (xdoc::topapp
    (xdoc::p
     "As defined later, a key tree includes a tree of indices,
-     represented as a closed non-empty set of paths."))
+     represented as a closed non-empty set of paths.")
+   (xdoc::p
+    "Extending a path of an index tree results in a index tree,
+     because the extension preserves
+     non-emptiness and prefix closure."))
 
   (define bip32-index-treep (x)
     :returns (yes/no booleanp)
@@ -612,7 +652,14 @@
     :fix bip32-index-tree-fix
     :equiv bip32-index-tree-equiv
     :define t
-    :forward t))
+    :forward t)
+
+  (defrule bip32-index-treep-of-insert-of-rcons
+    (implies (and (bip32-index-treep paths)
+                  (set::in path paths)
+                  (ubyte32p index))
+             (bip32-index-treep (set::insert (rcons index path) paths)))
+    :enable bip32-index-treep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,7 +677,11 @@
    (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path)
-     trivially satisfies this key validity condition."))
+     trivially satisfies this key validity condition.")
+   (xdoc::p
+    "Extending a path of an index tree
+     preserves the validity of the keys,
+     provided that the key at the end of the new extended path is valid."))
   (forall (path)
           (b* ((tree (bip32-index-tree-fix tree)))
             (implies (set::in path tree)
@@ -664,6 +715,18 @@
              bip32-ckd-priv*
              bip32-ckd-pub*))
 
+  (defrule bip32-valid-keys-p-of-insert-of-rcons
+    (implies (and (bip32-index-treep tree)
+                  (bip32-valid-keys-p root tree)
+                  (set::in path tree)
+                  (ubyte32p index)
+                  (not (mv-nth 0 (bip32-ckd* root (rcons index path)))))
+             (bip32-valid-keys-p root (set::insert (rcons index path) tree)))
+    :enable bip32-valid-keys-p
+    :use (:instance bip32-valid-keys-p-necc
+          (path (bip32-valid-keys-p-witness
+                 root (insert (rcons index path) tree)))))
+
   (in-theory (disable (:e bip32-valid-keys-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -695,7 +758,11 @@
    (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path),
-     trivially satisfies this depth validity condition."))
+     trivially satisfies this depth validity condition.")
+   (xdoc::p
+    "Extending a path of an index tree
+     preserves the validity of the key depths,
+     provided that the depth of the path being extended is below 255."))
   (forall (path)
           (b* ((tree (bip32-index-tree-fix tree)))
             (implies (set::in path tree)
@@ -723,6 +790,18 @@
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
     :enable (bip32-valid-depths-p set::in))
+
+  (defrule bip32-valid-depths-p-of-insert-of-rcons
+    (implies (and (bip32-index-treep tree)
+                  (bip32-valid-depths-p init tree)
+                  (set::in path tree)
+                  (< (+ (byte-fix init) (len path)) 255)
+                  (ubyte32p index))
+             (bip32-valid-depths-p init (set::insert (rcons index path) tree)))
+    :enable (bip32-valid-depths-p bytep)
+    :use ((:instance bip32-valid-depths-p-necc
+           (path (bip32-valid-depths-p-witness
+                  init (insert (rcons index path) tree))))))
 
   (in-theory (disable (:e bip32-valid-depths-p))))
 
@@ -859,6 +938,55 @@
           (init (bip32-key-tree->root-depth tree))
           (tree (bip32-key-tree->index-tree tree))
           (path (ubyte32-list-fix path)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip32-extend-tree
+  ((tree bip32-key-treep) (parent-path ubyte32-listp) (child-index ubyte32p))
+  :guard (and (bip32-path-in-tree-p parent-path tree)
+              (not (bip32-path-in-tree-p (rcons child-index parent-path) tree))
+              (< (+ (bip32-key-tree->root-depth tree) (len parent-path)) 255))
+  :returns (mv (error? booleanp)
+               (new-tree bip32-key-treep))
+  :short "Extend a key tree with a key."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "The new key is identified by
+     (i) the path of its parent and (ii) the child index of the new key.
+     The parent must be already in the tree, while the new child key must not:
+     this is expressed by the guard of this function.
+     The total depth of the new key should not exceed 255:
+     this is also expressed by the guard.")
+   (xdoc::p
+    "Given our model of key trees,
+     we just add the path of the new key to the underlying index tree.
+     But we need to check whether the child key derivation fails:
+     if it does, we return the input key tree unchanged,
+     along with @('t') as the first result.
+     The first result is @('nil') if key derivation succeeds.")
+   (xdoc::p
+    "If the key tree consists of private keys, the new key is private.
+     If the key tree consists of public keys, the new key is public.
+     We uniformly use the @(tsee bip32-ckd) function."))
+  (b* ((tree (mbe :logic (bip32-key-tree-fix tree) :exec tree))
+       (parent-path (mbe :logic (ubyte32-list-fix parent-path)
+                         :exec parent-path))
+       (child-index (mbe :logic (ubyte32-fix child-index) :exec child-index))
+       ((bip32-key-tree tree) tree)
+       ((unless (mbt (bip32-path-in-tree-p parent-path tree))) (mv t tree))
+       (new-path (rcons child-index parent-path))
+       ((unless (mbt (not (bip32-path-in-tree-p new-path tree)))) (mv t tree))
+       ((unless (mbt
+                 (< (+ tree.root-depth (len parent-path)) 255))) (mv t tree))
+       ((mv error? &) (bip32-ckd* tree.root-key new-path))
+       ((when error?) (mv error? tree))
+       (new-index-tree (set::insert new-path tree.index-tree))
+       (new-tree (change-bip32-key-tree tree :index-tree new-index-tree)))
+    (mv nil new-tree))
+  :no-function t
+  :guard-hints (("Goal" :in-theory (enable bip32-path-in-tree-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
