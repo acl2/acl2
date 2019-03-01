@@ -163,16 +163,16 @@
 
 ; The following defun has two notes in it which are given afterwards.
 
-; (Note: for now we leave comments of the form ``Error {[x]}'', to support our
-; own testing that provokes these messages.)
-
 (defun concrete-badge-userfn (fn)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
   (cond
-   ((not *aokp*)    ; See Note 1.
+   ((and (null *aokp*) ; See Note 1.
+         (null *warrant-reqs*))
     (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
-; Error {[1]}
             'concrete-badge-userfn
             (print-list-without-stobj-arrays
              (list fn)))))
@@ -196,44 +196,21 @@
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
          ((null failure-msg)
+          (maybe-extend-warrant-reqs fn nil 'badge-userfn)
           bdg)
-         (t (let* ((failure-msg
-                    (if failure-msg
-                        failure-msg
-; Error {[4.5]}
-                        (msg "~x0 returns multiple values, so it has a badge ~
-                              but no warrant"
-                             fn)))
-                   (msg
-                    (cond
-                     ((eq *aokp* 'badge-userfn)
-; Error {[2]}
-                      (msg "The value of BADGE-USERFN is not specified on ~
-                            ~x0 because ~@1."
-                           fn failure-msg))
-                     ((eq *aokp* t)
-; Error {[3]}
-                      (msg "The value of CONCRETE-BADGE-USERFN is not ~
-                            specified on ~x0 because ~@1."
-                           fn failure-msg))
-                     (t
-; Error {[4]}
-                      (msg "The value of ~x0 is not specified.  ~x0 is a ~
-                            constrained function with ~x1 as its attachment ~
-                            and in this instance that attachment calls ~
-                            CONCRETE-BADGE-USERFN on ~x2 and is not ~
-                            specified because ~@3."
-                           *aokp*
-                           (symbol-value
-                            (attachment-symbol *aokp*))
-                           fn
-                           failure-msg)))))
-              (throw-raw-ev-fncall ; See Note 3.
-               (list* 'ev-fncall-null-body-er
-                      nil
-                      msg
-                      (print-list-without-stobj-arrays
-                       (list fn)))))))))))
+         (t (throw-raw-ev-fncall
+             (list* 'ev-fncall-null-body-er
+                    nil
+
+; See the comment under the second throw-raw-ev-fncall in
+; concrete-apply$-userfn, for why we assume here that this call has come from
+; badge-userfn.
+
+                    (msg "The value of ~x0 is not specified on ~x1 because ~
+                          ~@2."
+                         'BADGE-USERFN fn failure-msg)
+                    (print-list-without-stobj-arrays
+                     (list fn))))))))))
 
 ; Notes on CONCRETE-BADGE-USERFN
 
@@ -245,7 +222,13 @@
 ; might be called directly by the user at the top level of the ACL2 loop, or
 ; used in some other function used in proofs or hints.  So we might find
 ; ourselves executing concrete-badge-userfn even though *aokp* is nil.  We need
-; for it to act undefined when *aokp* is nil.
+; for it to act undefined when *aokp* is nil.  This same reasoning applies to
+; concrete-apply$-userfn.  More recently, however, we have made
+; concrete-badge-userfn untouchable; thus, we could now remove the *aokp* test.
+; (The issue for the *warrant-reqs* test is similar.)  But for now, at least,
+; we'll leave this *aokp* test, mainly to protect against inappropriate
+; execution if untouchability is removed, but with the bonus that this test
+; provides extra protection in case our thinking here is flawed!
 
 ; Note 2.  on throw-raw-ev-fncall: Throughout this function we cause errors
 ; when the answer is not determined by the known warrants.  The various errors
@@ -331,6 +314,41 @@
               (concrete-check-apply$-hyp-tamep-hyp (cdr ilks) (cdr args) wrld)))
         (t (concrete-check-apply$-hyp-tamep-hyp (cdr ilks) (cdr args) wrld))))
 
+(defun maybe-extend-warrant-reqs (fn args caller)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; This function is evaluated only for side effect, to update *warrant-reqs* as
+; appropriate to reflect the need for a true warrant on fn when applying fn to
+; args.  Caller is used only in an error message (which quite possibly nobody
+; will see), to reflect that caller, which is apply$-userfn or badge-userfn as
+; of this writing.
+
+; See *warrant-reqs* for a description of the values of that variable, which
+; should serve to explain the code below.
+
+  (let ((warrant-reqs *warrant-reqs*)) ; bind the special, for efficiency
+    (cond ((null warrant-reqs) nil)
+          ((eq t warrant-reqs)
+           (setq *warrant-reqs* (list fn)))
+          ((eq :nil! warrant-reqs)
+           (setq *warrant-reqs* fn) ; the function responsible for the abort
+           (throw-raw-ev-fncall
+            (list* 'ev-fncall-null-body-er
+                   nil
+                   (msg "The value of ~x0 is not specified on ~x1 because the ~
+                         use of warrants is not permitted in this context."
+                        caller fn)
+                   (print-list-without-stobj-arrays
+                    (list fn args)))))
+          ((symbolp warrant-reqs) ; invalid value for *warrant-reqs*
+           (er hard! 'maybe-extend-warrant-reqs
+               "Implementation error: *warrant-reqs* has an input value of ~
+                ~x0."
+               warrant-reqs))
+          ((member fn warrant-reqs :test #'eq) nil)
+          (t (push fn *warrant-reqs*)))))
+
 ; Here is the STATE-free expansion of
 ; (defun-overrides concrete-apply$-userfn (fn args) ...)
 ; ==>
@@ -341,13 +359,15 @@
 ; etags.  But they're really part of the progn!
 
 (defun concrete-apply$-userfn (fn args)
-;           (progn (chk-live-state-p ',name state)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
   (cond
-   ((not *aokp*)
-    (throw-raw-ev-fncall
+   ((and (null *aokp*) ; See Note 1.
+         (null *warrant-reqs*))
+    (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
-; Error {[5]}
             'concrete-apply$-userfn
             (print-list-without-stobj-arrays
              (list fn args)))))
@@ -355,36 +375,22 @@
         (query-badge-userfn-structure t fn (w *the-live-state*))
         (cond
          (failure-msg ; no badge for fn
-          (let* ((msg (cond
-                       ((eq *aokp* 'apply$-userfn)
-; Error {[6]}
-                        (msg "The value of APPLY$-USERFN is not specified on ~
-                              ~x0 because ~@1."
-                             fn failure-msg))
-                       ((eq *aokp* t)
-; Error {[7]}
-                        (msg "The value of CONCRETE-APPLY$-USERFN is not ~
-                              specified on ~x0 because ~@1."
-                             fn failure-msg))
-                       (t
-; Error {[8]}
-                        (msg "The value of ~x0 is not specified.  ~x0 is a ~
-                              constrained function with ~x1 as its attachment ~
-                              and in this instance that attachment calls ~
-                              CONCRETE-APPLY$-USERFN on ~x2 and is not ~
-                              specified because ~@3."
-                             *aokp*
-                             (symbol-value
-                              (attachment-symbol *aokp*))
-                             fn
-                             failure-msg)))))
-            (throw-raw-ev-fncall
-             (list* 'ev-fncall-null-body-er
-                    nil
-                    msg
-                    (print-list-without-stobj-arrays
-                     (list fn args))))))
+          (throw-raw-ev-fncall
+           (list* 'ev-fncall-null-body-er
+                  nil
+
+; The following message assumes that we got here by way of a call to
+; apply$-userfn.  Since concrete-apply$-userfn is untouchable, that must be the
+; case unless the user has changed that, in which case the error message below
+; might be confusing -- but surely nobody should remove untouchability of
+; concrete-apply$-userfn!  See the Essay on Memoization with Attachments.
+
+                  (msg "The value of ~x0 is not specified on ~x1 because ~@2."
+                       'APPLY$-USERFN fn failure-msg)
+                  (print-list-without-stobj-arrays
+                   (list fn args)))))
          ((eq (access apply$-badge bdg :ilks) t)
+          (maybe-extend-warrant-reqs fn args 'apply$-userfn)
           (if (int= (access apply$-badge bdg :out-arity) 1)
               (apply (*1*-symbol fn)
                      (if (= (access apply$-badge bdg :arity) (length args))
@@ -399,6 +405,7 @@
            (access apply$-badge bdg :ilks)
            args
            (w *the-live-state*))
+          (maybe-extend-warrant-reqs fn args 'apply$-userfn)
           (if (int= (access apply$-badge bdg :out-arity) 1)
               (apply (*1*-symbol fn)
                      (if (= (access apply$-badge bdg :arity) (length args))
@@ -410,45 +417,20 @@
                         args
                       (take (access apply$-badge bdg :arity) args))))))
          (t
-          (let ((msg
-                 (cond
-                  ((eq *aokp* 'apply$-userfn)
-; Error {[9]}
-                   (msg "The value of APPLY$-USERFN is not specified~ when ~
-                         the first argument, fn, is ~x0, and the second ~
-                         argument, args, is ~x1.  Fn has badge ~x2 and args ~
-                         is not known to satisfy the tameness requirement of ~
-                         that badge."
-                        fn args bdg))
-                  ((eq *aokp* t)
-; Error {[10]}
-                   (msg "The value of CONCRETE-APPLY$-USERFN is not specified ~
-                         when the first argument, fn, is ~x0, and the second ~
-                         argument, args, is ~x1.  Fn has badge ~x2 and args ~
-                         is not known to satisfy the tameness requirement of ~
-                         that badge."
-                        fn args bdg))
-                  (t
-; Error {[11]}
-                   (msg "The value of ~x0 is not specified. ~x0 is a ~
-                         constrained function with ~x1 as its attachment and ~
-                         in this instance that attachment calls ~
-                         CONCRETE-APPLY$-USERFN with first argument, fn, ~
-                         being ~x2 and second argument, args, being ~x3.  But ~
-                         fn has badge ~x4 and args is not known to satisfy ~
-                         the tameness requirement of fn's badge."
-                        *aokp*
-                        (symbol-value
-                         (attachment-symbol *aokp*))
-                        fn
-                        args
-                        bdg)))))
-            (throw-raw-ev-fncall
-             (list* 'ev-fncall-null-body-er
-                    nil
-                    msg
-                    (print-list-without-stobj-arrays
-                     (list fn args)))))))))))
+          (throw-raw-ev-fncall
+           (list* 'ev-fncall-null-body-er
+                  nil
+
+; See a comment above about a corresponding msg in the previous
+; throw-raw-ev-fncall.
+
+                  (msg "The value of ~x0 is not specified when the first ~
+                        argument, fn, is ~x1, and the second argument, args, ~
+                        is ~x2.  Fn has badge ~x3 and args is not known to ~
+                        satisfy the tameness requirement of that badge."
+                       'APPLY$-USERFN fn args bdg)
+                  (print-list-without-stobj-arrays
+                   (list fn args))))))))))
 
 (defun-*1* concrete-apply$-userfn (fn args)
   (concrete-apply$-userfn fn args))

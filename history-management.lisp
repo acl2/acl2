@@ -14526,12 +14526,6 @@
             (t nil))))))
       (value@par runic-value)))))
 
-(defun all-function-symbolps (fns wrld)
-  (cond ((atom fns) (equal fns nil))
-        (t (and (symbolp (car fns))
-                (function-symbolp (car fns) wrld)
-                (all-function-symbolps (cdr fns) wrld)))))
-
 (defun non-function-symbols (lst wrld)
   (cond ((null lst) nil)
         ((function-symbolp (car lst) wrld)

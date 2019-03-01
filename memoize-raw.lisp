@@ -2386,6 +2386,12 @@
                                      memoized function ~x0, which may have ~
                                      been computed using attachments"
                                     at-fn))
+                              ((eq at-fn :{apply$-or-badge}-userfn)
+                               (msg "one of the functions ~v0, which depend ~
+                                     on warrants for the result, was called ~
+                                     during evaluation of a call of ~x1"
+                                    '(apply$-userfn badge-userfn)
+                                    fn))
                               (t
                                (msg "an attachment to function ~x0 was used ~
                                      during evaluation of one of its calls"
@@ -2676,6 +2682,9 @@
 
 ; This is the main part of the body of the function defined by memoize-fn.
 
+; Some relevant background may be found in the Essay on Memoization with
+; Attachments.
+
 ; Comments saying "performance counting*" are intended to mark code that might
 ; best be ignored on a first reading.  A long comment in *memoize-call-array*
 ; outlines how performance counting is implemented.
@@ -2812,11 +2821,28 @@
                      `(let (,*attached-fn-temp*)
                         (mv?-let
                          ,vars
-                         (let ((*aokp* (and *aokp* t)))
+                         (let ((*aokp* (and *aokp* t))
+                               (saved-warrant-reqs *warrant-reqs*))
+                           (when (consp saved-warrant-reqs)
+
+; When *warrant-reqs* is a list, reset it to its initial non-nil value.  See
+; the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+                             (setq *warrant-reqs* (and *warrant-reqs* t)))
                            (,prog1-fn
                             ,body
-                            (when (not (member *aokp* '(t nil) :test #'eq))
-                              (setq ,*attached-fn-temp* *aokp*))))
+                            (cond
+                             ((not (member *aokp* '(t nil) :test #'eq))
+                              (setq ,*attached-fn-temp* *aokp*))
+                             ((consp *warrant-reqs*)
+                              (setq ,*attached-fn-temp*
+                                    :{apply$-or-badge}-userfn)
+                              (when (consp saved-warrant-reqs)
+                                (setq *warrant-reqs*
+                                      (union-eq *warrant-reqs*
+                                                saved-warrant-reqs))))
+                             ((eq saved-warrant-reqs t)
+                              (setq *warrant-reqs* saved-warrant-reqs)))))
                          (progn
                            (cond
                             (,*attached-fn-temp*

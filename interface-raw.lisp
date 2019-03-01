@@ -1294,7 +1294,7 @@
                          though it was supposedly translated successfully ~
                          earlier.  Please contat the ACL2 implementors."
                         x)
-          tx)))
+          (oneify tx fns w program-p))))
    ((not (symbolp (car x)))
     (oneify
      (list* 'let (listlis (cadr (car x))

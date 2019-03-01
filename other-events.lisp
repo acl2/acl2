@@ -1603,8 +1603,8 @@
 
   '(big-n decrement-big-n zp-big-n
 
-; We disallow attachments for the following system functions that support
-; apply$.
+; We disallow user-supplied attachments for the following system functions that
+; support apply$.
 
           badge-userfn apply$-userfn
 
@@ -25518,20 +25518,6 @@
 ; We introduce warrantp now (and some related and supporting functions) in
 ; support of defattach.
 
-(defun warrant-name (fn)
-
-; Warning: Keep this in sync with warrant-name-inverse.
-
-; From fn generate the name APPLY$-WARRANT-fn.
-
-  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
-                  :guard (symbolp fn)))
-  (intern-in-package-of-symbol
-   (concatenate 'string
-                "APPLY$-WARRANT-"
-                (symbol-name fn))
-   fn))
-
 (defun warrant-name-inverse (warrant-fn)
 
 ; Warning: Keep this in sync with warrant-name.
@@ -25594,11 +25580,7 @@
 
   (declare (xargs :mode :program))
   (let* ((name (warrant-name fn))
-         (rule-name (intern-in-package-of-symbol
-                     (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
-                                     (coerce (symbol-name fn) 'list))
-                             'string)
-                     fn))
+         (rule-name (apply$-rule-name fn))
          (necc-name (intern-in-package-of-symbol
                      (coerce
                       (append (coerce (symbol-name name) 'list)

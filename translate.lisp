@@ -2987,6 +2987,55 @@
          (not (eq (car attachment-alist) :attachment-disallowed))
          (assoc-eq fn attachment-alist))))
 
+(defun apply$-lambda-guard (fn args)
+
+; This function provides the guard for a lambda application.  It implies
+; (true-listp args), in support of guard verification for the apply$
+; mutual-recursion.  It also guarantees that if we have a good lambda, then we
+; can avoid checking in the raw Lisp definition of apply$-lambda that the arity
+; of fn (the length of its formals) equals the length of args.
+
+; We were a bit on the fence regarding whether to incorporate this change.  On
+; the positive side: in one test involving trivial computation on a list of
+; length 10,000,000, we found a 13% speedup.  But one thing that gave us pause
+; is that the following test showed no speedup at all -- in fact it seemed to
+; show a consistent slowdown, though probably well under 1%.  (In one trio of
+; runs the average was 6.56 seconds for the old ACL2 and 6.58 for the new.)
+
+;   cd books/system/tests/
+;   acl2
+;   (include-book "apply-timings")
+;   ; Get a function with a guard of t:
+;   (with-output
+;     :off event
+;     (encapsulate
+;       ()
+;       (local (in-theory (disable (:e ap4))))
+;       (defun ap4-10M ()
+;         (declare (xargs :guard t))
+;         (ap4 *10m*
+;              *good-lambda1* *good-lambda2* *good-lambda3* *good-lambda4*
+;              0))))
+;   (time$ (ap4-10M))
+
+; But we decided that a stronger guard would be more appropriate, in part
+; because that's really the idea of guards, in part because more user bugs
+; could be caught, and in part because this would likely need to be part of the
+; guards in support of a loop macro.
+
+  (declare (xargs :guard t :mode :logic))
+  (and (consp fn)
+       (consp (cdr fn))
+       (true-listp args)
+       (equal (len (cadr fn)) ; (cadr fn) = (lambda-object-formals fn), here.
+              (length args))))
+
+(defun apply$-guard (fn args)
+  (declare (xargs :guard t :mode :logic))
+  (if (atom fn)
+      (true-listp args)
+    (apply$-lambda-guard fn args)))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3037,8 +3086,8 @@
 
 (defun ev-fncall-guard-er (fn args w user-stobj-alist latches extra)
 
-; This function is called only by ev-fncall-rec-logical, which do not expect to
-; be executed.
+; This function is called only by ev-fncall-rec-logical, which we do not expect
+; to be executed.
 
 ; Note that user-stobj-alist is only used for error messages, so this function
 ; may be called in the presence of local stobjs.
@@ -3056,7 +3105,8 @@
       latches))
 
 (defun ev-fncall-rec-logical (fn args w user-stobj-alist big-n safe-mode gc-off
-                                 latches hard-error-returns-nilp aok)
+                                 latches hard-error-returns-nilp aok
+                                 warranted-fns)
 
 ; This is the "slow" code for ev-fncall-rec, for when raw-ev-fncall is not
 ; called.
@@ -3068,9 +3118,11 @@
 
 ; Keep this function in sync with *primitive-formals-and-guards*.
 
+; Warranted-fns is a list of function symbols that are to be treated as though
+; they have true warrants.  See ev-fncall+-w.
+
   (declare (xargs :guard (and (plist-worldp w)
-                              (equal hard-error-returns-nilp
-                                     hard-error-returns-nilp))))
+                              (symbol-listp warranted-fns))))
   (cond
    ((zp-big-n big-n)
     (mv t
@@ -3304,6 +3356,18 @@
          (ev-fncall-null-body-er nil fn nil latches))
         (otherwise
          (cond
+          ((and (eq fn 'apply$-userfn)
+                (consp warranted-fns)       ; hence :nil! is not the value
+                (member-eq x warranted-fns) ; hence x is a symbol
+                (or guard-checking-off
+                    (true-listp args)))
+           (ev-fncall-rec-logical x y w user-stobj-alist big-n safe-mode gc-off
+                                  latches hard-error-returns-nilp aok
+                                  warranted-fns))
+          ((and (eq fn 'badge-userfn)
+                (consp warranted-fns) ; hence :nil! is not the value
+                (member-eq x warranted-fns))
+           (mv nil (get-badge x w) latches))
           ((and (null args)
                 (car (stobjs-out fn w)))
            (mv t
@@ -3319,21 +3383,21 @@
 
                                   (cdr (attachment-pair fn w)))))
              (mv-let
-              (er val latches)
-              (ev-rec (if guard-checking-off
-                          ''t
-                        (guard fn nil w))
-                      alist w user-stobj-alist
-                      (decrement-big-n big-n) (eq extra t) guard-checking-off
-                      latches
-                      hard-error-returns-nilp
-                      aok)
-              (cond
-               (er (mv er val latches))
-               ((null val)
-                (ev-fncall-guard-er fn args w user-stobj-alist latches extra))
-               ((and (eq fn 'hard-error)
-                     (not hard-error-returns-nilp))
+               (er val latches)
+               (ev-rec (if guard-checking-off
+                           ''t
+                         (guard fn nil w))
+                       alist w user-stobj-alist
+                       (decrement-big-n big-n) (eq extra t) guard-checking-off
+                       latches
+                       hard-error-returns-nilp
+                       aok)
+               (cond
+                (er (mv er val latches))
+                ((null val)
+                 (ev-fncall-guard-er fn args w user-stobj-alist latches extra))
+                ((and (eq fn 'hard-error)
+                      (not hard-error-returns-nilp))
 
 ; Before we added this case, the following returned nil even though the result
 ; was t if we replaced ev-fncall-rec-logical by ev-fncall-rec.  That wasn't
@@ -3344,47 +3408,48 @@
 ;   (mv-let (erp val ign)
 ;           (ev-fncall-rec-logical 'hard-error '(top "ouch" nil) (w state)
 ;                                  (user-stobj-alist state)
-;                                  100000 nil nil nil nil t)
+;                                  100000 nil nil nil nil t nil)
 ;           (declare (ignore ign val))
 ;           erp)
 
 
-                (mv t (illegal-msg) latches))
-               ((eq fn 'throw-nonexec-error)
-                (ev-fncall-null-body-er nil
-                                        (car args)  ; fn
-                                        (cadr args) ; args
-                                        latches))
-               ((member-eq fn '(pkg-witness pkg-imports))
-                (mv t (unknown-pkg-error-msg fn (car args)) latches))
-               (attachment
-                (ev-fncall-rec-logical attachment args w user-stobj-alist
-                                       (decrement-big-n big-n)
-                                       safe-mode gc-off latches
-                                       hard-error-returns-nilp aok))
-               ((null body)
-                (ev-fncall-null-body-er
-                 (and (not aok) attachment)
-                 fn args latches))
-               (t
-                (mv-let
-                 (er val latches)
-                 (ev-rec body alist w user-stobj-alist
-                         (decrement-big-n big-n) (eq extra t)
-                         guard-checking-off
-                         latches
-                         hard-error-returns-nilp
-                         aok)
-                 (cond
-                  (er (mv er val latches))
-                  ((eq fn 'return-last) ; avoid stobjs-out for return-last
-                   (mv nil val latches))
-                  (t (mv nil
-                         val
-                         (latch-stobjs
-                          (actual-stobjs-out fn args w user-stobj-alist)
-                          val
-                          latches)))))))))))))))))
+                 (mv t (illegal-msg) latches))
+                ((eq fn 'throw-nonexec-error)
+                 (ev-fncall-null-body-er nil
+                                         (car args)  ; fn
+                                         (cadr args) ; args
+                                         latches))
+                ((member-eq fn '(pkg-witness pkg-imports))
+                 (mv t (unknown-pkg-error-msg fn (car args)) latches))
+                (attachment
+                 (ev-fncall-rec-logical attachment args w user-stobj-alist
+                                        (decrement-big-n big-n)
+                                        safe-mode gc-off latches
+                                        hard-error-returns-nilp aok
+                                        warranted-fns))
+                ((null body)
+                 (ev-fncall-null-body-er
+                  (and (not aok) attachment)
+                  fn args latches))
+                (t
+                 (mv-let
+                   (er val latches)
+                   (ev-rec body alist w user-stobj-alist
+                           (decrement-big-n big-n) (eq extra t)
+                           guard-checking-off
+                           latches
+                           hard-error-returns-nilp
+                           aok)
+                   (cond
+                    (er (mv er val latches))
+                    ((eq fn 'return-last) ; avoid stobjs-out for return-last
+                     (mv nil val latches))
+                    (t (mv nil
+                           val
+                           (latch-stobjs
+                            (actual-stobjs-out fn args w user-stobj-alist)
+                            val
+                            latches)))))))))))))))))
 
 (defun ev-fncall-rec (fn args w user-stobj-alist big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok)
@@ -3414,7 +3479,7 @@
                                   (cons "Implementation error" nil)
                                   latches)))))))
   (ev-fncall-rec-logical fn args w user-stobj-alist big-n safe-mode gc-off
-                         latches hard-error-returns-nilp aok))
+                         latches hard-error-returns-nilp aok nil))
 
 #-acl2-loop-only
 (progn

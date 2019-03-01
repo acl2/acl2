@@ -6158,6 +6158,9 @@
 
 (defun ok-to-force (rcnst)
 
+; Warning: In function push-warrants, we rely on the return value of
+; ok-to-force being t or nil.
+
 ; We normally use the rewrite constant to determine whether forcing is enabled.
 ; At one time we experimented with a heuristic that allows the "force-flg" to
 ; be 'weak, meaning:  do not force if the resulting assumption has a variable
@@ -12110,6 +12113,381 @@
 (defmacro all-ffn-symbs-lst (lst ans)
   `(all-fnnames1 t ,lst ,ans))
 
+; Essay on Evaluation of Apply$ and Loop$ Calls During Proofs
+
+; (Note: This essay also applies similarly to badge, even though we do not
+; discuss badge in it.)
+
+; A goal from the earliest days of ACL2 has been efficient evaluation, not only
+; for forms submitted at the top-level loop, but also during proofs.  The
+; earliest implementations of apply$, badge, and loop$ limited their evaluation
+; during proofs, essentially disallowing apply$ or badge for user-defined
+; functions.  This is not particularly unreasonable since attachments are
+; disallowed during proofs, which is completely appropriate.
+
+; This situation has been remedied starting in March, 2019, by expanding the
+; use in the rewriter of concrete-apply$-userfn and concrete-badge-userfn, for
+; calls of apply$-userfn and badge-userfn on concrete arguments, where the
+; first argument has a warrant.  If the warrant is not known to be true in the
+; current context, then it is forced (unless it is known to be false).  See
+; community book books/system/tests/apply-in-proofs.lisp for examples.
+
+; The key idea is that the truth of the warrant for fn justifies replacement of
+; (apply$ 'fn '(arg1 ... argk)) by (fn arg1 ... argk); let's call this a
+; "warranted replacement".  A version of ev-fncall, ev-fncall+, records the
+; warrants that are required to be true in order to make those warranted
+; replacements during evaluation.  Ev-fncall+ is actually a small wrapper for
+; ev-fncall+-w, which in turn has a raw Lisp implementation that relies on a
+; Lisp global, *warrant-reqs*.  The definition of *warrant-reqs* has a comment
+; explaining its legal values, and a search of the sources for *warrant-reqs*
+; should make reasonably clear how this variable is used; but here is a
+; summary.  When *warrant-reqs* has its global value of nil, no special
+; behavior occurs: ev-fncall+[-w] essentially reduces to ev-fncall[-w].
+; Otherwise, *warrant-reqs* can be initialized to t to represent the empty
+; list, and this "list" is extended by maybe-extend-warrant-reqs each time a
+; new function requires a true warrant because of a warranted replacement (as
+; described above).  Upon completion of a ground evaluation using ev-fncall+,
+; this list of functions is returned as the third value of ev-fncall+.  The
+; function push-warrants then processes this list of functions as follows: for
+; the warrant of each function in that list, either the warrant is known to be
+; true or it is forced (except that if it the warrant is known to be false, the
+; evaluation is considered to have failed).
+
+; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
+; for the rewriter as described above, where *aokp* is nil but *warrant-reqs*
+; is non-nil, evaluation involving apply$ or loop$ always reduces to evaluation
+; of apply$-userfn, which is handled with warranted replacements as described
+; above.  At one time we considered allowing these shortcuts for lambdas and
+; loop$ forms, and we could reconsider if we want more efficiency.  But the
+; current implementation seems to provide sufficient efficiency (until someone
+; complains, at least), and has the following advantage: the set of function
+; computed in *warrant-reqs* is exactly the ones for which warranted
+; replacement is used; but if we allow shortcuts for lambdas and loop$ forms,
+; then we will need to include all user-defined functions occurring in the
+; lambda body or loop$ body even when lying on an IF branch that was not taken
+; during a given evaluation.
+
+; We considered handling evaluation in expand-abbreviations as described above
+; for the rewriter.  However, there is no type-alist readily available in
+; expand-abbreviations for determining which warrants are known to be true.
+; Moreover, the rules (with names like apply$-fn) justifying warranted
+; replacements are conditional rewrite rules, which we traditionally ignore
+; during preprocess-clause (and hence during expand-abbreviations) in favor of
+; considering only "simple" rules.  However, we do use ev-fncall+ in
+; expand-abbreviations, so that we can avoid wrapping HIDE around the ground
+; function application when the evaluation aborted rather than doing a
+; warranted replacement.  This case is represented by the case that the third
+; value of ev-fncall+[-w] is a function symbol.  Special handling is important
+; for this case, to avoid wrapping the call in HIDE, since that would prevent
+; the rewriter from later performing a successful evaluation using warranted
+; replacements.  Note that we initialize *warrant-reqs* to :nil! in this case
+; instead of t, which causes evaluation to abort immediately the first time
+; that a warranted replacement is called for.  For very long loops this
+; obviously can be important for efficiency!
+
+; We considered also using ev-fncall+ for eval-ground-subexpressions, but that
+; seemed to introduce more complexity than it's worth -- so far, anyhow, though
+; this could change based on user demand.  Since eval-ground-subexpressions
+; does not introduce HIDE, we don't have the need for ev-fncall+ that is
+; described above for expand-abbreviations.
+
+; Note that our scheme works nicely with the executable-counterpart of apply$
+; disabled.  Specifically, all warranted replacements are justified by warrants
+; -- actually by rules with names like apply$-fn -- rather than by the
+; execution of apply$ calls.
+
+; Next we develop the logical and raw Lisp definitions of ev-fncall+.
+
+(defun all-function-symbolps (fns wrld)
+  (declare (xargs :mode :logic
+                  :guard (plist-worldp wrld)))
+  (cond ((atom fns) (equal fns nil))
+        (t (and (symbolp (car fns))
+                (function-symbolp (car fns) wrld)
+                (all-function-symbolps (cdr fns) wrld)))))
+
+(defun badged-fns-of-world (wrld)
+
+; We return the list of badged functions in wrld, but in a way that can be
+; guard-verified and can be proved to return a list of function symbols.
+
+  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
+  (and (alistp (table-alist 'badge-table wrld))
+       (let ((badge-alist
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table wrld)))))
+         (and (alistp badge-alist)
+              (let ((syms (strip-cars badge-alist)))
+                (and (all-function-symbolps syms wrld)
+                     syms))))))
+
+(defun unknown-constraints-table-guard (key val wrld)
+  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
+                 because ~@0.  See :DOC partial-encapsulate.")
+        (ctx 'unknown-constraints-table-guard))
+    (and (eq key :supporters)
+         (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                            (global-val 'embedded-event-lst wrld))))
+           (cond
+            ((null ee-entries)
+             (er hard ctx er-msg
+                 "it is not being made in the scope of a non-trivial ~
+                  encapsulate"))
+            ((cdr ee-entries)
+             (er hard ctx er-msg
+                 (msg "it is being made in the scope of nested non-trivial ~
+                       encapsulates.  In particular, an enclosing encapsulate ~
+                       introduces function ~x0, while an encapsulate superior ~
+                       to that one introduces function ~x1"
+                      (caar (cadr (car ee-entries)))
+                      (caar (cadr (cadr ee-entries))))))
+            ((not (all-function-symbolps val wrld))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, is not a list of known function symbols"
+                      val)))
+            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                                 val))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, does not include all of the signature ~
+                       functions of the partial-encapsulate"
+                      val)))
+            (t t))))))
+
+(table unknown-constraints-table nil nil
+       :guard
+       (unknown-constraints-table-guard key val world))
+
+(defmacro set-unknown-constraints-supporters (&rest fns)
+  `(table unknown-constraints-table
+          :supporters
+
+; Notice that by including the newly-constrained functions in the supporters,
+; we are guaranteeing that this table event is not redundant.  To see this,
+; first note that we are inside a non-trivial encapsulate (see
+; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
+; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
+; would have rejected a previous attempt to set to these supporters, since they
+; were not function symbols at that time.
+
+          (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                             (global-val 'embedded-event-lst world))))
+            (union-equal (strip-cars (cadr (car ee-entries)))
+                         ',fns))))
+
+(partial-encapsulate
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; We think of (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil) as the
+; list of badged functions supplied to apply$-userfn or badge-userfn during
+; evaluation of the call of fn on args in wrld using the given
+; user-stobj-alist, big-n, safe-mode, and gc-off.  But if the last argument,
+; strictp, is non-nil, then we think of the result as the first function symbol
+; encountered during evaluation, if any, for which a true warrant was required
+; to complete that call of fn.
+
+; Also see ev-fncall+-w.
+
+ (((ev-fncall+-fns * * * * * * *) => *))
+ nil
+ (logic)
+ (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
+          (declare (ignore fn args big-n safe-mode gc-off))
+          (and (not strictp)
+               (badged-fns-of-world wrld))))
+ (defthm all-function-symbolps-ev-fncall+-fns
+   (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
+     (implies (not (symbolp fns)) ; allow t, :nil!, or a function symbol
+              (all-function-symbolps fns wrld))))
+ (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
+   (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
+            (badged-fns-of-world wrld))))
+
+#+acl2-loop-only
+(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; This function allows apply$-userfn and badge-userfn to execute on warranted
+; functions even when *aokp* is nil.  It returns an error triple whose
+; non-erroneous value is a list of the functions that need warrants in order to
+; trust the result.  However, in the case of an error when strictp is :nil!,
+; the value is a function symbol responsible for the error (because a warrant
+; is required, but :nil! causes evaluation to abort in that case).  Its
+; implementation is in the #-acl2-loop-only definition of this function; the
+; present logical definition is incomplete in the sense that ev-fncall+-fns is
+; partially constrained.
+
+; This logical definition actually permits a list, computed by constrained
+; function ev-fncall+-fns, that properly includes the intended list as a
+; subset.  But the under-the-hood implementation of ev-fncall+-w produces
+; exactly the set of functions given to apply$-userfn or badge-userfn.
+
+  (let* ((big-n (big-n))
+         (fns (ev-fncall+-fns fn args w big-n safe-mode gc-off strictp)))
+    (mv-let (erp val latches)
+      (ev-fncall-rec-logical fn args w
+                             nil ; user-stobj-alist
+                             big-n safe-mode gc-off
+                             nil ; latches
+                             t   ; hard-error-returns-nilp
+                             nil ; aokp
+                             (and (not strictp) fns))
+      (declare (ignore latches))
+      (mv erp val fns))))
+
+#-acl2-loop-only
+(defvar *warrant-reqs*
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; Legal values of this variable are as follows.
+
+; nil -   Always the global value, and always the value when *aokp* is non-nil
+; t   -   Represents the empty list, enabling accumulation of function symbols
+;         whose (true) warrants support evaluation
+; lst   - A non-empty, duplicate-free list, which represents a set of function
+;         symbols whose (true) warrants support evaluation
+; :nil! - Like nil, but causes evaluation to stop if a warrant is ever required
+; fn  -   A function symbol for which evaluation is aborted because its warrant
+;         is required (because *warrant-reqs* is :nil!)
+
+  nil)
+
+#-acl2-loop-only
+(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
+
+; See comments in the logic definition of this function.
+
+  (let ((*warrant-reqs*
+
+; See comments in the definition of *warrant-reqs* for a discussion of the
+; :nil! and t values of this global.
+
+         (if strictp :nil! t)))
+    (declare (special *warrant-reqs*)) ; just to be safe
+    (mv-let (erp val latches)
+      (ev-fncall-w fn args w
+                   nil ; user-stobj-alist
+                   safe-mode gc-off
+                   t    ; hard-error-returns-nilp
+                   nil) ; aok
+      (declare (ignore latches))
+      (mv erp
+          val
+          (if (and (null erp)
+                   (atom *warrant-reqs*))
+              nil
+            *warrant-reqs*)))))
+
+(defun ev-fncall+ (fn args strictp state)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+; Also see comments in the logic definition of ev-fncall+-w.
+
+  (ev-fncall+-w fn args
+                (w state)
+                (f-get-global 'safe-mode state)
+                (gc-off state)
+                strictp))
+
+(defun warrant-name (fn)
+
+; Warning: Keep this in sync with warrant-name-inverse.
+
+; From fn generate the name APPLY$-WARRANT-fn.
+
+  (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
+                  :guard (symbolp fn)))
+  (intern-in-package-of-symbol
+   (concatenate 'string
+                "APPLY$-WARRANT-"
+                (symbol-name fn))
+   fn))
+
+(defun apply$-rule-name (fn)
+  (declare (xargs :guard (symbolp fn)))
+  (intern-in-package-of-symbol
+   (coerce (append '(#\A #\P #\P #\L #\Y #\$ #\-)
+                   (coerce (symbol-name fn) 'list))
+           'string)
+   fn))
+
+(defun push-warrants (fns target type-alist ens wrld ok-to-force ttree ttree0)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; This function is called when *aokp* is nil and *warrant-reqs* is non-nil.
+
+; Fns is a list of warranted function symbols, each an argument to
+; apply$-userfn or badge-userfn during evaluation of target, which is the
+; application of some function symbol to constants and may have subsidiary
+; calls of apply$-userfn.  If ok-to-force is true, then we update ttree by
+; forcing warrants that are not known, to justify the evaluation of target.
+; Since one of the arguments is type-alist, we do not expect to call this
+; function during preprocess-clause.  (This is reasonable since execution that
+; is conditional on warrants isn't "simple", just as rules with hypotheses
+; aren't simple.)
+
+; We return (mv erp ttree), where if erp is non-nil then ttree extends the
+; input ttree (which is initially ttree0) to justify that every symbol in fns
+; has a warrant and to record the application of each rule APPLY$-fn.  This is
+; a no-change loser: if erp is non-nil then the returned ttree is ttree0.  Note
+; however that if ok-to-force is true, then erp will be nil.
+
+; We overload ok-to-force just a bit.  At the top level it is Boolean.
+; Otherwise, it can be :immediate or :force, meaning that it is ok to force
+; (the top-level value of ok-to-force is t) and the mode is :immediate or not,
+; respectively.
+
+  (cond
+   ((endp fns) (mv nil ttree))
+   (t
+    (let* ((fn (car fns))
+           (warrant-name (warrant-name fn))
+           (warrant (fcons-term* warrant-name))
+           (fn-apply$-rule (list :rewrite (apply$-rule-name fn))))
+      (assert$
+       (and (function-symbolp warrant-name wrld)
+            (logicp warrant-name wrld))
+       (cond
+        ((enabled-runep fn-apply$-rule ens wrld)
+         (mv-let (knownp nilp ttree)
+           (known-whether-nil warrant type-alist ens nil nil wrld ttree)
+           (cond
+            (knownp
+             (cond
+              ((not nilp)
+               (push-warrants (cdr fns) target type-alist ens wrld ok-to-force
+                              (push-lemma fn-apply$-rule ttree)
+                              ttree0))
+              (t
+
+; The warrant is known to be false, which is presumably rare.  There is no
+; point in trying to force the warrant, so we cause an error.
+
+               (mv t ttree0))))
+            (ok-to-force
+             (let* ((ok-to-force
+                     (cond ((not (eq ok-to-force t))
+                            ok-to-force)
+; Else ok-to-force is t, and we convert it to :immediate or :force.
+                           ((enabled-numep *immediate-force-modep-xnume*
+                                           ens)
+                            :immediate)
+                           (t :force)))
+                    (immediatep (eq ok-to-force :immediate)))
+               (mv-let (force-flg ttree)
+                 (force-assumption fn-apply$-rule target warrant type-alist nil
+                                   immediatep t
+                                   (push-lemma fn-apply$-rule ttree))
+                 (declare (ignore force-flg)) ; still t
+                 (push-warrants (cdr fns) target type-alist ens wrld ok-to-force
+                                ttree ttree0))))
+            (t ; Forcing is disallowed, so we cause an error.
+             (mv t ttree0)))))
+        (t (mv t ttree0))))))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -12530,43 +12908,43 @@
 ; in fact we are rewriting a piece of it (namely xi).
 
                 (mv-let (term1 alist1)
-                        (simplifiable-mv-nth term alist)
-                        (rewrite-entry
-                         (rewrite term1 alist1 2)
-                         :ttree (push-lemma
-                                 (fn-rune-nume 'mv-nth nil nil wrld)
-                                 ttree))))
+                  (simplifiable-mv-nth term alist)
+                  (rewrite-entry
+                   (rewrite term1 alist1 2)
+                   :ttree (push-lemma
+                           (fn-rune-nume 'mv-nth nil nil wrld)
+                           ttree))))
                (t
                 (let ((ens (access rewrite-constant rcnst
                                    :current-enabled-structure)))
                   (mv-let
-                   (deep-pequiv-lst shallow-pequiv-lst)
-                   (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
-                   (sl-let
-                    (rewritten-args ttree)
-                    (rewrite-entry
-                     (rewrite-args (fargs term) alist 1 nil
-                                   deep-pequiv-lst shallow-pequiv-lst
-                                   geneqv fn)
-                     :obj '?
-                     :geneqv
-                     (geneqv-lst fn geneqv ens wrld)
-                     :pequiv-info nil ; ignored
-                     )
-                    (cond
-                     ((and
-                       (or (flambdap fn)
-                           (logicp fn wrld))
-                       (all-quoteps rewritten-args)
-                       (or
-                        (flambda-applicationp term)
-                        (and (enabled-xfnp fn ens wrld)
+                    (deep-pequiv-lst shallow-pequiv-lst)
+                    (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
+                    (sl-let
+                     (rewritten-args ttree)
+                     (rewrite-entry
+                      (rewrite-args (fargs term) alist 1 nil
+                                    deep-pequiv-lst shallow-pequiv-lst
+                                    geneqv fn)
+                      :obj '?
+                      :geneqv
+                      (geneqv-lst fn geneqv ens wrld)
+                      :pequiv-info nil ; ignored
+                      )
+                     (cond
+                      ((and
+                        (or (flambdap fn)
+                            (logicp fn wrld))
+                        (all-quoteps rewritten-args)
+                        (or
+                         (flambda-applicationp term)
+                         (and (enabled-xfnp fn ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                             (not (getpropc fn 'constrainedp nil wrld)))))
+                              (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable-counterpart of the fn (or just go into the lambda
@@ -12579,23 +12957,43 @@
 ; provided such functions are currently toggled.  Undefined functions
 ; (e.g., car) pass the test.
 
-                      (cond ((flambda-applicationp term)
-                             (rewrite-entry
-                              (rewrite (lambda-body fn)
-                                       (pairlis$ (lambda-formals fn)
-                                                 rewritten-args)
-                                       'lambda-body)))
-                            (t
-                             (mv-let
-                              (erp val latches)
-                              (pstk
-                               (ev-fncall fn
+                       (cond
+                        ((flambda-applicationp term)
+                         (rewrite-entry
+                          (rewrite (lambda-body fn)
+                                   (pairlis$ (lambda-formals fn)
+                                             rewritten-args)
+                                   'lambda-body)))
+                        (t
+                         (let ((ok-to-force (ok-to-force rcnst)))
+                           (mv-let
+                             (erp val apply$ed-fns)
+                             (pstk
+                              (ev-fncall+ fn
                                           (strip-cadrs rewritten-args)
-                                          state
-                                          nil t nil))
-                              (declare (ignore latches))
-                              (cond
-                               (erp
+
+; The strictp argument is nil here, as we will deal with required true warrants
+; in push-warrants, below.  See the Essay on Evaluation of Apply$ and Loop$
+; Calls During Proofs.
+
+                                          nil
+                                          state))
+                             (mv-let
+                               (erp ttree)
+                               (cond ((or erp
+
+; No special action is necessary if apply$ed-fns is nil, as opposed to a
+; non-empty list.
+
+                                          (null apply$ed-fns))
+                                      (mv erp ttree))
+                                     (t (push-warrants
+                                         apply$ed-fns
+                                         (cons-term fn rewritten-args)
+                                         type-alist ens wrld ok-to-force
+                                         ttree ttree)))
+                               (cond
+                                (erp
 
 ; We following a suggestion from Matt Wilding and attempt to rewrite the term
 ; before applying HIDE.  This is really a heuristic choice; we could choose
@@ -12604,33 +13002,33 @@
 ; apply in the rare case that the current function symbol (whose evaluation has
 ; errored out) is a compound recognizer.
 
-                                (let ((new-term1
-                                       (cons-term fn rewritten-args)))
-                                  (sl-let
-                                   (new-term2 ttree)
-                                   (rewrite-entry
-                                    (rewrite-with-lemmas new-term1))
-                                   (cond
-                                    ((equal new-term1 new-term2)
-                                     (mv step-limit
-                                         (fcons-term* 'hide new-term1)
-                                         (push-lemma
-                                          (fn-rune-nume 'hide nil nil wrld)
-                                          ttree)))
-                                    (t (mv step-limit new-term2 ttree))))))
-                               (t (mv step-limit
-                                      (kwote val)
-                                      (push-lemma
-                                       (fn-rune-nume fn nil t wrld)
-                                       ttree))))))))
-                     (t
-                      (sl-let
-                       (rewritten-term ttree)
-                       (rewrite-entry
-                        (rewrite-primitive fn rewritten-args))
-                       (rewrite-entry
-                        (rewrite-with-lemmas
-                         rewritten-term))))))))))))))))
+                                 (let ((new-term1
+                                        (cons-term fn rewritten-args)))
+                                   (sl-let
+                                    (new-term2 ttree)
+                                    (rewrite-entry
+                                     (rewrite-with-lemmas new-term1))
+                                    (cond
+                                     ((equal new-term1 new-term2)
+                                      (mv step-limit
+                                          (fcons-term* 'hide new-term1)
+                                          (push-lemma
+                                           (fn-rune-nume 'hide nil nil wrld)
+                                           ttree)))
+                                     (t (mv step-limit new-term2 ttree))))))
+                                (t (mv step-limit
+                                       (kwote val)
+                                       (push-lemma
+                                        (fn-rune-nume fn nil t wrld)
+                                        ttree))))))))))
+                      (t
+                       (sl-let
+                        (rewritten-term ttree)
+                        (rewrite-entry
+                         (rewrite-primitive fn rewritten-args))
+                        (rewrite-entry
+                         (rewrite-with-lemmas
+                          rewritten-term))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
                               rdepth step-limit
