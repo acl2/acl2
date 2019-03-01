@@ -98,8 +98,8 @@
 
 ; * The Source Code Group contains the five files that introduce apply$, et al,
 ; into the source code.  The first one listed above, other-events.lisp, just
-; introduces two partially constrained functions, concrete-badge-userfn and
-; concrete-apply$-userfn, that play a role in the implementation of the
+; introduces two partially constrained functions, doppelganger-badge-userfn and
+; doppelganger-apply$-userfn, that play a role in the implementation of the
 ; evaluation theory for apply$.  We do not discuss that file further here since
 ; it is overwhelmingly concerned with events not related to apply$, but we
 ; discuss the concrete functions extensively in apply-raw.lisp.

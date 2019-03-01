@@ -1633,13 +1633,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Note: In apply-raw.lisp we use a relaxed version of the expansion of
 ; defun-overrides that ignores the requirement that STATE be a formal!  We use
-; that relaxed code to define concrete-badge-userfn and concrete-apply$-userfn.
-; The basic argument is that it is ok to secretly look at the current world as
-; long as we cause an error if the current world does not specify a value for
-; the notion being ``defined'' and that once the world does specify a value
-; that value never changes.  If more functions like these two arise in the
-; future we may wish to relax defun-overrides or at least define a relaxed
-; version of it.
+; that relaxed code to define doppelganger-badge-userfn and
+; doppelganger-apply$-userfn.  The basic argument is that it is ok to secretly
+; look at the current world as long as we cause an error if the current world
+; does not specify a value for the notion being ``defined'' and that once the
+; world does specify a value that value never changes.  If more functions like
+; these two arise in the future we may wish to relax defun-overrides or at
+; least define a relaxed version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -13554,8 +13554,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn ; redefined from partial-encapsulate
-    concrete-apply$-userfn ; redefined from partial-encapsulate
+    doppelganger-badge-userfn ; redefined from partial-encapsulate
+    doppelganger-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
@@ -21045,10 +21045,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
-; See the Essay on Memoization with Attachments for why concrete-apply$-userfn
-; and concrete-badge-userfn are untouchable.
+; See the Essay on Memoization with Attachments for why
+; doppelganger-apply$-userfn and doppelganger-badge-userfn are untouchable.
 
-    concrete-apply$-userfn concrete-badge-userfn
+    doppelganger-apply$-userfn doppelganger-badge-userfn
 
     when-pass-2
 
@@ -28248,9 +28248,9 @@ Lisp definition."
   ()
 
 ; The following function symbols are used (ancestrally) in the constraints on
-; concrete-badge-userfn and concrete-apply$-userfn.  They must be in logic
-; mode.  We use encapsulate so that verify-termination-boot-strap will do its
-; intended job in the first pass of the build.
+; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They must be in
+; logic mode.  We use encapsulate so that verify-termination-boot-strap will do
+; its intended job in the first pass of the build.
 
   (logic)
   (verify-termination-boot-strap booleanp)

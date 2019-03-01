@@ -1955,11 +1955,11 @@
 ; the constraint on apply$-userfn mentions badge-userfn.
 
 (defattach
-  (badge-userfn concrete-badge-userfn)
-  (apply$-userfn concrete-apply$-userfn)
+  (badge-userfn doppelganger-badge-userfn)
+  (apply$-userfn doppelganger-apply$-userfn)
   :hints
-  (("Goal" :use (concrete-badge-userfn-type
-                 concrete-apply$-userfn-takes-arity-args))))
+  (("Goal" :use (doppelganger-badge-userfn-type
+                 doppelganger-apply$-userfn-takes-arity-args))))
 
 ; -----------------------------------------------------------------
 ; 12. Loop$ Scions

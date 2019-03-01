@@ -5098,7 +5098,7 @@
 ; use of equalities on the type-alist.  Suppose that (foo x) is defined to be
 ; (bar (foo (cdr x))) in a certain case.  But imagine that on the type-alist we
 ; have (foo (cdr x)) = (foo x).  Then rewritten-body, here, is (bar (foo x)).
-; Because it contains a rewriteable call we rewrite it again.  If we do so with
+; Because it contains a rewritable call we rewrite it again.  If we do so with
 ; the old fnstack, we will open (foo x) to (bar (foo x)) again and infinitely
 ; regress.
 
@@ -5918,8 +5918,8 @@
 
 (mutual-recursion
 
-(defun contains-rewriteable-callp
-  (fn term cliquep terms-to-be-ignored-by-rewrite)
+(defun contains-rewritable-callp (fn term cliquep
+                                     terms-to-be-ignored-by-rewrite)
 
 ; This function scans the non-quote part of term and determines
 ; whether it contains a call, t, of any fn in the mutually recursive
@@ -5936,25 +5936,25 @@
 ; calls of fns in the clique, as described in the comment on the subject
 ; in rewrite-fncallp above.
 
-         (contains-rewriteable-callp-lst fn (fargs term)
-                                         cliquep
-                                         terms-to-be-ignored-by-rewrite))
+         (contains-rewritable-callp-lst fn (fargs term)
+                                        cliquep
+                                        terms-to-be-ignored-by-rewrite))
         ((and (if cliquep
                   (member-eq (ffn-symb term) cliquep)
                 (eq (ffn-symb term) fn))
               (not (member-equal term terms-to-be-ignored-by-rewrite)))
          t)
-        (t (contains-rewriteable-callp-lst fn (fargs term)
-                                           cliquep
-                                           terms-to-be-ignored-by-rewrite))))
+        (t (contains-rewritable-callp-lst fn (fargs term)
+                                          cliquep
+                                          terms-to-be-ignored-by-rewrite))))
 
-(defun contains-rewriteable-callp-lst
-  (fn lst cliquep terms-to-be-ignored-by-rewrite)
+(defun contains-rewritable-callp-lst (fn lst cliquep
+                                         terms-to-be-ignored-by-rewrite)
   (cond ((null lst) nil)
-        (t (or (contains-rewriteable-callp fn (car lst)
-                                           cliquep
-                                           terms-to-be-ignored-by-rewrite)
-               (contains-rewriteable-callp-lst
+        (t (or (contains-rewritable-callp fn (car lst)
+                                          cliquep
+                                          terms-to-be-ignored-by-rewrite)
+               (contains-rewritable-callp-lst
                 fn (cdr lst)
                 cliquep
                 terms-to-be-ignored-by-rewrite)))))
@@ -12126,11 +12126,12 @@
 ; disallowed during proofs, which is completely appropriate.
 
 ; This situation has been remedied starting in March, 2019, by expanding the
-; use in the rewriter of concrete-apply$-userfn and concrete-badge-userfn, for
-; calls of apply$-userfn and badge-userfn on concrete arguments, where the
-; first argument has a warrant.  If the warrant is not known to be true in the
-; current context, then it is forced (unless it is known to be false).  See
-; community book books/system/tests/apply-in-proofs.lisp for examples.
+; use in the rewriter of doppelganger-apply$-userfn and
+; doppelganger-badge-userfn, for calls of apply$-userfn and badge-userfn on
+; concrete arguments, where the first argument has a warrant.  If the warrant
+; is not known to be true in the current context, then it is forced (unless it
+; is known to be false).  See community book
+; books/system/tests/apply-in-proofs.lisp for examples.
 
 ; The key idea is that the truth of the warrant for fn justifies replacement of
 ; (apply$ 'fn '(arg1 ... argk)) by (fn arg1 ... argk); let's call this a
@@ -15332,12 +15333,12 @@
 
 ; Nqthm Discrepancy: In nqthm, the caller of rewrite-fncall,
 ; rewrite-with-lemmas, would ask whether the result was different from term and
-; whether it contained rewriteable calls.  If so, it called the rewriter on the
+; whether it contained rewritable calls.  If so, it called the rewriter on the
 ; result.  We have changed that here so that rewrite-fncall, in the case that
-; it is returning the expanded body, asks about rewriteable calls and possibly
-; calls rewrite again.  In the implementation below we ask about rewriteable
+; it is returning the expanded body, asks about rewritable calls and possibly
+; calls rewrite again.  In the implementation below we ask about rewritable
 ; calls only for recursively defined fns.  The old code asked the question on
-; all expansions.  It is possible the old code sometimes found a rewriteable
+; all expansions.  It is possible the old code sometimes found a rewritable
 ; call of a non-recursive fn in the expansion of that fn's body because of uses
 ; of that fn in the arguments.  So this is a possible difference between ACL2
 ; and nqthm, although we have no reason to believe it is significant and we do
@@ -15406,7 +15407,7 @@
 ; their handling in both rewrite-fncallp (where we take advantage of
 ; the knowledge that lambda-expressions will not occur in rewritten
 ; bodies unless the user has explicitly prevented us from opening
-; them) and contains-rewriteable-callp.
+; them) and contains-rewritable-callp.
 
                (cond
                 ((and (not (recursive-fn-on-fnstackp fnstack))
@@ -15564,7 +15565,7 @@
 ;                           ((ffnnamep 'if rewritten-body)
 
 ; Nqthm Discrepancy: This clause is new to ACL2.  Nqthm always rewrote the
-; rewritten body if it contained rewriteable calls.  This allows Nqthm to open
+; rewritten body if it contained rewritable calls.  This allows Nqthm to open
 ; up (member x '(a b c d e)) to a 5-way case split in "one" apparent rewrite.
 ; In an experiment I have added the proviso above, which avoids rewriting the
 ; rewritten body if it contains an IF.  This effectively slows down the opening
@@ -15612,7 +15613,7 @@
 
 ; takes forever unless you give the two disable hints shown above.
 
-                              ((contains-rewriteable-callp
+                              ((contains-rewritable-callp
                                 fn rewritten-body
                                 (if (cdr recursivep)
                                     recursivep

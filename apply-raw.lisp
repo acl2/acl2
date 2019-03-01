@@ -28,9 +28,9 @@
 ; executable functions attached to badge-userfn and apply$-userfn.  We proceed
 ; in four main steps:
 
-; * define concrete-badge-userfn, which will be attached to badge-userfn
+; * define doppelganger-badge-userfn, which will be attached to badge-userfn
 
-; * define concrete-apply$-userfn, which will be attached to apply$-userfn
+; * define doppelganger-apply$-userfn, which will be attached to apply$-userfn
 
 ; * optimize apply$-lambda with compilation and caching
 
@@ -38,7 +38,7 @@
 ;   full version of the proof sketched in the paper ``Limited Second Order
 ;   Functionality in a First Order Setting''
 
-; The two concrete- functions mentioned above are actually partially
+; The two doppelganger- functions mentioned above are actually partially
 ; constrained in other-events.lisp; the definitions here are their raw Lisp
 ; implementations.  The model described in the paper (and justified in the
 ; essay here) is relevant because, in addition to making the warrants valid, it
@@ -60,14 +60,14 @@
 
 ;    (include-book "projects/apply/apply" :dir :system)
 ;    (defattach
-;      (badge-userfn concrete-badge-userfn)
-;      (apply$-userfn concrete-apply$-userfn)
+;      (badge-userfn doppelganger-badge-userfn)
+;      (apply$-userfn doppelganger-apply$-userfn)
 ;      :hints
-;      (("Goal" :use (concrete-badge-userfn-type
-;                     concrete-apply$-userfn-takes-arity-args))))
+;      (("Goal" :use (doppelganger-badge-userfn-type
+;                     doppelganger-apply$-userfn-takes-arity-args))))
 ;    (value :q)
 ;    (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
-;    (setq *allow-concrete-execution-of-apply-stubs* t)
+;    (setq *allow-doppelganger-execution-of-apply-stubs* t)
 ;    (lp)
 ;    (quote (end of rubric))
 
@@ -79,7 +79,8 @@
 ; -----------------------------------------------------------------
 
 ; In the days when The Rubric was necessary, the raw lisp variable
-; *allow-concrete-execution-of-apply-stubs* told us whether it had been
+; *allow-concrete-execution-of-apply-stubs* (which we would now call
+; *allow-doppelganger-execution-of-apply-stubs*) told us whether it had been
 ; executed.  Later, we just set that variable to t.  Since then (after
 ; Version_8.0) we have eliminated that variable.
 
@@ -131,16 +132,16 @@
        (t (mv nil bdg)))))))
 
 ; The (extensible) attachments for badge-userfn and apply$-userfn are
-; concrete-badge-userfn and concrete-apply$-userfn.  They will be attached to
-; badge-userfn and apply$-userfn to extend the evaluation theory appropriately.
-; See the defattach event at the end of apply.lisp.  We define the two
-; concrete- functions below.
+; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They will be
+; attached to badge-userfn and apply$-userfn to extend the evaluation theory
+; appropriately.  See the defattach event at the end of apply.lisp.  We define
+; the two doppelganger- functions below.
 
 ; Because we want to implement their bodies in raw Lisp, we would like to
 ; introduce them with defun-overrides commands like
 
-; (defun-overrides concrete-badge-userfn (fn) ...)
-; (defun-overrides concrete-apply$-userfn (fn args) ...)
+; (defun-overrides doppelganger-badge-userfn (fn) ...)
+; (defun-overrides doppelganger-apply$-userfn (fn args) ...)
 
 ; But the defun-overrides macro requires that STATE be among the formals of the
 ; function introduced and it is not.  So we can't use defun-overrides per se.
@@ -153,17 +154,17 @@
 ; (b) is that we cannot apply$ functions to stobjs or state.
 
 ; Here is the STATE-free expansion of
-; (defun-overrides concrete-badge-userfn (fn) ...)
+; (defun-overrides doppelganger-badge-userfn (fn) ...)
 ; ==>
 ;  (assert (member 'state formals :test 'eq))
-(progn (push 'concrete-badge-userfn *defun-overrides*) ; see add-trip
+(progn (push 'doppelganger-badge-userfn *defun-overrides*) ; see add-trip
 
 ; The next two items are pushed to the left margin so they get picked up by
 ; etags.  But they're really part of the progn!
 
 ; The following defun has two notes in it which are given afterwards.
 
-(defun concrete-badge-userfn (fn)
+(defun doppelganger-badge-userfn (fn)
 
 ; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
 
@@ -173,7 +174,7 @@
     (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
-            'concrete-badge-userfn
+            'doppelganger-badge-userfn
             (print-list-without-stobj-arrays
              (list fn)))))
 
@@ -203,8 +204,8 @@
                     nil
 
 ; See the comment under the second throw-raw-ev-fncall in
-; concrete-apply$-userfn, for why we assume here that this call has come from
-; badge-userfn.
+; doppelganger-apply$-userfn, for why we assume here that this call has come
+; from badge-userfn.
 
                     (msg "The value of ~x0 is not specified on ~x1 because ~
                           ~@2."
@@ -212,23 +213,23 @@
                     (print-list-without-stobj-arrays
                      (list fn))))))))))
 
-; Notes on CONCRETE-BADGE-USERFN
+; Notes on DOPPELGANGER-BADGE-USERFN
 
 ; Note 1. on the test of *aokp*: We once thought that it was unnecessary to
-; test *aokp* in concrete-badge-userfn.  The (faulty) reasoning was that
-; concrete-badge-userfn is the attachment for badge-userfn.  We wouldn't be
-; running concrete-badge-userfn if attachments weren't ok.  The flaw in that
-; reasoning is that concrete-badge-userfn is itself a :logic mode function and
-; might be called directly by the user at the top level of the ACL2 loop, or
-; used in some other function used in proofs or hints.  So we might find
-; ourselves executing concrete-badge-userfn even though *aokp* is nil.  We need
-; for it to act undefined when *aokp* is nil.  This same reasoning applies to
-; concrete-apply$-userfn.  More recently, however, we have made
-; concrete-badge-userfn untouchable; thus, we could now remove the *aokp* test.
-; (The issue for the *warrant-reqs* test is similar.)  But for now, at least,
-; we'll leave this *aokp* test, mainly to protect against inappropriate
-; execution if untouchability is removed, but with the bonus that this test
-; provides extra protection in case our thinking here is flawed!
+; test *aokp* in doppelganger-badge-userfn.  The (faulty) reasoning was that
+; doppelganger-badge-userfn is the attachment for badge-userfn.  We wouldn't be
+; running doppelganger-badge-userfn if attachments weren't ok.  The flaw in
+; that reasoning is that doppelganger-badge-userfn is itself a :logic mode
+; function and might be called directly by the user at the top level of the
+; ACL2 loop, or used in some other function used in proofs or hints.  So we
+; might find ourselves executing doppelganger-badge-userfn even though *aokp*
+; is nil.  We need for it to act undefined when *aokp* is nil.  This same
+; reasoning applies to doppelganger-apply$-userfn.  More recently, however, we
+; have made doppelganger-badge-userfn untouchable; thus, we could now remove
+; the *aokp* test.  (The issue for the *warrant-reqs* test is similar.)  But
+; for now, at least, we'll leave this *aokp* test, mainly to protect against
+; inappropriate execution if untouchability is removed, but with the bonus that
+; this test provides extra protection in case our thinking here is flawed!
 
 ; Note 2.  on throw-raw-ev-fncall: Throughout this function we cause errors
 ; when the answer is not determined by the known warrants.  The various errors
@@ -250,10 +251,10 @@
 ; we do above.  So instead of throw-without-attach we use its expansion,
 ; without the quote on the ``fn'' arg.
 
-; End of Notes on CONCRETE-BADGE-USERFN
+; End of Notes on DOPPELGANGER-BADGE-USERFN
 
-(defun-*1* concrete-badge-userfn (fn)
-  (concrete-badge-userfn fn))
+(defun-*1* doppelganger-badge-userfn (fn)
+  (doppelganger-badge-userfn fn))
 
 ; End of progn from ``defun-overrides''
 )
@@ -261,7 +262,7 @@
 ; Essay on a Misguided Desire for Erroneous APPLY$s to Print Exactly the
 ; Same Error Messages whether Evaluation of APPLY$ Stubs is Supported or Not
 
-; One possible objection to our handling of errors in concrete-badge-userfn
+; One possible objection to our handling of errors in doppelganger-badge-userfn
 ; arises with the question: If we attempt an evaluation of apply$ that is bound
 ; to fail, do we get exactly the same error message regardless of whether
 ; evaluation of the critical apply$ constrained functions is supported or not?
@@ -350,15 +351,15 @@
           (t (push fn *warrant-reqs*)))))
 
 ; Here is the STATE-free expansion of
-; (defun-overrides concrete-apply$-userfn (fn args) ...)
+; (defun-overrides doppelganger-apply$-userfn (fn args) ...)
 ; ==>
 ;  (assert (member 'state formals :test 'eq))
-(progn (push 'concrete-apply$-userfn *defun-overrides*) ; see add-trip
+(progn (push 'doppelganger-apply$-userfn *defun-overrides*) ; see add-trip
 
 ; The next two items are pushed to the left margin so they get picked up by
 ; etags.  But they're really part of the progn!
 
-(defun concrete-apply$-userfn (fn args)
+(defun doppelganger-apply$-userfn (fn args)
 
 ; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
 
@@ -368,7 +369,7 @@
     (throw-raw-ev-fncall ; See Note 2.
      (list* 'ev-fncall-null-body-er
             nil
-            'concrete-apply$-userfn
+            'doppelganger-apply$-userfn
             (print-list-without-stobj-arrays
              (list fn args)))))
    (t (mv-let (failure-msg bdg)
@@ -380,10 +381,10 @@
                   nil
 
 ; The following message assumes that we got here by way of a call to
-; apply$-userfn.  Since concrete-apply$-userfn is untouchable, that must be the
-; case unless the user has changed that, in which case the error message below
-; might be confusing -- but surely nobody should remove untouchability of
-; concrete-apply$-userfn!  See the Essay on Memoization with Attachments.
+; apply$-userfn.  Since doppelganger-apply$-userfn is untouchable, that must be
+; the case unless the user has changed that, in which case the error message
+; below might be confusing -- but surely nobody should remove untouchability of
+; doppelganger-apply$-userfn!  See the Essay on Memoization with Attachments.
 
                   (msg "The value of ~x0 is not specified on ~x1 because ~@2."
                        'APPLY$-USERFN fn failure-msg)
@@ -432,16 +433,15 @@
                   (print-list-without-stobj-arrays
                    (list fn args))))))))))
 
-(defun-*1* concrete-apply$-userfn (fn args)
-  (concrete-apply$-userfn fn args))
+(defun-*1* doppelganger-apply$-userfn (fn args)
+  (doppelganger-apply$-userfn fn args))
 
 ; End of progn from ``defun-overrides''
 )
 
 ; What we've described so far is adequate to run APPLY$ and EV$ forms in the
-; evaluation theory after attaching the concrete- ``doppelgangers'' of
-; badge-userfn and apply$-userfn for the current world to those critical
-; functions.
+; evaluation theory after attaching the ``doppelgangers'' of badge-userfn and
+; apply$-userfn for the current world to those critical functions.
 
 ; Now we turn to the optimization of APPLY$-LAMBDA.  The following is provable:
 
@@ -856,11 +856,11 @@
 
 ; - We need apply$ to reduce to apply$-userfn.
 ; - We need to look up the attachment of apply$-userfn, to get
-;   concrete-apply$-userfn, which amounts to evaluating special
+;   doppelganger-apply$-userfn, which amounts to evaluating special
 ;   variable (attachment-symbol apply$-userfn) =
 ;   ACL2_*1*_ACL2::APPLY$-USERFN (see throw-or-attach).
-; - Apply$-userfn calls concrete-apply$-userfn.
-; ... then, looking at the defun of concrete-apply$-userfn:
+; - Apply$-userfn calls doppelganger-apply$-userfn.
+; ... then, looking at the defun of doppelganger-apply$-userfn:
 ; - We need to look up the value of special variable *aokp*.
 ; - We need to compute query-badge-userfn-structure.
 ; - We need to call apply.
@@ -1955,17 +1955,17 @@
 ; and sometimes by a Common Lisp compliant (with guard T) function symbol.
 
 ; Fire up this version of ACL2 and run The Rubric EXCEPT the redefinition of
-; apply$-lambda!  [Remember:  these instructions cannot be followed any more!
+; apply$-lambda!  [Remember: these instructions cannot be followed any more!
 ; For example, we don't redefine apply$-lambda anymore, so you can't not
 ; redefine it!  But you can sort of guess what we mean just knowing that
 ; (concrete-apply$-lambda fn args) is raw Lisp for what you now see in the raw
 ; Lisp code of the defun apply$-lambda.]
 
 ;   (include-book "projects/apply/apply" :dir :system)
-;   (defattach (badge-userfn concrete-badge-userfn)
+;   (defattach (badge-userfn doppelganger-badge-userfn)
 ;     :hints
-;     (("Goal" :use concrete-badge-userfn-type)))
-;   (defattach apply$-userfn concrete-apply$-userfn)
+;     (("Goal" :use doppelganger-badge-userfn-type)))
+;   (defattach apply$-userfn doppelganger-apply$-userfn)
 ;   (value :q)
 ;   ; (defun apply$-lambda (fn args) (concrete-apply$-lambda fn args))
 ;   (setq *allow-concrete-execution-of-apply-stubs* t)

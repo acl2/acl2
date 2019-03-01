@@ -862,7 +862,7 @@
                          user-defined functions or ill-formed or untame ~
                          lambda objects while expanding macros.  Because of ~
                          logical considerations, attachments (including ~
-                         CONCRETE-APPLY$-USERFN) must not be called in this ~
+                         DOPPELGANGER-APPLY$-USERFN) must not be called in this ~
                          context.  See :DOC ignored-attachment.  Thus it is ~
                          illegal to use the quoted function object~#1~[~/s~] ~
                          ~#2~[~&3 in the guard~/~&4 in the body~/~&3 in the ~
@@ -28759,22 +28759,22 @@
 ; Finally let us turn to how memoization deals with apply$-userfn and
 ; badge-userfn.  (Also see community book
 ; books/system/tests/apply-with-memoization.lisp for discussion of an example.)
-; These are attached respectively to concrete-apply$-userfn and
-; concrete-badge-userfn, whose behaviors can change (and probably do change)
-; every time the badge-table changes.  So consider what happens for a call of a
-; function, fn, memoized with :aokp t, when that call invokes apply$-userfn or
-; badge-userfn.  The result stored for that call of fn needs to be invalidated
-; when the badge is removed from the badge-table for the function argument of
-; that subsidiary call of apply$-userfn or badge-userfn.  We take the
-; conservative approach of considering that the attachment to apply$-userfn or
-; badge-userfn has changed; thus, table-cltl-cmd produces a special attachment
-; object, *special-cltl-cmd-attachment-mark*, which is (list 'attachment
-; *special-cltl-cmd-attachment-mark-name*).  Unlike normal attachment objects,
-; add-trip does not extend *defattach-fns* when encountering this special one,
-; because there is no need to invalidate memoization results when the
-; badge-table is extended.  Add-trip does however still call
-; maybe-push-undo-stack, so that undo-trip will push this special object onto
-; *defattach-fns*.  Then when it is time for
+; These are attached respectively to doppelganger-apply$-userfn and
+; doppelganger-badge-userfn, whose behaviors can change (and probably do
+; change) every time the badge-table changes.  So consider what happens for a
+; call of a function, fn, memoized with :aokp t, when that call invokes
+; apply$-userfn or badge-userfn.  The result stored for that call of fn needs
+; to be invalidated when the badge is removed from the badge-table for the
+; function argument of that subsidiary call of apply$-userfn or badge-userfn.
+; We take the conservative approach of considering that the attachment to
+; apply$-userfn or badge-userfn has changed; thus, table-cltl-cmd produces a
+; special attachment object, *special-cltl-cmd-attachment-mark*, which is (list
+; 'attachment *special-cltl-cmd-attachment-mark-name*).  Unlike normal
+; attachment objects, add-trip does not extend *defattach-fns* when
+; encountering this special one, because there is no need to invalidate
+; memoization results when the badge-table is extended.  Add-trip does however
+; still call maybe-push-undo-stack, so that undo-trip will push this special
+; object onto *defattach-fns*.  Then when it is time for
 ; update-memo-entries-for-attachments to invalidate memo-tables and recalculate
 ; :ext-anc-attachments fields, the function ext-anc-attachments-valid-p will
 ; look for apply$-userfn and badge-userfn among the extended ancestors when it
@@ -28783,12 +28783,12 @@
 ; badge-userfn have changed.
 
 ; Note that we do not concern ourselves with extended-ancestors of
-; concrete-apply$-userfn or concrete-badge-userfn, because these functions are
-; untouchable.  Thus, they should never arise except as extended ancestors of
-; apply$-userfn and badge-userfn, which we already handle fully as discussed
-; above.  That is why we do not mind using nil for the supporters of the
-; partial-encapsulate events for concrete-badge-userfn and
-; concrete-apply$-userfn.
+; doppelganger-apply$-userfn or doppelganger-badge-userfn, because these
+; functions are untouchable.  Thus, they should never arise except as extended
+; ancestors of apply$-userfn and badge-userfn, which we already handle fully as
+; discussed above.  That is why we do not mind using nil for the supporters of
+; the partial-encapsulate events for doppelganger-badge-userfn and
+; doppelganger-apply$-userfn.
 
 ; Start code supporting ext-ancestors-attachments.
 
@@ -30423,8 +30423,8 @@
                state))
           (t state)))))))
 
-; Below we introduce concrete-badge-userfn and concrete-apply$-userfn as
-; constrained functions.  See the Essay on the APPLY$ Integration in
+; Below we introduce doppelganger-badge-userfn and doppelganger-apply$-userfn
+; as constrained functions.  See the Essay on the APPLY$ Integration in
 ; apply-prim.lisp for an overview.  These functions are intended to be the
 ; doppelgangers of badge-userfn and apply$-userfn, so we introduce them each
 ; with partial-encapsulate since the explicit constraints do not comprehend all
@@ -30436,10 +30436,10 @@
 
 #+acl2-loop-only
 (partial-encapsulate
-  (((concrete-badge-userfn *) => *))
+  (((doppelganger-badge-userfn *) => *))
   nil ; not the true supporters (see the Essay on Memoization with Attachments)
   (logic)
-  (local (defun concrete-badge-userfn (fn)
+  (local (defun doppelganger-badge-userfn (fn)
            (declare (xargs :mode :logic))
            (declare (ignore fn))
            nil))
@@ -30450,10 +30450,10 @@
 ; fn))).  See apply-prim.lisp for the defun of apply$-badgep.  Since it is not
 ; defined in the ACL2 sources, we just use its expansion below.
 
-  (defthm concrete-badge-userfn-type
+  (defthm doppelganger-badge-userfn-type
     (or
-     (null (concrete-badge-userfn fn))
-     (let ((x (concrete-badge-userfn fn)))
+     (null (doppelganger-badge-userfn fn))
+     (let ((x (doppelganger-badge-userfn fn)))
        (and (weak-apply$-badge-p x)
             (natp (access apply$-badge x :arity))
             (natp (access apply$-badge x :out-arity))
@@ -30475,26 +30475,26 @@
 
 ;         (implies (or (apply$-primp fn)
 ;                      (assoc-eq fn *apply$-boot-fns-badge-alist*))
-;                  (equal (concrete-badge-userfn fn) nil))
+;                  (equal (doppelganger-badge-userfn fn) nil))
 
     :rule-classes nil))
 
 #+acl2-loop-only
 (partial-encapsulate
-  (((concrete-apply$-userfn * *) => *))
+  (((doppelganger-apply$-userfn * *) => *))
   nil ; not the true supporters (see the Essay on Memoization with Attachments)
   (logic)
-  (local (defun concrete-apply$-userfn (fn args)
+  (local (defun doppelganger-apply$-userfn (fn args)
            (declare (xargs :mode :logic))
            (declare (ignore fn args))
            nil))
-  (defthm concrete-apply$-userfn-takes-arity-args
+  (defthm doppelganger-apply$-userfn-takes-arity-args
     (implies
-     (concrete-badge-userfn fn)
-     (equal (concrete-apply$-userfn fn args)
-            (concrete-apply$-userfn
+     (doppelganger-badge-userfn fn)
+     (equal (doppelganger-apply$-userfn fn args)
+            (doppelganger-apply$-userfn
              fn
-             (take (caddr (concrete-badge-userfn fn))
+             (take (caddr (doppelganger-badge-userfn fn))
                    args))))
     :rule-classes nil))
 

@@ -2697,7 +2697,7 @@
 ; apply-prim.lisp but they're needed earlier now.
 
 ; We evaluate the defrec below in :logic mode so that the its accessors can be
-; used in concrete-badge-userfn.
+; used in doppelganger-badge-userfn.
 (encapsulate () (logic)
 (defrec apply$-badge
 

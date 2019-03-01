@@ -128,15 +128,15 @@
                 '(APPLY$-BADGE 2 1 . T)))
 
 ; The examples above formerly broke and now work.  Here is a related example
-; that uses concrete-apply$-userfn, which has been fixed simply by making
-; concrete-apply$-userfn untouchable (similarly, concrete-badge-userfn is also
-; now untouchable).
+; that uses doppelganger-apply$-userfn, which has been fixed simply by making
+; doppelganger-apply$-userfn untouchable (similarly, doppelganger-badge-userfn
+; is also now untouchable).
 
 #||
 (include-book "projects/apply/top" :dir :system) ; apply-lemmas in v8-1
 (defun foo (fn args)
   (declare (xargs :guard (true-listp args)))
-  (concrete-apply$-userfn fn args))
+  (doppelganger-apply$-userfn fn args))
 (memoize 'foo)
 (defconst *list-3* (list 3))
 (defun$ g (x) (declare (xargs :guard t)) (cons x 4))

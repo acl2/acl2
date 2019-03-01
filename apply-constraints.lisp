@@ -145,15 +145,15 @@
 ; require moving up the definition below of *apply$-boot-fns-badge-alist* so we
 ; can use it in the new constraint.
 
-; More problematically, we must make sure that concrete-badge-userfn satisfies
-; the strengthened constraint.  This is difficult because concrete-badge-userfn
-; is currently (partially) constrained in other-events.lisp, which is processed
-; before apply$-primp and *apply$-boot-fns-badge-alist* are defined.  The only
-; way we can think of to fix this would be to move the introduction of
-; concrete-badge-userfn into this file and deal with any bootstrapping issues
-; that come up!  If this additional constraint is added, we would have to
-; change the raw Lisp definition of concrete-badge-userfn, q.v. in
-; apply-raw.lisp.
+; More problematically, we must make sure that doppelganger-badge-userfn
+; satisfies the strengthened constraint.  This is difficult because
+; doppelganger-badge-userfn is currently (partially) constrained in
+; other-events.lisp, which is processed before apply$-primp and
+; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
+; fix this would be to move the introduction of doppelganger-badge-userfn into
+; this file and deal with any bootstrapping issues that come up!  If this
+; additional constraint is added, we would have to change the raw Lisp
+; definition of doppelganger-badge-userfn, q.v. in apply-raw.lisp.
 
 ; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
 ; constraint) in the Foundational work of books/projects/apply-model/ex1/ and
