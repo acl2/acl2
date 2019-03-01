@@ -76,10 +76,11 @@
 
 ;; A stack has one or more major stack frames.  A major stack frame has a base
 ;; binding list, a debug area, and one or more minor stack frames.  A minor
-;; stack frame has a binding list, a scratch list, and a debug area.
+;; stack frame has a binding list, two scratch lists: one for gl-objects and
+;; one for BFRs, and a debug area.
 
 ;; The stobj implementation of the stack has three arrays:
-;; - one for minor frames' bindings, scratch, debug fields interleaved
+;; - one for minor frames' bindings, scratch, bool-scratch, debug fields interleaved
 ;; - one for major frames' bindings and debug fields interleaved
 ;; - one for the top minor frame pointer of each major frame.
 
@@ -95,6 +96,7 @@
 (fty::defprod minor-frame
   ((bindings gl-object-alist-p)
    (scratch gl-objectlist-p)
+   (bool-scratch true-listp :rule-classes :type-prescription)
    (debug)))
 
 (fty::deflist minor-stack :elt-type minor-frame :true-listp t :non-emptyp t
@@ -199,6 +201,19 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
+(define stack$a-push-bool-scratch ((bfr)
+                                   (x major-stack-p))
+  :enabled t
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame
+                            jframe
+                            :minor-stack
+                            (cons (change-minor-frame nframe
+                                                      :bool-scratch (cons bfr nframe.bool-scratch))
+                                  (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
 (define stack$a-set-minor-debug ((debug)
                                  (x major-stack-p))
   :enabled t
@@ -225,14 +240,14 @@
   :enabled t
   (minor-frame->debug (car (major-frame->minor-stack (car x)))))
 
-(define stack$a-scratchlen ((x major-stack-p))
+(define stack$a-scratch-len ((x major-stack-p))
   :enabled t
   (len (minor-frame->scratch (car (major-frame->minor-stack (car x))))))
 
 
 (define stack$a-pop-scratch ((n natp)
                              (x major-stack-p))
-  :guard (<= n (stack$a-scratchlen x))
+  :guard (<= n (stack$a-scratch-len x))
   :enabled t
   (b* (((major-frame jframe) (car x))
        ((minor-frame nframe) (car jframe.minor-stack)))
@@ -243,9 +258,31 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
+(define stack$a-bool-scratch-len ((x major-stack-p))
+  :enabled t
+  (len (minor-frame->bool-scratch (car (major-frame->minor-stack (car x))))))
+
+
+(define stack$a-pop-bool-scratch ((n natp)
+                                  (x major-stack-p))
+  :guard (<= n (stack$a-scratch-len x))
+  :enabled t
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :bool-scratch
+                                                                         (nthcdr n nframe.bool-scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
 (define stack$a-scratch ((x major-stack-p))
   :enabled t
   (minor-frame->scratch (car (major-frame->minor-stack (car x)))))
+
+(define stack$a-bool-scratch ((x major-stack-p))
+  :enabled t
+  (minor-frame->bool-scratch (car (major-frame->minor-stack (car x)))))
 
 (local (defthm len-gt-0
          (equal (< 0 (len x))
@@ -327,7 +364,7 @@
 (local (std::remove-default-post-define-hook :fix))
 
 (defstobj stack$c
-  (stack$c-minor :type (array t (3)) :resizable t)
+  (stack$c-minor :type (array t (4)) :resizable t)
   (stack$c-major :type (array t (2)) :resizable t)
   (stack$c-top-minor :type (array (unsigned-byte 32) (1)) :resizable t :initially 0)
   (stack$c-top-frame :type (unsigned-byte 32) :initially 0)
@@ -385,8 +422,9 @@
 (defun-sk stack$c-minor-frames-welltyped (stack$c)
   (forall i
           (implies (natp i)
-                   (and (gl-object-alist-p (nth (* 3 i) (nth *stack$c-minori* stack$c)))
-                        (gl-objectlist-p (nth (+ 1 (* 3 i)) (nth *stack$c-minori* stack$c))))))
+                   (and (gl-object-alist-p (nth (* 4 i) (nth *stack$c-minori* stack$c)))
+                        (gl-objectlist-p (nth (+ 1 (* 4 i)) (nth *stack$c-minori* stack$c)))
+                        (true-listp (nth (+ 2 (* 4 i)) (nth *stack$c-minori* stack$c))))))
   :rewrite :direct)
 
 (in-theory (disable stack$c-minor-frames-welltyped
@@ -398,7 +436,8 @@
  (defthm stack$c-minor-frames-welltyped-zero
    (implies (stack$c-minor-frames-welltyped stack$c)
             (and (gl-object-alist-p (nth 0 (nth *stack$c-minori* stack$c)))
-                 (gl-objectlist-p (nth 1 (nth *stack$c-minori* stack$c)))))
+                 (gl-objectlist-p (nth 1 (nth *stack$c-minori* stack$c)))
+                 (true-listp (nth 2 (nth *stack$c-minori* stack$c)))))
    :hints (("goal" :use ((:instance stack$c-minor-frames-welltyped-necc (i 0)))))))
 
 ;; (defthm stack$c-minor-frames-welltyped-implies-gl-object-alist-p
@@ -492,7 +531,7 @@
 (defun-sk stack$c-minor-frames-bounded (stack$c)
   (forall i
           (implies (and (natp i)
-                        (<= (+ 3 (* 3 (nth-nat (stack$c-top-frame stack$c)
+                        (<= (+ 4 (* 4 (nth-nat (stack$c-top-frame stack$c)
                                                (nth *stack$c-top-minori1* stack$c))))
                             i))
                    (equal (nth i (nth *stack$c-minori* stack$c)) nil)))
@@ -522,7 +561,7 @@
   :enabled t
   (and (<= (+ 2 (* 2 (stack$c-top-frame stack$c))) (stack$c-major-length stack$c))
        (<= (+ 1 (stack$c-top-frame stack$c)) (stack$c-top-minor-length stack$c))
-       (<= (+ 3 (* 3 (stack$c-top-minori (stack$c-top-frame stack$c) stack$c)))
+       (<= (+ 4 (* 4 (stack$c-top-minori (stack$c-top-frame stack$c) stack$c)))
            (stack$c-minor-length stack$c))
        (equal (stack$c-top-minor-frame stack$c)
               (stack$c-top-minori (stack$c-top-frame stack$c) stack$c))
@@ -616,7 +655,7 @@
                                (resize-stack$c-top-minor (max 16 (* 2 new-top-len)) stack$c)
                              stack$c)))
        (prev-top-minor (stack$c-top-minor-frame stack$c))
-       (new-minor-len (+ 6 (* 3 prev-top-minor)))
+       (new-minor-len (+ 8 (* 4 prev-top-minor)))
        (stack$c (mbe :logic (non-exec (update-nth *stack$c-minori*
                                                   (maybe-grow-list
                                                    new-minor-len nil
@@ -657,7 +696,7 @@
   (b* ((top-major (stack$c-top-frame stack$c))
        (top-minor (stack$c-top-minor-frame stack$c))
        (new-top-minor (+ 1 top-minor))
-       (new-minor-len (+ 3 (* 3 new-top-minor)))
+       (new-minor-len (+ 4 (* 4 new-top-minor)))
        (stack$c (mbe :logic (non-exec (update-nth *stack$c-minori*
                                                   (maybe-grow-list
                                                    new-minor-len nil
@@ -703,13 +742,13 @@
   :enabled t
   :guard-hints (("goal" :do-not-induct t))
   (b* ((top-minor (stack$c-top-minor-frame stack$c)))
-    (update-stack$c-minori (* 3 top-minor) bindings stack$c)))
+    (update-stack$c-minori (* 4 top-minor) bindings stack$c)))
 
 (define stack$c-add-minor-bindings ((bindings gl-object-alist-p)
                                     (stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (* 3 top-minor)))
+       (index (* 4 top-minor)))
     (update-stack$c-minori index
                            (append bindings (stack$c-minori index stack$c))
                            stack$c)))
@@ -718,16 +757,25 @@
                               (stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (+ 1 (* 3 top-minor))))
+       (index (+ 1 (* 4 top-minor))))
     (update-stack$c-minori index
                            (cons obj (stack$c-minori index stack$c))
+                           stack$c)))
+
+(define stack$c-push-bool-scratch ((bfr)
+                                   (stack$c stack$c-okp))
+  :enabled t
+  (b* ((top-minor (stack$c-top-minor-frame stack$c))
+       (index (+ 2 (* 4 top-minor))))
+    (update-stack$c-minori index
+                           (cons bfr (stack$c-minori index stack$c))
                            stack$c)))
 
 (define stack$c-set-minor-debug ((debug)
                                  (stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c)))
-    (update-stack$c-minori (+ 2 (* 3 top-minor)) debug stack$c)))
+    (update-stack$c-minori (+ 3 (* 4 top-minor)) debug stack$c)))
 
 (define stack$c-bindings ((stack$c stack$c-okp))
   :enabled t
@@ -736,7 +784,7 @@
 (define stack$c-minor-bindings ((stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (* 3 top-minor)))
+       (index (* 4 top-minor)))
     (stack$c-minori index stack$c)))
 
 (define stack$c-debug ((stack$c stack$c-okp))
@@ -746,13 +794,19 @@
 (define stack$c-minor-debug ((stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (+ 2 (* 3 top-minor))))
+       (index (+ 3 (* 4 top-minor))))
     (stack$c-minori index stack$c)))
 
-(define stack$c-scratchlen ((stack$c stack$c-okp))
+(define stack$c-scratch-len ((stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (+ 1 (* 3 top-minor))))
+       (index (+ 1 (* 4 top-minor))))
+    (len (stack$c-minori index stack$c))))
+
+(define stack$c-bool-scratch-len ((stack$c stack$c-okp))
+  :enabled t
+  (b* ((top-minor (stack$c-top-minor-frame stack$c))
+       (index (+ 2 (* 4 top-minor))))
     (len (stack$c-minori index stack$c))))
 
 
@@ -763,15 +817,29 @@
 (define stack$c-pop-scratch ((n natp)
                              (stack$c stack$c-okp))
   :enabled t
-  :guard (<= n (stack$c-scratchlen stack$c))
+  :guard (<= n (stack$c-scratch-len stack$c))
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (+ 1 (* 3 top-minor))))
+       (index (+ 1 (* 4 top-minor))))
+    (update-stack$c-minori index (nthcdr n (stack$c-minori index stack$c)) stack$c)))
+
+(define stack$c-pop-bool-scratch ((n natp)
+                             (stack$c stack$c-okp))
+  :enabled t
+  :guard (<= n (stack$c-scratch-len stack$c))
+  (b* ((top-minor (stack$c-top-minor-frame stack$c))
+       (index (+ 2 (* 4 top-minor))))
     (update-stack$c-minori index (nthcdr n (stack$c-minori index stack$c)) stack$c)))
 
 (define stack$c-scratch ((stack$c stack$c-okp))
   :enabled t
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
-       (index (+ 1 (* 3 top-minor))))
+       (index (+ 1 (* 4 top-minor))))
+    (stack$c-minori index stack$c)))
+
+(define stack$c-bool-scratch ((stack$c stack$c-okp))
+  :enabled t
+  (b* ((top-minor (stack$c-top-minor-frame stack$c))
+       (index (+ 2 (* 4 top-minor))))
     (stack$c-minori index stack$c)))
 
 (local (defthm bound-when-stack$c-top-minorp
@@ -786,10 +854,11 @@
   :guard (< 1 (stack$c-minor-frames stack$c))
   (b* ((top-major (stack$c-top-frame stack$c))
        (top-minor (stack$c-top-minor-frame stack$c))
-       (offset (* 3 top-minor))
+       (offset (* 4 top-minor))
        (stack$c (update-stack$c-minori offset nil stack$c))
        (stack$c (update-stack$c-minori (+ 1 offset) nil stack$c))
        (stack$c (update-stack$c-minori (+ 2 offset) nil stack$c))
+       (stack$c (update-stack$c-minori (+ 3 offset) nil stack$c))
        (new-top-minor (+ -1 top-minor))
        (stack$c (update-stack$c-top-minori top-major new-top-minor stack$c)))
     (update-stack$c-top-minor-frame new-top-minor stack$c)))
@@ -805,10 +874,11 @@
                       :hints(("Goal" :in-theory (enable nth-nat nfix))))))
   (b* ((top-major (stack$c-top-frame stack$c))
        (top-minor (stack$c-top-minor-frame stack$c))
-       (minor-offset (* 3 top-minor))
+       (minor-offset (* 4 top-minor))
        (stack$c (update-stack$c-minori minor-offset nil stack$c))
        (stack$c (update-stack$c-minori (+ 1 minor-offset) nil stack$c))
        (stack$c (update-stack$c-minori (+ 2 minor-offset) nil stack$c))
+       (stack$c (update-stack$c-minori (+ 3 minor-offset) nil stack$c))
        (major-offset (* 2 top-major))
        (stack$c (update-stack$c-majori major-offset nil stack$c))
        (stack$c (update-stack$c-majori (+ 1 major-offset) nil stack$c))
@@ -820,11 +890,12 @@
   :returns (frames minor-stack-p)
   :measure (lnfix top)
   :ruler-extenders (cons)
-  :guard (<= (+ 3 (* 3 top)) (stack$c-minor-length stack$c))
+  :guard (<= (+ 4 (* 4 top)) (stack$c-minor-length stack$c))
   :enabled t
-  (cons (make-minor-frame :bindings (stack$c-minori (* 3 (lnfix top)) stack$c)
-                          :scratch (stack$c-minori (+ 1 (* 3 (lnfix top))) stack$c)
-                          :debug (stack$c-minori (+ 2 (* 3 (lnfix top))) stack$c))
+  (cons (make-minor-frame :bindings (stack$c-minori (* 4 (lnfix top)) stack$c)
+                          :scratch (stack$c-minori (+ 1 (* 4 (lnfix top))) stack$c)
+                          :bool-scratch (stack$c-minori (+ 2 (* 4 (lnfix top))) stack$c)
+                          :debug (stack$c-minori (+ 3 (* 4 (lnfix top))) stack$c))
         (and (< (lnfix bottom) (lnfix top))
              (stack$c-build-minor-frames bottom (1- (lnfix top)) stack$c)))
   ///
@@ -901,8 +972,8 @@
    (implies (and (bind-free (stobjs::bind-updater-independence-prev-stobj new mfc state))
                  (syntaxp (not (equal new old)))
                  (<= (nfix bottom) (nfix top))
-                 (stobjs::range-equal (* 3 (nfix bottom))
-                                      (+ 3 (* 3 (- (nfix top) (nfix bottom))))
+                 (stobjs::range-equal (* 4 (nfix bottom))
+                                      (+ 4 (* 4 (- (nfix top) (nfix bottom))))
                                       (nth *stack$c-minori* new)
                                       (nth *stack$c-minori* old)))
             (equal (stack$c-build-minor-frames bottom top new)
@@ -932,7 +1003,7 @@
                                                (nth *stack$c-top-minori1* new)
                                                (nth *stack$c-top-minori1* old))
                       ;; (equal top-minor (nth-nat top (nth *stack$c-top-minori1* old)))
-                      (stobjs::range-equal 0 (+ 3 (* 3 top-minor))
+                      (stobjs::range-equal 0 (+ 4 (* 4 top-minor))
                                            (nth *stack$c-minori* new)
                                            (nth *stack$c-minori* old)))
                  (equal (stack$c-build-major-frames top new)
@@ -955,7 +1026,7 @@
                                             (nth *stack$c-top-minori1* new)
                                             (nth *stack$c-top-minori1* old))
                    (equal top-minor (nth-nat top (nth *stack$c-top-minori1* old)))
-                   (stobjs::range-equal 0 (+ 3 (* 3 top-minor))
+                   (stobjs::range-equal 0 (+ 4 (* 4 top-minor))
                                         (nth *stack$c-minori* new)
                                         (nth *stack$c-minori* old)))
               (equal (stack$c-build-major-frames top new)
@@ -967,195 +1038,6 @@
   :enabled t
   (stack$c-build-major-frames (stack$c-top-frame stack$c) stack$c))
      
-
-
-
-
-;; (local (include-book "std/util/termhints" :dir :system))
-;; (local (include-book "std/basic/arith-equivs" :dir :system))
-;; (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-
-
-;; (local (include-book "std/stobjs/updater-independence" :dir :system))
-
-;; (local (defsection range-nat-equiv
-;;          (defthmd nth-nat-when-range-nat-equiv
-;;            (implies (and (stobjs::range-nat-equiv start num x y)
-;;                          (<= (nfix start) (nfix n))
-;;                          (< (nfix n) (+ (nfix start) (nfix num))))
-;;                     (equal (nth-nat n x) (nth-nat n y)))
-;;            :hints(("Goal" :in-theory (enable nth-nat stobjs::nth-when-range-nat-equiv))))
-
-;;          (defthm range-nat-equiv-by-badguy-nth-nat
-;;            (let ((badguy (stobjs::range-nat-equiv-badguy start num x y)))
-;;              (implies (equal (nth-nat badguy x) (nth-nat badguy y))
-;;                       (stobjs::range-nat-equiv start num x y)))
-;;            :hints (("Goal" :in-theory (enable nth-nat))))
-           
-
-;;          (defthm range-nat-equiv-by-badguy-literal-nth-nat
-;;            (let ((badguy (stobjs::range-nat-equiv-badguy start num x y)))
-;;              (implies (acl2::rewriting-positive-literal `(stobjs::range-nat-equiv ,start ,num ,x ,y))
-;;                       (iff (stobjs::range-nat-equiv start num x y)
-;;                            (or (not (< badguy (+ (nfix start) (nfix num))))
-;;                                (equal (nth-nat badguy x) (nth-nat badguy y))))))
-;;            :hints(("Goal" :in-theory (enable stobjs::range-nat-equiv-by-badguy-literal
-;;                                              stobjs::nth-when-range-nat-equiv
-;;                                              nth-nat))))
-
-;;          (defthm range-nat-equiv-by-superrange1
-;;            (implies (and (stobjs::range-nat-equiv min1 max1 x y)
-;;                          (<= (nfix min1) (nfix min))
-;;                          (<= (+ (nfix min) (nfix max))
-;;                              (+ (nfix min1) (nfix max1))))
-;;                     (stobjs::range-nat-equiv min max x y))
-;;            :hints(("Goal" :in-theory (disable range-nat-equiv-by-badguy-literal-nth-nat))))
-
-;;          (defthm range-nat-equiv-when-range-nat-equiv1
-;;            (implies (stobjs::range-nat-equiv start num x y)
-;;                     (stobjs::range-nat-equiv start num x y)))))
-
-;; (local
-;;  (define major-frame-for-minor-frame-indexp ((j natp) (n natp) stack$c)
-;;    :verify-guards nil
-;;    :non-executable t
-;;    (b* ((n (nfix n))
-;;         (j (nfix j)))
-;;      (and (or (equal j 0)
-;;               (< (nth-nat (+ -1 j) (nth *stack$c-top-minori1* stack$c)) n))
-;;           (<= n (nth-nat j (nth *stack$c-top-minori1* stack$c)))))
-;;    ///
-;;    (fty::deffixequiv major-frame-for-minor-frame-indexp)
-
-;;    (defthmd major-frame-for-minor-frame-index-uniquep
-;;      (implies (and (major-frame-for-minor-frame-indexp j n stack$c)
-;;                    (stack$c-top-minor-ordered stack$c)
-;;                    (<= (nfix j) (nth-nat *stack$c-top-frame1* stack$c))
-;;                    (<= (nfix j1) (nth-nat *stack$c-top-frame1* stack$c)))
-;;               (equal (major-frame-for-minor-frame-indexp j1 n stack$c)
-;;                      (equal (nfix j1) (nfix j))))
-;;      :hints (("goal" ;; :cases ((major-frame-for-minor-frame-indexp j1 n stack$c))
-;;               :in-theory (disable stack$c-top-minor-ordered-necc))
-;;              (acl2::use-termhint
-;;               (if (major-frame-for-minor-frame-indexp j1 n stack$c)
-;;                   (if (< (nfix j1) (nfix j))
-;;                       '(:use ((:instance acl2::mark-clause-is-true (x j1-less))
-;;                               (:instance stack$c-top-minor-ordered-necc
-;;                                (i (nfix j1)) (j (+ -1 (nfix j))))))
-;;                     '(:use ((:instance acl2::mark-clause-is-true (x j1-greater))
-;;                             (:instance stack$c-top-minor-ordered-necc
-;;                              (i (nfix j)) (j (+ -1 (nfix j1)))))))
-;;                 '(:in-theory (disable major-frame-for-minor-frame-indexp))))))))
-
-
-;; ;; (local (include-book "arithmetic/top" :Dir :system))
-
-;; (local
-;;  (define find-major-frame-for-minor-frame-index-aux ((n natp) (j natp) stack$c)
-;;    :verify-guards nil
-;;    :non-executable t
-;;    :measure (nfix (- (nth-nat *stack$c-top-frame1* stack$c) (nfix j)))
-;;    :returns (maj-frame natp :rule-classes :type-prescription)
-;;    (if (zp (- (nth-nat *stack$c-top-frame1* stack$c) (nfix j)))
-;;        (nth-nat *stack$c-top-frame1* stack$c)
-;;      (let ((n (nfix n)))
-;;        (if (<= n (nth-nat j (nth *stack$c-top-minori1* stack$c)))
-;;            (nfix j)
-;;          (find-major-frame-for-minor-frame-index-aux n (+ 1 (nfix j)) stack$c))))
-;;    ///
-
-;;    (fty::deffixequiv find-major-frame-for-minor-frame-index-aux)
-;;    (local (defthm find-major-frame-gte-j
-;;             (implies (<= (nfix j) (nth-nat *stack$c-top-frame1* stack$c))
-;;                      (<= (nfix j) (find-major-frame-for-minor-frame-index-aux n j stack$c)))
-;;             :rule-classes :linear))
-
-;;    (local (defthm find-major-frame-lte-top-frame
-;;             (<= (find-major-frame-for-minor-frame-index-aux n j stack$c)
-;;                 (nth-nat *stack$c-top-frame1* stack$c))
-;;             :rule-classes :linear))
-
-;;    ;; (local (defthm minor-frame-of-find-major-frame-linear
-;;    ;;          (implies (<= (nfix j) (nth-nat *stack$c-top-frame1* stack$c))
-;;    ;;                   (<= (nth-nat j (nth *stack$c-top-minori1* stack$c))
-;;    ;;                       (nth-nat (find-major-frame-for-minor-frame-index-aux n j stack$c)
-;;    ;;                                (nth *stack$c-top-minori1* stack$c))
-
-;;    (defthm major-frame-for-minor-frame-indexp-of-find-major-frame-aux
-;;      (b* ((maj (find-major-frame-for-minor-frame-index-aux n j stack$c))
-;;           (top-minor (nth-nat (nth-nat *stack$c-top-frame1* stack$c) (nth *stack$c-top-minori1* stack$c))))
-;;        (implies (and (stack$c-top-minor-ordered stack$c)
-;;                      (<= (nfix j) (nth-nat *stack$c-top-frame1* stack$c))
-;;                      (or (zp j)
-;;                          (< (nth-nat (+ -1 j) (nth *stack$c-top-minori1* stack$c)) (nfix n)))
-;;                      (<= (nfix n) top-minor))
-;;                 (major-frame-for-minor-frame-indexp
-;;                  maj n stack$c)))
-;;      :hints(("Goal" :in-theory (enable major-frame-for-minor-frame-indexp)
-;;              :induct (find-major-frame-for-minor-frame-index-aux n j stack$c))
-;;             ;; (and stable-under-simplificationp
-;;             ;;      '(:use ((:instance stack$c-top-minor-ordered-necc
-;;             ;;               (j (+ -1 (nfix j))) (i (+ -1 (nth-nat *stack$c-top-frame1* stack$c)))))
-;;             ;;        :in-theory (disable stack$c-top-minor-ordered-necc)))
-;;             ))
-
-;;    (defthm find-major-frame-for-minor-frame-index-aux-of-update
-;;      (implies (bind-free (acl2::prev-stobj-binding new 'old mfc state))
-;;               (let ((maj (find-major-frame-for-minor-frame-index-aux n j old)))
-;;                 (implies (and (stobjs::range-nat-equiv j (+ 1 maj (- j)) (nth *stack$c-top-minori1* new) (nth *stack$c-top-minori1* old))
-;;                               (<= maj (nth-nat *stack$c-top-frame1* new)))
-;;                          (equal (find-major-frame-for-minor-frame-index-aux n j new)
-;;                                 maj))))
-;;      :hints (("goal" :induct (find-major-frame-for-minor-frame-index-aux n j old)
-;;               :expand ((:free (x) (find-major-frame-for-minor-frame-index-aux n j x)))
-;;               :in-theory (enable nth-nat-when-range-nat-equiv))))))
-
-
-;; (local (define find-major-frame-for-minor-frame-index ((n natp) stack$c)
-;;          :verify-guards nil
-;;          :non-executable t
-;;          :returns (maj-frame natp :rule-classes :type-prescription)
-;;          (find-major-frame-for-minor-frame-index-aux n 0 stack$c)
-;;          ///
-;;          (defthm major-frame-for-minor-frame-indexp-of-find-major-frame
-;;            (b* ((maj (find-major-frame-for-minor-frame-index n stack$c))
-;;                 (top-minor (nth-nat (nth-nat *stack$c-top-frame1* stack$c) (nth *stack$c-top-minori1* stack$c))))
-;;              (implies (and (stack$c-top-minor-ordered stack$c)
-;;                            (<= (nfix n) top-minor))
-;;                       (major-frame-for-minor-frame-indexp
-;;                        maj n stack$c))))
-
-;;          (local (in-theory (disable find-major-frame-for-minor-frame-index
-;;                                     major-frame-for-minor-frame-indexp-of-find-major-frame)))
-
-;;          (defthm upper-bound-by-find-major-frame-for-minor-frame-index
-;;            (b* ((maj (find-major-frame-for-minor-frame-index n stack$c))
-;;                 (top-minor (nth-nat (nth-nat *stack$c-top-frame1* stack$c) (nth *stack$c-top-minori1* stack$c))))
-;;              (implies (and (stack$c-top-minor-ordered stack$c)
-;;                            (<= (nfix n) top-minor))
-;;                       (<= (nfix n) (nth-nat maj (nth *stack$c-top-minori1* stack$c)))))
-;;            :hints (("goal" :use major-frame-for-minor-frame-indexp-of-find-major-frame
-;;                     :in-theory (enable major-frame-for-minor-frame-indexp)))
-;;            :rule-classes :linear)
-
-;;          (defthm lower-bound-by-find-major-frame-for-minor-frame-index
-;;            (b* ((maj (find-major-frame-for-minor-frame-index n stack$c))
-;;                 (top-minor (nth-nat (nth-nat *stack$c-top-frame1* stack$c) (nth *stack$c-top-minori1* stack$c))))
-;;              (implies (and (stack$c-top-minor-ordered stack$c)
-;;                            (<= (nfix n) top-minor)
-;;                            (not (equal maj 0)))
-;;                       (< (nth-nat (+ -1 maj) (nth *stack$c-top-minori1* stack$c)) (nfix n))))
-;;            :hints (("goal" :use major-frame-for-minor-frame-indexp-of-find-major-frame
-;;                     :in-theory (enable major-frame-for-minor-frame-indexp)))
-;;            :rule-classes :linear)
-
-;;          (defthm find-major-frame-for-minor-frame-index-of-update
-;;            (implies (bind-free (prev-stobj-binding new 'old mfc state))
-;;                     (let ((maj (find-major-frame-for-minor-frame-index n old)))
-;;                       (implies (and (stobjs::range-nat-equiv 0 (+ 1 maj) (nth *stack$c-top-minori1* new) (nth *stack$c-top-minori1* old))
-;;                                     (<= maj (nth-nat *stack$c-top-frame1* new)))
-;;                                (equal (find-major-frame-for-minor-frame-index n new)
-;;                                       maj))))))
 
 
 
@@ -1191,10 +1073,10 @@
               (equal (equal (+ a c) (+ b d))
                      (equal (+ (+ (- b) a) c) (fix d)))))
 
-   (defthm equal-const-plus-3*
+   (defthm equal-const-plus-4*
      (implies (syntaxp (quotep c))
-              (equal (equal (+ c (* 3 x)) (* 3 y))
-                     (equal (+ (/ c 3) x) (fix y)))))
+              (equal (equal (+ c (* 4 x)) (* 4 y))
+                     (equal (+ (/ c 4) x) (fix y)))))
 
 
    (defthm equal-const-plus-2*
@@ -1211,8 +1093,8 @@
      (implies (and (bind-free '((old . stack$c)))
                    (syntaxp (not (equal new old)))
                    (<= (nfix bottom) (nfix top))
-                   (stobjs::range-equal (* 3 (nfix bottom))
-                                        (+ 3 (* 3 (- (nfix top) (nfix bottom))))
+                   (stobjs::range-equal (* 4 (nfix bottom))
+                                        (+ 4 (* 4 (- (nfix top) (nfix bottom))))
                                         (nth *stack$c-minori* new)
                                         (nth *stack$c-minori* old)))
               (equal (stack$c-build-minor-frames bottom top new)
@@ -1232,7 +1114,7 @@
                                             (nth *stack$c-top-minori1* new)
                                             (nth *stack$c-top-minori1* old))
                    (equal top-minor (nth-nat top (nth *stack$c-top-minori1* old)))
-                   (stobjs::range-equal 0 (+ 3 (* 3 top-minor))
+                   (stobjs::range-equal 0 (+ 4 (* 4 top-minor))
                                         (nth *stack$c-minori* new)
                                         (nth *stack$c-minori* old)))
               (equal (stack$c-build-major-frames top new)
@@ -1300,21 +1182,25 @@
    (defthm car-stack$C-build-minor-frames
      (equal (car (stack$c-build-minor-frames bottom top stack$c))
             (MAKE-MINOR-FRAME
-             :BINDINGS (STACK$C-MINORI (* 3 (LNFIX TOP))
+             :BINDINGS (STACK$C-MINORI (* 4 (LNFIX TOP))
                                        STACK$C)
-             :SCRATCH (STACK$C-MINORI (+ 1 (* 3 (LNFIX TOP)))
+             :SCRATCH (STACK$C-MINORI (+ 1 (* 4 (LNFIX TOP)))
                                       STACK$C)
-             :DEBUG (STACK$C-MINORI (+ 2 (* 3 (LNFIX TOP)))
+             :bool-SCRATCH (STACK$C-MINORI (+ 2 (* 4 (LNFIX TOP)))
+                                           STACK$C)
+             :DEBUG (STACK$C-MINORI (+ 3 (* 4 (LNFIX TOP)))
                                     STACK$C))))
 
    (defthm stack$C-build-minor-frames-zero
      (equal (stack$c-build-minor-frames top top stack$c)
             (list (MAKE-MINOR-FRAME
-                   :BINDINGS (STACK$C-MINORI (* 3 (LNFIX TOP))
+                   :BINDINGS (STACK$C-MINORI (* 4 (LNFIX TOP))
                                              STACK$C)
-                   :SCRATCH (STACK$C-MINORI (+ 1 (* 3 (LNFIX TOP)))
+                   :SCRATCH (STACK$C-MINORI (+ 1 (* 4 (LNFIX TOP)))
                                             STACK$C)
-                   :DEBUG (STACK$C-MINORI (+ 2 (* 3 (LNFIX TOP)))
+                   :bool-SCRATCH (STACK$C-MINORI (+ 2 (* 4 (LNFIX TOP)))
+                                                 STACK$C)
+                   :DEBUG (STACK$C-MINORI (+ 3 (* 4 (LNFIX TOP)))
                                           STACK$C)))))
 
    (defthm stack$C-build-minor-frames-plus-1
@@ -1323,11 +1209,13 @@
               (equal (stack$c-build-minor-frames bottom (+ 1 top) stack$c)
                      (cons (let ((top (+ 1 top)))
                              (MAKE-MINOR-FRAME
-                              :BINDINGS (STACK$C-MINORI (* 3 (LNFIX TOP))
+                              :BINDINGS (STACK$C-MINORI (* 4 (LNFIX TOP))
                                                         STACK$C)
-                              :SCRATCH (STACK$C-MINORI (+ 1 (* 3 (LNFIX TOP)))
+                              :SCRATCH (STACK$C-MINORI (+ 1 (* 4 (LNFIX TOP)))
                                                        STACK$C)
-                              :DEBUG (STACK$C-MINORI (+ 2 (* 3 (LNFIX TOP)))
+                              :bool-SCRATCH (STACK$C-MINORI (+ 2 (* 4 (LNFIX TOP)))
+                                                            STACK$C)
+                              :DEBUG (STACK$C-MINORI (+ 3 (* 4 (LNFIX TOP)))
                                                      STACK$C)))
                            (stack$c-build-minor-frames bottom top stack$c)))))
 
@@ -1424,14 +1312,43 @@
             (stack-set-minor-bindings :logic stack$a-set-minor-bindings :exec stack$c-set-minor-bindings)
             (stack-add-minor-bindings :logic stack$a-add-minor-bindings :exec stack$c-add-minor-bindings)
             (stack-push-scratch :logic stack$a-push-scratch :exec stack$c-push-scratch)
+            (stack-push-bool-scratch :logic stack$a-push-bool-scratch :exec stack$c-push-bool-scratch)
             (stack-set-minor-debug :logic stack$a-set-minor-debug :exec stack$c-set-minor-debug)
             (stack-bindings :logic stack$a-bindings :exec stack$c-bindings)
             (stack-minor-bindings :logic stack$a-minor-bindings :exec stack$c-minor-bindings)
             (stack-debug :logic stack$a-debug :exec stack$c-debug)
             (stack-minor-debug :logic stack$a-minor-debug :exec stack$c-minor-debug)
-            (stack-scratchlen :logic stack$a-scratchlen :exec stack$c-scratchlen)
+            (stack-scratch-len :logic stack$a-scratch-len :exec stack$c-scratch-len)
             (stack-pop-scratch :logic stack$a-pop-scratch :exec stack$c-pop-scratch)
             (stack-scratch :logic stack$a-scratch :exec stack$c-scratch)
+            (stack-bool-scratch-len :logic stack$a-bool-scratch-len :exec stack$c-bool-scratch-len)
+            (stack-pop-bool-scratch :logic stack$a-pop-bool-scratch :exec stack$c-pop-bool-scratch)
+            (stack-bool-scratch :logic stack$a-bool-scratch :exec stack$c-bool-scratch)
             (stack-pop-minor-frame :logic stack$a-pop-minor-frame :exec stack$c-pop-minor-frame :protect t)
             (stack-pop-frame :logic stack$a-pop-frame :exec stack$c-pop-frame :protect t)
             (stack-extract :logic stack$a-extract :exec stack$c-extract)))
+
+
+
+
+(define revappend-take ((n natp) (x true-listp) acc)
+  (if (zp n)
+      acc
+    (revappend-take (1- n) (cdr x) (cons (car x) acc)))
+  ///
+  (defthm revappend-take-elim
+    (equal (revappend-take n x acc)
+           (revappend (take n x) acc))))
+
+(define rev-take ((n natp) (x true-listp))
+  :inline t
+  (revappend-take n x nil)
+  ///
+  (defthm rev-take-elim
+    (equal (rev-take n x)
+           (rev (take n x)))))
+
+(define stack-peek-scratch ((n natp) stack)
+  :guard (<= n (stack-scratch-len stack))
+  (rev-take n (stack-scratch stack)))
+
