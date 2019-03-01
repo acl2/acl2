@@ -12287,6 +12287,9 @@
 ; encountered during evaluation, if any, for which a true warrant was required
 ; to complete that call of fn.
 
+; The constraint below can almost surely be explicitly strengthened, but we see
+; no need at this point.
+
 ; Also see ev-fncall+-w.
 
  (((ev-fncall+-fns * * * * * * *) => *))
@@ -12298,7 +12301,7 @@
                (badged-fns-of-world wrld))))
  (defthm all-function-symbolps-ev-fncall+-fns
    (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
-     (implies (not (symbolp fns)) ; allow t, :nil!, or a function symbol
+     (implies (not (symbolp fns)) ; hence not a function symbol
               (all-function-symbolps fns wrld))))
  (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
    (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
@@ -12312,12 +12315,12 @@
 ; This function allows apply$-userfn and badge-userfn to execute on warranted
 ; functions even when *aokp* is nil.  It returns an error triple whose
 ; non-erroneous value is a list of the functions that need warrants in order to
-; trust the result.  However, in the case of an error when strictp is :nil!,
-; the value is a function symbol responsible for the error (because a warrant
-; is required, but :nil! causes evaluation to abort in that case).  Its
-; implementation is in the #-acl2-loop-only definition of this function; the
-; present logical definition is incomplete in the sense that ev-fncall+-fns is
-; partially constrained.
+; trust the result.  However, in the case of an error when strictp is true, the
+; value is a function symbol responsible for the error when a warrant is
+; required so that evaluation is aborted, else nil.  Its implementation is in
+; the #-acl2-loop-only definition of this function; the present logical
+; definition is incomplete in the sense that ev-fncall+-fns is partially
+; constrained.
 
 ; This logical definition actually permits a list, computed by constrained
 ; function ev-fncall+-fns, that properly includes the intended list as a
@@ -12376,8 +12379,7 @@
       (declare (ignore latches))
       (mv erp
           val
-          (if (and (null erp)
-                   (atom *warrant-reqs*))
+          (if (member-eq *warrant-reqs* '(t nil :nil!))
               nil
             *warrant-reqs*)))))
 
