@@ -308,7 +308,13 @@
    :pub (b* (((mv error? child) (bip32-ckd-pub parent.get i)))
           (mv error? (bip32-ext-key-pub child))))
   :no-function t
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-ext-key-kind-of-bip32-ckd
+    (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd parent i)))
+           (bip32-ext-key-kind parent))
+    :enable bip32-ckd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,7 +476,13 @@
    :pub (b* (((mv error? key) (bip32-ckd-pub* root.get path)))
           (mv error? (bip32-ext-key-pub key))))
   :no-function t
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-ext-key-kind-of-bip32-ckd*
+    (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd* root path)))
+           (bip32-ext-key-kind root))
+    :enable bip32-ckd*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1405,9 +1417,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bip32-export-key
-  ((tree bip32-key-treep) (path ubyte32-listp) (mainnet? booleanp))
-  :guard (bip32-path-in-tree-p path tree)
+(define bip32-export-key ((tree bip32-key-treep)
+                          (path ubyte32-listp)
+                          (mainnet? booleanp)
+                          (public? booleanp))
+  :guard (and (bip32-path-in-tree-p path tree)
+              (or public? (bip32-key-tree-priv-p tree)))
   :returns (exported byte-listp)
   :short "Export a key from a tree."
   :long
@@ -1416,8 +1431,17 @@
     "The key to export is designated by a path,
      which must be a valid path in the tree.")
    (xdoc::p
-    "The boolean argument specifies whether the key is
+    "A boolean argument specifies whether the key is
      for the mainnet or for the testnet.")
+   (xdoc::p
+    "Another boolean argument specified whether the key should be public.
+     If this is @('nil'), then the tree must consist of private keys,
+     as expressed by the guard.
+     If this is @('t') instead, the tree may consist of private or public keys;
+     if it consists of private keys,
+     we use @(tsee bip32-n) to turn the extended private key at the path
+     into the corresponding extended public key,
+     prior to serializing it.")
    (xdoc::p
     "We first derive the key at the path from the root, via @(tsee bip32-ckd*).
      Since the key tree satisfies @(tsee bip32-valid-keys-p)
@@ -1451,6 +1475,10 @@
        ((bip32-key-tree tree) tree)
        ((mv error? key) (bip32-ckd* tree.root-key path))
        ((unless (mbt (not error?))) nil)
+       (key (if (and public?
+                     (bip32-key-tree-priv-p tree))
+                (bip32-ext-key-pub (bip32-n (bip32-ext-key-priv->get key)))
+              key))
        (depth (+ tree.root-depth (len path)))
        ((unless (mbt (bytep depth))) nil)
        (index (if (consp path)
@@ -1465,6 +1493,7 @@
                  tree.root-parent)))
     (bip32-serialize-key key depth index parent mainnet?))
   :no-function t
+  :guard-hints (("Goal" :in-theory (enable bip32-key-tree-priv-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
