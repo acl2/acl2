@@ -352,36 +352,31 @@
                 but it is ~x0 instead." equiv))
        ;; name of the binary predicate:
        (binpred (if signed 'acl2::signed-byte-p 'acl2::unsigned-byte-p))
+       ;; package for the generated theorem and variable names:
+       (pkg (symbol-package-name type))
+       (pkg (if (equal pkg *main-lisp-package-name*) "ACL2" pkg))
+       (pkg-witness (pkg-witness pkg))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
        (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
        (equiv (or equiv (acl2::add-suffix-to-fn type "-EQUIV")))
        ;; names of the generated theorems:
-       (pred-pkg (symbol-package-name pred))
-       (pred-pkg (if (equal pred-pkg *main-lisp-package-name*) "ACL2" pred-pkg))
-       (pred-pkg-witness (pkg-witness pred-pkg))
        (booleanp-of-pred (acl2::packn-pos (list 'booleanp-of- pred)
-                                          pred-pkg-witness))
+                                          pkg-witness))
        (pred-forward-binpred (acl2::packn-pos (list pred '-forward- binpred)
-                                              pred-pkg-witness))
+                                              pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
-                                              pred-pkg-witness))
-       (fix-pkg (symbol-package-name fix))
-       (fix-pkg (if (equal fix-pkg *main-lisp-package-name*) "ACL2" fix-pkg))
-       (fix-pkg-witness (pkg-witness fix-pkg))
+                                              pkg-witness))
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix)
-                                     fix-pkg-witness))
+                                     pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred)
-                                       fix-pkg-witness))
-       (type-pkg (symbol-package-name type))
-       (type-pkg (if (equal type-pkg *main-lisp-package-name*) "ACL2" type-pkg))
-       (type-pkg-witness (pkg-witness type-pkg))
+                                       pkg-witness))
        (type-size-is-posp (if size-value
                               nil
                             (acl2::packn-pos (list type '-is-posp)
-                                             type-pkg-witness)))
+                                             pkg-witness)))
        ;; variable to use in the generated functions and theorems:
-       (x (intern-in-package-of-symbol "X" type-pkg-witness))
+       (x (intern-in-package-of-symbol "X" pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -457,6 +452,7 @@
                                 :pred pred
                                 :fix fix
                                 :equiv equiv))))
+    ;; top-level event:
     `(encapsulate
        ()
        (logic)

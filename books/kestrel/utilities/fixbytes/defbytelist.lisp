@@ -199,29 +199,27 @@
                 but it is ~x0 instead." equiv))
        ;; name of the binary predicate:
        (binpred (if signed 'acl2::signed-byte-listp 'acl2::unsigned-byte-listp))
+       ;; package for the generated theorem and variable names:
+       (pkg (symbol-package-name type))
+       (pkg (if (equal pkg *main-lisp-package-name*) "ACL2" pkg))
+       (pkg-witness (pkg-witness pkg))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
        (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
        (equiv (or equiv (acl2::add-suffix-to-fn type "-EQUIV")))
        ;; names of the generated theorems:
-       (pred-pkg (symbol-package-name pred))
-       (pred-pkg (if (equal pred-pkg *main-lisp-package-name*) "ACL2" pred-pkg))
-       (pred-pkg-witness (pkg-witness pred-pkg))
        (pred-forward-binpred (acl2::packn-pos (list pred '-forward- binpred)
-                                              pred-pkg-witness))
+                                              pkg-witness))
        (pred-rewrite-binpred (acl2::packn-pos (list pred '-rewrite- binpred)
-                                              pred-pkg-witness))
+                                              pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
-                                              pred-pkg-witness))
+                                              pkg-witness))
        (true-listp-when-pred-rewrite (acl2::packn-pos (list 'true-listp-when-
                                                             pred
                                                             '-rewrite)
-                                                      pred-pkg-witness))
+                                                      pkg-witness))
        ;; variable to use in the generated functions and theorems:
-       (type-pkg (symbol-package-name type))
-       (type-pkg (if (equal type-pkg *main-lisp-package-name*) "ACL2" type-pkg))
-       (type-pkg-witness (pkg-witness type-pkg))
-       (x (intern-in-package-of-symbol "X" type-pkg-witness))
+       (x (intern-in-package-of-symbol "X" pkg-witness))
        ;; XDOC topic for the generated theorems:
        (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS"))
        ;; generated events:
