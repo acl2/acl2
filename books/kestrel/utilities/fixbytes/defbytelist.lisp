@@ -136,11 +136,7 @@
     (xdoc::li
      "A rule to prove @(tsee true-listp) from the unary recognizer.
       Since @(tsee true-listp) is relatively common,
-      this rule is disabled by default for efficiency."))
-
-   (xdoc::p
-    "See the implementation, which uses a readable backquote notation,
-     for details.")))
+      this rule is disabled by default for efficiency."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
