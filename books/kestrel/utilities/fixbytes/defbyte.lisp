@@ -382,13 +382,14 @@
                                              type-pkg-witness)))
        ;; variable to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" type-pkg-witness))
-       ;; generated events:
+       ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
                               (acl2::string-downcase (symbol-package-name type))
                               "::"
                               (acl2::string-downcase (symbol-name type))
                               ")"))
+       ;; generated events:
        (type-size-is-posp-event?
         (and type-size-is-posp
              `((defrule ,type-size-is-posp

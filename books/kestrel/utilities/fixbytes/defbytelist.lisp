@@ -223,41 +223,49 @@
        (type-pkg-witness (pkg-witness type-pkg))
        (x (intern-in-package-of-symbol "X" type-pkg-witness))
        ;; XDOC topic for the generated theorems:
-       (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS")))
-    ;; generated events:
+       (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS"))
+       ;; generated events:
+       (deflist-event
+         `(fty::deflist ,type
+            :elt-type ,byte
+            ,@(and parents (list :parents parents))
+            ,@(and short (list :short short))
+            ,@(and long (list :long long))
+            :true-listp t
+            :pred ,pred
+            :fix ,fix
+            :equiv ,equiv))
+       (theorems-event
+        `(defsection ,type-theorems
+           :extension ,type
+           (defrule ,pred-forward-binpred
+             (implies (,pred ,x)
+                      (,binpred ,size ,x))
+             :rule-classes :forward-chaining
+             :in-theory '(,pred ,bytep ,binpred))
+           (defruled ,pred-rewrite-binpred
+             (equal (,pred ,x)
+                    (,binpred ,size ,x))
+             :in-theory '(,pred ,bytep ,binpred))
+           (defruled ,binpred-rewrite-pred
+             (equal (,binpred ,size ,x)
+                    (,pred ,x))
+             :in-theory '(,pred-rewrite-binpred))
+           (theory-invariant
+            (incompatible (:rewrite ,pred-rewrite-binpred)
+                          (:rewrite ,binpred-rewrite-pred)))
+           (defruled ,true-listp-when-pred-rewrite
+             (implies (,pred ,x)
+                      (true-listp ,x))
+             :in-theory '(,pred true-listp)))))
+    ;; top-level event:
     `(encapsulate
        ()
-       (fty::deflist ,type
-         :elt-type ,byte
-         ,@(and parents (list :parents parents))
-         ,@(and short (list :short short))
-         ,@(and long (list :long long))
-         :true-listp t
-         :pred ,pred
-         :fix ,fix
-         :equiv ,equiv)
-       (defsection ,type-theorems
-         :extension ,type
-         (defrule ,pred-forward-binpred
-           (implies (,pred ,x)
-                    (,binpred ,size ,x))
-           :rule-classes :forward-chaining
-           :in-theory '(,pred ,bytep ,binpred))
-         (defruled ,pred-rewrite-binpred
-           (equal (,pred ,x)
-                  (,binpred ,size ,x))
-           :in-theory '(,pred ,bytep ,binpred))
-         (defruled ,binpred-rewrite-pred
-           (equal (,binpred ,size ,x)
-                  (,pred ,x))
-           :in-theory '(,pred-rewrite-binpred))
-         (theory-invariant
-          (incompatible (:rewrite ,pred-rewrite-binpred)
-                        (:rewrite ,binpred-rewrite-pred)))
-         (defruled ,true-listp-when-pred-rewrite
-           (implies (,pred ,x)
-                    (true-listp ,x))
-           :in-theory '(,pred true-listp))))))
+       (logic)
+       ,deflist-event
+       (set-default-hints nil)
+       (set-override-hints nil)
+       ,theorems-event)))
 
 (defsection defbytelist-macro-definition
   :short "Definition of the @(tsee defbytelist) macro."
