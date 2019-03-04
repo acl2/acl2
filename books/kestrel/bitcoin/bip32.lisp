@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/defset" :dir :system)
-(include-book "kestrel/utilities/fixbytes/ubyte32-list" :dir :system)
+(include-book "kestrel/utilities/fixbytes/defbytelist-instances" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (include-book "crypto")
