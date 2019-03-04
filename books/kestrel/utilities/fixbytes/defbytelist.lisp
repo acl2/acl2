@@ -112,31 +112,39 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::p
-    "The following are generated, inclusive of XDOC documentation:")
+   (xdoc::desc
+    "@('type')"
+    (xdoc::p
+     "A call of @(tsee fty::deflist) to generate the fixtype."))
 
-   (xdoc::ul
+   (xdoc::desc
+    "@('pred-forward-binpred')"
+    (xdoc::p
+     "A forward chaining rule from @('pred')
+      to the corresponding binary predicate
+      @(tsee acl2::unsigned-byte-listp) or @(tsee acl2::signed-byte-listp)."))
 
-    (xdoc::li
-     "A call of @(tsee fty::deflist) to generate the fixtype.")
-
-    (xdoc::li
-     "Forward chaining rules
-      from the unary recognizers to the binary predicates
-      @(tsee acl2::unsigned-byte-listp) and @(tsee acl2::signed-byte-listp).
-      These rules can combine with
-      forward chaining rules from the binary predicates.")
-
-    (xdoc::li
-     "Rules that rewrite between the binary predicate and the unary recognizer.
+   (xdoc::desc
+    "@('binpred-rewrite-pred')
+     <br/>
+     @('pred-rewrite-binpred')"
+    (xdoc::p
+     "Rule that rewrite between @('pred') and
+      the corresponding binary predicate
+      @(tsee acl2::unsigned-byte-listp) or @(tsee acl2::signed-byte-listp).
       These rules are disabled by default, but may be useful in some proofs.
       Since these are converse rules,
-      a theory invariant is also generated preventing the enabling of both.")
+      a theory invariant is also generated preventing the enabling of both."))
 
+   (xdoc::desc
+    "@('true-listp-when-pred')"
     (xdoc::li
-     "A rule to prove @(tsee true-listp) from the unary recognizer.
+     "A rule to prove @(tsee true-listp) from @('pred').
       Since @(tsee true-listp) is relatively common,
-      this rule is disabled by default for efficiency."))))
+      this rule is disabled by default for efficiency."))
+
+   (xdoc::p
+    "The above items are generated with XDOC documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -229,21 +237,22 @@
            (implies (,pred x)
                     (,binpred ,size x))
            :rule-classes :forward-chaining
-           :enable (,pred ,bytep))
+           :in-theory '(,pred ,bytep ,binpred))
          (defruled ,pred-rewrite-binpred
            (equal (,pred x)
                   (,binpred ,size x))
-           :enable (,pred ,bytep))
+           :in-theory '(,pred ,bytep ,binpred))
          (defruled ,binpred-rewrite-pred
            (equal (,binpred ,size x)
                   (,pred x))
-           :enable ,pred-rewrite-binpred)
+           :in-theory '(,pred-rewrite-binpred))
          (theory-invariant
           (incompatible (:rewrite ,pred-rewrite-binpred)
                         (:rewrite ,binpred-rewrite-pred)))
          (defruled ,true-listp-when-pred-rewrite
            (implies (,pred x)
-                    (true-listp x)))))))
+                    (true-listp x))
+           :in-theory '(,pred true-listp))))))
 
 (defsection defbytelist-macro-definition
   :short "Definition of the @(tsee defbytelist) macro."
