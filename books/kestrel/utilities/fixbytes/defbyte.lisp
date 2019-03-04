@@ -374,12 +374,14 @@
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred)
                                        fix-pkg-witness))
        (type-pkg (symbol-package-name type))
-       (type-pkg (if (equal pred-pkg *main-lisp-package-name*) "ACL2" type-pkg))
+       (type-pkg (if (equal type-pkg *main-lisp-package-name*) "ACL2" type-pkg))
        (type-pkg-witness (pkg-witness type-pkg))
        (type-size-is-posp (if size-value
                               nil
                             (acl2::packn-pos (list type '-is-posp)
                                              type-pkg-witness)))
+       ;; variable to use in the generated functions and theorems:
+       (x (intern-in-package-of-symbol "X" type-pkg-witness))
        ;; generated events:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -393,47 +395,47 @@
                  (posp ,size)
                  :rule-classes (:rewrite :type-prescription)))))
        (pred-event
-        `(define ,pred (x)
+        `(define ,pred (,x)
            :parents (,type)
            :short ,(concatenate 'string "Recognizer for " type-ref ".")
-           (,binpred ,size x)
+           (,binpred ,size ,x)
            :no-function t
            ///
            (defrule ,booleanp-of-pred
-             (booleanp (,pred x))
+             (booleanp (,pred ,x))
              :in-theory '(,pred
                           (:t ,binpred)
                           acl2::booleanp-compound-recognizer))
            (defrule ,pred-forward-binpred
-             (implies (,pred x)
-                      (,binpred ,size x))
+             (implies (,pred ,x)
+                      (,binpred ,size ,x))
              :rule-classes :forward-chaining
              :in-theory '(,pred))
            (defruled ,binpred-rewrite-pred
-             (equal (,binpred ,size x)
-                    (,pred x))
+             (equal (,binpred ,size ,x)
+                    (,pred ,x))
              :in-theory '(,pred))
            (theory-invariant
             (incompatible (:rewrite ,binpred-rewrite-pred)
                           (:definition ,pred)))))
        (fix-event
-        `(define ,fix ((x ,pred))
+        `(define ,fix ((,x ,pred))
            :parents (,type)
            :short ,(concatenate 'string "Fixer for " type-ref ".")
-           (mbe :logic (if (,pred x) x 0)
-                :exec x)
+           (mbe :logic (if (,pred ,x) ,x 0)
+                :exec ,x)
            :no-function t
            ///
            (defrule ,pred-of-fix
-             (,pred (,fix x))
+             (,pred (,fix ,x))
              :in-theory '(,pred ,fix ,binpred
                                 posp integer-range-p expt (:e expt) fix zip)
              ,@(and type-size-is-posp
                     `(:use (,type-size-is-posp
                             (:instance defbyte-fix-support-lemma (z ,size))))))
            (defrule ,fix-when-pred
-             (implies (,pred x)
-                      (equal (,fix x) x))
+             (implies (,pred ,x)
+                      (equal (,fix ,x) ,x))
              :in-theory '(,fix))))
        (type-event
         `(defsection ,type

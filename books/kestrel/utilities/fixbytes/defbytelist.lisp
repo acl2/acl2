@@ -217,7 +217,12 @@
                                                             pred
                                                             '-rewrite)
                                                       pred-pkg-witness))
-       ;; XDOC topic name for the generated theorems:
+       ;; variable to use in the generated functions and theorems:
+       (type-pkg (symbol-package-name type))
+       (type-pkg (if (equal type-pkg *main-lisp-package-name*) "ACL2" type-pkg))
+       (type-pkg-witness (pkg-witness type-pkg))
+       (x (intern-in-package-of-symbol "X" type-pkg-witness))
+       ;; XDOC topic for the generated theorems:
        (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS")))
     ;; generated events:
     `(encapsulate
@@ -234,24 +239,24 @@
        (defsection ,type-theorems
          :extension ,type
          (defrule ,pred-forward-binpred
-           (implies (,pred x)
-                    (,binpred ,size x))
+           (implies (,pred ,x)
+                    (,binpred ,size ,x))
            :rule-classes :forward-chaining
            :in-theory '(,pred ,bytep ,binpred))
          (defruled ,pred-rewrite-binpred
-           (equal (,pred x)
-                  (,binpred ,size x))
+           (equal (,pred ,x)
+                  (,binpred ,size ,x))
            :in-theory '(,pred ,bytep ,binpred))
          (defruled ,binpred-rewrite-pred
-           (equal (,binpred ,size x)
-                  (,pred x))
+           (equal (,binpred ,size ,x)
+                  (,pred ,x))
            :in-theory '(,pred-rewrite-binpred))
          (theory-invariant
           (incompatible (:rewrite ,pred-rewrite-binpred)
                         (:rewrite ,binpred-rewrite-pred)))
          (defruled ,true-listp-when-pred-rewrite
-           (implies (,pred x)
-                    (true-listp x))
+           (implies (,pred ,x)
+                    (true-listp ,x))
            :in-theory '(,pred true-listp))))))
 
 (defsection defbytelist-macro-definition
