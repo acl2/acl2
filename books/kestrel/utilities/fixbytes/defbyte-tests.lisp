@@ -1,6 +1,6 @@
-; Fixtypes for Unsigned and Signed Bytes -- Tests
+; Fixtypes of Unsigned and Signed Bytes -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/testing" :dir :system)
 (include-book "defbyte")
+
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,7 +60,7 @@
 
 (must-succeed*
  (define size () 32)
- (fty::defbyte (size) :type mybyte :description "my bytes")
+ (fty::defbyte (size) :type mybyte)
  (assert! (function-symbolp 'mybyte-p (w state)))
  (assert! (function-symbolp 'mybyte-fix (w state)))
  (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
@@ -69,7 +70,7 @@
    (((size) => *))
    (local (defun size () 2))
    (defthm posp-of-size (posp (size))))
- (fty::defbyte (size) :type mybyte :description "my bytes")
+ (fty::defbyte (size) :type mybyte)
  (assert! (function-symbolp 'mybyte-p (w state)))
  (assert! (function-symbolp 'mybyte-fix (w state)))
  (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
@@ -100,13 +101,16 @@
 
 (must-succeed*
  (defun not-guard-verif () 8)
+ (assert-event (not (eq (symbol-class 'not-guard-verif (w state))
+                        :common-lisp-compliant)))
  (must-fail
-  (fty::defbyte (not-guard-verif) :type mybyte :description "my bytes")))
+  (fty::defbyte (not-guard-verif) :type mybyte)))
 
 (must-succeed*
  (defun not-provably-posp () "a")
+ (verify-guards not-provably-posp)
  (must-fail
-  (fty::defbyte (not-provably-posp) :type mybyte :description "my bytes")))
+  (fty::defbyte (not-provably-posp) :type mybyte)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,16 +188,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test the :DESCRIPTION input:
+; test the :SHORT input:
 
-(must-fail (fty::defbyte 8 :description 'something))
+(must-fail (fty::defbyte 8 :short 'something))
 
-(must-succeed (fty::defbyte 8 :description nil))
+(must-succeed (fty::defbyte 8 :short nil))
 
-(must-succeed (fty::defbyte 8 :description "my bytes"))
+(must-succeed (fty::defbyte 8 :short "Short doc."))
 
 (must-succeed
- (fty::defbyte 8 :description (concatenate 'string "my" " " "bytes")))
+ (fty::defbyte 8 :short (concatenate 'string "Short" " " "doc.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

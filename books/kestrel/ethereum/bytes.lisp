@@ -27,7 +27,7 @@
   :type byte
   :pred bytep
   :parents (bytes)
-  :description "bytes")
+  :short "Fixtype of bytes.")
 
 (defsection byte-fix-ext
   :extension byte-fix
@@ -56,7 +56,8 @@
 
 (fty::defbytelist byte
   :pred byte-listp
-  :parents (byte-arrays))
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays.")
 
 (defsection byte-listp-ext
   :extension byte-listp

@@ -62,7 +62,12 @@
        :pred ,(acl2::packn (list 'acl2::ubyte size '-listp))
        :fix ,(acl2::packn (list 'acl2::ubyte size '-list-fix))
        :equiv ,(acl2::packn (list 'acl2::ubyte size '-list-equiv))
-       :parents (defbytelist-instances))))
+       :parents (defbytelist-instances)
+       :short ,(concatenate
+                'string
+                "Fixtype of true lists of unsigned bytes of size "
+                (coerce (explode-nonnegative-integer size 10 nil) 'string)
+                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +100,12 @@
        :pred ,(acl2::packn (list 'acl2::sbyte size '-listp))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-list-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-list-equiv))
-       :parents (defbytelist-instances))))
+       :parents (defbytelist-instances)
+       :short ,(concatenate
+                'string
+                "Fixtype of true lists of signed bytes of size "
+                (coerce (explode-nonnegative-integer size 10 nil) 'string)
+                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

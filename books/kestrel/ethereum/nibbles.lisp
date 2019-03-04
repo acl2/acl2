@@ -26,7 +26,7 @@
   :type nibble
   :pred nibblep
   :parents (nibbles)
-  :description "nibbles")
+  :short "Fixtype of nibbles.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,7 +47,8 @@
 
 (fty::defbytelist nibble
   :pred nibble-listp
-  :parents (nibble-arrays))
+  :parents (nibble-arrays)
+  :short "Fixtype of nibble arrays.")
 
 (defsection nibble-list-fix-ext
   :extension nibble-list-fix

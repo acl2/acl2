@@ -28,4 +28,4 @@
   :type word
   :pred wordp
   :parents (words)
-  :description "words")
+  :short "Fixtype of words.")

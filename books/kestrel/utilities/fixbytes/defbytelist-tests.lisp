@@ -1,6 +1,6 @@
-; Fixtypes for Unsigned and Signed Byte Lists -- Tests
+; Fixtypes of True Lists of Unsigned and Signed Bytes -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/testing" :dir :system)
 (include-book "defbytelist")
+
+(include-book "kestrel/utilities/testing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,7 +49,7 @@
 
 (must-succeed*
  (define size () 50)
- (fty::defbyte (size) :type mybyte :description "my bytes")
+ (fty::defbyte (size) :type mybyte)
  (fty::defbytelist mybyte)
  (assert! (function-symbolp 'mybyte-list-p (w state)))
  (assert! (function-symbolp 'mybyte-list-fix$inline (w state)))
@@ -59,7 +60,7 @@
    (((size) => *))
    (local (defun size () 2))
    (defthm posp-of-size (posp (size))))
- (fty::defbyte (size) :type mybyte :description "my bytes")
+ (fty::defbyte (size) :type mybyte)
  (fty::defbytelist mybyte)
  (assert! (function-symbolp 'mybyte-list-p (w state)))
  (assert! (function-symbolp 'mybyte-list-fix$inline (w state)))
@@ -156,6 +157,22 @@
 (must-succeed*
  (fty::defbyte 4)
  (fty::defbytelist ubyte4 :parents (this that)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the :SHORT input:
+
+(must-succeed*
+ (fty::defbyte 4)
+ (must-fail (fty::defbytelist ubyte4 :short #\s)))
+
+(must-succeed*
+ (fty::defbyte 4)
+ (fty::defbytelist ubyte4 :short "Short doc."))
+
+(must-succeed*
+ (fty::defbyte 4)
+ (fty::defbytelist ubyte4 :short (concatenate 'string "Short" " " "doc.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

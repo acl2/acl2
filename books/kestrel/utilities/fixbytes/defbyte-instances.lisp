@@ -59,11 +59,11 @@
        :fix ,(acl2::packn (list 'acl2::ubyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::ubyte size '-equiv))
        :parents (defbyte-instances)
-       :description ,(concatenate
-                      'string
-                      "unsigned bytes of size "
-                      (coerce (explode-nonnegative-integer size 10 nil)
-                              'string)))))
+       :short ,(concatenate
+                'string
+                "Fixtype of unsigned bytes of size "
+                (coerce (explode-nonnegative-integer size 10 nil) 'string)
+                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,11 +97,11 @@
        :fix ,(acl2::packn (list 'acl2::sbyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-equiv))
        :parents (defbyte-instances)
-       :description ,(concatenate
-                      'string
-                      "signed bytes of size "
-                      (coerce (explode-nonnegative-integer size 10 nil)
-                              'string)))))
+       :short ,(concatenate
+                'string
+                "Fixtype of signed bytes of size "
+                (coerce (explode-nonnegative-integer size 10 nil) 'string)
+                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
