@@ -1,4 +1,4 @@
-; Fixtypes of Unsigned and Signed Bytes of Various Sizes -- Tests
+; Fixtypes of Unsigned and Signed Bytes -- Instances -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

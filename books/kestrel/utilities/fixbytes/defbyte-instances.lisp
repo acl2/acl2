@@ -1,4 +1,4 @@
-; Fixtypes of Unsigned and Signed Bytes of Various Sizes
+; Fixtypes of Unsigned and Signed Bytes -- Instances
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
