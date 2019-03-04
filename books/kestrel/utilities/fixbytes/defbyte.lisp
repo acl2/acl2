@@ -21,7 +21,10 @@
 
 (defxdoc defbyte
 
-  :parents (acl2::kestrel-utilities fty)
+  :parents (acl2::kestrel-utilities
+            fty
+            unsigned-byte-p
+            signed-byte-p)
 
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
           unsigned or signed bytes of a specified size."
@@ -39,9 +42,14 @@
 
    (xdoc::p
     "This macro introduces unary recognizers, and associated fixtypes,
-     for unsigned or signed bytes of specified sizes.
+     of unsigned or signed bytes of specified sizes.
      It also generates various theorems that relate
      the unary recognizers to the binary predicates.")
+
+   (xdoc::p
+    "Besides their use in fixtypes,
+     the unary recognizers introduced by this macro support
+     <see topic='@(url acl2::tau-system)'>tau system</see> reasoning.")
 
    (xdoc::h3 "General Form")
 
@@ -154,15 +162,7 @@
       If this is @('nil') instead,
       no @(':long') is generated for the fixtype."))
 
-   (xdoc::p
-    "This macro currently does not perform a thorough validation of its inputs.
-     In particular, it does not check whether
-     the names of the generated events already exists.
-     Errors may result in failures of the generated events.
-     These errors should be easy to diagnose,
-     also since this macro has a very simple and readable implementation.")
-
-   (xdoc::h3 "Generated Functions and Theorems")
+   (xdoc::h3 "Generated Events")
 
    (xdoc::p
     "The following are generated, inclusive of XDOC documentation:")

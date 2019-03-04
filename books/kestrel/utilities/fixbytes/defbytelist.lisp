@@ -18,7 +18,11 @@
 
 (defxdoc defbytelist
 
-  :parents (acl2::kestrel-utilities fty defbyte)
+  :parents (acl2::kestrel-utilities
+            fty
+            defbyte
+            acl2::unsigned-byte-listp
+            acl2::signed-byte-p)
 
   :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
           true lists of unsigned or signed bytes of a specified size."
@@ -35,13 +39,19 @@
      are binary predicates.")
 
    (xdoc::p
-    "This macro introduces fixtypes for true lists of values
+    "This macro introduces unary recognizers, and associated fixtypes,
+     of true lists of values
      of fixtypes previously introduced via @(tsee defbyte).
      This macro uses @(tsee fty::deflist) to introduce the list fixtype,
      but it also generates various theorems that relate
      the unary recognizers for lists of bytes
      to the aforementioned binary predicates for lists of bytes,
      and to other built-in predicates.")
+
+   (xdoc::p
+    "Besides their use in fixtypes,
+     the unary recognizers introduced by this macro support
+     <see topic='@(url acl2::tau-system)'>tau system</see> reasoning.")
 
    (xdoc::h3 "General Form")
 
@@ -119,15 +129,7 @@
       If this is @('nil') instead,
       no @(':long') is generated for the fixtype."))
 
-   (xdoc::p
-    "This macro currently does not perform a thorough validation of its inputs.
-     In particular, it does not check whether
-     the names of the generated events already exists.
-     Errors may result in failures of the generated events.
-     These errors should be easy to diagnose,
-     also since this macro has a very simple and readable implementation.")
-
-   (xdoc::h3 "Generated Functions and Theorems")
+   (xdoc::h3 "Generated Events")
 
    (xdoc::p
     "The following are generated, inclusive of XDOC documentation:")
