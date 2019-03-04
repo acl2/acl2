@@ -52,9 +52,9 @@
   (defmacro defubyte (size)
     (declare (xargs :guard (posp size)))
     `(defbyte
+       ,(acl2::packn (list 'acl2::ubyte size))
        ,size
        :signed nil
-       :type ,(acl2::packn (list 'acl2::ubyte size))
        :pred ,(acl2::packn (list 'acl2::ubyte size 'p))
        :fix ,(acl2::packn (list 'acl2::ubyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::ubyte size '-equiv))
@@ -90,9 +90,9 @@
   (defmacro defsbyte (size)
     (declare (xargs :guard (posp size)))
     `(defbyte
+       ,(acl2::packn (list 'acl2::sbyte size))
        ,size
        :signed t
-       :type ,(acl2::packn (list 'acl2::sbyte size))
        :pred ,(acl2::packn (list 'acl2::sbyte size 'p))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-equiv))

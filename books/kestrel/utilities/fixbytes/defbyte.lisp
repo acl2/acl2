@@ -54,9 +54,9 @@
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defbyte size"
+    "(defbyte type"
+    "         size"
     "         :signed ..."
-    "         :type ..."
     "         :pred ..."
     "         :fix ..."
     "         :equiv ..."
@@ -66,6 +66,11 @@
     "  )")
 
    (xdoc::h3 "Inputs")
+
+   (xdoc::desc
+    "@(':type')"
+    (xdoc::p
+     "A symbol that specifies the name of the fixtype."))
 
    (xdoc::desc
     "@('size')"
@@ -84,42 +89,25 @@
       unsigned (@('nil'), the default) or signed (@('t'))."))
 
    (xdoc::desc
-    "@(':type')"
-    (xdoc::p
-     "A symbol that specifies the name of the fixtype.
-      If this is @('nil') (the default),
-      the name of the type is @('ubyte<size>') or @('sbyte<size>'),
-      based on whether @(':signed') is @('nil') or @('t'),
-      where @('<size>') is a decimal representation of the value of @('size').
-      If @('size') is a call of a nullary function,
-      @(':type') must not be @('nil')."))
-
-   (xdoc::desc
     "@(':pred')"
     (xdoc::p
-     "A symbol that specifies the name of the unary recognizer.
+     "A symbol that specifies the name of the fixtype's recognizer.
       If this is @('nil') (the default),
-      the name of the recognizer is @('<type>-p'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the recognizer is @('type') followed by @('-p')."))
 
    (xdoc::desc
     "@(':fix')"
     (xdoc::p
-     "A symbol that specifies the name of the fixer.
+     "A symbol that specifies the name of the fixtype's fixer.
       If this is @('nil') (the default),
-      the name of the fixer is @('<type>-fix'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the fixer is @('type') followed by @('-fix')."))
 
    (xdoc::desc
     "@(':equiv')"
     (xdoc::p
-     "A symbol that specifies the name of the equivalence.
+     "A symbol that specifies the name of the fixtype's equivalence.
       If this is @('nil') (the default),
-      the name of the equivalence is @('<type>-equiv'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the equivalence is @('type') followed by @('-equiv')."))
 
    (xdoc::desc
     "@(':parents')
@@ -262,9 +250,9 @@
         (mv t nil)
       (mv nil nil))))
 
-(define defbyte-fn (size
+(define defbyte-fn (type
+                    size
                     signed
-                    type
                     pred
                     fix
                     equiv
@@ -291,7 +279,11 @@
      shows that 0 satisfies the recognizer,
      as a rewrite rule:
      this theorem serves to prove the return type theorems of the fixer."))
-  (b* (;; validate the SIZE input:
+  (b* (;; validate the TYPE input:
+       ((unless (symbolp type))
+        (raise "The TYPE input must be a symbol, ~
+                but it is ~x0 instead." type))
+       ;; validate the SIZE input:
        ((mv size-valid size-value) (defbyte-check-size size wrld))
        ((unless size-valid)
         (raise "The SIZE input must be ~
@@ -300,40 +292,41 @@
                 (3) a call of a nullary function (defined or constrained) ~
                 that provably denotes a positive integer; ~
                 but it is ~x0 instead." size))
-       ;; validate some of the other inputs:
+       ;; validate the :SIGNED input:
        ((unless (booleanp signed))
         (raise "The :SIGNED input must be a boolean, ~
                 but it is ~x0 instead." signed))
-       ((unless (symbolp type))
-        (raise "The :TYPE input must be a symbol, ~
-                but it is ~x0 instead." type))
-       ((unless (or size-value type))
-        (raise "Since the SIZE input is a call of a nullary function, ~
-                the :TYPE input must be supplied and not be NIL."))
+       ;; validate the :PRED input:
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~
                 but it is ~x0 instead." pred))
+       ;; validate the :FIX input:
        ((unless (symbolp fix))
         (raise "The :FIX input must be a symbol, ~
                 but it is ~x0 instead." fix))
+       ;; validate the :EQUIV input:
        ((unless (symbolp equiv))
         (raise "The :EQUIV input must be a symbol, ~
                 but it is ~x0 instead." equiv))
        ;; name of the binary predicate:
        (binpred (if signed 'acl2::signed-byte-p 'acl2::unsigned-byte-p))
-       ;; name of the generated fixtype:
-       (type (or type (acl2::packn (list (if signed 'acl2::sbyte 'acl2::ubyte)
-                                         size-value))))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
        (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
        (equiv (or equiv (acl2::add-suffix-to-fn type "-EQUIV")))
        ;; names of the generated theorems:
-       (fix-when-pred (acl2::packn (list fix '-when- pred)))
-       (pred-forward-binpred (acl2::packn (list pred '-forward- binpred)))
+       (pred-pkg (symbol-package-name pred))
+       (pred-pkg (if (equal pred-pkg *main-lisp-package-name*) "ACL2" pred-pkg))
+       (pred-pkg-witness (pkg-witness pred-pkg))
+       (pred-forward-binpred (acl2::packn-pos (list pred '-forward- binpred)
+                                              pred-pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
-                                              (pkg-witness
-                                               (symbol-package-name pred)))))
+                                              pred-pkg-witness))
+       (fix-pkg (symbol-package-name fix))
+       (fix-pkg (if (equal fix-pkg *main-lisp-package-name*) "ACL2" fix-pkg))
+       (fix-pkg-witness (pkg-witness fix-pkg))
+       (fix-when-pred (acl2::packn-pos (list fix '-when- pred)
+                                       fix-pkg-witness)))
     ;; generated events:
     `(encapsulate
        ()
@@ -406,10 +399,10 @@
 (defsection defbyte-macro-definition
   :short "Definition of the @(tsee defbyte) macro."
   :long "@(def defbyte)"
-  (defmacro defbyte (size
+  (defmacro defbyte (type
+                     size
                      &key
                      signed
-                     type
                      pred
                      fix
                      equiv
@@ -417,9 +410,9 @@
                      short
                      long)
     `(make-event (defbyte-fn
+                   ',type
                    ',size
                    ',signed
-                   ',type
                    ',pred
                    ',fix
                    ',equiv

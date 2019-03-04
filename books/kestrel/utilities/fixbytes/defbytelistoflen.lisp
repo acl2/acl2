@@ -60,12 +60,12 @@
 ;; This will be redundant if fixbytes/instances.lisp
 ;; has been loaded, but if not, we need it here.
 
-(fty::defbyte 8
+(fty::defbyte ubyte8 8
   :signed nil
   :pred ubyte8p
   :parents (defbyte-instances))
 
-(fty::defbytelist ubyte8
+(fty::defbytelist ubyte8-list ubyte8
   :pred ubyte8-listp)
 
 

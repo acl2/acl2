@@ -23,8 +23,7 @@
    "In Bitcoin, as in most modern contexts,
     the unqualified term `byte' denotes an (unsigned) 8-bit byte."))
 
-(fty::defbyte 8
-  :type byte
+(fty::defbyte byte 8
   :pred bytep
   :parents (bytes)
   :short "Fixtype of bytes.")
@@ -57,7 +56,7 @@
    "These are finite lists of bytes,
     which model byte arrays in particular."))
 
-(fty::defbytelist byte
+(fty::defbytelist byte-list byte
   :pred byte-listp
   :parents (byte-sequences)
   :short "Fixtype of true lists of @(see byte)s.")

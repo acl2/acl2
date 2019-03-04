@@ -19,19 +19,19 @@
 ; test successful calls with a positive integer as size:
 
 (must-succeed*
- (fty::defbyte 8)
+ (fty::defbyte ubyte8 8)
  (assert! (function-symbolp 'ubyte8-p (w state)))
  (assert! (function-symbolp 'ubyte8-fix (w state)))
  (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
 
 (must-succeed*
- (fty::defbyte 1)
+ (fty::defbyte ubyte1 1)
  (assert! (function-symbolp 'ubyte1-p (w state)))
  (assert! (function-symbolp 'ubyte1-fix (w state)))
  (assert! (function-symbolp 'ubyte1-equiv$inline (w state))))
 
 (must-succeed*
- (fty::defbyte 100)
+ (fty::defbyte ubyte100 100)
  (assert! (function-symbolp 'ubyte100-p (w state)))
  (assert! (function-symbolp 'ubyte100-fix (w state)))
  (assert! (function-symbolp 'ubyte100-equiv$inline (w state))))
@@ -42,14 +42,14 @@
 
 (must-succeed*
  (defconst *size* 7)
- (fty::defbyte *size*)
+ (fty::defbyte ubyte7 *size*)
  (assert! (function-symbolp 'ubyte7-p (w state)))
  (assert! (function-symbolp 'ubyte7-fix (w state)))
  (assert! (function-symbolp 'ubyte7-equiv$inline (w state))))
 
 (must-succeed*
  (defconst *size* 16)
- (fty::defbyte *size*)
+ (fty::defbyte ubyte16 *size*)
  (assert! (function-symbolp 'ubyte16-p (w state)))
  (assert! (function-symbolp 'ubyte16-fix (w state)))
  (assert! (function-symbolp 'ubyte16-equiv$inline (w state))))
@@ -60,153 +60,158 @@
 
 (must-succeed*
  (define size () 32)
- (fty::defbyte (size) :type mybyte)
- (assert! (function-symbolp 'mybyte-p (w state)))
- (assert! (function-symbolp 'mybyte-fix (w state)))
- (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
+ (fty::defbyte byte (size))
+ (assert! (function-symbolp 'byte-p (w state)))
+ (assert! (function-symbolp 'byte-fix (w state)))
+ (assert! (function-symbolp 'byte-equiv$inline (w state))))
 
 (must-succeed*
  (encapsulate
    (((size) => *))
    (local (defun size () 2))
    (defthm posp-of-size (posp (size))))
- (fty::defbyte (size) :type mybyte)
+ (fty::defbyte byte (size))
+ (assert! (function-symbolp 'byte-p (w state)))
+ (assert! (function-symbolp 'byte-fix (w state)))
+ (assert! (function-symbolp 'byte-equiv$inline (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; test the TYPE input:
+
+(must-fail (fty::defbyte "mybyte" 8))
+
+(must-succeed*
+ (fty::defbyte mybyte 8)
  (assert! (function-symbolp 'mybyte-p (w state)))
  (assert! (function-symbolp 'mybyte-fix (w state)))
  (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test calls with a bad size:
+; test the SIZE input:
 
-(must-fail (fty::defbyte "8"))
+(must-fail (fty::defbyte byte "8"))
 
-(must-fail (fty::defbyte 0))
+(must-fail (fty::defbyte byte 0))
 
-(must-fail (fty::defbyte 3/4))
+(must-fail (fty::defbyte byte 3/4))
 
-(must-fail (fty::defbyte :key))
+(must-fail (fty::defbyte byte :key))
 
-(must-fail (fty::defbyte *not-a-const*))
+(must-fail (fty::defbyte byte *not-a-const*))
 
 (must-succeed*
  (defconst *not-a-posp-const* '(1 2 3))
- (must-fail (fty::defbyte *not-a-posp-const*)))
+ (must-fail (fty::defbyte byte *not-a-posp-const*)))
 
-(must-fail (fty::defbyte (not-a-fn)))
+(must-fail (fty::defbyte byte (not-a-fn)))
 
-(must-fail (fty::defbyte (len)))
+(must-fail (fty::defbyte byte (len)))
 
-(must-fail (fty::defbyte (cons)))
+(must-fail (fty::defbyte byte (cons)))
 
 (must-succeed*
  (defun not-guard-verif () 8)
  (assert-event (not (eq (symbol-class 'not-guard-verif (w state))
                         :common-lisp-compliant)))
  (must-fail
-  (fty::defbyte (not-guard-verif) :type mybyte)))
+  (fty::defbyte byte (not-guard-verif))))
 
 (must-succeed*
  (defun not-provably-posp () "a")
  (verify-guards not-provably-posp)
  (must-fail
-  (fty::defbyte (not-provably-posp) :type mybyte)))
+  (fty::defbyte byte (not-provably-posp))))
+
+(must-succeed*
+ (fty::defbyte byte 10)
+ (assert! (byte-p 1023))
+ (assert! (not (byte-p 1024))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :SIGNED input:
 
-(must-fail (fty::defbyte 8 :signed "no"))
+(must-fail (fty::defbyte byte 8 :signed "no"))
 
 (must-succeed*
- (fty::defbyte 8 :signed nil)
- (assert! (ubyte8-p 255))
- (assert! (not (ubyte8-p -1))))
+ (fty::defbyte ubyte 8 :signed nil)
+ (assert! (ubyte-p 255))
+ (assert! (not (ubyte-p -1))))
 
 (must-succeed*
- (fty::defbyte 8 :signed t)
- (assert! (sbyte8-p -128))
- (assert! (not (sbyte8-p 255))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test the :TYPE input:
-
-(must-fail (fty::defbyte 8 :type "mybyte"))
-
-(must-succeed*
- (fty::defbyte 8 :type mybyte)
- (assert! (function-symbolp 'mybyte-p (w state)))
- (assert! (function-symbolp 'mybyte-fix (w state)))
- (assert! (function-symbolp 'mybyte-equiv$inline (w state))))
+ (fty::defbyte sbyte 8 :signed t)
+ (assert! (sbyte-p -128))
+ (assert! (not (sbyte-p 255))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :PRED input:
 
-(must-fail (fty::defbyte 8 :pred 55))
+(must-fail (fty::defbyte byte 8 :pred 55))
 
 (must-succeed*
- (fty::defbyte 8 :pred mypred)
+ (fty::defbyte byte 8 :pred mypred)
  (assert! (function-symbolp 'mypred (w state)))
- (assert! (function-symbolp 'ubyte8-fix (w state)))
- (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
+ (assert! (function-symbolp 'byte-fix (w state)))
+ (assert! (function-symbolp 'byte-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :FIX input:
 
-(must-fail (fty::defbyte 8 :fix '(1 a #\c)))
+(must-fail (fty::defbyte byte 8 :fix '(1 a #\c)))
 
 (must-succeed*
- (fty::defbyte 8 :fix myfix)
- (assert! (function-symbolp 'ubyte8-p (w state)))
+ (fty::defbyte byte 8 :fix myfix)
+ (assert! (function-symbolp 'byte-p (w state)))
  (assert! (function-symbolp 'myfix (w state)))
- (assert! (function-symbolp 'ubyte8-equiv$inline (w state))))
+ (assert! (function-symbolp 'byte-equiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :EQUIV input:
 
-(must-fail (fty::defbyte 8 :equiv "EQ"))
+(must-fail (fty::defbyte byte 8 :equiv "EQ"))
 
 (must-succeed*
- (fty::defbyte 8 :equiv myequiv)
- (assert! (function-symbolp 'ubyte8-p (w state)))
- (assert! (function-symbolp 'ubyte8-fix (w state)))
+ (fty::defbyte byte 8 :equiv myequiv)
+ (assert! (function-symbolp 'byte-p (w state)))
+ (assert! (function-symbolp 'byte-fix (w state)))
  (assert! (function-symbolp 'myequiv$inline (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :PARENTS input:
 
-(must-fail (fty::defbyte 8 :parents "123"))
+(must-fail (fty::defbyte byte 8 :parents "123"))
 
-(must-succeed (fty::defbyte 8 :parents nil))
+(must-succeed (fty::defbyte byte 8 :parents nil))
 
-(must-succeed (fty::defbyte 8 :parents (this that)))
+(must-succeed (fty::defbyte byte 8 :parents (this that)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :SHORT input:
 
-(must-fail (fty::defbyte 8 :short 'something))
+(must-fail (fty::defbyte byte 8 :short 'something))
 
-(must-succeed (fty::defbyte 8 :short nil))
+(must-succeed (fty::defbyte byte 8 :short nil))
 
-(must-succeed (fty::defbyte 8 :short "Short doc."))
+(must-succeed (fty::defbyte byte 8 :short "Short doc."))
 
 (must-succeed
- (fty::defbyte 8 :short (concatenate 'string "Short" " " "doc.")))
+ (fty::defbyte byte 8 :short (concatenate 'string "Short" " " "doc.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test the :LONG input:
 
-(must-fail (fty::defbyte 8 :long #\a))
+(must-fail (fty::defbyte byte 8 :long #\a))
 
-(must-succeed (fty::defbyte 8 :long nil))
+(must-succeed (fty::defbyte byte 8 :long nil))
 
-(must-succeed (fty::defbyte 8 :long "<p>More doc.</p>"))
+(must-succeed (fty::defbyte byte 8 :long "<p>More doc.</p>"))
 
-(must-succeed (fty::defbyte 8 :long (xdoc::topp "More doc.")))
+(must-succeed (fty::defbyte byte 8 :long (xdoc::topp "More doc.")))
