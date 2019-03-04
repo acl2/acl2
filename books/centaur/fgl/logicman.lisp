@@ -2276,8 +2276,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                         :str-alist `(("<NAME>" . ,(symbol-name name)))
                         :pkg-sym 'fgl::gl-symbol))
 
-(def-gl-object-eval base nil)
+(def-gl-object-eval base (equal not return-last synp))
 
+(acl2::def-ev-pseudo-term-fty-support base-apply-ev base-apply-ev-lst)
 
 (local (include-book "aabf"))
 (local

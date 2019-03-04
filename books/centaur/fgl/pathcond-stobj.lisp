@@ -41,7 +41,8 @@
 (defstobj pathcond
   (pathcond-bdd :type (satisfies acl2::ubddp) :initially t)
   (pathcond-aig :type calist-stobj)
-  (pathcond-aignet :type aignet-pathcond))
+  (pathcond-aignet :type aignet-pathcond)
+  (pathcond-enabledp :type (member t nil) :initially t))
 
 
 

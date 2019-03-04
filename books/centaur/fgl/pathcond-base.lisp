@@ -91,7 +91,8 @@
                                  (len (cddr pathcond)))))
   (mbe :logic (non-exec (list (acl2::ubdd-fix (pathcond-bdd pathcond))
                               (calist-fix (pathcond-aig pathcond))
-                              (aignet::nbalist-fix (pathcond-aignet pathcond))))
+                              (aignet::nbalist-fix (pathcond-aignet pathcond))
+                              (bool-fix (pathcond-enabledp pathcond))))
        :exec pathcond)
   ///
   (defthm nth-of-pathcond-fix
@@ -100,7 +101,9 @@
          (equal (nth *pathcond-aig* (pathcond-fix pathcond))
                 (calist-fix (nth *pathcond-aig* pathcond)))
          (equal (nth *pathcond-aignet* (pathcond-fix pathcond))
-                (aignet::nbalist-fix (nth *pathcond-aignet* pathcond)))))
+                (aignet::nbalist-fix (nth *pathcond-aignet* pathcond)))
+         (equal (nth *pathcond-enabledp* (pathcond-fix pathcond))
+                (acl2::bool-fix (nth *pathcond-enabledp* pathcond)))))
 
   (local (defthm equal-of-cons
            (equal (equal (cons a b) c)
@@ -114,7 +117,8 @@
     :hints (("goal" :expand ((len pathcond)
                              (len (cdr pathcond))
                              (len (cddr pathcond))
-                             (len (cdddr pathcond))))))
+                             (len (cdddr pathcond))
+                             (len (cddddr pathcond))))))
 
   (defun-nx pathcond-equiv (x y)
     (equal (pathcond-fix x) (pathcond-fix y)))

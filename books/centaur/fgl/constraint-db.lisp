@@ -660,6 +660,8 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-process-new-lit ((lit gl-object-p)
                              (ccat constraint-db-p)
                              state)
+  :returns (mv (insts constraint-instancelist-p)
+               (new-ccat constraint-db-p))
   (b* ((ccat (constraint-db-fix ccat))
        ((unless (gl-object-case lit :g-apply))
         (mv nil ccat))

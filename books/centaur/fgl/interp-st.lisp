@@ -40,9 +40,9 @@
 (include-book "prof")
 
 (fty::defbitstruct interp-flags
-  ((intro-bvars booleanp)
-   (intro-synvars booleanp)
-   (simplify-logic booleanp)))
+  ((intro-bvars booleanp :default t)
+   (intro-synvars booleanp :default t)
+   (simplify-logic booleanp :default t)))
 
 (acl2::defstobj-clone constraint-pathcond pathcond :prefix "CONSTRAINT-")
 
@@ -65,19 +65,42 @@
              :initially ,(make-interp-flags)))))
 
 
+(local (defun member-eq-tree (x tree)
+         (declare (xargs :guard (symbolp x)))
+         (if (atom tree)
+             (eq x tree)
+           (or (member-eq-tree x (car tree))
+               (member-eq-tree x (cdr tree))))))
+
 (local (defun interp-st-fields-to-templates (fields)
          (declare (xargs :mode :program))
          (if (atom fields)
              nil
-           (cons (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
-                                                (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
-                                                (<fieldcase> . ,(if (atom (cdr fields))
-                                                                    t
-                                                                  (intern$ (symbol-name (caar fields)) "KEYWORD")))
-                                                (<type> . ,(third (car fields)))
-                                                (<rest> . ,(cdddr (car fields))))
-                                       :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
-                                       :pkg-sym 'fgl::foo)
+           (cons (b* ((name (caar fields))
+                      (type (cadr (assoc-keyword :type (cdar fields))))
+                      (type-pred (acl2::translate-declaration-to-guard type name nil))
+                      (typep (and type-pred (not (member-eq-tree 'satisfies type))))
+                      (pred (or type-pred
+                                (and (symbolp type)
+                                     `(,(intern-in-package-of-symbol (concatenate 'string (symbol-name type) "P")
+                                                                     type)
+                                       ,name))))
+                      (- (and (not pred)
+                              (er hard? 'interp-st-fields-to-templates
+                                  "couldn't figure out the predicate for the type of ~x0~%" (car fields)))))
+                   (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
+                                                  (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
+                                                  (<fieldcase> . ,(if (atom (cdr fields))
+                                                                      t
+                                                                    (intern$ (symbol-name (caar fields)) "KEYWORD")))
+                                                  (<type> . ,(third (car fields)))
+                                                  (<rest> . ,(cdddr (car fields)))
+                                                  (<pred> . ,pred))
+                                         :features (cond ((eq pred t) '(:no-pred))
+                                                         (typep '(:type-pred))
+                                                         (t nil))
+                                         :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
+                                         :pkg-sym 'fgl::foo))
                  (interp-st-fields-to-templates (cdr fields))))))
 
 (make-event
@@ -113,7 +136,8 @@
  (acl2::template-subst
   '(defsection interp-st-field-basics
      (local (in-theory (enable interp-st-get
-                               interp-st-field-fix)))
+                               interp-st-field-fix
+                               interp-stp)))
      (:@append fields
       (def-updater-independence-thm interp-st-><field>-updater-independence
         (implies (equal (interp-st-get :<field> new)
@@ -137,7 +161,22 @@
 
       (defthm interp-st-><field>-of-update-interp-st-><field>
         (equal (interp-st-><field> (update-interp-st-><field> x interp-st))
-               x)))
+               x))
+
+      (:@ :type-pred
+       (defthm interp-st-implies-<field>-type
+         (implies (interp-stp interp-st)
+                  (let ((<field> (interp-st-><field> interp-st)))
+                    <pred>))
+         :hints(("Goal" :in-theory (enable interp-st-><field>)))
+         :rule-classes :type-prescription))
+
+      (:@ (and (not :type-pred) (not :no-pred))
+       (defthm interp-st-implies-<field>-type
+         (implies (interp-stp interp-st)
+                  (let ((<field> (interp-st-><field> interp-st)))
+                    <pred>))
+         :hints(("Goal" :in-theory (enable interp-st-><field>))))))
 
      (:@proj fields
       (in-theory (disable interp-st-><field>
@@ -157,44 +196,11 @@
   :subsubsts `((fields . ,*interp-st-field-templates*))))
 
 
-
-(defthm interp-st-implies-natp-reclimit
-  (implies (interp-stp interp-st)
-           (natp (interp-st->reclimit interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->reclimit)))
-  :rule-classes :type-prescription)
-
-(defthm interp-st-implies-constraint-db-p-constraint-db
-  (implies (interp-stp interp-st)
-           (constraint-db-p (interp-st->constraint-db interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->constraint-db))))
-
-(defthm interp-st-implies-integerp-backchain-limit
-  (implies (interp-stp interp-st)
-           (integerp (interp-st->backchain-limit interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->backchain-limit)))
-  :rule-classes :type-prescription)
-
-(defthm interp-st-implies-equiv-contextsp-equiv-contexts
-  (implies (interp-stp interp-st)
-           (equiv-contextsp (interp-st->equiv-contexts interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->equiv-contexts))))
-
-(defthm interp-st-implies-glcp-config-p-config
-  (implies (interp-stp interp-st)
-           (glcp-config-p (interp-st->config interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->config))))
-
 (defthm interp-st-implies-natp-flags
   (implies (interp-stp interp-st)
            (natp (interp-st->flags interp-st)))
   :hints(("Goal" :in-theory (enable interp-st->flags)))
   :rule-classes :type-prescription)
-
-(defthm interp-st-implies-interp-flags-p-flags
-  (implies (interp-stp interp-st)
-           (interp-flags-p (interp-st->flags interp-st)))
-  :hints(("Goal" :in-theory (enable interp-st->flags))))
 
 (in-theory (disable interp-stp))
 
@@ -576,6 +582,20 @@
              (ok)
              (lbfr-p x)
              ok))
+
+(define interp-st-bfr-mode (&key (interp-st 'interp-st))
+  :enabled t
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (mode)
+             (logicman->mode logicman)
+             mode))
+
+(define interp-st-bfr-state (&key (interp-st 'interp-st))
+  :enabled t
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (bfrstate)
+             (logicman->bfrstate logicman)
+             bfrstate))
 
 (define interp-st-bfr-not (x &key (interp-st 'interp-st))
   :enabled t

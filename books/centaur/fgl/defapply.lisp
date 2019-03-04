@@ -66,6 +66,14 @@
                       a
                     (nth (1- n) b)))))
 
+(defun my-return-last (x y z)
+  (declare (xargs :guard t))
+  (mbe :logic (return-last x y z)
+       :exec (if (or (not (eq x 'acl2::mbe1-raw))
+                     (equal y z))
+                 (return-last x y z)
+               z)))
+
 
 (program)
 
@@ -79,9 +87,11 @@
 
 (defmacro ecc (call)
   (declare (xargs :guard (consp call)))
-  (if (member-eq (car call) acl2::*ec-call-bad-ops*)
-      call
-    `(ec-call ,call)))
+  (cond ((eq (car call) 'return-last)
+         (cons 'my-return-last (cdr call)))
+        ((member-eq (car call) acl2::*ec-call-bad-ops*)
+         call)
+        (t `(ec-call ,call))))
 
 (defun make-mv-call (f args world)
   (let* ((stobjs-out (getprop f 'stobjs-out nil 'current-acl2-world world)))
@@ -162,7 +172,8 @@
 ;;             (make-apply-rewrites name (cdr fns) world))))
 
 (def-ruleset! defapply-guards '((:executable-counterpart eqlablep)
-                                (:executable-counterpart equal)))
+                                (:executable-counterpart equal)
+                                my-return-last))
 
 (defun mk-arity-table (lst w)
   (if (atom lst)

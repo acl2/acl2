@@ -95,13 +95,14 @@
   ((dont-concrete-exec booleanp)
    (dont-expand-def booleanp)
    (dont-rewrite booleanp)
+   (dont-rewrite-under-if-test booleanp)
    (dont-primitive-exec booleanp)))
 
 (define gl-function-mode-fix! (x)
   :guard-hints(("Goal" :in-theory (enable gl-function-mode-fix)))
   :enabled t
   (mbe :logic (gl-function-mode-fix x)
-       :exec (loghead 4 (ifix x))))
+       :exec (loghead 5 (ifix x))))
 
 (define g-concretelist-p ((x gl-objectlist-p))
   (if (atom x)
@@ -177,7 +178,39 @@
       (mv nil nil nil))))
 
 
-         
+
+
+(define gl-interp-match-synp ((x pseudo-termp))
+  :returns (mv (synp-type symbolp) ;; nil if bad
+               (untrans-form)
+               (trans-term pseudo-termp)
+               (vars))
+  (b* (((unless (pseudo-term-case x :fncall))
+        (mv nil nil nil nil))
+       ((pseudo-term-fncall x))
+       ((unless (and (eq x.fn 'synp)
+                     (eql (len x.args) 3)))
+        (mv nil nil nil nil))
+       ((list vars untrans-form trans-form) x.args)
+       ((unless (and (pseudo-term-case vars :quote)
+                     (pseudo-term-case untrans-form :quote)
+                     (pseudo-term-case trans-form :quote)))
+        (mv nil nil nil nil))
+       (vars (acl2::pseudo-term-quote->val vars))
+       (trans-form (acl2::pseudo-term-quote->val trans-form))
+       (untrans-form (acl2::pseudo-term-quote->val untrans-form))
+       ((unless (and (consp untrans-form)
+                     (symbolp (car untrans-form))
+                     (pseudo-termp trans-form)))
+        (mv nil nil nil nil)))
+    (mv (car untrans-form)
+        untrans-form
+        trans-form
+        vars))
+  ///
+  (defret gl-interp-match-synp-implies-eval
+    (implies synp-type
+             (equal (base-apply-ev x a) t))))
 
 (define gl-interp-syntax-bind ((synp-arg pseudo-termp)
                                (x pseudo-termp)
@@ -199,6 +232,10 @@
        (varname (acl2::pseudo-term-var->name x))
        (bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
+       ;; Consider allowing already-bound variables to be bound in the new
+       ;; bindings, and just omitting them from the final bindings.  Might be
+       ;; convenient in case we want to bind a variable in different places for
+       ;; different cases.  
        ((when (assoc-eq varname bindings))
         (mv (gl-msg "Syntax-bind error: ~x0 was supposed to be bound in a ~
                        syntax-bind form but was already bound" varname)
@@ -215,6 +252,148 @@
 (define gl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
   (and (equal contexts '(iff)) '(iff)))
+
+(define interp-st-checkpoint-p (chp interp-st)
+  :enabled t
+  (stobj-let ((pathcond (interp-st->pathcond interp-st))
+              (logicman (interp-st->logicman interp-st)))
+             (ok)
+             (pathcond-checkpoint-p chp (logicman->mode logicman) pathcond)
+             ok))
+
+(define interp-st-pathcond-assume ((test interp-st-bfr-p)
+                                   interp-st)
+
+  :returns (mv contra
+               (checkpoint (implies (not contra)
+                                    (interp-st-checkpoint-p checkpoint new-interp-st)))
+               (new-interp-st))
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (pathcond (interp-st->pathcond interp-st))
+              (constraint-pathcond (interp-st->constraint interp-st)))
+             (contra checkpoint pathcond constraint-pathcond)
+             ;; this is a bit weak... would be better to check against
+             ;; both constraint and pathcond at once somehow
+             (b* ((bfr-mode  (logicman->mode logicman))
+                  (checkpoint (pathcond-checkpoint bfr-mode pathcond))
+                  ((mv constraint-implies constraint-pathcond)
+                   (logicman-pathcond-implies test constraint-pathcond))
+                  ((when constraint-implies)
+                   (mv (eql constraint-implies 0) checkpoint pathcond constraint-pathcond))
+                  ((mv contra pathcond) (logicman-pathcond-assume test pathcond))
+                  ((when contra)
+                   (b* ((pathcond (pathcond-rewind checkpoint bfr-mode pathcond)))
+                     (mv contra nil pathcond constraint-pathcond))))
+               (mv nil checkpoint pathcond constraint-pathcond))
+             (mv contra checkpoint interp-st)))
+
+
+(define interp-st-pathcond-rewind (checkpoint
+                                   interp-st)
+  :guard (interp-st-checkpoint-p checkpoint interp-st)
+  :returns new-interp-st
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (pathcond (interp-st->pathcond interp-st)))
+             (pathcond)
+             (pathcond-rewind checkpoint (logicman->mode logicman) pathcond)
+             interp-st))
+
+(define gl-apply-match-not ((x gl-object-p))
+  :guard (gl-object-case x :g-apply)
+  :returns (mv ok
+               (negated-arg gl-object-p))
+  (b* (((unless (mbt (gl-object-case x :g-apply))) (mv nil nil))
+       ((g-apply x))
+       (fn x.fn)
+       (args x.args)
+       ((when (eq fn 'not))
+        (cond ((eql (len args) 1)
+               (mv t (gl-object-fix (car args))))
+              (t (mv nil nil))))
+       ((when (eq fn 'equal))
+        (b* (((unless (eql (len args) 2))
+              (mv nil nil))
+             ((list arg1 arg2) args)
+             ((when (gl-object-case arg1
+                      :g-concrete (eq arg1.val nil)
+                      :otherwise nil))
+              (mv t (gl-object-fix arg2)))
+             ((when (gl-object-case arg2
+                      :g-concrete (eq arg2.val nil)
+                      :otherwise nil))
+              (mv t (gl-object-fix arg1))))
+          (mv nil nil))))
+    (mv nil nil))
+  ///
+  (defret gl-apply-match-not-correct
+    (implies ok
+             (iff (base-gl-object-eval negated-arg env logicman)
+                  (not (base-gl-object-eval x env logicman))))
+    :hints(("Goal" :expand ((base-gl-objectlist-eval (g-apply->args x) env)
+                            (base-gl-objectlist-eval (cdr (g-apply->args x)) env)
+                            (base-gl-objectlist-eval (cddr (g-apply->args x)) env))
+            :in-theory (enable base-apply))))
+
+  (defret gl-object-count-of-g-apply-match-not
+    (implies ok
+             (< (gl-object-count negated-arg) (gl-object-count x)))
+    :hints(("Goal" :expand ((gl-object-count x)
+                            (gl-objectlist-count (g-apply->args x))
+                            (gl-objectlist-count (cdr (g-apply->args x)))
+                            (gl-objectlist-count (cddr (g-apply->args x))))))
+    :rule-classes :linear))
+  
+
+
+(define gl-rewrite-relive-hyp-synp ((synp-type symbolp)
+                                    (form pseudo-termp)
+                                    (vars)
+                                    (untrans-form)
+                                    interp-st
+                                    state)
+  :returns (mv err successp
+               new-interp-st
+               new-state)
+  :prepwork ((local (defthm alist-keys-of-gl-object-alist
+                      (implies (gl-object-alist-p x)
+                               (and (pseudo-var-list-p (alist-keys x))
+                                    (symbol-listp (alist-keys x))))
+                      :hints(("Goal" :in-theory (enable alist-keys)))))
+             (local (defthm symbol-alistp-when-gl-object-alist-p
+                      (implies (gl-object-alist-p x)
+                               (symbol-alistp x)))))
+  (b* ((bindings (append (interp-st-minor-bindings interp-st)
+                         (interp-st-bindings interp-st)))
+       ((mv ok val) (acl2::magic-ev form bindings state t t))
+       ((unless ok)
+        (mv (gl-msg "Synp error: ~x0 failed to evaluate -- translated: ~x1" untrans-form form)
+            nil interp-st state))
+       ((when (eq synp-type 'syntaxp))
+        (mv nil val interp-st state))
+       ;; bind-free...
+       ((unless val)
+        ;; No error -- bind-free evaluated to NIL which means just don't do the rewrite.
+        (mv nil nil interp-st state))
+       ((unless (gl-object-alist-p val))
+        (mv (gl-msg "Bind-free error: ~x0 evaluated to a non-GL object alist: ~x1" untrans-form val)
+            nil interp-st state))
+       (newly-bound-vars (alist-keys bindings))
+       ((when (and (symbol-listp vars)
+                   (not (subsetp-eq vars newly-bound-vars))))
+        (mv (gl-msg "Bind-free error: ~x0 evaluated to an alist not ~
+                     containing the required vars ~x1: ~x2" untrans-form val vars)
+            nil interp-st state))
+       ;; Consider allowing already-bound variables to be bound in the new
+       ;; bindings, and just omitting them from the final bindings.  Might be
+       ;; convenient in case we want to bind a variable in different places for
+       ;; different cases.  
+       ((when (intersectp-eq (alist-keys val) newly-bound-vars))
+        (mv (gl-msg "Bind-free error: ~x0 evaluated to a non-GL object alist: ~x1" untrans-form val)
+            nil interp-st state))
+       (interp-st (interp-st-set-bindings (append val (interp-st-bindings interp-st)) interp-st)))
+    (mv nil t interp-st state)))
+
+
 
 (defines gl-interp
   (define gl-interp-test ((x pseudo-termp)
@@ -338,7 +517,7 @@
                    20)
     :returns (mv err
                  new-interp-st
-                 state)
+                 new-state)
     (b* (((when (atom bindings)) (mv nil interp-st state))
          ((binding x1) (car x))
          ((gl-interp-recursive-call err interp-st state)
@@ -524,7 +703,38 @@
 
       (mv err (not err) val interp-st state)))
           
-    
+  (define gl-rewrite-relieve-hyps ((hyps pseudo-term-listp)
+                                   interp-st
+                                   state)
+    :measure (list (nfix (interp-st->reclimit interp-st)) 9000
+                   (pseudo-term-list-binding-count hyps) 0)
+    :returns (mv err successp
+                 new-interp-st
+                 new-state)
+    (b* (((when (atom hyps))
+          (mv nil t interp-st state))
+         ((mv err ok interp-st state)
+          (gl-rewrite-relieve-hyp (car hyps) interp-st state))
+         ((when (or err (not ok)))
+          (mv err ok interp-st state)))
+      (gl-rewrite-relieve-hyps (cdr hyps) interp-st state)))
+
+  (define gl-rewrite-relieve-hyp ((hyp pseudo-termp)
+                                  interp-st
+                                  state)
+    :measure (list (nfix (interp-st->reclimit interp-st)) 9000
+                   (pseudo-term-binding-count hyp) 0)
+    :returns (mv err successp
+                 new-interp-st
+                 new-state)
+    (b* (((mv synp-type untrans-form trans-term vars)
+          (gl-interp-match-synp hyp))
+         ((when synp-type)
+          (gl-rewrite-relieve-hyp-synp synp-type trans-term interp-st state))
+         ((mv err test-bfr interp-st state)
+          (gl-interp-test hyp interp-st state)))
+      (mv err (eq test-bfr t) interp-st state)))
+
   (define gl-interp-time$ ((timing-arg pseudo-termp)
                            (x pseudo-termp)
                            interp-st
@@ -621,7 +831,7 @@
          (testbfr (first (interp-st-bool-scratch interp-st)))
          ((gl-interp-recursive-call err else-unreachable elseval interp-st state)
           ;; pushes val onto scratch if not unreachable
-          (gl-maybe-interp (interp-st-bfr-not testbfr interp-st) else interp-st state))
+          (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
          ((when err)
           (b* ((interp-st (interp-st-pop-scratch 1 interp-st))
                (interp-st (interp-st-pop-bool-scratch 1 interp-st)))
@@ -665,7 +875,7 @@
          (interp-st (interp-st-push-bool-scratch testbfr interp-st))
          ((gl-interp-recursive-call err else-unreachable elseval interp-st state)
           ;; pushes val onto scratch if not unreachable
-          (gl-maybe-interp (interp-st-bfr-not testbfr interp-st) else interp-st state))
+          (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
          (testval (first (interp-st-scratch interp-st)))
          (testbfr (first (interp-st-bool-scratch interp-st)))
          (interp-st (interp-st-pop-scratch 1 interp-st))
@@ -691,24 +901,7 @@
                  new-interp-st
                  new-state)
     (b* (((mv contra checkpoint interp-st)
-          (stobj-let ((logicman (interp-st->logicman interp-st))
-                      (pathcond (interp-st->pathcond interp-st))
-                      (constraint-pathcond (interp-st->constraint interp-st)))
-                     (contra checkpoint pathcond constraint-pathcond)
-                     ;; this is a bit weak... would be better to check against
-                     ;; both constraint and pathcond at once somehow
-                     (b* ((bfr-mode  (logicman->mode logicman))
-                          (checkpoint (pathcond-checkpoint bfr-mode pathcond))
-                          ((mv constraint-implies constraint-pathcond)
-                           (logicman-pathcond-implies test constraint-pathcond))
-                          ((when constraint-implies)
-                           (mv (eql constraint-implies 0) checkpoint pathcond constraint-pathcond))
-                          ((mv contra pathcond) (logicman-pathcond-assume test pathcond))
-                          ((when contra)
-                           (b* ((pathcond (pathcond-rewind checkpoint bfr-mode pathcond)))
-                             (mv contra nil pathcond constraint-pathcond))))
-                       (mv nil checkpoint pathcond constraint-pathcond))
-                     (mv contra checkpoint interp-st)))
+          (interp-st-pathcond-assume test interp-st))
          ((when contra)
           (mv nil t nil interp-st state))
          ((mv err ans interp-st state)
@@ -722,8 +915,245 @@
           (mv nil t nil interp-st state)))
       (mv err nil ans interp-st state)))
 
-    gl-interp-merge-branches
-    gl-interp-simplify-if-test)
+  (define gl-interp-maybe-simplify-if-test ((test interp-st-bfr-p)
+                                            (xobj gl-object-p)
+                                            interp-st
+                                            state)
+    :measure (list (nfix (interp-st->reclimit interp-st))
+                   2000
+                   (gl-object-count xobj)
+                   60)
+    :returns (mv err
+                 unreachable
+                 xbfr
+                 new-interp-st
+                 new-state)
+    (b* (((mv contra checkpoint interp-st)
+          (interp-st-pathcond-assume test interp-st))
+         ((when contra)
+          (mv nil t nil interp-st state))
+         ((mv err ans interp-st state)
+          (gl-interp-simplify-if-test x interp-st state))
+         (interp-st (stobj-let ((logicman (interp-st->logicman interp-st))
+                                (pathcond (interp-st->pathcond interp-st)))
+                               (pathcond)
+                               (pathcond-rewind checkpoint (logicman->bfr-mode logicman) pathcond)
+                               interp-st))
+         ((when (eq err :unreachable))
+          (mv nil t nil interp-st state)))
+      (mv err nil ans interp-st state)))
+
+  (define gl-interp-simplify-if-test ((xobj gl-object-p)
+                                      interp-st
+                                      state)
+    :returns (mv err
+                 xbfr
+                 new-interp-st
+                 new-state)
+    :measure (list (nfix (interp-st->reclimit interp-st))
+                   2000
+                   (gl-object-count xobj)
+                   40)
+    (gl-object-case xobj
+      :g-concrete (mv nil (and xobj.val t) interp-st state)
+      :g-boolean (mv nil xobj.bool interp-st state)
+      :g-integer (mv nil t interp-st state)
+      :g-cons (mv nil t interp-st state)
+      :g-var (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+                         (logicman (interp-st->logicman interp-st)))
+                        (bfr bvar-db)
+                        (b* (((mv bvar bvar-db) (add-term-bvar-unique xobj bvar-db))
+                             (bvar-db (maybe-add-equiv-term xobj bvar bvar-db state))
+                             (bfr (bfr-var bvar)))
+                          (mv bfr bvar-db))
+                        (mv nil bfr interp-st state))
+      :g-ite (b* (((mv err test-bfr interp-st state)
+                   (gl-interp-simplify-if-test xobj.test interp-st state))
+                  (interp-st (interp-st-push-bool-scratch test-bfr interp-st))
+                  ((gl-interp-recursive-call err then-unreachable then-bfr interp-st state)
+                   (gl-interp-maybe-simplify-if-test test-bfr xobj.then interp-st state))
+                  ((when err)
+                   (b* ((interp-st (interp-st-pop-bool-scratch 1 interp-st)))
+                     (mv err nil interp-st state)))
+                  (test-bfr (car (interp-st-bool-scratch interp-st)))
+                  (interp-st (interp-st-push-bool-scratch then-bfr interp-st))
+                  ((mv err else-unreachable else-bfr interp-st state)
+                   (gl-interp-maybe-simplify-if-test test-bfr xobj.else interp-st state))
+                  ((when err)
+                   (b* ((interp-st (interp-st-pop-bool-scratch 2 interp-st)))
+                     (mv err nil interp-st state)))
+                  (then-bfr (car (interp-st-bool-scratch interp-st)))
+                  (test-bfr (cadr (interp-st-bool-scratch interp-st)))
+                  ((when then-unreachable)
+                   (if else-unreachable
+                       (mv :unreachable nil interp-st state)
+                     (mv nil else-bfr interp-st state)))
+                  ((when else-unreachable)
+                   (mv nil then-bfr interp-st state))
+                  ((mv ite interp-st) (stobj-let ((logicman (interp-st->logicman interp-st)))
+                                                 (ite logicman)
+                                                 (bfr-ite test-bfr then-bfr else-bfr)
+                                                 (mv ite interp-st))))
+               (mv nil ite interp-st state))
+      :g-apply (gl-interp-simplify-if-test-fncall xobj.fn xobj.args interp-st state)))
+
+  (define gl-interp-simplify-if-test-fncall ((x gl-object-p)
+                                             interp-st
+                                             state)
+    :guard (gl-object-case x :g-apply)
+    :measure (list (nfix (interp-st->reclimit interp-st))
+                   2000
+                   (gl-object-count x)
+                   20)
+    :returns (mv err
+                 xbfr
+                 new-interp-st
+                 new-state)
+    (b* (((mv not-matched neg-arg)
+          (gl-apply-match-not x))
+         ((when not-matched)
+          (b* (((mv err bfr interp-st state)
+                (gl-interp-simplify-if-test neg-arg interp-st state))
+               ((when err)
+                (mv err nil interp-st state)))
+            (mv nil (interp-st-bfr-not bfr) interp-st state)))
+         ((g-apply x))
+         ((gl-function-mode fn-mode)
+          (gl-function-mode-fix!
+           (cdr (hons-assoc-equal fn (table-alist 'gl-fn-modes (w state))))))
+
+         ;; BOZO support gl-interp-force-check.
+
+         ;; We rewrite this fncall again because it presumably might not have
+         ;; been done in IFF context before.  E.g.
+         ;; (let ((a (foo x)))
+         ;;   (if a y z))
+         ;; Note we wouldn't do this fully "right" even if we had perfect
+         ;; knowledge of congruences because our test term might be bound to a
+         ;; variable that is used in both Boolean and non-Boolean contexts.
+         ((when (zp reclimit))
+          (mv (gl-msg "The recursion limit ran out.") nil interp-st state))
+         ((interp-st-bind
+           (reclimit (1- reclimit) reclimit)
+           (equiv-contexts '(iff)))
+          ((gl-interp-recursive-call err successp ans interp-st state)
+           (gl-rewrite-fncall x.fn x.args fn-mode.dont-rewrite-under-if-test interp-st state)))
+         ((when err)
+          (mv err nil interp-st state))
+         ((when successp)
+          (b* (((interp-st-bind
+                 (reclimit (1- reclimit) reclimit)))
+               ((mv err ans interp-st state)
+                (gl-interp-simplify-if-test ans interp-st state)))
+            (mv err ans interp-st state)))
+
+         (look (get-term->bvar x bvar-db))
+         ((when look)
+          (b* ((bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
+                               (bfr)
+                               (bfr-var look)
+                               bfr)))
+            (mv nil bfr interp-st state)))
+
+         ((unless (interp-flags->intro-bvars (interp-st->flags interp-st)))
+          ;; Note: we only return intro-bvars-fail when this flag is set to
+          ;; false, which it is not at the top level.  So when we set the flag
+          ;; to true (as we do in relieve-hyp and add-bvar-constraint-substs,
+          ;; e.g.) we check for this error specifically and catch it.
+          ;; Otherwise we expect callers not to set intro-bvars to nil and then
+          ;; they won't have to deal with this error specially.
+          (mv :intro-bvars-fail nil interp-st state))
+
+         ((mv bfr interp-st)
+          (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+                      (logicman (interp-st->logicman interp-st))
+                      (constraint-db (interp-st->constraint-db interp-st)))
+                     (var bvar-db)
+                     (b* ((bvar (next-bvar bvar-db))
+                          (bvar-db (add-term-bvar x bvar-db))
+                          (bvar-db (maybe-add-equiv-term x bvar bvar-db state))
+                          (bfr (bfr-var bvar)))
+                       (mv bfr bvar-db))
+                     (mv bfr interp-st)))
+
+         ((mv err interp-st state)
+          (gl-interp-add-constraints constraint-substs interp-st state))
+
+         ((when err)
+          (mv err nil interp-st state)))
+      (mv nil bfr interp-st state)))
+
+
+  (define gl-interp-add-constraints ((x gl-object-p)
+                                     interp-st
+                                     state)
+    :guard (gl-object-case x :g-apply)
+    :measure (list (nfix (interp-st->reclimit interp-st))
+                   2000
+                   (gl-object-count x)
+                   15)
+    :returns (mv err
+                 new-interp-st
+                 new-state)
+    (b* ((constraint-db (interp-st->constraint-db interp-st))
+         ((mv constraint-substs constraint-db)
+          (gbc-process-new-lit x constraint-db state))
+         (interp-st (update-interp-st->constraint-db constraint-db))
+         ((unless constraint-substs)
+          (mv nil interp-st state))
+         ;; Disable the pathcond so that constraint thms are simulated in an empty (universal) context.
+         ((mv pathcond-enabledp interp-st) (stobj-let ((pathcond (interp-st->pathcond interp-st)))
+                                                      (enabledp pathcond)
+                                                      (b* ((enabledp (pathcond-enabledp pathcond))
+                                                           (pathcond (update-pathcond-enabledp nil pathcond)))
+                                                        (mv enabledp pathcond))
+                                                      (mv enabledp interp-st)))
+         ((mv err interp-st state)
+          (gl-interp-add-constraints-for-substs constraint-substs interp-st state))
+         (interp-st (stobj-let ((pathcond (interp-st->pathcond interp-st)))
+                               (pathcond)
+                               (update-pathcond-enabledp pathcond-enabledp pathcond)
+                               interp-st)))
+      (mv err interp-st state)))
+                                                        
+
+
+  (define gl-interp-add-constraints-for-substs ((substs constraint-instancelist-p)
+                                                interp-st
+                                                state)
+    :guard (gl-object-case x :g-apply)
+    :measure (list (nfix (interp-st->reclimit interp-st))
+                   2000
+                   (gl-object-count x)
+                   10)
+    :returns (mv err
+                 new-interp-st
+                 new-state)
+    (b* (((when (atom substs)) (mv nil interp-st state))
+         ((constraint-instance sub1) (car substs))
+         (thm-body (meta-extract-formula sub1.thmname state))
+         ((unless (pseudo-termp thm-body))
+          (gl-interp-add-constraints-for-substs (cdr substs) interp-st state))
+         (interp-st (interp-st-push-frame sub1.subst interp-st))
+         ((mv err bfr interp-st state)
+          (gl-interp-test thm-body interp-st state))
+         (interp-st (interp-st-pop-frame interp-st))
+         ((mv contra interp-st) (stobj-let ((constraint-pathcond (interp-st->constraint interp-st))
+                                            (logicman (interp-st->logicman interp-st)))
+                                           (contra pathcond)
+                                           (logicman-pathcond-assume bfr constraint-pathcond)
+                                           (mv contra interp-st)))
+         ((when contra)
+          (mv (gl-msg "A contradiction has been noted in the constraints.  ~
+                       This is likely due to a bug in GL or an unsound fact ~
+                       stored in ACL2 (e.g., via TTAG,skip-proofs, defaxiom, ~
+                       or soundness bug).")
+              interp-st state)))
+      (gl-interp-add-constraints-for-substs (cdr substs) interp-st state)))
+         
+
+  gl-rewrite-relieve-hyps
+    gl-interp-merge-branches)
              
         
          
