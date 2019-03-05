@@ -30,7 +30,7 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-macros/top")
-(include-book "fixbytes/instances")
+(include-book "fixbytes/defbytelist-instances")
 (include-book "include-book-paths")
 (include-book "integer-range-fixing")
 (include-book "integer-range-lists")

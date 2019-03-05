@@ -1294,7 +1294,7 @@
                          though it was supposedly translated successfully ~
                          earlier.  Please contat the ACL2 implementors."
                         x)
-          tx)))
+          (oneify tx fns w program-p))))
    ((not (symbolp (car x)))
     (oneify
      (list* 'let (listlis (cadr (car x))
@@ -3256,6 +3256,9 @@
 
 (defun-one-output maybe-push-undo-stack (fn name &optional extra)
 
+; This function is evaluated only for side-effect; its return value is
+; irrelevant.
+
 ; See add-trip below for context.  Fn is one of the raw Lisp function names
 ; secretly spawned by CLTL-COMMAND forms, e.g., DEFUN, DEFMACRO, DEFCONST,
 ; DEFPKG, DEFATTACH, or (for the HONS version) MEMOIZE or UNMEMOIZE.  Name is
@@ -3377,15 +3380,29 @@
               (push `(defpkg ,name ',(package-entry-imports temp))
                     (get (packn (cons name '("-PACKAGE"))) '*undo-stack*))))))
         (attachment
-         (let ((at-sym (attachment-symbol name)))
-           (push `(progn #+hons (push ',name *defattach-fns*)
-                         ,(set-attachment-symbol-form
-                           name
+         (cond
+          #+hons ; else this branch will be impossible
+          ((eq name *special-cltl-cmd-attachment-mark-name*)
 
-; Note that at-sym is bound when name is introduced; see throw-or-attach-call.
+; This case arises from a call of table-cltl-cmd for (table badge-table ...);
+; so in this case we should not call set-attachment-symbol-form.  Just below,
+; we optimize ever so slightly, to avoid making *defattach-fns* really long in
+; the case that there are many such badges being added but not many defattach
+; events.
 
-                           (symbol-value at-sym)))
-                 (get name '*undo-stack*))))
+           (push `(unless (eq ',name (car *defattach-fns*))
+                    (push ',name *defattach-fns*))
+                 (get name '*undo-stack*)))
+          (t (push `(progn
+                      #+hons (push ',name *defattach-fns*)
+                      ,(set-attachment-symbol-form
+                        name
+
+; Note that (attachment-symbol name) is bound when name is introduced; see
+; throw-or-attach-call.
+
+                        (symbol-value (attachment-symbol name))))
+                   (get name '*undo-stack*)))))
         #+hons
         (memoize
          (push `(unmemoize-fn ',name)
@@ -5827,12 +5844,16 @@
           (attachment ; (cddr trip) is produced by attachment-cltl-cmd
            (dolist (x (cdr cltl-cmd))
              (let ((name (if (symbolp x) x (car x))))
-               (install-for-add-trip
-                (cond ((symbolp x)
-                       (set-attachment-symbol-form x nil))
-                      (t (set-attachment-symbol-form name (cdr x))))
-                nil
-                nil))))
+               (unless (eq name *special-cltl-cmd-attachment-mark-name*)
+
+; See maybe-push-undo-stack for relevant discussion of the condition above.
+             
+                 (install-for-add-trip
+                  (cond ((symbolp x)
+                         (set-attachment-symbol-form x nil))
+                        (t (set-attachment-symbol-form name (cdr x))))
+                  nil
+                  nil)))))
 
 ; There is nothing to do for memoize or unmemoize.
 
@@ -6451,14 +6472,18 @@
         (attachment ; (cddr trip) is produced by attachment-cltl-cmd
          (dolist (x (cdr (cddr trip)))
            (let ((name (if (symbolp x) x (car x))))
-             #+hons (push name *defattach-fns*)
              (maybe-push-undo-stack 'attachment name)
-             (install-for-add-trip
-              (cond ((symbolp x)
-                     (set-attachment-symbol-form x nil))
-                    (t (set-attachment-symbol-form name (cdr x))))
-              nil
-              t))))
+             (unless (eq name *special-cltl-cmd-attachment-mark-name*)
+
+; See maybe-push-undo-stack for relevant discussion of the condition above.
+
+               #+hons (push name *defattach-fns*)
+               (install-for-add-trip
+                (cond ((symbolp x)
+                       (set-attachment-symbol-form x nil))
+                      (t (set-attachment-symbol-form name (cdr x))))
+                nil
+                t)))))
         #+hons
         (memoize
          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))

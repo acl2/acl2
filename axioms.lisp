@@ -1633,13 +1633,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Note: In apply-raw.lisp we use a relaxed version of the expansion of
 ; defun-overrides that ignores the requirement that STATE be a formal!  We use
-; that relaxed code to define concrete-badge-userfn and concrete-apply$-userfn.
-; The basic argument is that it is ok to secretly look at the current world as
-; long as we cause an error if the current world does not specify a value for
-; the notion being ``defined'' and that once the world does specify a value
-; that value never changes.  If more functions like these two arise in the
-; future we may wish to relax defun-overrides or at least define a relaxed
-; version of it.
+; that relaxed code to define doppelganger-badge-userfn and
+; doppelganger-apply$-userfn.  The basic argument is that it is ok to secretly
+; look at the current world as long as we cause an error if the current world
+; does not specify a value for the notion being ``defined'' and that once the
+; world does specify a value that value never changes.  If more functions like
+; these two arise in the future we may wish to relax defun-overrides or at
+; least define a relaxed version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -2785,7 +2785,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; See the comment after ILLEGAL (below) for a discussion of an earlier,
 ; inadequate handling of these issues.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   #-acl2-loop-only
   (when (not *hard-error-returns-nilp*)
 
@@ -3953,7 +3953,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 129))
+  (let ((x 132))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -4191,9 +4191,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
   #-non-standard-analysis
-  '(31 . BOOLEANP)
+  '(32 . BOOLEANP)
   #+non-standard-analysis
-  '(34 . BOOLEANP)
+  '(35 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -5294,7 +5294,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; bound.
 
     `(let ((,at-fn-var ,at-fn)) ; to look up special var value only once
-       (cond ((and ,at-fn-var (aokp))
+       (declare (special ,at-fn-var *warrant-reqs*))
+       (cond ((and ,at-fn-var
+                   ,(if (member fn '(apply$-userfn badge-userfn)
+                                :test #'eq)
+                        '(or (aokp)
+                             *warrant-reqs*)
+                      '(aokp)))
               #+hons
               (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
@@ -13415,6 +13421,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     fchecksum-obj2
     check-sum-obj
     verify-guards-fn1 ; to update *cl-cache*
+    ev-fncall+-w
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -13547,8 +13554,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn ; redefined from partial-encapsulate
-    concrete-apply$-userfn ; redefined from partial-encapsulate
+    doppelganger-badge-userfn ; redefined from partial-encapsulate
+    doppelganger-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
@@ -21038,6 +21045,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
+; See the Essay on Memoization with Attachments for why
+; doppelganger-apply$-userfn and doppelganger-badge-userfn are untouchable.
+
+    doppelganger-apply$-userfn doppelganger-badge-userfn
+
     when-pass-2
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
@@ -25033,7 +25045,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         '(CDR (CAR (CDR (CDR (CDR (CDR CURRENT-CLAUSE))))))))
 
 (defun record-error (name rec)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (er hard? 'record-error
       "An attempt was made to treat ~x0 as a record of type ~x1."
       rec name))
@@ -25622,6 +25634,16 @@ Lisp definition."
 ; The following avoids an ACL2(p) loop in thanks-for-the-hint; see
 ; string-append.
  (verify-termination-boot-strap string-append)
+
+; The following must be in :logic mode for badged-fns-of-world.
+ (verify-termination-boot-strap plist-worldp)
+ (verify-termination-boot-strap fgetprop)
+ (verify-termination-boot-strap sgetprop)
+ (verify-termination-boot-strap function-symbolp)
+ (verify-termination-boot-strap strip-cars)
+ (verify-termination-boot-strap assoc-eq-exec$guard-check)
+ (verify-termination-boot-strap assoc-eq-exec)
+ (verify-termination-boot-strap table-alist)
 
  )
 
@@ -28226,9 +28248,9 @@ Lisp definition."
   ()
 
 ; The following function symbols are used (ancestrally) in the constraints on
-; concrete-badge-userfn and concrete-apply$-userfn.  They must be in logic
-; mode.  We use encapsulate so that verify-termination-boot-strap will do its
-; intended job in the first pass of the build.
+; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They must be in
+; logic mode.  We use encapsulate so that verify-termination-boot-strap will do
+; its intended job in the first pass of the build.
 
   (logic)
   (verify-termination-boot-strap booleanp)

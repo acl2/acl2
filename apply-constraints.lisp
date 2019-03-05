@@ -145,15 +145,15 @@
 ; require moving up the definition below of *apply$-boot-fns-badge-alist* so we
 ; can use it in the new constraint.
 
-; More problematically, we must make sure that concrete-badge-userfn satisfies
-; the strengthened constraint.  This is difficult because concrete-badge-userfn
-; is currently (partially) constrained in other-events.lisp, which is processed
-; before apply$-primp and *apply$-boot-fns-badge-alist* are defined.  The only
-; way we can think of to fix this would be to move the introduction of
-; concrete-badge-userfn into this file and deal with any bootstrapping issues
-; that come up!  If this additional constraint is added, we would have to
-; change the raw Lisp definition of concrete-badge-userfn, q.v. in
-; apply-raw.lisp.
+; More problematically, we must make sure that doppelganger-badge-userfn
+; satisfies the strengthened constraint.  This is difficult because
+; doppelganger-badge-userfn is currently (partially) constrained in
+; other-events.lisp, which is processed before apply$-primp and
+; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
+; fix this would be to move the introduction of doppelganger-badge-userfn into
+; this file and deal with any bootstrapping issues that come up!  If this
+; additional constraint is added, we would have to change the raw Lisp
+; definition of doppelganger-badge-userfn, q.v. in apply-raw.lisp.
 
 ; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
 ; constraint) in the Foundational work of books/projects/apply-model/ex1/ and
@@ -249,26 +249,14 @@
 ; (``warrant\b'' or ``warranted,'' excluding ``warranty'' which occurs twice at
 ; the top of nearly every file).
 
-; Some functions have badges but not warrants!  All ~800 primitives have badges
-; known to the logical definition of BADGE, but these primitives do not have
+; Some functions have badges but not warrants!  Approximately 800 primitives
+; that have badges known to the logical definition of BADGE do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and
 ; do not have warrants: apply$ knows how to apply$ itself.
 
 ; Every function listed in the :badge-userfn-structure of the badge-table has a
-; badge.
-
-; But not every function listed in the :badge-userfn-structure has a warrant!
-
-; For example, (defun$ foo (x) (mv x x)) would produce a badge but not a
-; warrant; foo obeys all the rules required of warranted functions except for
-; one rule: foo returns multiple values and so cannot be apply$'d (because
-; apply$ returns a single value). (defun$ bar (x) (mv-let (a b) (foo x) (+ a
-; b))) would produce a badge and a warrant even though it uses the unwarranted
-; but badged foo.  Both foo and bar would have entries in the
-; :badge-userfn-structure of the badge-table mapping them to their badges.
-
-; If fn has a badge, bdg, in :badge-userfn-structure then fn has a warrant.
-; The warrant, if it exists, is named APPLY$-WARRANT-fn and takes 0 arguments.
+; badge, and these are exactly the functions that have a warrant.  The warrant
+; for fn, if it exists, is named APPLY$-WARRANT-fn and takes 0 arguments.
 
 )

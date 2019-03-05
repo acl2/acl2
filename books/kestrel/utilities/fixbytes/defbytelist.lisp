@@ -1,6 +1,6 @@
-; Fixtypes for Unsigned and Signed Byte Lists -- Macro
+; Fixtypes of True Lists of Unsigned and Signed Bytes -- Generator
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,9 +18,13 @@
 
 (defxdoc defbytelist
 
-  :parents (acl2::kestrel-utilities fty defbyte)
+  :parents (acl2::kestrel-utilities
+            fty
+            defbyte
+            acl2::unsigned-byte-listp
+            acl2::signed-byte-p)
 
-  :short "Introduce <see topic='@(url fty)'>fixtypes</see> for
+  :short "Introduce <see topic='@(url fty)'>fixtypes</see> of
           true lists of unsigned or signed bytes of a specified size."
 
   :long
@@ -35,7 +39,8 @@
      are binary predicates.")
 
    (xdoc::p
-    "This macro introduces fixtypes for true lists of values
+    "This macro introduces unary recognizers, and associated fixtypes,
+     of true lists of values
      of fixtypes previously introduced via @(tsee defbyte).
      This macro uses @(tsee fty::deflist) to introduce the list fixtype,
      but it also generates various theorems that relate
@@ -43,19 +48,30 @@
      to the aforementioned binary predicates for lists of bytes,
      and to other built-in predicates.")
 
+   (xdoc::p
+    "Besides their use in fixtypes,
+     the unary recognizers introduced by this macro support
+     <see topic='@(url acl2::tau-system)'>tau system</see> reasoning.")
+
    (xdoc::h3 "General Form")
 
    (xdoc::code
-    "(defbytelist byte"
-    "             :type ..."
+    "(defbytelist type"
+    "             byte"
     "             :pred ..."
     "             :fix ..."
     "             :equiv ..."
     "             :parents ..."
+    "             :short ..."
     "             :long ..."
     "  )")
 
    (xdoc::h3 "Inputs")
+
+   (xdoc::desc
+    "@('type')"
+    (xdoc::p
+     "A symbol that specifies the name of the fixtype."))
 
    (xdoc::desc
     "@('byte')"
@@ -64,100 +80,71 @@
       This is the type of the elements of the generated list type."))
 
    (xdoc::desc
-    "@(':type')"
-    (xdoc::p
-     "A symbol that specifies the name of the fixtype.
-      If this is @('nil') (the default),
-      the name of the type is @('<byte>-list'),
-      where @('<byte>') is the name of the element type,
-      as specified via the @('byte') input."))
-
-   (xdoc::desc
     "@(':pred')"
     (xdoc::p
-     "A symbol that specifies the name of the unary recognizer.
+     "A symbol that specifies the name of the fixtype's recognizer.
       If this is @('nil') (the default),
-      the name of the recognizer is @('<type>-p'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the recognizer is @('type') followed by @('-p')."))
 
    (xdoc::desc
     "@(':fix')"
     (xdoc::p
-     "A symbol that specifies the name of the fixer.
+     "A symbol that specifies the name of the fixtype's fixer.
       If this is @('nil') (the default),
-      the name of the fixer is @('<type>-fix'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the fixer is @('type') followed by @('-fix')."))
 
    (xdoc::desc
     "@(':equiv')"
     (xdoc::p
-     "A symbol that specifies the name of the equivalence.
+     "A symbol that specifies the name of the fixtype's equivalence.
       If this is @('nil') (the default),
-      the name of the equivalence is @('<type>-equiv'),
-      where @('<type>') is the name of the fixtype,
-      as specified via the @(':type') input."))
+      the name of the equivalence is @('type') followed by @('-equiv')."))
 
    (xdoc::desc
-    "@(':parents')"
+    "@(':parents')
+     <br/>
+     @(':short')
+     <br/>
+     @(':long')"
     (xdoc::p
-     "A list of symbols to use as XDOC parents of the generated fixtype,
-      in addition to the XDOC topic for the element type.
-      The default is @('nil'), i.e. just the XDOC topic for the element type.
-      All the other generated XDOC topics are (directly or indirectly)
-      under the XDOC topic for this generated fixtype."))
+     "These, if present, are added to
+      the XDOC topic generated for the fixtype."))
+
+   (xdoc::h3 "Generated Events")
 
    (xdoc::desc
-    "@(':long')"
+    "@('type')"
     (xdoc::p
-     "A string that provides additional documentation for the fixtype,
-      or @('nil') (the default).
-      If this is a string,
-      it is used as the XDOC @(':long') string
-      of the generated fixtype.
-      If this is @('nil') instead,
-      no @(':long') is generated for the fixtype."))
+     "A call of @(tsee fty::deflist) to generate the fixtype."))
 
-   (xdoc::p
-    "This macro currently does not perform a thorough validation of its inputs.
-     In particular, it does not check whether
-     the names of the generated events already exists.
-     Errors may result in failures of the generated events.
-     These errors should be easy to diagnose,
-     also since this macro has a very simple and readable implementation.")
+   (xdoc::desc
+    "@('pred-forward-binpred')"
+    (xdoc::p
+     "A forward chaining rule from @('pred')
+      to the corresponding binary predicate
+      @(tsee acl2::unsigned-byte-listp) or @(tsee acl2::signed-byte-listp)."))
 
-   (xdoc::h3 "Generated Functions and Theorems")
-
-   (xdoc::p
-    "The following are generated, inclusive of XDOC documentation:")
-
-   (xdoc::ul
-
-    (xdoc::li
-     "A call of @(tsee fty::deflist) to generate the fixtype.")
-
-    (xdoc::li
-     "Forward chaining rules
-      from the unary recognizers to the binary predicates
-      @(tsee acl2::unsigned-byte-listp) and @(tsee acl2::signed-byte-listp).
-      These rules can combine with
-      forward chaining rules from the binary predicates.")
-
-    (xdoc::li
-     "Rules that rewrite between the binary predicate and the unary recognizer.
+   (xdoc::desc
+    "@('binpred-rewrite-pred')
+     <br/>
+     @('pred-rewrite-binpred')"
+    (xdoc::p
+     "Rule that rewrite between @('pred') and
+      the corresponding binary predicate
+      @(tsee acl2::unsigned-byte-listp) or @(tsee acl2::signed-byte-listp).
       These rules are disabled by default, but may be useful in some proofs.
       Since these are converse rules,
-      a theory invariant is also generated preventing the enabling of both.")
+      a theory invariant is also generated preventing the enabling of both."))
 
+   (xdoc::desc
+    "@('true-listp-when-pred')"
     (xdoc::li
-     "A rule to prove @(tsee true-listp) from the unary recognizer.
+     "A rule to prove @(tsee true-listp) from @('pred').
       Since @(tsee true-listp) is relatively common,
       this rule is disabled by default for efficiency."))
 
    (xdoc::p
-    "See the implementation, which uses a readable backquote notation,
-     for details.")))
+    "The above items are generated with XDOC documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,18 +154,23 @@
   :order-subtopics t
   :default-parent t)
 
-(define defbytelist-fn (byte
-                        type
+(define defbytelist-fn (type
+                        byte
                         pred
                         fix
                         equiv
                         parents
+                        short
                         long
                         (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program
-  :short "Event generated by the @(tsee defbytelist) macro."
-  (b* (;; validate the BYTE input:
+  :short "Events generated by @(tsee defbytelist)."
+  (b* (;; validate the TYPE input:
+       ((unless (symbolp type))
+        (raise "The TYPE input must be a symbol, ~
+                but it is ~x0 instead." type))
+       ;; validate the BYTE input:
        ((unless (symbolp byte))
         (raise "The BYTE input must be a symbol,
                 but it is ~x0 instead." byte))
@@ -193,103 +185,105 @@
        (size (defbyte-info->size info))
        (signed (defbyte-info->signed info))
        (bytep (defbyte-info->pred info))
-       (description (defbyte-info->description info))
-       ;; validate the other inputs:
-       ((unless (symbolp type))
-        (raise "The :TYPE input must be a symbol, ~
-                but it is ~x0 instead." type))
+       ;; validate the :PRED input:
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~
                 but it is ~x0 instead." pred))
+       ;; validate the :FIX input:
        ((unless (symbolp fix))
         (raise "The :FIX input must be a symbol, ~
                 but it is ~x0 instead." fix))
+       ;; validate the :EQUIV input:
        ((unless (symbolp equiv))
         (raise "The :EQUIV input must be a symbol, ~
                 but it is ~x0 instead." equiv))
-       ((unless (symbol-listp parents))
-        (raise "The :PARENTS input must be a true list of symbols, ~
-                but it is ~x0 instead." parents))
-       ((unless (acl2::maybe-stringp long))
-        (raise "The :LONG input must be a string or NIL, ~
-                but it is ~x0 instead." long))
        ;; name of the binary predicate:
        (binpred (if signed 'acl2::signed-byte-listp 'acl2::unsigned-byte-listp))
-       ;; name of the generated fixtype:
-       (type (or type (acl2::add-suffix-to-fn byte "-LIST")))
+       ;; package for the generated theorem and variable names:
+       (pkg (symbol-package-name type))
+       (pkg (if (equal pkg *main-lisp-package-name*) "ACL2" pkg))
+       (pkg-witness (pkg-witness pkg))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
        (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
        (equiv (or equiv (acl2::add-suffix-to-fn type "-EQUIV")))
        ;; names of the generated theorems:
-       (pred-forward-binpred (acl2::packn (list pred '-forward- binpred)))
-       (pred-rewrite-binpred (acl2::packn (list pred '-rewrite- binpred)))
+       (pred-forward-binpred (acl2::packn-pos (list pred '-forward- binpred)
+                                              pkg-witness))
+       (pred-rewrite-binpred (acl2::packn-pos (list pred '-rewrite- binpred)
+                                              pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
-                                              (pkg-witness
-                                               (symbol-package-name pred))))
+                                              pkg-witness))
        (true-listp-when-pred-rewrite (acl2::packn-pos (list 'true-listp-when-
                                                             pred
                                                             '-rewrite)
-                                                      (pkg-witness
-                                                       (symbol-package-name
-                                                        pred))))
-       ;; XDOC topic name for the generated theorems:
-       (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS")))
-    ;; generated events:
+                                                      pkg-witness))
+       ;; variable to use in the generated functions and theorems:
+       (x (intern-in-package-of-symbol "X" pkg-witness))
+       ;; XDOC topic for the generated theorems:
+       (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS"))
+       ;; generated events:
+       (deflist-event
+         `(fty::deflist ,type
+            :elt-type ,byte
+            ,@(and parents (list :parents parents))
+            ,@(and short (list :short short))
+            ,@(and long (list :long long))
+            :true-listp t
+            :pred ,pred
+            :fix ,fix
+            :equiv ,equiv))
+       (theorems-event
+        `(defsection ,type-theorems
+           :extension ,type
+           (defrule ,pred-forward-binpred
+             (implies (,pred ,x)
+                      (,binpred ,size ,x))
+             :rule-classes :forward-chaining
+             :in-theory '(,pred ,bytep ,binpred))
+           (defruled ,pred-rewrite-binpred
+             (equal (,pred ,x)
+                    (,binpred ,size ,x))
+             :in-theory '(,pred ,bytep ,binpred))
+           (defruled ,binpred-rewrite-pred
+             (equal (,binpred ,size ,x)
+                    (,pred ,x))
+             :in-theory '(,pred-rewrite-binpred))
+           (theory-invariant
+            (incompatible (:rewrite ,pred-rewrite-binpred)
+                          (:rewrite ,binpred-rewrite-pred)))
+           (defruled ,true-listp-when-pred-rewrite
+             (implies (,pred ,x)
+                      (true-listp ,x))
+             :in-theory '(,pred true-listp)))))
+    ;; top-level event:
     `(encapsulate
        ()
-       (fty::deflist ,type
-         :elt-type ,byte
-         :parents (,@parents ,byte)
-         :short ,(concatenate 'string
-                              "<see topic='@(url acl2::fty)'>Fixtype</see> of "
-                              "true lists of "
-                              description
-                              ".")
-         ,@(and long `(:long ,long))
-         :true-listp t
-         :pred ,pred
-         :fix ,fix
-         :equiv ,equiv)
-       (defsection ,type-theorems
-         :extension ,type
-         (defrule ,pred-forward-binpred
-           (implies (,pred x)
-                    (,binpred ,size x))
-           :rule-classes :forward-chaining
-           :enable (,pred ,bytep))
-         (defruled ,pred-rewrite-binpred
-           (equal (,pred x)
-                  (,binpred ,size x))
-           :enable (,pred ,bytep))
-         (defruled ,binpred-rewrite-pred
-           (equal (,binpred ,size x)
-                  (,pred x))
-           :enable ,pred-rewrite-binpred)
-         (theory-invariant
-          (incompatible (:rewrite ,pred-rewrite-binpred)
-                        (:rewrite ,binpred-rewrite-pred)))
-         (defruled ,true-listp-when-pred-rewrite
-           (implies (,pred x)
-                    (true-listp x)))))))
+       (logic)
+       ,deflist-event
+       (set-default-hints nil)
+       (set-override-hints nil)
+       ,theorems-event)))
 
 (defsection defbytelist-macro-definition
   :short "Definition of the @(tsee defbytelist) macro."
   :long "@(def defbytelist)"
-  (defmacro defbytelist (byte
+  (defmacro defbytelist (type
+                         byte
                          &key
-                         type
                          pred
                          fix
                          equiv
                          parents
+                         short
                          long)
     `(make-event (defbytelist-fn
-                   ',byte
                    ',type
+                   ',byte
                    ',pred
                    ',fix
                    ',equiv
                    ',parents
+                   ,short
                    ,long
                    (w state)))))

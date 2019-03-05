@@ -102,54 +102,9 @@
 ; file is processed only in pass 2, fundamentally because apply$-primp and
 ; apply$-prim are only defined in pass 2.
 
-(defun apply$-lambda-guard (fn args)
-
-; This function provides the guard for a lambda application.  It implies
-; (true-listp args), in support of guard verification for the apply$
-; mutual-recursion.  It also guarantees that if we have a good lambda, then we
-; can avoid checking in the raw Lisp definition of apply$-lambda that the arity
-; of fn (the length of its formals) equals the length of args.
-
-; We were a bit on the fence regarding whether to incorporate this change.  On
-; the positive side: in one test involving trivial computation on a list of
-; length 10,000,000, we found a 13% speedup.  But one thing that gave us pause
-; is that the following test showed no speedup at all -- in fact it seemed to
-; show a consistent slowdown, though probably well under 1%.  (In one trio of
-; runs the average was 6.56 seconds for the old ACL2 and 6.58 for the new.)
-
-;   cd books/system/tests/
-;   acl2
-;   (include-book "apply-timings")
-;   ; Get a function with a guard of t:
-;   (with-output
-;     :off event
-;     (encapsulate
-;       ()
-;       (local (in-theory (disable (:e ap4))))
-;       (defun ap4-10M ()
-;         (declare (xargs :guard t))
-;         (ap4 *10m*
-;              *good-lambda1* *good-lambda2* *good-lambda3* *good-lambda4*
-;              0))))
-;   (time$ (ap4-10M))
-
-; But we decided that a stronger guard would be more appropriate, in part
-; because that's really the idea of guards, in part because more user bugs
-; could be caught, and in part because this would likely need to be part of the
-; guards in support of a loop macro.
-
-  (declare (xargs :guard t :mode :logic))
-  (and (consp fn)
-       (consp (cdr fn))
-       (true-listp args)
-       (equal (len (cadr fn)) ; (cadr fn) = (lambda-object-formals fn), here.
-              (length args))))
-
-(defun apply$-guard (fn args)
-  (declare (xargs :guard t :mode :logic))
-  (if (atom fn)
-      (true-listp args)
-    (apply$-lambda-guard fn args)))
+; The definitions of apply$-lambda-guard and apply$-guard were here at one
+; time, but have been moved so that they precede the definition of
+; ev-fncall-rec-logical.
 
 (when-pass-2
 
@@ -2000,11 +1955,11 @@
 ; the constraint on apply$-userfn mentions badge-userfn.
 
 (defattach
-  (badge-userfn concrete-badge-userfn)
-  (apply$-userfn concrete-apply$-userfn)
+  (badge-userfn doppelganger-badge-userfn)
+  (apply$-userfn doppelganger-apply$-userfn)
   :hints
-  (("Goal" :use (concrete-badge-userfn-type
-                 concrete-apply$-userfn-takes-arity-args))))
+  (("Goal" :use (doppelganger-badge-userfn-type
+                 doppelganger-apply$-userfn-takes-arity-args))))
 
 ; -----------------------------------------------------------------
 ; 12. Loop$ Scions

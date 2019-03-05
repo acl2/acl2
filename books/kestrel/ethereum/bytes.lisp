@@ -23,11 +23,10 @@
     Unless otherwise stated, in the documentation of our Ethereum model,
     the unqualified `byte' denotes an 8-bit byte."))
 
-(fty::defbyte 8
-  :type byte
+(fty::defbyte byte 8
   :pred bytep
   :parents (bytes)
-  :description "bytes")
+  :short "Fixtype of bytes.")
 
 (defsection byte-fix-ext
   :extension byte-fix
@@ -54,9 +53,10 @@
     We use true lists of @(see bytes)
     to model byte arrays in our Ethereum model."))
 
-(fty::defbytelist byte
+(fty::defbytelist byte-list byte
   :pred byte-listp
-  :parents (byte-arrays))
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays.")
 
 (defsection byte-listp-ext
   :extension byte-listp

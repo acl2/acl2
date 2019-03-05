@@ -8526,12 +8526,12 @@
 ; To explain what this function does we first have to recap the world global
 ; 'loop$-alist.  Loop$-alist maps the loop$ expressions to their logic
 ; translations.  For example, if a defun mentioned (loop$ for x in lst collect
-; (cadr x)), whose translation -- modulo our use of lambda$ for brevity -- is
+; (cadr x)), the translation -- modulo our use of lambda$ for brevity -- is
 ; (collect$ (lambda$ (x) (car (cdr x))) lst).  The raw Lisp of the defun will
 ; contain
 
 ; (if *aokp*
-;     (loop$ for x in lst collect (cadr x))
+;     (loop for x in lst collect (cadr x))
 ;     (collect$ (lambda$ (x) (car (cdr x))) lst))
 
 ; But where did the Lisp compiler get the collect$ term, given that all that

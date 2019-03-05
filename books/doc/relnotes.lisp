@@ -188,9 +188,8 @@
  placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
  curve.</p>
 
- <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 key
- derivation, key trees, key serialization/deserialization, key export/import,
- and master key generation.</p>
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
+ hierarchical deterministic wallets.</p>
 
  <h4>Bytes</h4>
 

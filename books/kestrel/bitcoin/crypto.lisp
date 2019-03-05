@@ -579,7 +579,9 @@
        (pub (secp256k1-mul priv (secp256k1-generator))))
     pub)
   :no-function t
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+  (in-theory (disable (:e secp256k1-priv-to-pub))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

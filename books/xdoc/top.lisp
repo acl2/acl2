@@ -401,9 +401,9 @@
          ;; add as little output as possible.
          ;;
          ;; This still isn't great, but it's certainly better than it was.  If
-         ;; you want to tweak it, please make sure to look at the "Interactive
-         ;; tests" at the bottom of tests/preprocessor-tests.lisp, and try to
-         ;; make sure that things are no worse than they are today.
+         ;; you want to tweak it, please make sure to look at the "Error
+         ;; Reporting Tests" at the bottom of tests/defsection-tests.lisp, and
+         ;; try to make sure that things are no worse than they are today.
          (stack-pop-if-nonempty
           ;; If this is an empty defsection, don't bother unhiding the output
           ;; because it's just a value triple that nobody wants to see.

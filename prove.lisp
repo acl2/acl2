@@ -283,15 +283,13 @@
                          ttree))
                     (t
                      (mv-let
-                      (erp val latches)
+                      (erp val fns)
                       (pstk
-                       (ev-fncall fn (strip-cadrs expanded-args) state nil t
-                                  nil))
-                      (declare (ignore latches))
+                       (ev-fncall+ fn (strip-cadrs expanded-args) t state))
                       (cond
                        (erp
 
-; We following a suggestion from Matt Wilding and attempt to simplify the term
+; We follow a suggestion from Matt Wilding and attempt to simplify the term
 ; before applying HIDE.
 
                         (let ((new-term1 (cons-term fn expanded-args)))
@@ -302,10 +300,21 @@
                                    rdepth step-limit ens wrld state ttree)
                                   (cond
                                    ((equal new-term2 new-term1)
-                                    (mv step-limit
-                                        (mcons-term* 'hide new-term1)
-                                        (push-lemma (fn-rune-nume 'hide nil nil wrld)
-                                                    ttree)))
+                                    (if fns
+                                        (mv step-limit
+
+; Since fns is non-nil, the evaluation failure was caused by aborting when a
+; warrant was needed.  This case is handled in rewrite, so we do not want to
+; hide the term.  See the Essay on Evaluation of Apply$ and Loop$ Calls During
+; Proofs.
+
+                                            new-term1
+                                            ttree)
+                                      (mv step-limit
+                                          (mcons-term* 'hide new-term1)
+                                          (push-lemma (fn-rune-nume 'hide nil
+                                                                    nil wrld)
+                                                      ttree))))
                                    (t (mv step-limit new-term2 ttree))))))
                        (t (mv step-limit
                               (kwote val)

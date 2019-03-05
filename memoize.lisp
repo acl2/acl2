@@ -426,3 +426,10 @@
   (declare (xargs :guard t)
            (ignore arg))
   nil)
+
+(defconst *special-cltl-cmd-attachment-mark-name*
+; This is used in memoize-raw.lisp, so we define it here.
+  ':apply$-userfn/badge-userfn)
+
+(defconst *special-cltl-cmd-attachment-mark*
+  `(attachment ,*special-cltl-cmd-attachment-mark-name*))

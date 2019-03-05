@@ -1410,8 +1410,8 @@ ACL2 from scratch.")
             ("COMMON-LISP")
             (with-warnings-suppressed ,@forms)))
 
-; The following prevents an error when SBCL compiles ec-calls in the definition
-; of concrete-apply$-lambda.  We may do something more principled in the near
+; The following may prevent an error when SBCL compiles ec-calls in the
+; definition of apply$-lambda.  We may do something more principled in the
 ; future.  The names could be obtained with (add-suffix name *inline-suffix*),
 ; except that add-suffix and inline-suffix* are not yet defined here.  We could
 ; wait until they are, but then we'd need to teach note-fns-in-form about
