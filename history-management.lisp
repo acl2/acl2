@@ -11766,10 +11766,14 @@
    ((eq (ffn-symb body) 'if)
     (let* ((inst-test (sublis-var alist
 
-; Since (remove-guard-holders x) is provably equal to x, the machine we
+; Since (remove-guard-holders x nil) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
+; It might be sound to pass in the world so that guard holders are removed from
+; quoted lambdas in argument positions with ilk :fn (or :fn?), but we don't
+; expect to pay much of a price by playing it safe here and in
+; induction-machine-for-fn1.
 
-                                  (remove-guard-holders (fargn body 1))))
+                                  (remove-guard-holders (fargn body 1) nil)))
            (branch-result
             (append (termination-machine names
                                          (fargn body 2)
@@ -12848,7 +12852,7 @@
            (let* ((term1 (make-lambda-application
                           (lambda-formals (ffn-symb term))
                           (termify-clause-set cl-set2)
-                          (remove-guard-holders-lst (fargs term))))
+                          (remove-guard-holders-lst (fargs term) wrld)))
                   (cl (reverse (add-literal-smart term1 clause nil)))
                   (cl-set3 (if (equal cl *true-clause*)
                                cl-set1
@@ -12863,7 +12867,7 @@
                               (list cl)))))
              (mv cl-set3 ttree)))))
         ((eq (ffn-symb term) 'if)
-         (let ((test (remove-guard-holders (fargn term 1))))
+         (let ((test (remove-guard-holders (fargn term 1) wrld)))
            (mv-let
             (cl-set1 ttree)
 
@@ -13058,8 +13062,7 @@
                            (sublis-var-lst-lst
                             (pairlis$
                              (formals (ffn-symb term) wrld)
-                             (remove-guard-holders-lst
-                              (fargs term)))
+                             (remove-guard-holders-lst (fargs term) wrld))
                             guard-concl-segments)))))
                    cl-set2)
                   ttree)))))))

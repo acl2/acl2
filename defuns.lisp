@@ -1058,7 +1058,7 @@
                                                      alist
                                                      ruler-extenders
                                                      nil ; acc
-                                                     t ; merge-p
+                                                     t   ; merge-p
                                                      nil) ; flg
                       (mv (or flg1 flg2)
                           (cross-tests-and-calls
@@ -1113,10 +1113,14 @@
    ((eq (ffn-symb body) 'if)
     (let ((test
 
-; Since (remove-guard-holders x) is provably equal to x, the machine we
+; Since (remove-guard-holders x nil) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
+; It might be sound to pass in the world so that guard holders are removed from
+; quoted lambdas in argument positions with ilk :fn (or :fn?), but we don't
+; expect to pay much of a price by playing it safe here and in
+; termination-machine.
 
-           (remove-guard-holders (fargn body 1))))
+           (remove-guard-holders (fargn body 1) nil)))
       (cond
        ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
         (mv-let
@@ -1285,7 +1289,14 @@
 ; when we did not do so.
 
   (let* ((tests0 (remove-guard-holders-lst
-                  (access tests-and-calls tc :tests))))
+                  (access tests-and-calls tc :tests)
+
+; Since the present function supports generation of induction machines, we are
+; playing it safe here by passing in nil as the second argument of
+; remove-guard-holders-lst, as we do in induction-machine-for-fn1 for
+; remove-guard-holders.
+
+                  nil)))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
@@ -1315,7 +1326,11 @@
        (make tests-and-calls
              :tests tests
              :calls (remove-guard-holders-lst
-                     (access tests-and-calls tc :calls)))))))
+                     (access tests-and-calls tc :calls)
+
+; See the comment above about "playing it safe".
+
+                     nil))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 
@@ -1866,7 +1881,7 @@
             (equivalence-relationp equiv wrld))
        (mv-let (body ttree)
                (cond ((eq install-body :NORMALIZE)
-                      (normalize (remove-guard-holders body)
+                      (normalize (remove-guard-holders body wrld)
                                  nil ; iff-flg
                                  nil ; type-alist
                                  ens
@@ -1903,7 +1918,7 @@
 
 ; We massage the hyps with this function to speed rewrite up.
 
-(defun preprocess-hyp (hyp)
+(defun preprocess-hyp (hyp wrld)
 
 ; In nqthm, this function also replaced (not (zerop x)) by
 ; ((numberp x) (not (equal x '0))).
@@ -1919,13 +1934,13 @@
   (case-match hyp
     (('atom x)
      (list (mcons-term* 'not (mcons-term* 'consp
-                                          (remove-guard-holders x)))))
-    (& (list (remove-guard-holders hyp)))))
+                                          (remove-guard-holders x wrld)))))
+    (& (list (remove-guard-holders hyp wrld)))))
 
-(defun preprocess-hyps (hyps)
+(defun preprocess-hyps (hyps wrld)
   (cond ((null hyps) nil)
-        (t (append (preprocess-hyp (car hyps))
-                   (preprocess-hyps (cdr hyps))))))
+        (t (append (preprocess-hyp (car hyps) wrld)
+                   (preprocess-hyps (cdr hyps) wrld)))))
 
 (defun add-definition-rule-with-ttree (rune nume clique controller-alist
                                             install-body term ens wrld ttree)
@@ -1969,7 +1984,7 @@
             (make rewrite-rule
                   :rune rune
                   :nume nume
-                  :hyps (preprocess-hyps hyps)
+                  :hyps (preprocess-hyps hyps wrld)
                   :equiv equiv
                   :lhs (mcons-term fn args)
                   :var-info (cond (abbreviationp (not (null vars-bag)))
@@ -8329,7 +8344,8 @@
 
   (let ((formals (lambda-object-formals x))
         (dcl (lambda-object-dcl x))
-        (body (lambda-object-body x)))
+        (body (lambda-object-body x))
+        (wrld (w state)))
 ; Note: dcl and body are in fully translated form.
     (cond
      ((authenticate-tagged-lambda$ x state)
@@ -8344,7 +8360,7 @@
              (edcls
               (edcls-from-lambda-object-dcls-short-cut (cddr lambda$-expr)))
              (guard-lst
-              (get-guards2 edcls '(types guards) nil (w state) nil nil)))
+              (get-guards2 edcls '(types guards) nil wrld nil nil)))
 
 ; Guard-lst is the list of untranslated conjuncts in the guard (plus any TYPE
 ; declarations) typed in the original lambda$.  It can be run directly in raw
@@ -8382,14 +8398,15 @@
                       (or (cadr (assoc-keyword :guard
                                                (cdr (assoc-eq 'xargs
                                                               (cdr dcl)))))
-                          *t*))
-                     (w state)))
+                          *t*)
+                      wrld)
+                     wrld))
           `(LAMBDA ,formals
                    ,dcl
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders body)
-                     (w state))))))))
+                     (remove-guard-holders body wrld)
+                     wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 

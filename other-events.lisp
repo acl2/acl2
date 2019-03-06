@@ -6485,10 +6485,19 @@
 ; (getpropc 'foo-witness 'constraint-lst)
 
 ; you'll see a much simpler result, with return-last calls removed, than if we
-; did not apply remove-guard-holders-lst here.
+; did not apply remove-guard-holders-lst here.  Out of an abundance of caution
+; (perhaps more than is necessary), we avoid removing guard holders from quoted
+; lambdas by passing in nil as the second argument of remove-guard-holders-lst.
 
            (remove-guard-holders-lst
-            (constraints-list infectious-fns wrld formula-lst1 nil))))
+            (constraints-list infectious-fns wrld formula-lst1 nil)
+
+; It might be sound to pass in the world hereso that guard holders are removed
+; from quoted lambdas in argument positions with ilk :fn (or :fn?), but rather
+; than take a chance, we are playing it safe here.  If that causes problems
+; then we can think harder about whether it is sound to pass in the world here.
+
+            nil)))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
 (defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
@@ -23858,59 +23867,60 @@
               (standard-co state) state nil))))
 
 (defun pl2-fn (form rule-id caller state)
-  (let ((ens (ens-maybe-brr state)))
+  (let ((ens (ens-maybe-brr state))
+        (wrld (w state)))
     (er-let*
-     ((term (translate form t t nil caller (w state) state)))
-     (cond
-      ((not (or (symbolp rule-id)
-                (and (consp rule-id)
-                     (keywordp (car rule-id)))))
-       (er soft caller
-           "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
+        ((term (translate form t t nil caller wrld state)))
+      (cond
+       ((not (or (symbolp rule-id)
+                 (and (consp rule-id)
+                      (keywordp (car rule-id)))))
+        (er soft caller
+            "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
             is neither.  See :DOC ~x0."
-           caller rule-id))
-      (t (mv-let
-          (flg term1)
-          (cond ((or (variablep term)
-                     (fquotep term)
-                     (flambdap (ffn-symb term)))
-                 (mv t (remove-guard-holders term)))
-                (t (mv nil term)))
-          (cond ((or (variablep term1)
-                     (fquotep term1)
-                     (flambdap (ffn-symb term1)))
-                 (er soft caller
-                     "~@0 must represent a term that is not a variable or a ~
+            caller rule-id))
+       (t (mv-let
+            (flg term1)
+            (cond ((or (variablep term)
+                       (fquotep term)
+                       (flambdap (ffn-symb term)))
+                   (mv t (remove-guard-holders term wrld)))
+                  (t (mv nil term)))
+            (cond ((or (variablep term1)
+                       (fquotep term1)
+                       (flambdap (ffn-symb term1)))
+                   (er soft caller
+                       "~@0 must represent a term that is not a variable or a ~
                       constant, which is not a LET (or LAMBDA application).  ~
                       But ~x1 does not meet this requirement."
-                     (case caller
-                       (pl (msg "A non-symbol argument of ~x0" caller))
-                       (pl2 (msg "The first argument of ~x0" caller))
-                       (otherwise (er hard 'pl2-fn
-                                      "Implementation error: Unexpected case! ~
+                       (case caller
+                         (pl (msg "A non-symbol argument of ~x0" caller))
+                         (pl2 (msg "The first argument of ~x0" caller))
+                         (otherwise (er hard 'pl2-fn
+                                        "Implementation error: Unexpected case! ~
                                        ~ Please contact the ACL2 implementors.")))
-                     form))
-                (t (let ((term term1))
-                     (pprogn
-                      (cond (flg (fms "+++++++++~%**NOTE**:~%Instead showing ~
+                       form))
+                  (t (let ((term term1))
+                       (pprogn
+                        (cond (flg (fms "+++++++++~%**NOTE**:~%Instead showing ~
                                        rules for the following term, which is ~
                                        much more likely to be encountered ~
                                        during proofs:~|~%  ~y0+++++++++~%"
-                                      (list (cons #\0 (untranslate term1
-                                                                   nil
-                                                                   (w state))))
-                                      (standard-co state) state nil))
-                            (t state))
-                      (show-rewrites-linears-fn
-                       'show-rewrites rule-id nil ens term nil nil nil :none t
-                       state)
-                      (show-meta-lemmas term rule-id ens state)
-                      (show-rewrites-linears-fn
-                       'show-linears rule-id nil ens term nil nil nil :none t
-                       state)
-                      (show-type-prescription-rules term rule-id nil nil
-                                                    ens state)
-                      (value :invisible)))))))))))
+                                        (list (cons #\0 (untranslate term1
+                                                                     nil
+                                                                     wrld)))
+                                        (standard-co state) state nil))
+                              (t state))
+                        (show-rewrites-linears-fn
+                         'show-rewrites rule-id nil ens term nil nil nil :none t
+                         state)
+                        (show-meta-lemmas term rule-id ens state)
+                        (show-rewrites-linears-fn
+                         'show-linears rule-id nil ens term nil nil nil :none t
+                         state)
+                        (show-type-prescription-rules term rule-id nil nil
+                                                      ens state)
+                        (value :invisible)))))))))))
 
 (defun pl-fn (name state)
   (cond

@@ -1333,7 +1333,9 @@ defwitness/definstantiate rules for it.</p>")
   (declare (xargs :mode :program))
   (b* (((er term)
         (translate term t t nil ctx (w state) state))
-       (term (remove-guard-holders term)))
+       (term (remove-guard-holders term
+; Matt K. mod 3/2019 for new argument of remove-guard-holders:
+                                   (w state))))
     (value term)))
 
 (defun wcp-translate-lst (lst ctx state)

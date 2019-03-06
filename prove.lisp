@@ -2802,7 +2802,7 @@
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
 
-                   (caddr temp)))
+                   (caddr temp) wrld))
              (constraint-cl (cadddr temp))
              (sr-limit (car (access rewrite-constant
                                     (access prove-spec-var pspv
@@ -2825,7 +2825,7 @@
 
 ; WARNING: See the warning about the processing in translate-by-hint.
 
-         (let* ((cl (remove-guard-holders-lst cl))
+         (let* ((cl (remove-guard-holders-lst cl wrld))
                 (cl (remove-equal *nil* cl))
                 (easy-winp
                  (cond ((null cl) ; very weird case!
