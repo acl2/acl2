@@ -42,7 +42,9 @@
   (pathcond-bdd :type (satisfies acl2::ubddp) :initially t)
   (pathcond-aig :type calist-stobj)
   (pathcond-aignet :type aignet-pathcond)
-  (pathcond-enabledp :type (member t nil) :initially t))
+  (pathcond-enabledp :type (member t nil) :initially t)
+  (pathcond-checkpoint-ptrs :type (satisfies nat-listp) :initially nil)
+  (pathcond-checkpoint-ubdds :type (satisfies acl2::ubdd-listp) :initially nil))
 
 
 

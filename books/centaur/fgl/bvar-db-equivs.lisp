@@ -243,5 +243,10 @@
     (equal (bvar-db-bfrlist (maybe-add-equiv-term obj bvar bvar-db state))
            (bvar-db-bfrlist bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term
-                                      add-term-equiv)))))
+                                      add-term-equiv))))
+
+  (defthm next-bvar$a-of-maybe-add-equiv-term
+    (equal (next-bvar$a (maybe-add-equiv-term x bvar bvar-db state))
+           (next-bvar$a bvar-db))
+    :hints(("Goal" :in-theory (enable maybe-add-equiv-term)))))
 

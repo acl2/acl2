@@ -709,7 +709,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
              (gl-bfr-object-p (g-cons car cdr)))
     :hints (("goal" :expand ((gl-bfr-object-p (g-cons car cdr))))))
 
-  (fty::deffixequiv-mutual gl-bfr-object-p-aux
+  (fty::deffixequiv-mutual gl-bfr-object-p
     :hints ((acl2::use-termhint
              `(:expand ((gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
                         (gl-bfr-object-p-aux ,(acl2::hq (gl-object-fix x)) ,(acl2::hq bfrstate))
@@ -733,7 +733,18 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :flag gl-bfr-objectlist-p)
     :hints (("goal" :induct (gl-bfr-object-p-flag flag x old)))))
 
-
+(define gl-bfr-object-alist-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (pseudo-var-p (caar x))
+         (gl-bfr-object-p (cdar x))
+         (gl-bfr-object-alist-p (cdr x))))
+  ///
+  (defthmd gl-bfr-object-alist-p-implies-gl-object-alist-p
+    (implies (gl-bfr-object-alist-p x)
+             (gl-object-alist-p x))
+    :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
 
 
 
@@ -960,33 +971,33 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       gl-objectlist-bfrlist-of-nil))
 
   (defthm-gl-object-bfrlist-flag
-    (defthm bfr-listp-of-gl-object-bfrlist
+    (defthm gl-bfr-object-p-when-gl-object-p
       (implies (gl-object-p x)
-               (equal (bfr-listp (gl-object-bfrlist x))
-                      (gl-bfr-object-p x)))
+               (equal (gl-bfr-object-p x)
+                      (bfr-listp (gl-object-bfrlist x))))
       :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-p x))
                          (gl-object-p x)
                          (gl-object-bfrlist x))))
       :flag gl-object-bfrlist)
-    (defthm bfrlist-okp-of-gl-objectlist-bfrlist
+    (defthm gl-bfr-objectlist-p-when-gl-objectlist-p
       (implies (gl-objectlist-p x)
-               (equal (bfr-listp (gl-objectlist-bfrlist x))
-                      (gl-bfr-objectlist-p x)))
+               (equal (gl-bfr-objectlist-p x)
+                      (bfr-listp (gl-objectlist-bfrlist x))))
       :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x))
                          (gl-objectlist-p x)
                          (gl-objectlist-bfrlist x))))
       :flag gl-objectlist-bfrlist))
 
   (defthm-gl-object-bfrlist-flag
-    (defthmd gl-object-bfrlist-when-symbolic-boolean-free
-      (implies (gl-object-symbolic-boolean-free x)
-               (equal (gl-object-bfrlist x) nil))
+    (defthm gl-object-bfrlist-when-symbolic-boolean-free
+      (equal (gl-object-symbolic-boolean-free x)
+             (equal (gl-object-bfrlist x) nil))
       :hints ('(:expand ((gl-object-bfrlist x)
                          (gl-object-symbolic-boolean-free x))))
       :flag gl-object-bfrlist)
-    (defthmd gl-objectlist-bfrlist-when-symbolic-boolean-free
-      (implies (gl-objectlist-symbolic-boolean-free x)
-               (equal (gl-objectlist-bfrlist x) nil))
+    (defthm gl-objectlist-bfrlist-when-symbolic-boolean-free
+      (equal (gl-objectlist-symbolic-boolean-free x)
+             (equal (gl-objectlist-bfrlist x) nil))
       :hints ('(:expand ((gl-objectlist-bfrlist x)
                          (gl-objectlist-symbolic-boolean-free x))))
       :flag gl-objectlist-bfrlist)))
@@ -1005,6 +1016,14 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
              (equal (gl-object-alist-bfrlist (cons (cons var val) rest))
                     (append (gl-object-bfrlist val)
                             (gl-object-alist-bfrlist rest)))))
+
+  (defthm bfr-listp-of-gl-object-alist-bfrlist
+    (implies (gl-object-alist-p x)
+             (equal (gl-bfr-object-alist-p x)
+                    (bfr-listp (gl-object-alist-bfrlist x))))
+    :hints(("Goal" :in-theory (enable gl-bfr-object-alist-p
+                                      gl-object-alist-p))))
+    
 
   (local (in-theory (enable gl-object-alist-fix))))
 

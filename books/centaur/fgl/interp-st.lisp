@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "pathcond")
-(include-book "bvar-db")
+(include-book "bvar-db-equivs")
 (include-book "constraint-db")
 (include-book "glcp-config")
 (include-book "contexts")
@@ -667,3 +667,117 @@
              (not)
              (bfr-not x)
              not))
+
+
+(define interp-st-nvars-ok (interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+              (logicman (interp-st->logicman interp-st)))
+             (ok)
+             (logicman-check-nvars (next-bvar bvar-db) logicman)
+             ok))
+
+
+(local
+ (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$a
+   (implies (get-term->bvar$a x bvar-db)
+            (subsetp (gl-object-bfrlist x) (bvar-db-bfrlist bvar-db)))
+   :hints (("goal" :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
+                          (m (get-term->bvar$a x bvar-db))))
+            :in-theory (disable subsetp-bfrlist-of-bvar-db-bfrlist)))))
+
+(define interp-st-add-term-bvar ((x gl-object-p) interp-st state)
+  :returns (mv bfr new-interp-st)
+  :guard (interp-st-nvars-ok interp-st)
+  :prepwork ((local (in-theory (enable interp-st-nvars-ok
+                                       logicman-check-nvars
+                                       ))))
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+              (logicman (interp-st->logicman interp-st)))
+             (bfr bvar-db logicman)
+             (b* ((nextvar (next-bvar bvar-db))
+                  (bvar-db (add-term-bvar x bvar-db))
+                  (bvar-db (maybe-add-equiv-term x nextvar bvar-db state))
+                  (logicman (logicman-add-var logicman))
+                  (bfr (bfr-var nextvar logicman)))
+               (mv bfr bvar-db logicman))
+             (mv bfr interp-st))
+  ///
+  (defret interp-st-nvars-ok-of-interp-st-add-term-bvar
+    (implies (interp-st-nvars-ok interp-st)
+             (interp-st-nvars-ok new-interp-st)))
+
+  (defret bfr-p-of-interp-st-add-term-bvar
+    (implies (interp-st-nvars-ok interp-st)
+             (lbfr-p bfr (interp-st->logicman new-interp-st)))
+    :hints(("Goal" :in-theory (enable interp-st-bfr-p))))
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :logicman))
+                  (not (equal (interp-st-field-fix key) :bvar-db)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret logicman-extension-p-of-<fn>
+    (implies (equal old-logicman (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
+
+  (defret logicman-check-nvars-of-<fn>
+    (implies (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
+                                   (interp-st->logicman interp-st))
+             (logicman-check-nvars (next-bvar$a (interp-st->bvar-db new-interp-st))
+                                   (interp-st->logicman new-interp-st))))
+
+  (defret bvar-db-bfrlist-of-<fn>
+    (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
+                     (append (gl-object-bfrlist x)
+                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))))
+
+(define interp-st-add-term-bvar-unique ((x gl-object-p) interp-st state)
+  :returns (mv bfr new-interp-st)
+  :guard (interp-st-nvars-ok interp-st)
+  :prepwork ((local (in-theory (enable interp-st-nvars-ok
+                                       logicman-check-nvars
+                                       bfr-varname-p))))
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+              (logicman (interp-st->logicman interp-st)))
+             (bfr bvar-db logicman)
+             (b* ((var (get-term->bvar x bvar-db))
+                  ((when var)
+                   (mv (bfr-var var logicman) bvar-db logicman))
+                  (nextvar (next-bvar bvar-db))
+                  (bvar-db (add-term-bvar x bvar-db))
+                  (bvar-db (maybe-add-equiv-term x nextvar bvar-db state))
+                  (logicman (logicman-add-var logicman))
+                  (bfr (bfr-var nextvar logicman)))
+               (mv bfr bvar-db logicman))
+             (mv bfr interp-st))
+  ///
+  (defret interp-st-nvars-ok-of-interp-st-add-term-bvar-unique
+    (implies (interp-st-nvars-ok interp-st)
+             (interp-st-nvars-ok new-interp-st)))
+
+  (defret bfr-p-of-interp-st-add-term-bvar-unique
+    (implies (interp-st-nvars-ok interp-st)
+             (lbfr-p bfr (interp-st->logicman new-interp-st)))
+    :hints(("Goal" :in-theory (enable interp-st-bfr-p))))
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :logicman))
+                  (not (equal (interp-st-field-fix key) :bvar-db)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret logicman-extension-p-of-<fn>
+    (implies (equal old-logicman (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
+
+  (defret logicman-check-nvars-of-<fn>
+    (implies (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
+                                   (interp-st->logicman interp-st))
+             (logicman-check-nvars (next-bvar$a (interp-st->bvar-db new-interp-st))
+                                   (interp-st->logicman new-interp-st))))
+
+  (defret bvar-db-bfrlist-of-<fn>
+    (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
+                     (append (gl-object-bfrlist x)
+                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))))

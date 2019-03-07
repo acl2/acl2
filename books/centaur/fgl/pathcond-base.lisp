@@ -52,6 +52,14 @@
     (implies (pathcondp x)
              (aignet::nbalistp (nth *pathcond-aignet* x))))
 
+  (defthm pathcondp-implies-ubdd-listp-checkpoint-ubdds
+    (implies (pathcondp x)
+             (acl2::ubdd-listp (nth *pathcond-checkpoint-ubdds* x))))
+
+  (defthm pathcondp-implies-nat-listp-checkpoint-ptrs
+    (implies (pathcondp x)
+             (nat-listp (nth *pathcond-checkpoint-ptrs* x))))
+
   (local (in-theory (enable aignet::redundant-update-nth)))
 
   (defthm pathcondp-implies-update-bdd-equal
@@ -84,15 +92,50 @@
                   (aignet::nbalistp nbalist))
              (pathcondp (update-nth *pathcond-aignet* nbalist x)))))
 
+(define ubdd-list-fix ((x acl2::ubdd-listp))
+  :returns (new-x acl2::ubdd-listp)
+  (mbe :logic
+       (if (atom x)
+           nil
+         (cons (acl2::ubdd-fix (car x))
+               (ubdd-list-fix (cdr x))))
+       :exec x)
+  ///
+  (defthm ubdd-list-fix-when-ubdd-listp
+    (implies (acl2::ubdd-listp x)
+             (equal (ubdd-list-fix x) x)))
+  
+  (defthm len-of-ubdd-list-fix
+    (equal (len (ubdd-list-fix x))
+           (len x))))
+
 (define pathcond-fix (pathcond)
   :returns (new-pathcond pathcondp)
-  :guard-hints (("goal" :expand ((len pathcond)
-                                 (len (cdr pathcond))
-                                 (len (cddr pathcond)))))
+  :prepwork ((local (defthm len-equal-n
+                      (implies (syntaxp (quotep n))
+                               (equal (equal (len x) n)
+                                      (if (zp n)
+                                          (and (atom x) (equal n 0))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (1- n))))))))
+             (local (in-theory (disable len acl2::nth-when-too-large-cheap
+                                        nat-listp
+                                        pathcondp-implies-calistp
+                                        pathcondp-implies-nat-listp-checkpoint-ptrs
+                                        pathcondp-implies-ubdd-listp-checkpoint-ubdds
+                                        pathcondp-implies-ubddp
+                                        pathcondp-implies-nbalistp))))
+  ;; :guard-hints (("goal" :expand ((len pathcond)
+  ;;                                (len (cdr pathcond))
+  ;;                                (len (cddr pathcond))
+  ;;                                (len (cdddr pathcond))
+  ;;                                (len (cddddr pathcond)))))
   (mbe :logic (non-exec (list (acl2::ubdd-fix (pathcond-bdd pathcond))
                               (calist-fix (pathcond-aig pathcond))
                               (aignet::nbalist-fix (pathcond-aignet pathcond))
-                              (bool-fix (pathcond-enabledp pathcond))))
+                              (bool-fix (pathcond-enabledp pathcond))
+                              (acl2::nat-list-fix (pathcond-checkpoint-ptrs pathcond))
+                              (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
        :exec pathcond)
   ///
   (defthm nth-of-pathcond-fix
@@ -103,7 +146,11 @@
          (equal (nth *pathcond-aignet* (pathcond-fix pathcond))
                 (aignet::nbalist-fix (nth *pathcond-aignet* pathcond)))
          (equal (nth *pathcond-enabledp* (pathcond-fix pathcond))
-                (acl2::bool-fix (nth *pathcond-enabledp* pathcond)))))
+                (acl2::bool-fix (nth *pathcond-enabledp* pathcond)))
+         (equal (nth *pathcond-checkpoint-ptrs* (pathcond-fix pathcond))
+                (acl2::nat-list-fix (nth *pathcond-checkpoint-ptrs* pathcond)))
+         (equal (nth *pathcond-checkpoint-ubdds* (pathcond-fix pathcond))
+                (ubdd-list-fix (nth *pathcond-checkpoint-ubdds* pathcond)))))
 
   (local (defthm equal-of-cons
            (equal (equal (cons a b) c)
@@ -114,11 +161,14 @@
   (defthm pathcond-fix-when-pathcondp
     (implies (pathcondp pathcond)
              (equal (pathcond-fix pathcond) pathcond))
-    :hints (("goal" :expand ((len pathcond)
-                             (len (cdr pathcond))
-                             (len (cddr pathcond))
-                             (len (cdddr pathcond))
-                             (len (cddddr pathcond))))))
+    ;; :hints (("goal" :expand ((len pathcond)
+    ;;                          (len (cdr pathcond))
+    ;;                          (len (cddr pathcond))
+    ;;                          (len (cdddr pathcond))
+    ;;                          (len (cddddr pathcond))
+    ;;                          (len (cddddr (cdr pathcond)))
+    ;;                          (len (cddddr (cddr pathcond))))))
+    )
 
   (defun-nx pathcond-equiv (x y)
     (equal (pathcond-fix x) (pathcond-fix y)))
@@ -129,73 +179,48 @@
 
   (in-theory (disable pathcondp)))
 
-(define pathcond-checkpoint-p (x (bfr-mode bfr-mode-p) pathcond)
-  (bfr-mode-case
-    :aig (and (natp x)
-              (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                         (ok)
-                         (<= x (calist-stobj-len calist-stobj))
-                         ok))
-    :aignet (and (natp x)
-                 (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                            (ok)
-                            (<= x (aignet-pathcond-len aignet-pathcond))
-                            ok))
-    :bdd (acl2::ubddp x)))
+(define pathcond-rewind-stack-len ((bfr-mode bfr-mode-p)
+                                   pathcond)
+  (bfr-mode-case bfr-mode
+    :bdd (len (pathcond-checkpoint-ubdds pathcond))
+    :otherwise (len (pathcond-checkpoint-ptrs pathcond))))
 
-(define pathcond-checkpoint ((bfr-mode bfr-mode-p) pathcond)
-  :returns (chp (pathcond-checkpoint-p chp bfr-mode pathcond)
-                :hints(("Goal" :in-theory (enable pathcond-checkpoint-p))))
-  (bfr-mode-case
-    :bdd (mbe :logic (acl2::ubdd-fix (pathcond-bdd pathcond))
-              :exec (pathcond-bdd pathcond))
-    :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                    (len)
-                    (calist-stobj-len calist-stobj)
-                    len)
-    :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                       (len)
-                       (aignet-pathcond-len aignet-pathcond)
-                       len)))
+(local (defthm ubdd-listp-of-cdr
+         (implies (acl2::ubdd-listp x)
+                  (acl2::ubdd-listp (cdr x)))))
 
-(define pathcond-rewindable ((bfr-mode bfr-mode-p) (new pathcondp) (old pathcondp))
-  :verify-guards nil
-  :non-executable t
-  (b* ((new (pathcond-fix new))
-       (old (pathcond-fix old)))
-    (bfr-mode-case
-      :aig (and (equal new (update-nth *pathcond-aig* (nth *pathcond-aig* new) old))
-                (calist-extension-p (nth *pathcond-aig* new) (nth *pathcond-aig* old)))
-      :aignet (and (equal new (update-nth *pathcond-aignet* (nth *pathcond-aignet* new) old))
-                   (aignet::nbalist-extension-p (nth *pathcond-aignet* new) (nth *pathcond-aignet* old)))
-      :bdd (equal new (update-nth *pathcond-bdd* (nth *pathcond-bdd* new) old))))
-  ///
-  (defthm pathcond-checkpoint-p-when-rewindable
-    (implies (and (pathcond-rewindable bfr-mode new old)
-                  (pathcond-checkpoint-p chp bfr-mode old))
-             (pathcond-checkpoint-p chp bfr-mode new))
-    :hints(("Goal" :in-theory (enable pathcond-checkpoint-p))))
+(local (Defthm rationalp-when-natp
+         (implies (natp x)
+                  (rationalp x))))
 
-  (defthm pathcond-rewindable-of-self
-    (pathcond-rewindable bfr-mode x x)
-    :hints(("Goal" :in-theory (enable aignet::nbalist-extension-p
-                                      calist-extension-p)))))
-
-(define pathcond-rewind ((chp (pathcond-checkpoint-p chp bfr-mode pathcond))
-                         (bfr-mode bfr-mode-p)
+(define pathcond-rewind ((bfr-mode bfr-mode-p)
                          pathcond)
-  :guard-hints (("goal" :in-theory (enable pathcond-checkpoint-p)))
-  (b* ((pathcond (pathcond-fix pathcond)))
+  :guard (< 0 (pathcond-rewind-stack-len bfr-mode pathcond))
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-stack-len)))
+  (b* ((pathcond (pathcond-fix pathcond))
+       ((unless (pathcond-enabledp pathcond))
+        pathcond))
     (bfr-mode-case
-      :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                      (calist-stobj)
-                      (rewind-calist chp calist-stobj)
-                      pathcond)
-      :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                         (aignet-pathcond)
-                         (aignet-pathcond-rewind chp aignet-pathcond)
-                         pathcond)
-      :bdd (update-pathcond-bdd (acl2::ubdd-fix chp) pathcond)))
+      :aig (let* ((ptrs (pathcond-checkpoint-ptrs pathcond))
+                  (chp (lnfix (car ptrs)))
+                  (pathcond (update-pathcond-checkpoint-ptrs (cdr ptrs) pathcond)))
+             (stobj-let ((calist-stobj (pathcond-aig pathcond)))
+                        (calist-stobj)
+                        (let ((chp (if (<= chp (calist-stobj-len calist-stobj)) chp 0)))
+                          (rewind-calist chp calist-stobj))
+                        pathcond))
+      :aignet (let* ((ptrs (pathcond-checkpoint-ptrs pathcond))
+                  (chp (lnfix (car ptrs)))
+                  (pathcond (update-pathcond-checkpoint-ptrs (cdr ptrs) pathcond)))
+                (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                           (aignet-pathcond)
+                           (let ((chp (if (<= chp (aignet-pathcond-len aignet-pathcond)) chp 0)))
+                             (aignet-pathcond-rewind chp aignet-pathcond))
+                           pathcond))
+      :bdd (let* ((stack (pathcond-checkpoint-ubdds pathcond))
+                  (chp (car stack))
+                  (pathcond (update-pathcond-checkpoint-ubdds (cdr stack) pathcond)))
+             (update-pathcond-bdd (acl2::ubdd-fix chp) pathcond))))
   ///
   (local (defthm update-nth-same
            (equal (update-nth n v1 (update-nth n v2 x))
@@ -204,19 +229,7 @@
   (local (defthm update-nth-lemma
            (implies (equal x (update-nth n val y))
                     (equal (update-nth n val1 x)
-                           (update-nth n val1 y)))))
+                           (update-nth n val1 y))))))
 
-  (defthm pathcond-rewind-when-rewindable
-    (implies (pathcond-rewindable bfr-mode new old)
-             (equal (pathcond-rewind (pathcond-checkpoint bfr-mode old) bfr-mode new)
-                    (pathcond-fix old)))
-    :hints(("Goal" :in-theory (enable pathcond-rewindable
-                                      pathcond-checkpoint))))
 
-  (defthm pathcond-rewind-when-rewindable-free
-    (implies (and (pathcond-rewindable bfr-mode new old)
-                  (equal (pathcond-checkpoint bfr-mode old) chp))
-             (equal (pathcond-rewind chp bfr-mode new)
-                    (pathcond-fix old)))))
-  
 

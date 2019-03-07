@@ -153,7 +153,7 @@ auto-bindings).</p>"
   (define gl-object-symbolic-boolean-free ((x gl-object-p))
     :measure (gl-object-count x)
     (gl-object-case x
-      :g-integer nil
+      :g-integer (not x.bits)
       :g-boolean nil
       :g-concrete t
       :g-ite (and (gl-object-symbolic-boolean-free x.test)

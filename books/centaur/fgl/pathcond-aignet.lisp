@@ -724,6 +724,16 @@
        ((when contradictionp) (mv contradictionp nbalist-stobj)))
     (aignet-pathcond-assume-logic (snode->fanin slot1) aignet nbalist-stobj))
   ///
+  (defret aignet-pathcond-p-of-aignet-pathcond-assume-logic
+    (implies (and (aignet-pathcond-p nbalist-stobj aignet)
+                  (aignet-litp lit aignet))
+             (aignet-pathcond-p new-nbalist-stobj aignet))
+    :hints (("goal" :induct <call> :expand (<call>))
+            (and stable-under-simplificationp
+                 (let ((lit (car (last clause))))
+                   (and (eq (car lit) 'aignet-pathcond-p)
+                        `(:expand (,lit)))))))
+
   (defret nbalist-assume-correct
     (implies (and (aignet-pathcond-eval aignet nbalist-stobj invals regvals)
                   (equal 1 (lit-eval lit invals regvals aignet)))
@@ -797,7 +807,11 @@
                     (nbalist-fix y)))
     :hints (("goal" :use ((:instance nbalist-stobj-rewind-of-extension-lemma))
              :in-theory (disable nbalist-stobj-rewind-of-extension-lemma)
-             :do-not-induct t))))
+             :do-not-induct t)))
+
+  (defthm nbalist-extension-of-nbalist-stobj-rewind
+    (nbalist-extension-p x (nbalist-stobj-rewind len x))
+    :hints(("Goal" :in-theory (enable nbalist-extension-p)))))
                   
 (defstobj aignet-pathcond$c
   (aignet-pathcond-nbalist$c :type nbalist-stobj)

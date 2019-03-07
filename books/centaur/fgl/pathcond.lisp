@@ -57,8 +57,37 @@
     (implies (and (bind-logicman-extension new old)
                   (logicman-pathcond-p pathcond old))
              (logicman-pathcond-p pathcond new))
-    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
-                       
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (def-updater-independence-thm logicman-pathcond-p-updater-independence
+    (implies (equal (pathcond-aignet new) (pathcond-aignet old))
+             (equal (logicman-pathcond-p new logicman)
+                    (logicman-pathcond-p old logicman))))
+
+
+  (defthm logicman-pathcond-p-of-pathcond-rewind
+    (implies (and (logicman-pathcond-p x)
+                  (equal (bfr-mode-fix bfr-mode)
+                         (bfr-mode-fix (lbfr-mode))))
+             (logicman-pathcond-p (pathcond-rewind bfr-mode x)))
+    :hints(("Goal" :in-theory (e/d (pathcond-rewind)
+                                   (aignet::nbalist-extension-of-nbalist-stobj-rewind
+                                    aignet::aignet-pathcond-p-necc)))
+           (and stable-under-simplificationp
+                (let ((lit (car (last clause))))
+                  `(:expand (,lit)
+                    :use ((:instance aignet::aignet-pathcond-p-necc
+                           (nbalist (nth *pathcond-aignet* x))
+                           (aignet (logicman->aignet logicman))
+                           (id (aignet::aignet-pathcond-p-witness . ,(cdr lit))))
+                          (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
+                           (x (nth *pathcond-aignet* x))
+                           (len (car (nth *pathcond-checkpoint-ptrs* x))))
+                          (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
+                           (x (nth *pathcond-aignet* x))
+                           (len 0)))))))))
+                                   
+
 
 
 (define logicman-pathcond-eval (env pathcond &optional (logicman 'logicman))
@@ -265,6 +294,18 @@
                                   &optional (logicman 'logicman))
   :returns (mv contradictionp
                new-pathcond)
+  :prepwork ((local (defthm len-of-calist-assume-fix
+                      (<= (len (calist-fix calist)) (len (mv-nth 1 (calist-assume x calist))))
+                      :hints(("Goal" :in-theory (enable calist-assume)))
+                      :rule-classes :linear))
+
+             (local (defthm len-of-aignet-pathcond-assume
+                      (<= (len (aignet::nbalist-fix pc))
+                          (len (mv-nth 1 (aignet::aignet-pathcond-assume-logic x aignet pc))))
+                      :hints (("goal" :use ((:instance aignet::nbalist-extension-of-aignet-pathcond-assume-logic
+                                             (nbalist-stobj pc) (lit x) (aignet aignet)))
+                               :in-theory (disable aignet::nbalist-extension-of-aignet-pathcond-assume-logic)))
+                      :rule-classes :linear)))
   :guard-hints (("goal" :in-theory (enable bfr-p bfr->aignet-lit aignet::aignet-idp)))
   (b* ((x (lbfr-fix x))
        (pathcond (pathcond-fix pathcond))
@@ -277,21 +318,40 @@
                 (new-pathcond-bdd (acl2::q-and pathcond-bdd x))
                 ((when (eq new-pathcond-bdd nil))
                  (mv t pathcond))
+                (stack (cons pathcond-bdd (pathcond-checkpoint-ubdds pathcond)))
+                (pathcond (update-pathcond-checkpoint-ubdds stack pathcond))
                 (pathcond (update-pathcond-bdd new-pathcond-bdd pathcond)))
              (mv nil pathcond))
       :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                      (contra calist-stobj)
-                      (calist-assume x calist-stobj)
-                      (mv contra pathcond))
+                      (len contra calist-stobj)
+                      (b* ((len (calist-stobj-len calist-stobj))
+                           ((mv contra calist-stobj) (calist-assume x calist-stobj))
+                           ((when contra)
+                            (b* ((calist-stobj (rewind-calist len calist-stobj)))
+                              (mv len contra calist-stobj))))
+                        (mv len contra calist-stobj))
+                      (b* (((when contra) (mv contra pathcond))
+                           (stack (cons len (pathcond-checkpoint-ptrs pathcond)))
+                           (pathcond (update-pathcond-checkpoint-ptrs stack pathcond)))
+                        (mv nil pathcond)))
       :aignet (b* ((bfrstate (logicman->bfrstate logicman))
                    (x (bfr->aignet-lit x)))
                 (stobj-let ((aignet (logicman->aignet logicman)))
                            (contra pathcond)
                            (b* ((pathcond (pathcond-fix pathcond)))
                              (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                                        (contra aignet-pathcond)
-                                        (aignet-pathcond-assume x aignet aignet-pathcond)
-                                        (mv contra pathcond)))
+                                        (len contra aignet-pathcond)
+                                        (b* ((len (aignet-pathcond-len aignet-pathcond))
+                                             ((mv contra aignet-pathcond)
+                                              (aignet-pathcond-assume x aignet aignet-pathcond))
+                                             ((when contra)
+                                              (b* ((aignet-pathcond (aignet-pathcond-rewind len aignet-pathcond)))
+                                                (mv len contra aignet-pathcond))))
+                                          (mv len contra aignet-pathcond))
+                                        (b* (((when contra) (mv contra pathcond))
+                                             (stack (cons len (pathcond-checkpoint-ptrs pathcond)))
+                                             (pathcond (update-pathcond-checkpoint-ptrs stack pathcond)))
+                                          (mv nil pathcond))))
                            (mv contra pathcond)))))
   ///
   ;; (defret logicman-get-of-logicman-pathcond-assume
@@ -301,6 +361,32 @@
 
   ;; (defret logicman-extension-p-of-logicman-pathcond-assume
   ;;   (logicman-extension-p new-logicman logicman))
+  
+  (local (defthm nbalist-stobj-rewind-of-assume-logic
+           (equal (aignet::nbalist-stobj-rewind
+                   (len (aignet::nbalist-fix nbalist))
+                   (mv-nth 1 (aignet::aignet-pathcond-assume-logic
+                              lit aignet nbalist)))
+                  (aignet::nbalist-fix nbalist))
+           :hints (("goal" :use ((:instance aignet::nbalist-extension-of-aignet-pathcond-assume-logic
+                                  (nbalist-stobj nbalist) (lit lit) (aignet aignet)))
+                    :in-theory (disable aignet::nbalist-extension-of-aignet-pathcond-assume-logic)))))
+
+  (local (defthm rewind-calist-of-calist-assume
+           (equal (rewind-calist
+                   (len (calist-fix calist))
+                   (mv-nth 1 (calist-assume lit calist)))
+                  (calist-fix calist))
+           :hints (("goal" :use ((:instance calist-extension-p-of-calist-assume
+                                  (calist-stobj calist) (x lit)))
+                    :in-theory (disable calist-extension-p-of-calist-assume)))))
+
+  (defret logicman-pathcond-p-of-<fn>
+    (implies (and (logicman-pathcond-p pathcond)
+                  (lbfr-p x))
+             (logicman-pathcond-p new-pathcond))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable logicman-pathcond-p)))))
   
 
   (defret logicman-pathcond-assume-correct
@@ -335,21 +421,46 @@
 
   (local (in-theory (disable (force))))
 
-  (defret pathcond-rewindable-of-logicman-pathcond-assume
-    (implies (equal (bfr-mode-fix bfr-mode) (bfr-mode-fix (lbfr-mode)))
-             (pathcond-rewindable bfr-mode new-pathcond pathcond))
-    :hints(("Goal" :in-theory (enable pathcond-rewindable bfr-fix))))
+  (local (defthm update-nth-redundant
+           (implies (and (equal val (nth n x))
+                         (< (nfix n) (len x)))
+                    (equal (update-nth n val x) x))
+           :hints(("Goal" :in-theory (enable nth update-nth)))))
 
+  (local (defthm len-of-pathcond-fix
+           (equal (len (pathcond-fix x)) 6)
+           :hints(("Goal" :in-theory (enable pathcond-fix)))))
 
-  (defret pathcond-checkpoint-p-of-logicman-pathcond-assume
-    (implies (pathcond-checkpoint-p chp (lbfr-mode) pathcond)
-             (pathcond-checkpoint-p chp (lbfr-mode) new-pathcond))
-    :hints (("goal" :use ((:instance pathcond-checkpoint-p-when-rewindable
-                           (old pathcond)
-                           (new new-pathcond)
-                           (bfr-mode (lbfr-mode))))
-             :in-theory (disable pathcond-checkpoint-p-when-rewindable
-                                 logicman-pathcond-assume))))
+  ;; (local (defthm len-of-calist-assume
+  ;;          (implies (calistp calist)
+  ;;                   (<= (len calist) (len (mv-nth 1 (calist-assume x calist)))))
+  ;;          :hints(("Goal" :in-theory (enable calist-assume)))
+  ;;          :rule-classes :linear))
+  
+
+  (defret pathcond-rewind-of-logicman-pathcond-assume
+    (implies (and (not contradictionp)
+                  (equal (bfr-mode-fix bfr-mode) (bfr-mode-fix (lbfr-mode))))
+             (equal (pathcond-rewind bfr-mode new-pathcond)
+                    (pathcond-fix pathcond)))
+    :hints(("Goal" :in-theory (enable pathcond-rewind bfr-fix))
+           (and stable-under-simplificationp
+                '(:in-theory (enable pathcond-fix update-nth)))))
+
+  (defret logicman-pathcond-assume-unchanged-when-contradictionp
+    (implies contradictionp
+             (equal new-pathcond
+                    (pathcond-fix pathcond))))
+
+  ;; (defret pathcond-checkpoint-p-of-logicman-pathcond-assume
+  ;;   (implies (pathcond-checkpoint-p chp (lbfr-mode) pathcond)
+  ;;            (pathcond-checkpoint-p chp (lbfr-mode) new-pathcond))
+  ;;   :hints (("goal" :use ((:instance pathcond-checkpoint-p-when-rewindable
+  ;;                          (old pathcond)
+  ;;                          (new new-pathcond)
+  ;;                          (bfr-mode (lbfr-mode))))
+  ;;            :in-theory (disable pathcond-checkpoint-p-when-rewindable
+  ;;                                logicman-pathcond-assume))))
   ;; (local
   ;;  #!aignet
   ;;  (Defthm depends-on-of-aignet-lit-fix

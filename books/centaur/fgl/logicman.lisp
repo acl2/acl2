@@ -352,13 +352,15 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (implies (and (bind-logicman-extension new old)
                   (gl-bfr-object-p x (logicman->bfrstate old)))
              (gl-bfr-object-p x (logicman->bfrstate new)))
-    :hints (("goal" :use bfrstate>=-when-logicman-extension)))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension
+             :in-theory (disable gl-bfr-object-p-when-gl-object-p))))
 
   (defthm gl-bfr-objectlist-p-when-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (gl-bfr-objectlist-p x (logicman->bfrstate old)))
              (gl-bfr-objectlist-p x (logicman->bfrstate new)))
-    :hints (("goal" :use bfrstate>=-when-logicman-extension))))
+    :hints (("goal" :use bfrstate>=-when-logicman-extension
+             :in-theory (disable gl-bfr-objectlist-p-when-gl-objectlist-p)))))
 
 
 
@@ -826,16 +828,18 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (define bfr-nvars (&optional (logicman 'logicman))
   ;; :guard (logicman-nvars-ok)
 ;;  :prepwork ((local (in-theory (enable logicman-nvars-ok))))
-  (mbe :logic (non-exec (aignet::num-ins (logicman->aignet logicman)))
-       :exec (stobj-let
-              ((aignet (logicman->aignet logicman)))
-              (nvars)
-              (aignet::num-ins aignet)
-              nvars))
+  (b* (((unless (lbfr-mode-is :aignet)) 0))
+    (mbe :logic (non-exec (aignet::num-ins (logicman->aignet logicman)))
+         :exec (stobj-let
+                ((aignet (logicman->aignet logicman)))
+                (nvars)
+                (aignet::num-ins aignet)
+                nvars)))
   ///
   (def-updater-independence-thm bfr-nvars-updater-independence
-    (implies (equal (aignet::num-ins (logicman->aignet new))
-                    (aignet::num-ins (logicman->aignet old)))
+    (implies (and (equal (aignet::num-ins (logicman->aignet new))
+                         (aignet::num-ins (logicman->aignet old)))
+                  (equal (lbfr-mode new) (lbfr-mode old)))
              (equal (bfr-nvars new) (bfr-nvars old))))
 
   (defthm bfr-nvars-of-logicman-extension
@@ -878,10 +882,20 @@ logicman stobj.  If no logicman argument is supplied, the variable named
      logicman))
   ///
   (defret bfr-nvars-of-<fn>
-    (implies (lbfr-mode-is :aignet)
-             (equal (bfr-nvars new-logicman)
-                    (+ 1 (bfr-nvars logicman))))
-    :hints(("Goal" :in-theory (enable bfr-nvars)))))
+    (equal (bfr-nvars new-logicman)
+           (if (lbfr-mode-is :aignet)
+               (+ 1 (bfr-nvars logicman))
+             (bfr-nvars logicman)))
+    :hints(("Goal" :in-theory (enable bfr-nvars))))
+
+  (defret logicman-get-of-logicman-add-var
+    (implies (not (equal (logicman-field-fix key) :aignet))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman))))
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
 
 
@@ -913,7 +927,16 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (bfr-varname-p x old))
              (bfr-varname-p x new))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable logicman-extension-p))))))
+                 '(:in-theory (enable logicman-extension-p)))))
+
+  (defthm bfr-varname-p-when-not-aignet
+    (implies (not (lbfr-mode-is :aignet))
+             (bfr-varname-p x)))
+
+  (defthm bfr-varname-p-nvars-of-logicman-add-var
+    (bfr-varname-p (bfr-nvars logicman)
+                   (logicman-add-var logicman))
+    :hints(("Goal" :in-theory (enable bfr-nvars logicman-add-var)))))
 
 (define logicman-check-nvars ((n natp) &optional (logicman 'logicman))
   (or (not (lbfr-mode-is :aignet))
@@ -924,7 +947,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (< (nfix v) (nfix n)))
              (bfr-varname-p v))
     :hints(("Goal" :in-theory (enable bfr-varname-p)))))
-             
+
 
 ;; (define bfr-varname-p (x)
 ;;   (natp x)
@@ -1606,6 +1629,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman) (bfr-nvars logicman)))
+
   (defret logicman-get-of-<fn>
     (implies (and (equal key1 (logicman-field-fix key))
                   (not (eq key1 :aignet))
@@ -1690,6 +1716,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman) (bfr-nvars logicman)))
+
   (defret logicman-get-of-<fn>
     (implies (and (equal key1 (logicman-field-fix key))
                   (not (eq key1 :aignet))
@@ -1773,6 +1802,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defret logicman-extension-p-of-<fn>
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman) (bfr-nvars logicman)))
 
   (defret logicman-get-of-<fn>
     (implies (and (equal key1 (logicman-field-fix key))
@@ -1859,6 +1891,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman) (bfr-nvars logicman)))
+  
   (defret logicman-get-of-<fn>
     (implies (and (equal key1 (logicman-field-fix key))
                   (not (eq key1 :aignet))
@@ -1962,6 +1997,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (logicman-extension-p new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-extension-p))))
 
+  (defret bfr-nvars-of-<fn>
+    (equal (bfr-nvars new-logicman) (bfr-nvars logicman)))
+  
   (defret logicman-get-of-<fn>
     (implies (and (equal key1 (logicman-field-fix key))
                   (not (eq key1 :aignet))
@@ -2167,7 +2205,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
            (cons (<name>-gl-object-eval (car x) env)
                  (<name>-gl-objectlist-eval (cdr x) env))))
        ///
-       (verify-guards <name>-gl-object-eval-fn)
+       (verify-guards <name>-gl-object-eval-fn
+         :hints(("Goal" :in-theory (disable gl-bfr-object-p-when-gl-object-p
+                                            gl-bfr-objectlist-p-when-gl-objectlist-p))))
        
        (defret-mutual <name>-gl-object-eval-of-gl-bfr-object-fix
         (defret <name>-gl-object-eval-of-gl-bfr-object-fix
@@ -2204,7 +2244,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                     (equal (<name>-gl-object-eval x env new)
                            (<name>-gl-object-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<name>-gl-object-eval x env logicman))
-                               (gl-bfr-object-p x old))))
+                               (gl-bfr-object-p x old))
+                     :in-theory (disable gl-bfr-object-p-when-gl-object-p
+                                         gl-bfr-objectlist-p-when-gl-objectlist-p)))
            :flag <name>-gl-object-eval)
          (defthm <name>-gl-objectlist-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
@@ -2212,7 +2254,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                     (equal (<name>-gl-objectlist-eval x env new)
                            (<name>-gl-objectlist-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<name>-gl-objectlist-eval x env logicman))
-                              (gl-bfr-objectlist-p x old))))
+                              (gl-bfr-objectlist-p x old))
+                     :in-theory (disable gl-bfr-object-p-when-gl-object-p
+                                         gl-bfr-objectlist-p-when-gl-objectlist-p)))
             :flag <name>-gl-objectlist-eval)
          :hints (("goal" :induct (<name>-gl-object-eval-flag flag x env old))))
 
