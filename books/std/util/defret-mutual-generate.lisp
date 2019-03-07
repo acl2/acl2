@@ -605,14 +605,26 @@ function names. For example:</p>
                       (dmgen-process-function-keys (cdr (assoc :function-keys kwd-alist))))))
     (dmgen-generate-for-rules thmname rules (defines-guts->gutslist guts))))
 
-(define dmgen-multi-rulesets (dmgen-forms guts)
+(defun dmgen-multi-rulesets (dmgen-forms guts)
   (if (atom dmgen-forms)
       nil
     (append (dmgen-multi-ruleset (car dmgen-forms) guts)
             (dmgen-multi-rulesets (cdr dmgen-forms) guts))))
 
-(defun dmgen-multi (mutrec dmgen-forms world)
+
+(defun kwd-alist-to-keyword-value-list (keys kwd-alist)
+  (if (atom keys)
+      nil
+    (let ((look (assoc-eq (car keys) kwd-alist)))
+      (if look
+          (list* (car keys) (cdr look)
+                 (kwd-alist-to-keyword-value-list (cdr keys) kwd-alist))
+        (kwd-alist-to-keyword-value-list (cdr keys) kwd-alist)))))
+      
+
+(defun dmgen-multi (kwd-alist dmgen-forms world)
   (b* ((defines-alist (get-defines-alist world))
+       (mutrec (cdr (assoc :mutual-recursion kwd-alist)))
        (mutual-recursion (or mutrec (caar defines-alist)))
        ((unless mutual-recursion)
         (er hard? 'defret-mutual-generate
@@ -626,7 +638,21 @@ function names. For example:</p>
     `(defret-mutual ,top-thmname
        ,@defrets
        :skip-others t
-       :mutual-recursion ,mutual-recursion)))
+       ,@(kwd-alist-to-keyword-value-list
+          '(:mutual-recursion :hints :no-induction-hint :instructions :otf-flg)
+          kwd-alist))))
+
+
+(defun dmgen-extract-keywords (args keys)
+  (if (atom args)
+      (mv nil nil)
+    (if (and (symbolp (car args))
+             (member-eq (car args) keys))
+        (b* (((mv others kwd-alist) (dmgen-extract-keywords (cddr args) keys)))
+          (mv others (cons (cons (car args) (cadr args)) kwd-alist)))
+      (b* (((mv others kwd-alist) (dmgen-extract-keywords (cdr args) keys)))
+        (mv (cons (car args) others) kwd-alist)))))
+
 
 (defun dmgen-single (args world)
   (b* ((thmname (car args))
@@ -634,26 +660,20 @@ function names. For example:</p>
        ((unless (keyword-value-listp keywords))
         (er hard? 'defret-mutual-generate
             "Bad arguments: not a keyword-value list"))
-       (mutual-recursion-look (assoc-keyword :mutual-recursion keywords))
-       (keywords-except-mutual-recursion
-        (if mutual-recursion-look
-            (append (take (- (len keywords) (len mutual-recursion-look)) keywords)
-                    (cddr mutual-recursion-look))
-          keywords))
-       (dmgen-forms `((defret-generate ,thmname . ,keywords-except-mutual-recursion))))
-    (dmgen-multi (cadr mutual-recursion-look) dmgen-forms world)))
+       ((mv defret-generate-args top-kwd-alist)
+        (dmgen-extract-keywords keywords '(:mutual-recursion :hints :no-induction-hint
+                                           :instructions :otf-flg)))
+       (dmgen-forms `((defret-generate ,thmname . ,defret-generate-args))))
+    (dmgen-multi top-kwd-alist dmgen-forms world)))
 
 
 (defun defret-mutual-generate-fn (args world)
   (b* (((when (symbolp (car args)))
         (dmgen-single args world))
-       (mutrec-look (member :mutual-recursion args))
-       (args-except-mutual-recursion
-        (if mutrec-look
-            (append (take (- (len args) (len mutrec-look)) args)
-                    (cddr mutrec-look))
-          args)))
-    (dmgen-multi (cadr mutrec-look) args-except-mutual-recursion world)))
+       ((mv defret-generate-forms top-kwd-alist)
+        (dmgen-extract-keywords args '(:mutual-recursion :hints :no-induction-hint
+                                       :instructions :otf-flg))))
+    (dmgen-multi top-kwd-alist defret-generate-forms world)))
 
 (defmacro defret-mutual-generate (&rest args)
   `(make-event
