@@ -448,14 +448,12 @@
 (defun flexsum-predicate-def (sum)
   (b* (((flexsum sum) sum)
        (short (cat "Recognizer for @(see " (xdoc::full-escape-symbol sum.name) ") structures."))
-       (bool  (intern-in-package-of-symbol "BOOL" sum.name))
        (consp-when-foo-p (intern-in-package-of-symbol
                           (cat "CONSP-WHEN-" (symbol-name sum.pred))
                           sum.pred)))
     `(define ,sum.pred (,sum.xvar)
        :parents (,sum.name)
        :short ,short
-       :returns ,bool
        :measure ,sum.measure
        ,@(and (getarg :measure-debug nil sum.kwd-alist)
               `(:measure-debug t))
@@ -676,11 +674,18 @@
        ((unless sum.case) nil)
        (case-spec (if sum.kind
                       (flexsum-kind-case-macro-spec sum)
-                    (flexsum-cond-case-macro-spec sum))))
+                    (flexsum-cond-case-macro-spec sum)))
+       (kind-eq (and sum.kind (intern-in-package-of-symbol
+                               (concatenate 'string (symbol-name sum.kind) "-EQ")
+                               sum.kind))))
     `((defmacro ,sum.case (var-or-expr &rest args)
         ,(if sum.kind
              `(kind-casemacro-fn var-or-expr args ',case-spec)
-           `(cond-casemacro-fn var-or-expr args ',case-spec))))))
+           `(cond-casemacro-fn var-or-expr args ',case-spec)))
+      ,@(and sum.kind
+             `((defmacro ,kind-eq (kind keyword)
+                 (declare (xargs :guard (member-eq keyword ',(flexprods->kinds sum.prods))))
+                 `(eq ,kind ,keyword)))))))
 
 (defun flextype-def-sum-kinds (sums)
   (if (atom sums)

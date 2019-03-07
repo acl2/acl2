@@ -105,7 +105,8 @@
         ;; Check whether we covered all the prod-kinds.
         (let ((diff (set-difference-eq (kind-casemacro-prod-kinds cases) seen)))
           (and diff
-               (er hard? 'kind-casemacro-fn "No case covers product kinds ~x0~%" diff))))
+               (er hard? 'kind-casemacro-fn "No case covers product kinds ~x0~%"
+                   (remove-duplicates-eq diff)))))
        (kind (car keys))
        ((when (eq kind :otherwise))
         ;; Check whether there are any remaining cases.

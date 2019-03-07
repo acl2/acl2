@@ -141,7 +141,6 @@
   (b* (((flexalist alist) alist)
        ;; std::deflist-compatible variable names
        (stdx (intern-in-package-of-symbol "X" alist.pred))
-       (bool (intern-in-package-of-symbol "BOOL" alist.name))
        ;; (stda (intern-in-package-of-symbol "A" alist.pred)))
        (std-defalist-call (and (not alist.unique-keys)
                                `((std::defalist ,alist.pred (,stdx)
@@ -161,7 +160,6 @@
            . ,std-defalist-call)
       `(define ,alist.pred (,alist.xvar)
          :parents (,alist.name)
-         :returns ,bool
          :progn t
          :short ,(str::cat "Recognizer for @(see " (xdoc::full-escape-symbol alist.name) ").")
          :measure ,alist.measure

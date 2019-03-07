@@ -352,7 +352,6 @@
 (define bitstruct-pred (x)
   (b* (((bitstruct x))
        (short (cat "Recognizer for @(see " (xdoc::full-escape-symbol x.name) ") bit structures."))
-       (bool (intern-in-package-of-symbol "BOOL" x.name))
        (def (if x.signedp
 		`(signed-byte-p ,x.width ,x.xvar)
 	      `(unsigned-byte-p ,x.width ,x.xvar)))
@@ -370,7 +369,6 @@
     `(define ,x.pred (,x.xvar)
        :parents (,x.name)
        :short ,short
-       :returns ,bool
        :progn t
        :guard-hints (("goal" :in-theory (enable unsigned-byte-p signed-byte-p)))
        ,full-def
