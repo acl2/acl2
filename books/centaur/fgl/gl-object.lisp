@@ -33,6 +33,7 @@
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "arith-base")
 
 (fty::deftypes gl-object
   (fty::defflexsum gl-object
@@ -128,4 +129,46 @@ auto-bindings).</p>"
     (g-integer (numlist start by n))))
 
 
-(fty::defmap gl-object-alist :key-type pseudo-var-p :val-type gl-object :true-listp t)
+(fty::defmap gl-object-alist :key-type pseudo-var-p :val-type gl-object :true-listp t
+  ///
+  (defthm gl-object-alist-p-of-append
+    (implies (and (gl-object-alist-p x)
+                  (gl-object-alist-p y))
+             (gl-object-alist-p (append x y)))))
+
+
+(define mk-g-boolean (x)
+  :returns (bool gl-object-p)
+  (if (booleanp x)
+      (g-concrete x)
+    (g-boolean x)))
+
+(define mk-g-integer ((x true-listp))
+  :returns (int gl-object-p :hints(("Goal" :in-theory (enable gl-object-p))))
+  (if (boolean-listp (mbe :logic (true-list-fix x) :exec x))
+      (g-concrete (bools->int x))
+    (g-integer x)))
+
+(defines gl-object-symbolic-boolean-free
+  (define gl-object-symbolic-boolean-free ((x gl-object-p))
+    :measure (gl-object-count x)
+    (gl-object-case x
+      :g-integer nil
+      :g-boolean nil
+      :g-concrete t
+      :g-ite (and (gl-object-symbolic-boolean-free x.test)
+                  (gl-object-symbolic-boolean-free x.then)
+                  (gl-object-symbolic-boolean-free x.else))
+      :g-var t
+      :g-cons (and (gl-object-symbolic-boolean-free x.car)
+                   (gl-object-symbolic-boolean-free x.cdr))
+      :g-apply (gl-objectlist-symbolic-boolean-free x.args)))
+  (define gl-objectlist-symbolic-boolean-free ((x gl-objectlist-p))
+    :measure (gl-objectlist-count x)
+    (if (atom x)
+        t
+      (and (gl-object-symbolic-boolean-free (car x))
+           (gl-objectlist-symbolic-boolean-free (cdr x)))))
+  ///
+  (fty::deffixequiv-mutual gl-object-symbolic-boolean-free
+    :hints (("goal" :expand ((gl-objectlist-fix x))))))

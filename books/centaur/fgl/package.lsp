@@ -184,7 +184,10 @@
      gl-bdd-mode gl-aig-mode gl-mbe
 
      logcons logcar logcdr loghead logtail logapp logext
-     b-ior b-and b-xor b-not bfix bitp bool-fix bool->bit
+     b-ior b-and b-xor b-not bfix bitp
+     bool-fix bool-fix$inline
+     bool->bit bool->bit$inline
+     bit->bool bit->bool$inline
      binary-- binary-minus-for-gl
 
      numlist
@@ -227,8 +230,13 @@
      pseudo-term pseudo-term-kind pseudo-term-case
      pseudo-term-fix pseudo-term-equiv pseudo-term-count
      pseudo-term-list pseudo-term-list-fix pseudo-term-list-equiv pseudo-term-list-count
-     pseudo-term-null pseudo-term-quote pseudo-term-var pseudo-term-fncall pseudo-term-lambda
-     pseudo-term-call pseudo-term-const
+     pseudo-term-null
+     pseudo-term-quote pseudo-term-quote->val
+     pseudo-term-var pseudo-term-var->name
+     pseudo-term-fncall pseudo-term-fncall->fn
+     pseudo-term-lambda pseudo-term-lambda->formals pseudo-term-lambda->body
+     pseudo-term-call pseudo-term-call->args pseudo-term-call->fn
+     pseudo-term-const pseudo-term-const->val
 
      rev str-fix
 

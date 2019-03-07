@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "clause-processors/unify-subst" :dir :system)
-(include-book "glcp-unify-defs")
+(include-book "glcp-unify-thms")
 (include-book "clause-processors/magic-ev" :dir :system)
 (include-book "centaur/meta/term-vars" :dir :system)
 
@@ -232,6 +232,112 @@
 
 (fty::defmap constraint-db :key-type pseudo-fnsym-p :val-type constraint-tuplelist :true-listp t)
 
+
+(defthm gl-object-alist-bfrlist-of-append
+  (equal (gl-object-alist-bfrlist (append a b))
+         (append (gl-object-alist-bfrlist a)
+                 (gl-object-alist-bfrlist b)))
+  :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist))))
+
+(define gl-object-alistlist-bfrlist ((x gl-object-alistlist-p))
+  :returns (bfrs)
+  (if (atom x)
+      nil
+    (append (gl-object-alist-bfrlist (car x))
+            (gl-object-alistlist-bfrlist (cdr x))))
+  ///
+  (defthm gl-object-alistlist-bfrlist-of-append
+    (equal (gl-object-alistlist-bfrlist (append a b))
+           (append (gl-object-alistlist-bfrlist a)
+                   (gl-object-alistlist-bfrlist b)))
+    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist)))))
+
+(define sig-table-bfrlist ((x sig-table-p))
+  :returns (bfrs)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (gl-objectlist-p (caar x))))
+        (append (gl-objectlist-bfrlist (caar x))
+                (gl-object-alistlist-bfrlist (cdar x))
+                (sig-table-bfrlist (cdr x)))
+      (sig-table-bfrlist (cdr x))))
+  ///
+  (defthm sig-table-bfrlist-of-append
+    (equal (sig-table-bfrlist (append a b))
+           (append (sig-table-bfrlist a)
+                   (sig-table-bfrlist b)))
+    :hints(("Goal" :in-theory (enable sig-table-bfrlist))))
+
+  (defthm member-bfrlist-of-sig-table-lookup
+    (implies (and (gl-objectlist-p pat)
+                  (not (member v (sig-table-bfrlist x))))
+             (not (member v (gl-object-alistlist-bfrlist
+                             (cdr (hons-assoc-equal pat x)))))))
+
+  (local (in-theory (enable sig-table-fix))))
+
+(define constraint-tuple-bfrlist ((x constraint-tuple-p))
+  :returns (bfrs)
+  (b* (((constraint-tuple x)))
+    (sig-table-bfrlist x.sig-table)))
+
+(define constraint-tuplelist-bfrlist ((x constraint-tuplelist-p))
+  :returns (bfrs)
+  (if (atom x)
+      nil
+    (append (constraint-tuple-bfrlist (car x))
+            (constraint-tuplelist-bfrlist (cdr x))))
+  ///
+  (defthm constraint-tuplelist-bfrlist-of-append
+    (equal (constraint-tuplelist-bfrlist (append a b))
+           (append (constraint-tuplelist-bfrlist a)
+                   (constraint-tuplelist-bfrlist b)))
+    :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
+
+(define constraint-db-bfrlist ((x constraint-db-p))
+  :returns (bfrs)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (pseudo-fnsym-p (caar x))))
+        (append (constraint-tuplelist-bfrlist (cdar x))
+                (constraint-db-bfrlist (cdr x)))
+      (constraint-db-bfrlist (cdr x))))
+  ///
+  (local (in-theory (enable constraint-db-fix)))
+
+  (defthm constraint-tuplelist-bfrlist-of-lookup
+    (implies (pseudo-fnsym-p pat)
+             (subsetp (constraint-tuplelist-bfrlist
+                       (cdr (hons-assoc-equal pat x)))
+                      (constraint-db-bfrlist x))))
+
+  (defthm member-constraint-tuplelist-bfrlist-of-lookup
+    (implies (and (pseudo-fnsym-p pat)
+                  (not (member v (constraint-db-bfrlist x))))
+             (not (member v (constraint-tuplelist-bfrlist
+                             (cdr (hons-assoc-equal pat x))))))
+    :hints (("goal" :use constraint-tuplelist-bfrlist-of-lookup
+             :in-theory (disable constraint-tuplelist-bfrlist-of-lookup))))
+
+  (defthm member-constraint-db-bfrlist-of-hons-shrink-alist
+    (implies (and (not (member v (constraint-db-bfrlist x)))
+                  (not (member v (constraint-db-bfrlist y))))
+             (not (member v (constraint-db-bfrlist (hons-shrink-alist x y))))))
+
+  (defthm subsetp-constraint-db-bfrlist-of-hons-shrink-alist
+    (subsetp (constraint-db-bfrlist (hons-shrink-alist x nil))
+             (constraint-db-bfrlist x))
+    :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw))))
+
+  (defthm constraint-db-bfrlist-of-append
+    (equal (constraint-db-bfrlist (append a b))
+           (append (constraint-db-bfrlist a)
+                   (constraint-db-bfrlist b)))
+    :hints(("Goal" :in-theory (enable constraint-db-bfrlist)))))
+
+
 ;; Code to add a rule to the initial catalog (with empty existing-lits etc).
 (define gbc-rule-lit-add-catalog-entry ((var pseudo-var-p)
                                         (pat pseudo-termp)
@@ -255,7 +361,14 @@
                    :common-vars nil
                    :existing-vars nil
                    :sig-table (hons-acons nil (list nil) nil))))
-    (cons (cons pat.fn (cons new-tuple tuples)) (constraint-db-fix ccat))))
+    (cons (cons pat.fn (cons new-tuple tuples)) (constraint-db-fix ccat)))
+  ///
+  (defret bfrlist-of-<fn>
+    (acl2::set-equiv (constraint-db-bfrlist new-ccat)
+                     (constraint-db-bfrlist ccat))
+    :hints(("Goal" :in-theory (enable constraint-db-bfrlist
+                                      constraint-tuplelist-bfrlist
+                                      constraint-tuple-bfrlist)))))
 
 (define gbc-rule-add-catalog-entries ((lit-alist pseudo-term-subst-p)
                                       (rule constraint-rule-p)
@@ -269,6 +382,13 @@
        (ccat (gbc-rule-lit-add-catalog-entry var pat rule ccat)))
     (gbc-rule-add-catalog-entries (cdr lit-alist) rule ccat))
   ///
+  
+  (defret bfrlist-of-<fn>
+    (acl2::set-equiv (constraint-db-bfrlist new-ccat)
+                     (constraint-db-bfrlist ccat))
+    :hints(("Goal" :in-theory (enable constraint-db-bfrlist
+                                      constraint-tuplelist-bfrlist
+                                      constraint-tuple-bfrlist))))
   (local (in-theory (enable pseudo-term-subst-fix)))) ;; for fix hook
 
 
@@ -316,7 +436,15 @@
   (b* (((constraint-rule rule)))
     (hons-shrink-alist
      (gbc-rule-add-catalog-entries rule.lit-alist rule ccat)
-     nil)))
+     nil))
+  ///
+  (defret bfrlist-of-<fn>
+    (subsetp (constraint-db-bfrlist new-ccat) (constraint-db-bfrlist ccat))
+    :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw))))
+
+  (defret member-bfrlist-of-<fn>
+    (implies (not (member v (constraint-db-bfrlist ccat)))
+             (not (member v (constraint-db-bfrlist new-ccat))))))
 
 (defmacro gbc-add-rule (name lit-alist syntaxp)
   `(table fgl::gl-bool-constraints
@@ -447,6 +575,12 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (equal (assoc k x)
                          (hons-assoc-equal k x)))))
 
+(defthm member-bfrlist-of-lookup-in-gl-object-alist
+  (implies (and (not (member v (gl-object-alist-bfrlist x)))
+                (pseudo-var-p k))
+           (not (member v (gl-object-bfrlist (cdr (hons-assoc-equal k x))))))
+  :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist hons-assoc-equal))))
+
 (define gbc-signature ((common-vars pseudo-var-list-p)
                        (subst gl-object-alist-p))
   :returns (sig gl-objectlist-p)
@@ -454,7 +588,11 @@ prior to introducing the constraint rule above, but succeed after:</p>
       nil
     (hons (cdr (assoc (pseudo-var-fix (car common-vars))
                       (gl-object-alist-fix subst)))
-          (gbc-signature (cdr common-vars) subst))))
+          (gbc-signature (cdr common-vars) subst)))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (not (member v (gl-object-alist-bfrlist subst)))
+             (not (member v (gl-objectlist-bfrlist sig))))))
 
 (define gbc-extend-substs ((lit-subst gl-object-alist-p)
                            (partial-substs gl-object-alistlist-p))
@@ -464,7 +602,13 @@ prior to introducing the constraint rule above, but succeed after:</p>
     ;; is append good enough? I think so
     (cons (append (gl-object-alist-fix lit-subst)
                   (gl-object-alist-fix (car partial-substs)))
-          (gbc-extend-substs lit-subst (cdr partial-substs)))))
+          (gbc-extend-substs lit-subst (cdr partial-substs))))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-alist-bfrlist lit-subst)))
+                  (not (member v (gl-object-alistlist-bfrlist partial-substs))))
+             (not (member v (gl-object-alistlist-bfrlist new-substs))))
+    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist)))))
 
 (local (defthm symbol-alistp-when-gl-object-alist-p
          (implies (gl-object-alist-p x)
@@ -480,6 +624,22 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 (fty::deflist constraint-instancelist :elt-type constraint-instance :true-listp t)
 
+(define constraint-instance-bfrlist ((x constraint-instance-p))
+  (gl-object-alist-bfrlist (constraint-instance->subst x)))
+
+(define constraint-instancelist-bfrlist ((x constraint-instancelist-p))
+  (if (atom x)
+      nil
+    (append (constraint-instance-bfrlist (car x))
+            (constraint-instancelist-bfrlist (cdr x))))
+  ///
+  (defthm constraint-instancelist-bfrlist-of-append
+    (equal (constraint-instancelist-bfrlist (append a b))
+           (append (constraint-instancelist-bfrlist a)
+                   (constraint-instancelist-bfrlist b)))
+    :hints(("Goal" :in-theory (enable constraint-instancelist-bfrlist)))))
+
+
 (define gbc-substs-check-syntaxp ((substs gl-object-alistlist-p)
                                   (thmname symbolp)
                                   (syntaxp pseudo-termp)
@@ -491,7 +651,14 @@ prior to introducing the constraint rule above, but succeed after:</p>
        ((when (or err (not ok)))
         (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
     (cons (constraint-instance thmname subst)
-          (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state))))
+          (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (not (member v (gl-object-alistlist-bfrlist substs)))
+             (not (member v (constraint-instancelist-bfrlist insts))))
+    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist
+                                      constraint-instancelist-bfrlist
+                                      constraint-instance-bfrlist)))))
 
 
 (define gbc-sort-substs-into-sigtable ((substs gl-object-alistlist-p)
@@ -503,7 +670,14 @@ prior to introducing the constraint rule above, but succeed after:</p>
        (sig (gbc-signature common-vars subst))
        (sig-substs (cdr (hons-get sig (sig-table-fix sigtable))))
        (sigtable (hons-acons sig (cons subst sig-substs) sigtable)))
-    (gbc-sort-substs-into-sigtable (cdr substs) common-vars sigtable)))
+    (gbc-sort-substs-into-sigtable (cdr substs) common-vars sigtable))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+                  (not (member v (sig-table-bfrlist sigtable))))
+             (not (member v (sig-table-bfrlist new-sigtable))))
+    :hints(("Goal" :in-theory (enable sig-table-bfrlist
+                                      gl-object-alistlist-bfrlist)))))
 
 
 ;; Invariant: for a given rule, existing lit set, and matching lit, there is at
@@ -538,7 +712,16 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                                 x.sig-table)))
     (mv t
         (cons (change-constraint-tuple x :sig-table sigtable)
-              (cdr tuples)))))
+              (cdr tuples))))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+                  (not (member v (constraint-tuplelist-bfrlist tuples))))
+             (not (member v (constraint-tuplelist-bfrlist new-tuples))))
+    :hints(("Goal" :in-theory (e/d (constraint-tuplelist-bfrlist
+                                      constraint-tuple-bfrlist)
+                                   ((:d gbc-add-substs-to-existing-tuple)))
+            :induct <call> :expand (<call>)))))
 
 
 
@@ -570,7 +753,15 @@ prior to introducing the constraint rule above, but succeed after:</p>
                    :common-vars common-vars
                    :existing-vars existing-vars
                    :sig-table sigtable)))
-    (hons-acons fnsym (cons new-tuple tuples) ccat)))
+    (hons-acons fnsym (cons new-tuple tuples) ccat))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+                  (not (member v (constraint-db-bfrlist ccat))))
+             (not (member v (constraint-db-bfrlist new-ccat))))
+    :hints(("Goal" :in-theory (enable constraint-db-bfrlist
+                                      constraint-tuplelist-bfrlist
+                                      constraint-tuple-bfrlist)))))
 
 (define gbc-add-new-substs-for-unmatched-lits ((unmatched-litvars pseudo-var-list-p)
                                                (rule constraint-rule-p)
@@ -584,7 +775,12 @@ prior to introducing the constraint rule above, but succeed after:</p>
     (gbc-add-new-substs-for-unmatched-lits
      (cdr unmatched-litvars) rule existing-lits existing-vars substs
      (gbc-add-new-substs-for-unmatched-lit
-      (car unmatched-litvars) rule existing-lits existing-vars substs ccat))))
+      (car unmatched-litvars) rule existing-lits existing-vars substs ccat)))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+                  (not (member v (constraint-db-bfrlist ccat))))
+             (not (member v (constraint-db-bfrlist new-ccat))))))
 
 (local (defthm pseudo-var-list-p-strip-cars-of-gl-object-alist
          (implies (gl-object-alist-p x)
@@ -638,7 +834,15 @@ prior to introducing the constraint rule above, but succeed after:</p>
               new-existing-vars
               new-substs
               ccat)))
-    (mv nil ccat)))
+    (mv nil ccat))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-bfrlist lit)))
+                  (not (member v (constraint-tuple-bfrlist tuple)))
+                  (not (member v (constraint-db-bfrlist ccat))))
+             (and (not (member v (constraint-instancelist-bfrlist insts)))
+                  (not (member v (constraint-db-bfrlist new-ccat)))))
+    :hints(("Goal" :in-theory (enable constraint-tuple-bfrlist)))))
 
 
 
@@ -654,7 +858,16 @@ prior to introducing the constraint rule above, but succeed after:</p>
         (gbc-process-new-lit-tuple lit (car tuples) ccat state))
        ((mv substs-rest ccat)
         (gbc-process-new-lit-tuples lit (cdr tuples) ccat state)))
-    (mv (append substs1 substs-rest) ccat)))
+    (mv (append substs1 substs-rest) ccat))
+  ///
+  
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-bfrlist lit)))
+                  (not (member v (constraint-tuplelist-bfrlist tuples)))
+                  (not (member v (constraint-db-bfrlist ccat))))
+             (and (not (member v (constraint-instancelist-bfrlist insts)))
+                  (not (member v (constraint-db-bfrlist new-ccat)))))
+    :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
 
 
 (define gbc-process-new-lit ((lit gl-object-p)
@@ -666,7 +879,14 @@ prior to introducing the constraint rule above, but succeed after:</p>
        ((unless (gl-object-case lit :g-apply))
         (mv nil ccat))
        (tuples (cdr (hons-get (g-apply->fn lit) ccat))))
-    (gbc-process-new-lit-tuples lit tuples ccat state)))
+    (gbc-process-new-lit-tuples lit tuples ccat state))
+  ///
+  (defret bfrlist-of-<fn>
+    (implies (and (not (member v (gl-object-bfrlist lit)))
+                  (not (member v (constraint-db-bfrlist ccat))))
+             (and (not (member v (constraint-instancelist-bfrlist insts)))
+                  (not (member v (constraint-db-bfrlist new-ccat)))))
+    :hints(("Goal" :in-theory (enable constraint-tuplelist-bfrlist)))))
 
 
 (define gbc-tuples-make-fast ((x constraint-tuplelist-p))
@@ -689,19 +909,22 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-db-make-fast-rec ((x constraint-db-p)
                               (acc constraint-db-p))
   :returns (new-x constraint-db-p)
-  :measure (len (constraint-db-fix x))
-  (b* ((acc (constraint-db-fix acc))
-       (x (constraint-db-fix x))
-       ((when (atom x)) acc)
-       (acc (if (hons-get (caar x) acc)
-                acc
-              (hons-acons (caar x)
-                            (gbc-tuples-make-fast (cdar x))
-                            acc))))
-    (gbc-db-make-fast-rec (cdr x) acc)))
+  :enabled t
+  (mbe :logic (hons-shrink-alist (constraint-db-fix x)
+                                 (constraint-db-fix acc))
+       :exec (b* ((acc (constraint-db-fix acc))
+                  (x (constraint-db-fix x))
+                  ((when (atom x)) acc)
+                  (acc (if (hons-get (caar x) acc)
+                           acc
+                         (hons-acons (caar x)
+                                     (gbc-tuples-make-fast (cdar x))
+                                     acc))))
+               (gbc-db-make-fast-rec (cdr x) acc))))
 
 (define gbc-db-make-fast ((x constraint-db-p))
   :returns (new-x constraint-db-p)
+  :enabled t
   (gbc-db-make-fast-rec x nil))
 
 (define gbc-db-free-rec ((x constraint-db-p))
@@ -712,6 +935,8 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 (define gbc-db-free ((x constraint-db-p))
   (gbc-db-free-rec (fast-alist-free x)))
+
+
 
 
 

@@ -709,7 +709,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 (define bfr-eval ((x lbfr-p) env &optional (logicman 'logicman))
   :short "Evaluate a BFR under an appropriate BDD/AIG environment."
-  :returns bool
+  :returns (bool t)
   :prepwork (;; (local (include-book "std/lists/nth" :dir :system))
              (local (defthm alist-to-bits-of-nil-under-bits-equiv
                       (aignet::bits-equiv (alist-to-bitarr max nil bitarr)
@@ -789,7 +789,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp x old))
              (equal (bfr-list-eval x env new)
-                    (bfr-list-eval x env old)))))
+                    (bfr-list-eval x env old))))
+
+  (defthm bfr-list-eval-of-true-list-fix
+    (equal (bfr-list-eval (true-list-fix x) env)
+           (bfr-list-eval x env))
+    :hints(("Goal" :in-theory (enable bfr-list-eval)))))
 
 
 
@@ -2009,7 +2014,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (define gobj-bfr-eval ((x lbfr-p)
                        (env gl-env-p)
                        &optional (logicman 'logicman))
-  :returns bool
+  :returns (bool t)
   (bfr-eval x (gl-env->bfr-vals env))
   ///
   (defthm gobj-bfr-eval-consts
@@ -2064,7 +2069,13 @@ logicman stobj.  If no logicman argument is supplied, the variable named
            (if (gobj-bfr-eval x env logicman)
                (gobj-bfr-eval y env logicman)
              (gobj-bfr-eval z env logicman)))
-    :fn bfr-ite))
+    :fn bfr-ite)
+
+  
+  (defthm gobj-bfr-eval-reduce-by-bfr-eval
+    (implies (and (equal ans (bfr-eval x (gl-env->bfr-vals env)))
+                  (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'acl2::bfr-eval-fn)) :otherwise t)))
+             (equal (gobj-bfr-eval x env) ans))))
 
 
 (define gobj-bfr-list-eval ((x lbfr-listp) (env gl-env-p) &optional (logicman 'logicman))
@@ -2097,7 +2108,22 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (equal (len (gobj-bfr-list-eval x env))
            (len x)))
 
-  (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env gl-env-p))))
+  (fty::deffixequiv gobj-bfr-list-eval :args ((x true-listp) (env gl-env-p)))
+
+  (defthmd gobj-bfr-list-eval-is-bfr-list-eval
+    (equal (gobj-bfr-list-eval x env)
+           (bfr-list-eval x (gl-env->bfr-vals env)))
+    :hints(("Goal" :in-theory (enable bfr-list-eval gobj-bfr-eval))))
+
+  (defthm gobj-bfr-list-eval-reduce-by-bfr-list-eval
+    (implies (and (equal ans (bfr-list-eval x (gl-env->bfr-vals env)))
+                  (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'bfr-list-eval-fn)) :otherwise t)))
+             (equal (gobj-bfr-list-eval x env) ans))
+    :hints(("Goal" :in-theory (enable gobj-bfr-list-eval-is-bfr-list-eval))))
+
+  (defthmd gobj-bfr-list-eval-of-boolean-list
+    (implies (boolean-listp (true-list-fix x))
+             (equal (gobj-bfr-list-eval x env) (true-list-fix x)))))
 
 
 (define gobj-var-lookup ((name pseudo-var-p) (env gl-env-p))
@@ -2113,6 +2139,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
      (defapply <name>-apply <fns>)
 
      (defines <name>-gl-object-eval
+       :flag-local nil
        (define <name>-gl-object-eval ((x lgl-bfr-object-p)
                                       (env gl-env-p)
                                       &optional (logicman 'logicman))
@@ -2267,6 +2294,17 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                 (cons (<name>-gl-object-eval car env)
                       (<name>-gl-object-eval cdr env))))
 
+       (defthm <name>-gl-object-eval-of-mk-g-boolean
+         (equal (<name>-gl-object-eval (mk-g-boolean x) env)
+                (gobj-bfr-eval x env))
+         :hints(("Goal" :in-theory (enable mk-g-boolean booleanp))))
+
+       (defthm <name>-gl-object-eval-of-mk-g-integer
+         (equal (<name>-gl-object-eval (mk-g-integer x) env)
+                (bools->int (gobj-bfr-list-eval x env)))
+         :hints(("Goal" :in-theory (enable mk-g-integer
+                                           gobj-bfr-list-eval-of-boolean-list))))
+
        (fty::deffixequiv-mutual <name>-gl-object-eval))))
 
 (defmacro def-gl-object-eval (name fns)
@@ -2276,7 +2314,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                         :str-alist `(("<NAME>" . ,(symbol-name name)))
                         :pkg-sym 'fgl::gl-symbol))
 
-(def-gl-object-eval base (equal not return-last synp))
+(def-gl-object-eval base (equal not if
+                                int bool concrete
+                                return-last synp
+                                cons
+                                intcons intcons* endint
+                                intcar intcdr))
 
 (acl2::def-ev-pseudo-term-fty-support base-apply-ev base-apply-ev-lst)
 

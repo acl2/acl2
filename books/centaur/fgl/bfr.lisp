@@ -948,7 +948,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
   (in-theory (disable* gl-object-bfrlist-when-thms))
 
-  (def-ruleset gl-object-bfrlist-of-thms
+  (def-ruleset! gl-object-bfrlist-of-thms
     '(gl-object-bfrlist-of-g-concrete
       gl-object-bfrlist-of-g-boolean
       gl-object-bfrlist-of-g-integer
@@ -975,6 +975,37 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x))
                          (gl-objectlist-p x)
                          (gl-objectlist-bfrlist x))))
+      :flag gl-objectlist-bfrlist))
+
+  (defthm-gl-object-bfrlist-flag
+    (defthmd gl-object-bfrlist-when-symbolic-boolean-free
+      (implies (gl-object-symbolic-boolean-free x)
+               (equal (gl-object-bfrlist x) nil))
+      :hints ('(:expand ((gl-object-bfrlist x)
+                         (gl-object-symbolic-boolean-free x))))
+      :flag gl-object-bfrlist)
+    (defthmd gl-objectlist-bfrlist-when-symbolic-boolean-free
+      (implies (gl-objectlist-symbolic-boolean-free x)
+               (equal (gl-objectlist-bfrlist x) nil))
+      :hints ('(:expand ((gl-objectlist-bfrlist x)
+                         (gl-objectlist-symbolic-boolean-free x))))
       :flag gl-objectlist-bfrlist)))
+
+(define gl-object-alist-bfrlist ((x gl-object-alist-p))
+  :returns (bfrlist)
+  (if (atom x)
+      nil
+    (append (and (mbt (and (consp (car x))
+                           (pseudo-var-p (caar x))))
+                 (gl-object-bfrlist (cdar x)))
+            (gl-object-alist-bfrlist (cdr x))))
+  ///
+  (defthm gl-object-alist-bfrlist-of-cons
+    (implies (pseudo-var-p var)
+             (equal (gl-object-alist-bfrlist (cons (cons var val) rest))
+                    (append (gl-object-bfrlist val)
+                            (gl-object-alist-bfrlist rest)))))
+
+  (local (in-theory (enable gl-object-alist-fix))))
 
 

@@ -60,31 +60,23 @@
    :endif))
 
 (ifndef "DEFS_ONLY"
-  (def-gl-object-eval glcp-unify (intcons intcons* cons endint if equal))
-
-  (local (in-theory (enable glcp-unify-apply-ev-of-nonsymbol-atom
-                            glcp-unify-apply-ev-of-bad-fncall
-                            glcp-unify-apply-ev-of-fncall-args)))
-
-  (acl2::def-ev-pseudo-term-fty-support glcp-unify-apply-ev glcp-unify-apply-ev-lst)
-
   (cmr::defthm-term-vars-flag
-    (defthm glcp-unify-apply-ev-of-acons-when-all-vars-bound
+    (defthm base-apply-ev-of-acons-when-all-vars-bound
       (implies (and (subsetp (term-vars x) (alist-keys a))
                     (not (assoc k a)))
-               (equal (glcp-unify-apply-ev x (cons (cons k v) a))
-                      (glcp-unify-apply-ev x a)))
+               (equal (base-apply-ev x (cons (cons k v) a))
+                      (base-apply-ev x a)))
       :hints ('(:expand ((term-vars x)))
               (and stable-under-simplificationp
-                   '(:in-theory (enable glcp-unify-apply-ev-of-fncall-args
-                                        glcp-unify-apply-ev-of-nonsymbol-atom)
+                   '(:in-theory (enable base-apply-ev-of-fncall-args
+                                        base-apply-ev-of-nonsymbol-atom)
                      :cases ((pseudo-term-case x :fncall)))))
       :flag term-vars)
-    (defthm glcp-unify-apply-ev-lst-of-acons-when-all-vars-bound
+    (defthm base-apply-ev-lst-of-acons-when-all-vars-bound
       (implies (and (subsetp (termlist-vars x) (alist-keys a))
                     (not (assoc k a)))
-               (equal (glcp-unify-apply-ev-lst x (cons (cons k v) a))
-                      (glcp-unify-apply-ev-lst x a)))
+               (equal (base-apply-ev-lst x (cons (cons k v) a))
+                      (base-apply-ev-lst x a)))
       :hints ('(:expand ((termlist-vars x))))
       :flag termlist-vars))
 
@@ -94,32 +86,9 @@
 
 (local (in-theory (disable logcar logcdr)))
 
-(ifndef "THMS_ONLY"
-
-  (fty::defmap gl-object-alist :key-type pseudo-var-p :val-type gl-object :true-listp t)
-
-  (define gl-object-alist-bfrlist ((x gl-object-alist-p))
-    :returns (bfrlist)
-    (if (atom x)
-        nil
-      (append (and (mbt (and (consp (car x))
-                             (pseudo-var-p (caar x))))
-                   (gl-object-bfrlist (cdar x)))
-              (gl-object-alist-bfrlist (cdr x))))
-    ///
-    (defthm gl-object-alist-bfrlist-of-cons
-      (implies (pseudo-var-p var)
-               (equal (gl-object-alist-bfrlist (cons (cons var val) rest))
-                      (append (gl-object-bfrlist val)
-                              (gl-object-alist-bfrlist rest)))))
-
-    (local (in-theory (enable gl-object-alist-fix))))
-  :endif)
-
-
 
 (ifndef "DEFS_ONLY"
-  (define glcp-unify-apply-ev-alist ((x gl-object-alist-p)
+  (define base-apply-ev-alist ((x gl-object-alist-p)
                                       (env gl-env-p)
                                       &optional
                                       (logicman 'logicman))
@@ -130,17 +99,17 @@
         nil
       (if (mbt (and (consp (car x))
                     (pseudo-var-p (caar x))))
-          (cons (cons (caar x) (glcp-unify-gl-object-eval (cdar x) env))
-                (glcp-unify-apply-ev-alist (cdr x) env))
-        (glcp-unify-apply-ev-alist (cdr x) env)))
+          (cons (cons (caar x) (base-gl-object-eval (cdar x) env))
+                (base-apply-ev-alist (cdr x) env))
+        (base-apply-ev-alist (cdr x) env)))
     ///
     (local (in-theory (enable gl-object-alist-fix)))
 
-    (defthm lookup-in-glcp-unify-apply-ev-alist
-      (equal (hons-assoc-equal k (glcp-unify-apply-ev-alist x env))
+    (defthm lookup-in-base-apply-ev-alist
+      (equal (hons-assoc-equal k (base-apply-ev-alist x env))
              (b* ((look (hons-assoc-equal k (gl-object-alist-fix x))))
                (and look
-                    (cons k (glcp-unify-gl-object-eval (cdr look) env)))))
+                    (cons k (base-gl-object-eval (cdr look) env)))))
       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
     
@@ -155,8 +124,8 @@
                       (alistp x))
              :hints(("Goal" :in-theory (enable symbol-alistp)))))
     
-    (defthm alist-keys-of-glcp-unify-apply-ev-alist
-      (equal (alist-keys (glcp-unify-apply-ev-alist x env))
+    (defthm alist-keys-of-base-apply-ev-alist
+      (equal (alist-keys (base-apply-ev-alist x env))
              (alist-keys (gl-object-alist-fix x)))))
   :endif)
 
@@ -186,6 +155,9 @@
                (mv nil nil))
       :fncall 
       (b* ((fn pat.fn)
+           ((when (eq fn 'concrete))
+            (b* (((unless (int= (len pat.args) 1)) (mv nil nil)))
+              (glcp-unify-concrete (first pat.args) x alist)))
            ((when (or (eq fn 'intcons)
                       (eq fn 'intcons*)))
             (b* (((unless (int= (len pat.args) 2)) (mv nil nil))
@@ -206,6 +178,14 @@
                  ((unless (pseudo-term-case bitvar :var))
                   (mv nil nil)))
               (glcp-unify-concrete bitvar (acl2::bit->bool (logcar x)) alist)))
+           ((when (eq fn 'int))
+            (b* (((unless (int= (len pat.args) 1)) (mv nil nil))
+                 ((unless (integerp x)) (mv nil nil)))
+              (glcp-unify-concrete (first pat.args) x alist)))
+           ((when (eq fn 'bool))
+            (b* (((unless (int= (len pat.args) 1)) (mv nil nil))
+                 ((unless (booleanp x)) (mv nil nil)))
+              (glcp-unify-concrete (first pat.args) x alist)))
            ((when (eq fn 'cons))
             (b* (((unless (int= (len pat.args) 2)) (mv nil nil))
                  ((unless (consp x)) (mv nil nil))
@@ -299,16 +279,16 @@
       (implies (and flag
                     (subsetp (term-vars term)
                              (alist-keys (gl-object-alist-fix alist))))
-               (equal (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist new-alist env))
-                      (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist alist env))))
+               (equal (base-apply-ev term (base-apply-ev-alist new-alist env))
+                      (base-apply-ev term (base-apply-ev-alist alist env))))
       :hints (("goal" :induct <call>)
               (acl2::use-termhint
                `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                          (:free (a b) (glcp-unify-apply-ev-alist (cons a b) env)))))))
+                          (:free (a b) (base-apply-ev-alist (cons a b) env)))))))
 
     (defret <fn>-correct
       (implies flag
-               (equal (glcp-unify-apply-ev pat (glcp-unify-apply-ev-alist new-alist env))
+               (equal (base-apply-ev pat (base-apply-ev-alist new-alist env))
                       x))
       :hints (("Goal" :induct <call>)
               (acl2::use-termhint
@@ -338,7 +318,20 @@
 ;;           :use ((:instance boolean-list-fix-of-true-list-fix)
 ;;                 (:instance boolean-list-fix-of-true-list-fix (x y))))))
 
+(defthm bfrlist-of-mk-g-integer
+  (implies (not (member v x))
+           (not (member v (gl-object-bfrlist (mk-g-integer x)))))
+  :hints(("Goal" :in-theory (enable mk-g-integer))))
 
+(defthm bfrlist-of-mk-g-boolean
+  (implies (not (equal v x))
+           (not (member v (gl-object-bfrlist (mk-g-boolean x)))))
+  :hints(("Goal" :in-theory (enable mk-g-boolean))))
+
+(defthm bfrlist-of-mk-g-boolean-nonboolean
+  (and (not (member nil (gl-object-bfrlist (mk-g-boolean x))))
+       (not (member t (gl-object-bfrlist (mk-g-boolean x)))))
+  :hints(("Goal" :in-theory (enable mk-g-boolean))))
 
 (with-output :off (prove)
   (defines glcp-unify-term/gobj
@@ -363,7 +356,8 @@
       :verify-guards nil
       (b* ((alist (gl-object-alist-fix alist))
            (x (gl-object-fix x))
-           ((when (gl-object-case x :g-concrete))
+           (x.kind (gl-object-kind x))
+           ((when (gl-object-kind-eq x.kind :g-concrete))
             (glcp-unify-concrete pat (g-concrete->val x) alist)))
         (pseudo-term-case pat
           :const (mv nil nil) ;; only matches when concrete, taken care of above.
@@ -377,7 +371,7 @@
           :fncall (b* ((fn pat.fn)
                        ((when (and** (eq fn 'if)
                                      (eql (len pat.args) 3)
-                                     (gl-object-case x :g-ite)))
+                                     (gl-object-kind-eq x.kind :g-ite)))
                         (b* (((g-ite x))
                              ((mv ok alist)
                               (glcp-unify-term/gobj (first pat.args) x.test alist))
@@ -390,37 +384,50 @@
                        ((when (and** (or** (eq fn 'intcons)
                                            (eq fn 'intcons*))
                                      (int= (len pat.args) 2)
-                                     (gl-object-case x :g-integer)))
+                                     (gl-object-kind-eq x.kind :g-integer)))
                         (b* ((bits (g-integer->bits x))
                              ((mv first rest end) (first/rest/end bits))
                              ((when (and end (not (eq fn 'intcons*))))
                               (mv nil nil))
                              ((mv car-ok alist)
                               (glcp-unify-term/gobj (first pat.args)
-                                                    (g-boolean first)
+                                                    (mk-g-boolean first)
                                                     alist))
                              ((unless car-ok) (mv nil nil)))
                           (glcp-unify-term/gobj (second pat.args)
-                                                (g-integer rest)
+                                                (mk-g-integer rest)
                                                 alist)))
                        ((when (and** (eq fn 'endint)
                                      (int= (len pat.args) 1)
-                                     (gl-object-case x :g-integer)))
+                                     (gl-object-kind-eq x.kind :g-integer)))
                         (b* ((bits (g-integer->bits x))
                              ((unless (s-endp bits)) (mv nil nil)))
-                          (glcp-unify-term/gobj (first pat.args) (g-boolean (car bits)) alist))))
+                          (glcp-unify-term/gobj (first pat.args) (mk-g-boolean (car bits)) alist)))
 
-                    (gl-object-case x
-                      :g-apply (if (eq x.fn fn)
-                                   (glcp-unify-term/gobj-list pat.args x.args alist)
-                                 (mv nil nil))
-                      :g-cons (b* (((unless (and (eq fn 'cons)
-                                                 (int= (len pat.args) 2)))
-                                    (mv nil nil))
-                                   ((mv car-ok alist) (glcp-unify-term/gobj (first pat.args) x.car alist))
-                                   ((unless car-ok) (mv nil nil)))
-                                (glcp-unify-term/gobj (second pat.args) x.cdr alist))
-                      :otherwise (mv nil nil)))
+                       ((when (and** (eq fn 'int)
+                                     (int= (len pat.args) 1)
+                                     (gl-object-kind-eq x.kind :g-integer)))
+                        (glcp-unify-term/gobj (first pat.args) x alist))
+
+                       ((when (and** (eq fn 'bool)
+                                     (int= (len pat.args) 1)
+                                     (gl-object-kind-eq x.kind :g-boolean)))
+                        (glcp-unify-term/gobj (first pat.args) x alist))
+
+                       ((when (gl-object-kind-eq x.kind :g-apply))
+                        (b* (((g-apply x)))
+                          (if (eq x.fn fn)
+                              (glcp-unify-term/gobj-list pat.args x.args alist)
+                            (mv nil nil))))
+                       ((when (gl-object-kind-eq x.kind :g-cons))
+                        (b* (((g-cons x))
+                             ((unless (and (eq fn 'cons)
+                                           (int= (len pat.args) 2)))
+                              (mv nil nil))
+                             ((mv car-ok alist) (glcp-unify-term/gobj (first pat.args) x.car alist))
+                             ((unless car-ok) (mv nil nil)))
+                          (glcp-unify-term/gobj (second pat.args) x.cdr alist))))
+                    (mv nil nil))
           ;; don't support unifying with lambdas
           :otherwise (mv nil nil))))
 
@@ -457,7 +464,8 @@
       (defret bfrlist-of-<fn>
         (implies (and (not (member b (gl-object-alist-bfrlist alist)))
                       (not (member b (gl-object-bfrlist x)))
-                      (not (equal b nil)))
+                      ;; (not (equal b nil))
+                      )
                  (not (member b (gl-object-alist-bfrlist new-alist))))
         :hints ('(:expand ((:free (x) <call>)
                            (glcp-unify-term/gobj nil x alist)))
@@ -467,7 +475,8 @@
       (defret bfrlist-of-<fn>
         (implies (and (not (member b (gl-object-alist-bfrlist alist)))
                       (not (member b (gl-objectlist-bfrlist x)))
-                      (not (equal b nil)))
+                      ;; (not (equal b nil))
+                      )
                  (not (member b (gl-object-alist-bfrlist new-alist))))
         :hints ('(:expand ((:free (x) <call>)
                            (gl-objectlist-bfrlist x))))
@@ -547,18 +556,18 @@
           (implies (and flag
                         (subsetp (term-vars term)
                                  (alist-keys (gl-object-alist-fix alist))))
-                   (equal (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist new-alist env))
-                          (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist alist env))))
+                   (equal (base-apply-ev term (base-apply-ev-alist new-alist env))
+                          (base-apply-ev term (base-apply-ev-alist alist env))))
           :hints ('(:expand (<call>
                              (glcp-unify-term/gobj nil x alist)
-                             (:free (a b) (glcp-unify-apply-ev-alist (cons a b) env)))))
+                             (:free (a b) (base-apply-ev-alist (cons a b) env)))))
           :fn glcp-unify-term/gobj)
         (defret <fn>-preserves-eval-when-all-keys-bound
           (implies (and flag
                         (subsetp (term-vars term)
                                  (alist-keys (gl-object-alist-fix alist))))
-                   (equal (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist new-alist env))
-                          (glcp-unify-apply-ev term (glcp-unify-apply-ev-alist alist env))))
+                   (equal (base-apply-ev term (base-apply-ev-alist new-alist env))
+                          (base-apply-ev term (base-apply-ev-alist alist env))))
           :hints ('(:expand ((:free (x) <call>))))
           :fn glcp-unify-term/gobj-list))
 
@@ -595,15 +604,15 @@
       (defret-mutual <fn>-correct
         (defret <fn>-correct
           (implies flag
-                   (equal (glcp-unify-apply-ev pat (glcp-unify-apply-ev-alist new-alist env))
-                          (glcp-unify-gl-object-eval x env)))
+                   (equal (base-apply-ev pat (base-apply-ev-alist new-alist env))
+                          (base-gl-object-eval x env)))
           :hints ('(:expand (<call>
                              (glcp-unify-term/gobj nil x alist))
-                    :in-theory (enable glcp-unify-apply
-                                       ;; glcp-unify-apply-ev-of-fncall-args
+                    :in-theory (enable base-apply
+                                       ;; base-apply-ev-of-fncall-args
                                        ))
                   (and stable-under-simplificationp
-                       '(:expand ((glcp-unify-gl-object-eval x env))
+                       '(:expand ((base-gl-object-eval x env))
                          :do-not-induct t))
                   (acl2::use-termhint
                    (b* (((when (gl-object-case x :g-concrete)) nil))
@@ -645,16 +654,16 @@
                                           ))))
                             ((when (and (gl-object-case x :g-apply)
                                         (equal fn (g-apply->fn x))))
-                             '(:in-theory (enable glcp-unify-apply-ev-of-fncall-args))))
+                             '(:in-theory (enable base-apply-ev-of-fncall-args))))
                          nil)))))
           :fn glcp-unify-term/gobj)
         (defret <fn>-correct
           (implies flag
-                   (equal (glcp-unify-apply-ev-lst pat (glcp-unify-apply-ev-alist new-alist env))
-                          (glcp-unify-gl-objectlist-eval x env)))
+                   (equal (base-apply-ev-lst pat (base-apply-ev-alist new-alist env))
+                          (base-gl-objectlist-eval x env)))
           :hints ('(:expand ((:free (x) <call>)
-                             (glcp-unify-gl-objectlist-eval x env)
-                             (glcp-unify-gl-objectlist-eval nil env))))
+                             (base-gl-objectlist-eval x env)
+                             (base-gl-objectlist-eval nil env))))
           :fn glcp-unify-term/gobj-list))
 
       ;; (defret-mutual depends-on-of-<fn>

@@ -211,6 +211,21 @@ sign bit, which we must implicitly extend out to infinity.</p>"
                    (t              (mv (car x) (cdr x) nil)))))
 
 
+;; Unifies with any integer or g-integer
+(define int (x)
+  :enabled t
+  (ifix x))
+
+;; Unifies with any Boolean or g-boolean
+(define bool (x)
+  :enabled t
+  (bool-fix x))
+
+;; Unifies with any concrete value.
+(define concrete (x)
+  :enabled t
+  x)
+
 
 
 

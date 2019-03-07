@@ -54,9 +54,12 @@
       (pathcond :type pathcond)
       (constraint :type pathcond)
       (constraint-db :type (satisfies constraint-db-p))
+      (constraint-inst-stack :type (satisfies constraint-instancelist-p))
+      (thenval-stack :type (satisfies gl-objectlist-p))
+      (elseval-stack :type (satisfies gl-objectlist-p))
       (prof :type interp-profiler)
       (backchain-limit :type integer :initially -1)
-      (bvar-mode :type t)
+      ;; (bvar-mode :type t)
       (equiv-contexts :type (satisfies equiv-contextsp))
       (reclimit :type (integer 0 *) :initially 0)
       (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config))
@@ -188,7 +191,7 @@
      ;; test:
      (local 
       (defthm interp-st-test-updater-independence
-        (b* ((interp-st1 (update-interp-st->bvar-mode bvar-mode interp-st))
+        (b* ((interp-st1 (update-interp-st->reclimit reclimit interp-st))
              (interp-st2 (update-interp-st->logicman logicman interp-st)))
           (and (equal (interp-st->constraint interp-st2) (interp-st->constraint interp-st))
                (equal (interp-st->constraint interp-st1) (interp-st->constraint interp-st)))))))
@@ -387,12 +390,53 @@
              (stack-push-scratch x stack)
              interp-st))
 
+(define interp-st-pushlist-scratch ((x gl-objectlist-p)
+                                    interp-st)
+  :enabled t
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-pushlist-scratch x stack)
+             interp-st))
+
+(define interp-st-push-bool-scratch (x interp-st)
+  :enabled t
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-push-bool-scratch x stack)
+             interp-st))
+
+(define interp-st-scratch (interp-st)
+  :enabled t
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (len)
+             (stack-scratch stack)
+             len))
+
+(define interp-st-bool-scratch (interp-st)
+  :enabled t
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (len)
+             (stack-bool-scratch stack)
+             len))
+
 (define interp-st-scratch-len (interp-st)
   :enabled t
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (len)
              (stack-scratch-len stack)
+             len))
+
+(define interp-st-bool-scratch-len (interp-st)
+  :enabled t
+  :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (len)
+             (stack-bool-scratch-len stack)
              len))
 
 (define interp-st-pop-scratch ((n natp)
@@ -403,6 +447,16 @@
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
              (stack-pop-scratch n stack)
+             interp-st))
+
+(define interp-st-pop-bool-scratch ((n natp)
+                                    interp-st)
+  :enabled t
+  :inline t
+  :guard (<= n (interp-st-bool-scratch-len interp-st))
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-pop-bool-scratch n stack)
              interp-st))
 
 (define interp-st-peek-scratch ((n natp)
@@ -582,6 +636,14 @@
              (ok)
              (lbfr-p x)
              ok))
+
+(define interp-st-bfr-listp (x &key (interp-st 'interp-st))
+  :enabled t
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (ok)
+             (lbfr-listp x)
+             ok))
+
 
 (define interp-st-bfr-mode (&key (interp-st 'interp-st))
   :enabled t

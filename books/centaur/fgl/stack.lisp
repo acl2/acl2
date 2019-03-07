@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "gl-object")
+(include-book "bfr")
 (include-book "std/stobjs/absstobjs" :dir :System)
 
 (local (include-book "std/lists/take" :dir :system))
@@ -50,6 +51,8 @@
 (local (in-theory (disable nth acl2::nth-when-zp update-nth (tau-system))))
 
 (local (std::add-default-post-define-hook :fix))
+
+
 
 ;; This book defines a stack containing "major frames", each containing a stack
 ;; of "minor frames".
@@ -201,6 +204,17 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
+(define stack$a-pushlist-scratch ((objs gl-objectlist-p)
+                                  (x major-stack-p))
+  :enabled t
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :scratch (append objs nframe.scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
 (define stack$a-push-bool-scratch ((bfr)
                                    (x major-stack-p))
   :enabled t
@@ -265,7 +279,7 @@
 
 (define stack$a-pop-bool-scratch ((n natp)
                                   (x major-stack-p))
-  :guard (<= n (stack$a-scratch-len x))
+  :guard (<= n (stack$a-bool-scratch-len x))
   :enabled t
   (b* (((major-frame jframe) (car x))
        ((minor-frame nframe) (car jframe.minor-stack)))
@@ -762,6 +776,15 @@
                            (cons obj (stack$c-minori index stack$c))
                            stack$c)))
 
+(define stack$c-pushlist-scratch ((objs gl-objectlist-p)
+                                  (stack$c stack$c-okp))
+  :enabled t
+  (b* ((top-minor (stack$c-top-minor-frame stack$c))
+       (index (+ 1 (* 4 top-minor))))
+    (update-stack$c-minori index
+                           (append objs (stack$c-minori index stack$c))
+                           stack$c)))
+
 (define stack$c-push-bool-scratch ((bfr)
                                    (stack$c stack$c-okp))
   :enabled t
@@ -825,7 +848,7 @@
 (define stack$c-pop-bool-scratch ((n natp)
                              (stack$c stack$c-okp))
   :enabled t
-  :guard (<= n (stack$c-scratch-len stack$c))
+  :guard (<= n (stack$c-bool-scratch-len stack$c))
   (b* ((top-minor (stack$c-top-minor-frame stack$c))
        (index (+ 2 (* 4 top-minor))))
     (update-stack$c-minori index (nthcdr n (stack$c-minori index stack$c)) stack$c)))
@@ -1312,6 +1335,7 @@
             (stack-set-minor-bindings :logic stack$a-set-minor-bindings :exec stack$c-set-minor-bindings)
             (stack-add-minor-bindings :logic stack$a-add-minor-bindings :exec stack$c-add-minor-bindings)
             (stack-push-scratch :logic stack$a-push-scratch :exec stack$c-push-scratch)
+            (stack-pushlist-scratch :logic stack$a-pushlist-scratch :exec stack$c-pushlist-scratch)
             (stack-push-bool-scratch :logic stack$a-push-bool-scratch :exec stack$c-push-bool-scratch)
             (stack-set-minor-debug :logic stack$a-set-minor-debug :exec stack$c-set-minor-debug)
             (stack-bindings :logic stack$a-bindings :exec stack$c-bindings)
@@ -1351,4 +1375,33 @@
 (define stack-peek-scratch ((n natp) stack)
   :guard (<= n (stack-scratch-len stack))
   (rev-take n (stack-scratch stack)))
+
+
+
+(local (std::add-default-post-define-hook :fix))
+
+(define minor-frame-bfrlist ((x minor-frame-p))
+  (b* (((minor-frame x)))
+    (append (gl-object-alist-bfrlist x.bindings)
+            (gl-objectlist-bfrlist x.scratch)
+            x.bool-scratch)))
+
+(define minor-stack-bfrlist ((x minor-stack-p))
+  :ruler-extenders (binary-append)
+  (append (minor-frame-bfrlist (car x))
+          (let ((x (cdr x)))
+            (and (consp x)
+                 (minor-stack-bfrlist x)))))
+
+(define major-frame-bfrlist ((x major-frame-p))
+  (b* (((major-frame x)))
+    (append (gl-object-alist-bfrlist x.bindings)
+            (minor-stack-bfrlist x.minor-stack))))
+
+(define major-stack-bfrlist ((x major-stack-p))
+  :ruler-extenders (binary-append)
+  (append (major-frame-bfrlist (car x))
+          (let ((x (cdr x)))
+            (and (consp x)
+                 (major-stack-bfrlist x)))))
 
