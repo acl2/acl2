@@ -1859,3 +1859,66 @@ class:~%~%" (len ctrexes))))))
      config.exec-ctrex
      config.param-bfr
      bvar-db state)))
+
+
+
+(defun translate-and-logically-evaluate-fn (form alist state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((er translated-form)
+        (acl2::translate form t t t 'translate-and-logically-evaluate (w state) state))
+       ((mv err ans) (acl2::magic-ev translated-form alist state nil t)))
+    (mv err ans state)))
+
+(defun translate-and-very-logically-evaluate-fn (form alist clock state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((er translated-form)
+        (acl2::translate form t t t 'translate-and-logically-evaluate (w state) state))
+       ((mv err ans) (magicer-ev translated-form alist clock state nil t)))
+    (mv err ans state)))
+
+(defmacro translate-and-very-logically-evaluate (form &key alist (clock '10000))
+  `(translate-and-very-logically-evaluate-fn ',form ,alist state ,clock))
+
+(defmacro translate-and-logically-evaluate (form &key alist)
+  `(translate-and-logically-evaluate-fn ',form ,alist state))
+
+(defun gl-ctrex-alist-fn (n state)
+  (declare (xargs :stobjs state :verify-guards nil))
+  (b* ((obj-alist (glcp-obj-ctrex->obj-alist (nth n (@ glcp-counterex-assignments)))))
+    (pairlis$ (strip-cars obj-alist)
+              (acl2::strip-cadrs obj-alist))))
+
+(defmacro gl-ctrex-alist (&optional (n '0))
+  `(gl-ctrex-alist-fn ,n state))
+
+
+
+;; (defun v1v2 (v)
+;;   (mv (logand v #x33333333)
+;;       (logand (ash v -2) #x33333333)))
+
+;; (def-gl-thm fast-logcount-32-correct
+;;   :hyp   (unsigned-byte-p 32 x)
+;;   :concl (equal (let* ((v (- x (logand (ash x -1) #x55555555)))
+;;                        (mv (v1v2 v))
+;;                        (v1 (mv-nth 0 mv))
+;;                        (v2 (mv-nth 1 mv))
+;;                        (v (+ v1 v2)))
+;;                   (ash (32* (logand (+ v (ash v -4)) #xF0F0F0F)
+;;                             #x1010101)
+;;                        -24))
+;;                 (logcount (if (or (eql x #xabc) (eql x #xddd0)) (+ 1 x) x)))
+;;   :g-bindings `((x ,(g-int 0 1 33))))
+
+;; (translate-and-logically-evaluate
+;;  (list :impl (let* ((v (- x (logand (ash x -1) #x55555555)))
+;;                     (mv (v1v2 v))
+;;                     (v1 (mv-nth 0 mv))
+;;                     (v2 (mv-nth 1 mv))
+;;                     (v (+ v1 v2)))
+;;                (ash (32* (logand (+ v (ash v -4)) #xF0F0F0F)
+;;                          #x1010101)
+;;                     -24))
+;;        :spec (logcount (if (or (eql x #xabc) (eql x #xddd0)) (+ 1 x) x)))
+;;  :alist (gl-ctrex-alist 0))
+ 

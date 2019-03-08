@@ -126,6 +126,12 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
+ <h4>Fixtypes for Osets</h4>
+
+ <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
+ topic='@(url set::std/osets)'>osets</see> of elements of specified fixtypes.
+ This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -172,9 +178,18 @@
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>Improved the documentation of the Bitcoin library.</p>
+ <p>Improved the documentation.</p>
 
  <p>Added fixtypes for bytes and byte sequences.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
+ placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
+ curve.</p>
+
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
+ hierarchical deterministic wallets.</p>
 
  <h4>Bytes</h4>
 
@@ -243,6 +258,11 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <h4>FTY Type Aliases</h4>
+
+ <p>Added a macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
+ existing fixtype, as well as of its recognizer, fixer, and equivalence.</p>
+
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -250,6 +270,10 @@
 
  <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see
+ pseudo-term-fty).</p>
 
  <h4>FTY Types for Bytes</h4>
 
@@ -283,6 +307,13 @@
  required in the verification of an Arm FPU currently under development.  This
  in turn required some minor modifications of @('projects/arm/*/').</p>
 
+ <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
+
+ <p>The @(tsee soft::defun2), @(tsee soft::defchoose2), @(tsee
+ soft::defun-sk2), and @(tsee soft::defun-inst) macros no longer include an
+ explicit list of function parameters.  The function is implicitly
+ parameterized over the function variables that it depends on.</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
@@ -308,7 +339,10 @@
  @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
  str::defcharset).  Added a new predicate.</p>
 
- <p>Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ <p>Added functions @(tsee hexchars=>ubyte8) and @(tsee ubyte8=>hexchars) to
+ convert between single bytes and pairs of hexadecimal digit characters;
+ rephrased @(tsee ubyte8s=>hexchars) in terms of @(tsee ubyte8=>hexchars).
+ Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
  inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
 
  <h4>System Utilities</h4>
@@ -431,6 +465,9 @@
  <h3>Testing</h3>
 
  <h3>Miscellaneous</h3>
+
+ <p>We now avoid causing an error when building the manual in the case that the
+ @('zip') program is not installed; that causes a warning instead.</p>
 
  ")
 

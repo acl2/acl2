@@ -283,15 +283,13 @@
                          ttree))
                     (t
                      (mv-let
-                      (erp val latches)
+                      (erp val fns)
                       (pstk
-                       (ev-fncall fn (strip-cadrs expanded-args) state nil t
-                                  nil))
-                      (declare (ignore latches))
+                       (ev-fncall+ fn (strip-cadrs expanded-args) t state))
                       (cond
                        (erp
 
-; We following a suggestion from Matt Wilding and attempt to simplify the term
+; We follow a suggestion from Matt Wilding and attempt to simplify the term
 ; before applying HIDE.
 
                         (let ((new-term1 (cons-term fn expanded-args)))
@@ -302,10 +300,21 @@
                                    rdepth step-limit ens wrld state ttree)
                                   (cond
                                    ((equal new-term2 new-term1)
-                                    (mv step-limit
-                                        (mcons-term* 'hide new-term1)
-                                        (push-lemma (fn-rune-nume 'hide nil nil wrld)
-                                                    ttree)))
+                                    (if fns
+                                        (mv step-limit
+
+; Since fns is non-nil, the evaluation failure was caused by aborting when a
+; warrant was needed.  This case is handled in rewrite, so we do not want to
+; hide the term.  See the Essay on Evaluation of Apply$ and Loop$ Calls During
+; Proofs.
+
+                                            new-term1
+                                            ttree)
+                                      (mv step-limit
+                                          (mcons-term* 'hide new-term1)
+                                          (push-lemma (fn-rune-nume 'hide nil
+                                                                    nil wrld)
+                                                      ttree))))
                                    (t (mv step-limit new-term2 ttree))))))
                        (t (mv step-limit
                               (kwote val)
@@ -2793,7 +2802,7 @@
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
 
-                   (caddr temp)))
+                   (caddr temp) wrld))
              (constraint-cl (cadddr temp))
              (sr-limit (car (access rewrite-constant
                                     (access prove-spec-var pspv
@@ -2816,7 +2825,7 @@
 
 ; WARNING: See the warning about the processing in translate-by-hint.
 
-         (let* ((cl (remove-guard-holders-lst cl))
+         (let* ((cl (remove-guard-holders-lst cl wrld))
                 (cl (remove-equal *nil* cl))
                 (easy-winp
                  (cond ((null cl) ; very weird case!
@@ -6011,9 +6020,14 @@
                         ens
                         (getpropc x 'runic-mapping-pairs nil wrld))
                        (enabled-lmi-names ens (cdr lmi-lst) wrld)))
-         ((enabled-runep x ens wrld)
-          (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
-         (t (enabled-lmi-names ens (cdr lmi-lst) wrld)))))))
+         (t (let ((x (if (and (consp x)
+                              (eq (car x) :executable-counterpart))
+                         (list :definition (cadr x))
+                       x)))
+              (cond
+               ((enabled-runep x ens wrld)
+                (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
+               (t (enabled-lmi-names ens (cdr lmi-lst) wrld))))))))))
 
 (defun@par maybe-warn-for-use-hint (pspv cl-id ctx wrld state)
   (cond
@@ -6029,9 +6043,9 @@
       (cond
        (enabled-lmi-names
         (warning$@par ctx ("Use")
-          "It is unusual to :USE an enabled :REWRITE or :DEFINITION rule, so ~
-           you may want to consider disabling ~&0 in the hint provided for ~
-           ~@1.  See :DOC using-enabled-rules."
+          "It is unusual to :USE the formula of an enabled :REWRITE or ~
+           :DEFINITION rule, so you may want to consider disabling ~&0 in the ~
+           hint provided for ~@1.  See :DOC using-enabled-rules."
           enabled-lmi-names
           (tilde-@-clause-id-phrase cl-id)))
        (t (state-mac@par)))))))

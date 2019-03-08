@@ -37,9 +37,9 @@
 # This used to all be done in GNUMakefile itself, but we separated it
 # in case other Makefiles want to use it as well.  To use it in a
 # Makefile, first run it and then include the resulting
-# Makefile-features, making sure that ACL2 is in the environment --
-# e.g.:
-# RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) ./features.sh)
+# Makefile-features, making sure that ACL2 and STARTJOB are in the
+# environment -- e.g.:
+# RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) ./features.sh)
 # -include $(BUILD_DIR)/Makefile-features
 
 # We first run ACL2 on the cert_features.lsp script, which begins by
@@ -66,14 +66,11 @@
 # for shell commands within recipes, it doesn't affact the environment
 # for $(shell ...) directives.
 
-
-export STARTJOB=/bin/bash
-
 # Run from within build directory
 echo "Determining ACL2 features (for ACL2 = $ACL2)" 1>&2
 rm -f Makefile-features;
 # Don't fail here if ACL2 isn't built! Still want to be able to do "make clean" etc.
-ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || true
+ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || echo "*** Failed to run ACL2! ***" 1>&2
 
 
 echo "Determining whether Glucose is installed" 1>&2

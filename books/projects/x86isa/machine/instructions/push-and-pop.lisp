@@ -444,15 +444,18 @@
        ;; Update the x86 state:
 
        ((mv flg x86)
-	(wme-size-opt proc-mode operand-size
-		  (the (signed-byte #.*max-linear-address-size*) new-rsp)
-		  #.*ss*
-		  ;; If operand-size is 64, val is zero-extended here
-		  ;; automatically.
-		  val
-		  (alignment-checking-enabled-p x86)
-		  x86
-		  :mem-ptr? nil))
+	(wme-size-opt proc-mode
+                      operand-size
+                      (the (signed-byte #.*max-linear-address-size*) new-rsp)
+                      #.*ss*
+                      ;; If operand size is 64 or 32 bits, val is zero-extended
+                      ;; here automatically.  This may not be quite right when
+                      ;; the operand size is 32 bits: see the paragraph in the
+                      ;; :long above.  TODO: handle this properly
+                      val
+                      (alignment-checking-enabled-p x86)
+                      x86
+                      :mem-ptr? nil))
        ((when flg) ;; Would also handle bad rsp values.
 	(cond
 	 ;; FIXME? The non-canonical-address error won't come up here

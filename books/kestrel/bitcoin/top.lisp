@@ -1,6 +1,6 @@
-; Bitcoin Library
+; Bitcoin
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,7 @@
 (include-book "crypto")
 (include-book "base58")
 (include-book "base58check")
+(include-book "bip32")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,6 +39,13 @@
     (xdoc::li
      "The <a href=\"https://en.bitcoin.it\">Bitcoin Wiki</a>,
       referenced as `[Wiki]' in the documentation of this library.")
+    (xdoc::li
+     "The <a href=\"https://github.com/bitcoin/bips\"
+      >Bitcoin Improvement Proposals (BIPs) repository</a>,
+      particularly the @('.mediawiki') files.
+      In the documentation of this library,
+      we reference individual BIPs as `[BIP<i>n</i>]',
+      where <i>n</i> is the number of the BIP.")
     (xdoc::li
      "The <a href=\"https://bitcoin.org/bitcoin.pdf\">Bitcoin White Paper</a>,
       referenced as `[WP]' in the documentation of this library.")

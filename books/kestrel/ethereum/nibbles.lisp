@@ -22,11 +22,10 @@
    "[YP:C] describes @($\\mathbb{Y}$) as the set of nibbles,
     which consist of 4 bits."))
 
-(fty::defbyte 4
-  :type nibble
+(fty::defbyte nibble 4
   :pred nibblep
   :parents (nibbles)
-  :description "nibbles")
+  :short "Fixtype of nibbles.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,9 +44,10 @@
     analogously to our model of
     <see topic='@(url byte-arrays)'>byte arrays</see>."))
 
-(fty::defbytelist nibble
+(fty::defbytelist nibble-list nibble
   :pred nibble-listp
-  :parents (nibble-arrays))
+  :parents (nibble-arrays)
+  :short "Fixtype of nibble arrays.")
 
 (defsection nibble-list-fix-ext
   :extension nibble-list-fix

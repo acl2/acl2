@@ -54,6 +54,7 @@
          ************************************************************************"))))
 
 (include-book "defs-program")
+(include-book "centaur/fty/fty-sum-casemacro" :dir :system)
 
 (program)
 (make-event

@@ -214,6 +214,7 @@
 (include-book "cgen/top" :ttags :all)
 (include-book "defunc" :ttags :all)
 (include-book "definec" :ttags :all)
+(include-book "defintrange" :ttags :all)
 
 #!ACL2
 (defmacro acl2s-common-settings ()
@@ -253,8 +254,6 @@
    ;;Cgen settings
    (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
    (acl2s::acl2s-defaults :set acl2s::num-trials 500)
-
-   
 
 ))
 

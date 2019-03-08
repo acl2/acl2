@@ -36,5 +36,5 @@
 ; Based on ACL2 function chk-acceptable-rewrite-rule.
 
   (acceptable-rewrite-rule-p1 :some-proposed-rewrite-rule
-                              (unprettyify (remove-guard-holders term))
+                              (unprettyify (remove-guard-holders term wrld))
                               ens wrld))

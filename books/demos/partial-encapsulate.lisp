@@ -22,5 +22,5 @@
 ; definition; one of those constrains is the equality below.
 (defthm test-ln
   (equal (ln 3)
-         2303957/2097152)
+         10986123/10000000)
   :rule-classes nil)

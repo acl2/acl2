@@ -374,7 +374,7 @@
 ; t than with :lock-free t.  In fact :shared t may rival performance with
 ; :shared nil.
 
-;   cd books/centaur/tutorial/
+;   cd books/centaur/esim/tutorial/
 ;   (include-book "alu16-book")
 ;   (time$ (def-gl-thm foo
 ;            :hyp (and (alu16-test-vector-autohyps)
@@ -2386,6 +2386,12 @@
                                      memoized function ~x0, which may have ~
                                      been computed using attachments"
                                     at-fn))
+                              ((eq at-fn :{apply$-or-badge}-userfn)
+                               (msg "one of the functions ~v0, which depend ~
+                                     on warrants for the result, was called ~
+                                     during evaluation of a call of ~x1"
+                                    '(apply$-userfn badge-userfn)
+                                    fn))
                               (t
                                (msg "an attachment to function ~x0 was used ~
                                      during evaluation of one of its calls"
@@ -2676,6 +2682,9 @@
 
 ; This is the main part of the body of the function defined by memoize-fn.
 
+; Some relevant background may be found in the Essay on Memoization with
+; Attachments.
+
 ; Comments saying "performance counting*" are intended to mark code that might
 ; best be ignored on a first reading.  A long comment in *memoize-call-array*
 ; outlines how performance counting is implemented.
@@ -2812,11 +2821,28 @@
                      `(let (,*attached-fn-temp*)
                         (mv?-let
                          ,vars
-                         (let ((*aokp* (and *aokp* t)))
+                         (let ((*aokp* (and *aokp* t))
+                               (saved-warrant-reqs *warrant-reqs*))
+                           (when (consp saved-warrant-reqs)
+
+; When *warrant-reqs* is a list, reset it to its initial non-nil value.  See
+; the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+                             (setq *warrant-reqs* (and *warrant-reqs* t)))
                            (,prog1-fn
                             ,body
-                            (when (not (member *aokp* '(t nil) :test #'eq))
-                              (setq ,*attached-fn-temp* *aokp*))))
+                            (cond
+                             ((not (member *aokp* '(t nil) :test #'eq))
+                              (setq ,*attached-fn-temp* *aokp*))
+                             ((consp *warrant-reqs*)
+                              (setq ,*attached-fn-temp*
+                                    :{apply$-or-badge}-userfn)
+                              (when (consp saved-warrant-reqs)
+                                (setq *warrant-reqs*
+                                      (union-eq *warrant-reqs*
+                                                saved-warrant-reqs))))
+                             ((eq saved-warrant-reqs t)
+                              (setq *warrant-reqs* saved-warrant-reqs)))))
                          (progn
                            (cond
                             (,*attached-fn-temp*
@@ -5068,7 +5094,7 @@
   (setq *record-pons-calls* nil)
   (setq *record-time* nil))
 
-(defun update-memo-entry-for-attachments (fns entry wrld)
+(defun update-memo-entry-for-attachments (fns entry special-name wrld)
 
 ; See the Essay on Memoization with Attachments.
 
@@ -5083,8 +5109,8 @@
           (if (eq fns :clear)
               :clear
             (or (null ext-anc-attachments)
-                (ext-anc-attachments-valid-p fns ext-anc-attachments wrld
-                                             t)))))
+                (ext-anc-attachments-valid-p fns ext-anc-attachments
+                                             special-name wrld t)))))
     (cond ((eq valid-p t) (mv nil entry))
           (t
            (mv (if (eq valid-p nil) t valid-p)
@@ -5113,7 +5139,8 @@
                  :clear
                (strict-merge-sort-symbol-<
                 (loop for fn in fns
-                      collect (canonical-sibling fn wrld))))))
+                      collect (canonical-sibling fn wrld)))))
+        (special-name *special-cltl-cmd-attachment-mark-name*))
     (when (eq fns :clear)
       (observation ctx
                    "Memoization tables for functions memoized with :AOKP T ~
@@ -5124,15 +5151,26 @@
         (lambda (k entry)
           (when (symbolp k)
             (mv-let (changedp new-entry)
-                    (update-memo-entry-for-attachments fns entry wrld)
+                    (update-memo-entry-for-attachments fns entry special-name
+                                                       wrld)
                     (when changedp
                       (when (not (or (eq changedp t)
                                      (eq fns :clear)))
+
+; Note that the following observation won't be printed when executing :u, which
+; suppresses observations.  But it should show up when executing :ubt.
+
                         (observation ctx
                                      "Memoization table for function ~x0 is ~
-                                      being cleared because attachment to ~
-                                      function ~x1 has changed."
-                                     k changedp)
+                                      being cleared because ~@1."
+                                     k
+                                     (if (eq changedp special-name)
+                                         "it depends on apply$-userfn or ~
+                                          badge-userfn and at least one badge ~
+                                          has changed"
+                                       (msg "the attachment to function ~x0 ~
+                                             has changed"
+                                            changedp)))
                         (clear-one-memo-and-pons-hash entry :auto))
                       (mf-sethash k new-entry *memoize-info-ht*)))))
         *memoize-info-ht*)))))

@@ -41,6 +41,7 @@
 
 (include-book "centaur/bitops/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "X86ISA"
@@ -64,6 +65,7 @@
 
      definline
      def-gl-thm
+     gl::defthm-using-gl
      b*
      include-raw
 

@@ -217,55 +217,55 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-generated :one :one
+   (xdoc::evmac-section-generated
 
-     (xdoc::desc
-      "@('new')"
-      (xdoc::p
-       "Domain-restricted version of @('old'):")
-      (xdoc::code
-       ";; when old is not recursive:"
-       "(defun new (x1 ... xn)"
-       "  (if (mbt restriction<x1,...,xn>)"
-       "      old-body<x1,...,xn>"
-       "    undefined))"
-       ""
-       ";; when old is recursive:"
-       "(defun new (x1 ... xn)"
-       "  (if (mbt restriction<x1,...,xn>)"
-       "      old-body<x1,...,xn,"
-       "               (new update1-x1<x1,...,xn>"
-       "                    ..."
-       "                    update1-xn<x1,...,xn>)"
-       "               ..."
-       "               (new updatem-x1<x1,...,xn>"
-       "                    ..."
-       "                    updatem-xn<x1,...,xn>)>"
-       "    undefined))")
-      (xdoc::p
-       "If @('old') is recursive,
-        the measure term and well-founded relation of @('new')
-        are the same as @('old').")
-      (xdoc::p
-       "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)'),
-        where @('old-guard<x1,...,xn>') is the guard term of @('old').")
-      (xdoc::p
-       "Since the restriction test follows from the guard,
-        the test is wrapped by @(tsee mbt).
-        Since @(tsee mbt) requires its argument to be @('t')
-        (not just non-@('nil')),
-        the applicability condition @(':restriction-boolean') ensures that
-        the restriction test is @('t') when it is non-@('nil')."))
+    (xdoc::desc
+     "@('new')"
+     (xdoc::p
+      "Domain-restricted version of @('old'):")
+     (xdoc::code
+      ";; when old is not recursive:"
+      "(defun new (x1 ... xn)"
+      "  (if (mbt restriction<x1,...,xn>)"
+      "      old-body<x1,...,xn>"
+      "    undefined))"
+      ""
+      ";; when old is recursive:"
+      "(defun new (x1 ... xn)"
+      "  (if (mbt restriction<x1,...,xn>)"
+      "      old-body<x1,...,xn,"
+      "               (new update1-x1<x1,...,xn>"
+      "                    ..."
+      "                    update1-xn<x1,...,xn>)"
+      "               ..."
+      "               (new updatem-x1<x1,...,xn>"
+      "                    ..."
+      "                    updatem-xn<x1,...,xn>)>"
+      "    undefined))")
+     (xdoc::p
+      "If @('old') is recursive,
+       the measure term and well-founded relation of @('new')
+       are the same as @('old').")
+     (xdoc::p
+      "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)'),
+       where @('old-guard<x1,...,xn>') is the guard term of @('old').")
+     (xdoc::p
+      "Since the restriction test follows from the guard,
+       the test is wrapped by @(tsee mbt).
+       Since @(tsee mbt) requires its argument to be @('t')
+       (not just non-@('nil')),
+       the applicability condition @(':restriction-boolean') ensures that
+       the restriction test is @('t') when it is non-@('nil')."))
 
-     (xdoc::desc
-      "@('old-to-new')"
-      (xdoc::p
-       "Theorem that relates @('old') to @('new'):")
-      (xdoc::code
-       "(defthm old-to-new"
-       "  (implies restriction<x1,...,xn>"
-       "           (equal (old x1 ... xn)"
-       "                  (new x1 ... xn))))")))
+    (xdoc::desc
+     "@('old-to-new')"
+     (xdoc::p
+      "Theorem that relates @('old') to @('new'):")
+     (xdoc::code
+      "(defthm old-to-new"
+      "  (implies restriction<x1,...,xn>"
+      "           (equal (old x1 ... xn)"
+      "                  (new x1 ... xn))))")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

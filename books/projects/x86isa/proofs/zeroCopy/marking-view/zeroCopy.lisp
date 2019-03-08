@@ -4127,7 +4127,7 @@
                                all-mem-except-paging-structures-equal-and-rm-low-64-from-rest-of-memory)
                               (:linear bitops::expt-2-lower-bound-by-logbitp)))))))
 
-(def-gl-export entry-attributes-unchanged-when-destination-PDPTE-modified
+(defthm-using-gl entry-attributes-unchanged-when-destination-PDPTE-modified
   :hyp (and (unsigned-byte-p 64 dest-pdpte)
             (unsigned-byte-p 64 src-pdpte))
   :concl (and

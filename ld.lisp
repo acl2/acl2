@@ -1200,10 +1200,13 @@
 
   (mv-let
    (signal val state)
-   #+acl2-loop-only (ld-read-eval-print state)
-   #-acl2-loop-only (progn (acl2-unwind *ld-level* t)
-                           (setq *trace-level* 0)
-                           (ld-read-eval-print state))
+   #+acl2-loop-only
+   (ld-read-eval-print state)
+   #-acl2-loop-only
+   (progn (acl2-unwind *ld-level* t)
+          (setq *trace-level* 0)
+          (setq *hcomp-loop$-alist* nil) ; could be modified in raw-mode
+          (ld-read-eval-print state))
    (cond ((eq signal :continue)
           (ld-loop state))
          ((eq signal :return)

@@ -258,7 +258,7 @@
 
 (mutual-recursion
 
-(defun remove-guard-holders1 (changedp0 term)
+(defun remove-guard-holders1 (changedp0 term ilk wrld)
 
 ; Warning: If you change this function, consider changing :DOC guard-holders.
 
@@ -271,6 +271,12 @@
 ; (especially if changedp0 is true), but if changedp is nil then we know that
 ; new-term is just term.
 
+; Note: wrld is normally a world, but may be nil, in which case ilk is ignored
+; and thus guard holders are not removed from quoted lambdas.  Use nil for wrld
+; when the notion of provable equality of the input and output terms must not
+; rely on how quoted lambdas are handled in ilk = :fn (or :fn?) argument
+; positions.
+
 ; See the Essay on the Removal of Guard Holders.
 
 ; WARNING: The resulting term is in quote normal form.  We take advantage of
@@ -279,21 +285,44 @@
 ; holds.  We also take advantage of this fact in
 ; interpret-term-as-rewrite-rule, as commented there.
 
-; WARNING.  Remove-guard-holders is used in constraint-info,
+; WARNING.  Remove-guard-holders is used in
 ; induction-machine-for-fn1, and termination-machine, so (remove-guard-holders1
-; term) needs to be provably equal to term, for every term, in the ground-zero
-; theory.  In fact, because of the use in constraint-info, it needs to be the
-; case that for any axiomatic event e, (remove-guard-holders e) can be
-; substituted for e without changing the logical power of the set of axioms.
-; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence RETURN-LAST,
-; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
+; term ilk w) needs to be provably equal to term, for every term and suitable
+; ilk, in the ground-zero theory.  In fact, because of the use in
+; constraint-info, it needs to be the case that for any axiomatic event e,
+; (remove-guard-holders e w) can be substituted for e without changing the
+; logical power of the set of axioms.  Actually, we want to view the logical
+; axiom added by e as though remove-guard-holders had been applied to it, and
+; hence RETURN-LAST, MV-LIST, and CONS-WITH-HINT appear in
+; *non-instantiable-primitives*.
 
-  (declare (xargs :guard (pseudo-termp term)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (ilks-plist-worldp wrld))
                   :measure (acl2-count term)))
   (cond
    ((variablep term) (mv changedp0 term))
-   ((fquotep term) (mv changedp0 term))
+   ((fquotep term)
+    (cond
+     ((and wrld
+           (or (eq ilk :fn) (eq ilk :fn?)))
+      (let ((evg (unquote term)))
+        (mv-let (lambda-args dcls body)
+          (case-match evg
+            (('LAMBDA lambda-args body)
+             (mv lambda-args nil body))
+            (('LAMBDA lambda-args dcl body)
+             (mv lambda-args (list dcl) body))
+            (&
+             (mv nil nil nil)))
+          (cond
+           ((pseudo-termp body) ; helpful test for guard verification
+            (mv-let (c u)
+              (remove-guard-holders1 nil body nil wrld)
+              (cond
+               (c (mv t (kwote `(LAMBDA ,lambda-args ,@dcls ,u))))
+               (t (mv changedp0 term)))))
+           (t (mv changedp0 term))))))
+     (t (mv changedp0 term))))
    ((or (eq (ffn-symb term) 'RETURN-LAST)
         (eq (ffn-symb term) 'MV-LIST))
 
@@ -304,15 +333,15 @@
 ; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
 ; body), we just open up the prog2$ early, throwing away the dcl-guardian.
 
-    (remove-guard-holders1 t (car (last (fargs term)))))
+    (remove-guard-holders1 t (car (last (fargs term))) ilk wrld))
    ((eq (ffn-symb term) 'CONS-WITH-HINT)
     (mv-let
       (changedp1 arg1)
-      (remove-guard-holders1 nil (fargn term 1))
+      (remove-guard-holders1 nil (fargn term 1) nil wrld)
       (declare (ignore changedp1))
       (mv-let
         (changedp2 arg2)
-        (remove-guard-holders1 nil (fargn term 2))
+        (remove-guard-holders1 nil (fargn term 2) nil wrld)
         (declare (ignore changedp2))
         (mv t (mcons-term* 'cons arg1 arg2)))))
    ((flambdap (ffn-symb term))
@@ -320,7 +349,7 @@
       term
       ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
         val)
-       (remove-guard-holders1 t val))
+       (remove-guard-holders1 t val ilk wrld))
       ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
         . args)
 
@@ -330,92 +359,129 @@
 ; equality variants, as for member.
 
        (mv-let
-        (changedp1 args1)
-        (remove-guard-holders1-lst args)
-        (declare (ignore changedp1))
-        (mv-let
-         (changedp2 logic2)
-         (remove-guard-holders1 nil logic)
-         (declare (ignore changedp2))
-         (mv t (subcor-var formals args1 logic2)))))
+         (changedp1 args1)
+         (remove-guard-holders1-lst args nil wrld)
+         (declare (ignore changedp1))
+         (mv-let
+           (changedp2 logic2)
+           (remove-guard-holders1 nil
+                                  logic
+                                  nil ; could probably be ilk but we play it safe
+                                  wrld)
+           (declare (ignore changedp2))
+           (mv t (subcor-var formals args1 logic2)))))
       (&
        (mv-let
-        (changedp1 lambda-body)
-        (remove-guard-holders1 nil (lambda-body (ffn-symb term)))
-        (mv-let
-         (changedp2 args)
-         (remove-guard-holders1-lst (fargs term))
-         (cond ((or changedp1 changedp2)
-                (mv t
-                    (mcons-term
-                     (if changedp1
-                         (make-lambda (lambda-formals (ffn-symb term))
-                                      lambda-body)
-                       (ffn-symb term))
-                     args)))
-               (t (mv changedp0 term))))))))
+         (changedp1 lambda-body)
+         (remove-guard-holders1 nil
+                                (lambda-body (ffn-symb term))
+                                nil ; could probably be ilk but we play it safe
+                                wrld)
+         (mv-let
+           (changedp2 args)
+           (remove-guard-holders1-lst (fargs term) nil wrld)
+           (cond ((or changedp1 changedp2)
+                  (mv t
+                      (mcons-term
+                       (if changedp1
+                           (make-lambda (lambda-formals (ffn-symb term))
+                                        lambda-body)
+                         (ffn-symb term))
+                       args)))
+                 (t (mv changedp0 term))))))))
    (t (mv-let
-       (changedp1 args)
-       (remove-guard-holders1-lst (fargs term))
-       (cond ((null changedp1)
-              (cond ((quote-listp args)
-                     (let ((new-term (mcons-term (ffn-symb term)
-                                                 args)))
-                       (cond ((equal term new-term) ; even if not eq
-                              (mv changedp0 term))
-                             (t (mv t new-term)))))
-                    (t (mv changedp0 term))))
-             (t (mv t (mcons-term (ffn-symb term) args))))))))
+        (changedp1 args)
+        (remove-guard-holders1-lst
+         (fargs term)
+         (and wrld
+              (let ((ilks (ilks-per-argument-slot (ffn-symb term) wrld)))
+                (and (true-listp ilks) ; true, but needed for guard verif.
+                     ilks)))
+         wrld)
+        (cond ((null changedp1)
+               (cond ((quote-listp args)
+                      (let ((new-term (mcons-term (ffn-symb term)
+                                                  args)))
+                        (cond ((equal term new-term) ; even if not eq
+                               (mv changedp0 term))
+                              (t (mv t new-term)))))
+                     (t (mv changedp0 term))))
+              (t (mv t (mcons-term (ffn-symb term) args))))))))
 
-(defun remove-guard-holders1-lst (lst)
-  (declare (xargs :guard (pseudo-term-listp lst)
+(defun remove-guard-holders1-lst (lst ilks wrld)
+
+; Note: wrld is normally a world, but may be nil, in which case ilks is ignored.
+
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (true-listp ilks)
+                              (ilks-plist-worldp wrld))
                   :measure (acl2-count lst)))
   (cond ((endp lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1 nil (car lst))
+                   (remove-guard-holders1 nil (car lst) (car ilks) wrld)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst (cdr lst))
+                           (remove-guard-holders1-lst (cdr lst) (cdr ilks) wrld)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 )
 
-(defun remove-guard-holders (term)
+(defun remove-guard-holders (term wrld)
 
 ; Return a term equal to term, but slightly simplified.  See also the warning
 ; in remove-guard-holders1.
 
-  (declare (xargs :guard (pseudo-termp term)))
+; Note: wrld is normally a world, but may be nil, in which case there is no use
+; of ilks to remove guard-holders in lambda bodies.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (ilks-plist-worldp wrld))))
   (mv-let (changedp result)
-          (remove-guard-holders1 nil term)
+          (remove-guard-holders1 nil term nil wrld)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders-lst (lst)
+(defun remove-guard-holders-lst (lst wrld)
 
 ; Return a list of terms element-wise equal to lst, but slightly simplified.
 
+; Note: wrld is normally a world, but may be nil, in which case there is no use
+; of ilks to remove guard-holders in lambda bodies.
+
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (ilks-plist-worldp wrld))))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst lst)
+          (remove-guard-holders1-lst lst nil wrld)
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders1-lst-lst (lst)
+(defun remove-guard-holders1-lst-lst (lst wrld)
+
+; Note: wrld is normally a world, but may be nil, in which case there is no use
+; of ilks to remove guard-holders in lambda bodies.
+
+  (declare (xargs :guard (and (pseudo-term-list-listp lst)
+                              (ilks-plist-worldp wrld))))
   (cond ((null lst) (mv nil nil))
         (t (mv-let (changedp1 a)
-                   (remove-guard-holders1-lst (car lst))
+                   (remove-guard-holders1-lst (car lst) nil wrld)
                    (mv-let (changedp2 b)
-                           (remove-guard-holders1-lst-lst (cdr lst))
+                           (remove-guard-holders1-lst-lst (cdr lst) wrld)
                            (cond ((or changedp1 changedp2)
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 
-(defun remove-guard-holders-lst-lst (lst)
+(defun remove-guard-holders-lst-lst (lst wrld)
 
 ; Return a list of clauses element-wise equal to lst, but slightly simplified.
 
+; Note: wrld is normally a world, but may be nil, in which case there is no use
+; of ilks to remove guard-holders in lambda bodies.
+
+  (declare (xargs :guard (and (pseudo-term-list-listp lst)
+                              (ilks-plist-worldp wrld))))
   (mv-let (changedp result)
-          (remove-guard-holders1-lst-lst lst)
+          (remove-guard-holders1-lst-lst lst wrld)
           (declare (ignore changedp))
           result))
 
@@ -8958,7 +9024,7 @@
                               (split-on-conjoined-disjunctions-in-hyps-of-pairs (cdr pairs)))))))))
 
 (defun chk-acceptable-tau-rule (name term ctx wrld state)
-  (let ((term1 (remove-guard-holders term)))
+  (let ((term1 (remove-guard-holders term wrld)))
     (mv-let
      (form j bc)
      (tau-bounder-formp term1 wrld)
@@ -9104,7 +9170,7 @@
 ; ACCUMULATE means we just add rune to 'tau-lost-runes, and IGNORE means we
 ; just quietly ignore the situation.
 
-  (let ((term1 (remove-guard-holders term)))
+  (let ((term1 (remove-guard-holders term wrld0)))
     (mv-let
      (form j bc)
      (tau-bounder-formp term1 wrld0)
@@ -9221,7 +9287,7 @@
             (acceptable-tau-rules
              (split-on-conjoined-disjunctions-in-hyps-of-pairs
               (strip-force-and-case-split-in-hyps-of-pairs
-               (unprettyify (remove-guard-holders term))))
+               (unprettyify (remove-guard-holders term wrld0))))
              wrld)))
        (cond
         ((null pairs)

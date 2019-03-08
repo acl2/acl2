@@ -1633,13 +1633,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Note: In apply-raw.lisp we use a relaxed version of the expansion of
 ; defun-overrides that ignores the requirement that STATE be a formal!  We use
-; that relaxed code to define concrete-badge-userfn and concrete-apply$-userfn.
-; The basic argument is that it is ok to secretly look at the current world as
-; long as we cause an error if the current world does not specify a value for
-; the notion being ``defined'' and that once the world does specify a value
-; that value never changes.  If more functions like these two arise in the
-; future we may wish to relax defun-overrides or at least define a relaxed
-; version of it.
+; that relaxed code to define doppelganger-badge-userfn and
+; doppelganger-apply$-userfn.  The basic argument is that it is ok to secretly
+; look at the current world as long as we cause an error if the current world
+; does not specify a value for the notion being ``defined'' and that once the
+; world does specify a value that value never changes.  If more functions like
+; these two arise in the future we may wish to relax defun-overrides or at
+; least define a relaxed version of it.
 
   (assert (member 'state formals :test 'eq))
   `(progn (push ',name *defun-overrides*) ; see add-trip
@@ -2785,7 +2785,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; See the comment after ILLEGAL (below) for a discussion of an earlier,
 ; inadequate handling of these issues.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   #-acl2-loop-only
   (when (not *hard-error-returns-nilp*)
 
@@ -3953,7 +3953,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 129))
+  (let ((x 132))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -4191,9 +4191,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(27 . MINUSP))
 (defconst *tau-booleanp-pair*
   #-non-standard-analysis
-  '(31 . BOOLEANP)
+  '(32 . BOOLEANP)
   #+non-standard-analysis
-  '(34 . BOOLEANP)
+  '(35 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
@@ -5294,7 +5294,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; bound.
 
     `(let ((,at-fn-var ,at-fn)) ; to look up special var value only once
-       (cond ((and ,at-fn-var (aokp))
+       (declare (special ,at-fn-var *warrant-reqs*))
+       (cond ((and ,at-fn-var
+                   ,(if (member fn '(apply$-userfn badge-userfn)
+                                :test #'eq)
+                        '(or (aokp)
+                             *warrant-reqs*)
+                      '(aokp)))
               #+hons
               (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
@@ -13415,6 +13421,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     fchecksum-obj2
     check-sum-obj
     verify-guards-fn1 ; to update *cl-cache*
+    ev-fncall+-w
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -13547,14 +13554,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     canonical-pathname ; redefined from partial-encapsulate
 
-    concrete-badge-userfn ; redefined from partial-encapsulate
-    concrete-apply$-userfn ; redefined from partial-encapsulate
+    doppelganger-badge-userfn ; redefined from partial-encapsulate
+    doppelganger-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
 
 ; Found in apply-raw so users can see the *cl-cache*:
 
-    print-cl-cache
+    print-cl-cache-fn
 
 ; mfc functions
 
@@ -13690,6 +13697,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-ld-keyword-alias! set-ld-keyword-aliases!
     with-guard-checking-event
     when-pass-2
+    loop$
     ))
 
 (defmacro with-live-state (form)
@@ -21037,6 +21045,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
+; See the Essay on Memoization with Attachments for why
+; doppelganger-apply$-userfn and doppelganger-badge-userfn are untouchable.
+
+    doppelganger-apply$-userfn doppelganger-badge-userfn
+
     when-pass-2
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
@@ -25032,7 +25045,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         '(CDR (CAR (CDR (CDR (CDR (CDR CURRENT-CLAUSE))))))))
 
 (defun record-error (name rec)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t :mode :logic))
   (er hard? 'record-error
       "An attempt was made to treat ~x0 as a record of type ~x1."
       rec name))
@@ -25621,6 +25634,16 @@ Lisp definition."
 ; The following avoids an ACL2(p) loop in thanks-for-the-hint; see
 ; string-append.
  (verify-termination-boot-strap string-append)
+
+; The following must be in :logic mode for badged-fns-of-world.
+ (verify-termination-boot-strap plist-worldp)
+ (verify-termination-boot-strap fgetprop)
+ (verify-termination-boot-strap sgetprop)
+ (verify-termination-boot-strap function-symbolp)
+ (verify-termination-boot-strap strip-cars)
+ (verify-termination-boot-strap assoc-eq-exec$guard-check)
+ (verify-termination-boot-strap assoc-eq-exec)
+ (verify-termination-boot-strap table-alist)
 
  )
 
@@ -28225,9 +28248,9 @@ Lisp definition."
   ()
 
 ; The following function symbols are used (ancestrally) in the constraints on
-; concrete-badge-userfn and concrete-apply$-userfn.  They must be in logic
-; mode.  We use encapsulate so that verify-termination-boot-strap will do its
-; intended job in the first pass of the build.
+; doppelganger-badge-userfn and doppelganger-apply$-userfn.  They must be in
+; logic mode.  We use encapsulate so that verify-termination-boot-strap will do
+; its intended job in the first pass of the build.
 
   (logic)
   (verify-termination-boot-strap booleanp)
@@ -28241,6 +28264,202 @@ Lisp definition."
   (verify-termination-boot-strap revappend)
   (verify-termination-boot-strap first-n-ac)
   (verify-termination-boot-strap take))
+
+; Start code for read-file-into-string.
+
+(defconst *read-file-into-string-bound*
+
+; We rather arbitrarily set this value to the largest 64-bit CCL fixnum.  It is
+; a strict upper bound on the size of a string we are willing to return from
+; read-file-into-string, and it serves as a termination bound for our call of
+; read-file-into-string1 inside read-file-into-string.
+
+  (1- (ash 1 60)))
+
+#-acl2-loop-only
+(defvar *read-file-into-string-alist*
+
+; Associates filenames (in the native OS) with streams and positions.  The pair
+; ("fname" str . pos) means that the next time we call read-file-into-string to
+; read the next chunk from a file whose filename is "fname", we will be read
+; from the stream, str, at position pos.  When pos reaches end of file we
+; delete that entry.
+
+  nil)
+
+#-acl2-loop-only
+(defun read-file-into-string2-raw (os-filename stream posn bytes)
+  (let* ((file-len (file-length stream))
+         (max-bytes (if (<= posn file-len)
+                        (- file-len posn)
+                      (error "The :start position, ~s, specified for a call ~%~
+                              of read-file-into-string, exceeds the length ~%~
+                              of file ~s, which is ~s."
+                             posn os-filename file-len)))
+         (finish-p (or (null bytes)
+                       (< max-bytes bytes)))
+         (bytes (if bytes
+                    (min bytes max-bytes)
+                  max-bytes)))
+    (and (<= bytes *read-file-into-string-bound*)
+         (let ((fwd (file-write-date os-filename)))
+           (or (check-against-read-file-alist os-filename fwd)
+               (push (cons os-filename fwd)
+                     *read-file-alist*))
+           (when (not (eql fwd (file-write-date os-filename)))
+             (error "Illegal attempt to call ~s concurrently with some write ~
+                     to that file!~%See :DOC read-file-into-string."
+                    'read-file-into-string))
+
+; The following #-acl2-loop-only code, minus the WHEN clause, is based on code
+; found at http://www.ymeme.com/slurping-a-file-common-lisp-83.html and was
+; authored by @sabetts, who is apparently Shawn Betts.  The URL above presents
+; five implementations of file slurping and I found the discussion truly
+; excellent.  Thank you @sabetts!
+
+; The URL above says ``You can do anything you like with the code.''
+
+           (let ((seq (make-string bytes)))
+             (declare (type string seq))
+             (read-sequence seq stream)
+             (let ((temp (remove1-assoc-equal os-filename
+                                              *read-file-into-string-alist*)))
+               (cond
+                (finish-p
+                 (close stream)
+                 (setq *read-file-into-string-alist* temp))
+                (t
+                 (setq *read-file-into-string-alist*
+                       (cons (list* os-filename stream (+ posn bytes))
+                             temp)))))
+             seq)))))
+
+(defun read-file-into-string1 (channel state ans bound)
+
+; Channel is an open input character channel.  We read all the characters in
+; the file and return the list of them.
+
+  (declare (xargs :stobjs state
+                  :guard (and (symbolp channel)
+                              (open-input-channel-p channel :character state)
+                              (character-listp ans)
+                              (natp bound))
+                  :measure (acl2-count bound)))
+  (cond ((zp bound) ; file is too large
+         (mv nil state))
+        (t (mv-let
+            (val state)
+            (read-char$ channel state)
+            (cond ((not (characterp val)) ; end of file
+                   (mv (coerce (reverse ans) 'string)
+                       state))
+                  (t (read-file-into-string1 channel state (cons val ans)
+                                             (1- bound))))))))
+
+; At one time the following local lemma seemed to be helpful, but it is not
+; currently necessary.
+
+;(local
+; (defthm stringp-read-file-into-string1
+;   (implies (car (read-file-into-string1 channel state ans bound))
+;            (stringp (car (read-file-into-string1 channel state ans
+;                                                  bound))))))
+
+(defun read-file-into-string2-logical (filename start bytes state)
+
+; This function logically specifies read-file-into-string2.
+
+  (declare (xargs :stobjs state :guard (and (stringp filename)
+                                            (natp start)
+                                            (or (null bytes)
+                                                (natp bytes)))))
+  (non-exec
+   (mv-let (erp val state)
+     (mv-let (chan state)
+       (open-input-channel filename :character state)
+       (cond
+        ((or (null chan)
+; The following is to simplify guard verification.
+             (not (state-p state)))
+         (mv nil nil state))
+        (t (mv-let (val state)
+             (read-file-into-string1 chan state nil
+                                     *read-file-into-string-bound*)
+             (pprogn
+              (ec-call ; guard verification here seems unimportant
+               (close-input-channel chan state))
+              (mv nil val state))))))
+     (declare (ignore erp state))
+     (and (stringp val)
+
+; If the following conjunct is false, then raw Lisp would cause an error; so
+; there is no harm in adding it (and, it helps with guard verification).
+
+          (<= start (length val))
+          (subseq val
+                  start
+                  (if bytes
+                      (min (+ start bytes)
+                           (length val))
+                    (length val)))))))
+
+(defun read-file-into-string2 (filename start bytes state)
+
+; Filename is an ACL2 pathname; see the Essay on Pathnames.
+
+; Parallelism wart: avoid potential illegal behavior caused by this function.
+; A simple but expensive solution is probably to add a lock.  But with some
+; thought one might provide for correct parallel evaluations of this function.
+; Perhaps that's already the case!
+
+  (declare (xargs :stobjs state :guard (and (stringp filename)
+                                            (natp start)
+                                            (or (null bytes)
+                                                (natp bytes)))))
+  #-acl2-loop-only
+  (let* ((os-filename (pathname-unix-to-os filename state))
+         (triple (assoc-equal os-filename
+                              *read-file-into-string-alist*)))
+    (cond
+     ((eql start 0)
+      (when triple
+        (close (cadr triple)) ; close the stream
+        (setq *read-file-into-string-alist*
+              (remove1-assoc-equal os-filename
+                                   *read-file-into-string-alist*)))
+      (let ((stream
+             (open os-filename :direction :input :if-does-not-exist nil)))
+        (cond
+         (stream
+          (push (list* os-filename stream 0)
+                *read-file-into-string-alist*)
+          (read-file-into-string2-raw os-filename stream 0 bytes))
+         (t nil))))
+     ((null triple) ; and start > 0
+      (error "It is illegal to call read-file-into-string with a non-zero ~%~
+              :start value, in this case ~s, when there is no suitable ~%~
+              preceding call of read-file-into-string on the same file,~%~
+              ~s.  See :DOC read-file-into-string."
+             start os-filename))
+     ((not (eql (cddr triple) ; position
+                start))
+      (error "It is illegal to call read-file-into-string with a ~%~
+              non-zero :start value, in this case ~s, that is not the ~%~
+              position of the first byte unread by the preceding call ~%~
+              of read-file-into-string on the same file, in this case, ~%~
+              position ~s of file ~s.~%~
+              See :DOC read-file-into-string."
+             start (cddr triple) os-filename))
+     (t ; start = (cddr triple) > 0
+      (read-file-into-string2-raw os-filename
+                                  (cadr triple) ; stream
+                                  start         ; (cddr triple)
+                                  bytes))))
+  #+acl2-loop-only
+  (read-file-into-string2-logical filename start bytes state))
+
+(defmacro read-file-into-string (filename &key (start '0) bytes)
+  `(read-file-into-string2 ,filename ,start ,bytes state))
 
 (defmacro when-pass-2 (&rest x)
 
@@ -28274,7 +28493,7 @@ Lisp definition."
           (set-compile-fns nil))))
 
 #+acl2-loop-only
-(defun print-cl-cache ()
+(defun print-cl-cache-fn (i j)
 
 ; -----------------------------------------------------------------
 ; Reminders about print-cl-cache:
@@ -28316,6 +28535,9 @@ Lisp definition."
 
 ; Warning: Keep the return values in sync for the logic and raw Lisp.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard t)
+           (ignore i j))
   nil)
 
+(defmacro print-cl-cache (&optional i j)
+  `(print-cl-cache-fn ,i ,j))

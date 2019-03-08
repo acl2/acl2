@@ -30,6 +30,7 @@
 
 (in-package "FTY")
 (include-book "fty-parseutils")
+(include-book "fty-sum-casemacro")
 (include-book "xdoc/names" :dir :system)
 (program)
 
@@ -644,142 +645,42 @@
     (find-prod-by-kind kind (cdr prods))))
 
 
-(defun flexsum-case-macro-kinds (var prods kwd-alist)
-  (b* (((when (atom kwd-alist)) nil)
-       ((when (eq (caar kwd-alist) :otherwise))
-        `((otherwise ,(cdar kwd-alist))))
-       ((flexprod prod) (find-prod-by-kind (caar kwd-alist) prods)))
-    (cons `(,(if (atom (cdr kwd-alist))
-                 'otherwise
-               prod.kind)
-            (b* (((,prod.ctor-name ,var :quietp t) ,var))
-              ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-kinds var prods (cdr kwd-alist)))))
 
-(defun flexsum-case-macro-conds (var prods kwd-alist)
-  (b* (((when (atom kwd-alist)) nil)
-       ((when (eq (caar kwd-alist) :otherwise))
-        `((t ,(cdar kwd-alist))))
-       ((flexprod prod) (find-prod-by-kind (caar kwd-alist) prods)))
-    (cons `(,(if (atom (cdr kwd-alist))
-                 t
-               prod.cond)
-            (b* (((,prod.ctor-name ,var :quietp t) ,var))
-              ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-conds var prods (cdr kwd-alist)))))
+(define flexsum-kind-case-macro-spec-prods (prods)
+  (if (atom prods)
+      nil
+    (b* (((flexprod prod) (car prods)))
+      (cons (list prod.kind prod.ctor-name)
+            (flexsum-kind-case-macro-spec-prods (cdr prods))))))
 
-(defun flexsum-case-macro-member-special-form-expand (kinds)
-  (if (atom kinds)
-      '(:otherwise nil)
-    (cons (car kinds)
-          (cons t
-                (flexsum-case-macro-member-special-form-expand (cdr kinds))))))
+(define flexsum-kind-case-macro-spec (sum)
+  (b* (((flexsum sum))
+       (prods (flexsum-kind-case-macro-spec-prods sum.prods)))
+    (list* sum.case sum.kind prods)))
 
-(defun flexsum-case-macro-fn (var-or-binding rest-args sum)
-  (b* (((flexsum sum) sum)
-       (kinds (flexprods->kinds sum.prods))
-       ;; Special case: (foo-case x :kind) becomes (foo-case x :kind t :otherwise nil)
-       ((when (case-match rest-args
-                ((kind) (member kind kinds))
-                (& nil)))
-        (if (consp var-or-binding)
-            `(let* ((tmp ,var-or-binding))
-               ,(flexsum-case-macro-fn 'tmp
-                                       (cons (car rest-args) '(t :otherwise nil))
-                                       sum))
-          (flexsum-case-macro-fn var-or-binding
-                                 (cons (car rest-args) '(t :otherwise nil))
-                                 sum)))
-       ;; Special case: (foo-case x '(:kind1 :kind2)) becomes
-       ;;               (foo-case x :kind1 t :kind2 t :otherwise nil)
-       ((when (case-match rest-args
-                (('quote sub-kinds)
-                 (and (true-listp sub-kinds)
-                      (subsetp sub-kinds kinds)))
-                (& nil)))
-        (if (consp var-or-binding)
-            `(let* ((tmp ,var-or-binding))
-               ,(flexsum-case-macro-fn 'tmp
-                                       (flexsum-case-macro-member-special-form-expand
-                                        (cadr (car rest-args)))
-                                       sum))
-          (flexsum-case-macro-fn var-or-binding
-                                 (flexsum-case-macro-member-special-form-expand
-                                  (cadr (car rest-args)))
-                                 sum)))
-       ((when (consp var-or-binding))
-        (er hard? 'flexsum-case-macro "Requires a variable, rather than ~x0" var-or-binding))
+(define flexsum-cond-case-macro-spec-prods (prods)
+  (if (atom prods)
+      nil
+    (b* (((flexprod prod) (car prods)))
+      (cons (list prod.kind prod.cond prod.ctor-name)
+            (flexsum-cond-case-macro-spec-prods (cdr prods))))))
 
-       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
+(define flexsum-cond-case-macro-spec (sum)
+  (b* (((flexsum sum))
+       (prods (flexsum-cond-case-macro-spec-prods sum.prods)))
+    (list* sum.case sum.xvar prods)))
 
-       (allowed-keywordlist-keys (append kinds '(:otherwise)))
-       (allowed-parenthesized-keys (append kinds '(acl2::otherwise :otherwise acl2::&)))
-
-       ;; extract :foo bar :baz fuz style arguments
-       ((mv kwd-alist rest)
-        (extract-keywords sum.case
-                          allowed-keywordlist-keys
-                          rest-args nil))
-       (kwd-alist (reverse kwd-alist))
-       ((when (and rest kwd-alist))
-        ;; Note: if we ever want to allow keyword options that aren't themselves cases,
-        ;; change this error condition.
-        ;; For now, only allow one kind of syntax --
-        ;; either :foo bar :baz fuz
-        ;; or    (:foo bar) (:baz fuz)
-        ;; but not :foo bar (:baz fuz).
-        (er hard? sum.case "Inconsistent syntax: ~x0" rest-args))
-       ((unless (and (alistp rest)
-                     (true-list-listp rest)
-                     ;; weaken this?
-                     (subsetp (strip-cars rest) allowed-parenthesized-keys)))
-        (er hard? sum.case "Malformed cases: ~x0~%" rest))
-       (keys (if kwd-alist
-                 (strip-cars kwd-alist)
-               (sublis '((acl2::otherwise . :otherwise)
-                         (acl2::&         . :otherwise))
-                       (strip-cars rest))))
-       (vals (if kwd-alist
-                 (strip-cdrs kwd-alist)
-               (pairlis$ (make-list (len rest) :initial-element 'progn$)
-                         (strip-cdrs rest))))
-       ((unless (<= (len (member :otherwise keys)) 1))
-        ;; otherwise must be last or not exist
-        (er hard? sum.case "Otherwise case must be last"))
-       ((unless (no-duplicatesp keys))
-        (er hard? sum.case "Duplicate cases among: ~x0" keys))
-       ((unless (or (member :otherwise keys)
-                    (subsetp kinds keys)))
-        (er hard? sum.case "Missing case(s): ~x0~%" (set-difference-eq kinds keys)))
-       ((when (and (member :otherwise keys)
-                   (subsetp kinds keys)))
-        (er hard? sum.case "Otherwise is present but all cases are already covered"))
-       (kind-kwd-alist (pairlis$ keys vals))
-
-       (body
-        (if sum.kind
-            (let ((var.kind (intern-in-package-of-symbol
-                             (cat (symbol-name var) ".KIND")
-                             (if (equal (symbol-package-name var) "COMMON-LISP")
-                                 'acl2::acl2
-                               var))))
-              `(let* ((,var.kind (,sum.kind ,var)))
-                 (case ,var.kind
-                   . ,(flexsum-case-macro-kinds var sum.prods kind-kwd-alist))))
-          (nice-cond (flexsum-case-macro-conds var sum.prods kind-kwd-alist)))))
-    (if (consp var-or-binding)
-        `(let* ((,var ,(cadr var-or-binding))) ,body)
-      body)))
 
 (defun flexsum-def-case-macro (sum)
   (b* (((flexsum sum) sum)
-       ((unless sum.case) nil))
-    `((defmacro ,sum.case (var-or-binding &rest args)
-        (declare (xargs :guard (or (symbolp var-or-binding)
-                                   (and (true-listp var-or-binding)
-                                        (eql (len var-or-binding) 2)
-                                        (symbolp (car var-or-binding))))))
-        (flexsum-case-macro-fn var-or-binding args ',sum)))))
+       ((unless sum.case) nil)
+       (case-spec (if sum.kind
+                      (flexsum-kind-case-macro-spec sum)
+                    (flexsum-cond-case-macro-spec sum))))
+    `((defmacro ,sum.case (var-or-expr &rest args)
+        ,(if sum.kind
+             `(kind-casemacro-fn var-or-expr args ',case-spec)
+           `(cond-casemacro-fn var-or-expr args ',case-spec))))))
 
 (defun flextype-def-sum-kinds (sums)
   (if (atom sums)

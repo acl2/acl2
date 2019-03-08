@@ -31,26 +31,62 @@ public final class Acl2Variable extends Acl2Term {
         this.name = name;
     }
 
+    /**
+     * Index of this variable.
+     * This is set, once, to a non-negative integer
+     * by {@link #setVariableIndices(Map)}.
+     * The purpose of this index is just to optimize the evaluation of terms,
+     * so that bindings of values to variables can be represented as
+     * arrays instead of maps, for faster access:
+     * see {@link Acl2Term#eval(Acl2Value[])}.
+     */
+    private int index = -1;
+
     //////////////////////////////////////// package-private members:
+
+    /**
+     * Sets the index of this variable,
+     * according to the supplied map from variable symbols to indices.
+     *
+     * @throws IllegalArgumentException if this variable
+     *                                  is not a key of the map,
+     *                                  or if the value associated with it
+     *                                  is negative
+     * @throws IllegalStateException    if this variable index is already set
+     */
+    @Override
+    void setVariableIndices(Map<Acl2Symbol, Integer> indices) {
+        if (this.index != -1)
+            throw new IllegalStateException
+                    ("Index of variable " + this.name
+                            + " already set to " + this.index + ".");
+        Integer index = indices.get(this.name);
+        if (index == null)
+            throw new IllegalArgumentException
+                    ("Variable " + this.name + " has no associated index.");
+        if (index < 0)
+            throw new IllegalArgumentException
+                    ("Negative index " + index
+                            + "associated to variable " + this.name + ".");
+        this.index = index;
+    }
 
     /**
      * Evaluates this ACL2 variable to an ACL2 value,
      * with respect to the given binding of values to variable symbols.
      * The result is the value bound to the symbol of the variable.
-     *
-     * @throws Acl2EvaluationException if bindings does not contain
-     *                                 the symbol of this variable
+     * Since variable indices are set
+     * when a function definition is added to the environment
+     * and terms are evaluated after that,
+     * the conditions in the assertion below should hold.
+     * This evaluation never fails.
      */
     @Override
-    Acl2Value eval(Map<Acl2Symbol, Acl2Value> bindings)
-            throws Acl2EvaluationException {
-        assert bindings != null;
-        Acl2Value result = bindings.get(this.name);
-        if (result == null)
-            throw new Acl2EvaluationException
-                    ("Unbound variable: '" + this.name + "'.");
-        else
-            return result;
+    Acl2Value eval(Acl2Value[] binding) {
+        assert binding != null &&
+                this.index >= 0 &&
+                this.index < binding.length;
+        return binding[this.index];
     }
 
     //////////////////////////////////////// public members:

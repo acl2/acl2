@@ -18,6 +18,17 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Sets the indices of all the variables in this function.
+     * See {@link Acl2Variable} for more information about variable indices.
+     *
+     * @throws IllegalArgumentException if this function is malformed
+     *                                  in a way that
+     *                                  some valid index cannot be set
+     * @throws IllegalStateException    if some index is already set
+     */
+    abstract void setVariableIndices();
+
+    /**
      * Applies this ACL2 function to the given ACL2 values.
      *
      * @throws Acl2EvaluationException if the application fails
@@ -34,7 +45,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     /**
      * Checks if this function is the {@code or} ACL2 "pseudo-function".
      * This is not an ACL2 notion; it is an AIJ notion.
-     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
      */
     abstract boolean isOr();
 
