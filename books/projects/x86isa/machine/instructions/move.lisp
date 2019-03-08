@@ -64,8 +64,7 @@
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -98,7 +97,7 @@
        ((when flg0)
 	(!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
@@ -110,7 +109,7 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg2 x86)
-	(x86-operand-to-reg/mem$ proc-mode operand-size
+	(x86-operand-to-reg/mem proc-mode operand-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 register
@@ -138,8 +137,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-mov-Op/En-RM)
@@ -156,11 +154,11 @@
        ((the (integer 1 8) operand-size)
 	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0 reg/mem (the (unsigned-byte 3) increment-RIP-by) ?addr x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* operand-size inst-ac?
 	 nil ;; Not a memory pointer operand
 	 seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -191,8 +189,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (select-address-size
 					 segment-base-and-bounds
@@ -260,7 +257,7 @@
        ((when badlength?)
 	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
 
        ;; Get data from offset in segment:
        (inst-ac? (alignment-checking-enabled-p x86))
@@ -286,8 +283,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (rme-size riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -338,8 +334,7 @@
 					 riml32
 					 rme-size) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -379,7 +374,7 @@
        ((when flg0)
 	(!!ms-fresh :x86-effective-addr-error flg0))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
 	(add-to-*ip proc-mode temp-rip increment-RIP-by x86))
@@ -407,7 +402,7 @@
        ;; Update the x86 state:
        (inst-ac? t)
        ((mv flg3 x86)
-	(x86-operand-to-reg/mem$ proc-mode reg/mem-size
+	(x86-operand-to-reg/mem proc-mode reg/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 imm
@@ -438,8 +433,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -501,8 +495,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movsx)
@@ -518,7 +511,7 @@
        ((the (integer 1 8) reg/mem-size)
 	(select-operand-size proc-mode nil rex-byte t prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -526,7 +519,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode
 						#.*gpr-access*
 						reg/mem-size
 						inst-ac?
@@ -590,8 +583,7 @@
 					       n64-to-i64)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movsxd)
@@ -604,7 +596,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (reg/mem-size (if (equal opcode #xBE) 1 2))
 
@@ -614,7 +606,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode
 						#.*gpr-access*
 						reg/mem-size
 						inst-ac?
@@ -688,8 +680,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-movzx)
@@ -701,7 +692,7 @@
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (reg/mem-size (if (equal opcode #xB6) 1 2))
 
@@ -711,7 +702,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						reg/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -780,8 +771,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -819,12 +809,12 @@
 		    rex-byte
 		    x86))
        ;; The OF, SF, ZF, AF, PF, and CF flags are undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*zf* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :zf x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :of x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 

@@ -68,7 +68,7 @@ arithmetic.</p>"
 
   ///
 
-  (defthm-usb n01p-general-cf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-cf-spec-fn
     :bound 1
     :concl (general-cf-spec-fn result-nbits raw-result)
     :gen-linear t
@@ -77,7 +77,7 @@ arithmetic.</p>"
 (define cf-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "cf-spec" result-nbits)
+  `(define ,(mk-name "CF-SPEC" result-nbits)
      ((raw-result :type (unsigned-byte ,(1+ result-nbits))))
      :inline t
      :no-function t
@@ -87,9 +87,9 @@ arithmetic.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-cf-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-CF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "cf-spec" result-nbits) raw-result)
+       :concl (,(mk-name "CF-SPEC" result-nbits) raw-result)
        :gen-linear t
        :gen-type t)))
 
@@ -131,14 +131,14 @@ complement) arithmetic.</p>"
 
   ///
 
-  (defthm-usb n01p-general-of-spec-fn
+  (defthm-unsigned-byte-p n01p-general-of-spec-fn
     :bound 1
     :concl (general-of-spec-fn result-nbits signed-raw-result)))
 
 (define of-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "of-spec" result-nbits)
+  `(define ,(mk-name "OF-SPEC" result-nbits)
      ((signed-raw-result :type (signed-byte ,(1+ result-nbits))))
      :inline t
      :no-function t
@@ -150,9 +150,9 @@ complement) arithmetic.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-of-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-OF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "of-spec" result-nbits) signed-raw-result)
+       :concl (,(mk-name "OF-SPEC" result-nbits) signed-raw-result)
        :gen-type t
        :gen-linear t)))
 
@@ -193,7 +193,7 @@ otherwise.</p>"
   (if (equal result 0) 1 0)
   ///
 
-  (defthm-usb n01p-zf-spec
+  (defthm-unsigned-byte-p n01p-zf-spec
     :bound 1
     :concl (zf-spec result)
     :gen-type t
@@ -322,7 +322,7 @@ otherwise.</p>"
 (define pf-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "pf-spec" result-nbits)
+  `(define ,(mk-name "PF-SPEC" result-nbits)
      ((result :type (unsigned-byte ,result-nbits)))
      :parents (rflag-specifications)
      :inline t
@@ -348,9 +348,9 @@ otherwise.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-pf-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-PF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "pf-spec" result-nbits) result)
+       :concl (,(mk-name "PF-SPEC" result-nbits) result)
        :gen-type t
        :gen-linear t)))
 
@@ -387,7 +387,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 
   ///
 
-  (defthm-usb n01p-general-pf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-pf-spec-fn
     :bound 1
     :concl (general-pf-spec-fn result-nbits result)
     :gen-type t
@@ -412,7 +412,7 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 (define sf-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "sf-spec" result-nbits)
+  `(define ,(mk-name "SF-SPEC" result-nbits)
      ((result       :type (unsigned-byte ,result-nbits)))
      :inline t
      :no-function t
@@ -427,9 +427,9 @@ result contains an even number of 1 bits; cleared otherwise.</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-sf-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "sf-spec" result-nbits) result)
+       :concl (,(mk-name "SF-SPEC" result-nbits) result)
        :gen-type t
        :gen-linear t)
      ))
@@ -467,7 +467,7 @@ positive value and 1 indicates a negative value.)</p>"
              (1- (the (integer 0 64) result-nbits))))))))
   ///
 
-  (defthm-usb n01p-general-sf-spec-fn
+  (defthm-unsigned-byte-p n01p-general-sf-spec-fn
     :bound 1
     :concl (general-sf-spec-fn result-nbits result)
     :gen-type t
@@ -495,7 +495,7 @@ positive value and 1 indicates a negative value.)</p>"
 (define add-af-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "add-af-spec" result-nbits)
+  `(define ,(mk-name "ADD-AF-SPEC" result-nbits)
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits)))
      :inline t
@@ -520,9 +520,9 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-add-af-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-ADD-AF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "add-af-spec" result-nbits) dst src)
+       :concl (,(mk-name "ADD-AF-SPEC" result-nbits) dst src)
        :gen-linear t
        :gen-type t)))
 
@@ -545,7 +545,7 @@ positive value and 1 indicates a negative value.)</p>"
 (define sub-af-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "sub-af-spec" result-nbits)
+  `(define ,(mk-name "SUB-AF-SPEC" result-nbits)
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits)))
      :inline t
@@ -570,9 +570,9 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-sub-af-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SUB-AF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "sub-af-spec" result-nbits)
+       :concl (,(mk-name "SUB-AF-SPEC" result-nbits)
                 dst src)
        :gen-linear t
        :gen-type t)))
@@ -597,7 +597,7 @@ positive value and 1 indicates a negative value.)</p>"
 (define adc-af-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "adc-af-spec" result-nbits)
+  `(define ,(mk-name "ADC-AF-SPEC" result-nbits)
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits))
       (cf          :type (unsigned-byte 1)))
@@ -624,9 +624,9 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-adc-af-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-ADC-AF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "adc-af-spec" result-nbits)
+       :concl (,(mk-name "ADC-AF-SPEC" result-nbits)
                 dst src cf)
        :gen-linear t
        :gen-type t)))
@@ -651,7 +651,7 @@ positive value and 1 indicates a negative value.)</p>"
 (define sbb-af-spec-gen-fn (result-nbits)
   :verify-guards nil
 
-  `(define ,(mk-name "sbb-af-spec" result-nbits)
+  `(define ,(mk-name "SBB-AF-SPEC" result-nbits)
      ((dst         :type (unsigned-byte ,result-nbits))
       (src         :type (unsigned-byte ,result-nbits))
       (cf          :type (unsigned-byte 1)))
@@ -677,9 +677,9 @@ positive value and 1 indicates a negative value.)</p>"
 
      ///
 
-     (defthm-usb ,(mk-name "n01p-sbb-af-spec" result-nbits)
+     (defthm-unsigned-byte-p ,(mk-name "N01P-SBB-AF-SPEC" result-nbits)
        :bound 1
-       :concl (,(mk-name "sbb-af-spec" result-nbits)
+       :concl (,(mk-name "SBB-AF-SPEC" result-nbits)
                 dst src cf)
        :gen-linear t
        :gen-type t)))

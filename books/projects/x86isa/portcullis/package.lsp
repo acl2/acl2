@@ -41,6 +41,7 @@
 
 (include-book "centaur/bitops/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 (defpkg "X86ISA"
@@ -64,16 +65,17 @@
 
      definline
      def-gl-thm
+     gl::defthm-using-gl
      b*
      include-raw
-     
+
      ;; XDOC
      defsection
      defxdoc
      top
 
      ;; TOOLS
-     defprod
+     fty::defprod
      fty::defbitstruct
      def-ruleset
      def-ruleset!
@@ -82,6 +84,9 @@
      enable*
      disable*
      e/d*
+     std::defthm-natp
+     std::defthm-unsigned-byte-p
+     std::defthm-signed-byte-p
 
      x86isa ; so that top-level :doc topic is also in "ACL2" package
 

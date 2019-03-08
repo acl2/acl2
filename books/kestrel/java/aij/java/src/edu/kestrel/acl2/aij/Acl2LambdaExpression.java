@@ -42,6 +42,26 @@ public final class Acl2LambdaExpression extends Acl2Function {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Sets the indices of all the variables in this lambda expression.
+     * The index of each free variable in the body of this lambda expression
+     * is set to the zero-based position of the variable symbol
+     * in the parameters of this lambda expression.
+     *
+     * @throws IllegalArgumentException if this function is malformed
+     *                                  in a way that
+     *                                  some valid index cannot be set
+     * @throws IllegalStateException    if some index is already set
+     */
+    @Override
+    void setVariableIndices() {
+        int len = parameters.length;
+        Map<Acl2Symbol, Integer> indices = new HashMap<>(len);
+        for (int i = 0; i < len; ++i)
+            indices.put(parameters[i], i);
+        body.setVariableIndices(indices);
+    }
+
+    /**
      * Applies this ACL2 lambda expression to the given ACL2 values.
      * Since lambda expressions in well-formed ACL2 terms are closed,
      * the body of the lambda expression is evaluated
@@ -64,10 +84,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
                             + "-ary lambda expression on "
                             + len
                             + (len == 1 ? " argument." : " arguments."));
-        Map<Acl2Symbol, Acl2Value> bindings = new HashMap<>(len);
-        for (int i = 0; i < len; ++i)
-            bindings.put(this.parameters[i], values[i]);
-        return this.body.eval(bindings);
+        return this.body.eval(values);
     }
 
     /**
@@ -84,7 +101,7 @@ public final class Acl2LambdaExpression extends Acl2Function {
     /**
      * Checks if this function is the {@code or} ACL2 "pseudo-function".
      * This is not an ACL2 notion; it is an AIJ notion.
-     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
      */
     @Override
     boolean isOr() {
@@ -168,9 +185,6 @@ public final class Acl2LambdaExpression extends Acl2Function {
 
     /**
      * Returns a printable representation of this ACL2 lambda expression.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the parameters or body includes "unusual" characters.
      */
     @Override
     public String toString() {

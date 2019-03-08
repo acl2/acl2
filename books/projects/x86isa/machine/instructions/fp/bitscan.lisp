@@ -124,7 +124,7 @@
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -132,7 +132,7 @@
             (the (integer 0 4) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$ proc-mode
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                 #.*gpr-access*
                                                 operand-size
                                                 inst-ac?
@@ -160,13 +160,13 @@
        ;; Update the x86 state:
        (x86 (write-*ip proc-mode temp-rip x86))
        (zf (if (int= reg/mem 0) 1 0))
-       (x86 (!flgi #.*zf* zf x86))
+       (x86 (!flgi :zf zf x86))
        ;; [Shilpi:] CF, OF, SF, AF, PF are always undefined.
-       (x86 (!flgi-undefined #.*cf* x86))
-       (x86 (!flgi-undefined #.*of* x86))
-       (x86 (!flgi-undefined #.*sf* x86))
-       (x86 (!flgi-undefined #.*af* x86))
-       (x86 (!flgi-undefined #.*pf* x86))
+       (x86 (!flgi-undefined :cf x86))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (!flgi-undefined :sf x86))
+       (x86 (!flgi-undefined :af x86))
+       (x86 (!flgi-undefined :pf x86))
 
        ;; [Shilpi:] DEST (register rgf-index) should be undefined if
        ;; reg/mem = 0.

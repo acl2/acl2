@@ -24,3 +24,17 @@
 
 (assert-equal (ubyte8s=>hexchars '(240 15 169))
               '(#\F #\0 #\0 #\F #\A #\9))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (hexchars=>ubyte8s nil)
+              nil)
+
+(assert-equal (hexchars=>ubyte8s '(#\0 #\0 #\0 #\1 #\0 #\2 #\0 #\3))
+              '(0 1 2 3))
+
+(assert-equal (hexchars=>ubyte8s '(#\F #\0 #\0 #\F #\A #\9))
+              '(240 15 169))
+
+(assert-equal (hexchars=>ubyte8s '(#\f #\0 #\0 #\f #\a #\9))
+              '(240 15 169))

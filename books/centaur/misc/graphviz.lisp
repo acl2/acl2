@@ -33,7 +33,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/util/defenum" :dir :System)
 (include-book "centaur/vl/util/defs" :dir :System) ;; bozo, just for maybe-string-fix
-(include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "centaur/vl/util/printedlist" :dir :system)
 
 (local (std::add-default-post-define-hook :fix))

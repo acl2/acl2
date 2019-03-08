@@ -129,8 +129,11 @@
 ;community books
       u::defloop def-ruleset
       must-fail ;from misc/eval
-
-
+      must-succeed
+      must-prove
+      must-not-prove
+      symbol-package-name-safe
+      
       )
    (union-eq
     (union-eq 
@@ -155,6 +158,9 @@
      
      ;defunc defaults
       defunc
+      definec
+      defintrange
+      defnatrange
       set-defunc-termination-strictp set-defunc-function-contract-strictp set-defunc-body-contracts-strictp set-defunc-timeout
       get-defunc-timeout get-defunc-termination-strictp get-defunc-function-contract-strictp get-defunc-body-contracts-strictp
        ))))
@@ -195,6 +201,10 @@
               ;caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
               ;cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
               
+              must-fail ;from misc/eval
+              must-succeed
+              must-prove
+              must-not-prove
               
               trace* trace$
 
@@ -214,8 +224,9 @@
               ;if ; see macro below
               equal
 
-              defun acl2s::defunc ;for function definitions
-
+              defun acl2s::defunc acl2s::definec;for function definitions
+              acl2s::defintrange acl2s::defnatrange
+              
               ; + * unary-- unary-/ < ;see definitions below
               numerator denominator
               rationalp integerp
@@ -279,7 +290,7 @@
               cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
               
               trace* trace$
-         
+
               defthm thm defconst in-package defun table
               
               )

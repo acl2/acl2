@@ -679,7 +679,7 @@
 ; 'abbreviation from the basic ingredients, preprocessing the hyps and
 ; computing the loop-stopper.  Equiv is an equivalence relation name.
 
-  (let ((hyps (preprocess-hyps hyps))
+  (let ((hyps (preprocess-hyps hyps wrld))
         (loop-stopper (if loop-stopper-lst
                           (remove-irrelevant-loop-stopper-pairs
                            (cadr loop-stopper-lst)
@@ -1666,7 +1666,7 @@
 ; is a ttree that justifies the storage of all the :REWRITE rules.
 
   (chk-acceptable-rewrite-rule1 name match-free loop-stopper
-                                (unprettyify (remove-guard-holders term))
+                                (unprettyify (remove-guard-holders term wrld))
                                 ctx ens wrld state))
 
 ; So now we work on actually generating and adding the rules.
@@ -1772,7 +1772,7 @@
 ; convention.  "Consistency is the hobgoblin of small minds."  Emerson?
 
   (add-rewrite-rule1 rune nume
-                     (unprettyify (remove-guard-holders term))
+                     (unprettyify (remove-guard-holders term wrld))
                      loop-stopper-lst backchain-limit-lst match-free ens wrld))
 
 ;---------------------------------------------------------------------------
@@ -2253,7 +2253,7 @@
 ; messages without causing an error.
 
   (chk-acceptable-linear-rule1 name match-free trigger-terms
-                               (unprettyify (remove-guard-holders term))
+                               (unprettyify (remove-guard-holders term wrld))
                                ctx ens wrld state))
 
 ; And now, to adding :LINEAR rules...
@@ -2300,10 +2300,10 @@
 
 (defun add-linear-rule2 (rune nume trigger-terms hyps concl
                               backchain-limit-lst match-free ens wrld state)
-  (let* ((concl (remove-guard-holders concl))
+  (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
          (lst (external-linearize xconcl ens wrld state))
-         (hyps (preprocess-hyps hyps))
+         (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (all-vars-in-hyps hyps))
          (max-terms
           (or trigger-terms
@@ -2365,7 +2365,7 @@
 ;                (recur-over-break-cons cdr)))))
 
   (add-linear-rule1 rune nume trigger-terms
-                    (unprettyify (remove-guard-holders term))
+                    (unprettyify (remove-guard-holders term wrld))
                     backchain-limit-lst match-free ens wrld state))
 
 ;---------------------------------------------------------------------------
@@ -3203,7 +3203,7 @@
              (chk-triggers match-free name hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
 
-(defun destructure-forward-chaining-term (term)
+(defun destructure-forward-chaining-term (term wrld)
 
 ; We return two lists, hyps and concls, such that term is equivalent to
 ; (implies (and . hyps) (and . concls)).
@@ -3220,7 +3220,7 @@
 ; might have.  But we decided to stick with the ``just do what the user said''
 ; approach.
 
-;   (let ((term (remove-lambdas (remove-guard-holders term))))
+;   (let ((term (remove-lambdas (remove-guard-holders term wrld))))
 ;     (cond ((or (variablep term)
 ;                (fquotep term)
 ;                (not (eq (ffn-symb term) 'implies)))
@@ -3236,7 +3236,7 @@
 ;                                hyps)
 ;                        concls)))))
 
-  (let ((term (remove-lambdas (remove-guard-holders term))))
+  (let ((term (remove-lambdas (remove-guard-holders term wrld))))
     (cond ((or (variablep term)
                (fquotep term)
                (not (eq (ffn-symb term) 'implies)))
@@ -3258,7 +3258,7 @@
 
   (mv-let
    (hyps concls)
-   (destructure-forward-chaining-term term)
+   (destructure-forward-chaining-term term wrld)
    (let ((hyps-vars (all-vars1-lst hyps nil))
          (concls-vars (all-vars1-lst concls nil)))
      (chk-triggers name match-free hyps trigger-terms
@@ -3289,7 +3289,7 @@
 (defun add-forward-chaining-rule (rune nume trigger-terms term match-free wrld)
   (mv-let
    (hyps concls)
-   (destructure-forward-chaining-term term)
+   (destructure-forward-chaining-term term wrld)
    (putprop-forward-chaining-rules-lst rune nume
                                        trigger-terms
                                        hyps concls
@@ -3297,7 +3297,28 @@
                                                             hyps concls
                                                             trigger-terms
                                                             wrld)
-                                       wrld)))
+                                       wrld)))(defun putprop-forward-chaining-rules-lst
+  (rune nume triggers hyps concls match-free wrld)
+  (cond ((null triggers)
+         (put-match-free-value match-free rune wrld))
+        (t (putprop-forward-chaining-rules-lst
+            rune nume
+            (cdr triggers)
+            hyps concls match-free
+            (putprop (ffn-symb (car triggers))
+                     'forward-chaining-rules
+                     (cons (make forward-chaining-rule
+                                 :rune rune
+                                 :nume nume
+                                 :trigger (car triggers)
+                                 :hyps hyps
+                                 :concls concls
+                                 :match-free match-free)
+                           (getpropc (ffn-symb (car triggers))
+                                     'forward-chaining-rules nil wrld))
+                     wrld)))))
+
+
 
 ;---------------------------------------------------------------------------
 ; Section:  :META Rules
@@ -3718,7 +3739,8 @@
                        (normalized-evaluator-cl-set evfn-lst wrld)))
                      (cl-set2
                       (remove-guard-holders-lst-lst
-                       (evaluator-clauses evfn evfn-lst fn-args-lst))))
+                       (evaluator-clauses evfn evfn-lst fn-args-lst)
+                       wrld)))
                 (cond
                  ((not (and (clause-set-subsumes nil cl-set1 cl-set2)
                             (clause-set-subsumes nil cl-set2 cl-set1)))
@@ -3858,7 +3880,16 @@
   (let* ((defthm (if (or (eql i 0) (eql i 6) (eql i 7)) 'defthmd 'defthm))
          (name (defevaluator-form/defthm-name
                  evfn evfn-lst namedp prefix i clause))
-         (formula (prettyify-clause clause nil nil))
+         (formula
+
+; Notice that we pass nil to the world argument of prettyify-clause below, so
+; that the user cannot affect the formula generated here, for example by
+; setting the 'untranslate or 'untranslate-preprocess entry in the
+; user-defined-functions-table.  We do not rely on this for soundness, however,
+; since ultimately the defthm returned below would be rejected if the formula
+; is unsuitable.
+
+          (prettyify-clause clause nil nil))
          (hints (defevaluator-form/defthm-hints evfn evfn-lst i)))
     `((,defthm ,name
         ,formula
@@ -5348,7 +5379,7 @@
 ; type-set lemmas in wrld.  The ttree returned contains no 'assumption
 ; tags.
 
-  (let ((term (remove-guard-holders term)))
+  (let ((term (remove-guard-holders term wrld)))
     (mv-let
      (hyps concl)
      (unprettyify-tp term)
@@ -6387,7 +6418,7 @@
 ; are so intermingled that it seemed dubious to separate them into two
 ; functions.
 
-  (let ((pairs (unprettyify (remove-guard-holders term)))
+  (let ((pairs (unprettyify (remove-guard-holders term wrld)))
         (hyp-msg   "~x0 is an unacceptable :CONGRUENCE rule.  The ~
                     single hypothesis of a :CONGRUENCE rule must be a ~
                     term of the form (equiv x y), where equiv has ~
@@ -6409,7 +6440,7 @@
 ; quote-normal form, both to facilitate matching when the rule is subsequently
 ; applied and to make the test robust below where we use subst-var-lst.
 
-             (sublis-var nil (cdar pairs))))
+             (quote-normal-form (cdar pairs))))
         (case-match
          hyp
          ((equiv1 xk yk)
@@ -7011,7 +7042,7 @@
             (make rewrite-rule
                   :rune *fake-rune-for-anonymous-enabled-rule*
                   :nume nil
-                  :hyps (preprocess-hyps hyps)
+                  :hyps (preprocess-hyps hyps wrld)
                   :equiv equiv
                   :lhs (mcons-term fn args)
                   :var-info (var-counts args body)
@@ -7161,6 +7192,8 @@
 ; (cl-proc cl hint) => cl-list
 ; or
 ; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in)
+; or
+; (cl-proc cl hint st_1 ... st_k) => (erp cl-list st_i1 ... st_in d)
 
   (cond
    ((null (cdr stobjs-out)) ; first two signatures
@@ -7173,19 +7206,20 @@
           (t (msg "~x0 returns a single argument, but doesn't take exactly one ~
                    or two arguments, both not stobjs"
                   cl-proc))))
-   ((and ; the final (third) class of signatures above
-     (null (car stobjs-in))
-     (cdr stobjs-in)
-     (null (cadr stobjs-in))
-     (not (member-eq nil (cddr stobjs-in)))
-     (null (car stobjs-out))
-     (cdr stobjs-out)
-     (null (cadr stobjs-out))
-     (not (member-eq nil (cddr stobjs-out))))
+   ((and (null (car stobjs-in))
+         (cdr stobjs-in)
+         (null (cadr stobjs-in))
+         (not (member-eq nil (cddr stobjs-in)))
+         (null (car stobjs-out))
+         (cdr stobjs-out)
+         (null (cadr stobjs-out))
+         (member-equal (member-eq nil (cddr stobjs-out))
+                       '(nil (nil))))
     nil)
    (t
     (msg "both the arguments and results of ~x0 in this case are expected to ~
-          contain stobjs in exactly all positions other than the first two"
+          contain stobjs in exactly all positions other than the first two ~
+          and possibly the last"
          cl-proc))))
 
 (defun destructure-clause-processor-rule (term)
@@ -7195,7 +7229,7 @@
 ; (mv flg fn cl alist rest-args ev call xflg)
 ; where
 ; flg:   :error, if term is not the right shape
-;        t, if the clause processor function returns an error triple
+;        t, if the clause processor function returns (mv erp clauses ...)
 ;           and is thus to be accessed with CLAUSES-RESULT
 ;        nil, if the clause processor returns a set of clauses.
 ; fn:    the clause processor function (presumably a function symbol)
@@ -7449,59 +7483,6 @@
 (table trusted-cl-proc-table nil nil
        :guard
        (trusted-cl-proc-table-guard key val world))
-
-(defun unknown-constraints-table-guard (key val wrld)
-  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate.")
-        (ctx 'unknown-constraints-table-guard))
-    (and (eq key :supporters)
-         (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                            (global-val 'embedded-event-lst wrld))))
-           (cond
-            ((null ee-entries)
-             (er hard ctx er-msg
-                 "it is not being made in the scope of a non-trivial ~
-                  encapsulate"))
-            ((cdr ee-entries)
-             (er hard ctx er-msg
-                 (msg "it is being made in the scope of nested non-trivial ~
-                       encapsulates.  In particular, an enclosing encapsulate ~
-                       introduces function ~x0, while an encapsulate superior ~
-                       to that one introduces function ~x1"
-                      (caar (cadr (car ee-entries)))
-                      (caar (cadr (cadr ee-entries))))))
-            ((not (all-function-symbolps val wrld))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, is not a list of known function symbols"
-                      val)))
-            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                                 val))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, does not include all of the signature ~
-                       functions of the partial-encapsulate"
-                      val)))
-            (t t))))))
-
-(table unknown-constraints-table nil nil
-       :guard
-       (unknown-constraints-table-guard key val world))
-
-(defmacro set-unknown-constraints-supporters (&rest fns)
-  `(table unknown-constraints-table
-          :supporters
-
-; Notice that by including the newly-constrained functions in the supporters,
-; we are guaranteeing that this table event is not redundant.  To see this,
-; first note that we are inside a non-trivial encapsulate (see
-; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
-; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
-; would have rejected a previous attempt to set to these supporters, since they
-; were not function symbols at that time.
-
-          (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                             (global-val 'embedded-event-lst world))))
-            (union-equal (strip-cars (cadr (car ee-entries)))
-                         ',fns))))
 
 (defmacro define-trusted-clause-processor
   (clause-processor supporters
@@ -7903,8 +7884,8 @@
 ; In the case of a :meta fn, triple-flg is :error or nil and rest-args may be
 ; nil or something like (mfc state).  In the case of a :clause-processor,
 ; triple-flg may be :error, t, or nil and rest-args may be nil or (hint) or
-; (hint stobj1 stobj2 ... stobjk).  When hyp-fn is present, we know that it can
-; take the same arguments as fn.
+; (hint stobj1 stobj2 ...).  When hyp-fn is present, we know that it can take
+; the same arguments as fn.
 
 ; If triple-flg is :error then we know chk-acceptable-x-rule will cause an
 ; error.  Otherwise, we guarantee that fn is a function symbol, hyp-fn is nil
@@ -8435,7 +8416,7 @@
      ((eq token :FORWARD-CHAINING)
       (cond ((not (assoc-eq :TRIGGER-TERMS seen))
              (mv-let (hyps concls)
-                     (destructure-forward-chaining-term corollary)
+                     (destructure-forward-chaining-term corollary wrld)
                      (declare (ignore concls))
                      (cond ((null hyps)
                             (er soft ctx
@@ -8477,7 +8458,7 @@
       (cond ((not (assoc-eq :TYPED-TERM seen))
              (mv-let
               (hyps concl)
-              (unprettyify-tp (remove-guard-holders corollary))
+              (unprettyify-tp (remove-guard-holders corollary wrld))
               (declare (ignore hyps))
               (let ((pat (cond ((ffn-symb-p concl 'implies)
                                 (find-type-prescription-pat (fargn concl 2)
@@ -8753,11 +8734,11 @@
                               See :DOC linear."
                              name))
                         (t
-                         (let ((terms (remove-guard-holders-lst terms)))
+                         (let ((terms (remove-guard-holders-lst terms wrld)))
                            (er-progn
                             (chk-legal-linear-trigger-terms
                              terms
-                             (unprettyify (remove-guard-holders corollary))
+                             (unprettyify (remove-guard-holders corollary wrld))
                              name ctx state)
                             (value terms)))))))
                     ((eq token :FORWARD-CHAINING)
@@ -8770,7 +8751,8 @@
                                    one trigger.  Your rule class, ~x0, ~
                                    specifies none.  See :DOC forward-chaining."
                                   x))
-                             (t (value (remove-guard-holders-lst terms))))))
+                             (t (value (remove-guard-holders-lst terms
+                                                                 wrld))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
@@ -8917,10 +8899,12 @@
                             (:type-prescription
                              (mv-let
                               (hyps concl)
-                              (unprettyify-tp (remove-guard-holders corollary))
+                              (unprettyify-tp (remove-guard-holders corollary
+                                                                    wrld))
                               (list (cons hyps concl))))
                             (otherwise
-                             (unprettyify (remove-guard-holders corollary))))))
+                             (unprettyify (remove-guard-holders corollary
+                                                                wrld))))))
                      (cond
                       ((not (member-eq token
                                        '(:REWRITE :META :LINEAR
@@ -11178,7 +11162,8 @@
 
             (let ((attached-fns
                    (attached-fns (canonical-ancestors-lst
-                                  (all-ffn-symbs (remove-guard-holders tterm)
+                                  (all-ffn-symbs (remove-guard-holders tterm
+                                                                       wrld)
                                                  nil)
                                   wrld)
                                  wrld)))
@@ -11520,13 +11505,6 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defmacro thm (term &key hints otf-flg)
-  (list 'thm-fn
-        (list 'quote term)
-        'state
-        (list 'quote hints)
-        (list 'quote otf-flg)))
-
 (defun thm-fn (term state hints otf-flg)
   (er-progn
    (with-ctx-summarized
@@ -11552,6 +11530,26 @@
                 (fms "Proof succeeded.~%" nil
                      (proofs-co state) state nil))
            (value :invisible))))
+
+(defmacro thm (term &key hints otf-flg)
+
+; We started using make-event here in January, 2019.  Instead of defining
+; thm-fn above and generating a call of it below, we could presumably generate
+; a new name and instead call defthm with that name, adding :rule-classes nil.
+; But to reduce risk and potential churn we decided, when introducing
+; make-event here, to continue with the existing definition of thm-fn, and
+; essentially the same use of thm-fn.  It seems very reasonable to try the
+; defthm approach instead if someone wants to do that.
+
+  `(with-output :off summary :stack :push
+     (make-event (er-progn (with-output :stack :pop
+                             (thm-fn ',term
+                                     state
+                                     ',hints
+                                     ',otf-flg))
+                           (value '(value-triple :invisible)))
+                 :expansion? (value-triple :invisible)
+                 :on-behalf-of :quiet!)))
 
 ; Note:  During boot-strapping the thm macro is unavailable because it is
 ; not one of the *initial-event-defmacros*.

@@ -345,6 +345,7 @@
               (count-to-nil (car x))
               (count-to-nil (cdr x)))))
 
+     #+acl2-devel ; else not redundant with :? measure
      (verify-termination
        (ffnnamep (declare (xargs :measure (count-to-nil term)
                                  :verify-guards nil)))
@@ -654,7 +655,7 @@
    (t (defcong-fn-equal-equal-events term (+ 1 i) (cdr c1-cn)))))
 
 ; -----------------------------------------------------------------
-; 8. DEF-WARRANT
+; 8. DEFWARRANT
 
 ; -----------------------------------------------------------------
 ; 9. DEFUN$
@@ -665,3 +666,8 @@
 
 ; -----------------------------------------------------------------
 ; 11. The Defattach
+
+; -----------------------------------------------------------------
+; 12. Loop$ Scions
+
+; See loop.lisp.

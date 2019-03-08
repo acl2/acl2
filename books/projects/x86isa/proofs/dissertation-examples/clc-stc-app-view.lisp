@@ -76,7 +76,7 @@
 (defthm program-effects-1
   (implies (preconditions x86)
            (equal (x86-run 1 x86)
-                  (!rip (+ 1 (rip x86)) (!flgi *cf* 0 x86))))
+                  (!rip (+ 1 (rip x86)) (!flgi :cf 0 x86))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
                                     x86-operation-mode)
                                    (create-canonical-address-list
@@ -85,9 +85,10 @@
 (defthm program-effects-2
   (implies (preconditions x86)
            (equal (x86-run 2 x86)
-                  (!rip (+ 2 (rip x86)) (!flgi *cf* 1 x86))))
+                  (!rip (+ 2 (rip x86)) (!flgi :cf 1 x86))))
   :hints (("Goal" :in-theory (e/d* (x86-cmc/clc/stc/cld/std
-                                    x86-operation-mode)
+                                    x86-operation-mode
+                                    rflag-RoWs-enables)
                                    (create-canonical-address-list
                                     (create-canonical-address-list))))))
 

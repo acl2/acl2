@@ -12,7 +12,7 @@
 
 (in-package "RTL")
 
-(include-book "masc")
+(include-book "rac")
 (local (include-book "bits"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

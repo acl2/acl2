@@ -10,7 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
+(include-book "restrict")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,7 +29,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-intro
+   (xdoc::evmac-section-intro
 
     (xdoc::p
      "Even though functions are total in ACL2
@@ -41,27 +43,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-form
-
-    (xdoc::code
-     "(restrict old"
-     "          restriction"
-     "          &key"
-     "          :undefined       ; default :undefined"
-     "          :new-name        ; default :auto"
-     "          :new-enable      ; default :auto"
-     "          :thm-name        ; default :auto"
-     "          :thm-enable      ; default t"
-     "          :non-executable  ; default :auto"
-     "          :verify-guards   ; default :auto"
-     "          :hints           ; default nil"
-     "          :print           ; default :result"
-     "          :show-only       ; default nil"
-     "  )"))
+   (xdoc::evmac-section-form-auto restrict)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-inputs
+   (xdoc::evmac-section-inputs
 
     (xdoc::desc-apt-input-old
      (xdoc::p
@@ -175,19 +161,17 @@
 
     (xdoc::desc-apt-input-verify-guards nil)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print restrict)
 
-    (xdoc::desc-apt-input-show-only))
+    (xdoc::evmac-input-show-only restrict))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-appconds
+   (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    restrict
 
     (xdoc::desc
      "@(':restriction-of-rec-calls')"
@@ -233,9 +217,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-generated
-    nil
-    nil
+   (xdoc::evmac-section-generated
 
     (xdoc::desc
      "@('new')"
@@ -283,4 +265,8 @@
       "(defthm old-to-new"
       "  (implies restriction<x1,...,xn>"
       "           (equal (old x1 ... xn)"
-      "                  (new x1 ... xn))))")))))
+      "                  (new x1 ... xn))))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy restrict)))

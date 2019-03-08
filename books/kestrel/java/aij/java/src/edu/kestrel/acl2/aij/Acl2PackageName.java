@@ -104,12 +104,44 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
 
     /**
      * Returns a printable representation of this ACL2 package name.
-     * This should be improved to return something non-confusing
-     * when the package name includes "unusual" characters.
+     * The result is just the Java string consisting of the package name itself
+     * if every character in the package name is a letter, digit, or a dash,
+     * and the first character is not a digit.
+     * otherwise, this Java string is preceded and followed by a vertical bar,
+     * and any backslash or vertical bar in the package name
+     * is preceded by backslash.
+     * This scheme should ensure that
+     * ACL2 package names are always printed clearly.
+     * The conditions here under which
+     * the package name is surrounded by vertical bars
+     * are more stringent than in ACL2;
+     * future versions of this method may relax those conditions
+     * and match ACL2's conditions more closely.
+     * This scheme should ensure that ACL2 package names
+     * are always printed clearly.
      */
     @Override
     public String toString() {
-        return this.name;
+        StringBuilder result = new StringBuilder();
+        boolean noBars = true;
+        for (int i = 0; i < this.name.length(); ++i) {
+            char jchar = this.name.charAt(i);
+            noBars = noBars &&
+                    (('A' <= jchar && jchar <= 'Z') ||
+                            ('0' <= jchar && jchar <= '9' && i != 0) ||
+                            (jchar == '-'));
+            if (jchar == '|')
+                result.append("\\|");
+            else if (jchar == '\\')
+                result.append("\\\\");
+            else
+                result.append(jchar);
+        }
+        if (!noBars) {
+            result.insert(0, '|');
+            result.append('|');
+        }
+        return new String(result);
     }
 
     /**

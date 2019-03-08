@@ -51,11 +51,7 @@
                          rme-size
                          wime-size
                          wme-size)
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+                        (las-to-pas
                          xr-fault-wb-in-system-level-marking-view
                          xr-fault-wb-in-sys-view))))
 
@@ -105,7 +101,6 @@
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -116,7 +111,6 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml32
@@ -570,79 +564,76 @@
     (x86-run (pre-clk n) x86)
     (if (< 0 n)
         (XW
-         :RGF *RAX* (LOGHEAD 16 (ASH (XR :RGF *RDX* X86) 2))
+         :RGF *RAX* (ASH (XR :RGF *RDX* X86) 2)
          (XW
           :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
           (XW
            :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
            (XW
             :RIP 0 (+ 16 (XR :RIP 0 X86))
-            (MV-NTH
-             1
-             (WB
-              8 (+ -8 (XR :RGF *RSP* X86))
-              :W (LOGHEAD 64 (XR :RGF *RBP* X86))
-              (WRITE-USER-RFLAGS
-               (LOGIOR
-                (LOGHEAD 32
-                         (ASH (PF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
-                              2))
-                (LOGAND
-                 4294967226
-                 (LOGIOR
-                  (LOGHEAD 32
-                           (ASH (SF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
-                                7))
-                  (LOGAND
-                   4294967166
-                   (BITOPS::LOGSQUASH
-                    1
-                    (XR
-                     :RFLAGS 0
-                     (WRITE-USER-RFLAGS
-                      (LOGIOR
-                       (LOGHEAD 32
-                                (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
-                       (LOGAND
-                        4294967226
-                        (LOGIOR (LOGAND 4294965118
-                                        (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
-                                (LOGHEAD 32
-                                         (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
-                                              7)))))
-                      16 X86)))))))
-               2064
-               (WRITE-USER-RFLAGS
-                (LOGIOR
-                 (LOGHEAD 32
-                          (ASH (PF-SPEC32 (XR :RGF *RDX* X86)) 2))
-                 (LOGAND 4294967226
-                         (LOGIOR (LOGAND 4294965118
-                                         (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86)))
-                                 (LOGHEAD 32
-                                          (ASH (SF-SPEC32 (XR :RGF *RDX* X86))
-                                               7)))))
-                16 X86))))))))
+            (XW
+             :UNDEF 0 (+ 3 (NFIX (XR :UNDEF 0 X86)))
+             (XW
+              :RFLAGS 0
+              (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                          (PF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
+                          (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                          (LOGHEAD 1
+                                   (CREATE-UNDEF (+ 1 (NFIX (XR :UNDEF 0 X86)))))
+                          (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                          0
+                          (SF-SPEC64 (ASH (XR :RGF *RDX* X86) 2))
+                          (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                          (LOGHEAD 1
+                                   (CREATE-UNDEF (+ 2 (NFIX (XR :UNDEF 0 X86)))))
+                          (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                          (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+              (MV-NTH 1
+                      (WB 8 (+ -8 (XR :RGF *RSP* X86))
+                          :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                          X86))))))))
       (XW
        :RGF *RSP* (+ -8 (XR :RGF *RSP* X86))
        (XW
         :RGF *RBP* (+ -8 (XR :RGF *RSP* X86))
-        (XW
-         :RIP 0 (+ 34 (XR :RIP 0 X86))
-         (MV-NTH
-          1
-          (WB
-           8 (+ -8 (XR :RGF *RSP* X86))
-           :W (LOGHEAD 64 (XR :RGF *RBP* X86))
-           (WRITE-USER-RFLAGS
-            (LOGIOR
-             4
-             (LOGAND 4294967290
-                     (LOGIOR 64
-                             (LOGAND 4294965054
-                                     (BITOPS::LOGSQUASH 1 (XR :RFLAGS 0 X86))))))
-            16 X86)))))))))
+        (XW :RIP 0 (+ 34 (XR :RIP 0 X86))
+            (XW :UNDEF 0 (+ 1 (NFIX (XR :UNDEF 0 X86)))
+                (XW :RFLAGS 0
+                    (RFLAGSBITS 0 (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                                1 (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                                (LOGHEAD 1
+                                         (CREATE-UNDEF (NFIX (XR :UNDEF 0 X86))))
+                                (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                                1 0 (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                                0 (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                                (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                    (MV-NTH 1
+                            (WB 8 (+ -8 (XR :RGF *RSP* X86))
+                                :W (LOGHEAD 64 (XR :RGF *RBP* X86))
+                                X86))))))))))
   :hints (("Goal" :in-theory (e/d* (instruction-decoding-and-spec-rules
+                                    rflag-RoWs-enables
+                                    write-user-rflags
 
                                     gpr-and-spec-4
                                     jcc/cmovcc/setcc-spec
@@ -653,7 +644,6 @@
                                     one-byte-opcode-execute
                                     !rgfi-size
                                     x86-operand-to-reg/mem
-                                    x86-operand-to-reg/mem$
                                     wr64
                                     wr32
                                     wr16
@@ -666,7 +656,6 @@
                                     wml64
                                     rr32
                                     x86-operand-from-modr/m-and-sib-bytes
-                                    x86-operand-from-modr/m-and-sib-bytes$
                                     check-instruction-length
                                     riml-size
                                     riml32
@@ -1370,7 +1359,6 @@
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -1381,7 +1369,6 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              riml-size
                              riml32

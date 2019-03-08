@@ -137,30 +137,30 @@
 
   (let ((low-nibble (the (unsigned-byte 4) (logand opcode #xf))))
     (case low-nibble
-      (#x0 (equal 1 (the (unsigned-byte 1) (flgi #.*of* x86))))
-      (#x1 (equal 0 (the (unsigned-byte 1) (flgi #.*of* x86))))
-      (#x2 (equal 1 (the (unsigned-byte 1) (flgi #.*cf* x86))))
-      (#x3 (equal 0 (the (unsigned-byte 1) (flgi #.*cf* x86))))
-      (#x4 (equal 1 (the (unsigned-byte 1) (flgi #.*zf* x86))))
-      (#x5 (equal 0 (the (unsigned-byte 1) (flgi #.*zf* x86))))
-      (#x6 (or (equal 1 (the (unsigned-byte 1) (flgi #.*cf* x86)))
-	       (equal 1 (the (unsigned-byte 1) (flgi #.*zf* x86)))))
-      (#x7 (and (equal 0 (the (unsigned-byte 1) (flgi #.*cf* x86)))
-		(equal 0 (the (unsigned-byte 1) (flgi #.*zf* x86)))))
-      (#x8 (equal 1 (the (unsigned-byte 1) (flgi #.*sf* x86))))
-      (#x9 (equal 0 (the (unsigned-byte 1) (flgi #.*sf* x86))))
-      (#xA (equal 1 (the (unsigned-byte 1) (flgi #.*pf* x86))))
-      (#xB (equal 0 (the (unsigned-byte 1) (flgi #.*pf* x86))))
-      (#xC (not (equal (the (unsigned-byte 1) (flgi #.*sf* x86))
-		       (the (unsigned-byte 1) (flgi #.*of* x86)))))
-      (#xD (equal (the (unsigned-byte 1) (flgi #.*sf* x86))
-		  (the (unsigned-byte 1) (flgi #.*of* x86))))
-      (#xE (or (equal 1 (the (unsigned-byte 1) (flgi #.*zf* x86)))
-	       (not (equal (the (unsigned-byte 1) (flgi #.*sf* x86))
-			   (the (unsigned-byte 1) (flgi #.*of* x86))))))
-      (#xF (and (equal 0 (the (unsigned-byte 1) (flgi #.*zf* x86)))
-		(equal (the (unsigned-byte 1) (flgi #.*sf* x86))
-		       (the (unsigned-byte 1) (flgi #.*of* x86)))))
+      (#x0 (equal 1 (the (unsigned-byte 1) (flgi :of x86))))
+      (#x1 (equal 0 (the (unsigned-byte 1) (flgi :of x86))))
+      (#x2 (equal 1 (the (unsigned-byte 1) (flgi :cf x86))))
+      (#x3 (equal 0 (the (unsigned-byte 1) (flgi :cf x86))))
+      (#x4 (equal 1 (the (unsigned-byte 1) (flgi :zf x86))))
+      (#x5 (equal 0 (the (unsigned-byte 1) (flgi :zf x86))))
+      (#x6 (or (equal 1 (the (unsigned-byte 1) (flgi :cf x86)))
+	       (equal 1 (the (unsigned-byte 1) (flgi :zf x86)))))
+      (#x7 (and (equal 0 (the (unsigned-byte 1) (flgi :cf x86)))
+		(equal 0 (the (unsigned-byte 1) (flgi :zf x86)))))
+      (#x8 (equal 1 (the (unsigned-byte 1) (flgi :sf x86))))
+      (#x9 (equal 0 (the (unsigned-byte 1) (flgi :sf x86))))
+      (#xA (equal 1 (the (unsigned-byte 1) (flgi :pf x86))))
+      (#xB (equal 0 (the (unsigned-byte 1) (flgi :pf x86))))
+      (#xC (not (equal (the (unsigned-byte 1) (flgi :sf x86))
+		       (the (unsigned-byte 1) (flgi :of x86)))))
+      (#xD (equal (the (unsigned-byte 1) (flgi :sf x86))
+		  (the (unsigned-byte 1) (flgi :of x86))))
+      (#xE (or (equal 1 (the (unsigned-byte 1) (flgi :zf x86)))
+	       (not (equal (the (unsigned-byte 1) (flgi :sf x86))
+			   (the (unsigned-byte 1) (flgi :of x86))))))
+      (#xF (and (equal 0 (the (unsigned-byte 1) (flgi :zf x86)))
+		(equal (the (unsigned-byte 1) (flgi :sf x86))
+		       (the (unsigned-byte 1) (flgi :of x86)))))
       (otherwise ;; will not be reached
        nil))))
 
@@ -196,8 +196,7 @@
   :parents (one-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (enable rime-size))))
   :body
 
@@ -269,8 +268,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (enable rime-size))))
 
   :body
@@ -283,7 +281,7 @@
 	(if (equal proc-mode #.*64-bit-mode*)
 	    4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
 	  (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d (code-segment-descriptor-attributes-layout-slice :d cs-attr))
+	       (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
 	       (p3? (eql #.*operand-size-override* (prefixes->opr prefixes))))
 	    ;; 16 or 32 bits (rel16 or rel32):
 	    (if (= cs.d 1)
@@ -345,8 +343,7 @@
 					 select-address-size)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (enable rime-size))))
   :body
 
@@ -415,8 +412,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
@@ -435,7 +431,7 @@
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod  r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -443,7 +439,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) ?addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$
+	(x86-operand-from-modr/m-and-sib-bytes
 	 proc-mode #.*gpr-access* operand-size inst-ac?
 	 nil ;; Not a memory pointer operand
 	 seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -500,8 +496,7 @@
   :parents (two-byte-opcodes)
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
 
@@ -542,13 +537,13 @@
 
        (branch-cond (jcc/cmovcc/setcc-spec opcode x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Update the x86 state:
        (inst-ac? t)
        (val (if branch-cond 1 0))
        ((mv flg2 x86)
-	(x86-operand-to-reg/mem$ proc-mode 1
+	(x86-operand-to-reg/mem proc-mode 1
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 val

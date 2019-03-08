@@ -16,6 +16,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(assert! (alpha/digit-char-p #\a))
+
+(assert! (alpha/digit-char-p #\G))
+
+(assert! (alpha/digit-char-p #\5))
+
+(assert! (not (alpha/digit-char-p #\-)))
+
+(assert! (not (alpha/digit-char-p #\\)))
+
+(assert! (not (alpha/digit-char-p #\<)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert! (alpha/digit-charlist-p nil))
+
+(assert! (alpha/digit-charlist-p '(#\O #\5 #\a)))
+
+(assert! (not (alpha/digit-charlist-p '(#\a #\<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert! (alpha/digit/dash-char-p #\a))
 
 (assert! (alpha/digit/dash-char-p #\G))
@@ -30,11 +52,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (alpha/digit/dash-char-listp nil))
+(assert! (alpha/digit/dash-charlist-p nil))
 
-(assert! (alpha/digit/dash-char-listp '(#\- #\5 #\a)))
+(assert! (alpha/digit/dash-charlist-p '(#\- #\5 #\a)))
 
-(assert! (not (alpha/digit/dash-char-listp '(#\a #\<))))
+(assert! (not (alpha/digit/dash-charlist-p '(#\a #\<))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,13 +76,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (alpha/uscore/dollar-char-listp nil))
+(assert! (alpha/uscore/dollar-charlist-p nil))
 
-(assert! (alpha/uscore/dollar-char-listp '(#\_ #\a)))
+(assert! (alpha/uscore/dollar-charlist-p '(#\_ #\a)))
 
-(assert! (alpha/uscore/dollar-char-listp '(#\_ #\G #\$)))
+(assert! (alpha/uscore/dollar-charlist-p '(#\_ #\G #\$)))
 
-(assert! (not (alpha/uscore/dollar-char-listp '(#\a #\#))))
+(assert! (not (alpha/uscore/dollar-charlist-p '(#\a #\#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,15 +102,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (alpha/digit/uscore/dollar-char-listp nil))
+(assert! (alpha/digit/uscore/dollar-charlist-p nil))
 
-(assert! (alpha/digit/uscore/dollar-char-listp '(#\a #\$ #\5)))
+(assert! (alpha/digit/uscore/dollar-charlist-p '(#\a #\$ #\5)))
 
-(assert! (alpha/digit/uscore/dollar-char-listp '(#\_ #\$ #\G)))
+(assert! (alpha/digit/uscore/dollar-charlist-p '(#\_ #\$ #\G)))
 
-(assert! (not (alpha/digit/uscore/dollar-char-listp '(#\Space))))
+(assert! (not (alpha/digit/uscore/dollar-charlist-p '(#\Space))))
 
-(assert! (not (alpha/digit/uscore/dollar-char-listp '(#\1 #\-))))
+(assert! (not (alpha/digit/uscore/dollar-charlist-p '(#\1 #\-))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,11 +120,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (nondigit-char-listp nil))
+(assert! (nondigit-charlist-p nil))
 
-(assert! (nondigit-char-listp '(#\a #\~)))
+(assert! (nondigit-charlist-p '(#\a #\~)))
 
-(assert! (not (nondigit-char-listp '(#\: #\9))))
+(assert! (not (nondigit-charlist-p '(#\: #\9))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,8 +144,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (printable-char-listp nil))
+(assert! (printable-charlist-p nil))
 
-(assert! (printable-char-listp '(#\u #\7 #\! #\-)))
+(assert! (printable-charlist-p '(#\u #\7 #\! #\-)))
 
-(assert! (not (printable-char-listp '(#\r #\Return))))
+(assert! (not (printable-charlist-p '(#\r #\Return))))

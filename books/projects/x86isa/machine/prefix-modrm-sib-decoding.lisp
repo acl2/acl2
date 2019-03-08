@@ -41,7 +41,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../utils/constants")
+(include-book "../utils/structures")
 (include-book "opcode-maps")
 (include-book "top-level-memory")
 (include-book "dispatch-macros")
@@ -864,21 +864,12 @@
     ;; Example invocations:
     ;; (compute-prop-for-a-simple-cell :modr/m? '("ADD" 2 (E b)  (G b)))
     ;; (compute-prop-for-a-simple-cell :modr/m? '(:2-byte-escape))
-    ;; (compute-prop-for-a-simple-cell :modr/m? '(:ALT
-    ;;                                            (("VPMOVZXBW" 2 (V x)  (U x))
-    ;;                                             ("VPMOVZXBW" 2 (V x)  (M q)))))
 
     (cond ((not (simple-cell-p cell))
 	   (er hard? 'compute-prop-for-a-simple-cell
 	       "Use this function for a simple cell only.~%~x0 is not simple!~%" cell))
 	  ((basic-simple-cell-p cell)
-	   (any-operand-with-prop? prop cell))
-	  ((and (equal (car cell) :ALT)
-		(true-listp (cdr cell))
-		(true-list-listp (car (cdr cell))))
-	   ;; See comment in *simple-cells-legal-keywords* for a
-	   ;; description of :ALT.
-	   (any-operand-with-prop-for-simple-cells? prop (car (cdr cell))))
+	   (any-operand-with-prop? prop cell))	  
 	  ;; We've observed that either all :EXT opcodes have the same prop, or
 	  ;; none do.
 	  ((and (equal (car cell) :EXT)
@@ -3082,11 +3073,11 @@
 		       (unsigned-byte-p 8 mandatory-prefix)
 		       :hints
 		       (("goal"
-			 :use ((:instance opr-p-of-prefixes->opr (x prefixes))
-			       (:instance rep-p-of-prefixes->rep (x prefixes)))
-			 :in-theory (e/d (opr-p rep-p)
-					 (opr-p-of-prefixes->opr
-					  rep-p-of-prefixes->rep))))))
+			 :use ((:instance 8bits-p-of-prefixes->opr (x prefixes))
+			       (:instance 8bits-p-of-prefixes->rep (x prefixes)))
+			 :in-theory (e/d (8bits-p)
+					 (8bits-p-of-prefixes->opr
+					  8bits-p-of-prefixes->rep))))))
 
 	    (let ((rep-pfx (the (unsigned-byte 8)
 			     (prefixes->rep prefixes))))

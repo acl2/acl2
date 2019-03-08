@@ -73,9 +73,15 @@
            (state (princ$ "EXPORTED_VARS += ACL2_COMP_EXT" channel state))
            (state (newline channel state))
            (state (princ$ "export ACL2_HOST_LISP := " channel state))
-           (state (princ$ (symbol-name (@ host-lisp)) channel state))
+           (host-lisp (symbol-name (@ host-lisp)))
+           (state (princ$ host-lisp channel state))
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_HOST_LISP" channel state))
+           (state (newline channel state))
+           (state (princ$ "export USE_QUICKLISP ?= " channel state))
+           (state (princ$ (if (equal host-lisp "GCL") "0" "1") channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += USE_QUICKLISP" channel state))
            (state (newline channel state))
            (state (princ$ "export ACL2_THINKS_BOOK_DIR_IS := " channel state))
            (state (princ$ (f-get-global 'system-books-dir state) channel state))
@@ -127,6 +133,10 @@
 
 (write-file-if-obj-differs "acl2-version.certdep"
                            (f-get-global 'acl2-version state)
+                           state)
+
+(write-file-if-obj-differs "ground-zero-theory.certdep"
+                           (let ((world (w state))) (current-theory 'acl2::ground-zero))
                            state)
 
 (good-bye 0)

@@ -12,8 +12,6 @@ clean: clean-more
 clean-more:
 	rm -f evaluation-apply.lisp evaluation-user-defs.lisp Makefile-deps
 
-ifndef NO_RESCAN
-
 REBUILD_MAKEFILE_DEPS := $(shell \
   rm -f Makefile-deps Makefile-deps.out && \
   (diff ../apply.lisp evaluation-apply.lisp 2>&1 > /dev/null || \
@@ -21,7 +19,5 @@ REBUILD_MAKEFILE_DEPS := $(shell \
   (diff user-defs.lisp evaluation-user-defs.lisp 2>&1 > /dev/null || \
    cp -pf user-defs.lisp evaluation-user-defs.lisp) && \
   $(ACL2_SYSTEM_BOOKS)/build/cert.pl --include-excludes -s Makefile-deps *.lisp)
-
-endif # ifndef NO_RESCAN
 
 -include Makefile-deps

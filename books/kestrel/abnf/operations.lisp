@@ -63,7 +63,7 @@
     (and (consp chars)
          (standard-char-p (car chars))
          (alpha-char-p (car chars))
-         (alpha/digit/dash-char-listp (cdr chars))
+         (alpha/digit/dash-charlist-p (cdr chars))
          (equal (str::downcase-charlist chars) chars)))
   :no-function t)
 

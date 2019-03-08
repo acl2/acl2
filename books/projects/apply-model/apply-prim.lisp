@@ -94,7 +94,15 @@
 
   (declare (xargs :mode :program))
   (first-order-like-terms-and-out-arities1
-   (function-theory :here)
+   (member-equal '(:DEFINITION ACL2::EV$-LIST)
+
+; This member-equal call produces a tail of the function-theory that eliminates
+; runes near the end of ACL2 source file boot-strap-pass-2-b.lisp, added around
+; the end of January, 2019 to support loop$, thus eliminating definition runes
+; like ACL2::APPLY$-WARRANT-MEMPOS-DEFINITION that do not have corresponding
+; function symbols.
+
+                 (function-theory :here))
    '(SYNP                                      ; bad
      HIDE                                      ; stupid
      MV-LIST                                   ; restricts arguments

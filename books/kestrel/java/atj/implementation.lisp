@@ -14,8 +14,9 @@
 ; cert_param: non-acl2r
 
 (include-book "kestrel/utilities/doublets" :dir :system)
-(include-book "kestrel/utilities/error-checking" :dir :system)
-(include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/strings/hexstrings" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "oslib/top" :dir :system)
 (include-book "std/strings/charset" :dir :system)
@@ -152,12 +153,6 @@
         (t (cons (unquote (car list))
                  (atj-unquote-lst (cdr list))))))
 
-(defcharset alpha/digit
-  (or (and (standard-char-p x)
-           (alpha-char-p x))
-      (and (digit-char-p x) t))
-  :short "Recognize letters and digits.")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-input-processing
@@ -274,7 +269,7 @@
        (b* ((chars (explode string)))
          (and (consp chars)
               (alpha/uscore/dollar-char-p (car chars))
-              (alpha/digit/uscore/dollar-char-listp (cdr chars))))))
+              (alpha/digit/uscore/dollar-charlist-p (cdr chars))))))
 
 (std::deflist atj-string-ascii-java-identifier-listp (x)
   (atj-string-ascii-java-identifier-p x)
@@ -1181,7 +1176,7 @@
      can always be safely printed as Java string literals.
      So, for example, @(tsee atj-gen-package-name) always does that."))
   (b* ((chars (explode string)))
-    (if (printable-char-listp chars)
+    (if (printable-charlist-p chars)
         (msg "~x0" string)
       (msg "new String(new char[]{~s0})"
            (implode (atj-chars-to-comma-sep-hex (explode string))))))

@@ -167,7 +167,7 @@
         (fp-decode op1 exp-width frac-width))
        ((mv kind2 sign2 exp2 ?implicit2 frac2)
         (fp-decode op2 exp-width frac-width))
-       (daz (equal (mxcsr-slice :daz mxcsr) 1))
+       (daz (equal (mxcsrBits->daz mxcsr) 1))
        ((mv kind1 exp1 frac1)
         (sse-daz kind1 exp1 frac1 daz))
        ((mv kind2 exp2 frac2)
@@ -177,15 +177,15 @@
                          exp-width frac-width operation))
 
        ;; Check invalid operation
-       (mxcsr (if invalid (!mxcsr-slice :ie 1 mxcsr) mxcsr))
-       (im (equal (mxcsr-slice :im mxcsr) 1))
+       (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
+       (im (equal (mxcsrBits->im mxcsr) 1))
        ((when (and invalid (not im)))
         (mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
 
        ;; Check denormal operand
        (de (denormal-exception kind1 kind2))
-       (mxcsr (if de (!mxcsr-slice :de 1 mxcsr) mxcsr))
-       (dm (equal (mxcsr-slice :dm mxcsr) 1))
+       (mxcsr (if de (!mxcsrBits->de 1 mxcsr) mxcsr))
+       (dm (equal (mxcsrBits->dm mxcsr) 1))
        ((when (and de (not dm)))
         (mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))
 
@@ -234,7 +234,7 @@
     (integerp (mv-nth 1 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
     :rule-classes :type-prescription)
 
-  (defthm-usb n32p-mxcsr-sse-cmp
+  (defthm-unsigned-byte-p n32p-mxcsr-sse-cmp
     :bound 32
     :concl (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -255,13 +255,13 @@
        (result (n32 result)))
     (mv flg result mxcsr))
   ///
-  (defthm-usb n32p-result-sp-sse-cmp
+  (defthm-unsigned-byte-p n32p-result-sp-sse-cmp
     :bound 32
     :concl (mv-nth 1 (sp-sse-cmp operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-sp-sse-cmp
+  (defthm-unsigned-byte-p n32p-mxcsr-sp-sse-cmp
     :bound 32
     :concl (mv-nth 2 (sp-sse-cmp operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
@@ -279,13 +279,13 @@
        (result (n32 result)))
     (mv flg result mxcsr))
   ///
-  (defthm-usb n64p-result-dp-sse-cmp
+  (defthm-unsigned-byte-p n64p-result-dp-sse-cmp
     :bound 64
     :concl (mv-nth 1 (dp-sse-cmp operation op1 op2 mxcsr))
     :gen-type t
     :gen-linear t)
 
-  (defthm-usb n32p-mxcsr-dp-sse-cmp
+  (defthm-unsigned-byte-p n32p-mxcsr-dp-sse-cmp
     :bound 32
     :concl (mv-nth 2 (dp-sse-cmp operation op1 op2 mxcsr))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))

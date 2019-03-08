@@ -42,10 +42,9 @@
 ; Shilpi Goel         <shilpi@centtech.com>
 
 (in-package "X86ISA")
-(include-book "std/util/define" :dir :system)
+(include-book "../utils/structures")
 (include-book "cpuid-constants")
 (include-book "cpuid")
-(include-book "../utils/constants")
 
 (local (xdoc::set-default-parents 'opcode-maps))
 
@@ -163,10 +162,10 @@
   `(eql #.*repe* (prefixes->rep prefixes)))
 
 (defmacro nm-cr0-ts-is-1 ()
-  `(eql (cr0-slice :cr0-ts (cr0)) 1))
+  `(eql (cr0Bits->ts (cr0)) 1))
 
 (defmacro nm-cr0-em-is-1 ()
-  `(eql (cr0-slice :cr0-em (cr0)) 1))
+  `(eql (cr0Bits->em (cr0)) 1))
 
 (defmacro nm-exc-all-types ()
   ;; for all vex/evex exception types, we have a requirement on cr0.ts bit:
@@ -176,13 +175,13 @@
   `(not (eql (cplx86) 0)))
 
 (defmacro gp-cr4-pce-is-0 ()
-  `(eql (cr4-slice :cr4-pce (cr4)) 0))
+  `(eql (cr4Bits->pce (cr4)) 0))
 
 (defmacro gp-cr4-umip-is-1 ()
-  `(eql (cr4-slice :cr4-umip (cr4)) 0))
+  `(eql (cr4Bits->umip (cr4)) 0))
 
 (defmacro gp-cr0-pe-is-0 ()
-  `(eql (cr0-slice :cr0-pe (cr0)) 0))
+  `(eql (cr0Bits->pe (cr0)) 0))
 
 ;; ----------------------------------------------------------------------
 
@@ -194,7 +193,7 @@
 (defmacro cs.d ()
   `(b* (((the (unsigned-byte 16) cs-attr)
 	 (xr :seg-hidden-attr #.*cs* x86)))
-     (code-segment-descriptor-attributes-layout-slice :d cs-attr)))
+     (code-segment-descriptor-attributesBits->d cs-attr)))
 
 (defmacro cr0 ()
   `(the (unsigned-byte 32)
@@ -327,13 +326,13 @@
     ;; from table 2.5.1 from volume 2.. we only need to additionally check
     ;; the cpuid requirements:
     (cond ((equal (feature-flags feature-flags x86) 0) :ud)))
-   ((equal (cr0-slice :cr0-ts (cr0)) 1)
+   ((equal (cr0Bits->ts (cr0)) 1)
     :nm)
    ((and (not (member-eq type-id '(:type-22-7 :type-22-8 :type-22-9)))
-	 (equal (cr4-slice :cr4-osfxsr (cr4)) 0))
+	 (equal (cr4Bits->osfxsr (cr4)) 0))
     :ud)
    ;; BOZO -- Rob -- still need to add more here :(
-   ((or (equal (cr0-slice :cr0-em (cr0)) 1)
+   ((or (equal (cr0Bits->em (cr0)) 1)
 	(ud-lock-used)
 	;; If a corresponding CPUID feature flag is 0.
 	;; Source: Intel Vol. 2 (May 2018 edition)

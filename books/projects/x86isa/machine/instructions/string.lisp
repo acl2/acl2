@@ -117,8 +117,7 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p
-                :hyp (and (x86p x86)
-                          (canonical-address-p temp-rip))
+                :hyp (x86p x86)
                 :hints
                 (("Goal" :in-theory (e/d ()
                                          (rme-size
@@ -165,7 +164,7 @@
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
 
-       ((the (unsigned-byte 1) df) (flgi #.*df* x86))
+       ((the (unsigned-byte 1) df) (flgi :df x86))
 
        ((the (integer 2 8) counter/addr-size)
         (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
@@ -187,7 +186,7 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 src x86)
         (rme-size-opt
@@ -275,7 +274,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 0))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 0))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size #.*rcx* counter rex-byte x86)))
                        x86)
@@ -287,7 +286,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size #.*rcx* counter rex-byte x86))
                             (x86 (write-*ip proc-mode temp-rip x86)))
@@ -370,8 +369,7 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p
-                :hyp (and (x86p x86)
-                          (canonical-address-p temp-rip))
+                :hyp (x86p x86)
                 :hints
                 (("Goal" :in-theory (e/d ()
                                          (rme-size
@@ -419,7 +417,7 @@
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
 
-       ((the (unsigned-byte 1) df) (flgi #.*df* x86))
+       ((the (unsigned-byte 1) df) (flgi :df x86))
 
        ((the (integer 2 8) counter/addr-size)
         (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
@@ -441,7 +439,7 @@
 
        (inst-ac? (alignment-checking-enabled-p x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((mv flg0 src x86)
         (rme-size-opt proc-mode operand-size src-addr seg-reg :r inst-ac? x86))
@@ -528,7 +526,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 0))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 0))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size #.*rcx* counter rex-byte x86)))
                        x86)
@@ -540,7 +538,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 1))
                      (let* ((x86 (!rgfi-size
                                   counter/addr-size #.*rcx* counter rex-byte x86))
                             (x86 (write-*ip proc-mode temp-rip x86)))
@@ -607,12 +605,11 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p
-                :hyp (and (x86p x86)
-                          (canonical-address-p temp-rip))
+                :hyp (x86p x86)
                 :hints
                 (("Goal" :in-theory (e/d ()
                                          (trunc
-                                          rme-size 
+                                          rme-size
                                           !rgfi-size
                                           !rgfi-size
                                           unsigned-byte-p
@@ -653,7 +650,7 @@
        (p4? (equal #.*addr-size-override*
                    (the (unsigned-byte 8) (prefixes->adr prefixes))))
 
-       ((the (unsigned-byte 1) df) (flgi #.*df* x86))
+       ((the (unsigned-byte 1) df) (flgi :df x86))
 
        ((the (integer 2 8) counter/addr-size)
         (select-address-size proc-mode p4? x86)) ; CX or ECX or RCX
@@ -715,7 +712,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 0))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 0))
                      (let* ((x86 (!rgfi-size counter/addr-size
                                              #.*rcx*
                                              counter
@@ -733,7 +730,7 @@
                (let* ((counter (rgfi-size counter/addr-size #.*rcx* rex-byte x86))
                       (counter (trunc counter/addr-size (1- counter))))
                  (if (or (equal counter 0)
-                         (equal (the (unsigned-byte 1) (flgi #.*zf* x86)) 1))
+                         (equal (the (unsigned-byte 1) (flgi :zf x86)) 1))
                      (let* ((x86 (!rgfi-size counter/addr-size
                                              #.*rcx*
                                              counter

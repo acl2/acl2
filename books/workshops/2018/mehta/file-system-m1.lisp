@@ -13,7 +13,7 @@
 (include-book "std/io/read-ints" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
-(include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/strings/top" :dir :system)
 
 (include-book "insert-text")
 (include-book "fat32")

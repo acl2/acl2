@@ -33,7 +33,7 @@
 (include-book "g-primitives-help")
 (include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-(include-book "and-star")
+(include-book "centaur/misc/starlogic" :dir :system)
 (include-book "tools/templates" :dir :system)
 (local (include-book "bfr-reasoning"))
 (local (include-book "eval-g-base-help"))

@@ -9,13 +9,6 @@
 (in-package "ACL2")
 (include-book "poly")
 
-(defmacro def::signatured (fn &rest args)
-  `(encapsulate
-       ()
-     (def::signature ,fn ,@args)
-     (in-theory (disable ,fn))
-     ))
-
 (def::type+ lt-op-p (op)
   (or (equal op '<)
       (equal op '<=)))

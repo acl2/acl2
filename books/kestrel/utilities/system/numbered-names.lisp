@@ -10,10 +10,10 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)
-(include-book "../characters")
 (include-book "event-forms")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +109,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))
+       (nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-start nil nil
@@ -170,7 +170,7 @@
    Check whether @('x') consists of zero or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))))
+       (nondigit-charlist-p (explode x))))
 
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
@@ -230,7 +230,7 @@
    Check whether @('x') consists of one or more non-numeric characters.
    </p>"
   (and (stringp x)
-       (nondigit-char-listp (explode x))
+       (nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
 (table numbered-name-index-wildcard nil nil

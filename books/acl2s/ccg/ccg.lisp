@@ -1450,7 +1450,7 @@
                         collect (accg-find-ccmf accg (car p) (cadr p)))))
     (pprogn
      (fms "Producing counter-example, including simplifying rulers in order to ~
-           maximize the reabability of the counter-example."
+           maximize the readability of the counter-example."
           nil
           *standard-co*
           state nil)

@@ -107,10 +107,16 @@ public final class Acl2Environment {
     /**
      * Adds an ACL2 function definition consisting of
      * the given name, parameters, and body.
+     * The indices of the variables in the body of the function are set,
+     * based on their positions in the parameter list of the function.
      *
      * @throws IllegalArgumentException if name or parameters or body is null
+     *                                  or the function definition is malformed
+     *                                  in a way that
+     *                                  some valid variable index cannot be set
      * @throws IllegalStateException    if a function definition
      *                                  with the given name already exists
+     *                                  or some variable index is already set
      */
     public static void addFunctionDef(Acl2Symbol name,
                                       Acl2Symbol[] parameters,
@@ -126,6 +132,7 @@ public final class Acl2Environment {
                     ("Function already defined: \"" + name + "\".");
         Acl2LambdaExpression definiens =
                 Acl2LambdaExpression.make(parameters, body);
+        definiens.setVariableIndices();
         functionDefs.put(name, definiens);
     }
 
@@ -224,10 +231,6 @@ public final class Acl2Environment {
                             + "-ary function on "
                             + len
                             + (len == 1 ? " argument." : " arguments."));
-        Map<Acl2Symbol, Acl2Value> bindings = new HashMap<>(len);
-        for (int i = 0; i < len; ++i)
-            bindings.put(parameters[i], values[i]);
-        Acl2Term body = definiens.getBody();
-        return body.eval(bindings);
+        return definiens.getBody().eval(values);
     }
 }

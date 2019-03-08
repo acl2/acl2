@@ -35,8 +35,6 @@
 
 (include-book "round") ;floating-point rounding
 
-(include-book "add") ;support for reasoning about addition
-
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 

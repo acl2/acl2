@@ -32,8 +32,9 @@
 (include-book "../mlib/ctxexprs")
 (include-book "../mlib/strip")
 (include-book "../mlib/expr-tools")
+(include-book "../util/warningtree")
 (local (include-book "../util/arithmetic"))
-
+(local (in-theory (disable (tau-system))))
 (local (std::add-default-post-define-hook :fix))
 
 (defxdoc condcheck
@@ -41,7 +42,7 @@
   :short "Check for @('?:')-expressions with strange conditions."
 
   :long "<p>This is a heuristic for generating warnings.  We look for things
-like the following, except that we target the @('?:') operator instead of
+like the following,targeting the @('?:') operator as well as
 @('if') statements.</p>
 
 @({
@@ -190,6 +191,47 @@ vl-condcheck-fix).  We \"smartly\" negate it so that, e.g., @('A') becomes
                   dumb)
       :otherwise dumb)))
 
+(define vl-iftest-condcheck ((x vl-expr-p "The test of the IF statement or ?: operator.")
+                             (tests-above vl-exprlist-p)
+                             (ctx)
+                             (ifstmtp))
+  :returns (warnings vl-warninglist-p)
+  (b* ((x (vl-expr-fix x))
+       (tests-above (vl-exprlist-fix tests-above))
+       (test-fix  (vl-condcheck-fix x))
+       (~test-fix (vl-condcheck-negate test-fix))
+       (warning-descrip (if ifstmtp "an IF statement" "a ?: operator")))
+    (cond ((vl-expr-case x :vl-literal)
+           (list (make-vl-warning
+                  :type (if ifstmtp :vl-warn-ifstmt-const :vl-warn-qmark-const)
+                  :msg "found ~s3 with constant ~
+                                expression ~a1 as its test: ~a2.~%"
+                  :args (list ctx x x warning-descrip)
+                  :fatalp nil
+                  :fn __function__)))
+          ((member-equal test-fix tests-above)
+           (list (make-vl-warning
+                  :type (if ifstmtp :vl-warn-ifstmt-always-true :vl-warn-qmark-always-true)
+                  :msg "found ~s3 that is considering ~
+                                whether ~a1 holds, but an equivalent case was ~
+                                considered above, so this will always be ~
+                                true. The sub-expression is ~a2."
+                  :args (list ctx x x warning-descrip)
+                  :fatalp nil
+                  :fn __function__)))
+          ((member-equal ~test-fix tests-above)
+           (list (make-vl-warning
+                  :type (if ifstmtp :vl-warn-ifstmt-always-false :vl-warn-qmark-always-false)
+                  :msg "found ~s3 that is considering ~
+                                whether ~a1 holds, but an equivalent case was ~
+                                considered above, so this will always be ~
+                                false. The sub-expression is ~a2."
+                  :args (list ctx x x warning-descrip)
+                  :fatalp nil
+                  :fn __function__)))
+          (t
+           nil))))
+
 
 (defines vl-expr-condcheck
   :short "Look for strange conditions throughout an expression."
@@ -223,73 +265,200 @@ assume must be true as we are seeing @('X').</p>
 occurs, and is used in any warning messages we produce.</p>"
 
   (define vl-expr-condcheck ((x           vl-expr-p)
-                             (tests-above vl-exprlist-p)
-                             (ctx         vl-context-p))
-    :returns (warnings vl-warninglist-p)
+                             (tests-above vl-exprlist-p))
+    :returns (warnings vl-warningtree-p)
     :verify-guards nil
     :measure (vl-expr-count x)
     (b* ((x           (vl-expr-fix x))
-         (tests-above (vl-exprlist-fix tests-above))
-         (ctx         (vl-context-fix ctx)))
+         (tests-above (vl-exprlist-fix tests-above)))
       (vl-expr-case x
         :vl-qmark
         (b* ((test-fix  (vl-condcheck-fix x.test))
-             (~test-fix (vl-condcheck-negate test-fix))
-             (warnings
-              (cond ((vl-expr-case x.test :vl-literal)
-                     (list (make-vl-warning
-                            :type :vl-warn-qmark-const
-                            :msg "~a0: found a ?: operator with constant ~
-                                expression ~a1 as its test: ~a2.~%"
-                            :args (list ctx x.test x)
-                            :fatalp nil
-                            :fn __function__)))
-                    ((member-equal test-fix tests-above)
-                     (list (make-vl-warning
-                            :type :vl-warn-qmark-always-true
-                            :msg "~a0: found a ?: operator that is considering ~
-                                whether ~a1 holds, but an equivalent case was ~
-                                considered above, so this will always be ~
-                                true. The sub-expression is ~a2."
-                            :args (list ctx x.test x)
-                            :fatalp nil
-                            :fn __function__)))
-                    ((member-equal ~test-fix tests-above)
-                     (list (make-vl-warning
-                            :type :vl-warn-qmark-always-false
-                            :msg "~a0: found a ?: operator that is considering ~
-                                whether ~a1 holds, but an equivalent case was ~
-                                considered above, so this will always be ~
-                                false. The sub-expression is ~a2."
-                            :args (list ctx x.test x)
-                            :fatalp nil
-                            :fn __function__)))
-                    (t
-                     nil))))
-          (append warnings
-                  (vl-expr-condcheck x.test tests-above ctx)
-                  (vl-expr-condcheck x.then
-                                     (cons test-fix tests-above)
-                                     ctx)
-                  (vl-expr-condcheck x.else
-                                     (cons ~test-fix tests-above)
-                                     ctx)))
+             (~test-fix (vl-condcheck-negate test-fix)))
+          (vl-warningtree-cons
+           (vl-warningtree-cons (vl-iftest-condcheck x.test tests-above nil nil)
+                                (vl-expr-condcheck x.test tests-above))
+           (vl-warningtree-cons (vl-expr-condcheck x.then
+                                                   (cons test-fix tests-above))
+                                (vl-expr-condcheck x.else
+                                                   (cons ~test-fix tests-above)))))
         :otherwise
-        (vl-exprlist-condcheck (vl-expr->subexprs x) tests-above ctx))))
+        (vl-exprlist-condcheck (vl-expr->subexprs x) tests-above))))
 
   (define vl-exprlist-condcheck
     ((x vl-exprlist-p)
-     (tests-above vl-exprlist-p)
-     (ctx vl-context-p))
-    :returns (warnings vl-warninglist-p)
+     (tests-above vl-exprlist-p))
+    :returns (warnings vl-warningtree-p)
     :measure (vl-exprlist-count x)
     (if (atom x)
         nil
-      (append (vl-expr-condcheck (car x) tests-above ctx)
-              (vl-exprlist-condcheck (cdr x) tests-above ctx))))
+      (vl-warningtree-cons (vl-expr-condcheck (car x) tests-above)
+                           (vl-exprlist-condcheck (cdr x) tests-above))))
   ///
   (verify-guards vl-expr-condcheck
     :guard-debug t)
   (deffixequiv-mutual vl-expr-condcheck))
 
-(def-expr-check condcheck :formals (x.expr nil x.ctx))
+;; (def-expr-check condcheck :formals (x.expr nil x.ctx))
+
+(fty::defvisitor-template stmt-condcheck ((x :object)
+                                          (tests-above vl-exprlist-p))
+  :returns (warnings (:join (vl-warningtree-cons warnings1 warnings)
+                      :tmp-var warnings1
+                      :initial nil)
+                     vl-warningtree-p)
+  :renames ((vl-stmt vl-stmt-condcheck-aux))
+    
+    :type-fns ((vl-stmt vl-stmt-condcheck)
+               (vl-expr vl-expr-condcheck)
+               (vl-exprlist vl-exprlist-condcheck))
+    :fnname-template <type>-condcheck)
+
+(local (in-theory (disable vl-context-p-when-vl-ctxelement-p
+                           double-containment not
+                           (:t acl2::true-listp-append))))
+
+(set-bogus-mutual-recursion-ok t)
+(set-bogus-measure-ok t)
+
+(fty::defvisitors vl-stmt-condcheck-deps
+  :template stmt-condcheck
+  :dep-types (vl-stmt))
+
+
+(fty::defvisitor vl-stmt-condcheck
+  :template stmt-condcheck
+  :type statements
+  :measure (two-nats-measure :count 0)
+
+  (define vl-stmt-condcheck ((x vl-stmt-p)
+                             (tests-above vl-exprlist-p))
+    :returns (warnings vl-warningtree-p)
+    :measure (two-nats-measure (vl-stmt-count x) 1)
+    (vl-stmt-case x
+      :vl-ifstmt
+      (b* ((test-fix  (vl-condcheck-fix x.condition))
+           (~test-fix (vl-condcheck-negate test-fix)))
+        (vl-warningtree-cons
+         (vl-warningtree-cons (vl-iftest-condcheck x.condition tests-above (vl-stmt-fix x) t)
+                              (vl-expr-condcheck x.condition tests-above))
+          (vl-warningtree-cons (vl-stmt-condcheck x.truebranch (cons test-fix tests-above))
+                               (vl-stmt-condcheck x.falsebranch (cons ~test-fix tests-above)))))
+      :otherwise (vl-stmt-condcheck-aux x tests-above))))
+
+
+
+(local (defconst *condcheck-ctx-types*
+         '(vl-assign
+           vl-alias
+           vl-vardecl
+           vl-paramdecl
+           vl-fundecl
+           vl-taskdecl
+           vl-modinst
+           vl-gateinst
+           vl-always
+           vl-initial
+           vl-final
+           vl-typedef)))
+
+(local (define condcheck-ctx-to-aux-fns (x)
+         :mode :program :hooks nil
+         (if (atom x)
+             nil
+           (cons `(,(car x) ,(intern$ (cat (symbol-name (car x)) "-CONDCHECK!-AUX") "VL"))
+                 (condcheck-ctx-to-aux-fns (cdr x))))))
+
+(local (define condcheck-ctx-to-condcheck!-fns (x)
+         :mode :program :hooks nil
+         (if (atom x)
+             nil
+           (cons `(,(car x) ,(intern$ (cat (symbol-name (car x)) "-CONDCHECK!") "VL"))
+                 (condcheck-ctx-to-condcheck!-fns (cdr x))))))
+
+(local (define condcheck-existing-type-fns (x)
+         :mode :program :hooks nil
+         (if (atom x)
+             nil
+           (cons (list (caar x) `(lambda (x) (,(cdar x) x nil)))
+                 (condcheck-existing-type-fns (cdr x))))))
+
+(make-event
+ `(fty::defvisitor-template condcheck ((x :object))
+    :returns (warnings (:join (vl-warningtree-cons warnings1 warnings)
+                        :tmp-var warnings1
+                        :initial nil)
+                       vl-warningtree-p)
+    :renames ,(condcheck-ctx-to-aux-fns *condcheck-ctx-types*)
+    :type-fns ((vl-module :skip)
+               (vl-interface :skip)
+               ,@(condcheck-existing-type-fns
+                  (fty::visitorspec->type-fns
+                   (cdr (assoc 'stmt-condcheck
+                               (table-alist 'fty::visitor-templates (w state))))))
+                 . ,(condcheck-ctx-to-condcheck!-fns *condcheck-ctx-types*))
+    :fnname-template <type>-condcheck!))
+
+
+
+
+(local (define def-condcheck-ctx-fn (x)
+         :mode :program :hooks nil
+         `((fty::defvisitors ,(intern$ (cat (symbol-name x) "-CONDCHECK-DEPS") "VL")
+             :types (,x)
+             :template condcheck)
+           (define ,(intern$ (cat (symbol-name x) "-CONDCHECK!") "VL")
+             ((x ,(intern$ (cat (symbol-name x) "-P") "VL")))
+             :returns (warnings vl-warningtree-p)
+             (vl-warningtree-context
+              (,(intern$ (cat (symbol-name x) "-FIX") "VL") x)
+              (,(intern$ (cat (symbol-name x) "-CONDCHECK!-AUX") "VL")
+               x))))))
+
+(local (define def-condcheck-contexts-fn (x)
+         :mode :program :hooks nil
+         (if (atom x)
+             nil
+           (append (def-condcheck-ctx-fn (car x))
+                   (def-condcheck-contexts-fn (cdr x))))))
+
+
+
+(make-event
+ (cons 'progn (def-condcheck-contexts-fn *condcheck-ctx-types*)))
+
+(fty::defvisitors module/interface/design-condcheck
+  :template condcheck
+  :types (vl-design vl-module vl-interface))
+
+(define vl-module-condcheck ((x vl-module-p))
+  :returns (new-x vl-module-p)
+  (b* ((warnings (vl-module-condcheck! x)))
+    (change-vl-module x :warnings (vl-warningtree-flatten-aux warnings nil (vl-module->warnings x)))))
+
+(define vl-interface-condcheck ((x vl-interface-p))
+  :returns (new-x vl-interface-p)
+  (b* ((warnings (vl-interface-condcheck! x)))
+    (change-vl-interface x :warnings (vl-warningtree-flatten-aux warnings nil (vl-interface->warnings x)))))
+
+(defprojection vl-modulelist-condcheck ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p)
+  (vl-module-condcheck x))
+
+(defprojection vl-interfacelist-condcheck ((x vl-interfacelist-p))
+  :returns (new-x vl-interfacelist-p)
+  (vl-interface-condcheck x))
+
+(define vl-design-condcheck ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* (((vl-design x))
+       (warnings (vl-warningtree-flatten-aux (vl-design-condcheck! x) nil x.warnings))
+       (mods (vl-modulelist-condcheck x.mods))
+       (interfaces (vl-interfacelist-condcheck x.interfaces)))
+    (change-vl-design x :warnings warnings :mods mods :interfaces interfaces)))
+
+
+
+
+       
+  

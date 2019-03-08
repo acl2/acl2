@@ -454,17 +454,43 @@
   :hints (("subgoal 1" :in-theory (enable digits-def-2)))
   :rule-classes ())
 
+(defruled digits-mod-fl-rewrite
+  (implies (radixp b)
+           (equal (digits x i j b)
+                  (if (and (integerp i) (integerp j))
+                      (mod (fl (/ x (expt b j)))
+                           (expt b (+ 1 i (- j))))
+                    0)))
+  :enable digits
+  :cases ((and (integerp i) (integerp j)))
+  :hints
+  (("subgoal 1" :cases ((>= (- i j) -1)))
+   ("subgoal 1.2" :use lemma)
+   ("subgoal 1.1" :cases ((real/rationalp x)))
+   ("subgoal 1.1.2" :in-theory (enable fl))
+   ("subgoal 1.1.1" :use (:instance fl-mod
+                                    (a x)
+                                    (n (expt b j))
+                                    (m (expt b (+ 1 i (- j)))))))
+  :prep-lemmas
+  ((acl2::with-arith5-nonlinear++-help
+    (defruled lemma
+     (implies (and (integerp j)
+                   (integerp i)
+                   (radixp b)
+                   (< (- i j) -1))
+              (equal (fl (* (expt b (- j)) (mod x (expt b (1+ i))))) 0))
+     :enable fl))))
+
 (defrule digits-mod-fl
-  (implies (and (integerp x)
-                (integerp i)
+  (implies (and (integerp i)
                 (integerp j)
-                (>= i j)
                 (radixp b))
            (equal (digits x (1- i) j b)
                   (mod (fl (/ x (expt b j)))
                        (expt b (- i j)))))
-  :enable digits-def-2
-  :rule-classes ())
+  :rule-classes ()
+  :enable digits-mod-fl-rewrite)
 
 (defrule digits-neg-indices
   (implies (and (< i 0)
@@ -902,10 +928,8 @@
   :rule-classes ())
 
 (defrule bits-mod-fl
-  (implies (and (integerp x)
-                (integerp i)
-                (integerp j)
-                (>= i j))
+  (implies (and (integerp i)
+                (integerp j))
            (equal (bits x (1- i) j)
                   (mod (fl (/ x (expt 2 j)))
                        (expt 2 (- i j)))))
@@ -1711,12 +1735,7 @@
    :enable (all-bits-p all-digits-p)
    :induct (all-bits-p b k)))
 
-(defun sum-b (b k)
-  (declare (xargs :guard (all-bits-p b k)))
-  (if (zp k)
-      0
-    (+ (* (expt 2 (1- k)) (nth (1- k) b))
-       (sum-b b (1- k)))))
+; (defun sum-b (b k) ... )
 
 (local
  (defrule sum-b-as-sum-d
@@ -2468,6 +2487,40 @@
 ;;;		      Signed Integer Encodings with Radix
 ;;;**********************************************************************
 
+; (defund ui-r (r n b) ... )
+
+(defrule ui-r-range
+  (implies (radixp b)
+           (< (ui-r r n b) (expt b n)))
+  :rule-classes :linear
+  :enable ui-r)
+
+(defruled ui-r-def
+  (implies (and (real/rationalp r)
+                (radixp b))
+           (equal (ui-r r n b)
+                  (- r (chop-r r (- n) b))))
+  :enable (ui-r chop-r)
+  :use (:instance mod-def
+                  (x r)
+                  (y (expt b n))))
+
+(defrule ui-r-does-nothing
+  (implies (and (real/rationalp r)
+                (<= 0 r)
+                (< r (expt b n)))
+           (equal (ui-r r n b) r))
+  :enable ui-r)
+
+(defruled ui-r-mod
+  (implies (and (integerp k)
+                (integerp n)
+                (radixp b)
+                (<= n k))
+           (equal (ui-r (mod r (expt b k)) n b)
+                  (ui-r r n b)))
+  :enable ui-r)
+
 ; (defund si-r (r n b) ... )
 
 (defrule si-r-range
@@ -2476,6 +2529,41 @@
                 (>= (si-r r n b) (- (/ (expt b n) 2)))))
   :enable si-r
   :rule-classes :linear)
+
+(defrule si-r-does-nothing
+  (implies (and (real/rationalp r)
+                (<= (* -1/2 (expt b n)) r)
+                (< r (* 1/2 (expt b n))))
+           (equal (si-r r n b) r))
+  :enable si-r)
+
+(acl2::with-arith5-nonlinear-help
+ (defruled si-r-def
+   (implies (and (real/rationalp r)
+                 (radixp b))
+           (equal (si-r r n b)
+                  (- r (chop-r (+ r (/ (expt b n) 2)) (- n) b))))
+  :enable (si-r chop-r)
+  :cases ((< r (* (expt b n)
+                  (fl (+ 1/2 (* r (expt b (- n))))))))
+  :hints
+  (("subgoal 2" :use (:instance mod-force
+                                (m r)
+                                (n (expt b n))
+                                (a (fl (+ 1/2 (* r (expt b (- n))))))))
+   ("subgoal 1" :use (:instance mod-force
+                                (m r)
+                                (n (expt b n))
+                                (a (1- (fl (+ 1/2 (* r (expt b (- n))))))))))))
+
+(defruled si-r-mod
+  (implies (and (integerp k)
+                (integerp n)
+                (radixp b)
+                (<= n k))
+           (equal (si-r (mod r (expt b k)) n b)
+                  (si-r r n b)))
+  :enable si-r)
 
 (acl2::with-arith5-nonlinear-help
  (defruled si-r-even-b
@@ -2513,9 +2601,8 @@
                 (radixp b))
            (= (si-r (digits x (1- n) 0 b) n b)
               x))
-  :enable si-r
-  :use (:instance digits-tail-gen (i (1- n)))
-  :rule-classes ())
+  :rule-classes ()
+  :enable (digits-mod si-r-mod))
 
 (defruled digits-si-r
   (implies (and (integerp n)
@@ -2532,24 +2619,61 @@
                           (n i)
                           (m j)))))
 
+(defruled si-r-shift
+  (implies (and (natp n)
+                (natp k)
+                (dvecp r n b))
+           (equal (si-r (* (expt b k) r) (+ k n) b)
+                  (* (expt b k) (si-r r n b))))
+  :enable si-r
+  :use (:instance digitn-shift-up (x r) (n (1- n))))
+
+
 ; (defund sextend-r (m n r b) ... )
 
 (defruled si-r-sextend-r
-  (implies (and (integerp r)
+  (implies (and (real/rationalp r)
                 (integerp n)
                 (integerp m)
                 (<= n m)
                 (radixp b))
            (equal (si-r (sextend-r m n r b) m b)
                   (si-r r n b)))
-  :enable (sextend-r)
-  :use (:instance si-r-digits
-                  (x (si-r r n b))
-                  (n m)))
+  :enable (si-r sextend-r))
+
+(acl2::with-arith5-nonlinear-help
+ (defruled si-r-approx-lemma
+  (implies (and (real/rationalp x)
+                (real/rationalp y)
+                (integerp n)
+                (radixp b)
+                (< (abs (si-r x n b))
+                   (- (/ (expt b n) 2) (abs (- x y)))))
+           (equal (- (si-r x n b)
+                     (si-r y n b))
+                  (- x y)))
+  :enable (si-r-def chop-r)
+  :use (:instance fl-unique
+                  (x (+ 1/2 (* y (expt b (- n)))))
+                  (n (fl (+ 1/2 (* x (expt b (- n)))))))))
+
+(defruled si-r-approx
+  (implies (and (real/rationalp x)
+                (real/rationalp y)
+                (integerp n)
+                (radixp b)
+                (< (abs (si-r (mod x (expt b n)) n b))
+                   (- (/ (expt b n) 2) (abs (- x y)))))
+           (equal (- (si-r (mod x (expt b n)) n b)
+                     (si-r (mod y (expt b n)) n b))
+                  (- x y)))
+  :enable (si-r-mod si-r-approx-lemma))
 
 ;;;**********************************************************************
 ;;;		      Signed Integer Encodings
 ;;;**********************************************************************
+
+; (defnd ui (r) ... )
 
 ; (defund si (r n) ... )
 
@@ -2560,47 +2684,46 @@
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal" :in-theory (enable si))))
 
-
-
-(local
- (defrule si-as-si-r
-   (implies (bvecp r n)
-            (equal (si r n)
-                   (si-r r n 2)))
-   :enable (si si-r-even-b)
-   :disable digits-n-n-rewrite
-   :cases ((integerp n))
-   :hints (("subgoal 2" :in-theory (enable digitn digits dvecp)))))
+(defrulel si-as-si-r
+  (implies (bvecp r n)
+           (equal (si r n)
+                  (si-r r n 2)))
+  :enable (si si-r-even-b)
+  :disable digits-n-n-rewrite
+  :cases ((integerp n))
+  :hints (("subgoal 2" :in-theory (enable digitn digits dvecp))))
 
 (defrule si-bits
-    (implies (and (integerp x)
-		  (natp n)
-		  (< x (expt 2 (1- n)))
-		  (>= x (- (expt 2 (1- n)))))
-	     (= (si (bits x (1- n) 0) n)
-                x))
-    :disable bvecp-as-dvecp
-    :cases ((bvecp (bits x (1- n) 0) n))
-    :hints (
-      ("subgoal 2" :in-theory (enable bvecp-as-dvecp))
-      ("subgoal 1" :use (:instance si-r-digits (b 2))))
-    :rule-classes ())
+  (implies (and (integerp x)
+                (natp n)
+                (< x (expt 2 (1- n)))
+                (>= x (- (expt 2 (1- n)))))
+           (= (si (bits x (1- n) 0) n)
+              x))
+  :rule-classes ()
+  :use (:instance si-r-digits (b 2))
+  :cases ((bvecp (bits x (1- n) 0) n)))
 
 (defruled bits-si
   (implies (and (integerp n)
                 (< i n))
            (equal (bits (si r n) i j)
                   (bits r i j)))
-  :enable si
-  :cases ((and (real/rationalp r) (integerp i)))
-  :hints (
-    ("subgoal 2" :in-theory (enable digits fl))
-    ("subgoal 1" :use (:instance digits-plus-mult-2-rewrite
-                          (x r)
-                          (c (- (expt 2 n)))
-                          (n i)
-                          (m j)
-                          (b 2)))))
+  :enable (si bits)
+  :use (:instance bits-plus-mult-2-rewrite
+                  (x r)
+                  (c (- (expt 2 n)))
+                  (n i)
+                  (m j)))
+
+(defruled si-shift
+  (implies (and (natp n)
+                (natp k)
+                (bvecp r n))
+           (equal (si (* (expt 2 k) r) (+ k n))
+                  (* (expt 2 k) (si r n))))
+  :use ((:instance si-r-shift (b 2))
+        (:instance bvecp-shift-up (x r) (n (+ k n)))))
 
 ; (defund sextend (m n r) ... )
 
@@ -2611,8 +2734,7 @@
                  (bvecp r n))
             (equal (sextend m n r)
                    (sextend-r m n r 2)))
-   :enable (sextend-r sextend)
-   :disable bvecp-as-dvecp))
+   :enable (sextend-r sextend digits-mod)))
 
 (defruled si-sextend
   (implies (and (natp n)
@@ -2622,405 +2744,10 @@
            (equal (si (sextend m n r) m)
                   (si r n)))
   :enable si-r-sextend-r
-  :disable bvecp-as-dvecp
   :cases ((bvecp (sextend m n r) m))
-  :hints (("subgoal 2" :in-theory (enable bvecp-as-dvecp sextend-r))))
+  :hints (("subgoal 2" :in-theory (enable dvecp sextend-r))))
 
-(local (in-theory (disable bits-as-digits bitn-as-digitn)))
-
-(local
-(defthmd si-approx-1
-  (implies (and (integerp x)
-                (integerp y)
-                (not (zp n))
-                (= (fl (/ x (expt 2 n)))
-                   (fl (/ y (expt 2 n)))))
-           (equal (- (mod x (expt 2 n)) (mod y (expt 2 n)))
-                  (- x y)))
-  :hints (("Goal" :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-def (x y) (y (expt 2 n)))))))
-)
-
-(local
-(defthm si-approx-2
-  (implies (and (integerp x)
-                (not (zp n)))
-           (iff (>= (mod x (expt 2 n)) (expt 2 (1- n)))
-                (= (bitn (mod x (expt 2 n)) (1- n)) 1)))
-  :rule-classes ()
-  :hints (("Goal" :use ((:instance bitn-plus-bits (x (mod x (expt 2 n))) (n (1- n)) (m 0))
-                        (:instance bitn-0-1 (x (mod x (expt 2 n))) (n (1- n)))
-			(:instance bits-bounds (i (- n 2)) (j 0))
-			(:instance mod-bnd-1 (m x) (n (expt 2 n))))
-		  :in-theory (enable bits bvecp))))
-)
-
-(local
-(defthmd si-approx-3
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-                  (= (fl (/ x (expt 2 n)))
-                     (fl (/ y (expt 2 n))))
-                  (<= xb yb)
-                  (>= xb (expt 2 (1- n))))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :use (si-approx-1 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(local
-(defthmd si-approx-4
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (= (fl (/ x (expt 2 n)))
-                     (fl (/ y (expt 2 n))))
-                  (<= xb yb)
-                  (< xb (expt 2 (1- n))))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :use (si-approx-1 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(local
-(defthmd si-approx-5
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-                  (= (fl (/ x (expt 2 n)))
-                     (fl (/ y (expt 2 n))))
-                  (> xb yb)
-                  (< xb (expt 2 (1- n))))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :use (si-approx-1 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(local
-(defthmd si-approx-6
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (= (fl (/ x (expt 2 n)))
-                     (fl (/ y (expt 2 n))))
-                  (> xb yb)
-                  (>= xb (expt 2 (1- n))))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :nonlinearp t
-                  :use (si-approx-1 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(local
-(defthmd si-approx-7
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (= (fl (/ x (expt 2 n)))
-                     (fl (/ y (expt 2 n)))))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :use (si-approx-3 si-approx-4 si-approx-5 si-approx-6))))
-)
-
-(local
-(defthmd si-approx-8
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ x (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (and (<= (* (expt 2 n) m) x)
-	          (< x (* (expt 2 n) (1+ m))))))
-  :hints (("Goal" :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m x) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-9
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ x (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (>= y (* (expt 2 n) (1+ m)))))
-  :hints (("Goal" :nonlinearp t :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-def (x y) (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m y) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-10
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ x (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (< y (* (expt 2 n) (+ 2 m)))))
-  :hints (("Goal" :nonlinearp t :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-def (x y) (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m y) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-11
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ x (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (equal (fl (/ y (expt 2 n))) (1+ m))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-9 si-approx-10))))
-)
-
-(local
-(defthmd si-approx-12
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (equal yb (+ xb (- k (expt 2 n))))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-11
-                                      (:instance mod-def (y (expt 2 n)))
-				      (:instance mod-def (x y) (y (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-13
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (< yb (expt 2 (1- n)))))
-  :hints (("Goal" :use (si-approx-12 (:instance mod-bnd-1 (m y) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-14
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (>= xb (expt 2 (1- n)))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-12))))
-)
-
-(local
-(defthmd si-approx-15
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (< x y))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :use (si-approx-12 si-approx-13 si-approx-14 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(local
-(defthmd si-approx-16
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ y (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (and (<= (* (expt 2 n) m) y)
-	          (< y (* (expt 2 n) (1+ m))))))
-  :hints (("Goal" :use ((:instance mod-def (x y) (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m y) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-17
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ y (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (>= x (* (expt 2 n) (1+ m)))))
-  :hints (("Goal" :nonlinearp t
-                  :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-def (x y) (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m x) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-18
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ y (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (< x (* (expt 2 n) (+ 2 m)))))
-  :hints (("Goal" :nonlinearp t
-                  :use ((:instance mod-def (y (expt 2 n)))
-                        (:instance mod-def (x y) (y (expt 2 n)))
-                        (:instance mod-bnd-1 (m x) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-19
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y)))
-	(m (fl (/ y (expt 2 n)))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (equal (fl (/ x (expt 2 n))) (1+ m))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-17 si-approx-18))))
-)
-
-(local
-(defthmd si-approx-20
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (equal xb (+ yb (- k (expt 2 n))))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-19
-                                      (:instance mod-def (y (expt 2 n)))
-				      (:instance mod-def (x y) (y (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-21
-  (let ((xb (mod x (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (< xb (expt 2 (1- n)))))
-  :hints (("Goal" :use (si-approx-20 (:instance mod-bnd-1 (m x) (n (expt 2 n)))))))
-)
-
-(local
-(defthmd si-approx-22
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (>= yb (expt 2 (1- n)))))
-  :hints (("Goal" :nonlinearp t :use (si-approx-20))))
-)
-
-(local
-(defthmd si-approx-23
-  (let ((xb (mod x (expt 2 n)))
-        (yb (mod y (expt 2 n)))
-	(k (abs (- x y))))
-    (implies (and (integerp x)
-                  (integerp y)
-                  (not (zp n))
-		  (< (abs (si xb n)) (- (expt 2 (1- n)) k))
-                  (not (= (fl (/ x (expt 2 n)))
-                          (fl (/ y (expt 2 n)))))
-		  (> x y))
-             (equal (- (si xb n) (si yb n))
-                    (- x y))))
-  :hints (("Goal" :in-theory (enable si)
-                  :use (si-approx-20 si-approx-21 si-approx-22 si-approx-2 (:instance si-approx-2 (x y))))))
-)
-
-(defthmd si-approx
+(defruled si-approx
   (implies (and (not (zp n))
                 (integerp x)
                 (integerp y)
@@ -3029,14 +2756,242 @@
            (equal (- (si (mod x (expt 2 n)) n)
                      (si (mod y (expt 2 n)) n))
                   (- x y)))
-  :hints (("Goal" :use (si-approx-7 si-approx-15 si-approx-23))))
+  :cases ((and (bvecp (mod x (expt 2 n)) n)
+               (bvecp (mod y (expt 2 n)) n)))
+  :hints
+  (("subgoal 2" :in-theory (enable dvecp))
+   ("subgoal 1" :in-theory (enable si-r-approx))))
 
-(defthmd si-shift
+;;;**********************************************************************
+;;;                      Fixed-Point Registers with radix
+;;;**********************************************************************
+
+; (defund uf-r (r n m b) ... )
+
+(acl2::with-arith5-nonlinear-help
+ (defrule uf-r-range
+   (implies (and (integerp n)
+                 (integerp m)
+                 (radixp b))
+            (< (uf-r r n m b) (expt b m)))
+   :rule-classes :linear
+   :enable uf-r))
+
+(defruled uf-r-mod
+  (implies (and (integerp k)
+                (integerp n)
+                (radixp b)
+                (<= n k))
+           (equal (uf-r (mod r (expt b k)) n m b)
+                  (uf-r r n m b)))
+  :enable (uf-r ui-r-mod)
+  :cases ((real/rationalp r))
+  :hints (("subgoal 2" :in-theory (enable ui-r))))
+
+; (defund sf-r (r n m b) ... )
+
+(acl2::with-arith5-nonlinear-help
+ (defrule sf-r-range
+   (implies (and (integerp n)
+                 (integerp m)
+                 (radixp b))
+            (and (< (sf-r r n m b) (/ (expt b m) 2))
+                 (<= (- (/ (expt b m) 2)) (sf-r r n m b))))
+   :rule-classes :linear
+   :enable sf-r))
+
+(defruled sf-r-mod
+  (implies (and (integerp k)
+                (integerp n)
+                (radixp b)
+                (<= n k))
+           (equal (sf-r (mod r (expt b k)) n m b)
+                  (sf-r r n m b)))
+  :enable (sf-r si-r-mod)
+  :cases ((real/rationalp r))
+  :hints (("subgoal 2" :in-theory (enable si-r))))
+
+(defruled digits-uf-r
+  (let ((x (uf-r r n m b))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (dvecp r n b)
+                  (natp i)
+                  (natp j)
+                  (<= j i))
+             (equal (digits r i j b)
+                    (* (expt b (- f j))
+                       (- (chop-r x (- f j) b)
+                          (chop-r x (- f (1+ i)) b))))))
+  :enable (uf-r ui-r chop-r)
+  :use (:instance digits-fl-diff (x r) (i (1+ i))))
+
+(defruled digits-sf-r
+  (let ((x (sf-r r n m b))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (dvecp r n b)
+                  (natp i)
+                  (natp j)
+                  (<= j i)
+                  (< i n))
+             (equal (digits r i j b)
+                    (* (expt b (- f j))
+                       (- (chop-r x (- f j) b)
+                          (chop-r x (- f (1+ i)) b))))))
+  :enable (sf-r si-r chop-r)
+  :use ((:instance digits-fl-diff (x r) (i (1+ i)))
+        (:instance digits-fl-diff (x (- r (expt 2 n))) (i (1+ i)))
+        (:instance digits-plus-mult-2 (x r) (k n) (y -1) (n i) (m j))))
+
+(defrule chop-r-uf-r
+  (let ((x (uf-r r n m b))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (dvecp r n b)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop-r x k b) x)
+                  (= (digits r (1- (- f k)) 0 b) 0))))
+  :rule-classes ()
+  :enable (uf-r ui-r-def chop-r digits-mod))
+
+(defrule chop-r-sf-r
+  (let ((x (sf-r r n m b))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (dvecp r n b)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop-r x k b) x)
+                  (= (digits r (1- (- f k)) 0 b) 0))))
+  :rule-classes ()
+  :enable (sf-r si-r-def chop-r digits-mod)
+  :use (:instance mod-def
+                  (x r)
+                  (y (expt b (- (- n m) k)))))
+
+(defruled sf-r-val
   (implies (and (natp n)
-                (natp k)
-                (bvecp r n))
-           (equal (si (* (expt 2 k) r) (+ k n))
-                  (* (expt 2 k) (si r n))))
-  :hints (("Goal" :in-theory (e/d (si) (si-as-si-r))
-           :use ((:instance bitn-shift-up (x r) (n (1- n)))))))
+                (natp m)
+                (<= m n)
+                (dvecp r n b)
+                (integerp y)
+                (= (mod y (expt b n)) r)
+                (<= (- (/ (expt b n) 2)) y)
+                (< y (/ (expt b n) 2)))
+            (equal (sf-r r n m b)
+                   (* (expt b (- m n)) y)))
+  :enable (sf-r digits-mod)
+  :use (:instance si-r-digits (x y)))
 
+;;;**********************************************************************
+;;;                      Fixed-Point Registers
+;;;**********************************************************************
+
+; (defund uf (r n m) ... )
+
+(defrulel uf-as-uf-r
+  (implies (bvecp r n)
+           (equal (uf r n m)
+                  (uf-r r n m 2)))
+  :enable (uf uf-r ui))
+
+; (defund sf (r n m) ... )
+
+(defrulel sf-as-sf-r
+  (implies (bvecp r n)
+           (equal (sf r n m)
+                  (sf-r r n m 2)))
+  :enable (sf sf-r))
+
+(defrulel |chop as chop-r|
+  (equal (chop x k)
+         (chop-r x k 2))
+  :enable (chop chop-r))
+
+(defruled bits-uf
+  (let ((x (uf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (natp i)
+                  (natp j)
+                  (<= j i))
+             (equal (bits r i j)
+                    (* (expt 2 (- f j))
+                       (- (chop x (- f j))
+                          (chop x (- f (1+ i))))))))
+  :enable digits-uf-r)
+
+(defruled bits-sf
+  (let ((x (sf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (natp i)
+                  (natp j)
+                  (<= j i)
+                  (< i n))
+             (equal (bits r i j)
+                    (* (expt 2 (- f j))
+                       (- (chop x (- f j))
+                          (chop x (- f (1+ i))))))))
+  :use (:instance digits-sf-r (b 2)))
+
+(defrule chop-uf
+  (let ((x (uf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop x k) x)
+                  (= (bits r (1- (- f k)) 0) 0))))
+  :rule-classes ()
+  :use (:instance chop-r-uf-r (b 2)))
+
+(defrule chop-sf
+  (let ((x (sf r n m))
+        (f (- n m)))
+    (implies (and (natp n)
+                  (natp m)
+                  (<= m n)
+                  (bvecp r n)
+                  (integerp k)
+                  (<= (- f n) k)
+                  (< k f))
+             (iff (= (chop x k) x)
+                  (= (bits r (1- (- f k)) 0) 0))))
+  :rule-classes ()
+  :use (:instance chop-r-sf-r (b 2)))
+
+(defruled sf-val
+  (implies (and (natp n)
+                (natp m)
+                (<= m n)
+                (bvecp r n)
+                (integerp y)
+                (= (mod y (expt 2 n)) r)
+                (<= (- (expt 2 (1- n))) y)
+                (< y (expt 2 (1- n))))
+            (equal (sf r n m)
+                   (* (expt 2 (- m n)) y)))
+  :enable sf-r-val)

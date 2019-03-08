@@ -17,6 +17,12 @@
 
 (local (include-book "remove-guard-holders-lemmas"))
 
+(verify-termination weak-apply$-badge-alistp) ; and guards
+
+(verify-termination ilks-plist-worldp) ; and guards
+
+(verify-termination ilks-per-argument-slot) ; and guards
+
 (verify-termination-remove-guard-holders1) ; and guards
 
 (verify-termination remove-guard-holders) ; and guards

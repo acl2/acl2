@@ -10,7 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
+(include-book "tailrec")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,7 +30,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-intro
+   (xdoc::evmac-section-intro
 
     (xdoc::p
      "Under certain conditions,
@@ -43,29 +45,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-form
-
-    (xdoc::code
-     "(tailrec old"
-     "         &key"
-     "         :variant         ; default :monoid"
-     "         :domain          ; default :auto"
-     "         :new-name        ; default :auto"
-     "         :new-enable      ; default :auto"
-     "         :wrapper-name    ; default :auto"
-     "         :wrapper-enable  ; default t"
-     "         :thm-name        ; default :auto"
-     "         :thm-enable      ; default t"
-     "         :non-executable  ; default :auto"
-     "         :verify-guards   ; default :auto"
-     "         :hints           ; default nil"
-     "         :print           ; default :result"
-     "         :show-only       ; default nil"
-     "  )"))
+   (xdoc::evmac-section-form-auto tailrec)
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-inputs
+   (xdoc::evmac-section-inputs
 
     (xdoc::desc-apt-input-old
      (xdoc::p
@@ -228,11 +212,11 @@
 
     (xdoc::desc-apt-input-verify-guards t)
 
-    (xdoc::desc-apt-input-hints)
+    (xdoc::evmac-input-hints)
 
-    (xdoc::desc-apt-input-print)
+    (xdoc::evmac-input-print tailrec)
 
-    (xdoc::desc-apt-input-show-only)
+    (xdoc::evmac-input-show-only tailrec)
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,11 +299,9 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-appconds
+   (xdoc::evmac-section-appconds
 
-    (xdoc::p
-     "The following conditions must be proved
-      in order for the transformation to apply.")
+    tailrec
 
     (xdoc::desc
      "@(':domain-of-base')"
@@ -494,9 +476,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::apt-section-generated
-    t
-    t
+   (xdoc::evmac-section-generated
 
     (xdoc::desc
      "@('new')"
@@ -554,4 +534,8 @@
      (xdoc::code
       "(defthm old-to-wrapper"
       "  (equal (old x1 ... xn)"
-      "         (wrapper x1 ... xn)))")))))
+      "         (wrapper x1 ... xn)))")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-redundancy tailrec)))

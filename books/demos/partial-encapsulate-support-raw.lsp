@@ -7,5 +7,12 @@
 (defun ln (x)
   (if (and (real/rationalp x)
            (< 0 x))
-      (rational (log x))
+
+; At one time we returned (rational (log x)) in this case.  However, that gave
+; a different answer in GCL than in some other Lisps, presumably because of the
+; precision.
+
+      (let ((n (expt 10 7)))
+        (/ (round (* (log 3) n))
+           n))
     0))

@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "../guard-helpers"))
 
 ;; ======================================================================
@@ -75,12 +75,12 @@
 
   :parents (two-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (app-view x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (and (x86p x86) (app-view x86)))
 
-  :guard-hints (("Goal" :in-theory (e/d () (msri-is-n64p))
-		 :use ((:instance msri-is-n64p (i 0)))))
+  :guard-hints (("Goal" :in-theory (e/d (rflagsbits-p
+                                         !rflagsbits->tf)
+                                        (msri-is-n64p))
+                 :use ((:instance msri-is-n64p (i 0)))))
 
   :body
 
@@ -88,11 +88,11 @@
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
-	(ia32_efer-slice :ia32_efer-sce ia32-efer))
+        (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
-		   :exec (equal 0 ia32-efer-sce)))
-	(!!fault-fresh :ud nil ;; #UD
-		       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; Update the x86 state:
 
@@ -125,10 +125,7 @@
        ;; V-1): "They (system flags, of which TF is one) should not be
        ;; modified by application programs."
 
-       ((the (unsigned-byte 32) eflags)
-	(!rflags-slice :tf 1 eflags))
-
-       (x86 (wr64 *r11* eflags x86)) ;; SYSCALL
+       (x86 (wr64 *r11* (!rflagsBits->tf 1 eflags) x86)) ;; SYSCALL
 
        ;; On Linux and macOS, EAX is used to identify the system call to make.
        ;; See
@@ -144,48 +141,48 @@
        ((the (unsigned-byte 32) eax) (n32 rax))
 
        (x86
-	(cond
-	 ((equal eax (sys_read-idx x86)) ;; Read
-	  (x86-syscall-read x86))
-	 ((equal eax (sys_write-idx x86)) ;; Write
-	  (x86-syscall-write x86))
-	 ((equal eax (sys_open-idx x86)) ;; Open
-	  (x86-syscall-open x86))
-	 ((equal eax (sys_close-idx x86)) ;; Close
-	  (x86-syscall-close x86))
-	 ((equal eax (sys_stat-idx x86)) ;; Stat
-	  (x86-syscall-stat x86))
-	 ((equal eax (sys_lstat-idx x86)) ;; Lstat
-	  (x86-syscall-lstat x86))
-	 ((equal eax (sys_fstat-idx x86)) ;; Fstat
-	  (x86-syscall-fstat x86))
-	 ((equal eax (sys_lseek-idx x86)) ;; Lseek
-	  (x86-syscall-lseek x86))
-	 ((equal eax (sys_dup-idx x86)) ;; Dup
-	  (x86-syscall-dup x86))
-	 ((equal eax (sys_dup2-idx x86)) ;; Dup2
-	  (x86-syscall-dup2 x86))
-	 ((equal eax (sys_fcntl-idx x86)) ;; Fcntl
-	  (x86-syscall-fcntl x86))
-	 ((equal eax (sys_truncate-idx x86)) ;; Truncate
-	  (x86-syscall-truncate x86))
-	 ((equal eax (sys_ftruncate-idx x86)) ;; Ftruncate
-	  (x86-syscall-ftruncate x86))
-	 ((equal eax (sys_link-idx x86)) ;; Link
-	  (x86-syscall-link x86))
-	 ((equal eax (sys_unlink-idx x86)) ;; Unlink
-	  (x86-syscall-unlink x86))
-	 ((equal eax (sys_fadvise64-idx x86)) ;; Fadvise64
-	  (x86-syscall-fadvise64 x86))
-	 ((equal eax (sys_dup3-idx x86)) ;; Dup3
-	  (x86-syscall-dup3 x86))
-	 (t
-	  (let* ((x86
-		  (!ms (list "Unimplemented syscall"
-			     'RAX rax
-			     'RIP (rip x86))
-		       x86)))
-	    x86))))
+        (cond
+         ((equal eax (sys_read-idx x86)) ;; Read
+          (x86-syscall-read x86))
+         ((equal eax (sys_write-idx x86)) ;; Write
+          (x86-syscall-write x86))
+         ((equal eax (sys_open-idx x86)) ;; Open
+          (x86-syscall-open x86))
+         ((equal eax (sys_close-idx x86)) ;; Close
+          (x86-syscall-close x86))
+         ((equal eax (sys_stat-idx x86)) ;; Stat
+          (x86-syscall-stat x86))
+         ((equal eax (sys_lstat-idx x86)) ;; Lstat
+          (x86-syscall-lstat x86))
+         ((equal eax (sys_fstat-idx x86)) ;; Fstat
+          (x86-syscall-fstat x86))
+         ((equal eax (sys_lseek-idx x86)) ;; Lseek
+          (x86-syscall-lseek x86))
+         ((equal eax (sys_dup-idx x86)) ;; Dup
+          (x86-syscall-dup x86))
+         ((equal eax (sys_dup2-idx x86)) ;; Dup2
+          (x86-syscall-dup2 x86))
+         ((equal eax (sys_fcntl-idx x86)) ;; Fcntl
+          (x86-syscall-fcntl x86))
+         ((equal eax (sys_truncate-idx x86)) ;; Truncate
+          (x86-syscall-truncate x86))
+         ((equal eax (sys_ftruncate-idx x86)) ;; Ftruncate
+          (x86-syscall-ftruncate x86))
+         ((equal eax (sys_link-idx x86)) ;; Link
+          (x86-syscall-link x86))
+         ((equal eax (sys_unlink-idx x86)) ;; Unlink
+          (x86-syscall-unlink x86))
+         ((equal eax (sys_fadvise64-idx x86)) ;; Fadvise64
+          (x86-syscall-fadvise64 x86))
+         ((equal eax (sys_dup3-idx x86)) ;; Dup3
+          (x86-syscall-dup3 x86))
+         (t
+          (let* ((x86
+                  (!ms (list "Unimplemented syscall"
+                             'RAX rax
+                             'RIP (rip x86))
+                       x86)))
+            x86))))
 
        ;; (- (cw "~%~%X86-SYSCALL: If SYSCALL does not return the result you ~
        ;;         expected, then you might want to check whether these ~
@@ -194,21 +191,22 @@
 
 
        ((when (ms x86))
-	(!!ms-fresh :x86-syscall (ms x86)))
+        (!!ms-fresh :x86-syscall (ms x86)))
 
        ;; Clear RF, VM. Reserved bits retain their fixed values. Set
        ;; bit 2 (PF).
 
-       (x86 (!flgi #.*rf* 0 x86))
-       (x86 (!flgi #.*vm* 0 x86)) ;; SYSRET
-       (x86 (!flgi #.*pf* 0 x86))
+       (eflags (!rflagsBits->rf 0 eflags))
+       (eflags (!rflagsBits->vm 0 eflags)) ;; SYSRET
+       (eflags (!rflagsBits->pf 1 eflags))
+       (x86 (!rflags eflags x86))
 
        ;; SYSCALL loads a new rip from the ia32_lstar (64-bit
        ;; mode). Upon return, SYSRET copies the value saved in rcx to
        ;; the rip. Here, we cheat and directly assign temp-rip to rip.
 
        (x86 (!rip temp-rip x86))) ;; SYSRET
-      x86))
+    x86))
 
 (def-inst x86-syscall
 
@@ -219,11 +217,10 @@
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (and (x86p x86)
-			       (not (app-view x86))
-			       (canonical-address-p temp-rip)))
+                               (not (app-view x86))))
 
   :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 wr64)
-					())))
+                                        ())))
 
   :body
 
@@ -231,11 +228,11 @@
 
        (ia32-efer (n12 (msri #.*ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
-	(ia32_efer-slice :ia32_efer-sce ia32-efer))
+        (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
-		   :exec (equal 0 ia32-efer-sce)))
-	(!!fault-fresh :ud nil ;; #UD
-		       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 
@@ -250,7 +247,7 @@
        (lstar (msri #.*ia32_lstar-idx* x86))
        (lstar-addr (n64-to-i64 lstar))
        ((when (not (canonical-address-p lstar-addr)))
-	(!!ms-fresh :lstar-not-canonical lstar))
+        (!!ms-fresh :lstar-not-canonical lstar))
        (x86 (!rip lstar-addr x86))
 
        ;; R11 <- RFLAGS
@@ -272,9 +269,9 @@
        ;; OS provides CS; RPL forced to 0.
        (star (msri #.*ia32_star-idx* x86))
        (new-cs-selector
-	(the (unsigned-byte 16)
-	  (logand (part-select star :low 32 :high 47)
-		  #xfffc)))
+        (the (unsigned-byte 16)
+          (logand (part-select star :low 32 :high 47)
+                  #xfffc)))
        (x86 (!seg-visiblei #.*cs* new-cs-selector x86))
 
        ;; From the Intel Vol. 2, Instruction Reference SYSCALL:
@@ -296,7 +293,7 @@
        ;; CS.Base   <- 0;       (* Flat segment *)
        ;; CS.Limit  <- FFFFFH;  (* With 4-KByte granularity, implies a 4-GByte limit *)
        (cs-hidden-base-addr 0)
-       (cs-hidden-limit #xfffff)
+       (cs-hidden-limit #xffffffff) ; this is 32 bits, not 20 bits
        ;; CS.A       <- 1;   (* Accessed. *)
        ;; CS.R       <- 1;   (* Execute/read code. *)
        ;; CS.C       <- 0;
@@ -308,27 +305,18 @@
        ;; CS.D       <- 0;   (* Required if CS.L = 1 *)
        ;; CS.G       <- 1;   (* 4-KByte granularity *)
        (cs-attr
-	(!code-segment-descriptor-attributes-layout-slice
-	 :a 1
-	 (!code-segment-descriptor-attributes-layout-slice
-	  :r 1
-	  (!code-segment-descriptor-attributes-layout-slice
-	   :c 0
-	   (!code-segment-descriptor-attributes-layout-slice
-	    :msb-of-type 1
-	    (!code-segment-descriptor-attributes-layout-slice
-	     :s 1
-	     (!code-segment-descriptor-attributes-layout-slice
-	      :dpl 0
-	      (!code-segment-descriptor-attributes-layout-slice
-	       :p 1
-	       (!code-segment-descriptor-attributes-layout-slice
-		:l 1
-		(!code-segment-descriptor-attributes-layout-slice
-		 :d 0
-		 (!code-segment-descriptor-attributes-layout-slice
-		  :g 1
-		  cs-attr)))))))))))
+        (change-code-segment-descriptor-attributesBits
+         cs-attr
+         :a 1
+         :r 1
+         :c 0
+         :msb-of-type 1
+         :s 1
+         :dpl 0
+         :p 1
+         :l 1
+         :d 0
+         :g 1))
 
        (x86 (!seg-hidden-basei #.*cs* cs-hidden-base-addr x86))
        (x86 (!seg-hidden-limiti #.*cs* cs-hidden-limit x86))
@@ -336,26 +324,26 @@
 
        ;; CPL     <- 0;
        (current-cs-register (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))
-       (current-cs-register (!seg-sel-layout-slice :rpl 0 current-cs-register))
+       (current-cs-register (!segment-selectorBits->rpl 0 current-cs-register))
        (x86 (!seg-visiblei #.*cs* current-cs-register x86))
 
        ;; SS.Selector <- IA32_STAR[47:32] + 8; (* SS just above CS *)
        (new-ss-selector
-	(+ (part-select star :low 32 :high 47) 8))
+        (+ (part-select star :low 32 :high 47) 8))
        ;; Shilpi: How do we know that new-ss-selector fits in 16
        ;; bytes? Neither the Intel nor the AMD manuals say anything
        ;; about truncating this value to fit in 16 bits.  So, I'm
        ;; going to raise an error when it doesn't, just so we're aware
        ;; that a "bad" situation happened.
        ((when (not (n16p new-ss-selector)))
-	(!!ms-fresh :new-ss-selector-too-large new-ss-selector))
+        (!!ms-fresh :new-ss-selector-too-large new-ss-selector))
        (x86 (!seg-visiblei #.*ss* new-ss-selector x86))
 
        ;; (* Set rest of SS to a fixed value *)
        ;; SS.Base  <-  0;      (* Flat segment *)
        ;; SS.Limit <-  FFFFFH; (* With 4-KByte granularity, implies a 4-GByte limit *)
        (ss-hidden-base-addr 0)
-       (ss-hidden-limit #xfffff)
+       (ss-hidden-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) ss-attr) (seg-hidden-attri #.*ss* x86))
        ;; SS.A       <-  1;      (* Accessed. *)
        ;; SS.W       <-  1;      (* Read/write data. *)
@@ -367,25 +355,17 @@
        ;; SS.B       <-  1;      (* 32-bit stack segment *)
        ;; SS.G       <-  1;      (* 4-KByte granularity *)
        (ss-attr
-	(!data-segment-descriptor-attributes-layout-slice
-	 :a 1
-	 (!data-segment-descriptor-attributes-layout-slice
-	  :w 1
-	  (!data-segment-descriptor-attributes-layout-slice
-	   :e 0
-	   (!data-segment-descriptor-attributes-layout-slice
-	    :msb-of-type 0
-	    (!data-segment-descriptor-attributes-layout-slice
-	     :s 1
-	     (!data-segment-descriptor-attributes-layout-slice
-	      :dpl 0
-	      (!data-segment-descriptor-attributes-layout-slice
-	       :p 1
-	       (!data-segment-descriptor-attributes-layout-slice
-		:d/b 1
-		(!data-segment-descriptor-attributes-layout-slice
-		 :g 1
-		 ss-attr))))))))))
+        (change-data-segment-descriptor-attributesBits
+         ss-attr
+         :a 1
+         :w 1
+         :e 0
+         :msb-of-type 0
+         :s 1
+         :dpl 0
+         :p 1
+         :d/b 1
+         :g 1))
 
        (x86 (!seg-hidden-basei #.*ss* ss-hidden-base-addr x86))
        (x86 (!seg-hidden-limiti #.*ss* ss-hidden-limit x86))
@@ -398,10 +378,7 @@
 
   :parents (two-byte-opcodes)
 
-  :returns
-  (x86 x86p
-       :hyp (and (x86p x86)
-		 (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (if (app-view x86)
@@ -431,20 +408,19 @@
   \(as opposed to REX.W + 0F 07\) switches the machine to
   compatibility mode, not 64-bit mode.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :prepwork ((local (in-theory (e/d* (sysret-guard-helpers) ())))
 
-	     (local
-	      (defthm sysret-guard-helper
-		(implies (and (signed-byte-p 48 temp-rip)
-			      (signed-byte-p 48 start-rip))
-			 (signed-byte-p 49 (+ (- start-rip) temp-rip))))))
+             (local
+              (defthm sysret-guard-helper
+                (implies (and (signed-byte-p 48 temp-rip)
+                              (signed-byte-p 48 start-rip))
+                         (signed-byte-p 49 (+ (- start-rip) temp-rip))))))
 
   :guard-hints (("Goal" :in-theory (e/d (n64-to-i64 wr64)
-					(unsigned-byte-p
-					 signed-byte-p))))
+                                        (unsigned-byte-p
+                                         signed-byte-p))))
 
   :body
 
@@ -474,27 +450,27 @@
        ;; FI;
        ;; ...
        ((when (not (logbitp #.*w* rex-byte)))
-	(!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))
+        (!!ms-fresh :unsupported-sysret-because-rex.w!=1 rex-byte))
 
        (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
-	(ia32_efer-slice :ia32_efer-sce ia32-efer))
+        (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
-		   :exec (equal 0 ia32-efer-sce)))
-	(!!fault-fresh :ud nil ;; #UD
-		       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
+                   :exec (equal 0 ia32-efer-sce)))
+        (!!fault-fresh :ud nil ;; #UD
+                       :ia32-efer-sce=0 (cons 'ia32_efer ia32-efer)))
 
        ;; If CPL != 0...
        (current-cs-register (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))
-       (cpl (seg-sel-layout-slice :rpl current-cs-register))
+       (cpl (segment-selectorBits->rpl current-cs-register))
        ((when (not (equal 0 cpl)))
-	(!!fault-fresh :gp 0 ;; #GP(0)
-		       :cpl!=0 (cons 'cs-register current-cs-register)))
+        (!!fault-fresh :gp 0 ;; #GP(0)
+                       :cpl!=0 (cons 'cs-register current-cs-register)))
 
        ;; If RCX contains a non-canonical address...
        (rcx (rgfi *rcx* x86))
        ((when (not (canonical-address-p rcx)))
-	(!!ms-fresh :rcx-non-canonical rcx))
+        (!!ms-fresh :rcx-non-canonical rcx))
 
        ;; Update the x86 state:
 
@@ -509,23 +485,22 @@
        ;; CS.Selector   IA32_STAR[63:48]+16;
        (star (msri *ia32_star-idx* x86))
        (new-cs-selector
-	(+ (part-select star :low 48 :high 63)
-	   16))
+        (+ (part-select star :low 48 :high 63)
+           16))
        ;; Shilpi: How do we know that new-cs-selector fits in 16
        ;; bytes?
        ((when (not (n16p new-cs-selector)))
-	(!!ms-fresh :new-cs-selector-too-large new-cs-selector))
+        (!!ms-fresh :new-cs-selector-too-large new-cs-selector))
        ;; CS.Selector   CS.Selector OR 3;  (* RPL forced to 3 *)
        (new-cs-selector
-	(mbe :logic (logior new-cs-selector 3)
-	     :exec (!seg-sel-layout-slice :rpl 3 new-cs-selector)))
+        (!segment-selectorBits->rpl 3 new-cs-selector))
        (x86 (!seg-visiblei #.*cs* new-cs-selector x86))
 
        ;; (* Set rest of CS to a fixed value *)
        ;; CS.Base  <-  0;      (* Flat segment *)
        ;; CS.Limit <- FFFFFH;  (* With 4-KByte granularity, implies a 4-GByte limit *)
        (cs-base-addr 0)
-       (cs-limit #xfffff)
+       (cs-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
        ;; CS.A       <- 1;   (* Accessed. *)
        ;; CS.R       <- 1;   (* Execute/read code. *)
@@ -539,54 +514,43 @@
        ;; CS.D       <- 0;           (* Required if CS.L = 1 *)
        ;; CS.G       <- 1;           (* 4-KByte granularity *)
        (cs-attr
-	(!code-segment-descriptor-attributes-layout-slice
-	 :a 1
-	 (!code-segment-descriptor-attributes-layout-slice
-	  :r 1
-	  (!code-segment-descriptor-attributes-layout-slice
-	   :c 0
-	   (!code-segment-descriptor-attributes-layout-slice
-	    :msb-of-type 1
-	    (!code-segment-descriptor-attributes-layout-slice
-	     :s 1
-	     (!code-segment-descriptor-attributes-layout-slice
-	      :dpl 3
-	      (!code-segment-descriptor-attributes-layout-slice
-	       :p 1
-	       (!code-segment-descriptor-attributes-layout-slice
-		:l 1
-		(!code-segment-descriptor-attributes-layout-slice
-		 :d 0
-		 (!code-segment-descriptor-attributes-layout-slice
-		  :g 1
-		  cs-attr)))))))))))
-
+        (change-code-segment-descriptor-attributesBits
+         cs-attr
+         :a 1
+         :r 1
+         :c 0
+         :msb-of-type 1
+         :s 1
+         :dpl 3
+         :p 1
+         :l 1
+         :d 0
+         :g 1))
 
        (x86 (!seg-hidden-basei #.*cs* cs-base-addr x86))
        (x86 (!seg-hidden-limiti #.*cs* cs-limit x86))
        (x86 (!seg-hidden-attri #.*cs* cs-attr x86))
 
        ;; CPL <- 0;
-       (current-cs-register (!seg-sel-layout-slice :rpl 0 current-cs-register))
+       (current-cs-register (!segment-selectorBits->rpl 0 current-cs-register))
        (x86 (!seg-visiblei #.*cs* current-cs-register x86))
 
        ;; SS.Selector <- (IA32_STAR[63:48] + 8) OR 3; (* RPL forced to 3 *)
        (new-ss-selector
-	(+ (part-select star :low 48 :high 63) 8))
+        (+ (part-select star :low 48 :high 63) 8))
        ;; Shilpi: How do we know that new-ss-selector fits in 16
        ;; bytes?
        ((when (not (n16p new-ss-selector)))
-	(!!ms-fresh :new-ss-selector-too-large new-ss-selector))
+        (!!ms-fresh :new-ss-selector-too-large new-ss-selector))
        (new-ss-selector
-	(mbe :logic (logior new-ss-selector 3)
-	     :exec (!seg-sel-layout-slice :rpl 3 new-ss-selector)))
+        (!segment-selectorBits->rpl 3 new-ss-selector))
        (x86 (!seg-visiblei #.*ss* new-ss-selector x86))
 
        ;; (* Set rest of SS to a fixed value *)
        ;; SS.Base  <- 0;           (* Flat segment *)
        ;; SS.Limit <- FFFFFH;      (* With 4-KByte granularity, implies a 4-GByte limit *)
        (ss-base-addr 0)
-       (ss-limit #xfffff)
+       (ss-limit #xffffffff) ; this is 32 bits, not 20 bits
        ((the (unsigned-byte 16) ss-attr) (xr :seg-hidden-attr #.*ss* x86))
        ;; SS.A       <-  1;      (* Accessed. *)
        ;; SS.W       <-  1;      (* Read/write data. *)
@@ -598,25 +562,17 @@
        ;; SS.B       <- 1;           (* 32-bit stack segment*)
        ;; SS.G       <- 1;           (* 4-KByte granularity *)
        (ss-attr
-	(!data-segment-descriptor-attributes-layout-slice
-	 :a 1
-	 (!data-segment-descriptor-attributes-layout-slice
-	  :w 1
-	  (!data-segment-descriptor-attributes-layout-slice
-	   :e 0
-	   (!data-segment-descriptor-attributes-layout-slice
-	    :msb-of-type 0
-	    (!data-segment-descriptor-attributes-layout-slice
-	     :s 1
-	     (!data-segment-descriptor-attributes-layout-slice
-	      :dpl 3
-	      (!data-segment-descriptor-attributes-layout-slice
-	       :p 1
-	       (!data-segment-descriptor-attributes-layout-slice
-		:d/b 1
-		(!data-segment-descriptor-attributes-layout-slice
-		 :g 1
-		 ss-attr))))))))))
+        (change-data-segment-descriptor-attributesBits
+         ss-attr
+         :a 1
+         :w 1
+         :e 0
+         :msb-of-type 0
+         :s 1
+         :dpl 3
+         :p 1
+         :d/b 1
+         :g 1))
 
        (x86 (!seg-hidden-basei #.*ss* ss-base-addr x86))
        (x86 (!seg-hidden-limiti #.*ss* ss-limit x86))

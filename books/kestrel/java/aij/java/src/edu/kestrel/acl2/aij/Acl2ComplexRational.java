@@ -195,10 +195,12 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Returns a printable representation of this ACL2 complex rational.
+     * We return a Java string that
+     * conforms to ACL2's notation for complex rationals.
      */
     @Override
     public String toString() {
-        return this.realPart + "+" + this.imaginaryPart + "i";
+        return "#\\c(" + this.realPart + " " + this.imaginaryPart + ")";
     }
 
     /**

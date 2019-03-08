@@ -115,6 +115,23 @@
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
  set of natural numbers.</p>
 
+ <h4><see topic='@(url event-macros)'>Event Macros</see></h4>
+
+ <p>Started a library of concepts and utilities to develop event
+ macros (i.e. macros at the event level) more quickly and consistently.</p>
+
+ <p>This library includes some XDOC constructor utilities for the reference
+ documentation of event macros.</p>
+
+ <p>This library also includes functions to process inputs common to multiple
+ event macros.</p>
+
+ <h4>Fixtypes for Osets</h4>
+
+ <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
+ topic='@(url set::std/osets)'>osets</see> of elements of specified fixtypes.
+ This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).</p>
+
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -157,42 +174,80 @@
 
  <p>Improved and extended some documentation.</p>
 
- <p>Added XDOC constructor utilities tailored to APT transformations.</p>
+ <p>Added some XDOC constructor utilities tailored to APT transformations.</p>
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>Improved the documentation of the Bitcoin library.</p>
+ <p>Improved the documentation.</p>
+
+ <p>Added fixtypes for bytes and byte sequences.</p>
+
+ <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+
+ <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
+ placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
+ curve.</p>
+
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
+ hierarchical deterministic wallets.</p>
+
+ <h4>Bytes</h4>
+
+ <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
+ unsigned-byte-list-fix), and @(tsee signed-byte-list-fix) for @(tsee
+ unsigned-byte-p), @(tsee signed-byte-p), @(tsee unsigned-byte-listp), and
+ @(tsee signed-byte-listp).</p>
+
+ <h4><see topic='@(url std::define)'>Define</see></h4>
+
+ <p>Added support for configuration objects that can be used to specify some
+ extended options.  Also added support for @(':verify-guards :after-returns')
+ that indicates that guards are to be verified after the returns
+ specifiers.</p>
+
+ <h4><see topic='@(url rstobj::defrstobj)'>Defrstobj</see></h4>
+
+ <p>Added support for defining universal accessor and updater functions.</p>
 
  <h4>Digits in Arbitrary Bases</h4>
 
  <p>The files @('[books]/kestrel/utilities/digits-any-base*.lisp') have been
  moved to a new subdirectory @('[books]/kestrel/utilities/digits-any-base/')
- and renamed.  Some files have been refactored into smaller files.  The macro
- to generate additional return types for conversions from natural numbers to
- digits has been generalized and renamed.</p>
+ and renamed.  Some files have been refactored into smaller files.</p>
 
- <h4><see topic='@(url rstobj::defrstobj)'>defrstobj</see></h4>
+ <p>Some theorems have been added.</p>
 
- <p>Added support for defining universal accessor and updater functions.</p>
+ <p>The macro to generate additional return types for conversions from natural
+ numbers to digits has been generalized and renamed.</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
  <p>Added more error-checking functions.</p>
 
- <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
+ <p>The files @('[books]/kestrel/utilities/error-checking*.lisp') have been
+ moved to a new subdirectory @('[books]/kestrel/utilities/error-checking/')
+ and renamed.  Some files have been refactored into smaller files.</p>
 
- <p>Improved the documentation.</p>
+ <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
  @('nibble') instead of @('ubyte4').</p>
 
- <p>Added a formalization of Modified Merkle Patricia trees.</p>
-
- <p>Mofified the formalizations of RLP encoding and decoding to return an
- explicit error flag.</p>
+ <p>Modified the formalizations of RLP encoding and decoding to return an
+ explicit error flag.  Added theorems showing that RLP encodings are decodable:
+ RLP encoding is injective, and no valid encoding is a strict prefix of another
+ one.  Added executable RLP decoders and proved them correct with respect to
+ the ones declaratively defined as inverses of the RLP encoders.  Added the RLP
+ tests from the Ethereum Wiki's page on RLP.</p>
 
  <p>Added a formalization of hex-prefix decoding, declaratively defined as the
  inverse of hex-prefix encoding.</p>
+
+ <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Added several other theorems.  Improved some existing theorems.</p>
+
+ <p>Improved some documentation.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -203,6 +258,11 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <h4>FTY Type Aliases</h4>
+
+ <p>Added a macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
+ existing fixtype, as well as of its recognizer, fixer, and equivalence.</p>
+
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -210,6 +270,10 @@
 
  <p>Added a book @('[books]/centaur/fty/typegraph.lisp') containing a utility that
  writes a Graphviz @('.dot') file showing an FTY type hierarchy.</p>
+
+ <p>Added a book @('[books]/clause-processors/pseudo-term-fty') that supports
+ for treating pseudo-terms as an FTY sum-of-products type; see @(see
+ pseudo-term-fty).</p>
 
  <h4>FTY Types for Bytes</h4>
 
@@ -223,6 +287,33 @@
 
  <p>Added some theorems about functions on lists.</p>
 
+ <h4>Profiling</h4>
+
+ <p>Attempts to run @(tsee profile-acl2) or @(tsee profile-all) had failed, for
+ ACL2 built on SBCL, with an obscure SBCL error message.  Now, the error
+ message gives instructions for how to avoid the error by rebuilding SBCL from
+ sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
+ the appropriate SBCL source code line.</p>
+
+ <h4>RAC: Restricted Algorithmic C</h4>
+
+ <p>Minor modifications of @('projects/rac/') include a bug fix in the parser
+ and a rewrite of @('examples/hello.cpp')
+ (hat-tip to D. Hardin).</p>
+
+ <h4>@(csee rtl)</h4>
+
+ <p>A number of new lemmas have been added to @('rtl/rel11/lib/'), which were
+ required in the verification of an Arm FPU currently under development.  This
+ in turn required some minor modifications of @('projects/arm/*/').</p>
+
+ <h4><see topic='@(url soft::soft)'>SOFT</see></h4>
+
+ <p>The @(tsee soft::defun2), @(tsee soft::defchoose2), @(tsee
+ soft::defun-sk2), and @(tsee soft::defun-inst) macros no longer include an
+ explicit list of function parameters.  The function is implicitly
+ parameterized over the function variables that it depends on.</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
@@ -235,9 +326,24 @@
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
 
+ <h4>@(csee std/util)</h4>
+
+ <p>Added macros @(tsee std::defthm-natp), @(tsee std::defthm-unsigned-byte-p),
+ and @(tsee std::defthm-signed-byte-p), from the X86ISA model.</p>
+
  <h4><see topic='@(url string-utilities)'>String Utilities</see></h4>
 
- <p>Added new lemmas and generalized some existing lemmas.</p>
+ <p>Added new lemmas and generalized and improved some existing lemmas.</p>
+
+ <p>Redefined more compactly the predicates in
+ @('[books]/kestrel/utilities/string/char-kinds.lisp') via @(tsee
+ str::defcharset).  Added a new predicate.</p>
+
+ <p>Added functions @(tsee hexchars=>ubyte8) and @(tsee ubyte8=>hexchars) to
+ convert between single bytes and pairs of hexadecimal digit characters;
+ rephrased @(tsee ubyte8s=>hexchars) in terms of @(tsee ubyte8=>hexchars).
+ Added functions @(tsee hexchars=>ubyte8s) and @(tsee hexstring=>ubyte8s),
+ inverses of @(tsee ubyte8s=>hexchars) and @(tsee ubyte8s=>hexstring).</p>
 
  <h4>System Utilities</h4>
 
@@ -256,6 +362,10 @@
  argument has been changed from @('nil') to @('t'), for consistency with @(tsee
  orelse).</p>
 
+ <p>Added utilities @(tsee macro-keyword-args) and @(tsee macro-keyword-args+)
+ to retrieve an alist of the keyword arguments of a macro, associated to their
+ default values.</p>
+
  <h4>Typed List Utilities</h4>
 
  <p>Refactored the old file
@@ -264,12 +374,8 @@
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
- <p>Finished adding support for 32-bit application-level execution for
- non-floating-point instructions.  Added support for 32-bit application-level
- execution for the floating-point instructions ADDSS, ADDSD, SUBSS, SUBSD,
- MULSS, MULSD, DIVSS, DIVSD, MINSS, MINSD, MAXSS, MAXSD, ADDPS, ADDPD, SUBPS,
- SUBPD, MULPS, MULPD, DIVPS, DIVPD, MINPS, MINPD, MAXPS, MAXPD, SQRTSS, SQRTSD,
- SQRTPS, SQRTPD, and BSF.</p>
+ <p>Finished adding support for 32-bit application-level execution for all the
+ instructions, including the floating-point ones, supported by the model.</p>
 
  <p>Added support for enabling/disabling machine features that depend on CPUID
  flags.</p>
@@ -283,13 +389,85 @@
  64, 32, or 16 bits, based on the current mode and on the SS.B bit of the
  current stack segment.</p>
 
+ <p>Modified the logical definitions of the x86 state (i.e., the abstract
+ stobj).  Now, the x86 state accessor functions unconditionally return
+ well-formed values and the x86 state updater functions return a well-formed
+ state, provided that the initial state was well-formed; thus, constraints on
+ the index (in case of array fields) and value being written have been
+ eliminated.</p>
+
+ <p>Improved the @('defthm-natp'), @('defthm-usb'), and @('defthm-sb')
+ utilities to generate minimal and reliable hints for corollaries.  Improved
+ the @('defthm-natp') utility to also generate a rewrite rule.  Extended
+ @('defthm-natp') with the ability to turn on/off the generation of the type
+ and linear corollaries, to modify their hypotheses, to supply more specific
+ hints for the corollaries, and to specify @(':otf-flg'); these options are
+ like the ones provided by @('defthm-usb') and @('defthm-sb').  Improved the
+ @('defthm-usb') utility to also generate a linear linear saying that the value
+ is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
+ @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
+ with @('defthm-natp').  Moved all three utilities under @(see std/util).</p>
+
+ <p>Extended top-level memory reading functions to take into account the R bit
+ of code segment descriptors, when they access for reading (not execution) a
+ code segment in 32-bit mode: in this case, if R = 0, the code segment is
+ execute-only and thus reading data from it is not allowed.  Extended top-level
+ memory functions to take into account the W bit of data segment descriptors,
+ in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
+ to it is not allowed; writing to a code segment is not allowed either.</p>
+
+ <p>Extended effective-to-linear address translation to check that the visible
+ part of the DS, ES, FS, and GS segment registers does not contain a null
+ segment selector.  A similar check on CS and SS is not needed because a null
+ segment selector cannot be loaded into these two segment registers.</p>
+
+ <p>Improved and extended some documentation.</p>
+
+ <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+
+ <p>The @('use-termhint') utility has been moved to its own book
+ @('std/util/termhints') from its former location at
+ @('clause-processors/use-by-hint').</p>
+
+ <p>Added a new utility, @(see function-termhint), for creating termhints from
+ existing function definitions containing @(see hintcontext) annotations.</p>
+
+ <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
+
+ <p>Used new ACL2 system features to fix the remaining known soundness bug and
+ remove a trust tag.</p>
+
+ <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
+
+ <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
+ inputs known to be equivalent or opposite to each other, not just to
+ constants.  Added @(see aignet::obs-constprop) that combines this
+ with the existing observability transform, which works better than running
+ the two transforms separately.</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
 
+ <p>Added a feature to @('books/GNUMakefile') that allows books to specify
+ dependencies on cert ACL2 system features, so that they will be automatically
+ be recertified when such features are changed.  See @(see
+ build::acl2-system-feature-dependencies).</p>
+
+ <p>Added utilities @(see ifdef-define) and @(see ifdef-undefine) in
+ @('books/build/ifdef.lisp') which set or unset environment variables while
+ allowing the build system to correctly track them for its support of @(see
+ ifdef) and @(see ifndef).</p>
+
+ <p>Cleaned up the Perl scripts implementing <see topic='@(url build::cert.pl)'>cert.pl</see>,
+ factoring them into several supporting libraries.</p>
+
  <h3>Testing</h3>
 
  <h3>Miscellaneous</h3>
+
+ <p>We now avoid causing an error when building the manual in the case that the
+ @('zip') program is not installed; that causes a warning instead.</p>
 
  ")
 

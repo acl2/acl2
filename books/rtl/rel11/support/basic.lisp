@@ -373,6 +373,10 @@
   :rule-classes ())
 
 (defund congruent (a b n)
+  (declare (xargs :guard (and (real/rationalp a)
+                              (real/rationalp b)
+                              (real/rationalp n)
+                              (not (= n 0)))))
   (equal (mod a n) (mod b n)))
 
 (defthmd mod-mult
@@ -500,73 +504,20 @@
   (implies (integerp m)
            (equal (mod (1+ (* 2 m)) 2) 1)))
 
-(in-theory (disable mod))
-
-(defthmd fl-mod-1
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (mod a (* m n))
-	          (- a (* (fl (/ a (* m n))) (* m n)))))
-  :hints (("Goal" :use ((:instance mod-def (x a) (y (* m n))))
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
-
-(defthmd fl-mod-2
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (/ (mod a (* m n)) n)
-	          (/ (- a (* (fl (/ a (* m n))) (* m n))) n)))
-  :hints (("Goal" :use (fl-mod-1)
-		  :in-theory (theory 'minimal-theory))))
-
-(defthmd fl-mod-3
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (/ (mod a (* m n)) n)
-	          (- (/ a n) (* (fl (/ a (* m n))) m))))
-  :hints (("Goal" :use (fl-mod-2)
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
-
-(defthmd fl-mod-4
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (fl (/ (mod a (* m n)) n))
-	          (fl (- (/ a n) (* (fl (/ a (* m n))) m)))))
-  :hints (("Goal" :use (fl-mod-3)
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
-
-(defthmd fl-mod-5
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (fl (/ (mod a (* m n)) n))
-	          (- (fl (/ a n)) (* (fl (/ a (* m n))) m))))
-  :hints (("Goal" :use (fl-mod-4
-                        (:instance fl+int-rewrite (x (/ a n)) (n (* (fl (/ a (* m n))) m))))
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
-
-(defthmd fl-mod-6
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
-	   (equal (fl (/ (mod a (* m n)) n))
-	          (- (fl (/ a n)) (* (fl (/ (fl (/ a n)) m)) m))))
-  :hints (("Goal" :use (fl-mod-5
-                        (:instance fl/int-rewrite (x (/ a n)) (n m)))
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
-
-(defthmd fl-mod
-  (implies (and (integerp a)
-                (not (zp m))
-                (not (zp n)))
+(defrule fl-mod
+  (implies (not (zp m))
 	   (equal (fl (/ (mod a (* m n)) n))
 	          (mod (fl (/ a n)) m)))
-  :hints (("Goal" :use (fl-mod-6
-                        (:instance mod-def (x (fl (/ a n))) (y m)))
-		  :in-theory (disable fl+int-rewrite fl/int-rewrite fl/int-rewrite-alt))))
+  :prep-lemmas
+   ((acl2::with-arith5-nonlinear-help
+     (defrule lemma
+      (implies (posp m)
+               (equal (mod (fl x) m)
+                      (fl (mod x m))))
+      :enable fl))))
+
+(in-theory (disable mod))
+
 
 ;;;**********************************************************************
 ;;;                         CHOP-R
@@ -674,135 +625,69 @@
            (equal (chop-r x m r) 0))
   :enable chop-r)
 
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds-1
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-           (<= (chop-r (fl (/ x (expt r n))) (- k) r)
-               (/ (chop-r x (- k) r) (expt r n))))
-  :hints (("Goal" :use ((:instance fl/int-rewrite (x (/ x (expt r n))) (n (expt r k)))
-                        (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n))))
-                  :in-theory (e/d (chop-r) (fl/int-rewrite fl/int-rewrite-alt))))
-  :rule-classes ()))
+(acl2::with-arith5-nonlinear-help
+ (defrule chop-r-int-bounds
+   (implies (and (natp k)
+                 (natp n)
+                 (real/rationalp x)
+                 (radixp r))
+            (and (<= (chop-r (fl (/ x (expt r n))) (- k) r)
+                     (/ (chop-r x (- k) r) (expt r n)))
+                 (<= (/ (+ (chop-r x (- k) r) (expt r k))
+                        (expt r n))
+                     (+ (chop-r (fl (/ x (expt r n))) (- k) r)
+                        (expt r k)))))
+   :enable chop-r
+   :use
+   ((:instance fl/int-rewrite (x (/ x (expt r n))) (n (expt r k)))
+    (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n)))
+    (:instance mod-def (x (fl (/ x (expt r k)))) (y (expt r n))))))
 
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds-2
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-           (= (/ (+ (chop-r x (- k) r) (expt r k))
-                 (expt r n))
-              (* (expt r (- k n))
-	         (+ (* (expt r n) (fl (/ (fl (/ x (expt r k))) (expt r n))))
-		    (mod (fl (/ x (expt r k))) (expt r n))
-		    1))))
-  :hints (("Goal" :use ((:instance fl/int-rewrite (x (/ x (expt r n))) (n (expt r k)))
-                        (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n)))
-			(:instance mod-def (x (fl (/ x (expt r k)))) (y (expt r n))))
-                  :in-theory (e/d (chop-r) (fl/int-rewrite fl/int-rewrite-alt))))
-  :rule-classes ()))
-
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds-3
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-           (<= (* (expt r (- k n))
-	          (+ (* (expt r n) (fl (/ (fl (/ x (expt r k))) (expt r n))))
-		     (mod (fl (/ x (expt r k))) (expt r n))
-		     1))
-	       (* (expt r (- k n))
-	          (+ (* (expt r n) (fl (/ (fl (/ x (expt r k))) (expt r n))))
-		     (expt r n)))))
-  :hints (("Goal" :nonlinearp t :use ((:instance mod-bnd-1 (m (fl (/ x (expt r k)))) (n (expt r n))))))))
-
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds-4
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-           (= (* (expt r (- k n))
-                 (+ (* (expt r n) (fl (/ (fl (/ x (expt r k))) (expt r n))))
-                    (expt r n)))
-              (+ (chop-r (fl (/ x (expt r n))) (- k) r)
-                 (expt r k))))
-  :hints (("Goal" :use ((:instance fl/int-rewrite (x (/ x (expt r n))) (n (expt r k)))
-                        (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n))))
-	          :in-theory (enable chop-r)))))
-
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds-5
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-            (<= (/ (+ (chop-r x (- k) r) (expt r k))
-                   (expt r n))
-               (+ (chop-r (fl (/ x (expt r n))) (- k) r)
-                  (expt r k))))
-  :hints (("Goal" :use (chop-r-int-bounds-2 chop-r-int-bounds-3 chop-r-int-bounds-4)
-                  :in-theory (theory 'minimal-theory)))))
-
-(acl2::with-arith5-nonlinear-help (defrule chop-r-int-bounds
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r))
-           (and (<= (chop-r (fl (/ x (expt r n))) (- k) r)
-                    (/ (chop-r x (- k) r) (expt r n)))
-                (<= (/ (+ (chop-r x (- k) r) (expt r k))
-                       (expt r n))
-                    (+ (chop-r (fl (/ x (expt r n))) (- k) r)
-                       (expt r k)))))
-  :hints (("Goal" :use (chop-r-int-bounds-1 chop-r-int-bounds-5)))
-  :rule-classes ()))
-
-(acl2::with-arith5-nonlinear-help (defruled chop-r-int-neg-1
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (real/rationalp y)
-                (radixp r)
-                (= (fl (/ x (expt r k)))
-                   (fl (/ y (expt r k)))))
-           (equal (chop-r (1- (- (fl (/ y (expt r n))))) (- k) r)
-                  (- (* (expt r k)
-		        (1+ (fl (/ x (expt r (+ k n)))))))))
-  :hints (("Goal" :use ((:instance fl/int-rewrite (x (/ y (expt r n))) (n (expt r k)))
-                        (:instance fl/int-rewrite (x (/ y (expt r k))) (n (expt r n)))
-                        (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n)))
-			(:instance fl-m-n (m (1+ (fl (/ y (expt r n))))) (n
-                                                                          (expt r k))))
-                  :nonlinearp t
-                  :in-theory (e/d (chop-r) (fl/int-rewrite fl/int-rewrite-alt))))))
-
-(acl2::with-arith5-nonlinear-help (defruled chop-r-int-neg-2
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (radixp r)
-                (not (integerp (/ x (expt r k)))))
-           (equal (chop-r (- (/ x (expt r n))) (- k) r)
-                  (- (* (expt r k)
-		        (1+ (fl (/ x (expt r (+ k n)))))))))
-  :hints (("Goal" :use ((:instance fl/int-rewrite (x (- (/ x (expt r n)))) (n (expt r k)))
-                        (:instance minus-fl (x (/ x (expt r n))))
-			(:instance fl-m-n (m (1+ (fl (/ x (expt r k))))) (n (expt r n)))
-                        (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n))))
-                  :in-theory (e/d (chop-r) (fl/int-rewrite fl/int-rewrite-alt))))))
-
-(acl2::with-arith5-nonlinear-help (defruled chop-r-int-neg
-  (implies (and (natp k)
-                (natp n)
-                (real/rationalp x)
-                (real/rationalp y)
-                (radixp r)
-                (= (fl (/ x (expt r k)))
-                   (fl (/ y (expt r k))))
-                (not (integerp (/ x (expt r k)))))
-           (equal (chop-r (1- (- (fl (/ y (expt r n))))) (- k) r)
-                  (chop-r (- (/ x (expt r n))) (- k) r)))
-  :hints (("Goal" :use (chop-r-int-neg-1 chop-r-int-neg-2)))))
+(defruled chop-r-int-neg
+   (implies (and (natp k)
+                 (natp n)
+                 (real/rationalp x)
+                 (real/rationalp y)
+                 (radixp r)
+                 (= (fl (/ x (expt r k)))
+                    (fl (/ y (expt r k))))
+                 (not (integerp (/ x (expt r k)))))
+            (equal (chop-r (1- (- (fl (/ y (expt r n))))) (- k) r)
+                   (chop-r (- (/ x (expt r n))) (- k) r)))
+  :use (lemma1 lemma2)
+  :prep-lemmas
+  ((acl2::with-arith5-help
+    (defruled lemma1
+      (implies (and (natp k)
+                    (natp n)
+                    (real/rationalp x)
+                    (real/rationalp y)
+                    (radixp r)
+                    (= (fl (/ x (expt r k)))
+                       (fl (/ y (expt r k)))))
+               (equal (chop-r (1- (- (fl (/ y (expt r n))))) (- k) r)
+                      (- (* (expt r k)
+                            (1+ (fl (/ x (expt r (+ k n)))))))))
+      :enable chop-r
+      :use ((:instance fl/int-rewrite (x (/ y (expt r n))) (n (expt r k)))
+            (:instance fl/int-rewrite (x (/ y (expt r k))) (n (expt r n)))
+            (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n)))
+            (:instance fl-m-n (m (1+ (fl (/ y (expt r n))))) (n (expt r k))))))
+   (acl2::with-arith5-nonlinear-help
+    (defruled lemma2
+      (implies (and (natp k)
+                    (natp n)
+                    (real/rationalp x)
+                    (radixp r)
+                    (not (integerp (/ x (expt r k)))))
+               (equal (chop-r (- (/ x (expt r n))) (- k) r)
+                      (- (* (expt r k)
+                            (1+ (fl (/ x (expt r (+ k n)))))))))
+      :enable chop-r
+      :use ((:instance fl/int-rewrite (x (- (/ x (expt r n)))) (n (expt r k)))
+            (:instance minus-fl (x (/ x (expt r n))))
+            (:instance fl-m-n (m (1+ (fl (/ x (expt r k))))) (n (expt r n)))
+            (:instance fl/int-rewrite (x (/ x (expt r k))) (n (expt r n))))))))
 
 
 ;;;**********************************************************************

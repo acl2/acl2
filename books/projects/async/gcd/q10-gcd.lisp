@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; December 2018
 
 (in-package "ADE")
 
@@ -28,11 +28,11 @@
 
 ;; 1. DE Module Generator of Q10-GCD
 ;;
-;; Construct a DE module generator that concatenates Q10 with GCD via a
-;; link.  Prove the value and state lemmas for this module generator.
+;; Construct a DE module generator that concatenates Q10 with GCD via a link.
+;; Prove the value and state lemmas for this module generator.
 
 (defconst *q10-gcd$go-num* (+ *queue10$go-num*
-                             *gcd$go-num*))
+                              *gcd$go-num*))
 (defconst *q10-gcd$st-len* 3)
 
 (defun q10-gcd$data-ins-len (data-width)
@@ -221,8 +221,8 @@
 
   (defund q10-gcd$in-act (inputs st data-width)
     (queue10$in-act (q10-gcd$q10-inputs inputs st data-width)
-                   (get-field *q10-gcd$q10* st)
-                   (* 2 data-width)))
+                    (get-field *q10-gcd$q10* st)
+                    (* 2 data-width)))
 
   (defthm q10-gcd$in-act-inactive
     (implies (not (nth 0 inputs))
@@ -441,31 +441,15 @@
 
 ;; 3. Single-Step-Update Property
 
-;; The operation of Q10-GCD over a data sequence
-
-(defun q10-gcd$op-map (x)
-  (if (atom x)
-      nil
-    (cons (gcd$op (car x))
-          (q10-gcd$op-map (cdr x)))))
-
-(defthm len-of-q10-gcd$op-map
-  (equal (len (q10-gcd$op-map x))
-         (len x)))
-
-(defthm q10-gcd$op-map-of-append
-  (equal (q10-gcd$op-map (append x y))
-         (append (q10-gcd$op-map x) (q10-gcd$op-map y))))
-
-;; The extraction function for Q10-GCD that extracts the future output
-;; sequence from the current state.
+;; The extraction function for Q10-GCD that extracts the future output sequence
+;; from the current state.
 
 (defund q10-gcd$extract (st)
   (b* ((l   (get-field *q10-gcd$l* st))
        (q10  (get-field *q10-gcd$q10* st))
        (gcd (get-field *q10-gcd$gcd* st)))
     (append
-     (q10-gcd$op-map
+     (gcd$op-map
       (append (queue10$extract q10)
               (extract-valid-data (list l))))
      (gcd$extract gcd))))
@@ -528,8 +512,8 @@
                           (nth *q10-gcd$l* st))
                      '(t))
               (not (queue10$out-act (q10-gcd$q10-inputs inputs st data-width)
-                                   (nth *q10-gcd$q10* st)
-                                   (* 2 data-width))))
+                                    (nth *q10-gcd$q10* st)
+                                    (* 2 data-width))))
      :hints (("Goal"
               :in-theory (e/d (get-field
                                q10-gcd$q10-inputs)
@@ -574,10 +558,10 @@
                                         gcd$data-in)))))
 
   (local
-   (defthm q10-gcd$op-map-of-append-instance
-     (equal (q10-gcd$op-map (append x (list (strip-cars d))))
-            (append (q10-gcd$op-map x)
-                    (q10-gcd$op-map (list (strip-cars d)))))))
+   (defthm gcd$op-map-of-append-instance
+     (equal (gcd$op-map (append x (list (strip-cars d))))
+            (append (gcd$op-map x)
+                    (gcd$op-map (list (strip-cars d)))))))
 
   (defthm q10-gcd$extracted-step-correct
     (b* ((next-st (q10-gcd$step inputs st data-width)))
@@ -605,7 +589,7 @@
                               q10-gcd$extract)
                              (q10-gcd$input-format=>q10$input-format
                               q10-gcd$input-format=>gcd$input-format
-                              q10-gcd$op-map-of-append
+                              gcd$op-map-of-append
                               nfix)))))
   )
 
@@ -657,5 +641,5 @@
 
 ;; The multi-step input-output relationship
 
-(in-out-stream-lemma q10-gcd :op t :inv t)
+(in-out-stream-lemma q10-gcd :op gcd$op :inv t)
 

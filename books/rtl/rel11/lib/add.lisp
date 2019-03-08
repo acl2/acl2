@@ -34,7 +34,7 @@
   :rule-classes ())
 
 (defthm add-2
-    (implies (and (natp x) (natp y))
+    (implies (and (integerp x) (integerp y))
 	     (equal (+ x y)
 		    (+ (logxor x y)
 		       (* 2 (logand x y)))))
@@ -50,9 +50,9 @@
   :rule-classes ())
 
 (defthm add-3
-    (implies (and (natp x)
-		  (natp y)
-		  (natp z))
+    (implies (and (integerp x)
+		  (integerp y)
+		  (integerp z))
 	     (= (+ x y z)
 		(+ (logxor x (logxor y z))
 		   (* 2 (logior (logand x y)
@@ -61,13 +61,16 @@
   :rule-classes ())
 
 (defthmd lutz-lemma
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
             (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
                  (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n)))))))
 
 (defun rc-carry (x y k)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y)
+                              (natp k))))
   (if (zp k)
       0
     (logior (logand (bitn x (1- k)) (bitn y (1- k)))
@@ -75,6 +78,9 @@
 		    (logand (bitn y (1- k)) (rc-carry x y (1- k)))))))
 
 (defun rc-sum (x y k)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y)
+                              (natp k))))
   (if (zp k)
       0
     (cat (logxor (bitn x (1- k))
@@ -84,15 +90,17 @@
 	 (1- k))))
 
 (defthm ripple-carry
-  (implies (and (natp x)
-                (natp y)
+  (implies (and (integerp x)
+                (integerp y)
                 (natp n))
            (equal (+ (bits x (1- n) 0) (bits y (1- n) 0))
                   (cat (rc-carry x y n) 1 (rc-sum x y n) n)))
   :rule-classes ())
 
 (defun gen (x y i j)
-  (declare (xargs :measure (nfix (1+ i))))
+  (declare (xargs :measure (nfix (1+ i))
+                  :guard (and (integerp x)
+                              (integerp y))))
   (if (and (natp i) (natp j) (>= i j))
       (if (= (bitn x i) (bitn y i))
 	  (bitn x i)
@@ -100,7 +108,9 @@
     0))
 
 (defun prop (x y i j)
-  (declare (xargs :measure (nfix (1+ i))))
+  (declare (xargs :measure (nfix (1+ i))
+                  :guard (and (integerp x)
+                              (integerp y))))
   (if (and (natp i) (natp j) (>= i j))
       (if (= (bitn x i) (bitn y i))
 	  0
@@ -118,7 +128,7 @@
                  (:forward-chaining :trigger-terms ((prop x y i j)))))
 
 (defthmd gen-val
-  (implies (and (natp j) (>= i j))
+  (implies (natp j)
            (equal (gen x y i j)
                   (if (>= (+ (bits x i j) (bits y i j))
                           (expt 2 (1+ (- i j))))
@@ -132,9 +142,8 @@
 			(1+ (- i j))))))
 
 (defthmd gen-val-cor2
-  (implies (and (natp x)
-                (natp y)
-		(natp i))
+  (implies (and (integerp x)
+                (integerp y))
            (equal (+ (bits x i 0) (bits y i 0))
 		  (+ (* (expt 2 (1+ i)) (gen x y i 0))
 		     (bits (+ x y) i 0)))))
@@ -161,8 +170,8 @@
   (implies (and (natp i)
                 (natp j)
                 (<= j i)
-                (natp x)
-                (natp y))
+                (integerp x)
+                (integerp y))
            (equal (prop x y i j)
                   (if (equal (logxor (bits x i j) (bits y i j))
                              (1- (expt 2 (1+ (- i j)))))
@@ -183,8 +192,8 @@
   :rule-classes ())
 
 (defthm gen-extend-cor
-  (implies (and (natp x)
-                (natp y)
+  (implies (and (integerp x)
+                (integerp y)
                 (natp i)
                 (natp j)
                 (natp k)
@@ -233,7 +242,7 @@
 
 (defthmd bits-sum-swallow
   (implies (and (equal (bitn x k) 0)
-                (natp x)
+                (integerp x)
                 (natp y)
                 (integerp i)
                 (integerp j)
@@ -303,10 +312,10 @@
   :rule-classes ())
 
 (defthmd gen-plus
-  (implies (and (natp x)
-                (natp y)
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
 		(natp k)
-		(bvecp z (1+ k))
 		(= (logand z y) 0)
 		(= (gen x y k 0) 1))
 	   (equal (gen (+ x y) z k 0) 0)))
@@ -315,9 +324,9 @@
     (implies (and (natp i)
 		  (natp j)
 		  (> i j)
-		  (natp x)
-		  (natp y)
-		  (bvecp z (1+ j))
+		  (integerp x)
+		  (integerp y)
+                  (bvecp z (1+ j))
 		  (= (logand y z) 0))
 	     (equal (gen (+ x y) z i 0)
 		    (logand (prop x y i (1+ j))
@@ -330,11 +339,21 @@
 
 (defsection-rtl |Leading One Prediction| |Addition|
 
-(defund p0 (a b) (logxor a b))
+(defund p0 (a b)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b))))
+  (logxor a b))
 
-(defund k0 (a b n) (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
+(defund k0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
+  (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
 
 (defund w0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
   (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
 
 (defthm lza-thm
@@ -364,9 +383,7 @@
 (defsection-rtl |Trailing One Prediction| |Addition|
 
 (defthm top-thm-1
-  (implies (and (natp n)
-                (natp k)
-                (< k n)
+  (implies (and (natp k)
                 (integerp a)
                 (integerp b))
            (equal (equal (bits (+ a b 1) k 0) 0)

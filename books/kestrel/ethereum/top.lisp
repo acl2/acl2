@@ -14,7 +14,7 @@
 ; the order of the subtopics of the ETHEREUM topic below:
 (include-book "basics")
 (include-book "crypto")
-(include-book "rlp")
+(include-book "rlp/top")
 (include-book "hex-prefix")
 (include-book "mmp-trees")
 

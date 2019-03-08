@@ -57,8 +57,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
   ;; Note that the reg field serves as an opcode extension for this
@@ -92,7 +91,7 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -100,7 +99,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -141,19 +140,19 @@
 
        (x86
         (if (equal product-high 0)
-            (let* ((x86 (!flgi #.*cf* 0 x86))
-                   (x86 (!flgi-undefined #.*pf* x86))
-                   (x86 (!flgi-undefined #.*af* x86))
-                   (x86 (!flgi-undefined #.*zf* x86))
-                   (x86 (!flgi-undefined #.*sf* x86))
-                   (x86 (!flgi #.*of* 0 x86)))
+            (let* ((x86 (!flgi :cf 0 x86))
+                   (x86 (!flgi-undefined :pf x86))
+                   (x86 (!flgi-undefined :af x86))
+                   (x86 (!flgi-undefined :zf x86))
+                   (x86 (!flgi-undefined :sf x86))
+                   (x86 (!flgi :of 0 x86)))
               x86)
-          (let* ((x86 (!flgi #.*cf* 1 x86))
-                 (x86 (!flgi-undefined #.*pf* x86))
-                 (x86 (!flgi-undefined #.*af* x86))
-                 (x86 (!flgi-undefined #.*zf* x86))
-                 (x86 (!flgi-undefined #.*sf* x86))
-                 (x86 (!flgi #.*of* 1 x86)))
+          (let* ((x86 (!flgi :cf 1 x86))
+                 (x86 (!flgi-undefined :pf x86))
+                 (x86 (!flgi-undefined :af x86))
+                 (x86 (!flgi-undefined :zf x86))
+                 (x86 (!flgi-undefined :sf x86))
+                 (x86 (!flgi :of 1 x86)))
             x86)))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -167,8 +166,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
   ;; Note that the reg field serves as an opcode extension for this
@@ -202,7 +200,7 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -210,7 +208,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -250,12 +248,12 @@
              x86))))
 
        (x86
-        (let* ((x86 (!flgi #.*cf* cf-and-of x86))
-               (x86 (!flgi-undefined #.*pf* x86))
-               (x86 (!flgi-undefined #.*af* x86))
-               (x86 (!flgi-undefined #.*zf* x86))
-               (x86 (!flgi-undefined #.*sf* x86))
-               (x86 (!flgi #.*of* cf-and-of x86)))
+        (let* ((x86 (!flgi :cf cf-and-of x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :zf x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi :of cf-and-of x86)))
           x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -264,8 +262,7 @@
 (def-inst x86-imul-Op/En-RM
   :parents (two-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
 
@@ -291,7 +288,7 @@
        ((the (integer 1 8) reg/mem-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -299,7 +296,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -334,12 +331,12 @@
                     x86))
 
        (x86
-        (let* ((x86 (!flgi #.*cf* cf-and-of x86))
-               (x86 (!flgi-undefined #.*pf* x86))
-               (x86 (!flgi-undefined #.*af* x86))
-               (x86 (!flgi-undefined #.*zf* x86))
-               (x86 (!flgi-undefined #.*sf* x86))
-               (x86 (!flgi #.*of* cf-and-of x86)))
+        (let* ((x86 (!flgi :cf cf-and-of x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :zf x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi :of cf-and-of x86)))
           x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -349,8 +346,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d () (force (force))))))
 
   :long
@@ -392,7 +388,7 @@
               2
             4)))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -400,7 +396,7 @@
             (the (unsigned-byte 3) increment-RIP-by)
             (the (signed-byte 64) ?addr)
             x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -439,12 +435,12 @@
                     x86))
 
        (x86
-        (let* ((x86 (!flgi #.*cf* cf-and-of x86))
-               (x86 (!flgi-undefined #.*pf* x86))
-               (x86 (!flgi-undefined #.*af* x86))
-               (x86 (!flgi-undefined #.*zf* x86))
-               (x86 (!flgi-undefined #.*sf* x86))
-               (x86 (!flgi #.*of* cf-and-of x86)))
+        (let* ((x86 (!flgi :cf cf-and-of x86))
+               (x86 (!flgi-undefined :pf x86))
+               (x86 (!flgi-undefined :af x86))
+               (x86 (!flgi-undefined :zf x86))
+               (x86 (!flgi-undefined :sf x86))
+               (x86 (!flgi :of cf-and-of x86)))
           x86))
 
        (x86 (write-*ip proc-mode temp-rip x86)))

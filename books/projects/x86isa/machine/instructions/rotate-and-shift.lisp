@@ -66,14 +66,13 @@
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
   :guard (not (equal (modr/m->reg modr/m) 6))
   :guard-hints (("Goal"
-                 :in-theory (e/d () 
+                 :in-theory (e/d ()
                                  (unsigned-byte-p
                                   not force (force)))))
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory
                          (e/d ()
                               (trunc
@@ -156,11 +155,11 @@
        ((the (integer 0 8) ?reg/mem-size)
         (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0 ?reg/mem (the (unsigned-byte 3) increment-RIP-by) addr x86)
-        (x86-operand-from-modr/m-and-sib-bytes$
+        (x86-operand-from-modr/m-and-sib-bytes
          proc-mode #.*gpr-access* reg/mem-size inst-ac?
          nil ;; Not a memory pointer operand
          seg-reg p4? temp-rip rex-byte r/m mod sib
@@ -245,7 +244,7 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg2 x86)
-        (x86-operand-to-reg/mem$ proc-mode reg/mem-size
+        (x86-operand-to-reg/mem proc-mode reg/mem-size
                                  inst-ac?
                                  nil ;; Not a memory pointer operand
                                  ;; TO-DO@Shilpi: Remove this trunc.

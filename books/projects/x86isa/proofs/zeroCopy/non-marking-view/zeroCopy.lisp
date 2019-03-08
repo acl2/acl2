@@ -195,10 +195,10 @@
 
 (define pml4t-base-addr (x86)
   :enabled t
-  (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12)
+  (ash (cr3Bits->pdb (ctri *cr3* x86)) 12)
   ///
 
-  (defthm-usb n52p-of-pml4t-base-addr
+  (defthm-unsigned-byte-p n52p-of-pml4t-base-addr
     :hyp (x86p x86)
     :bound #.*physical-address-size*
     :concl (pml4t-base-addr x86))
@@ -238,7 +238,7 @@
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d* () ()))))
 
-(def-gl-export pml4-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl pml4-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (logtail 40 cr3) 0) ;; MBZ
             (unsigned-byte-p 64 cr3))
@@ -248,7 +248,7 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat cr3 64))))
 
-(def-gl-export page-dir-ptr-table-entry-addr-to-C-program-optimized-form
+(defthm-using-gl page-dir-ptr-table-entry-addr-to-C-program-optimized-form
   :hyp (and (canonical-address-p v-addr)
             (equal (loghead 12 base-addr) 0)
             (unsigned-byte-p #.*physical-address-size* base-addr))
@@ -258,7 +258,7 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat v-addr 64) (:nat base-addr 64))))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-1
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-1
   :hyp (and (equal (part-select entry :low 7 :width 1) 1)
             (equal (part-select entry :low 0 :width 1) 1)
             (unsigned-byte-p 64 entry))
@@ -266,7 +266,7 @@
   :g-bindings
   (gl::auto-bindings (:nat entry 64)))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-2
   :hyp (and (equal (part-select source-entry :low 7 :width 1) 1)
             (equal (part-select source-entry :low 0 :width 1) 1)
             (equal (part-select destination-entry :low 7 :width 1) 1)
@@ -284,7 +284,7 @@
   :g-bindings
   (gl::auto-bindings (:mix (:nat destination-entry 64) (:nat source-entry 64))))
 
-(def-gl-export page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-3
+(defthm-using-gl page-dir-ptr-table-entry-P=1-and-PS=1-zf-spec-helper-3
   :hyp (and (unsigned-byte-p 64 source-entry)
             (unsigned-byte-p 64 destination-entry))
   :concl (equal
@@ -386,11 +386,9 @@
    (equal
     (loghead
      1
-     (logext
-      64
-      (mv-nth
-       1
-       (rb 8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4t-base-addr x86)) :r x86))))
+     (mv-nth
+      1
+      (rb 8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4t-base-addr x86)) :r x86)))
     1)))
 
 (defun-nx source-PDPTE-ok-p (x86)
@@ -449,14 +447,12 @@
    (equal
     (loghead
      1
-     (logext
-      64
-      (mv-nth
-       1
-       (rb
-        8
-        (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4t-base-addr x86))
-        :r x86))))
+     (mv-nth
+      1
+      (rb
+       8
+       (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4t-base-addr x86))
+       :r x86)))
     1)))
 
 (defun-nx destination-PDPTE-ok-p (x86)
@@ -800,11 +796,7 @@
     (:definition byte-listp)
     (:rewrite unsigned-byte-p-of-ash)
     (:rewrite bitops::normalize-logbitp-when-mods-equal)
-    (:rewrite bitops::logbitp-of-negative-const)
-    (:rewrite bitops::logbitp-of-mask)
-    (:rewrite bitops::logbitp-of-const)
     (:rewrite greater-logbitp-of-unsigned-byte-p . 1)
-    (:meta bitops::open-logbitp-of-const-lite-meta)
     (:rewrite car-of-append)
     (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
     (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
@@ -867,766 +859,726 @@
     unsigned-byte-p
     force (force)))
 
-(local
- (defthm unsigned-byte-p-1-bool->bit
-   ;; Since I keep unsigned-byte-p disabled, I need this lemma to
-   ;; resolve the hyp of FLGI-!FLGI.
-   (unsigned-byte-p 1 (acl2::bool->bit x))))
-
 (defthm rewire_dst_to_src-effects
   (implies (rewire_dst_to_src-assumptions x86)
            (equal (x86-run (rewire_dst_to_src-clk) x86)
-                  (xw
-                   :rgf *rax* 1
-                   (xw
-                    :rgf *rcx*
+                  (XW
+                   :RGF *RAX* 1
+                   (XW
+                    :RGF *RCX*
                     (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4t-base-addr x86))
-                    ;; (logior (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                    ;;         (logand 4088
-                    ;;                 (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                    (xw
-                     :rgf *rdx*
-                     (logand
+                    ;; (LOGIOR (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                    ;;         (LOGAND 4088
+                    ;;                 (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                    (XW
+                     :RGF *RDX*
+                     (LOGAND
                       4503598553628672
-                      (logior
-                       (logand
+                      (LOGIOR
+                       (LOGAND
                         -4503598553628673
-                        (logext
+                        (LOGEXT
                          64
-                         (mv-nth
+                         (MV-NTH
                           1
-                          (rb
+                          (RB
                            8
                            (page-dir-ptr-table-entry-addr
                             (xr :rgf *rsi* x86)
                             (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                           ;; (logior
-                           ;;  (logand 4088
-                           ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                           ;;  (ash
-                           ;;   (loghead
+                           ;; (LOGIOR
+                           ;;  (LOGAND 4088
+                           ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                           ;;  (ASH
+                           ;;   (LOGHEAD
                            ;;    40
-                           ;;    (logtail
+                           ;;    (LOGTAIL
                            ;;     12
-                           ;;     (mv-nth
+                           ;;     (MV-NTH
                            ;;      1
-                           ;;      (rb
+                           ;;      (RB
                            ;;       8
-                           ;;       (logior
-                           ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                           ;;        (logand 4088
-                           ;;                (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                           ;;       :r x86))))
+                           ;;       (LOGIOR
+                           ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                           ;;        (LOGAND 4088
+                           ;;                (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                           ;;       :R X86))))
                            ;;   12))
-                           :r x86))))
-                       (logand
+                           :R X86))))
+                       (LOGAND
                         4503598553628672
-                        (logext
+                        (LOGEXT
                          64
-                         (mv-nth
+                         (MV-NTH
                           1
-                          (rb
+                          (RB
                            8
                            (page-dir-ptr-table-entry-addr
                             (xr :rgf *rdi* x86)
                             (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                           ;; (logior
-                           ;;  (logand 4088
-                           ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                           ;;  (ash
-                           ;;   (loghead
+                           ;; (LOGIOR
+                           ;;  (LOGAND 4088
+                           ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                           ;;  (ASH
+                           ;;   (LOGHEAD
                            ;;    40
-                           ;;    (logtail
+                           ;;    (LOGTAIL
                            ;;     12
-                           ;;     (mv-nth
+                           ;;     (MV-NTH
                            ;;      1
-                           ;;      (rb
+                           ;;      (RB
                            ;;       8
-                           ;;       (logior
-                           ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                           ;;        (logand 4088
-                           ;;                (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                           ;;       :r x86))))
+                           ;;       (LOGIOR
+                           ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                           ;;        (LOGAND 4088
+                           ;;                (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                           ;;       :R X86))))
                            ;;   12))
-                           :r x86))))))
-                     (xw
-                      :rgf *rsp* (+ 8 (xr :rgf *rsp* x86))
-                      (xw
-                       :rgf *rsi* 0
-                       (xw
-                        :rgf *rdi*
-                        (logand
+                           :R X86))))))
+                     (XW
+                      :RGF *RSP* (+ 8 (XR :RGF *RSP* X86))
+                      (XW
+                       :RGF *RSI* 0
+                       (XW
+                        :RGF *RDI*
+                        (LOGAND
                          4503598553628672
-                         (logext
+                         (LOGEXT
                           64
-                          (mv-nth
+                          (MV-NTH
                            1
-                           (rb
+                           (RB
                             8
                             (page-dir-ptr-table-entry-addr
                              (xr :rgf *rdi* x86)
                              (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-
-                            ;; (logior
-                            ;;  (logand 4088
-                            ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                            ;;  (ash
-                            ;;   (loghead
+                            ;; (LOGIOR
+                            ;;  (LOGAND 4088
+                            ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                            ;;  (ASH
+                            ;;   (LOGHEAD
                             ;;    40
-                            ;;    (logtail
+                            ;;    (LOGTAIL
                             ;;     12
-                            ;;     (mv-nth
+                            ;;     (MV-NTH
                             ;;      1
-                            ;;      (rb
+                            ;;      (RB
                             ;;       8
-                            ;;       (logior
-                            ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                            ;;        (logand 4088
-                            ;;                (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                            ;;       :r x86))))
+                            ;;       (LOGIOR
+                            ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                            ;;        (LOGAND 4088
+                            ;;                (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                            ;;       :R X86))))
                             ;;   12))
-                            :r x86))))
-                        (xw
-                         :rgf *r8* 1099511627775
-                         (xw
-                          :rgf *r9*
-                          (logand
+                            :R X86))))
+                        (XW
+                         :RGF *R8* 1099511627775
+                         (XW
+                          :RGF *R9*
+                          (LOGAND
                            4503598553628672
-                           (logext
+                           (LOGEXT
                             64
-                            (mv-nth
+                            (MV-NTH
                              1
-                             (rb
+                             (RB
                               8
                               (page-dir-ptr-table-entry-addr
                                (xr :rgf *rdi* x86)
                                (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                              ;; (logior
-                              ;;  (logand 4088
-                              ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                              ;;  (ash
-                              ;;   (loghead
+                              ;; (LOGIOR
+                              ;;  (LOGAND 4088
+                              ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                              ;;  (ASH
+                              ;;   (LOGHEAD
                               ;;    40
-                              ;;    (logtail
+                              ;;    (LOGTAIL
                               ;;     12
-                              ;;     (mv-nth
+                              ;;     (MV-NTH
                               ;;      1
-                              ;;      (rb
+                              ;;      (RB
                               ;;       8
-                              ;;       (logior
-                              ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                              ;;        (logand 4088
-                              ;;                (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                              ;;       :r x86))))
+                              ;;       (LOGIOR
+                              ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                              ;;        (LOGAND 4088
+                              ;;                (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                              ;;       :R X86))))
                               ;;   12))
-                              :r x86))))
-                          (xw
-                           :rip 0
-                           (logext 64 (mv-nth 1 (rb 8 (xr :rgf *rsp* x86) :r x86)))
-                           (xw
-                            :undef 0 (+ 46 (nfix (xr :undef 0 x86)))
-                            (!flgi
-                             *cf*
-                             (bool->bit
-                              (<
-                               (logand
-                                4503598553628672
-                                (mv-nth
-                                 1
-                                 (rb
-                                  8
-                                  (page-dir-ptr-table-entry-addr
-                                   (xr :rgf *rdi* x86)
-                                   (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                  ;; (logior
-                                  ;;  (logand 4088
-                                  ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                  ;;  (ash
-                                  ;;   (loghead
-                                  ;;    40
-                                  ;;    (logtail
-                                  ;;     12
-                                  ;;     (mv-nth
-                                  ;;      1
-                                  ;;      (rb
-                                  ;;       8
-                                  ;;       (logior
-                                  ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                  ;;        (logand
-                                  ;;         4088
-                                  ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                  ;;       :r x86))))
-                                  ;;   12))
-                                  :r x86)))
-                               (logand
-                                4503598553628672
-                                (logior
-                                 (logand
-                                  18442240475155922943
-                                  (mv-nth
-                                   1
-                                   (rb
-                                    8
-                                    (page-dir-ptr-table-entry-addr
-                                     (xr :rgf *rsi* x86)
-                                     (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                    ;; (logior
-                                    ;;  (logand 4088
-                                    ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                    ;;  (ash
-                                    ;;   (loghead
-                                    ;;    40
-                                    ;;    (logtail
-                                    ;;     12
-                                    ;;     (mv-nth
-                                    ;;      1
-                                    ;;      (rb
-                                    ;;       8
-                                    ;;       (logior
-                                    ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                    ;;        (logand
-                                    ;;         4088
-                                    ;;         (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                    ;;       :r x86))))
-                                    ;;   12))
-                                    :r x86)))
-                                 (logand
-                                  4503598553628672
-                                  (mv-nth
-                                   1
-                                   (rb
-                                    8
-                                    (page-dir-ptr-table-entry-addr
-                                     (xr :rgf *rdi* x86)
-                                     (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                    ;; (logior
-                                    ;;  (logand 4088
-                                    ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                    ;;  (ash
-                                    ;;   (loghead
-                                    ;;    40
-                                    ;;    (logtail
-                                    ;;     12
-                                    ;;     (mv-nth
-                                    ;;      1
-                                    ;;      (rb
-                                    ;;       8
-                                    ;;       (logior
-                                    ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                    ;;        (logand
-                                    ;;         4088
-                                    ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                    ;;       :r x86))))
-                                    ;;   12))
-                                    :r x86)))))))
-                             (!flgi
-                              *pf*
-                              (pf-spec64
-                               (loghead
+                              :R X86))))
+                          (XW
+                           :RIP 0
+                           (LOGEXT 64
+                                   (MV-NTH 1 (RB 8 (XR :RGF *RSP* X86) :R X86)))
+                           (XW
+                            :UNDEF 0 (+ 46 (NFIX (XR :UNDEF 0 X86)))
+                            (XW
+                             :RFLAGS 0
+                             (RFLAGSBITS
+                              (BOOL->BIT
+                               (<
+                                (LOGAND
+                                 4503598553628672
+                                 (MV-NTH
+                                  1
+                                  (RB
+                                   8
+                                   (LOGIOR
+                                    (LOGAND 4088
+                                            (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                    (ASH
+                                     (LOGHEAD
+                                      40
+                                      (LOGTAIL
+                                       12
+                                       (MV-NTH
+                                        1
+                                        (RB
+                                         8
+                                         (LOGIOR
+                                          (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                          (LOGAND
+                                           4088
+                                           (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                         :R X86))))
+                                     12))
+                                   :R X86)))
+                                (LOGAND
+                                 4503598553628672
+                                 (LOGIOR
+                                  (LOGAND
+                                   18442240475155922943
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           8
+                                           (LOGIOR
+                                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                           :R X86))))
+                                       12))
+                                     :R X86)))
+                                  (LOGAND
+                                   4503598553628672
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           8
+                                           (LOGIOR
+                                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                           :R X86))))
+                                       12))
+                                     :R X86)))))))
+                              (RFLAGSBITS->RES1 (XR :RFLAGS 0 X86))
+                              (PF-SPEC64
+                               (LOGHEAD
                                 64
                                 (+
-                                 (logand
+                                 (LOGAND
                                   4503598553628672
-                                  (logext
+                                  (LOGEXT
                                    64
-                                   (mv-nth
+                                   (MV-NTH
                                     1
-                                    (rb
+                                    (RB
                                      8
-                                     (page-dir-ptr-table-entry-addr
-                                      (xr :rgf *rdi* x86)
-                                      (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                     ;; (logior
-                                     ;;  (logand 4088
-                                     ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                     ;;  (ash
-                                     ;;   (loghead
-                                     ;;    40
-                                     ;;    (logtail
-                                     ;;     12
-                                     ;;     (mv-nth
-                                     ;;      1
-                                     ;;      (rb
-                                     ;;       8
-                                     ;;       (logior
-                                     ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                     ;;        (logand
-                                     ;;         4088
-                                     ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                     ;;       :r x86))))
-                                     ;;   12))
-                                     :r x86))))
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           8
+                                           (LOGIOR
+                                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                           :R X86))))
+                                       12))
+                                     :R X86))))
                                  (-
-                                  (logand
+                                  (LOGAND
                                    4503598553628672
-                                   (logior
-                                    (logand
+                                   (LOGIOR
+                                    (LOGAND
                                      -4503598553628673
-                                     (logext
+                                     (LOGEXT
                                       64
-                                      (mv-nth
+                                      (MV-NTH
                                        1
-                                       (rb
+                                       (RB
                                         8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rsi* x86)
-                                         (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86))))
-                                    (logand
+                                        (LOGIOR
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                         (ASH
+                                          (LOGHEAD
+                                           40
+                                           (LOGTAIL
+                                            12
+                                            (MV-NTH
+                                             1
+                                             (RB
+                                              8
+                                              (LOGIOR
+                                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                              :R X86))))
+                                          12))
+                                        :R X86))))
+                                    (LOGAND
                                      4503598553628672
-                                     (logext
+                                     (LOGEXT
                                       64
-                                      (mv-nth
+                                      (MV-NTH
                                        1
-                                       (rb
+                                       (RB
                                         8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rdi* x86)
-                                         (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86))))))))))
-                              (!flgi
-                               *af*
-                               (sub-af-spec64
-                                (logand
+                                        (LOGIOR
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                         (ASH
+                                          (LOGHEAD
+                                           40
+                                           (LOGTAIL
+                                            12
+                                            (MV-NTH
+                                             1
+                                             (RB
+                                              8
+                                              (LOGIOR
+                                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                              :R X86))))
+                                          12))
+                                        :R X86))))))))))
+                              (RFLAGSBITS->RES2 (XR :RFLAGS 0 X86))
+                              (SUB-AF-SPEC64
+                               (LOGAND
+                                4503598553628672
+                                (MV-NTH
+                                 1
+                                 (RB
+                                  8
+                                  (LOGIOR
+                                   (LOGAND 4088
+                                           (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                   (ASH
+                                    (LOGHEAD
+                                     40
+                                     (LOGTAIL
+                                      12
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        8
+                                        (LOGIOR
+                                         (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                        :R X86))))
+                                    12))
+                                  :R X86)))
+                               (LOGAND
+                                4503598553628672
+                                (LOGIOR
+                                 (LOGAND
+                                  18442240475155922943
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    8
+                                    (LOGIOR
+                                     (LOGAND 4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          8
+                                          (LOGIOR
+                                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                          :R X86))))
+                                      12))
+                                    :R X86)))
+                                 (LOGAND
+                                  4503598553628672
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    8
+                                    (LOGIOR
+                                     (LOGAND 4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          8
+                                          (LOGIOR
+                                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                          :R X86))))
+                                      12))
+                                    :R X86))))))
+                              (RFLAGSBITS->RES3 (XR :RFLAGS 0 X86))
+                              1
+                              (SF-SPEC64
+                               (LOGHEAD
+                                64
+                                (+
+                                 (LOGAND
+                                  4503598553628672
+                                  (LOGEXT
+                                   64
+                                   (MV-NTH
+                                    1
+                                    (RB
+                                     8
+                                     (LOGIOR
+                                      (LOGAND 4088
+                                              (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                      (ASH
+                                       (LOGHEAD
+                                        40
+                                        (LOGTAIL
+                                         12
+                                         (MV-NTH
+                                          1
+                                          (RB
+                                           8
+                                           (LOGIOR
+                                            (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                            (LOGAND
+                                             4088
+                                             (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                           :R X86))))
+                                       12))
+                                     :R X86))))
+                                 (-
+                                  (LOGAND
+                                   4503598553628672
+                                   (LOGIOR
+                                    (LOGAND
+                                     -4503598553628673
+                                     (LOGEXT
+                                      64
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        8
+                                        (LOGIOR
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                         (ASH
+                                          (LOGHEAD
+                                           40
+                                           (LOGTAIL
+                                            12
+                                            (MV-NTH
+                                             1
+                                             (RB
+                                              8
+                                              (LOGIOR
+                                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                              :R X86))))
+                                          12))
+                                        :R X86))))
+                                    (LOGAND
+                                     4503598553628672
+                                     (LOGEXT
+                                      64
+                                      (MV-NTH
+                                       1
+                                       (RB
+                                        8
+                                        (LOGIOR
+                                         (LOGAND
+                                          4088
+                                          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                         (ASH
+                                          (LOGHEAD
+                                           40
+                                           (LOGTAIL
+                                            12
+                                            (MV-NTH
+                                             1
+                                             (RB
+                                              8
+                                              (LOGIOR
+                                               (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                               (LOGAND
+                                                4088
+                                                (LOGHEAD
+                                                 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                              :R X86))))
+                                          12))
+                                        :R X86))))))))))
+                              (RFLAGSBITS->TF (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->INTF (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->DF (XR :RFLAGS 0 X86))
+                              (OF-SPEC64
+                               (+
+                                (LOGAND
                                  4503598553628672
-                                 (mv-nth
+                                 (LOGEXT
+                                  64
+                                  (MV-NTH
+                                   1
+                                   (RB
+                                    8
+                                    (LOGIOR
+                                     (LOGAND 4088
+                                             (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                     (ASH
+                                      (LOGHEAD
+                                       40
+                                       (LOGTAIL
+                                        12
+                                        (MV-NTH
+                                         1
+                                         (RB
+                                          8
+                                          (LOGIOR
+                                           (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                           (LOGAND
+                                            4088
+                                            (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                          :R X86))))
+                                      12))
+                                    :R X86))))
+                                (-
+                                 (LOGAND
+                                  4503598553628672
+                                  (LOGIOR
+                                   (LOGAND
+                                    -4503598553628673
+                                    (LOGEXT
+                                     64
+                                     (MV-NTH
+                                      1
+                                      (RB
+                                       8
+                                       (LOGIOR
+                                        (LOGAND
+                                         4088
+                                         (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                        (ASH
+                                         (LOGHEAD
+                                          40
+                                          (LOGTAIL
+                                           12
+                                           (MV-NTH
+                                            1
+                                            (RB
+                                             8
+                                             (LOGIOR
+                                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                              (LOGAND
+                                               4088
+                                               (LOGHEAD
+                                                28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                             :R X86))))
+                                         12))
+                                       :R X86))))
+                                   (LOGAND
+                                    4503598553628672
+                                    (LOGEXT
+                                     64
+                                     (MV-NTH
+                                      1
+                                      (RB
+                                       8
+                                       (LOGIOR
+                                        (LOGAND
+                                         4088
+                                         (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                        (ASH
+                                         (LOGHEAD
+                                          40
+                                          (LOGTAIL
+                                           12
+                                           (MV-NTH
+                                            1
+                                            (RB
+                                             8
+                                             (LOGIOR
+                                              (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                              (LOGAND
+                                               4088
+                                               (LOGHEAD
+                                                28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                             :R X86))))
+                                         12))
+                                       :R X86)))))))))
+                              (RFLAGSBITS->IOPL (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->NT (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RES4 (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RF (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->VM (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->AC (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->VIF (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->VIP (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->ID (XR :RFLAGS 0 X86))
+                              (RFLAGSBITS->RES5 (XR :RFLAGS 0 X86)))
+                             (MV-NTH
+                              1
+                              (WB
+                               8
+                               (page-dir-ptr-table-entry-addr
+                                (xr :rgf *rsi* x86)
+                                (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+                               ;; (LOGIOR
+                               ;;  (LOGAND 4088
+                               ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                               ;;  (ASH
+                               ;;   (LOGHEAD
+                               ;;    40
+                               ;;    (LOGTAIL
+                               ;;     12
+                               ;;     (MV-NTH
+                               ;;      1
+                               ;;      (RB
+                               ;;       8
+                               ;;       (LOGIOR
+                               ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                               ;;        (LOGAND 4088
+                               ;;                (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                               ;;       :R X86))))
+                               ;;   12))
+                               :W
+                               (LOGIOR
+                                (LOGAND
+                                 18442240475155922943
+                                 (MV-NTH
                                   1
-                                  (rb
+                                  (RB
+                                   8
+                                   (page-dir-ptr-table-entry-addr
+                                    (xr :rgf *rsi* x86)
+                                    (pdpt-base-addr (xr :rgf *rsi* x86) x86))
+                                   ;; (LOGIOR
+                                   ;;  (LOGAND 4088
+                                   ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RSI* X86))))
+                                   ;;  (ASH
+                                   ;;   (LOGHEAD
+                                   ;;    40
+                                   ;;    (LOGTAIL
+                                   ;;     12
+                                   ;;     (MV-NTH
+                                   ;;      1
+                                   ;;      (RB
+                                   ;;       8
+                                   ;;       (LOGIOR
+                                   ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   ;;        (LOGAND
+                                   ;;         4088
+                                   ;;         (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RSI* X86)))))
+                                   ;;       :R X86))))
+                                   ;;   12))
+                                   :R X86)))
+                                (LOGAND
+                                 4503598553628672
+                                 (MV-NTH
+                                  1
+                                  (RB
                                    8
                                    (page-dir-ptr-table-entry-addr
                                     (xr :rgf *rdi* x86)
                                     (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                   ;; (logior
-                                   ;;  (logand 4088
-                                   ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                   ;;  (ash
-                                   ;;   (loghead
+                                   ;; (LOGIOR
+                                   ;;  (LOGAND 4088
+                                   ;;          (LOGHEAD 32 (LOGTAIL 27 (XR :RGF *RDI* X86))))
+                                   ;;  (ASH
+                                   ;;   (LOGHEAD
                                    ;;    40
-                                   ;;    (logtail
+                                   ;;    (LOGTAIL
                                    ;;     12
-                                   ;;     (mv-nth
+                                   ;;     (MV-NTH
                                    ;;      1
-                                   ;;      (rb
+                                   ;;      (RB
                                    ;;       8
-                                   ;;       (logior
-                                   ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                   ;;        (logand
+                                   ;;       (LOGIOR
+                                   ;;        (LOGAND -4096 (LOGEXT 64 (XR :CTR *CR3* X86)))
+                                   ;;        (LOGAND
                                    ;;         4088
-                                   ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                   ;;       :r x86))))
+                                   ;;         (LOGHEAD 28 (LOGTAIL 36 (XR :RGF *RDI* X86)))))
+                                   ;;       :R X86))))
                                    ;;   12))
-                                   :r x86)))
-                                (logand
-                                 4503598553628672
-                                 (logior
-                                  (logand
-                                   18442240475155922943
-                                   (mv-nth
-                                    1
-                                    (rb
-                                     8
-                                     (page-dir-ptr-table-entry-addr
-                                      (xr :rgf *rsi* x86)
-                                      (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                     ;; (logior
-                                     ;;  (logand 4088
-                                     ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                     ;;  (ash
-                                     ;;   (loghead
-                                     ;;    40
-                                     ;;    (logtail
-                                     ;;     12
-                                     ;;     (mv-nth
-                                     ;;      1
-                                     ;;      (rb
-                                     ;;       8
-                                     ;;       (logior
-                                     ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                     ;;        (logand
-                                     ;;         4088
-                                     ;;         (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                     ;;       :r x86))))
-                                     ;;   12))
-                                     :r x86)))
-                                  (logand
-                                   4503598553628672
-                                   (mv-nth
-                                    1
-                                    (rb
-                                     8
-                                     (page-dir-ptr-table-entry-addr
-                                      (xr :rgf *rdi* x86)
-                                      (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                     ;; (logior
-                                     ;;  (logand 4088
-                                     ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                     ;;  (ash
-                                     ;;   (loghead
-                                     ;;    40
-                                     ;;    (logtail
-                                     ;;     12
-                                     ;;     (mv-nth
-                                     ;;      1
-                                     ;;      (rb
-                                     ;;       8
-                                     ;;       (logior
-                                     ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                     ;;        (logand
-                                     ;;         4088
-                                     ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                     ;;       :r x86))))
-                                     ;;   12))
-                                     :r x86))))))
-                               (!flgi
-                                *zf* 1
-                                (!flgi
-                                 *sf*
-                                 (sf-spec64
-                                  (loghead
-                                   64
-                                   (+
-                                    (logand
-                                     4503598553628672
-                                     (logext
-                                      64
-                                      (mv-nth
-                                       1
-                                       (rb
-                                        8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rdi* x86)
-                                         (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86))))
-                                    (-
-                                     (logand
-                                      4503598553628672
-                                      (logior
-                                       (logand
-                                        -4503598553628673
-                                        (logext
-                                         64
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           8
-                                           (page-dir-ptr-table-entry-addr
-                                            (xr :rgf *rsi* x86)
-                                            (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                           ;; (logior
-                                           ;;  (logand
-                                           ;;   4088
-                                           ;;   (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                           ;;  (ash
-                                           ;;   (loghead
-                                           ;;    40
-                                           ;;    (logtail
-                                           ;;     12
-                                           ;;     (mv-nth
-                                           ;;      1
-                                           ;;      (rb
-                                           ;;       8
-                                           ;;       (logior
-                                           ;;        (logand
-                                           ;;         -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                           ;;        (logand
-                                           ;;         4088
-                                           ;;         (loghead
-                                           ;;          28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                           ;;       :r x86))))
-                                           ;;   12))
-                                           :r x86))))
-                                       (logand
-                                        4503598553628672
-                                        (logext
-                                         64
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           8
-                                           (page-dir-ptr-table-entry-addr
-                                            (xr :rgf *rdi* x86)
-                                            (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                           ;; (logior
-                                           ;;  (logand
-                                           ;;   4088
-                                           ;;   (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                           ;;  (ash
-                                           ;;   (loghead
-                                           ;;    40
-                                           ;;    (logtail
-                                           ;;     12
-                                           ;;     (mv-nth
-                                           ;;      1
-                                           ;;      (rb
-                                           ;;       8
-                                           ;;       (logior
-                                           ;;        (logand
-                                           ;;         -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                           ;;        (logand
-                                           ;;         4088
-                                           ;;         (loghead
-                                           ;;          28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                           ;;       :r x86))))
-                                           ;;   12))
-                                           :r x86))))))))))
-                                 (!flgi
-                                  *of*
-                                  (of-spec64
-                                   (+
-                                    (logand
-                                     4503598553628672
-                                     (logext
-                                      64
-                                      (mv-nth
-                                       1
-                                       (rb
-                                        8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rdi* x86)
-                                         (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86))))
-                                    (-
-                                     (logand
-                                      4503598553628672
-                                      (logior
-                                       (logand
-                                        -4503598553628673
-                                        (logext
-                                         64
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           8
-                                           (page-dir-ptr-table-entry-addr
-                                            (xr :rgf *rsi* x86)
-                                            (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                           ;; (logior
-                                           ;;  (logand
-                                           ;;   4088
-                                           ;;   (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                           ;;  (ash
-                                           ;;   (loghead
-                                           ;;    40
-                                           ;;    (logtail
-                                           ;;     12
-                                           ;;     (mv-nth
-                                           ;;      1
-                                           ;;      (rb
-                                           ;;       8
-                                           ;;       (logior
-                                           ;;        (logand
-                                           ;;         -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                           ;;        (logand
-                                           ;;         4088
-                                           ;;         (loghead
-                                           ;;          28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                           ;;       :r x86))))
-                                           ;;   12))
-                                           :r x86))))
-                                       (logand
-                                        4503598553628672
-                                        (logext
-                                         64
-                                         (mv-nth
-                                          1
-                                          (rb
-                                           8
-                                           (page-dir-ptr-table-entry-addr
-                                            (xr :rgf *rdi* x86)
-                                            (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                           ;; (logior
-                                           ;;  (logand
-                                           ;;   4088
-                                           ;;   (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                           ;;  (ash
-                                           ;;   (loghead
-                                           ;;    40
-                                           ;;    (logtail
-                                           ;;     12
-                                           ;;     (mv-nth
-                                           ;;      1
-                                           ;;      (rb
-                                           ;;       8
-                                           ;;       (logior
-                                           ;;        (logand
-                                           ;;         -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                           ;;        (logand
-                                           ;;         4088
-                                           ;;         (loghead
-                                           ;;          28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                           ;;       :r x86))))
-                                           ;;   12))
-                                           :r x86)))))))))
-                                  (mv-nth
-                                   1
-                                   (wb
-                                    8
-                                    (page-dir-ptr-table-entry-addr
-                                     (xr :rgf *rsi* x86)
-                                     (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                    ;; (logior
-                                    ;;  (logand 4088
-                                    ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                    ;;  (ash
-                                    ;;   (loghead
-                                    ;;    40
-                                    ;;    (logtail
-                                    ;;     12
-                                    ;;     (mv-nth
-                                    ;;      1
-                                    ;;      (rb
-                                    ;;       8
-                                    ;;       (logior
-                                    ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                    ;;        (logand
-                                    ;;         4088
-                                    ;;         (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                    ;;       :r x86))))
-                                    ;;   12))
-                                    :w
-                                    (logior
-                                     (logand
-                                      18442240475155922943
-                                      (mv-nth
-                                       1
-                                       (rb
-                                        8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rsi* x86)
-                                         (pdpt-base-addr (xr :rgf *rsi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rsi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rsi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86)))
-                                     (logand
-                                      4503598553628672
-                                      (mv-nth
-                                       1
-                                       (rb
-                                        8
-                                        (page-dir-ptr-table-entry-addr
-                                         (xr :rgf *rdi* x86)
-                                         (pdpt-base-addr (xr :rgf *rdi* x86) x86))
-                                        ;; (logior
-                                        ;;  (logand 4088
-                                        ;;          (loghead 32 (logtail 27 (xr :rgf *rdi* x86))))
-                                        ;;  (ash
-                                        ;;   (loghead
-                                        ;;    40
-                                        ;;    (logtail
-                                        ;;     12
-                                        ;;     (mv-nth
-                                        ;;      1
-                                        ;;      (rb
-                                        ;;       8
-                                        ;;       (logior
-                                        ;;        (logand -4096 (logext 64 (xr :ctr *cr3* x86)))
-                                        ;;        (logand
-                                        ;;         4088
-                                        ;;         (loghead 28 (logtail 36 (xr :rgf *rdi* x86)))))
-                                        ;;       :r x86))))
-                                        ;;   12))
-                                        :r x86))))
-                                    (mv-nth 1
-                                            (wb 8 (+ -24 (xr :rgf *rsp* x86))
-                                                :w (xr :ctr *cr3* x86)
-                                                x86))))))))))))))))))))))
+                                   :R X86))))
+                               (MV-NTH 1
+                                       (WB 8 (+ -24 (XR :RGF *RSP* X86))
+                                           :W (XR :CTR *CR3* X86)
+                                           X86)))))))))))))))))
   :hints (("Goal"
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
+                             cr3bits->pdb
+                             segment-selectorbits->rpl
+
                              x86-operation-mode
                              shr-spec
                              shr-spec-64
@@ -1642,18 +1594,15 @@
                              one-byte-opcode-execute
                              two-byte-opcode-decode-and-execute
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              x86-effective-addr-when-64-bit-modep
                              x86-effective-addr-32/64
                              x86-effective-addr-from-sib
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              rr08 rr32 rr64 wr08 wr32 wr64
                              riml08 riml32 riml64
                              rme-size wme-size
                              rime-size wime-size
-                             !flgi-undefined
                              write-user-rflags
                              pos
                              member-p
@@ -1671,7 +1620,7 @@
 (encapsulate
   ()
 
-  (def-gl-export rb-and-rm-low-64-for-direct-map-helper
+  (defthm-using-gl rb-and-rm-low-64-for-direct-map-helper
     :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
               (n08p e) (n08p f) (n08p g) (n08p h))
     :concl (equal (logior a (ash b 8)
@@ -1695,7 +1644,7 @@
      (:mix (:nat a 8) (:nat b 8) (:nat c 8) (:nat d 8)
            (:nat e 8) (:nat f 8) (:nat g 8) (:nat h 8))))
 
-  (def-gl-export rml64-direct-map-helper
+  (defthm-using-gl rml64-direct-map-helper
     :hyp (and (n08p a) (n08p b) (n08p c) (n08p d)
               (n08p e) (n08p f) (n08p g) (n08p h))
     :concl (equal
@@ -1799,7 +1748,8 @@
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
-                             ia32e-la-to-pa-page-dir-ptr-table)
+                             ia32e-la-to-pa-page-dir-ptr-table
+                             ia32e-pdpte-1gb-pagebits->page)
                             (wb
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
@@ -1868,7 +1818,8 @@
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
-                             ia32e-la-to-pa-pml4-table)
+                             ia32e-la-to-pa-pml4-table
+                             ia32e-pml4ebits->pdpt)
                             (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask
@@ -1932,10 +1883,10 @@
   :hints (("Goal"
            :use ((:instance
                   ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                  (base-addr (ash (cr3-slice :cr3-pdb (ctri *cr3* x86)) 12))
-                  (wp (cr0-slice :cr0-wp (n32 (ctri *cr0* x86))))
+                  (base-addr (ash (cr3Bits->pdb (ctri *cr3* x86)) 12))
+                  (wp (cr0Bits->wp (n32 (ctri *cr0* x86))))
                   (smep (loghead 1 (bool->bit (logbitp 20 (xr :ctr *cr4* x86)))))
-                  (smap 0)
+                  (smap (loghead 1 (bool->bit (logbitp 21 (xr :ctr *cr4* x86)))))
                   (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
                   (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))
                   (r-w-x r-w-x)
@@ -1944,7 +1895,14 @@
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
-                             ia32e-la-to-pa)
+                             ia32e-la-to-pa
+                             cr3bits->pdb
+                             cr0bits->wp
+                             cr4bits->smep
+                             cr4bits->smap
+                             ia32_eferbits->nxe
+                             segment-selectorbits->rpl
+                             rflagsbits->ac)
                             (ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
@@ -2018,7 +1976,7 @@
                              not
                              force (force))))))
 
-(def-gl-export same-pml4-table-entry-addr-for-n-+-lin-addrs
+(defthm-using-gl same-pml4-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (physical-address-p pml4t-base-addr)
             (canonical-address-p lin-addr)
             (unsigned-byte-p 30 n)
@@ -2030,7 +1988,7 @@
   (gl::auto-bindings
    (:mix (:nat pml4t-base-addr 64) (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export same-pdp-table-entry-addr-for-n-+-lin-addrs
+(defthm-using-gl same-pdp-table-entry-addr-for-n-+-lin-addrs
   :hyp (and (unsigned-byte-p 30 n)
             (physical-address-p pdpt-base-addr)
             (canonical-address-p lin-addr)
@@ -2043,7 +2001,7 @@
   (gl::auto-bindings
    (:mix (:nat pdpt-base-addr 64) (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n-1
+(defthm-using-gl loghead-30-of-1G-aligned-lin-addr-+-n-1
   :hyp (and (canonical-address-p lin-addr)
             (canonical-address-p (+ n lin-addr))
             (equal (loghead 30 lin-addr) 0)
@@ -2051,7 +2009,7 @@
   :concl (equal (loghead 30 (+ n lin-addr)) n)
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export loghead-30-of-1G-aligned-lin-addr-+-n-2
+(defthm-using-gl loghead-30-of-1G-aligned-lin-addr-+-n-2
   :hyp (and (equal (loghead 30 (+ n lin-addr)) n)
             (canonical-address-p (+ n lin-addr))
             (canonical-address-p lin-addr)
@@ -2059,7 +2017,7 @@
   :concl (equal (loghead 30 lin-addr) 0)
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat n 64))))
 
-(def-gl-export logior-to-+-for-ash-x-30
+(defthm-using-gl logior-to-+-for-ash-x-30
   :hyp (and (unsigned-byte-p 22 x)
             (unsigned-byte-p 30 n))
   :concl (equal (logior n (ash x 30)) (+ n (ash x 30)))
@@ -2135,7 +2093,8 @@
                    wp smep smap ac nxe r-w-x cpl x86))
           nil))
   :hints (("Goal"
-           :in-theory (e/d* (ia32e-la-to-pa-pml4-table)
+           :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                             ia32e-pml4ebits->pdpt)
                             (commutativity-of-+
                              not
                              pml4-table-entry-addr-to-c-program-optimized-form
@@ -2174,7 +2133,7 @@
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              bitops::logand-with-negated-bitmask)))))
 
-(def-gl-export open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
+(defthm-using-gl open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
   :hyp (and (< iteration m)
             (canonical-address-p lin-addr)
             (canonical-address-p (+ -1 lin-addr m))
@@ -2186,7 +2145,7 @@
               (canonical-address-p (+ iteration lin-addr)))
   :g-bindings (gl::auto-bindings (:mix (:nat lin-addr 64) (:nat iteration 64) (:nat m 64))))
 
-(def-gl-export open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
+(defthm-using-gl open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
   :hyp (and (< iteration m)
             (integerp m)
             (<= m 1073741824)
@@ -2194,7 +2153,7 @@
   :concl (unsigned-byte-p 30 iteration)
   :g-bindings (gl::auto-bindings (:mix (:nat iteration 64) (:nat m 64))))
 
-(def-gl-export canonical-address-p-of-last-address-of-page
+(defthm-using-gl canonical-address-p-of-last-address-of-page
   :hyp (and (canonical-address-p lin-addr)
             (equal (loghead 30 lin-addr) 0))
   :concl (canonical-address-p (+ -1 *2^30* lin-addr))
@@ -2356,7 +2315,8 @@
                                  (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr)
                                  x86)))
               30))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table)
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table
+                                    ia32e-pdpte-1gb-pagebits->page)
                                    (commutativity-of-+
                                     not
                                     page-dir-ptr-table-entry-addr-to-c-program-optimized-form
@@ -2406,7 +2366,8 @@
                                  x86)))
               30))))
   :hints (("Goal"
-           :in-theory (e/d* (ia32e-la-to-pa-pml4-table)
+           :in-theory (e/d* (ia32e-la-to-pa-pml4-table
+                             ia32e-pml4ebits->pdpt)
                             (commutativity-of-+
                              not
                              pml4-table-entry-addr-to-c-program-optimized-form
@@ -2836,7 +2797,7 @@
                              force (force)
                              not)))))
 
-(def-gl-export entry-attributes-unchanged-when-destination-PDPTE-modified
+(defthm-using-gl entry-attributes-unchanged-when-destination-PDPTE-modified
   :hyp (and (unsigned-byte-p 64 dest-pdpte)
             (unsigned-byte-p 64 src-pdpte))
   :concl (and
@@ -2862,16 +2823,17 @@
   (implies (and (not (app-view x86))
                 (not (marking-view x86)))
            (equal
-            (mv-nth 1 (rb *2^30* (xr :rgf *rdi* x86) :r x86))
+            (mv-nth 1 (rb n (xr :rgf *rdi* x86) :r x86))
             (read-from-physical-memory
-             (mv-nth 1 (las-to-pas *2^30* (xr :rgf *rdi* x86) :r x86)) x86)))
+             (mv-nth 1 (las-to-pas n (xr :rgf *rdi* x86) :r x86)) x86)))
   :hints (("Goal"
            :do-not '(preprocess)
            :do-not-induct t
            :in-theory (e/d* (rb-wb-equal-in-non-marking-view
                              pos member-p subset-p
                              page-size
-                             rb)
+                             rb
+                             mv-nth-2-las-to-pas-system-level-non-marking-view)
 
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
@@ -2885,6 +2847,20 @@
                              pml4-table-entry-addr-to-c-program-optimized-form-gl
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+
+                             acl2::ash-0
+                             acl2::zip-open
+                             acl2::member-of-cons
+                             open-mv-nth-0-las-to-pas-for-same-1g-page
+                             open-mv-nth-1-las-to-pas-for-same-1g-page
+                             rb-1
+                             car-mv-nth-1-las-to-pas
+                             (:linear mv-nth-1-idiv-spec)
+                             (:linear mv-nth-1-div-spec)
+                             (:rewrite acl2::equal-of-booleans-rewrite)
+                             (:linear acl2::expt->-1)
+                             (:rewrite acl2::loghead-identity)
+                             (:rewrite consp-mv-nth-1-las-to-pas)
 
                              not
                              bitops::logand-with-negated-bitmask
@@ -3017,6 +2993,49 @@
                              30))))
   :hints (("Goal"
            :use ((:instance las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+                            (pml4t-base-addr (pml4t-base-addr x86))
+                            (pml4-table-entry-addr
+                             (pml4-table-entry-addr (xr :rgf *rdi* x86)
+                                                    (pml4t-base-addr x86)))
+                            (pml4-table-entry
+                             (mv-nth 1 (rb 8 (pml4-table-entry-addr (xr :rgf *rdi* x86)
+                                                                    (pml4t-base-addr x86))
+                                           :r x86)))
+                            (pdpt-base-addr
+                             (ash (loghead 40
+                                           (logtail
+                                            12
+                                            (mv-nth 1 (rb
+                                                       8 (pml4-table-entry-addr (xr :rgf *rdi* x86)
+                                                                                (pml4t-base-addr x86))
+                                                       :r x86))))
+                                  12))
+                            (page-dir-ptr-table-entry-addr
+                             (page-dir-ptr-table-entry-addr
+                              (xr :rgf *rdi* x86)
+                              (ash (loghead 40
+                                            (logtail
+                                             12
+                                             (mv-nth 1 (rb
+                                                        8 (pml4-table-entry-addr (xr :rgf *rdi* x86)
+                                                                                 (pml4t-base-addr x86))
+                                                        :r x86))))
+                                   12)))
+                            (page-dir-ptr-table-entry
+                             (mv-nth 1
+                                     (rb
+                                      8
+                                      (page-dir-ptr-table-entry-addr
+                                       (xr :rgf *rdi* x86)
+                                       (ash (loghead 40
+                                                     (logtail
+                                                      12
+                                                      (mv-nth 1 (rb
+                                                                 8 (pml4-table-entry-addr (xr :rgf *rdi* x86)
+                                                                                          (pml4t-base-addr x86))
+                                                                 :r x86))))
+                                            12))
+                                      :r x86)))
                             (lin-addr (xr :rgf *rdi* x86))
                             (r-w-x :r)))
            :do-not '(preprocess)
@@ -3024,7 +3043,10 @@
            :in-theory (e/d* (pdpt-base-addr
                              pml4t-base-addr
                              pos
-                             page-size)
+                             page-size
+                             cr3bits->pdb
+                             segment-selectorbits->rpl
+                             ia32e-page-tablesbits->ps)
                             (rewire_dst_to_src-clk
                              (rewire_dst_to_src-clk)
                              addr-range
@@ -3068,43 +3090,47 @@
             ;; Source, before the copy:
             (mv-nth 1 (rb *2^30* (xr :rgf *rdi* x86) :r x86))))
   :hints (("Goal"
-           :do-not '(preprocess)
+           :do-not '(preprocess generalize fertilize)
            :do-not-induct t
-           :in-theory (e/d* (rb-wb-equal-in-non-marking-view
-                             pos
-                             pdpt-base-addr
-                             page-size)
-                            (rewire_dst_to_src-clk
-                             (rewire_dst_to_src-clk)
-                             addr-range
-                             (addr-range)
-                             size-of-rb
-                             pml4-table-entry-addr
-                             natp-pml4-table-entry-addr
-                             page-dir-ptr-table-entry-addr
-                             pml4-table-entry-addr-to-c-program-optimized-form
-                             pml4-table-entry-addr-to-c-program-optimized-form-gl
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
-                             disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
-                             acl2::consp-when-member-equal-of-atom-listp
-                             ia32e-la-to-pa-xw-state
-                             (:linear adding-7-to-pml4-table-entry-addr)
-                             (:linear *physical-address-size*p-pml4-table-entry-addr)
-                             ;; (:rewrite las-to-pas-xw-state)
-                             (:rewrite acl2::equal-of-booleans-rewrite)
-                             (:rewrite loghead-unequal)
-                             (:rewrite negative-logand-to-positive-logand-with-integerp-x)
-                             (:rewrite |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
-                             not
-                             unsigned-byte-p-of-logtail
-                             disjoint-p-subset-p
-                             acl2::loghead-identity
-                             acl2::ash-0
-                             acl2::zip-open
-                             acl2::logtail-identity
-                             bitops::logand-with-negated-bitmask
-                             unsigned-byte-p
-                             force (force))))))
+           :in-theory
+           (e/d* (rb-wb-equal-in-non-marking-view
+                  pos
+                  pdpt-base-addr
+                  page-size
+                  cr3bits->pdb
+                  ia32e-page-tablesbits->ps)
+                 (rewire_dst_to_src-clk
+                  (rewire_dst_to_src-clk)
+                  addr-range
+                  (addr-range)
+                  size-of-rb
+                  pml4-table-entry-addr
+                  natp-pml4-table-entry-addr
+                  page-dir-ptr-table-entry-addr
+                  pml4-table-entry-addr-to-c-program-optimized-form
+                  pml4-table-entry-addr-to-c-program-optimized-form-gl
+                  page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                  page-dir-ptr-table-entry-addr-to-c-program-optimized-form-gl
+                  disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
+                  acl2::consp-when-member-equal-of-atom-listp
+                  ia32e-la-to-pa-xw-state
+                  ash-monotone-2
+                  adding-7-to-pml4-table-entry-addr
+                  *physical-address-size*p-pml4-table-entry-addr
+                  (:r acl2::equal-of-booleans-rewrite)
+                  (:r loghead-unequal)
+                  (:r loghead-of-non-integerp)
+                  (:r negative-logand-to-positive-logand-with-integerp-x)
+                  (:r |(logand -4096 base-addr) = base-addr when low 12 bits are 0|)
+                  not
+                  unsigned-byte-p-of-logtail
+                  disjoint-p-subset-p
+                  acl2::loghead-identity
+                  acl2::ash-0
+                  acl2::zip-open
+                  acl2::logtail-identity
+                  bitops::logand-with-negated-bitmask
+                  unsigned-byte-p
+                  force (force))))))
 
 ;; ======================================================================

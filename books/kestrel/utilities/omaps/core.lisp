@@ -81,9 +81,6 @@
      using the theorems provided by this library.
      The current theorems are preliminary
      and could be improved and extended if needed.
-     As in osets, some omap operation definitions necessarily depend on
-     the underlying alist representations,
-     while others are defined solely in terms of other omap operations.
      The empty omap is @('nil'), like the empty oset;
      there is no separate operation for the empty omap,
      as there is none for the empty oset.")

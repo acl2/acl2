@@ -83,42 +83,31 @@
 (define get-string-name-of-simple-cell ((cell simple-cell-p))
   :guard-hints (("Goal" :do-not-induct t))
   :prepwork ((local (in-theory (e/d (simple-cell-p
-                                     simple-cell-aux-p
                                      basic-simple-cell-p
                                      basic-simple-cells-p)
                                     ()))))
   (if (basic-simple-cell-p cell)
       (get-string-name-of-basic-simple-cell cell)
-    (if (equal (car cell) ':ALT)
-        (b* ((rest (rest cell))
-             (alt-opcodes (car rest))
-             ((unless (alistp alt-opcodes))
+    (if (equal (car cell) ':EXT)
+        (b* ((ext-opcode-desc-list (rest cell))
+             ((unless (opcode-descriptor-list-p ext-opcode-desc-list))
+              (er hard? 'get-string-name-of-simple-cell
+                  "~%Expected to be opcode-descriptor-list-p: ~p0~%"
+                  ext-opcode-desc-list))
+             (desc-cells (strip-cdrs ext-opcode-desc-list))
+             ((unless (alistp desc-cells))
               (er hard? 'get-string-name-of-simple-cell
                   "~%Expected to be alist: ~p0~%"
-                  alt-opcodes))
-             (opcode-names (strip-cars alt-opcodes))
+                  desc-cells))
+             (opcode-names (strip-cars desc-cells))
              ((unless (string-listp opcode-names))
               (er hard? 'get-string-name-of-simple-cell
                   "~%Expected to be string-listp: ~p0~%"
                   opcode-names)))
           (str::fast-string-append-lst (insert-slash-in-list opcode-names)))
-      ;; (car cell) == :EXT
-      (b* ((ext-opcode-desc-list (rest cell))
-           ((unless (opcode-descriptor-list-p ext-opcode-desc-list))
-            (er hard? 'get-string-name-of-simple-cell
-                "~%Expected to be opcode-descriptor-list-p: ~p0~%"
-                ext-opcode-desc-list))
-           (desc-cells (strip-cdrs ext-opcode-desc-list))
-           ((unless (alistp desc-cells))
-            (er hard? 'get-string-name-of-simple-cell
-                "~%Expected to be alist: ~p0~%"
-                desc-cells))
-           (opcode-names (strip-cars desc-cells))
-           ((unless (string-listp opcode-names))
-            (er hard? 'get-string-name-of-simple-cell
-                "~%Expected to be string-listp: ~p0~%"
-                opcode-names)))
-        (str::fast-string-append-lst (insert-slash-in-list opcode-names)))))
+      (er hard? 'get-string-name-of-simple-cell
+          "~%This should've been unreachable!~% Cell: ~p0~%"
+          cell)))
 
   ///
 
@@ -342,6 +331,7 @@
                          #x0)))
          (mod         (cdr (assoc-equal :mod opcode-identifier)))
          (r/m         (cdr (assoc-equal :r/m opcode-identifier)))
+         (rex         (cdr (assoc-equal :rex opcode-identifier)))
          (condition
           `(and
             ;; ,@(if evex
@@ -365,7 +355,13 @@
             ,@(and r/m
                    `((equal (modr/m->r/m modr/m) ,r/m)))
             ,@(and prefix
-                   `((equal mandatory-prefix ,prefix-val)))))
+                   `((equal mandatory-prefix ,prefix-val)))
+            ,@(and rex
+                   ;; TODO: :w and :not-w are the only two REX-based conditions
+                   ;; right now.  See opcode-maps for details.
+                   (if (equal rex :w)
+                       `((logbitp #.*w* rex-byte))
+                     `((not (logbitp #.*w* rex-byte)))))))
          ((mv doc-string dispatch)
           (create-dispatch-from-no-extensions-simple-cell
            opcode-cell world))
@@ -382,7 +378,8 @@
                               ,@(and prefix `((:PFX  ,prefix)))
                               ,@(and reg    `((:REG  ,reg)))
                               ,@(and mod    `((:MOD  ,mod)))
-                              ,@(and r/m    `((:R/M  ,r/m))))
+                              ,@(and r/m    `((:R/M  ,r/m)))
+                              ,@(and rex    `((:REX  ,rex))))
                             :config *x86isa-printconfig*)
                            ;; (str::pretty (cdr condition) ;; remove the 'and
                            ;;              :config *x86isa-printconfig*)
@@ -466,7 +463,7 @@
 
   (cond ((or (not cell)
              (not (simple-cell-p cell)))
-         (mv "" '(nil)))
+         (mv "ILLEGAL SIMPLE CELL. ERROR!" '(nil)))
 
         (t
          (b* (((mv doc-string dispatch)
@@ -491,18 +488,16 @@
                         world
                         :escape-bytes escape-bytes)))
                    (mv doc-string dispatch)))
-                ((or
-                  (and (basic-simple-cell-p cell)
-                       (or (stringp (car cell))
-                           (member-equal (car cell)
-                                         *simple-cells-standalone-legal-keywords*)))
-                  (equal (car cell) ':ALT))
+                ((and (basic-simple-cell-p cell)
+                      (or (stringp (car cell))
+                          (member-equal (car cell)
+                                        *simple-cells-standalone-legal-keywords*)))
                  (b* (((mv doc-string dispatch)
                        (create-dispatch-from-no-extensions-simple-cell cell world))
                       (doc-string (concatenate 'string " <td> " doc-string " </td>")))
                    (mv doc-string dispatch)))
                 (t
-                 (mv "" '(nil)))))
+                 (mv "UNREACHABLE!" '(nil)))))
               (string-name-of-simple-cell
                (get-string-name-of-simple-cell cell))
               (doc-string
@@ -967,16 +962,16 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((equal (vex-vvvv-slice vex-prefixes) #b1111)))
-        ((:NDS :NDD :DDS) `((not (equal (vex-vvvv-slice vex-prefixes) #b1111))))
-        ((:128 :LZ :L0)   `((equal (vex-l-slice vex-prefixes) 0)))
-        ((:256 :L1)       `((equal (vex-l-slice vex-prefixes) 1)))
-        ((:no-prefix)     `((equal (vex-pp-slice vex-prefixes) 0)))
-        ((:66)            `((equal (vex-pp-slice vex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (vex-pp-slice vex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (vex-pp-slice vex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (vex-w-slice vex-prefixes) 0)))
-        ((:W1)            `((equal (vex-w-slice vex-prefixes) 1)))
+        (:UNUSED-VVVV     `((equal (vex->vvvv vex-prefixes) #b1111)))
+        ((:NDS :NDD :DDS) `((not (equal (vex->vvvv vex-prefixes) #b1111))))
+        ((:128 :LZ :L0)   `((equal (vex->l vex-prefixes) 0)))
+        ((:256 :L1)       `((equal (vex->l vex-prefixes) 1)))
+        ((:no-prefix)     `((equal (vex->pp vex-prefixes) 0)))
+        ((:66)            `((equal (vex->pp vex-prefixes) #.*v66*)))
+        ((:F3)            `((equal (vex->pp vex-prefixes) #.*vF3*)))
+        ((:F2)            `((equal (vex->pp vex-prefixes) #.*vF2*)))
+        ((:W0)            `((equal (vex->w vex-prefixes) 0)))
+        ((:W1)            `((equal (vex->w vex-prefixes) 1)))
         ;; I don't need :0F, :0F38, and :0F3A below because the
         ;; vex-decode-and-execute function deals with this already.
         ;; ((:0F)            `((vex-prefixes-map-p #x0F vex-prefixes)))
@@ -998,20 +993,20 @@
 
   (if (atom prefix-case)
       (case prefix-case
-        (:UNUSED-VVVV     `((and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                 (equal (evex-v-prime-slice evex-prefixes) #b1))))
+        (:UNUSED-VVVV     `((and (equal (evex->vvvv evex-prefixes) #b1111)
+                                 (equal (evex->v-prime evex-prefixes) #b1))))
         ((:NDS :NDD :DDS) `((not
-                             (and (equal (evex-vvvv-slice evex-prefixes) #b1111)
-                                  (equal (evex-v-prime-slice evex-prefixes) #b1)))))
-        ((:128 :LZ :L0)   `((equal (evex-vl/rc-slice evex-prefixes) 0)))
-        ((:256 :L1)       `((equal (evex-vl/rc-slice evex-prefixes) 1)))
-        (:512             `((equal (evex-vl/rc-slice evex-prefixes) 2)))
-        ((:no-prefix)     `((equal (evex-pp-slice evex-prefixes) 0)))
-        ((:66)            `((equal (evex-pp-slice evex-prefixes) #.*v66*)))
-        ((:F3)            `((equal (evex-pp-slice evex-prefixes) #.*vF3*)))
-        ((:F2)            `((equal (evex-pp-slice evex-prefixes) #.*vF2*)))
-        ((:W0)            `((equal (evex-w-slice evex-prefixes) 0)))
-        ((:W1)            `((equal (evex-w-slice evex-prefixes) 1)))
+                             (and (equal (evex->vvvv evex-prefixes) #b1111)
+                                  (equal (evex->v-prime evex-prefixes) #b1)))))
+        ((:128 :LZ :L0)   `((equal (evex->vl/rc evex-prefixes) 0)))
+        ((:256 :L1)       `((equal (evex->vl/rc evex-prefixes) 1)))
+        (:512             `((equal (evex->vl/rc evex-prefixes) 2)))
+        ((:no-prefix)     `((equal (evex->pp evex-prefixes) 0)))
+        ((:66)            `((equal (evex->pp evex-prefixes) #.*v66*)))
+        ((:F3)            `((equal (evex->pp evex-prefixes) #.*vF3*)))
+        ((:F2)            `((equal (evex->pp evex-prefixes) #.*vF2*)))
+        ((:W0)            `((equal (evex->w evex-prefixes) 0)))
+        ((:W1)            `((equal (evex->w evex-prefixes) 1)))
         ;; I don't need to account for :0F, :0F38, and :0F3A because the
         ;; evex-decode-and-execute function deals with this already.
         (otherwise

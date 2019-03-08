@@ -16,8 +16,6 @@
 
 (include-book "lextra")
 
-(include-book "fadd-extra")
-
 (include-book "float-extra")
 
 (include-book "round-extra")

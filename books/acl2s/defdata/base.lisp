@@ -420,7 +420,7 @@
 (defun nth-symbol-builtin (n)
   (declare (xargs :guard (natp n)))
                  ;:verify-guards nil)) 
-  (intern$ (nth-string-builtin n) "ACL2"))
+  (intern$ (nth-string-builtin n) "ACL2S"))
 
 ;; (defattach nth-symbol nth-symbol-builtin)
 

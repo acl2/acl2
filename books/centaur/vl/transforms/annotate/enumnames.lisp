@@ -36,6 +36,27 @@
 (local (include-book "std/basic/arith-equivs" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
+;; BOZO We can run into a problem with shadowcheck due to constructs like this:
+
+;; module foo ();
+
+;;   localparam width = 4;
+
+;;   typedef enum logic [width-1:0] {
+;;       a = 1;
+;;       b = 2;
+;;       c = 3;
+;;   } my_enum_type;
+
+;; endmodule
+
+;; because currently we put all the localparams derived from the enum at the
+;; beginning of the module, rather than in program order.
+
+;; We could fix this by either inserting them in program order or else doing
+;; this after shadowcheck.  Probably the only necessary fix to shadowcheck
+;; would be to track the names introduced by the enum.
+
 (defxdoc enum-names
   :parents (annotate)
   :short "Making sense of the names defined by enum types."
@@ -304,42 +325,27 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
 
   (define vl-genelementlist-enumname-declarations ((x vl-genelementlist-p))
     :returns (mv (warnings  vl-warninglist-p)
-                 (new-x     vl-genelementlist-p)
-                 (new-decls vl-paramdecllist-p))
+                 (new-x     vl-genelementlist-p))
     :measure (two-nats-measure (vl-genelementlist-count x) 0)
     (b* (((when (atom x))
-          (mv nil nil nil))
-         ((mv warnings new-car decls1)  (vl-genelement-enumname-declarations (car x)))
-         ((wmv warnings new-cdr decls2) (vl-genelementlist-enumname-declarations (cdr x))))
+          (mv nil nil))
+         ((mv warnings first)  (vl-genelement-enumname-declarations (car x)))
+         ((wmv warnings rest) (vl-genelementlist-enumname-declarations (cdr x))))
       (mv warnings
-          (cons new-car new-cdr)
-          (append-without-guard decls1 decls2))))
+          (append first rest))))
 
   (define vl-genblock-enumname-declarations ((x vl-genblock-p))
     :returns (mv (warnings  vl-warninglist-p)
                  (new-x     vl-genblock-p))
     :measure (two-nats-measure (vl-genblock-count x) 0)
     (b* (((vl-genblock x))
-         ((mv warnings new-elems new-decls) (vl-genelementlist-enumname-declarations x.elems))
-         (new-decls
-          ;; Remove duplicate decls because when we find something like:
-          ;;    enum { FOO, BAR } a, b;
-          ;; the declaration for "a" will try to introduce paramdecls for FOO
-          ;; and BAR, and so will the declaration for "b".  This will look like
-          ;; a name clash unless we remove the duplicates.
-          ;;
-          ;; Don't use mergesort to remove the dupes, because we want earlier
-          ;; declarations to come first, in case later declarations refer to
-          ;; them.
-          (remove-duplicates-equal (list-fix new-decls)))
-         (new-x (change-vl-genblock x :elems (append (vl-modelementlist->genelements new-decls)
-                                                     new-elems))))
+         ((mv warnings new-elems) (vl-genelementlist-enumname-declarations x.elems))
+         (new-x (change-vl-genblock x :elems new-elems)))
       (mv warnings new-x)))
 
   (define vl-genelement-enumname-declarations ((x vl-genelement-p))
     :returns (mv (warnings  vl-warninglist-p)
-                 (new-x     vl-genelement-p)
-                 (new-decls vl-paramdecllist-p))
+                 (new-elems     vl-genelementlist-p))
     :measure (two-nats-measure (vl-genelement-count x) 0)
     (vl-genelement-case x
       :vl-genbase
@@ -349,32 +355,41 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
               (:vl-typedef   (vl-typedef-enumname-declarations x.item))
               (:vl-vardecl   (vl-vardecl-enumname-declarations x.item))
               (otherwise     (mv x.item nil nil))))
-           (new-x (change-vl-genbase x :item new-item)))
-        (mv warnings new-x decls))
+           ;; Remove duplicate decls because when we find something like:
+          ;;    enum { FOO, BAR } a, b;
+          ;; the declaration for "a" will try to introduce paramdecls for FOO
+          ;; and BAR, and so will the declaration for "b".  This will look like
+          ;; a name clash unless we remove the duplicates.
+          ;;
+          ;; Don't use mergesort to remove the dupes, because we want earlier
+          ;; declarations to come first, in case later declarations refer to
+          ;; them.
+           (decls (remove-duplicates-equal (list-fix decls)))
+           (new-elems (cons (change-vl-genbase x :item new-item)
+                        (vl-modelementlist->genelements decls))))
+        (mv warnings new-elems))
       :vl-genbegin
       (b* (((mv warnings new-block) (vl-genblock-enumname-declarations x.block))
-           (new-x                   (change-vl-genbegin x :block new-block))
-           ;; The decls have already been added inside to the block.
-           (decls                   nil))
-        (mv warnings new-x decls))
+           (new-x                   (change-vl-genbegin x :block new-block)))
+        (mv warnings (list new-x)))
       :vl-genif
       (b* (((mv warnings then)  (vl-genblock-enumname-declarations x.then))
            ((wmv warnings else) (vl-genblock-enumname-declarations x.else))
            (new-x               (change-vl-genif x :then then :else else)))
-        (mv warnings new-x nil))
+        (mv warnings (list new-x)))
       :vl-gencase
       (b* (((mv warnings cases)    (vl-gencaselist-enumname-declarations x.cases))
            ((wmv warnings default) (vl-genblock-enumname-declarations x.default))
            (new-x                  (change-vl-gencase x :cases cases :default default)))
-        (mv warnings new-x nil))
+        (mv warnings (list new-x)))
       :vl-genloop
       (b* (((mv warnings body) (vl-genblock-enumname-declarations x.body))
            (new-x              (change-vl-genloop x :body body)))
-        (mv warnings new-x nil))
+        (mv warnings (list new-x)))
       :vl-genarray
       (b* (((mv warnings blocks) (vl-genblocklist-enumname-declarations x.blocks))
            (new-x                (change-vl-genarray x :blocks blocks)))
-        (mv warnings new-x nil))))
+        (mv warnings (list new-x)))))
 
   (define vl-gencaselist-enumname-declarations ((x vl-gencaselist-p))
     :returns (mv (warnings vl-warninglist-p)
@@ -404,13 +419,11 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-module-p)
   (b* (((vl-module x) (vl-module-fix x))
        ((unless x.parse-temps) x)
-       ((mv warnings items decls)
-        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps)))
-       (decls      (remove-duplicates-equal (list-fix decls)))
-       (decl-items (vl-modelementlist->genelements decls)))
+       ((mv warnings items)
+        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps))))
     ;; BOZO Enums first used in ports and paramports don't work yet
     (change-vl-module x
-                      :parse-temps (change-vl-parse-temps x.parse-temps :loaditems (append decl-items items))
+                      :parse-temps (change-vl-parse-temps x.parse-temps :loaditems items)
                       :warnings (append-without-guard warnings x.warnings))))
 
 (defprojection vl-modulelist-add-enumname-declarations ((x vl-modulelist-p))
@@ -421,13 +434,11 @@ found in the datatype of a variable, parameter, or typedef declaration.</p>")
   :returns (new-x vl-interface-p)
   (b* (((vl-interface x) (vl-interface-fix x))
        ((unless x.parse-temps) x)
-       ((mv warnings items decls)
-        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps)))
-       (decls      (remove-duplicates-equal (list-fix decls)))
-       (decl-items (vl-modelementlist->genelements decls)))
+       ((mv warnings items)
+        (vl-genelementlist-enumname-declarations (vl-parse-temps->loaditems x.parse-temps))))
     ;; BOZO Enums first used in ports and paramports don't work yet
     (change-vl-interface x
-                         :parse-temps (change-vl-parse-temps x.parse-temps :loaditems (append decl-items items))
+                         :parse-temps (change-vl-parse-temps x.parse-temps :loaditems items)
                          :warnings (append-without-guard warnings x.warnings))))
 
 (defprojection vl-interfacelist-add-enumname-declarations ((x vl-interfacelist-p))

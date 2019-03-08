@@ -218,15 +218,13 @@ fatal warnings instead of non-fatal warnings.</p>"
   :parents (vl-clean-warnings)
   :short "Mergesort warnings using @(see vl-warning-<)"
 
-  (ACL2::defsort :comparablep vl-warning-p
-                 :compare< vl-warning-<
-                 :prefix vl-warning)
-
-  ;; Ugh, stupid defsort.  I should be able to rename these functions.
-  (defthm vl-warning-list-p-is-vl-warninglist-p
-    (equal (vl-warning-list-p x)
-           (vl-warninglist-p x))
-    :hints(("Goal" :in-theory (enable vl-warning-list-p))))
+  (ACL2::defsort vl-warning-sort
+    :comparablep vl-warning-p
+    :compare< vl-warning-<
+    :prefix vl-warning
+    :comparable-listp vl-warninglist-p
+    :true-listp nil
+    :weak t)
 
   (defthm vl-warninglist-p-of-vl-warning-sort
     (implies (force (vl-warninglist-p x))
@@ -466,3 +464,6 @@ particular interest.</p>"
                             'vl::__tmp__warnings)
                          vl::warnings)))
        ,rest-expr)))
+
+
+

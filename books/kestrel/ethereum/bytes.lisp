@@ -23,11 +23,23 @@
     Unless otherwise stated, in the documentation of our Ethereum model,
     the unqualified `byte' denotes an 8-bit byte."))
 
-(fty::defbyte 8
-  :type byte
+(fty::defbyte byte 8
   :pred bytep
   :parents (bytes)
-  :description "bytes")
+  :short "Fixtype of bytes.")
+
+(defsection byte-fix-ext
+  :extension byte-fix
+
+  (defrule natp-of-byte-fix
+    (natp (byte-fix x))
+    :rule-classes :type-prescription
+    :enable byte-fix)
+
+  (defrule byte-fix-upper-bound
+    (< (byte-fix x) 256)
+    :rule-classes :linear
+    :enable (byte-fix bytep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,6 +53,26 @@
     We use true lists of @(see bytes)
     to model byte arrays in our Ethereum model."))
 
-(fty::defbytelist byte
+(fty::defbytelist byte-list byte
   :pred byte-listp
-  :parents (byte-arrays))
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays.")
+
+(defsection byte-listp-ext
+  :extension byte-listp
+
+  (defrule nat-listp-when-byte-listp
+    (implies (byte-listp bytes)
+             (nat-listp bytes))))
+
+(defsection byte-list-fix-ext
+  :extension byte-list-fix
+
+  (defrule car-of-byte-list-fix
+    (implies (consp x)
+             (equal (car (byte-list-fix x))
+                    (byte-fix (car x)))))
+
+  (defrule cdr-of-byte-list-fix
+    (equal (cdr (byte-list-fix x))
+           (byte-list-fix (cdr x)))))

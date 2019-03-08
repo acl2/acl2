@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -37,13 +38,17 @@
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ; Matt Kaufmann       <kaufmann@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/def-bound-theorems" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
+(include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
@@ -52,33 +57,7 @@
 
 (defsection utils
   :parents (x86isa)
-  :short "The books in this directory provide some supporting events
-  for the rest of the books in @('X86ISA')."
-
-  :long "<p>Include Order:</p>
-<table>
-
-<tr>
-<th> Book/Directory </th>
-<th> Corresponding Documentation Topic </th>
-</tr>
-
-<tr>
-<td> utilities.lisp </td>
-<td> @(see utilities) </td>
-</tr>
-
-<tr>
-<td> constants.lisp </td>
-<td> @(see x86-constants) </td>
-</tr>
-
-<tr>
-<td> records-0.lisp </td>
-<td> Doc topic coming soon! </td>
-</tr>
-
-</table>"
+  :short "Utilities for rest of the @('X86ISA') books"
   )
 
 (defsection utilities
@@ -91,313 +70,22 @@
 
   :parents (utilities)
   :short "Macro that can be used to create event names by
-  concatenating strings, symbols, and numbers."
-  :long "@(def mk-name)
-
-@(def string-concatenate)"
-
-  (defun string-cat (lst)
-    (declare (xargs :verify-guards nil))
-    (cond ((atom lst)
-           "")
-          ((stringp (car lst))
-           (string-append (str::upcase-string (car lst))
-                          (string-cat (cdr lst))))
-          ((symbolp (car lst))
-           (string-append (symbol-name (car lst))
-                          (string-cat (cdr lst))))
-          ((natp (car lst))
-           (string-append
-            (coerce (explode-nonnegative-integer (car lst) 10 '())
-                    'string)
-            (string-cat (cdr lst))))
-          (t
-           (string-cat (cdr lst)))))
-
-  (defmacro string-concatenate (&rest x)
-    `(string-cat (list ,@x)))
+  concatenating strings, symbols, numbers, and characters."
+  :long "@(def mk-name)"
 
   (defmacro mk-name (&rest x)
     ;; Note that the package is X86ISA here.
-    `(intern$ (string-concatenate ,@x) "X86ISA"))
-
-  (defmacro acl2-mk-name (&rest x)
-    ;; Note that intern, unlike the regular Lisp reader, is sensitive to
-    ;; case.
-    `(intern (string-concatenate ,@x) "ACL2"))
-
-  )
+    `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
 
 ;; ======================================================================
 
-(defsection proving-bounds
-  :parents (utilities)
+;; The following macro is useful to prove a theorem using GL in a book while
+;; including GL in that book only locally: the local GL::DEF-GL-RULEDL needs
+;; GL, but the non-local DEFTHM does not.  Note that GL::DEF-GL-RULEDL does not
+;; automatically include all of GL already.  This macro is more general than
+;; the x86 ISA model and could be moved to the GL library, perhaps renamed.
 
-  :short "Some helpful macros that generate appropriate rewrite,
-  type-prescription, and linear rules when needed"
-
-  :long "<ul>
-<li><p>Use the macro @('defthm-natp') to prove
-a @('type-prescription') rule saying that some function returns a @('natp'),
-and a @('linear') corollary saying that the function
-returns a value greater than or equal to zero.</p>
-
-<p>Usage:</p>
-
-@({
-
-  (defthm-natp <theorem-name>
-    :hyp <hypotheses>
-    :concl <conclusion>
-    :hints <usual ACL2 hints>)
-  })
-
-<p>The above form produces a theorem of the form:</p>
-
-@({
-  (defthm <theorem-name>
-    (implies <hypotheses>
-             (natp <conclusion>))
-    :hints <usual ACL2 hints>
-    :rule-classes
-    (:type-prescription
-     (:linear
-      :corollary
-      (implies <hypotheses>
-               (<= 0 <conclusion>))
-      :hints <usual ACL2 hints>)))
-
-  })
-
-</li>
-
-<li><p>Use the macro @('defthm-usb') to prove
-a @('rewrite') rule saying that some function returns an @('unsigned-byte-p'),
-a @('type-prescription') corollary saying that the function returns a @('natp'),
-and a @('linear') corollary saying that the function
-returns a value less than or equal to <tt>(expt 2 bound)</tt>.</p>
-
-<p>Usage:</p>
-
-@({
-
-  (defthm-usb <theorem-name>
-    :hyp <hypotheses>
-    :bound <n>
-    :concl <conclusion>
-    :hints <usual ACL2 hints for the main theorem>
-    :gen-type <t or nil>    ;; Generate :type-prescription corollary
-    :gen-linear <t or nil>  ;; Generate :linear corollary
-    :hyp-t <hypotheses for the :type-prescription corollary>
-    :hyp-l <hypotheses for the :linear corollary>
-    :hints-t <usual ACL2 hints for the :type-prescription corollary>
-    :hints-l <usual ACL2 hints for the :linear corollary>
-    :otf-flg <t or nil>)
-  })
-
-<p>The above form produces a theorem of the following form (if both
-@(':gen-type') and @(':gen-linear') are @('t')):</p>
-
-@({
-  (defthm <theorem-name>
-    (implies <hypotheses>
-             (unsigned-byte-p <n> <conclusion>))
-    :hints <usual ACL2 hints for the main theorem>
-    :otf-flg <t or nil>
-    :rule-classes
-    (:rewrite
-     (:type-prescription
-      :corollary
-      (implies <hypotheses for the :type-prescription corollary>
-               (natp <conclusion>))
-      :hints <usual ACL2 hints for the :type-prescription corollary>)
-     (:linear
-      :corollary
-      (implies <hypotheses for the :linear corollary>
-               (< <conclusion> (expt 2 <n>)))
-      :hints <usual ACL2 hints for the :linear corollary>)))
-
-  })
-
-</li>
-
-<li><p>Use the macro @('defthm-sb') to prove
-a @('rewrite') rule saying that some function returns a @('signed-byte-p'),
-a @('type-prescription') corollary saying that the function returns an
-@('integerp'), and a @('linear') corollary saying that the function
-returns a value greater than or equal to <tt>(- (expt 2 (1-
-bound)))</tt> and less than <tt>(expt 2 (1- bound))</tt>.</p>
-
-<p>Usage:</p>
-
-@({
-
-  (defthm-sb <theorem-name>
-    :hyp <hypotheses>
-    :bound <n>
-    :concl <conclusion>
-    :hints <usual ACL2 hints for the main theorem>
-    :gen-type <t or nil>    ;; Generate :type-prescription corollary
-    :gen-linear <t or nil>  ;; Generate :linear corollary
-    :hyp-t <hypotheses for the :type-prescription corollary>
-    :hyp-l <hypotheses for the :linear corollary>
-    :hints-t <usual ACL2 hints for the :type-prescription corollary>
-    :hints-l <usual ACL2 hints for the :linear corollary>
-    :otf-flg <t or nil>)
-  })
-
-<p>The above form produces a theorem of the form: (if both
-@(':gen-type') and @(':gen-linear') are @('t'))</p>
-
-@({
-  (defthm <theorem-name>
-    (implies <hypotheses>
-             (signed-byte-p <n> <conclusion>))
-    :hints <usual ACL2 hints for the main theorem>
-    :otf-flg <t or nil>
-    :rule-classes
-    (:rewrite
-     (:type-prescription
-      :corollary
-      (implies <hypotheses for the :type-prescription corollary>
-               (integerp <conclusion>))
-      :hints <usual ACL2 hints for the :type-prescription corollary>)
-     (:linear
-      :corollary
-      (implies <hypotheses for the :linear corollary>
-               (and (<= (- (expt 2 (1- <n>)) <conclusion>))
-               (< <conclusion> (expt 2 (1- <n>)))))
-      :hints <usual ACL2 hints for the :linear corollary>)))
-
-  })
-
-</li>
-
-</ul>"
-
-  ;; since corollaries must just follow from their theorems,
-  ;; it may be possible to generate simpler hints for the corollaries below
-
-  (defmacro defthm-natp (name &key hyp concl hints)
-    (if concl
-        `(defthm ,name
-           ,(if (atom hyp)
-                `(natp ,concl)
-              `(implies ,hyp (natp ,concl)))
-           ,@(and hints `(:hints ,hints))
-           :rule-classes
-           (:type-prescription
-            (:linear
-             :corollary
-             ,(if (atom hyp)
-                  `(<= 0 ,concl)
-                `(implies ,hyp (<= 0 ,concl)))
-             ,@(and hints `(:hints ,hints)))))
-      nil))
-
-  (defmacro defthm-usb
-      (name &key hyp bound concl
-            gen-type gen-linear
-            hyp-t hyp-l
-            hints
-            hints-t hints-l
-            otf-flg)
-
-    (if (and concl bound)
-        (let ((hints-t (or hints-t hints))
-              (hints-l (or hints-l hints))
-              (2^bound (if (natp bound)
-                           (expt 2 bound)
-                         `(expt 2 ,bound))))
-          `(defthm ,name
-             ,(if (atom hyp)
-                  `(unsigned-byte-p ,bound ,concl)
-                `(implies ,hyp
-                          (unsigned-byte-p ,bound ,concl)))
-             ,@(and hints `(:hints ,hints))
-             ,@(and otf-flg `(:otf-flg t))
-             :rule-classes
-             (:rewrite
-              ,@(and gen-type
-                     `((:type-prescription
-                        :corollary
-                        ,(if (or (and (atom hyp-t) (atom hyp))
-                                 (equal hyp-t 't))
-                             `(natp ,concl)
-                           `(implies ,(or hyp-t hyp)
-                                     (natp ,concl)))
-                        ,@(and hints-t `(:hints ,hints-t)))))
-              ,@(and gen-linear
-                     `((:linear
-                        :corollary
-                        ,(if (or (and (atom hyp-l) (atom hyp))
-                                 (equal hyp-l 't))
-                             `(< ,concl ,2^bound)
-                           `(implies ,(or hyp-l hyp)
-                                     (< ,concl ,2^bound)))
-                        ,@(and hints-l `(:hints ,hints-l))))))))
-      nil))
-  ;; no need to generate a (>= ... 0) linear rule so far
-
-  (defmacro defthm-sb
-      (name &key hyp bound concl
-            gen-type gen-linear
-            hyp-t hyp-l
-            hints
-            hints-t hints-l
-            otf-flg)
-
-    (if (and concl bound)
-        (let* ((hints-t (or hints-t hints))
-               (hints-l (or hints-l hints))
-               (2^bound-1 (if (natp bound)
-                              (expt 2 (1- bound))
-                            `(expt 2 (1- ,bound))))
-               (low-2^bound-1 (if (natp bound)
-                                  (- 2^bound-1)
-                                `(- (expt 2 (1- ,bound))))))
-          `(defthm ,name
-             ,(if (atom hyp)
-                  `(signed-byte-p ,bound ,concl)
-                `(implies ,hyp
-                          (signed-byte-p ,bound ,concl)))
-             ,@(and hints `(:hints ,hints))
-             ,@(and otf-flg `(:otf-flg t))
-             :rule-classes
-             (:rewrite
-              ,@(and gen-type
-                     `((:type-prescription
-                        :corollary
-                        ,(if (or (and (atom hyp-t) (atom hyp))
-                                 (equal hyp-t 't))
-                             `(integerp ,concl)
-                           `(implies ,(or hyp-t hyp)
-                                     (integerp ,concl)))
-                        ,@(and hints-t `(:hints ,hints-t)))))
-              ,@(and gen-linear
-                     `((:linear
-                        :corollary
-                        ,(if (or (and (atom hyp-l) (atom hyp))
-                                 (equal hyp-l 't))
-                             `(and
-                               (<= ,low-2^bound-1 ,concl)
-                               (< ,concl ,2^bound-1))
-                           `(implies ,(or hyp-l hyp)
-                                     (and
-                                      (<= ,low-2^bound-1 ,concl)
-                                      (< ,concl ,2^bound-1))))
-                        ,@(and hints-l `(:hints ,hints-l))))))))
-      nil)))
-
-;; Misc.:
-
-(defmacro defthml (&rest args)
-  `(local (defthm ,@args)))
-
-(defmacro defthmld (&rest args)
-  `(local (defthmd ,@args)))
-
-(defmacro def-gl-export
+(defmacro defthm-using-gl
   (name &key hyp concl g-bindings rule-classes)
 
   (if (and hyp concl g-bindings)
@@ -598,7 +286,8 @@ constants and functions; it also proves some associated lemmas.</p>"
         :no-function t
         :enabled t
         :parents (constants-conversions-and-bounds)
-        (logext ,n x))
+        (mbe :logic (logext ,n x)
+             :exec (bitops::fast-logext ,n x)))
 
      `(define ,ntoi
         :inline t
@@ -765,145 +454,6 @@ constants and functions; it also proves some associated lemmas.</p>"
 
 ;; =============================================================================
 
-(defsection slicing-operations
-  :parents (utilities)
-  :short "Definitions of @('slice') and @('!slice')"
-
-  :long "<p>Slicing functions @('slice') and @('!slice') open up to an
-@('MBE').  The @(':logic') part is defined using @(see part-select) or
-@(see part-install) and the @(':exec') is heavily type-declared for
-the sake of efficiency.</p>"
-
-  )
-
-(encapsulate
- ()
-
- (local (include-book "arithmetic/top-with-meta" :dir :system))
-
- (define layout-constant-alistp (alst position max-size)
-   :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
-   :guard (and (natp position)
-               (natp max-size))
-   :enabled t
-   :parents (slicing-operations)
-   (if (atom alst)
-       (null alst)
-     (let ((entry (car alst)))
-       (and (consp entry)
-            (consp (cdr entry))
-            (consp (cddr entry))
-            (null (cdddr entry))
-            (let ((key (car entry))
-                  (pos (cadr entry))
-                  (width (caddr entry)))
-              (and (or (keywordp key)
-                       (and (natp key)
-                            (or (= key 0)
-                                (= key 1))))
-                   (natp pos)
-                   (natp width)
-                   (= position pos)
-                   (<= (+ pos width) max-size)
-                   (layout-constant-alistp (cdr alst)
-                                           (+ pos width)
-                                           max-size)))))))
-
- (local
-  (defthm sanity-check-of-layout-constant-alistp
-    (layout-constant-alistp
-     ;; Example of a layout constant
-     '((0          0  3) ;; 0
-       (:cr3-pwt   3  1) ;; Page-Level Writes Tranparent
-       (:cr3-pcd   4  1) ;; Page-Level Cache Disable
-       (0          5  7) ;; 0
-       (:cr3-pdb  12 40) ;; Page Directory Base
-       (0         52 12) ;; Reserved (must be zero)
-       )
-     0 64)
-    :rule-classes nil))
-
- (define field-pos-width (flg layout-constant)
-   :parents (slicing-operations)
-   :enabled t
-   :short "Returns the position and width of @('flg'), given
-    @('layout-constant')"
-   (declare (xargs :guard (symbolp flg)))
-   (if (atom layout-constant)
-       (mv 0 (or (cw "field-pos-width:  Unknown flag:   ~p0.~%" flg) 0))
-     (let ((entry (car layout-constant)))
-       (if (not (and (consp entry)
-                     (consp (cdr entry))
-                     (consp (cddr entry))
-                     (null (cdddr entry))
-                     (or (symbolp (car entry))
-                         (natp    (car entry)))
-                     (natp (cadr entry))
-                     (natp (caddr entry))))
-           (mv 0 (or (cw "field-pos-width:  Entry malformed:   ~p0.~%" entry) 0))
-         (let ((name (car entry))
-               (pos  (cadr entry))
-               (width (caddr entry)))
-           (if (eq name flg)
-               (mv pos width)
-             (field-pos-width flg (cdr layout-constant))))))))
-
- (define slice (flg reg reg-width layout-constant)
-   :enabled t
-   :parents (slicing-operations)
-   :short "Used to define efficient bit-slice accessor forms for
-    reasoning and execution"
-   :guard (and (symbolp flg)
-               (natp reg-width)
-               (layout-constant-alistp layout-constant 0 reg-width))
-   :guard-hints (("Goal" :do-not '(preprocess simplify)))
-   (mv-let (pos size)
-           (field-pos-width flg layout-constant)
-           (let* ((pos (if (natp pos) pos 0))
-                  (size (if (natp size) size 0))
-                  (mask (1- (expt 2 size)))
-                  (reg-width-pos (- reg-width pos)))
-             `(mbe :logic (part-select ,reg :low ,pos :width ,size)
-                   :exec
-                   (the (unsigned-byte ,size)
-                     (logand (the (unsigned-byte ,size) ,mask)
-                             (the (unsigned-byte ,reg-width-pos)
-                               (ash
-                                (the (unsigned-byte ,reg-width) ,reg)
-                                (- ,pos)))))))))
-
- (define !slice (flg val reg reg-size layout-constant)
-   :guard (and (symbolp flg)
-               (natp reg-size))
-   :parents (slicing-operations)
-   :short "Used to define efficient bit-slice updater forms for
-    reasoning and execution"
-   (mv-let (pos size)
-           (field-pos-width flg layout-constant)
-           (let* ((mask (lognot (ash (logmask size) pos)))
-                  (size+pos (+ pos size))
-                  (mask-size (+ 1 size+pos)))
-             `(let ((reg-for-!slice-do-not-use
-                     (the (unsigned-byte ,reg-size) ,reg)))
-                (declare (type (unsigned-byte ,reg-size)
-                               reg-for-!slice-do-not-use))
-                (mbe :logic (part-install ,val reg-for-!slice-do-not-use
-                                          :low ,pos :width ,size)
-                     :exec (the (unsigned-byte ,reg-size)
-                             (logior
-                              (the (unsigned-byte ,reg-size)
-                                (logand
-                                 (the (unsigned-byte ,reg-size)
-                                   reg-for-!slice-do-not-use)
-                                 (the (signed-byte ,mask-size) ,mask)))
-                              (the (unsigned-byte ,size+pos)
-                                (ash (the (unsigned-byte ,size) ,val)
-                                     ,pos)))))))))
-
- ) ;; End of encapsulate
-
-;; ======================================================================
-
 (defsection globally-disabled-events
   :parents (utilities)
 
@@ -986,8 +536,149 @@ disabledp) recursively on the events in
   (defmacro show-globally-disabled-events-status ()
     `(disabledp-lst (show-globally-disabled-events-ruleset) 0 state))
 
-  (globally-disable '(logior logand logxor floor mod ash))
-
-  )
+  (globally-disable '(logior logand logxor floor mod ash)))
 
 ;; ======================================================================
+
+;; [Shilpi] slicing-operations are not needed anymore --- the :exec parts of
+;; the accessor and updater macros have been incorporated in the
+;; accessor/updater functions defined by centaur/fty/bitstruct.lisp.  So we now
+;; use bitstructs to define bitvector structures (previously referred to as
+;; "layout constants" in these books).
+
+;; (defsection slicing-operations
+;;   :parents (utilities)
+;;   :short "Definitions of @('slice') and @('!slice')"
+
+;;   :long "<p>Slicing functions @('slice') and @('!slice') open up to an
+;; @('MBE').  The @(':logic') part is defined using @(see part-select) or
+;; @(see part-install) and the @(':exec') is heavily type-declared for
+;; the sake of efficiency.</p>"
+
+;;   )
+
+;; (encapsulate
+;;  ()
+
+;;  (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+;;  (define layout-constant-alistp (alst position max-size)
+;;    :short "Recognizer for all the layout constants, i.e. contiguous bit fields"
+;;    :guard (and (natp position)
+;;                (natp max-size))
+;;    :enabled t
+;;    :parents (slicing-operations)
+;;    (if (atom alst)
+;;        (null alst)
+;;      (let ((entry (car alst)))
+;;        (and (consp entry)
+;;             (consp (cdr entry))
+;;             (consp (cddr entry))
+;;             (null (cdddr entry))
+;;             (let ((key (car entry))
+;;                   (pos (cadr entry))
+;;                   (width (caddr entry)))
+;;               (and (or (keywordp key)
+;;                        (and (natp key)
+;;                             (or (= key 0)
+;;                                 (= key 1))))
+;;                    (natp pos)
+;;                    (natp width)
+;;                    (= position pos)
+;;                    (<= (+ pos width) max-size)
+;;                    (layout-constant-alistp (cdr alst)
+;;                                            (+ pos width)
+;;                                            max-size)))))))
+
+;;  (local
+;;   (defthm sanity-check-of-layout-constant-alistp
+;;     (layout-constant-alistp
+;;      ;; Example of a layout constant
+;;      '((0          0  3) ;; 0
+;;        (:cr3-pwt   3  1) ;; Page-Level Writes Tranparent
+;;        (:cr3-pcd   4  1) ;; Page-Level Cache Disable
+;;        (0          5  7) ;; 0
+;;        (:cr3-pdb  12 40) ;; Page Directory Base
+;;        (0         52 12) ;; Reserved (must be zero)
+;;        )
+;;      0 64)
+;;     :rule-classes nil))
+
+;;  (define field-pos-width (flg layout-constant)
+;;    :parents (slicing-operations)
+;;    :enabled t
+;;    :short "Returns the position and width of @('flg'), given
+;;     @('layout-constant')"
+;;    (declare (xargs :guard (symbolp flg)))
+;;    (if (atom layout-constant)
+;;        (mv 0 (or (cw "field-pos-width:  Unknown flag:   ~p0.~%" flg) 0))
+;;      (let ((entry (car layout-constant)))
+;;        (if (not (and (consp entry)
+;;                      (consp (cdr entry))
+;;                      (consp (cddr entry))
+;;                      (null (cdddr entry))
+;;                      (or (symbolp (car entry))
+;;                          (natp    (car entry)))
+;;                      (natp (cadr entry))
+;;                      (natp (caddr entry))))
+;;            (mv 0 (or (cw "field-pos-width:  Entry malformed:   ~p0.~%" entry) 0))
+;;          (let ((name (car entry))
+;;                (pos  (cadr entry))
+;;                (width (caddr entry)))
+;;            (if (eq name flg)
+;;                (mv pos width)
+;;              (field-pos-width flg (cdr layout-constant))))))))
+
+;;  (define slice (flg reg reg-width layout-constant)
+;;    :enabled t
+;;    :parents (slicing-operations)
+;;    :short "Used to define efficient bit-slice accessor forms for
+;;     reasoning and execution"
+;;    :guard (and (symbolp flg)
+;;                (natp reg-width)
+;;                (layout-constant-alistp layout-constant 0 reg-width))
+;;    :guard-hints (("Goal" :do-not '(preprocess simplify)))
+;;    (mv-let (pos size)
+;;            (field-pos-width flg layout-constant)
+;;            (let* ((pos (if (natp pos) pos 0))
+;;                   (size (if (natp size) size 0))
+;;                   (mask (1- (expt 2 size)))
+;;                   (reg-width-pos (- reg-width pos)))
+;;              `(mbe :logic (part-select ,reg :low ,pos :width ,size)
+;;                    :exec
+;;                    (the (unsigned-byte ,size)
+;;                      (logand (the (unsigned-byte ,size) ,mask)
+;;                              (the (unsigned-byte ,reg-width-pos)
+;;                                (ash
+;;                                 (the (unsigned-byte ,reg-width) ,reg)
+;;                                 (- ,pos)))))))))
+
+;;  (define !slice (flg val reg reg-size layout-constant)
+;;    :guard (and (symbolp flg)
+;;                (natp reg-size))
+;;    :parents (slicing-operations)
+;;    :short "Used to define efficient bit-slice updater forms for
+;;     reasoning and execution"
+;;    (mv-let (pos size)
+;;            (field-pos-width flg layout-constant)
+;;            (let* ((mask (lognot (ash (logmask size) pos)))
+;;                   (size+pos (+ pos size))
+;;                   (mask-size (+ 1 size+pos)))
+;;              `(let ((reg-for-!slice-do-not-use
+;;                      (the (unsigned-byte ,reg-size) ,reg)))
+;;                 (declare (type (unsigned-byte ,reg-size)
+;;                                reg-for-!slice-do-not-use))
+;;                 (mbe :logic (part-install ,val reg-for-!slice-do-not-use
+;;                                           :low ,pos :width ,size)
+;;                      :exec (the (unsigned-byte ,reg-size)
+;;                              (logior
+;;                               (the (unsigned-byte ,reg-size)
+;;                                 (logand
+;;                                  (the (unsigned-byte ,reg-size)
+;;                                    reg-for-!slice-do-not-use)
+;;                                  (the (signed-byte ,mask-size) ,mask)))
+;;                               (the (unsigned-byte ,size+pos)
+;;                                 (ash (the (unsigned-byte ,size) ,val)
+;;                                      ,pos)))))))))
+
+;;  ) ;; End of encapsulate

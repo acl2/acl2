@@ -51,7 +51,6 @@
                            acl2::consp-under-iff-when-true-listp
                            ;; consp-when-member-equal-of-vl-commentmap-p
                            ;; consp-when-member-equal-of-vl-caselist-p
-                           consp-when-member-equal-of-vl-usertypes-p
                            acl2::consp-when-member-equal-of-keyval-alist-p
                            vl-tokenlist-p-when-not-consp
                            not
@@ -265,10 +264,6 @@
         (when (vl-is-token? :vl-idtoken)
           ;; type_identifier [packed_dimension]
           (name := (vl-match))
-          (unless (vl-parsestate-is-user-defined-type-p (vl-idtoken->name name)
-                                                        (vl-tokstream->pstate))
-            (return-raw
-             (vl-parse-error (cat "Not a known type: " (vl-idtoken->name name)))))
           (when (vl-is-token? :vl-lbrack)
             (dim := (vl-parse-packeddimension)))
           (return (make-vl-usertype :name

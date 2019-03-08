@@ -129,7 +129,7 @@
                               
 
 (define print-fraig-stats-initial (fraig-stats)
-  (cw "Initial: classes: ~x0     const lits: ~x1    class lits: ~x2~%"
+  (cw "Fraig initial equiv classes: ~x0     const lits: ~x1    class lits: ~x2~%"
       (fraig-initial-nclasses fraig-stats)
       (fraig-initial-nconst-lits fraig-stats)
       (fraig-initial-nclass-lits fraig-stats)))

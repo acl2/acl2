@@ -33,7 +33,7 @@
 (include-book "gtypes")
 (include-book "gl-util")
 (include-book "symbolic-arithmetic")
-(include-book "and-star")
+(include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
@@ -1344,7 +1344,7 @@
     shape-spec-obj-in-range-open-atom
     shape-spec-obj-in-range-open-list-of-g-booleans
     shape-spec-obj-in-range-var
-    and*-rem-first and*-rem-second
+    acl2::and*-rem-first acl2::and*-rem-second
     acl2::iff-implies-equal-and*-1
     acl2::iff-implies-iff-and*-2
     car-cons cdr-cons natp-compound-recognizer

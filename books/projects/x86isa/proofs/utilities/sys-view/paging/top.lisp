@@ -42,6 +42,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 (local (in-theory (e/d* () (unsigned-byte-p signed-byte-p))))
 
@@ -165,7 +166,7 @@
   (implies (and (<= (+ i j) n) (natp n) (natp j))
            (equal (loghead i (logtail j (logext n lin-addr)))
                   (loghead i (logtail j lin-addr))))
-  :hints ((logbitp-reasoning)))
+  :hints ((bitops::logbitp-reasoning)))
 
 (defthm remove-logext-48-from-pml4-table-entry-addr
   (equal (pml4-table-entry-addr (logext 48 lin-addr) base-addr)
@@ -257,7 +258,7 @@
                                     force (force))))))
 
 (defthm xr-mv-nth-2-ia32e-la-to-pa-when-error
-  (implies (and (mv-nth 0 (ia32e-la-to-pa addr r-w-x x86))
+  (implies (and (mv-nth 0 (ia32e-la-to-pa addr r-w-x (double-rewrite x86)))
                 (not (eql fld :fault)))
            (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86)))
                   (xr fld index x86)))
@@ -266,13 +267,14 @@
                                     ia32e-la-to-pa-page-dir-ptr-table
                                     ia32e-la-to-pa-page-directory
                                     ia32e-la-to-pa-page-table)
-                                   (force (force))))))
+                                   ((tau-system)
+                                    force (force))))))
 
 (defthm xr-mem-disjoint-las-to-pas
   (implies
-   (and (64-bit-modep x86) ; added
-        (disjoint-p (list index)
-                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+   (and (disjoint-p (list index)
+                    (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
+        (64-bit-modep (double-rewrite x86)))
    (equal (xr :mem index (mv-nth 2 (las-to-pas n addr r-w-x x86)))
           (xr :mem index x86)))
   :hints (("Goal"
@@ -296,10 +298,10 @@
   :hints (("Goal" :in-theory (e/d* (disjoint-p) (force (force))))))
 
 (defthm read-from-physical-memory-and-mv-nth-2-las-to-pas
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  p-addrs
-                 (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+                 (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (read-from-physical-memory
                    p-addrs (mv-nth 2 (las-to-pas n addr r-w-x x86)))
                   (read-from-physical-memory p-addrs x86)))
@@ -319,10 +321,10 @@
 
 (defthm rm-low-64-disjoint-las-to-pas
   (implies
-   (and (64-bit-modep x86) ; added
-        (disjoint-p
+   (and (disjoint-p
          (addr-range 8 index)
-         (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+         (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
+        (64-bit-modep (double-rewrite x86)))
    (equal (rm-low-64 index (mv-nth 2 (las-to-pas n addr r-w-x x86)))
           (rm-low-64 index x86)))
   :hints (("Goal" :induct (las-to-pas n addr r-w-x x86)
@@ -409,6 +411,8 @@
      lin-addr base-addr x86)
     (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
   :hints (("Goal" :in-theory (e/d* (subset-p
+                                    cr3bits->pdb
+                                    ia32e-pde-pg-tablebits->pt
                                     xlation-governing-entries-paddrs-for-page-directory)
                                    (xlation-governing-entries-paddrs-for-page-table)))))
 
@@ -440,6 +444,8 @@
                      (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr (page-dir-ptr-table-base-addr lin-addr x86)) x86))
                     1))
            :in-theory (e/d* (subset-p
+                             ia32e-pdpte-pg-dirbits->pd
+                             cr3bits->pdb
                              xlation-governing-entries-paddrs-for-page-dir-ptr-table)
                             ()))))
 
@@ -451,7 +457,8 @@
              lin-addr base-addr x86)
             (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86))))
   :hints (("Goal" :in-theory (e/d* (subset-p
-                                    xlation-governing-entries-paddrs-for-pml4-table)
+                                    xlation-governing-entries-paddrs-for-pml4-table
+                                    ia32e-pml4ebits->pdpt)
                                    ()))))
 
 (defthm xlation-governing-entries-paddrs-subset-of-paging-structures
@@ -521,11 +528,11 @@
 (defthm xlation-governing-entries-paddrs-for-page-directory-and-mv-nth-1-wb-disjoint-p
   (implies
    (and
-    (64-bit-modep x86) ; added
     (disjoint-p
      (mv-nth 1 (las-to-pas n addr :w (double-rewrite x86)))
      (xlation-governing-entries-paddrs-for-page-directory
       lin-addr page-directory-base-addr (double-rewrite x86)))
+    (64-bit-modep (double-rewrite x86))
     (not (app-view x86)))
    (equal (xlation-governing-entries-paddrs-for-page-directory
            lin-addr page-directory-base-addr
@@ -565,11 +572,11 @@
                             ()))))
 
 (defthm xlation-governing-entries-paddrs-for-page-dir-ptr-table-and-mv-nth-1-wb-disjoint-p
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas n addr :w (double-rewrite x86)))
                  (xlation-governing-entries-paddrs-for-page-dir-ptr-table
                   lin-addr page-dir-ptr-table-base-addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86))
                 (not (app-view x86)))
            (equal (xlation-governing-entries-paddrs-for-page-dir-ptr-table
                    lin-addr page-dir-ptr-table-base-addr
@@ -592,10 +599,10 @@
                             ()))))
 
 (defthm xlation-governing-entries-paddrs-for-pml4-table-and-write-to-physical-memory-disjoint-p
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p p-addrs
+  (implies (and (disjoint-p p-addrs
                             (xlation-governing-entries-paddrs-for-pml4-table
-                             lin-addr pml4-table-base-addr (double-rewrite x86))))
+                             lin-addr pml4-table-base-addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (xlation-governing-entries-paddrs-for-pml4-table
                    lin-addr pml4-table-base-addr
                    (write-to-physical-memory p-addrs value x86))
@@ -609,11 +616,11 @@
                             ()))))
 
 (defthm xlation-governing-entries-paddrs-for-pml4-table-and-mv-nth-1-wb-disjoint-p
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas n addr :w (double-rewrite x86)))
                  (xlation-governing-entries-paddrs-for-pml4-table
                   lin-addr pml4-table-base-addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86))
                 (not (app-view x86)))
            (equal (xlation-governing-entries-paddrs-for-pml4-table
                    lin-addr pml4-table-base-addr
@@ -637,10 +644,10 @@
                             (force (force))))))
 
 (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint-p
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  p-addrs
-                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
+                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (xlation-governing-entries-paddrs
                    lin-addr (write-to-physical-memory p-addrs value x86))
                   (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
@@ -649,10 +656,10 @@
            :in-theory (e/d* (disjoint-p xlation-governing-entries-paddrs) ()))))
 
 (defthm xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint-p
-  (implies (and (64-bit-modep x86)
-                (disjoint-p
+  (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas n addr :w (double-rewrite x86)))
-                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
+                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (xlation-governing-entries-paddrs
                    lin-addr (mv-nth 1 (wb n addr w value x86)))
                   (xlation-governing-entries-paddrs
@@ -665,10 +672,10 @@
                             (wb)))))
 
 (defthm all-xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint-p
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  p-addrs
-                 (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
+                 (all-xlation-governing-entries-paddrs n addr (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (all-xlation-governing-entries-paddrs
                    n addr (write-to-physical-memory p-addrs value x86))
                   (all-xlation-governing-entries-paddrs n addr (double-rewrite x86))))
@@ -679,17 +686,17 @@
                             ()))))
 
 (defthm all-xlation-governing-entries-paddrs-and-mv-nth-1-wb-disjoint
-  (implies (and (64-bit-modep x86) ; added
-                (disjoint-p
+  (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas n-2 addr-2 :w (double-rewrite x86)))
-                 (all-xlation-governing-entries-paddrs n-1 addr-1 (double-rewrite x86))))
+                 (all-xlation-governing-entries-paddrs n-1 addr-1 (double-rewrite x86)))
+                (64-bit-modep (double-rewrite x86)))
            (equal (all-xlation-governing-entries-paddrs
                    n-1 addr-1 (mv-nth 1 (wb n-2 addr-2 w value x86)))
                   (all-xlation-governing-entries-paddrs
                    n-1 addr-1 (double-rewrite x86))))
   :hints (("Goal"
            :in-theory (e/d* (all-xlation-governing-entries-paddrs
-                             xlation-governing-entries-paddrs) ; added
+                             xlation-governing-entries-paddrs)
                             (;xlation-governing-entries-paddrs ; removed
                              disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                              wb))
@@ -703,7 +710,7 @@
   (implies (and (bind-free
                  (find-l-addrs-from-las-to-pas '(n addr-1) r-w-x mfc state)
                  (n addr-1))
-                (64-bit-modep x86) ; added
+                (64-bit-modep x86)
                 (<= addr-1 addr-2)
                 (< addr-2 (+ n addr-1))
                 (not (mv-nth 0 (las-to-pas n addr-1 r-w-x x86)))
@@ -712,7 +719,7 @@
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-  (implies (and (64-bit-modep x86) ; added
+  (implies (and (64-bit-modep x86)
                 (<= addr-1 addr-2)
                 (< addr-2 (+ n addr-1))
                 (not (mv-nth 0 (las-to-pas n addr-1 r-w-x x86)))
@@ -722,7 +729,7 @@
   :hints (("Goal" :in-theory (e/d* (member-p) ()))))
 
 (defthmd open-mv-nth-0-las-to-pas
-  (implies (and (64-bit-modep x86) ; added
+  (implies (and (64-bit-modep x86)
                 (canonical-address-p lin-addr)
                 (not (zp n)))
            (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))
@@ -730,7 +737,7 @@
                       (mv-nth 0 (las-to-pas (+ -1 n) (+ 1 lin-addr) r-w-x x86))))))
 
 (defthmd open-mv-nth-1-las-to-pas
-  (implies (and (64-bit-modep x86) ; added
+  (implies (and (64-bit-modep x86)
                 (not (zp n))
                 (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))))
            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))
@@ -748,7 +755,7 @@
                   nil)))
 
 (defthm cdr-mv-nth-1-las-to-pas-no-error
-  (implies (and (64-bit-modep x86) ; added
+  (implies (and (64-bit-modep x86)
                 (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
                 (canonical-address-p lin-addr))
            (equal (cdr (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
@@ -756,17 +763,17 @@
 
 (defthm mv-nth-0-las-to-pas-and-xw-mem-not-member
   (implies (and
-            (64-bit-modep x86) ; added
             (not
              (member-p
               index
               (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86))))
             (integerp index)
             (unsigned-byte-p 8 byte)
+            (64-bit-modep (double-rewrite x86))
             (x86p x86))
            (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x
                                         (xw :mem index byte x86)))
-                  (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))))
+                  (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))))
   :hints (("Goal"
            :in-theory (e/d* (open-mv-nth-0-las-to-pas
                              disjoint-p
@@ -775,17 +782,17 @@
 
 (defthm mv-nth-1-las-to-pas-and-xw-mem-not-member
   (implies (and
-            (64-bit-modep x86) ; added
             (not
              (member-p
               index
               (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86))))
             (integerp index)
             (unsigned-byte-p 8 byte)
+            (64-bit-modep (double-rewrite x86))
             (x86p x86))
            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x
                                         (xw :mem index byte x86)))
-                  (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))
+                  (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))))
   :hints (("Goal"
            :in-theory (e/d* (open-mv-nth-0-las-to-pas
                              open-mv-nth-1-las-to-pas
@@ -850,7 +857,7 @@
   (local
    (defthmd mv-nth-1-las-to-pas-subset-p-helper-2
      (implies
-      (and (64-bit-modep x86) ; added
+      (and (64-bit-modep x86)
            (<= (+ addr-1 n-2) (+ addr-1 n-1))
            (not (mv-nth 0 (las-to-pas (+ -1 n-1) (+ 1 addr-1) r-w-x x86)))
            (integerp n-1))
@@ -868,7 +875,7 @@
               :in-theory (e/d* (las-to-pas subset-p) ())))))
 
   (defthm mv-nth-1-las-to-pas-subset-p
-    (implies (and (64-bit-modep x86) ; added
+    (implies (and (64-bit-modep x86)
                   (<= addr-1 addr-2)
                   (<= (+ n-2 addr-2) (+ n-1 addr-1))
                   (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
@@ -903,7 +910,7 @@
   (implies (and (bind-free
                  (find-l-addrs-from-las-to-pas '(n-1 addr-1) r-w-x mfc state)
                  (n-1 addr-1))
-                (64-bit-modep x86) ; added
+                (64-bit-modep x86)
                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x (double-rewrite x86))))
                 (<= (+ n-2 addr-2) (+ n-1 addr-1))
                 (<= addr-1 addr-2)
@@ -931,7 +938,7 @@
   (implies (and (bind-free
                  (find-program-at-info 'prog-addr 'bytes mfc state)
                  (prog-addr bytes))
-                (64-bit-modep x86) ; added
+                (64-bit-modep x86)
                 (program-at prog-addr bytes x86)
 
                 ;; We don't need the following hypothesis because we
@@ -966,7 +973,7 @@
    (and
     (bind-free (find-l-addrs-from-las-to-pas '(prog-len prog-addr) r-w-x mfc state)
                (prog-len prog-addr))
-    (64-bit-modep x86) ; added
+    (64-bit-modep x86)
     ;; Note: This is in terms of disjoint-p$.
     (disjoint-p$
      (mv-nth 1 (las-to-pas prog-len prog-addr r-w-x (double-rewrite x86)))
@@ -1129,7 +1136,7 @@
     (bind-free (find-l-addrs-from-disjoint-p$-of-two-las-to-pas
                 '(n-1 lin-addr-1) r-w-x-1 '(n-2 lin-addr-2) r-w-x-2 mfc state)
                (n-1 lin-addr-1 n-2 lin-addr-2))
-    (64-bit-modep x86) ; added
+    (64-bit-modep x86)
     (disjoint-p$
      (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1  (double-rewrite x86)))
      (mv-nth 1 (las-to-pas n-2 lin-addr-2 r-w-x-2  (double-rewrite x86))))
@@ -1212,7 +1219,7 @@
    (and
     (bind-free (find-program-at-info 'super-addr 'bytes mfc state)
                (super-addr bytes))
-    (64-bit-modep x86) ; added
+    (64-bit-modep x86)
     ;; I don't need the following program-at hyp, but it makes searching
     ;; for free vars more efficient.
     (program-at super-addr bytes x86)
@@ -1394,12 +1401,12 @@
 
   (defthm xw-mem-and-las-to-pas-commute
     (implies
-     (and (64-bit-modep x86) ; added
-          (disjoint-p (list index)
+     (and (disjoint-p (list index)
                       (all-xlation-governing-entries-paddrs
                        n lin-addr (double-rewrite x86)))
           (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
-          (x86p x86) (integerp index) (unsigned-byte-p 8 value))
+          (x86p x86) (integerp index) (unsigned-byte-p 8 value)
+          (64-bit-modep (double-rewrite x86)))
      (equal (xw :mem index value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
             (mv-nth 2 (las-to-pas n lin-addr r-w-x (xw :mem index value x86)))))
     :hints
@@ -1433,11 +1440,11 @@
 
 (defthm write-to-physical-memory-and-mv-nth-2-las-to-pas-commute
   (implies
-   (and (64-bit-modep x86) ; added
-        (disjoint-p p-addrs
+   (and (disjoint-p p-addrs
                     (all-xlation-governing-entries-paddrs
                      n lin-addr (double-rewrite x86)))
         (physical-address-listp p-addrs)
+        (64-bit-modep (double-rewrite x86))
         (x86p x86))
    (equal
     (write-to-physical-memory p-addrs value (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))

@@ -93,7 +93,8 @@
 ; argument to have had remove-guard-holders applied.
 
                                                 (acl2::remove-guard-holders
-                                                 concl)
+                                                 concl
+                                                 wrld)
                                                 ens wrld))
          ((when msg)
           ;; Not okay!  Don't submit the theorem.

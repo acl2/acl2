@@ -35,9 +35,6 @@
 
 (include-book "../lib1.delta1/round") ;floating-point rounding
 
-(include-book "../lib1/add") ;support for reasoning about floating-point addition
-;                      (leading one prediction and sticky bit computation)
-
 ; Users may prefer to replace the (include-book "arith") below with:
 ; (include-book "../arithmetic/top")
 

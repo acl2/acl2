@@ -34,6 +34,7 @@
 (include-book "../lint/check-case")
 (include-book "../lint/check-namespace")
 (include-book "../mlib/hierarchy")
+(include-book "../lint/alwaysstyle")
 (include-book "../lint/drop-user-submodules")
 (include-book "../lint/suppress-warnings")
 (include-book "../lint/suppress-files")
@@ -44,10 +45,12 @@
 (include-book "../lint/leftright")
 (include-book "../lint/oddexpr")
 (include-book "../lint/qmarksize-check")
+(include-book "../lint/arith-compare")
 (include-book "../lint/selfassigns")
 (include-book "../lint/skip-detect")
 (include-book "../lint/logicassign")
 (include-book "../lint/check-globalparams")
+(include-book "../lint/ifdef-report")
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/unparam/top")
 (include-book "../transforms/annotate/top")
@@ -379,7 +382,10 @@ for particular modules, or all warnings of particular types, etc.  See @(see
    (post-shell  booleanp
                 "After running the linter, enter an ACL2 shell where the linter
                  configuration has been saved as constant
-                 @('vl::*vl-user-lintconfig*').")))
+                 @('vl::*vl-user-lintconfig*')."))
+  ;; Note: would be nice to use the default alist layout here but it's ~14x
+  ;; faster to admit this with :fulltree (23 sec vs 320 sec.)
+  :layout :fulltree)
 
 (defval *vl-lint-help*
   :short "Usage message for vl lint."
@@ -488,6 +494,9 @@ shown.</p>"
 
    (design-orig   vl-design-p
               "Really the initial, pre-transformed modules.")
+
+   (sv-modalist sv::modalist-p
+                "The result of converting the elaborated design into SV modules.")
 
    (reportcard vl-reportcard-p
                "The main result: binds \"original\" (pre-unparameterization)
@@ -743,6 +752,7 @@ shown.</p>"
 
        (design (xf-cwtime (vl-design-check-globalparams design config.global-packages)))
        (design (xf-cwtime (vl-design-duplicate-detect design)))
+       (design (xf-cwtime (vl-design-alwaysstyle design)))
 
        ;; Note: don't want to addnames before duplicate-detect, because it
        ;; would name unnamed duplicated blocks in different ways.
@@ -827,6 +837,7 @@ shown.</p>"
 
        (design (xf-cwtime (vl-design-check-selfassigns design)))
        (design (xf-cwtime (vl-design-qmarksize-check design)))
+       (design (xf-cwtime (vl-design-arith-compare-check design)))
        (sd-probs (xf-cwtime (sd-analyze-design design0)))
 
 ;; Not sure we care abotu this for anything
@@ -893,6 +904,7 @@ shown.</p>"
     (make-vl-lintresult :design design
                         :design0 design0
                         :design-orig design-orig
+                        :sv-modalist modalist
                         :reportcard reportcard
                         :sd-probs sd-probs
                         )))
@@ -1122,7 +1134,7 @@ shown.</p>"
                  (vl-println ", "))
                (vl-jp-description-locations (cdr x)))))
 
-(define vl-jp-locations ((x vl-design-p) &key (ps 'ps))
+(define vl-jp-design-locations ((x vl-design-p) &key (ps 'ps))
   (vl-ps-seq (vl-print "{")
              (vl-jp-description-locations
               (vl-remove-nameless-descriptions
@@ -1176,6 +1188,9 @@ shown.</p>"
         :vl-warn-oddexpr
         :vl-warn-possible-typo
         :vl-warn-include-guard
+        :vl-warn-plain-always
+        :vl-warn-always-latch
+        :vl-warn-arithmetic-comparison
         ))
 
 (defconst *smell-minor-warnings*
@@ -1338,15 +1353,15 @@ shown.</p>"
                       (vl-design-descriptions orig)))))
        (missing (difference orig-descs final-descs)))
     (vl-pp-stringlist-lines missing)))
-    
 
 
-(defun vl-lint-report (config lintresult state)
-  (declare (xargs :guard (and (vl-lintconfig-p config)
-                              (vl-lintresult-p lintresult))
-                  :stobjs state))
-
+(define vl-lint-report ((config vl-lintconfig-p)
+                        (loadresult vl-loadresult-p)
+                        (lintresult vl-lintresult-p)
+                        state)
+  :returns (state state-p1 :hyp (state-p1 state))
   (b* (((vl-lintresult lintresult))
+       ((vl-loadresult loadresult))
        ((vl-lintconfig config))
        (reportcard   lintresult.reportcard)
        (suppressed (vl-reportcard-keep-suppressed reportcard))
@@ -1366,23 +1381,23 @@ shown.</p>"
 
        (state
         (with-ps-file
-         "vl-basic.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-basic.txt" "Basic" *basic-warnings* reportcard)))
+          "vl-basic.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-basic.txt" "Basic" *basic-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-trunc.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-print "
+          "vl-trunc.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-print "
 NOTE: see the bottom of this file for an explanation of what these warnings
 mean and how to avoid them.
 
 ")
 
-         (vl-lint-print-warnings "vl-trunc.txt" "Truncation/Extension" *trunc-warnings* reportcard)
+          (vl-lint-print-warnings "vl-trunc.txt" "Truncation/Extension" *trunc-warnings* reportcard)
 
-         (vl-print "
+          (vl-print "
 
 UNDERSTANDING THESE WARNINGS.
 
@@ -1423,33 +1438,33 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
 
        (state
         (with-ps-file
-         "vl-fussy.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-fussy.txt" "Fussy Size Warnings" *fussy-size-warnings* reportcard)))
+          "vl-fussy.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-fussy.txt" "Fussy Size Warnings" *fussy-size-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-fussy-minor.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-fussy-minor.txt" "Minor Fussy Size Warnings" *fussy-size-minor-warnings* reportcard)))
+          "vl-fussy-minor.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-fussy-minor.txt" "Minor Fussy Size Warnings" *fussy-size-minor-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-lucid.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
+          "vl-lucid.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-lucid.txt" "Lucidity Checking" *lucid-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-lucid-vars.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-lucid-vars.txt" "Lucidity Checking" *lucid-variable-warnings* reportcard)))
+          "vl-lucid-vars.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-lucid-vars.txt" "Lucidity Checking" *lucid-variable-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-sv-use-set.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-sv-use-set.txt" "SV Use/Set Checking" *sv-use-set-warnings* reportcard)))
+          "vl-sv-use-set.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-sv-use-set.txt" "SV Use/Set Checking" *sv-use-set-warnings* reportcard)))
 
        (state
         (with-ps-file
@@ -1468,21 +1483,21 @@ Note: These modules were eliminated because they were never instantiated anywher
           (progn$
            (cw "vl-skipdet.txt: ~x0 Skip-Detect Warnings.~%" (len major))
            (with-ps-file "vl-skipdet.txt"
-                         (vl-ps-update-autowrap-col 68)
-                         (vl-cw "Skip-Detect Warnings.~%~%")
-                         (sd-pp-problemlist-long major)))))
+             (vl-ps-update-autowrap-col 68)
+             (vl-cw "Skip-Detect Warnings.~%~%")
+             (sd-pp-problemlist-long major)))))
 
        (state
         (with-ps-file
-         "vl-trunc-minor.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-print "
+          "vl-trunc-minor.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-print "
 NOTE: see the bottom of this file for an explanation of what these warnings
 mean and how to avoid them.
 
 ")
-         (vl-lint-print-warnings "vl-trunc-minor.txt" "Minor Truncation/Extension" *trunc-minor-warnings* reportcard)
-         (vl-print "
+          (vl-lint-print-warnings "vl-trunc-minor.txt" "Minor Truncation/Extension" *trunc-minor-warnings* reportcard)
+          (vl-print "
 
 UNDERSTANDING THESE WARNINGS.
 
@@ -1537,83 +1552,94 @@ wide addition instead of a 10-bit wide addition.")))
           (prog2$
            (cw "vl-skipdet-minor.txt: ~x0 Minor Skip-Detect Warnings.~%" (len minor))
            (with-ps-file "vl-skipdet-minor.txt"
-                         (vl-ps-update-autowrap-col 68)
-                         (vl-cw "Minor Skip-Detect Warnings.~%~%")
-                         (sd-pp-problemlist-long minor)))))
+             (vl-ps-update-autowrap-col 68)
+             (vl-cw "Minor Skip-Detect Warnings.~%~%")
+             (sd-pp-problemlist-long minor)))))
 
        (state
         (with-ps-file
-         "vl-smells.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells.txt" "Code-Smell Warnings" *smell-warnings* reportcard)))
+          "vl-smells.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-smells.txt" "Code-Smell Warnings" *smell-warnings* reportcard)))
 
        (state
         (with-ps-file
-         "vl-smells-minor.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* reportcard)))
+          "vl-smells-minor.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* reportcard)))
 
 
-      (state
-       (with-ps-file "vl-same-ports.txt"
-                     (vl-ps-update-autowrap-col 68)
-                     (vl-lint-print-warnings "vl-same-ports.txt"
-                                             "Same-ports Warnings"
-                                             *same-ports-warnings*
-                                             reportcard)))
-      (state
-       (with-ps-file "vl-same-ports-minor.txt"
-                     (vl-ps-update-autowrap-col 68)
-                     (vl-lint-print-warnings "vl-same-ports-minor.txt"
-                                             "Minor same-ports Warnings"
-                                             *same-ports-minor-warnings*
-                                             reportcard)))
+       (state
+        (with-ps-file "vl-same-ports.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-same-ports.txt"
+                                  "Same-ports Warnings"
+                                  *same-ports-warnings*
+                                  reportcard)))
+       (state
+        (with-ps-file "vl-same-ports-minor.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-same-ports-minor.txt"
+                                  "Minor same-ports Warnings"
+                                  *same-ports-minor-warnings*
+                                  reportcard)))
 
-      (state
-       (with-ps-file
-        "vl-other.txt"
-        (vl-ps-update-autowrap-col 68)
-        (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes reportcard)))
+       (state
+        (with-ps-file
+          "vl-other.txt"
+          (vl-ps-update-autowrap-col 68)
+          (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes reportcard)))
 
-      (state
-       (with-ps-file
-         "vl-suppressed.txt"
-         (vl-ps-update-autowrap-col 58)
-         (vl-lint-print-all-warnings "vl-suppressed.txt" "suppressed" suppressed)))
+       (state
+        (with-ps-file
+          "vl-suppressed.txt"
+          (vl-ps-update-autowrap-col 58)
+          (vl-lint-print-all-warnings "vl-suppressed.txt" "suppressed" suppressed)))
 
-      (- (cw "~%"))
+       (- (cw "~%"))
 
-      (state
-       (cwtime
-        (with-ps-file "vl-warnings.json"
-                      (vl-print "{\"warnings\":")
-                      (vl-jp-reportcard reportcard :no-html config.no-html)
-                      (vl-print ",\"locations\":")
-                      (vl-jp-locations lintresult.design)
-                      (vl-println "}"))
-        :name write-warnings-json))
+       (state
+        (cwtime
+         (with-ps-file "vl-warnings.json"
+           (vl-print "{\"warnings\":")
+           (vl-jp-reportcard reportcard :no-html config.no-html)
+           (vl-print ",\"locations\":")
+           (vl-jp-design-locations lintresult.design)
+           (vl-println "}"))
+         :name write-warnings-json))
 
-      (state
-       ;; This has historically been part of vl-warnings.json, which is fine
-       ;; and we will leave it there, but since the warnings files can get
-       ;; large, it's nice to emit this separately as well.
-       (cwtime
-        (with-ps-file "vl-locations.json"
-                      (vl-print "{\"locations\":")
-                      (vl-jp-locations lintresult.design)
-                      (vl-println "}"))
-        :name write-locations-json))
+       (state
+        ;; This has historically been part of vl-warnings.json, which is fine
+        ;; and we will leave it there, but since the warnings files can get
+        ;; large, it's nice to emit this separately as well.
+        (cwtime
+         (with-ps-file "vl-locations.json"
+           (vl-print "{\"locations\":")
+           (vl-jp-design-locations lintresult.design)
+           (vl-println "}"))
+         :name write-locations-json))
 
+       (state
+        (cwtime
+         (with-ps-file "vl-ifdefs.txt"
+           (vl-print-ifdef-report-main loadresult.ifdefmap))
+         :name write-ifdef-report))
 
-      (state
-       (cwtime
-        (with-ps-file "vl-warnings-suppressed.json"
-                      (vl-print "{\"warnings\":")
-                      (vl-jp-reportcard suppressed)
-                      (vl-print ",\"locations\":")
-                      (vl-jp-locations lintresult.design)
-                      (vl-println "}"))
-        :name write-warnings-json)))
+       (state
+        (cwtime
+         (with-ps-file "vl-ifdef-usage.json"
+           (vl-jp-definfo loadresult.defines loadresult.ifdefmap loadresult.defmap))
+         :name write-ifdef-usage.json))
+
+       (state
+        (cwtime
+         (with-ps-file "vl-warnings-suppressed.json"
+           (vl-print "{\"warnings\":")
+           (vl-jp-reportcard suppressed)
+           (vl-print ",\"locations\":")
+           (vl-jp-design-locations lintresult.design)
+           (vl-println "}"))
+         :name write-warnings-json)))
 
     state))
 
@@ -1670,7 +1696,7 @@ wide addition instead of a 10-bit wide addition.")))
         (cwtime (run-vl-lint config)
                 :name vl-lint))
        (state
-        (cwtime (vl-lint-report config result state)))
+        (cwtime (vl-lint-report config loadres result state)))
 
        ((when config.post-shell)
         (b* ((print (and (boundp-global 'acl2::ld-pre-eval-print state) ;; for guard

@@ -33,6 +33,13 @@ public final class Acl2NamedFunction extends Acl2Function {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Since a named function has no variables, this method does nothing.
+     */
+    @Override
+    void setVariableIndices() {
+    }
+
+    /**
      * Applies this ACL2 named function to the given ACL2 values.
      * The function is called on the given values;
      * see {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}.
@@ -57,7 +64,7 @@ public final class Acl2NamedFunction extends Acl2Function {
     /**
      * Checks if this function is the {@code or} ACL2 "pseudo-function".
      * This is not an ACL2 notion; it is an AIJ notion.
-     * See {@link Acl2FunctionApplication#eval(Map)} for details.
+     * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
      */
     @Override
     boolean isOr() {
@@ -111,9 +118,6 @@ public final class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Returns a printable representation of this ACL2 named function.
-     * This is meant for printing;
-     * it should be improved to return something non-confusing
-     * when the function name includes "unusual" characters.
      */
     @Override
     public String toString() {

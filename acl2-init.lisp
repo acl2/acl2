@@ -843,14 +843,7 @@ implementations.")
     (format t "Finished creating a command file for copying distribution files.")))
 
 (defun make-tags ()
-  #-(or ccl sbcl cmu)
-; We disallow ccl and sbcl for the following check.  We have found that the
-; result of the system-call is a process, (typep <result> 'external-process) in
-; ccl and (typep <result> 'sb-impl::process) in sbcl, which can probably be
-; made to yield the status.  But the status is 0 even for commands not found,
-; so why bother?  Since cmucl seems to fall victim in the same way as sbcl, we
-; treat these two the same here.
-  (when (not (eql (system-call "which" '("etags")) 0))
+  (when (not (eql (ignore-errors (system-call "which" '("etags"))) 0))
     (format t "SKIPPING etags: No such program is in the path.")
     (return-from make-tags 1))
   (system-call "etags"

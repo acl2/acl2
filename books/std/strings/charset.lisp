@@ -136,7 +136,7 @@ proving that it recognizes the correct characters.  </p>
 <li>@('(whitespace-char-p x)') &mdash; a \"slow\" function for recognizing
 newline, space, and tab characters</li>
 
-<li>@('(whitespace-charset)') &mdash; a @(see charset-p) that is proven to
+<li>@('(whitespace-chars)') &mdash; a @(see charset-p) that is proven to
 correspond to @('whitespace-char-p'),</li>
 
 <li>@('(whitespace-charlist-p x)') &mdash; an ordinary @(see std::deflist) to
@@ -173,7 +173,7 @@ determining whether @('x') is a member of the desired set.  Normally you should
 not worry about the efficiency of @('criteria').  Although the term you write
 here <i>does</i> become part of recognizers like @('whitespace-char-p') and
 @('whitespace-charlist-p'), the actual character set, i.e.,
-@('whitespace-charset'), is represented as a bit mask, and the speed of your
+@('whitespace-chars'), is represented as a bit mask, and the speed of your
 @('criteria') term will not have any bearing on how fast it is to look up its
 bits.</p>
 

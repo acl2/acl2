@@ -21,6 +21,19 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Possibly add function-symbolp to the guard of logicp.}}
+
+Currently logicp returns t on a symbol that is not a function symbol, which is
+slightly odd.  Adding function-symbolp to the guard of logicp would eliminate
+this slight oddity, but would require discharging the ensuing guard verification
+obligations.  Note also that some existing ACL2 code may rely on logicp
+returning t on a non-function symbol, e.g., see the following line in the
+definition of sublis-var!:
+
+              (logicp (ffn-symb term) wrld) ; maybe fn is being admitted
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Perhaps split :doc hints into separate topics.}}
 
 This item was added by Matt K. but is based on correspondence
@@ -272,78 +285,6 @@ ERC>
   channels.  But it doesn't seem to be strong enough to allow me to say
   that if (STATE-P STATE), then there are no duplicate open channels in
   STATE.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Fix profile book for sbcl.}}
-
-This could be a good one for Lisp hackers.
-
-The following is on linux -- I should try it on a Mac.  Maybe SBCL has
-some thread-local settings that I could increase.
-
-The error shown below even happens when starting SBCL with:
---dynamic-space-size 240000 --control-stack-size 640
-
-acl2s
-(include-book "centaur/memoize/old/profile" :dir :system)
-(profile-all) ; goes into ldb
-
-The error (using the large settings above, but the error is
-essentially the same either way):
-
-ACL2 !>(profile-all)
-
-ACL2 Observation in MEMOIZE-CALL-ARRAY-GROW:  Now reinitializing memoization
-structures.  This will erase saved values and statistics.
-Thread local storage exhausted.
-fatal error encountered in SBCL pid 14538(tid 0x7ffff7fd4740):
-%PRIMITIVE HALT called; the party is over.
-
-
-Welcome to LDB, a low-level debugger for the Lisp runtime environment.
-ldb>
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
-{{Improve redundancy for verify-termination.}}
-
-[Warning: This one might be tricky.]
-
-Try the files below with:
-
-(certify-book "sub")
-(certify-book "foo")
-
-The include-book phase of the latter is an error, I think because the
-make-event expansion wasn't recorded in the first phase.  How should
-we deal with this?  Notice that if we replace the verify-termination with
-(defun foo (x) x), the problem goes away.  But adding layers of make-event,
-encapsulate, etc. didn't seem to help.
-
-ginger:~/temp% cat sub.lisp
-(in-package "ACL2")
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-ginger:~/temp% cat foo.lisp
-(in-package "ACL2")
-
-(local (include-book "sub"))
-
-(defun foo (x)
-  (declare (xargs :mode :program))
-  x)
-
-(verify-termination foo)
-
-(defun bar (x)
-  (foo x))
-
-ginger:~/temp%
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 

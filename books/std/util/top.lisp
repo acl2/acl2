@@ -44,6 +44,8 @@
 (include-book "defredundant")
 (include-book "defsum")
 (include-book "defval")
+(include-book "defval-tests")
+(include-book "def-bound-theorems")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
@@ -77,6 +79,8 @@ functions, mapping over lists, and many other boilerplate tasks."
  <li>@(':type-prescription')s for @('mv')-returning functions (@(see defmvtypes))</li>
  <li>defining simple constants with @(see xdoc) documentation (@(see defval))</li>
  <li>defining constants that depend on stobjs, with @('mv') support (@(see defconsts))</li>
+ <li>proving rewrite, type prescription, and linear rules about terms in
+ @(tsee natp), @(tsee unsigned-byte-p), and @(tsee signed-byte-p).</li>
 </ul></li>
 
 </ol>
@@ -102,4 +106,3 @@ major macro is typically defined in its own book, e.g., you could do:</p>
 <p>Note that unlike many other @(see std) libraries, these macros are defined
 in the @('STD::') package.  This is mainly to avoid name collisions with older
 macros like @('deflist') from other libraries.</p>")
-

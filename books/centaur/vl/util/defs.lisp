@@ -45,6 +45,7 @@
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "std/strings/top" :dir :system)
 (include-book "std/system/non-parallel-book" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
@@ -701,59 +702,6 @@ behavior in cases like:</p>
                  (not (atom (cdr x))))))
 
 
-(defsection and*
-  :parents (utilities)
-  :short "@('and*') is like @('and') but is a (typically disabled) function."
-
-  :long "<p>This is occasionally useful for avoiding case-splitting in
-theorems.</p>"
-
-  (defund binary-and* (x y)
-    (declare (xargs :guard t))
-    (if x y nil))
-
-  (defund and*-macro (x)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           t)
-          ((atom (cdr x))
-           (car x))
-          (t
-           `(binary-and* ,(car x)
-                         ,(and*-macro (cdr x))))))
-
-  (defmacro and* (&rest args)
-    (and*-macro args))
-
-  (add-binop and* binary-and*))
-
-
-
-(defsection or*
-  :parents (utilities)
-  :short "@('or*') is like @('or') but is a (typically disabled) function."
-
-  :long "<p>This is occasionally useful for avoiding case-splitting in
-theorems.</p>"
-
-  (defund binary-or* (x y)
-    (declare (xargs :guard t))
-    (if x x y))
-
-  (defund or*-macro (x)
-    (declare (xargs :guard t))
-    (cond ((atom x)
-           nil)
-          ((atom (cdr x))
-           (car x))
-          (t
-           `(binary-or* ,(car x)
-                        ,(or*-macro (cdr x))))))
-
-  (defmacro or* (&rest args)
-    (or*-macro args))
-
-  (add-binop or* binary-or*))
 
 
 (defsection not*

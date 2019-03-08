@@ -92,13 +92,6 @@
 
 (include-book "bits-trunc") ;theorems about how we implement trunc rounding...
 
-;theorems about circuits for addition
-(include-book "add3") ;theorems about how we implement addition of (2 or) 3 bit vectors using land0, lior0, and lxor0
-(include-book "lop1") ;leading-one prediction
-(include-book "lop2") ;leading-one prediction
-(include-book "lop3") ;leading-one prediction
-(include-book "stick") ;Some special-purpose lemmas by Russinoff, probably about sticky bit computation
-
 ;helpers
 (include-book "bvecp-helpers")
 (include-book "model-helpers") ; do we use this?
@@ -111,8 +104,6 @@
 
 (include-book "../../arithmetic/top")
 (include-book "../../arithmetic/fp")
-
-(include-book "fadd")
 
 ; The following form evaluates to (prints out) the list of runes shown below,
 ; in the environment created by starting up ACL2 and then executing
@@ -725,46 +716,6 @@ So the correct result is, alteratively:
     (:TYPE-PRESCRIPTION NEXT-DENORMAL)
     (:REWRITE DENORMAL-SPACING)
     (:REWRITE NO-DENORMAL-IS-CLOSER-THAN-WHAT-DRND-ORIGINAL-NEAR-RETURNS)
-    (:DEFINITION GEN)
-    (:EXECUTABLE-COUNTERPART GEN)
-    (:TYPE-PRESCRIPTION GEN)
-    (:INDUCTION GEN)
-    (:DEFINITION PROP)
-    (:EXECUTABLE-COUNTERPART PROP)
-    (:TYPE-PRESCRIPTION PROP)
-    (:INDUCTION PROP)
-    (:REWRITE LAND0-GEN-0)
-    (:REWRITE BVECP-1-GEN)
-    (:FORWARD-CHAINING BVECP-1-GEN)
-    (:REWRITE BVECP-1-PROP)
-    (:FORWARD-CHAINING BVECP-1-PROP)
-    (:DEFINITION LAMT-0)
-    (:EXECUTABLE-COUNTERPART LAMT-0)
-    (:TYPE-PRESCRIPTION LAMT-0)
-    (:DEFINITION LAMG-0)
-    (:EXECUTABLE-COUNTERPART LAMG-0)
-    (:TYPE-PRESCRIPTION LAMG-0)
-    (:DEFINITION LAMZ-0)
-    (:EXECUTABLE-COUNTERPART LAMZ-0)
-    (:TYPE-PRESCRIPTION LAMZ-0)
-    (:DEFINITION LAM1-0)
-    (:EXECUTABLE-COUNTERPART LAM1-0)
-    (:TYPE-PRESCRIPTION LAM1-0)
-    (:DEFINITION LAM2-0)
-    (:EXECUTABLE-COUNTERPART LAM2-0)
-    (:TYPE-PRESCRIPTION LAM2-0)
-    (:DEFINITION LAM3-0)
-    (:EXECUTABLE-COUNTERPART LAM3-0)
-    (:TYPE-PRESCRIPTION LAM3-0)
-    (:DEFINITION LAM4-0)
-    (:EXECUTABLE-COUNTERPART LAM4-0)
-    (:TYPE-PRESCRIPTION LAM4-0)
-    (:DEFINITION LAM0-0)
-    (:EXECUTABLE-COUNTERPART LAM0-0)
-    (:TYPE-PRESCRIPTION LAM0-0)
-    (:DEFINITION LAMB-0)
-    (:EXECUTABLE-COUNTERPART LAMB-0)
-    (:TYPE-PRESCRIPTION LAMB-0)
     (:REWRITE A1)
     (:REWRITE A2)
     (:REWRITE A3)

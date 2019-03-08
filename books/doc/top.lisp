@@ -256,6 +256,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/oracle-time" :dir :system)
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
+(include-book "tools/trivial-ancestors-check" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
 ;; translate11-call, which end up taking a lot of space and causing us to spend
@@ -346,7 +347,10 @@ book that depends on Glucose being installed.</p>")
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
+(include-book "coi/documentation" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
 ) ;; end progn for including all the books
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl

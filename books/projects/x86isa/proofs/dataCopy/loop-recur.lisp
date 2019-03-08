@@ -50,11 +50,7 @@
                          rme-size
                          wime-size
                          wme-size)
-                        (mv-nth-1-wb-and-!flgi-commute
-                         ia32e-la-to-pa-values-and-!flgi
-                         las-to-pas
-                         las-to-pas-values-and-!flgi
-                         mv-nth-2-las-to-pas-and-!flgi-not-ac-commute
+                        (las-to-pas
                          xr-fault-wb-in-system-level-marking-view
                          xr-fault-wb-in-sys-view))))
 
@@ -85,27 +81,28 @@
                          :W
                          (MV-NTH 1 (RB 4 (XR :RGF *RDI* X86) :R X86))
                          (!FLGI
-                          *CF*
+                          :CF
                           (CF-SPEC64 (+ 18446744073709551612
                                         (XR :RGF *RAX* X86)))
                           (!FLGI
-                           *PF*
+                           :PF
                            (PF-SPEC64 (LOGHEAD 64
                                                (+ 18446744073709551612
                                                   (XR :RGF *RAX* X86))))
-                           (!FLGI *AF*
+                           (!FLGI :AF
                                   (ADD-AF-SPEC64 (XR :RGF *RAX* X86)
                                                  18446744073709551612)
-                                  (!FLGI *ZF* 0
-                                         (!FLGI *SF*
+                                  (!FLGI :ZF 0
+                                         (!FLGI :SF
                                                 (SF-SPEC64 (LOGHEAD 64
                                                                     (+ 18446744073709551612
                                                                        (XR :RGF *RAX* X86))))
-                                                (!FLGI *OF*
+                                                (!FLGI :OF
                                                        (OF-SPEC64 (+ -4 (XR :RGF *RAX* X86)))
                                                        X86)))))))))))))))
   :hints (("Goal"
            :in-theory (e/d* (instruction-decoding-and-spec-rules
+                             rflag-RoWs-enables
 
                              gpr-and-spec-4
                              gpr-add-spec-8
@@ -118,7 +115,6 @@
                              one-byte-opcode-execute
                              !rgfi-size
                              x86-operand-to-reg/mem
-                             x86-operand-to-reg/mem$
                              wr64
                              wr32
                              rr32
@@ -129,7 +125,6 @@
                              wml64
                              rr32
                              x86-operand-from-modr/m-and-sib-bytes
-                             x86-operand-from-modr/m-and-sib-bytes$
                              check-instruction-length
                              address-aligned-p
                              riml-size
@@ -282,7 +277,8 @@
            (equal (alignment-checking-enabled-p (x86-run (loop-clk-recur) x86))
                   (alignment-checking-enabled-p x86)))
   :hints (("Goal" :use ((:instance effects-copyData-loop-recur))
-           :in-theory (e/d* (alignment-checking-enabled-p)
+           :in-theory (e/d* (alignment-checking-enabled-p
+                             rflag-RoWs-enables)
                             (separate-smaller-regions
                              loop-clk-recur
                              (loop-clk-recur)

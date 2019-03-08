@@ -69,10 +69,10 @@
 ; Handling the Primitives
 
 ; Reminder: The apply-prim book defines the constant *badge-prim-falist* which
-; is a fast-alist with entries of the form (fn . (APPLY$-BADGE flg arity . T)).
-; One should not hons-acons anything onto this object because that would steal
-; the hash table out from under the current value and slow down apply$-primp
-; and badge-prim which use hons-get to access this constant.
+; is a fast-alist with entries of the form (fn . (APPLY$-BADGE arity out-arity
+; . T)).  One should not hons-acons anything onto this object because that
+; would steal the hash table out from under the current value and slow down
+; apply$-primp and badge-prim which use hons-get to access this constant.
 
 ; -----------------------------------------------------------------
 ; BADGE-USERFN and APPLY$-USERFN
@@ -81,22 +81,20 @@
 ; and apply$-userfn to access information about and to apply nonprimitive
 ; functions.
 
-; Badge-userfn is constrained to return nil or an apply$-badge.  The latter
-; are non-cheap records with token name APPLY$-BADGE and accessors
-; :authorization-flg, :arity, and :ilks.  We abbreviate the :authorization-flg
-; value as flg below.  If flg is t, then we know the associated function, fn,
-; returns a single value and is stobj- and state-free, and treats its arguments
-; as described by the ilks of the badge.  Flg is nil if fn returns multiple
-; values but is otherwise ok, i.e., is stobj- and state-free and treats its
-; arguments as described by the ilks.  In either case, arity is the arity of fn
-; and ilks indicates how the arguments are used.  Most generally, ilks is a
-; list, as long as the formals, of flags NIL, :FN, and/or :EXPR, indicating
-; that the corresponding formal is used in a ``vanilla'' (conventional) way, as
-; a function only inspected by APPLY$, or as an expression only inspected by
-; EV$.  If the ilks is a list (c_1 ... c_arity), we say c_i is the ``ilk'' of
-; the ith argument.  We make a special case of when all the formals are
-; ordinary, i.e., when each ilk is NIL.  We denote this with ilks = T.  (This
-; is admittedly a bit confusing, ``T is an abbreviation for a list of NILs.'')
+; Badge-userfn is constrained to return nil or an apply$-badge.  The latter are
+; non-cheap records with token name APPLY$-BADGE and accessors :arity,
+; :out-arity, and :ilks.  The existence of a badge means the function is is
+; stobj- and state-free, and treats its arguments as described by the ilks of
+; the badge.  Arity is the arity of fn, out-arity is the number of values it
+; returns, and ilks indicates how the arguments are used.  Most generally, ilks
+; is a list, as long as the formals, of flags NIL, :FN, and/or :EXPR,
+; indicating that the corresponding formal is used in a ``vanilla''
+; (conventional) way, as a function only inspected by APPLY$, or as an
+; expression only inspected by EV$.  If the ilks is a list (c_1 ... c_arity),
+; we say c_i is the ``ilk'' of the ith argument.  We make a special case of
+; when all the formals are ordinary, i.e., when each ilk is NIL.  We denote
+; this with ilks = T.  (This is admittedly a bit confusing, ``T is an
+; abbreviation for a list of NILs.'')
 
 ; The reason we impose any constraint on the shape of the object returned by
 ; badge-userfn is so that we can verify guards for tamep and apply$ without
@@ -147,15 +145,15 @@
 ; require moving up the definition below of *apply$-boot-fns-badge-alist* so we
 ; can use it in the new constraint.
 
-; More problematically, we must make sure that concrete-badge-userfn satisfies
-; the strengthened constraint.  This is difficult because concrete-badge-userfn
-; is currently (partially) constrained in other-events.lisp, which is processed
-; before apply$-primp and *apply$-boot-fns-badge-alist* are defined.  The only
-; way we can think of to fix this would be to move the introduction of
-; concrete-badge-userfn into this file and deal with any bootstrapping issues
-; that come up!  If this additional constraint is added, we would have to
-; change the raw Lisp definition of concrete-badge-userfn, q.v. in
-; apply-raw.lisp.
+; More problematically, we must make sure that doppelganger-badge-userfn
+; satisfies the strengthened constraint.  This is difficult because
+; doppelganger-badge-userfn is currently (partially) constrained in
+; other-events.lisp, which is processed before apply$-primp and
+; *apply$-boot-fns-badge-alist* are defined.  The only way we can think of to
+; fix this would be to move the introduction of doppelganger-badge-userfn into
+; this file and deal with any bootstrapping issues that come up!  If this
+; additional constraint is added, we would have to change the raw Lisp
+; definition of doppelganger-badge-userfn, q.v. in apply-raw.lisp.
 
 ; (BTW: The ``doppelganger'' of badge-userfn (which must also satisfy this
 ; constraint) in the Foundational work of books/projects/apply-model/ex1/ and
@@ -164,7 +162,7 @@
 
 ; On the other hand, so far, we haven't seen a proof where the stronger
 ; constraint is required.  It is just odd that, for all we know, (badge-userfn
-; 'cons) is something weird and thought-provoking like '(APPLY$-BADGE T 2 NIL
+; 'cons) is something weird and thought-provoking like '(APPLY$-BADGE 2 1 NIL
 ; :FN) suggesting it's a mapping function!  That doesn't really mess us up
 ; because we use badge, not badge-userfn, to access badges, and badge checks
 ; the primitives and boot functions before relying on badge-userfn.  So the
@@ -184,7 +182,9 @@
   (defthm apply$-userfn-takes-arity-args
     (implies (badge-userfn fn)
              (equal (apply$-userfn fn args)
-                    (apply$-userfn fn (take (caddr (badge-userfn fn)) args))))
+                    (apply$-userfn fn (take (apply$-badge-arity
+                                             (badge-userfn fn))
+                                            args))))
     :rule-classes nil))
 
 ; These two stubs are used as the ``default values'' of (apply$ fn args) and
@@ -194,7 +194,7 @@
 (defstub untame-ev$ (x a) t)
 
 ; The ``badge table'' is a table that associates badges with nonprimitive
-; function symbols.  It is extended by def-warrant.
+; function symbols.  It is extended by defwarrant.
 
 ; Three categories of function symbols have badges:
 
@@ -212,10 +212,10 @@
 ;   treat BADGE, say, as a primitive because it wasn't!  Now it is perhaps more
 ;   natural to consider it a primitive, but we don't!
 
-; * user-defined functions -- functions successfully processed by def-warrant
+; * user-defined functions -- functions successfully processed by defwarrant
 ;   and listed under the key :badge-userfn-structure (currently a simple alist)
 ;   in the badge-table, initialized in source file apply.lisp but accumulated
-;   by def-warrant.
+;   by defwarrant.
 
 (defconst *apply$-boot-fns-badge-alist*
   `((BADGE . ,*generic-tame-badge-1*)
@@ -249,27 +249,14 @@
 ; (``warrant\b'' or ``warranted,'' excluding ``warranty'' which occurs twice at
 ; the top of nearly every file).
 
-; Some functions have badges but not warrants!  All ~800 primitives have badges
-; known to the logical definition of BADGE, but these primitives do not have
+; Some functions have badges but not warrants!  Approximately 800 primitives
+; that have badges known to the logical definition of BADGE do not have
 ; warrants: there is no APPLY$-WARRANT-CONS because the badge of cons is
 ; built-in.  All 6 of the apply$ boot functions have badges known to BADGE and
 ; do not have warrants: apply$ knows how to apply$ itself.
 
 ; Every function listed in the :badge-userfn-structure of the badge-table has a
-; badge.
-
-; But not every function listed in the :badge-userfn-structure has a warrant!
-
-; For example, (defun$ foo (x) (mv x x)) would produce a badge but not a
-; warrant; foo obeys all the rules required of warranted functions except for
-; one rule: foo returns multiple values and so cannot be apply$'d (because
-; apply$ returns a single value). (defun$ bar (x) (mv-let (a b) (foo x) (+ a
-; b))) would produce a badge and a warrant even though it uses the unwarranted
-; but badged foo.  Both foo and bar would have entries in the
-; :badge-userfn-structure of the badge-table mapping them to their badges.
-
-; If fn has a badge, bdg, in :badge-userfn-structure then fn has a warrant iff
-; (access apply$-badge bdg :authorization-flg).  The warrant, if it exists, is
-; named APPLY$-WARRANT-fn and takes 0 arguments.
+; badge, and these are exactly the functions that have a warrant.  The warrant
+; for fn, if it exists, is named APPLY$-WARRANT-fn and takes 0 arguments.
 
 )

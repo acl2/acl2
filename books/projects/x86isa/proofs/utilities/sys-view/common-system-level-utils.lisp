@@ -191,29 +191,11 @@
 
 (defthm program-at-xw-rflags-not-ac-values-in-sys-view
   (implies (and (not (app-view x86))
-                (equal (rflags-slice :ac value)
-                       (rflags-slice :ac (rflags x86))))
+                (equal (rflagsBits->ac value)
+                       (rflagsBits->ac (rflags x86))))
            (equal (program-at addr bytes (xw :rflags 0 value x86))
                   (program-at addr bytes x86)))
   :hints (("Goal" :in-theory (e/d* (program-at) (rb)))))
-
-(defthm program-at-values-and-!flgi
-  (implies (and (not (equal index *ac*))
-                (not (app-view x86))
-                (x86p x86))
-           (equal (program-at addr bytes (!flgi index value x86))
-                  (program-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d* (rflags-slice-ac-simplify
-                                    !flgi-open-to-xw-rflags)
-                                   (rb)))))
-
-(defthm program-at-values-and-!flgi-undefined
-  (implies (and (not (equal index *ac*))
-                (not (app-view x86))
-                (x86p x86))
-           (equal (program-at addr bytes (!flgi-undefined index x86))
-                  (program-at addr bytes x86)))
-  :hints (("Goal" :in-theory (e/d* (!flgi-undefined) (rb)))))
 
 ;; ======================================================================
 
@@ -286,37 +268,43 @@
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
                             (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                                (logand 18446744073709547520
-                                                                                        (loghead 52 base-addr)))
-                                                     x86)))
+                                        (ia32e-pde-pg-tablebits->pt
+                                         (rm-low-64
+                                          (page-directory-entry-addr
+                                           (logext 48 lin-addr)
+                                           (logand 18446744073709547520
+                                                   (loghead 52 base-addr)))
+                                          x86))
                                         12))
-                            (u/s-acc (logand
-                                      u/s-acc
-                                      (page-user-supervisor
-                                       (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                             (logand 18446744073709547520
-                                                                                     (loghead 52 base-addr)))
-                                                  x86))))
-                            (r/w-acc (logand
-                                      r/w-acc
-                                      (page-read-write
-                                       (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                             (logand 18446744073709547520
-                                                                                     (loghead 52 base-addr)))
-                                                  x86))))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64 (page-directory-entry-addr
+                                           (logext 48 lin-addr)
+                                           (logand 18446744073709547520
+                                                   (loghead 52 base-addr)))
+                                          x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
                             (x/d-acc
                              (logand
                               x/d-acc
                               (page-execute-disable
-                               (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                     (logand 18446744073709547520
-                                                                             (loghead 52 base-addr)))
-                                          x86))))))
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
@@ -347,38 +335,46 @@
            :do-not-induct t
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-directory-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                    (logand 18446744073709547520
-                                                                                            (loghead 52 base-addr)))
-                                                     x86)))
-                                        12))
-                            (u/s-acc (logand
-                                      u/s-acc
-                                      (page-user-supervisor
-                                       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                 (logand 18446744073709547520
-                                                                                         (loghead 52 base-addr)))
-                                                  x86))))
-                            (r/w-acc (logand
-                                      r/w-acc
-                                      (page-read-write
-                                       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                 (logand 18446744073709547520
-                                                                                         (loghead 52 base-addr)))
-                                                  x86))))
+                            (base-addr
+                             (ash
+                              (ia32e-pdpte-pg-dirbits->pd
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
                             (x/d-acc
                              (logand
                               x/d-acc
                               (page-execute-disable
-                               (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                         (logand 18446744073709547520
-                                                                                 (loghead 52 base-addr)))
-                                          x86))))))
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-dir-ptr-table)
@@ -404,32 +400,36 @@
   :hints (("Goal"
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                            (logand 18446744073709547520
-                                                                                    (loghead 52 base-addr)))
-                                                     x86)))
-                                        12))
-                            (u/s-acc (page-user-supervisor
-                                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                        (logand 18446744073709547520
-                                                                                (loghead 52 base-addr)))
-                                                 x86)))
-                            (r/w-acc (page-read-write
-                                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                        (logand 18446744073709547520
-                                                                                (loghead 52 base-addr)))
-                                                 x86)))
+                            (base-addr
+                             (ash
+                              (ia32e-pml4ebits->pdpt
+                               (rm-low-64 (pml4-table-entry-addr
+                                           (logext 48 lin-addr)
+                                           (logand 18446744073709547520
+                                                   (loghead 52 base-addr)))
+                                          x86))
+                              12))
+                            (u/s-acc
+                             (page-user-supervisor
+                              (rm-low-64 (pml4-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand 18446744073709547520
+                                                  (loghead 52 base-addr)))
+                                         x86)))
+                            (r/w-acc
+                             (page-read-write
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
                             (x/d-acc
                              (page-execute-disable
-                              (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                (logand 18446744073709547520
-                                                                        (loghead 52 base-addr)))
-                                         x86)))))
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))))
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
@@ -454,12 +454,19 @@
            :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-pml4-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
                             (cpl (cpl x86))
-                            (base-addr (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                            (wp (bool->bit (logbitp 16 (xr :ctr *cr0* x86))))
-                            (smep (loghead 1 (bool->bit (logbitp 20 (xr :ctr *cr4* x86)))))
-                            (smap 0)
-                            (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
-                            (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))))
+                            (base-addr
+                             (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
+                            (wp
+                             (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
+                            (smep
+                             (cr4bits->smep (loghead 22 (xr :ctr *cr4* x86))))
+                            (smap
+                             (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
+                            (ac
+                             (rflagsbits->ac (xr :rflags 0 x86)))
+                            (nxe
+                             (ia32_eferbits->nxe
+                              (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
            :in-theory (e/d* (ia32e-la-to-pa) ()))))
 
 ;; ----------------------------------------------------------------------
@@ -516,38 +523,46 @@
   :hints (("Goal"
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                                (logand 18446744073709547520
-                                                                                        (loghead 52 base-addr)))
-                                                     x86)))
-                                        12))
-                            (u/s-acc (logand
-                                      u/s-acc
-                                      (page-user-supervisor
-                                       (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                             (logand 18446744073709547520
-                                                                                     (loghead 52 base-addr)))
-                                                  x86))))
-                            (r/w-acc (logand
-                                      r/w-acc
-                                      (page-read-write
-                                       (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                             (logand 18446744073709547520
-                                                                                     (loghead 52 base-addr)))
-                                                  x86))))
+                            (base-addr
+                             (ash
+                              (ia32e-pde-pg-tablebits->pt
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
                             (x/d-acc
                              (logand
                               x/d-acc
                               (page-execute-disable
-                               (rm-low-64 (page-directory-entry-addr (logext 48 lin-addr)
-                                                                     (logand 18446744073709547520
-                                                                             (loghead 52 base-addr)))
-                                          x86))))))
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
@@ -580,38 +595,46 @@
            :do-not-induct t
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-directory-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                    (logand 18446744073709547520
-                                                                                            (loghead 52 base-addr)))
-                                                     x86)))
-                                        12))
-                            (u/s-acc (logand
-                                      u/s-acc
-                                      (page-user-supervisor
-                                       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                 (logand 18446744073709547520
-                                                                                         (loghead 52 base-addr)))
-                                                  x86))))
-                            (r/w-acc (logand
-                                      r/w-acc
-                                      (page-read-write
-                                       (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                                 (logand 18446744073709547520
-                                                                                         (loghead 52 base-addr)))
-                                                  x86))))
+                            (base-addr
+                             (ash
+                              (ia32e-pdpte-pg-dirbits->pd
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
                             (x/d-acc
                              (logand
                               x/d-acc
                               (page-execute-disable
-                               (rm-low-64 (page-dir-ptr-table-entry-addr (logext 48 lin-addr)
-                                                                         (logand 18446744073709547520
-                                                                                 (loghead 52 base-addr)))
-                                          x86))))))
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
            :in-theory (e/d* (disjoint-p
                              member-p
                              ia32e-la-to-pa-page-dir-ptr-table)
@@ -639,32 +662,36 @@
   :hints (("Goal"
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
-                            (base-addr (ash
-                                        (loghead
-                                         40
-                                         (logtail
-                                          12
-                                          (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                            (logand 18446744073709547520
-                                                                                    (loghead 52 base-addr)))
-                                                     x86)))
-                                        12))
-                            (u/s-acc (page-user-supervisor
-                                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                        (logand 18446744073709547520
-                                                                                (loghead 52 base-addr)))
-                                                 x86)))
-                            (r/w-acc (page-read-write
-                                      (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                        (logand 18446744073709547520
-                                                                                (loghead 52 base-addr)))
-                                                 x86)))
+                            (base-addr
+                             (ash
+                              (ia32e-pml4ebits->pdpt
+                               (rm-low-64
+                                (pml4-table-entry-addr (logext 48 lin-addr)
+                                                       (logand 18446744073709547520
+                                                               (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (page-user-supervisor
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
+                            (r/w-acc
+                             (page-read-write
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
                             (x/d-acc
                              (page-execute-disable
-                              (rm-low-64 (pml4-table-entry-addr (logext 48 lin-addr)
-                                                                (logand 18446744073709547520
-                                                                        (loghead 52 base-addr)))
-                                         x86)))))
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))))
            :do-not-induct t
            :in-theory (e/d* (disjoint-p
                              member-p
@@ -691,12 +718,14 @@
            :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-pml4-table-when-no-errors
                             (lin-addr (logext 48 lin-addr))
                             (cpl (cpl x86))
-                            (base-addr (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                            (wp (bool->bit (logbitp 16 (xr :ctr *cr0* x86))))
-                            (smep (loghead 1 (bool->bit (logbitp 20 (xr :ctr *cr4* x86)))))
-                            (smap 0)
-                            (ac (bool->bit (logbitp 18 (xr :rflags 0 x86))))
-                            (nxe (loghead 1 (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86)))))))
+                            (base-addr
+                             (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
+                            (wp (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
+                            (smep (cr4bits->smep (loghead 22 (xr :ctr *cr4* x86))))
+                            (smap (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
+                            (ac (rflagsbits->ac (xr :rflags 0 x86)))
+                            (nxe (ia32_eferbits->nxe
+                                  (loghead 12 (xr :msr *ia32_efer-idx* x86))))))
            :in-theory (e/d* (ia32e-la-to-pa) ()))))
 
 ;; ======================================================================

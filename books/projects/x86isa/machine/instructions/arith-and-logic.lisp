@@ -196,8 +196,7 @@
   :operation t
   :guard (and (natp operation)
 	      (<= operation 8))
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
@@ -223,7 +222,7 @@
 		       (reg-index reg rex-byte #.*r*))
 		     rex-byte x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -231,7 +230,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						operand-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -273,7 +272,7 @@
 		(eql operation #.*OP-TEST*))
 	    ;; CMP and TEST modify just the flags.
 	    (mv nil x86)
-	  (x86-operand-to-reg/mem$ proc-mode operand-size
+	  (x86-operand-to-reg/mem proc-mode operand-size
 				   inst-ac?
 				   nil ;; Not a memory pointer operand
 				   result
@@ -321,8 +320,7 @@
 	      (natp operation)
 	      (<= operation 8))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
@@ -347,7 +345,7 @@
 		       (reg-index reg rex-byte #.*r*))
 		     rex-byte x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -355,7 +353,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						operand-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -450,8 +448,7 @@
 					 rme-size-of-4-to-rme32)
 					())))
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (force
 						  (force)
@@ -487,7 +484,7 @@
        ((the (integer 1 4) imm-size)
 	(select-operand-size proc-mode imm-byte-operand? rex-byte t prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -495,7 +492,7 @@
 	    increment-RIP-by
 	    (the (signed-byte 64) E-addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						E-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -569,7 +566,7 @@
 		(eql operation #.*OP-TEST*))
 	    ;; CMP and TEST modify just the flags.
 	    (mv nil x86)
-	  (x86-operand-to-reg/mem$ proc-mode E-size
+	  (x86-operand-to-reg/mem proc-mode E-size
 				   inst-ac?
 				   nil ;; Not a memory pointer operand
 				   result
@@ -620,8 +617,7 @@
 					   rme-size-of-2-to-rme16
 					   rme-size-of-4-to-rme32)))
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip))
+  :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (force (force)
 							gpr-arith/logic-spec-8
@@ -709,8 +705,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-inc/dec-FE-FF)
@@ -728,7 +723,7 @@
        ((the (integer 1 8) r/mem-size)
 	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -736,7 +731,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						r/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -763,7 +758,7 @@
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((the (unsigned-byte 1) old-cf)
-	(rflags-slice :cf input-rflags))
+	(rflagsBits->cf input-rflags))
        ((mv result output-rflags undefined-flags)
 	(gpr-arith/logic-spec r/mem-size
 			      (if (eql reg 0)
@@ -776,11 +771,11 @@
        ;; Updating the x86 state:
        ;; CF is unchanged.
        (output-rflags (the (unsigned-byte 32)
-			(!rflags-slice :cf old-cf output-rflags)))
+			(!rflagsBits->cf old-cf output-rflags)))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
 
        ((mv flg1 x86)
-	(x86-operand-to-reg/mem$ proc-mode r/mem-size
+	(x86-operand-to-reg/mem proc-mode r/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 result
@@ -804,8 +799,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-inc/dec-4x)
@@ -827,7 +821,7 @@
        ;; Computing the flags and the result:
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        ((the (unsigned-byte 1) old-cf)
-	(rflags-slice :cf input-rflags))
+	(rflagsBits->cf input-rflags))
        ((mv result output-rflags undefined-flags)
 	(gpr-arith/logic-spec operand-size
 			      (if (logbitp 3 opcode) ; 48-4F
@@ -840,7 +834,7 @@
        ;; Updating the x86 state:
        ;; CF is unchanged (see Intel manual, Mar'17, Vol. 2, INC & DEC)
        (output-rflags (the (unsigned-byte 32)
-			   (!rflags-slice :cf old-cf output-rflags)))
+			   (!rflagsBits->cf old-cf output-rflags)))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (!rgfi-size operand-size reg result 0 x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -860,8 +854,7 @@
 
   :parents (one-byte-opcodes)
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-			       (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
   :body
 
   (b* ((ctx 'x86-not/neg-F6-F7)
@@ -878,7 +871,7 @@
        ((the (integer 0 8) r/mem-size)
 	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m x86))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        (inst-ac? t)
        ((mv flg0
@@ -886,7 +879,7 @@
 	    (the (unsigned-byte 3) increment-RIP-by)
 	    (the (signed-byte 64) addr)
 	    x86)
-	(x86-operand-from-modr/m-and-sib-bytes$ proc-mode #.*gpr-access*
+	(x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
 						r/mem-size
 						inst-ac?
 						nil ;; Not a memory pointer operand
@@ -931,12 +924,12 @@
 		   (cf (the (unsigned-byte 1) (if (equal 0 r/mem) 0 1)))
 		   (output-rflags
 		    (the (unsigned-byte 32)
-		      (!rflags-slice :cf cf output-rflags)))
+		      (!rflagsBits->cf cf output-rflags)))
 		   (x86 (write-user-rflags output-rflags undefined-flags x86)))
 	      x86)
 	  x86))
        ((mv flg1 x86)
-	(x86-operand-to-reg/mem$ proc-mode r/mem-size
+	(x86-operand-to-reg/mem proc-mode r/mem-size
 				 inst-ac?
 				 nil ;; Not a memory pointer operand
 				 result

@@ -1,7 +1,5 @@
 (in-package "RTL")
 
-(include-book "../rel9-rtl-pkg/lib/util")
-
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (include-book "basic")
@@ -21,11 +19,21 @@
        (bvecp b n)
        (> (+ a b) (expt 2 n))))
 
-(defund p0 (a b) (logxor a b))
+(defund p0 (a b)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b))))
+  (logxor a b))
 
-(defund k0 (a b n) (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
+(defund k0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
+  (logand (bits (lognot a) (1- n) 0) (bits (lognot b) (1- n) 0)))
 
 (defund w0 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
   (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
 
 (local-defthmd bvecp-w0
@@ -165,7 +173,7 @@
   :hints (("Goal" :in-theory (enable bits-mod)
                   :use ((:instance mod-sum (n (expt 2 (1+ j))) (a a) (b b))
 		        (:instance mod-sum (n (expt 2 (1+ j))) (b a) (a (mod b (expt 2 (1+ j)))))))))
-   
+
 (local-defthmd w0-1-5
   (implies (and (natp a) (natp b) (not (zp j)) (= (bitn (p0 a b) j) 0))
            (equal (bits (+ a b) j 0)
@@ -442,13 +450,13 @@
 
 (local-defthm conds-goal
   (implies (and (natp j) (< j n) (conds a b n j) (assumps a b n))
-           (goal a b n))	   
+           (goal a b n))
   :rule-classes ()
   :hints (("Goal" :induct (nats j))
           ("Subgoal *1/2" :use (w0-1 w0-0 (:instance bitn-0-1 (x (w0 a b n)) (n j))))))
 
 (local-defthm assumps-goal
-  (implies (assumps a b n) (goal a b n))	   
+  (implies (assumps a b n) (goal a b n))
   :rule-classes ()
   :hints (("Goal" :use ((:instance conds-goal (j (1- n)))))))
 
@@ -486,11 +494,11 @@
   (implies (assumps+ a b n)
 	   (and (not (zp (e a b n)))
 	        (< (e a b n) n)))
-  :hints (("Goal" :use (lza-cor-1  
+  :hints (("Goal" :use (lza-cor-1
 			(:instance expo-monotone (x 2) (y (bits (+ 1 a b) (+ -1 n) 0)))
 			(:instance expo<= (x (bits (+ 1 a b) (+ -1 n) 0)) (n (1- n)))
 			(:instance bits-bounds (x (+ 1 a b)) (i (1- n)) (j 0))))))
-			
+
 
 (local-defthmd lza-cor-3
   (implies (assumps+ a b n)
@@ -671,7 +679,7 @@
 		        (:instance expo-fl (x (/ (w0 a b n) 2)))
                         (:instance expo-shift (x (w0 (1+ a) b n)) (n -1))
                         (:instance expo-shift (x (w0 a b n)) (n -1))))))
-			
+
 (local-defthmd lza-cor-8-b
   (implies (and (assumps+ a b n)
                 (= (bitn b 0) 0))
@@ -794,7 +802,7 @@
 		        (:instance expo-fl (x (/ (w0 a b n) 2)))
                         (:instance expo-shift (x (w0 a (1+ b) n)) (n -1))
                         (:instance expo-shift (x (w0 a b n)) (n -1))))))
-			
+
 (defthm lza-cor
   (implies (and (not (zp n))
                 (bvecp a n)
@@ -806,7 +814,7 @@
   :hints (("Goal" :use (lza-thm lza-cor-7 lza-cor-8-a lza-cor-8-b lza-cor-20-a lza-cor-20-b
                         (:instance lza-thm (a (1+ a)))
 		        (:instance lza-thm (b (1+ b)))))))
-			
+
 ;;----------------------------------------------------------------------------------------
 
 (local-defund equivs (x y n)
@@ -816,7 +824,7 @@
             (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
 
 (local-defthmd lutz-1
-   (implies (and (natp z) (natp n))
+   (implies (and (integerp z) (natp n))
             (iff (= (bits z n 0) (1- (expt 2 (1+ n))))
 	         (and (= (bitn z n) 1)
 		      (= (bits z (1- n) 0) (1- (expt 2 n))))))
@@ -826,7 +834,7 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-2
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
             (iff (= (+ (bits x n 0) (bits y n 0)) (1- (expt 2 (1+ n))))
 	         (and (not (= (bitn x n) (bitn y n)))
 		      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
@@ -835,11 +843,11 @@
 			(:instance bitn-plus-bits (m 0))
                         (:instance bitn-plus-bits (x y) (m 0))
                         (:instance bits-bounds (i (1- n)) (j 0))
-                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))			
+                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))
 		  :nonlinearp t)))
 
 (local-defthmd lutz-3
-   (implies (and (natp x) (natp y) (natp n)
+   (implies (and (integerp x) (integerp y) (natp n)
                  (equivs x y n)
 		 (not (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
 	    (equivs x y (1+ n)))
@@ -850,14 +858,14 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-4
-  (implies (and (natp x) (natp y) (natp n))
+  (implies (and (integerp x) (integerp y) (natp n))
            (equal (bits (+ x y) n 0)
                   (mod (+ (bits x n 0) (bits y n 0))
                        (expt 2 (1+ n)))))
   :hints (("Goal" :in-theory (enable bits-mod))))
 
 (local-defthmd lutz-5
-  (implies (and (natp x) (natp y) (natp n)
+  (implies (and (integerp x) (integerp y) (natp n)
                 (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
            (equal (bits (+ x y) n 0)
                   (mod (+ (* (expt 2 n) (+ (bitn x n) (bitn y n)))
@@ -871,7 +879,7 @@
 		        (:instance bitn-plus-bits (x y) (m 0))))))
 
 (local-defthmd lutz-6
-  (implies (and (natp x) (natp y) (natp n)
+  (implies (and (integerp x) (integerp y) (natp n)
                 (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
            (iff (= (bits (+ x y) n 0) (1- (expt 2 (1+ n))))
                 (not (= (bitn x n) (bitn y n)))))
@@ -881,7 +889,7 @@
 		        (:instance bitn-0-1 (x y))))))
 
 (local-defthmd lutz-7
-   (implies (and (natp x) (natp y) (natp n)
+   (implies (and (integerp x) (integerp y) (natp n)
                  (equivs x y n)
 		 (= (bits (+ x y) (1- n) 0) (1- (expt 2 n))))
 	    (equivs x y (1+ n)))
@@ -893,32 +901,32 @@
 		  :nonlinearp t)))
 
 (local-defthmd lutz-8
-   (implies (and (natp x) (natp y) (not (zp n))
+   (implies (and (integerp x) (integerp y) (not (zp n))
                  (equivs x y (1- n)))
 	    (equivs x y n))
   :hints (("Goal" :use ((:instance lutz-3 (n (1- n)))
                         (:instance lutz-7 (n (1- n)))))))
 
 (local-defthmd lutz-9
-   (implies (and (natp x) (natp y))
+   (implies (and (integerp x) (integerp y))
 	    (equivs x y 0))
   :hints (("Goal" :in-theory (enable equivs))))
 
 (local-defthmd lutz-10
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
 	    (equivs x y n))
   :hints (("Goal" :induct (nats n))
           ("Subgoal *1/2" :use (lutz-8))
 	  ("Subgoal *1/1" :use (lutz-9))))
 
 (defthmd lutz-lemma
-   (implies (and (natp x) (natp y) (natp n))
+   (implies (and (integerp x) (integerp y) (natp n))
             (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
                  (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
   :hints (("Goal" :in-theory (enable equivs) :use (lutz-10))))
-			
+
 ;;----------------------------------------------------------------------------------------
 
 (local-defthmd lza-cor-21
@@ -983,7 +991,7 @@
   :hints (("Goal"  :nonlinearp t
                    :use (lza-cor-2 lza-cor-4
                          (:instance expo-unique (x (bits (+ a b) (1- n) 0)) (n (1- (e a b n))))))))
-	        
+
 (local-defthm lza-cor-alt
   (implies (and (not (zp n))
                 (bvecp a n)

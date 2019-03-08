@@ -94,7 +94,8 @@ FAILING_TEST_TARGETS := \
   float1/ok \
   paramtypes3/ok \
   paramtypes4/ok \
-  param3/ok
+  param3/ok \
+  iface_basic7/ok
 
 SPECFILES := $(wildcard */spec.sv)
 TESTS := $(patsubst %/spec.sv,%,$(SPECFILES))

@@ -12,7 +12,7 @@
 
 (include-book "kestrel/ethereum/crypto" :dir :system)
 (include-book "kestrel/ethereum/hex-prefix" :dir :system)
-(include-book "kestrel/ethereum/rlp" :dir :system)
+(include-book "kestrel/ethereum/rlp/encoding" :dir :system)
 (include-book "kestrel/utilities/defmax-nat/implementation" :dir :system)
 (include-book "kestrel/utilities/lists/take-theorems" :dir :system)
 (include-book "kestrel/utilities/omaps/fty" :dir :system)

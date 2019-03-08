@@ -70,7 +70,7 @@ to get the functions admitted.</li>
 ;;;  A PROGN is only generated if there is more that one form. The user will
 ;;;  have to know if PROGN's are allowed in the context in which WHEN is used.
 
-(defmacro when$ (test &rest forms)
+(defmacro when$cl (test &rest forms)
   (if (consp forms)
       (if (consp (cdr forms))
 	  `(IF ,test (PROGN ,@forms) NIL)
@@ -83,7 +83,7 @@ to get the functions admitted.</li>
 ;;;
 ;;;  See notes on WHEN above.
 
-(defmacro unless$ (test &rest forms)
+(defmacro unless$cl (test &rest forms)
   (if (consp forms)
       (if (consp (cdr forms))
 	  `(IF ,test NIL (PROGN ,@forms))

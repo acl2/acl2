@@ -264,7 +264,14 @@
 
 (verify-termination ACL2::>=-LEN)
 (verify-termination ACL2::ALL->=-LEN)
-(verify-termination ACL2::>=-LEN ACL2::ALL->=-LEN)
+
+; Commented out by Matt K., 12/23/2018.  The following is ill-formed, but was
+; formerly accepted as redundant.  Now it is rejected, so I'm commenting it
+; out.  Presumably its intended effect was already accomplished by the two
+; verify-termination forms just above, which in turn are not necessary since
+; ACL2 comes up with the two indicated functions already in :logic mode.
+; (verify-termination ACL2::>=-LEN ACL2::ALL->=-LEN)
+
 (defun strip-cadrs (x)
   (declare (xargs :guard (acl2::all->=-len x 2)))
   (cond ((atom x) nil)

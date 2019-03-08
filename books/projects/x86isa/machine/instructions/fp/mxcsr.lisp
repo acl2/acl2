@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Cuong Chau          <ckcuong@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 (in-package "X86ISA")
 
@@ -65,45 +68,44 @@
 
   :body
   (b* ((ctx 'x86-ldmxcsr/stmxcsr-Op/En-M)
-       ((when (not (equal proc-mode #.*64-bit-mode*)))
-        (!!ms-fresh :unimplemented-in-32-bit-mode))
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-       
+
+       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
        (inst-ac? ;; Exceptions Type 5
         t)
-
        ((mv flg0
             (the (unsigned-byte 32) mem)
             (the (integer 0 4) increment-RIP-by)
-            (the (signed-byte 64) v-addr)
+            (the (signed-byte 64) addr)
             x86)
         (x86-operand-from-modr/m-and-sib-bytes proc-mode
-         #.*gpr-access* 4 inst-ac?
-         nil ;; Not a memory pointer operand
-         p2 p4? temp-rip rex-byte r/m mod sib
-         0 ;; No immediate operand
-         x86))
-
+                                                #.*gpr-access*
+                                                4
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
        ((when flg0)
         (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       ((the (signed-byte #.*max-linear-address-size+1*) temp-rip)
-        (+ temp-rip increment-RIP-by))
-
-       ((when (mbe :logic (not (canonical-address-p temp-rip))
-                   :exec (<= #.*2^47*
-                             (the (signed-byte
-                                   #.*max-linear-address-size+1*)
-                               temp-rip))))
-        (!!ms-fresh :temp-rip-not-canonical temp-rip))
-
-       ((when (not (canonical-address-p v-addr)))
-        (!!ms-fresh :v-addr-not-canonical v-addr))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -117,10 +119,17 @@
           (3 ;; STMXCSR
            (b* ((mxcsr (the (unsigned-byte 32) (mxcsr x86)))
                 ((mv flg1 x86)
-                 (x86-operand-to-reg/mem
-                  4 inst-ac?
-                  nil ;; Not a memory pointer operand
-                  mxcsr v-addr rex-byte r/m mod x86))
+                 (x86-operand-to-reg/mem proc-mode
+                                          4
+                                          inst-ac?
+                                          nil ;; Not a memory pointer operand
+                                          mxcsr
+                                          seg-reg
+                                          addr
+                                          rex-byte
+                                          r/m
+                                          mod
+                                          x86))
                 ;; Note: If flg1 is non-nil, we bail out without changing the
                 ;; x86 state.
                 ((when flg1)
@@ -129,7 +138,7 @@
           (otherwise ;; Should never be reached, unimplemented.
            x86)))
 
-       (x86 (!rip temp-rip x86)))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;; ======================================================================

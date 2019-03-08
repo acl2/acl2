@@ -6,7 +6,7 @@
 ;;
 
 (in-package "SMT")
-(include-book "tools/bstar" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (include-book "prove")
 (set-state-ok t)
 

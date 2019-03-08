@@ -183,14 +183,6 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   (seq tokstream
         (id := (vl-match-token :vl-idtoken))
 
-        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id)
-                                                    (vl-tokstream->pstate))
-          ;; We make this very strict because otherwise it seems that ambiguities
-          ;; can arise.
-          (return-raw
-           (vl-parse-error (cat "Parameter names that shadow types are not supported: "
-                                (vl-idtoken->name id)))))
-
         (when (not (eq (vl-loadconfig->edition config) :verilog-2005))
           ;; Per the SystemVerilog-2012 grammar, only unpacked_dimensions, not
           ;; variable_dimensions, are allowed here.
@@ -275,14 +267,6 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :count strong
   (seq tokstream
         (id := (vl-match-token :vl-idtoken))
-
-        (when (vl-parsestate-is-user-defined-type-p (vl-idtoken->name id)
-                                                    (vl-tokstream->pstate))
-          ;; We make this very strict because otherwise it seems that ambiguities
-          ;; can arise.
-          (return-raw
-           (vl-parse-error (cat "Parameter names that shadow types are not supported: " (vl-idtoken->name id)))))
-
         (:= (vl-match-token :vl-equalsign))
         (type := (vl-parse-datatype))
         (return (make-vl-paramdecl
@@ -610,6 +594,68 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
 ;                                    | local_parameter_declaration
 ;                                    | data_type list_of_param_assignments
 ;                                    | 'type' list_of_type_assignments
+;
+; This is a bit tricky.
+;
+; The list_of_param_assignments can match plain, untyped parameters like #( FOO
+; = 1, BAR = 2 ).  If this is followed by a data_type parameter port declaration,
+; then we could have something like this:
+;
+;     #( FOO = 1,
+;        BAR [3:0] = 4,
+;        foo_t BAZ = 2,
+;        ...)
+;
+; Our strategy is to use back-tracking to match as many plain parameter
+; assignments as we can, and then switch to just parsing a parameter port
+; declaration list.
+
+(defconst *vl-parse-0+-param-assignments-implicit-type*
+  ;; Type for plain param_assignments (to avoid re-consing)
+  ;;  - I'm not at all clear what the type of these parameter assignments should be, but
+  ;;    it seems most reasonable to treat them as plain-Jane, implicit value parameters,
+  ;;    as we would do if someone had written "parameter" first.
+  (make-vl-implicitvalueparam :range nil :sign nil))
+
+(defparser vl-parse-0+-param-assignments (leading-comma-required)
+  ;; Only intended for use in vl-parse-module-parameter-port-list-2012
+  ;;
+  ;; We match an optional list_of_param_assignments.
+  ;;   If it is followed by a comma, we read up to the comma (but does not eat the comma)
+  ;;   If it is followed by a right paren, we read up to the paren (but do not eat the paren)
+  ;;
+  ;; Otherwise, we assume we have made a mistake and there are no
+  ;; param_assignments here that we want.  Note that it is legal to have type-
+  ;; and RHS-free param_assignments like #(foo).  So by naively looking for as
+  ;; many param assignments as we can find, if we encounter a parameter
+  ;; declaration like #(foo_t SIZE_B = 1), we might mistakenly think that foo_t
+  ;; is a type- and RHS-free param assignment.  To avoid this ambiguity, make
+  ;; sure that we see a comma or right-paren in order to succeed.
+  :result (vl-paramdecllist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails never
+  :count strong-on-value
+  (declare (xargs :ruler-extenders :all))
+  (b* ((backup (vl-tokstream-save))
+       ((mv err assigns tokstream)
+        (seq tokstream
+             (when leading-comma-required
+               (:= (vl-match-token :vl-comma)))
+             (first := (vl-parse-param-assignment nil ;; atts
+                                                  nil ;; localp
+                                                  *vl-parse-0+-param-assignments-implicit-type*))
+             (unless (vl-is-some-token? '(:vl-comma :vl-rparen))
+               (return-raw (mv t nil tokstream)))
+             (rest := (vl-parse-0+-param-assignments t))
+             (return (cons first rest))))
+       ((unless err)
+        (mv err assigns tokstream))
+       ;; The error can only come from trying to parse 'first', so this is the
+       ;; case where we have no more parameter assignments to return.  Restore
+       ;; parse state and return nothing.
+       (tokstream (vl-tokstream-restore backup)))
+    (mv nil nil tokstream)))
 
 (defparser vl-parse-parameter-port-declaration-2012 ()
   ;; SystemVerilog-2012 only.
@@ -655,6 +701,9 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
        (return (append first rest))))
 
 (defparser vl-parse-module-parameter-port-list-2012 ()
+;       parameter_port_list ::= '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
+;                             | '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
+;                             | '#' '(' ')'
   :result (vl-paramdecllist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -668,25 +717,17 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
         (:= (vl-match-token :vl-pound))
         (:= (vl-match-token :vl-lparen))
 
-        (when (and (vl-is-token? :vl-idtoken)
-                   (not (vl-parsestate-is-user-defined-type-p (vl-idtoken->name (car (vl-tokstream->tokens)))
-                                                              (vl-tokstream->pstate))))
-          ;; Identifier that is not a type.  Seems like a list_of_param_assignments.
-          ;; Some notes:
-          ;;  - The parser for list-of-param-assignments is careful not to eat the comma afterward
-          ;;    unless things continue to look like additional param-assignments.
-          ;;  - I'm not at all clear what the type of these parameter assignments should be, but
-          ;;    it seems most reasonable to treat them as plain-Jane, implicit value parameters,
-          ;;    as we would do if someone had written "parameter" first.
-          (decls1 := (vl-parse-list-of-param-assignments nil ;; no attributes
-                                                         nil ;; not local
-                                                         (make-vl-implicitvalueparam :range nil :sign nil)))
+        ;; Try to match as many plain param_assignment as we can
+        (decls1 := (vl-parse-0+-param-assignments
+                    nil ; No comma required before the first param assignment
+                    ))
 
-          ;; At this point we should have eaten everything except for the { , parameter_port_declaration }
-          ;; section.  Eat the comma so that we can handle these parameter_port_declarations uniformly
-          ;; with the other cases.
-          (when (vl-is-token? :vl-comma)
-            (:= (vl-match))))
+        ;; At this point we should have eaten everything except for the { ,
+        ;; parameter_port_declaration } section.  Eat the comma so that we can
+        ;; handle these parameter_port_declarations uniformly with the other
+        ;; cases.
+        (when (vl-is-token? :vl-comma)
+          (:= (vl-match)))
 
         ;; Now either we had a list_of_param_assignments first or we didn't.
         ;; Either way, we ate the commas and now we should be looking at a list
