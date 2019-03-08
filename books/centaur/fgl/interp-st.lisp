@@ -630,14 +630,23 @@
 
 
 
-(define interp-st-bfr-p (x &key (interp-st 'interp-st))
+(define interp-st-bfr-p (x &optional (interp-st 'interp-st))
   :enabled t
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (ok)
              (lbfr-p x)
              ok))
 
-(define interp-st-bfr-listp (x &key (interp-st 'interp-st))
+(define interp-st-bfr-fix (x &optional (interp-st 'interp-st))
+  :enabled t
+  :guard (interp-st-bfr-p x)
+  (mbe :logic (stobj-let ((logicman (interp-st->logicman interp-st)))
+                         (new-x)
+                         (lbfr-fix x)
+                         new-x)
+       :exec x))
+
+(define interp-st-bfr-listp (x &optional (interp-st 'interp-st))
   :enabled t
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (ok)
@@ -645,21 +654,21 @@
              ok))
 
 
-(define interp-st-bfr-mode (&key (interp-st 'interp-st))
+(define interp-st-bfr-mode (&optional (interp-st 'interp-st))
   :enabled t
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (mode)
              (logicman->mode logicman)
              mode))
 
-(define interp-st-bfr-state (&key (interp-st 'interp-st))
+(define interp-st-bfr-state (&optional (interp-st 'interp-st))
   :enabled t
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (bfrstate)
              (logicman->bfrstate logicman)
              bfrstate))
 
-(define interp-st-bfr-not (x &key (interp-st 'interp-st))
+(define interp-st-bfr-not (x &optional (interp-st 'interp-st))
   :enabled t
   :inline t
   :guard (interp-st-bfr-p x)

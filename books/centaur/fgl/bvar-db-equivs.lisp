@@ -34,146 +34,6 @@
 (include-book "pathcond")
 (include-book "contexts")
 
-;; (local (include-book "std/lists/take" :dir :system))
-;; (local (in-theory (disable acl2::take-redefinition acl2::take-of-1)))
-
-;; (local (defthm take-of-symbol-list
-;;          (implies (symbol-listp x)
-;;                   (symbol-listp (take n x)))
-;;          :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
-
-;; (define context-p (x)
-;;   (or (pseudo-fnsym-p x)
-;;       (and (pseudo-lambda-p x)
-;;            (eql (len (acl2::pseudo-lambda->formals x)) 1)))
-;;   ///
-;;   (define context-fix ((x context-p))
-;;     :Returns (new-x context-p)
-;;     (mbe :logic (if (pseudo-fnsym-p x)
-;;                     x
-;;                   (b* (((pseudo-lambda x) (pseudo-lambda-fix x)))
-;;                     (pseudo-lambda (take 1 x.formals) x.body)))
-;;          :exec x)
-;;     ///
-;;     (defthm context-fix-when-context-p
-;;       (implies (context-p x)
-;;                (equal (context-fix x) x)))
-
-;;     (fty::deffixtype context :pred context-p :fix context-fix :equiv context-equiv
-;;       :define t)))
-
-
-(define check-equiv-replacement ((x gl-object-p)
-                                 (equiv-term gl-object-p)
-                                 (contexts equiv-contextsp)
-                                 state)
-  :returns (mv ok
-               (equiv gl-object-p)
-               negp)
-  (declare (ignorable state))
-  ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
-  (b* (((when (hons-equal (gl-object-fix x)
-                     (gl-object-fix equiv-term)))
-        (mv t nil t))
-       ((unless (gl-object-case equiv-term :g-apply))
-        (mv nil nil nil))
-       (equiv (g-apply->fn equiv-term))
-       ((unless (or (eq equiv 'equal)
-                    (member-eq equiv (equiv-contexts-fix contexts))))
-        (mv nil nil nil))
-       (args (g-apply->args equiv-term))
-       ((unless (equal (len args) 2))
-        (mv nil nil nil))
-       ((when (hons-equal (car args) (gl-object-fix x)))
-        (mv t (cadr args) nil))
-       ((when (hons-equal (cadr args) (gl-object-fix x)))
-        (mv t (car args) nil)))
-    (mv nil nil nil)))
-
-
-
-(define try-equivalences ((x gl-object-p)
-                          (bvars nat-listp)
-                          (contexts equiv-contextsp)
-                          pathcond
-                          bvar-db
-                          logicman
-                          state)
-  :guard (and (bvar-list-okp bvars bvar-db)
-              (logicman-check-nvars (next-bvar bvar-db)))
-  :returns (mv ok
-               (new-x gl-object-p)
-               (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
-  (b* ((pathcond (pathcond-fix pathcond))
-       ((when (atom bvars)) (mv nil nil pathcond))
-       (bvar (lnfix (car bvars)))
-       (bfr-var (bfr-var bvar logicman))
-       (equiv-term (get-bvar->term bvar bvar-db))
-       ((mv check-ok repl negp)
-        (check-equiv-replacement x equiv-term contexts state))
-       ((unless check-ok)
-        (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
-       ((mv ans pathcond) (logicman-pathcond-implies bfr-var pathcond logicman)))
-    (if (if negp (eql ans 0) (eql ans 1))
-        (mv t repl pathcond)
-      (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))))
-
-
-(define try-equivalences-loop ((x gl-object-p)
-                               (contexts equiv-contextsp)
-                               (clk natp)
-                               pathcond
-                               bvar-db
-                               logicman
-                               state)
-  :guard (logicman-check-nvars (next-bvar bvar-db))
-  :measure (nfix clk)
-  :returns (mv error
-               (replacement gl-object-p)
-               (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
-  (b* ((pathcond (pathcond-fix pathcond))
-       ((when (zp clk)) (mv "try-equivalences ran out of clock -- equiv loop?"
-                            (gl-object-fix x)
-                            pathcond))
-       (equivs (get-term->equivs x bvar-db))
-       ((mv ok repl pathcond)
-        (try-equivalences x equivs contexts pathcond bvar-db logicman state))
-       ((when ok)
-        (try-equivalences-loop repl contexts (1- clk) pathcond bvar-db logicman state)))
-    (mv nil (gl-object-fix x) pathcond)))
-
-
-(define maybe-add-equiv-term ((test-obj gl-object-p)
-                              (bvar natp)
-                              bvar-db
-                              state)
-  :guard (and (<= (base-bvar bvar-db) bvar)
-              (< bvar (next-bvar bvar-db)))
-  :returns (new-bvar-db)
-  (declare (ignorable state))
-  (gl-object-case test-obj
-    :g-var (add-term-equiv test-obj bvar bvar-db)
-    :g-apply (b* ((fn test-obj.fn)
-                  (args test-obj.args)
-
-                  ((unless (and (eq fn 'equal)
-                                (equal (len args) 2)))
-                   (add-term-equiv test-obj bvar bvar-db))
-                  ((list a b) args)
-                  ;; The rest is just a heuristic determination of which should rewrite to
-                  ;; the other. Note: in most cases we don't rewrite either way!
-                  (a-goodp (gl-object-case a
-                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
-                  ((when a-goodp)
-                   (add-term-equiv b bvar bvar-db))
-                  (b-goodp (gl-object-case b
-                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
-                  ((when b-goodp)
-                   (add-term-equiv a bvar bvar-db)))
-               bvar-db)
-
-    :otherwise bvar-db))
-
 
 
 (define bvar-db-bfrlist-aux ((n natp) bvar-db)
@@ -237,16 +97,175 @@
                                     (bvar-db-bfrlist
                                      subsetp-bfrlist-of-bvar-db-bfrlist))
              :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
-                    (m (get-term->bvar$a obj bvar-db)))))))
+                    (m (get-term->bvar$a obj bvar-db))))))))
+
+;; (local (include-book "std/lists/take" :dir :system))
+;; (local (in-theory (disable acl2::take-redefinition acl2::take-of-1)))
+
+;; (local (defthm take-of-symbol-list
+;;          (implies (symbol-listp x)
+;;                   (symbol-listp (take n x)))
+;;          :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+
+;; (define context-p (x)
+;;   (or (pseudo-fnsym-p x)
+;;       (and (pseudo-lambda-p x)
+;;            (eql (len (acl2::pseudo-lambda->formals x)) 1)))
+;;   ///
+;;   (define context-fix ((x context-p))
+;;     :Returns (new-x context-p)
+;;     (mbe :logic (if (pseudo-fnsym-p x)
+;;                     x
+;;                   (b* (((pseudo-lambda x) (pseudo-lambda-fix x)))
+;;                     (pseudo-lambda (take 1 x.formals) x.body)))
+;;          :exec x)
+;;     ///
+;;     (defthm context-fix-when-context-p
+;;       (implies (context-p x)
+;;                (equal (context-fix x) x)))
+
+;;     (fty::deffixtype context :pred context-p :fix context-fix :equiv context-equiv
+;;       :define t)))
+
+
+(define check-equiv-replacement ((x gl-object-p)
+                                 (equiv-term gl-object-p)
+                                 (contexts equiv-contextsp)
+                                 state)
+  :returns (mv ok
+               (equiv gl-object-p)
+               negp)
+  (declare (ignorable state))
+  ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
+  (b* (((when (hons-equal (gl-object-fix x)
+                     (gl-object-fix equiv-term)))
+        (mv t nil t))
+       ((unless (gl-object-case equiv-term :g-apply))
+        (mv nil nil nil))
+       (equiv (g-apply->fn equiv-term))
+       ((unless (or (eq equiv 'equal)
+                    (member-eq equiv (equiv-contexts-fix contexts))))
+        (mv nil nil nil))
+       (args (g-apply->args equiv-term))
+       ((unless (equal (len args) 2))
+        (mv nil nil nil))
+       ((when (hons-equal (car args) (gl-object-fix x)))
+        (mv t (cadr args) nil))
+       ((when (hons-equal (cadr args) (gl-object-fix x)))
+        (mv t (car args) nil)))
+    (mv nil nil nil))
+  ///
+  (defret gl-object-bfrlist-of-<fn>
+    (implies (not (member v (gl-object-bfrlist equiv-term)))
+             (not (member v (gl-object-bfrlist equiv))))))
+
+
+
+(define try-equivalences ((x gl-object-p)
+                          (bvars nat-listp)
+                          (contexts equiv-contextsp)
+                          pathcond
+                          bvar-db
+                          logicman
+                          state)
+  :guard (and (bvar-list-okp bvars bvar-db)
+              (logicman-check-nvars (next-bvar bvar-db)))
+  :returns (mv ok
+               (new-x gl-object-p)
+               (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
+  (b* ((pathcond (pathcond-fix pathcond))
+       ((when (atom bvars)) (mv nil nil pathcond))
+       (bvar (lnfix (car bvars)))
+       (bfr-var (bfr-var bvar logicman))
+       (equiv-term (get-bvar->term bvar bvar-db))
+       ((mv check-ok repl negp)
+        (check-equiv-replacement x equiv-term contexts state))
+       ((unless check-ok)
+        (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
+       ((mv ans pathcond) (logicman-pathcond-implies bfr-var pathcond logicman)))
+    (if (if negp (eql ans 0) (eql ans 1))
+        (mv t repl pathcond)
+      (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state)))
+  ///
+  (defret gl-object-bfrlist-of-<fn>
+    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+                  (bvar-list-okp$a bvars bvar-db))
+             (not (member v (gl-object-bfrlist new-x))))))
+
+
+(define try-equivalences-loop ((x gl-object-p)
+                               (contexts equiv-contextsp)
+                               (clk natp)
+                               pathcond
+                               bvar-db
+                               logicman
+                               state)
+  :guard (logicman-check-nvars (next-bvar bvar-db))
+  :measure (nfix clk)
+  :returns (mv error
+               (replacement gl-object-p)
+               (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
+  (b* ((pathcond (pathcond-fix pathcond))
+       ((when (zp clk)) (mv "try-equivalences ran out of clock -- equiv loop?"
+                            (gl-object-fix x)
+                            pathcond))
+       (equivs (get-term->equivs x bvar-db))
+       ((mv ok repl pathcond)
+        (try-equivalences x equivs contexts pathcond bvar-db logicman state))
+       ((when ok)
+        (try-equivalences-loop repl contexts (1- clk) pathcond bvar-db logicman state)))
+    (mv nil (gl-object-fix x) pathcond))
+  ///
+  (defret gl-object-bfrlist-of-<fn>
+    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+                  (not (member v (gl-object-bfrlist x))))
+             (not (member v (gl-object-bfrlist replacement))))))
+
+
+(define maybe-add-equiv-term ((test-obj gl-object-p)
+                              (bvar natp)
+                              bvar-db
+                              state)
+  :guard (and (<= (base-bvar bvar-db) bvar)
+              (< bvar (next-bvar bvar-db)))
+  :returns (new-bvar-db)
+  (declare (ignorable state))
+  (gl-object-case test-obj
+    :g-var (add-term-equiv test-obj bvar bvar-db)
+    :g-apply (b* ((fn test-obj.fn)
+                  (args test-obj.args)
+
+                  ((unless (and (eq fn 'equal)
+                                (equal (len args) 2)))
+                   (add-term-equiv test-obj bvar bvar-db))
+                  ((list a b) args)
+                  ;; The rest is just a heuristic determination of which should rewrite to
+                  ;; the other. Note: in most cases we don't rewrite either way!
+                  (a-goodp (gl-object-case a
+                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
+                  ((when a-goodp)
+                   (add-term-equiv b bvar bvar-db))
+                  (b-goodp (gl-object-case b
+                             :g-integer t :g-boolean t :g-concrete t :otherwise nil))
+                  ((when b-goodp)
+                   (add-term-equiv a bvar bvar-db)))
+               bvar-db)
+
+    :otherwise bvar-db)
+  ///
+  
 
   (defthm bvar-db-bfrlist-of-maybe-add-equiv-term
     (equal (bvar-db-bfrlist (maybe-add-equiv-term obj bvar bvar-db state))
            (bvar-db-bfrlist bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term
+                                      bvar-db-bfrlist
                                       add-term-equiv))))
 
   (defthm next-bvar$a-of-maybe-add-equiv-term
     (equal (next-bvar$a (maybe-add-equiv-term x bvar bvar-db state))
            (next-bvar$a bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term)))))
+
+
 

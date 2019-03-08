@@ -390,7 +390,10 @@
         (mv nil nil))
        ((mv err ans)
         (magic-ev-fncall fn (g-concretelist-vals args) state t nil)))
-    (mv (not err) (g-concrete ans))))
+    (mv (not err) (g-concrete ans)))
+  ///
+  (defret gl-object-bfrlist-of-<fn>
+    (equal (gl-object-bfrlist ans) nil)))
 
 
 (def-b*-binder gl-interp-recursive-call
@@ -986,19 +989,48 @@
                              state)
   :returns (mv successp
                (ans gl-object-p)
-               interp-st
+               new-interp-st
                state)
   (if dont
       (mv nil nil interp-st state)
     (case (pseudo-fnsym-fix fn)
       (int (gl-int-primitive args interp-st state))
-      (intcons (gl-intcons-primitive args interp-st state))
-      (intcons* (gl-intcons-primitive args interp-st state))
+      ((intcons intcons*) (gl-intcons-primitive args interp-st state))
       (endint (gl-endint-primitive args interp-st state))
       (intcar (gl-intcar-primitive args interp-st state))
       (intcdr (gl-intcdr-primitive args interp-st state))
       (bool (gl-bool-primitive args interp-st state))
-      (otherwise (mv nil nil interp-st state)))))
+      (otherwise (mv nil nil interp-st state))))
+  ///
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  ;; (lbfr-listp (gl-objectlist-bfrlist args)
+                  ;;             (interp-st->logicman interp-st))
+                  )
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (and ;;(interp-st-bfrs-ok interp-st)
+              (lbfr-listp (gl-objectlist-bfrlist args)
+                          (interp-st->logicman interp-st))
+                  )
+             (lbfr-listp (gl-object-bfrlist ans)
+                         (interp-st->logicman new-interp-st)))
+    :hints(("Goal" :in-theory (enable gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive
+                                      gl-objectlist-bfrlist
+                                      bfr-listp-when-not-member-witness)))))
+                                      
       
 
 
@@ -1022,6 +1054,32 @@
 
 
 
+(define gl-interp-finish-simplify-if-test-ite ((test-bfr interp-st-bfr-p)
+                                               (then-bfr interp-st-bfr-p)
+                                               (else-bfr interp-st-bfr-p)
+                                               (then-unreachable)
+                                               (else-unreachable)
+                                               interp-st)
+  :returns (mv err
+               (ite (interp-st-bfr-p ite new-interp-st))
+               new-interp-st)
+  (b* (((when then-unreachable)
+        (if else-unreachable
+            (mv :unreachable nil interp-st)
+          (mv nil (interp-st-bfr-fix else-bfr) interp-st)))
+       ((when else-unreachable)
+        (mv nil (interp-st-bfr-fix then-bfr) interp-st)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ite logicman)
+               (bfr-ite test-bfr then-bfr else-bfr)
+               (mv nil ite interp-st)))
+  ///
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st)))
+
+  (defret lbfr-p-of-<fn>
+    (lbfr-p ite (interp-st->logicman new-interp-st))))
 
 
 
@@ -1139,6 +1197,8 @@
                            append)))
 
 (set-state-ok t)
+
+
 
 (progn
   (with-output
@@ -1325,6 +1385,7 @@
              ((when successp)
               (b* ((interp-st (interp-st-pop-scratch arity interp-st)))
                 (mv nil ans interp-st state)))
+             (args (take arity (interp-st-scratch interp-st)))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((mv err successp ans interp-st state)
@@ -1744,6 +1805,7 @@
           :g-ite (gl-interp-simplify-if-test-ite xobj interp-st state)
           :g-apply (gl-interp-simplify-if-test-fncall xobj interp-st state)))
 
+      ;; BOZO should we have a version of this for OR?
       (define gl-interp-simplify-if-test-ite ((xobj gl-object-p)
                                               (interp-st interp-st-bfrs-ok)
                                               state)
@@ -1767,8 +1829,8 @@
              ((when err)
               (b* ((interp-st (interp-st-pop-scratch 2 interp-st)))
                 (mv err nil interp-st state)))
-             (interp-st (interp-st-push-bool-scratch test-bfr interp-st))
              (xobj.then (car (interp-st-scratch interp-st)))
+             (interp-st (interp-st-push-bool-scratch test-bfr interp-st))
              (interp-st (interp-st-pop-scratch 1 interp-st))
              ((gl-interp-recursive-call err then-unreachable then-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.then interp-st state))
@@ -1777,8 +1839,8 @@
                    (interp-st (interp-st-pop-scratch 1 interp-st)))
                 (mv err nil interp-st state)))
              (test-bfr (car (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-push-bool-scratch then-bfr interp-st))
              (xobj.else (car (interp-st-scratch interp-st)))
+             (interp-st (interp-st-push-bool-scratch then-bfr interp-st))
              (interp-st (interp-st-pop-scratch 1 interp-st))
              ((mv err else-unreachable else-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.else interp-st state))
@@ -1788,17 +1850,21 @@
              (then-bfr (car (interp-st-bool-scratch interp-st)))
              (test-bfr (cadr (interp-st-bool-scratch interp-st)))
              (interp-st (interp-st-pop-bool-scratch 2 interp-st))
-             ((when then-unreachable)
-              (if else-unreachable
-                  (mv :unreachable nil interp-st state)
-                (mv nil else-bfr interp-st state)))
-             ((when else-unreachable)
-              (mv nil then-bfr interp-st state))
-             ((mv ite interp-st) (stobj-let ((logicman (interp-st->logicman interp-st)))
-                                            (ite logicman)
-                                            (bfr-ite test-bfr then-bfr else-bfr)
-                                            (mv ite interp-st))))
-          (mv nil ite interp-st state)))
+             ((mv err bfr interp-st)
+              (gl-interp-finish-simplify-if-test-ite
+               test-bfr then-bfr else-bfr then-unreachable else-unreachable interp-st)))
+          (mv err bfr interp-st state)))
+          ;;    ((when then-unreachable)
+          ;;     (if else-unreachable
+          ;;         (mv :unreachable nil interp-st state)
+          ;;       (mv nil else-bfr interp-st state)))
+          ;;    ((when else-unreachable)
+          ;;     (mv nil then-bfr interp-st state))
+          ;;    ((mv ite interp-st) (stobj-let ((logicman (interp-st->logicman interp-st)))
+          ;;                                   (ite logicman)
+          ;;                                   (bfr-ite test-bfr then-bfr else-bfr)
+          ;;                                   (mv ite interp-st))))
+          ;; (mv nil ite interp-st state)))
 
       (define gl-interp-simplify-if-test-fncall ((xobj gl-object-p)
                                                  (interp-st interp-st-bfrs-ok)
@@ -2175,7 +2241,7 @@
 
 (local
  (defthm major-stack-bfrlist-of-stack$a-push-scratch
-   (acl2::set-equiv (major-stack-bfrlist (stack$a-push-scratch obj stack))
+   (set-equiv (major-stack-bfrlist (stack$a-push-scratch obj stack))
               (append (gl-object-bfrlist obj)
                       (major-stack-bfrlist stack)))
    :hints(("Goal" :in-theory (enable major-stack-bfrlist
@@ -2184,9 +2250,28 @@
                                      minor-frame-bfrlist
                                      stack$a-push-scratch)))))
 
+
+(local (defthm gl-objectlist-bfrlist-of-append
+         (equal (gl-objectlist-bfrlist (append x y))
+                (append (gl-objectlist-bfrlist x)
+                        (gl-objectlist-bfrlist y)))
+         :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist append)))))
+
+(local
+ (defthm major-stack-bfrlist-of-stack$a-pushlist-scratch
+   (set-equiv (major-stack-bfrlist (stack$a-pushlist-scratch objs stack))
+                    (append (gl-objectlist-bfrlist objs)
+                            (major-stack-bfrlist stack)))
+   :hints(("Goal" :in-theory (enable major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-stack-bfrlist
+                                     minor-frame-bfrlist
+                                     stack$a-pushlist-scratch)
+           :do-not-induct t))))
+
 (local
  (defthm major-stack-bfrlist-of-stack$a-push-bool-scratch
-   (acl2::set-equiv (major-stack-bfrlist (stack$a-push-bool-scratch obj stack))
+   (set-equiv (major-stack-bfrlist (stack$a-push-bool-scratch obj stack))
                     (cons obj
                           (major-stack-bfrlist stack)))
    :hints(("Goal" :in-theory (enable stack$a-push-bool-scratch
@@ -2247,10 +2332,47 @@
            :do-not-induct t))))
 
 (local
+ (defthm major-stack-bfrlist-of-stack$a-set-minor-bindings
+   (implies (and (not (member v (major-stack-bfrlist stack)))
+                 (not (member v (gl-object-alist-bfrlist bindings))))
+            (not (member v (major-stack-bfrlist (stack$a-set-minor-bindings bindings stack)))))
+   :hints(("Goal" :in-theory (enable stack$a-set-minor-bindings
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist
+                                     minor-stack-bfrlist)
+           :expand ((major-stack-bfrlist stack)
+                    (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+           :do-not-induct t))))
+
+(local
+ (defthm major-stack-bfrlist-of-stack$a-add-minor-bindings
+   (set-equiv (major-stack-bfrlist (stack$a-add-minor-bindings bindings stack))
+              (append (gl-object-alist-bfrlist bindings)
+                      (major-stack-bfrlist stack)))
+   :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist
+                                     minor-stack-bfrlist)
+           :do-not-induct t))))
+
+(local
  (defthm major-stack-bfrlist-of-stack$a-push-frame
    (equal (major-stack-bfrlist (stack$a-push-frame stack))
           (major-stack-bfrlist stack))
    :hints(("Goal" :in-theory (enable stack$a-push-frame
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist
+                                     minor-stack-bfrlist)
+           :do-not-induct t))))
+
+(local
+ (defthm major-stack-bfrlist-of-stack$a-push-minor-frame
+   (equal (major-stack-bfrlist (stack$a-push-minor-frame stack))
+          (major-stack-bfrlist stack))
+   :hints(("Goal" :in-theory (enable stack$a-push-minor-frame
                                      major-stack-bfrlist
                                      major-frame-bfrlist
                                      minor-frame-bfrlist
@@ -2270,7 +2392,19 @@
            :do-not-induct t))))
 
 (local
-   (defthm gl-object-alist-bfrlist-of-stack$a-bindings-bindings
+ (defthm major-stack-bfrlist-of-stack$a-pop-minor-frame
+   (implies (not (member v (major-stack-bfrlist stack)))
+            (not (member v (major-stack-bfrlist (stack$a-pop-minor-frame stack)))))
+   :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist
+                                     minor-stack-bfrlist
+                                     default-car)
+           :do-not-induct t))))
+
+(local
+   (defthm gl-object-alist-bfrlist-of-stack$a-bindings
      (implies (not (member v (major-stack-bfrlist stack)))
               (not (member v (gl-object-alist-bfrlist (stack$a-bindings stack)))))
      :hints(("Goal" :in-theory (enable stack$a-bindings
@@ -2279,12 +2413,61 @@
              :do-not-induct t))))
 
 (local
+ (defthm gl-object-alist-bfrlist-of-stack$a-minor-bindings
+   (implies (not (member v (major-stack-bfrlist stack)))
+            (not (member v (gl-object-alist-bfrlist (stack$a-minor-bindings stack)))))
+   :hints(("Goal" :in-theory (enable stack$a-minor-bindings
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-stack-bfrlist
+                                     minor-frame-bfrlist)
+           :expand ((major-stack-bfrlist stack)
+                    (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+           :do-not-induct t))))
+
+(local
+   (defthm gl-objectlist-bfrlist-of-stack$a-scratch
+     (implies (not (member v (major-stack-bfrlist stack)))
+              (not (member v (gl-objectlist-bfrlist (stack$a-scratch stack)))))
+     :hints(("Goal" :in-theory (enable stack$a-scratch
+                                       major-stack-bfrlist
+                                       major-frame-bfrlist
+                                       minor-stack-bfrlist
+                                       minor-frame-bfrlist)
+             :expand ((major-stack-bfrlist stack)
+                      (minor-stack-bfrlist (major-frame->minor-stack (car stack))) )
+             :do-not-induct t))))
+
+(local
+   (defthm bfrlist-of-stack$a-bool-scratch
+     (implies (not (member v (major-stack-bfrlist stack)))
+              (not (member v (stack$a-bool-scratch stack))))
+     :hints(("Goal" :in-theory (enable stack$a-bool-scratch
+                                       major-stack-bfrlist
+                                       major-frame-bfrlist
+                                       minor-stack-bfrlist
+                                       minor-frame-bfrlist)
+             :expand ((major-stack-bfrlist stack)
+                      (minor-stack-bfrlist (major-frame->minor-stack (car stack))) )
+             :do-not-induct t))))
+
+(local
  (defthm major-stack-bfrlist-of-stack$a-set-debug
    (equal (major-stack-bfrlist (stack$a-set-debug obj stack))
           (major-stack-bfrlist stack))
    :hints(("Goal" :in-theory (enable stack$a-set-debug
                                      major-stack-bfrlist
-                                     major-frame-bfrlist))))) 
+                                     major-frame-bfrlist)))))
+
+(local
+ (defthm major-stack-bfrlist-of-stack$a-set-minor-debug
+   (equal (major-stack-bfrlist (stack$a-set-minor-debug obj stack))
+          (major-stack-bfrlist stack))
+   :hints(("Goal" :in-theory (enable stack$a-set-minor-debug
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-stack-bfrlist
+                                     minor-frame-bfrlist))))) 
 
 
 (local (defthm bfr-listp-of-gl-objectlist-bfrlist-cdr
@@ -2297,16 +2480,21 @@
                   (bfr-listp (gl-objectlist-bfrlist (nthcdr n x))))
          :hints(("Goal" :in-theory (enable nthcdr)))))
 
-(local (defthm bfr-listp-of-gl-objectlist-bfrlist-take
-         (implies (bfr-listp (gl-objectlist-bfrlist x))
-                  (bfr-listp (gl-objectlist-bfrlist (take n x))))
-         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
-
 (local (defthm bfr-listp-of-gl-object-bfrlist-car
          (implies (bfr-listp (gl-objectlist-bfrlist x))
                   (bfr-listp (gl-object-bfrlist (car x))))
          :hints(("Goal" :expand ((gl-objectlist-bfrlist x))
                  :in-theory (enable default-car)))))
+
+(local (defthm bfr-listp-of-gl-objectlist-bfrlist-take
+         (implies (bfr-listp (gl-objectlist-bfrlist x))
+                  (bfr-listp (gl-objectlist-bfrlist (take n x))))
+         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+
+(local (defthm gl-objectlist-bfrlist-of-rev
+         (set-equiv (gl-objectlist-bfrlist (rev x))
+                          (gl-objectlist-bfrlist x))
+         :hints(("Goal" :in-theory (enable rev gl-objectlist-bfrlist)))))
 
 (local (defthm bfr-listp-of-constraint-instancelist-bfrlist-cdr
          (implies (bfr-listp (constraint-instancelist-bfrlist x))
@@ -2350,11 +2538,6 @@
                           (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
                  :do-not-induct t))))
 
-(local (defthm gl-objectlist-bfrlist-of-append
-         (equal (gl-objectlist-bfrlist (append x y))
-                (append (gl-objectlist-bfrlist x)
-                        (gl-objectlist-bfrlist y)))
-         :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist append)))))
 
 ;; (local (in-theory (disable bfr-listp-of-gl-objectlist-bfrlist
 ;;                            bfr-listp-of-gl-object-bfrlist)))
@@ -2407,17 +2590,20 @@
   :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist gl-object-alist-bfrlist pairlis$
                                     pseudo-var-list-p len))))
 
+(local (in-theory (enable stack-peek-scratch)))
+
 (progn
   (with-output
-    :off (event prove)
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
     (std::defret-mutual-generate interp-st-bfrs-ok-of-<fn>
       :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
                     ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
                     ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
                     (interp-st                     (interp-st-bfrs-ok interp-st))
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
-      :return-concls ((xbfr                        (interp-st-bfr-p xbfr :interp-st new-interp-st))
-                      ((gl-object-p x)             (interp-st-bfr-listp (gl-object-bfrlist x) :interp-st new-interp-st))
+      :return-concls ((xbfr                        (interp-st-bfr-p xbfr new-interp-st))
+                      ((gl-object-p x)             (interp-st-bfr-listp (gl-object-bfrlist x) new-interp-st))
                       (new-interp-st               (interp-st-bfrs-ok new-interp-st)))
       :rules ((t (:add-keyword :hints ('(:do-not-induct t)
                                        (let ((flag (find-flag-is-hyp clause)))
@@ -2426,9 +2612,9 @@
                                                       '(:no-op t))))))))
       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
 
-                
-         
-         
-        
-         
-    
+
+
+
+
+
+

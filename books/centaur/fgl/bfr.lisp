@@ -395,6 +395,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 (std::deflist bfr-listp$ (x bfrstate)
   :guard (bfrstate-p bfrstate)
+  :elementp-of-nil t
   (bfr-p x)
   ///
   (defmacro bfr-listp (x &optional (bfrstate 'bfrstate))
@@ -1028,3 +1029,79 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   (local (in-theory (enable gl-object-alist-fix))))
 
 
+
+
+(define bfr-listp-witness (x (bfrstate bfrstate-p))
+  (if (atom x)
+      'not-a-bfr
+    (if (bfr-p (car x))
+        (bfr-listp-witness (cdr x) bfrstate)
+      (car x)))
+  ///
+  (local (defthm not-a-bfr-is-not-a-bfr
+           (not (bfr-p 'not-a-bfr))
+           :hints(("Goal" :in-theory (enable bfr-p)))))
+
+  (defthm bfr-listp-witness-not-bfr-p
+    (not (bfr-p (bfr-listp-witness x bfrstate) bfrstate)))
+
+  (defthmd bfr-listp-when-not-member-witness
+    (implies (not (member (bfr-listp-witness x bfrstate) x))
+             (bfr-listp x bfrstate))
+    :hints(("Goal" :in-theory (enable bfr-listp))))
+  
+  (local (defthm member-bfr-list-when-not-bfr-p
+           (implies (and (bfr-listp x bfrstate)
+                         (not (bfr-p v bfrstate)))
+                    (not (member v x)))))
+
+  (defthm not-member-bfr-listp-witness-when-bfr-listp
+    (implies (bfr-listp x bfrstate)
+             (not (member (bfr-listp-witness y bfrstate) x)))))
+
+
+(defsection bfrlist-of-gl-object-accessors
+  (local (in-theory (enable* gl-object-bfrlist-when-thms)))
+
+  (defthm bfrlist-of-g-ite-accessors
+    (implies (and (gl-object-case x :g-ite)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-ite x)))
+               (and (not (member v (gl-object-bfrlist x.test)))
+                    (not (member v (gl-object-bfrlist x.then)))
+                    (not (member v (gl-object-bfrlist x.else)))))))
+
+  (defthm bfrlist-of-g-boolean-accessor
+    (implies (and (gl-object-case x :g-boolean)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-boolean x)))
+               (not (equal v x.bool)))))
+
+  (defthm bfrlist-of-g-integer-accessor
+    (implies (and (gl-object-case x :g-integer)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-integer x)))
+               (not (member v x.bits)))))
+
+  (defthm bfrlist-of-g-apply-accessor
+    (implies (and (gl-object-case x :g-apply)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-apply x)))
+               (not (member v (gl-objectlist-bfrlist x.args))))))
+
+  (defthm bfrlist-of-g-cons-accessor
+    (implies (and (gl-object-case x :g-cons)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-cons x)))
+               (and (not (member v (gl-object-bfrlist x.car)))
+                    (not (member v (gl-object-bfrlist x.cdr)))))))
+
+  (defthm member-gl-objectlist-bfrlist-of-cdr
+    (implies (not (member v (gl-objectlist-bfrlist x)))
+             (not (member v (gl-objectlist-bfrlist (cdr x)))))
+    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+
+  (defthm member-gl-object-bfrlist-of-car
+    (implies (not (member v (gl-objectlist-bfrlist x)))
+             (not (member v (gl-object-bfrlist (car x)))))
+    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist)))))

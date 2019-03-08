@@ -241,6 +241,8 @@
      rev str-fix
 
      def-b*-binder args forms rest-expr
+
+     set-equiv set-reasoning
      )
    #!CMR
    '(term-vars termlist-vars
