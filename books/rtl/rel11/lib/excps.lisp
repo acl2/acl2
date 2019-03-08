@@ -1040,5 +1040,65 @@
         (mv result fpscr)
       (arm-fscale-comp a b fpscr f))))
 
+;;--------------------------------------------------------------------------------
+
+;; We include specifications of two operations in support of the Arm BFloat16
+;; instructions, which are based on the 16-bit BF format (8-bit exponent, 7-bit
+;; mantissa).  These instructions do not access FPSCR or set exception flags,
+;; but assume DN = FZ = 1, return infinity of overflow, and use round-to-odd.
+
+;; Odd-round a non-zero value u and encode in the SP format, with overflow
+;; resulting in an infinity and underflow resulting in a zero:
+
+(defund bf-post-comp (u)
+  (let ((sgnf (if (< u 0) 1 0))
+	(r (rto u 24)))
+    (if (> (abs r) (lpn (sp)))
+   	(iencode sgnf (sp))
+      (if (< (abs u) (spn (sp)))
+	  (zencode sgnf (sp))
+	(nencode r (sp))))))
+
+;; SP product of 2 BF operands.  Note that in the case of a normal result,
+;; the product is 16-exact so no rounding is required:
+
+(defund bfmul16-spec (a b)
+  (let ((sgnr (logxor (sgnf a (bf)) (sgnf b (bf)))))
+    (if (or (nanp a (bf))
+	    (nanp b (bf))
+	    (and (infp a (bf))
+		 (or (zerp b (bf)) (denormp b (bf))))
+	    (and (infp b (bf))
+		 (or (zerp a (bf)) (denormp a (bf)))))
+        (indef (sp))
+      (if (or (infp a (bf)) (infp b (bf)))
+	  (iencode sgnr (sp))
+        (if (or (zerp a (bf)) (denormp a (bf))
+		(zerp b (bf)) (denormp b (bf)))
+	    (zencode sgnr (sp))
+	  (bf-post-comp (* (ndecode a (bf)) (ndecode b (bf)))))))))
+
+;; SP sum of 2 SP operands:
+
+(defund bfadd32-spec (a b)
+  (let* ((sgna (sgnf a (sp)))
+	 (sgnb (sgnf b (sp)))
+	 (aval (if (or (zerp a (sp)) (denormp a (sp))) 0 (ndecode a (sp))))
+	 (bval (if (or (zerp b (sp)) (denormp b (sp))) 0 (ndecode b (sp))))
+	 (u (+ aval bval)))
+    (if (or (nanp a (sp))
+	    (nanp b (sp))
+	    (and (infp a (sp)) (infp b (sp)) (not (= sgna sgnb))))
+        (indef (sp))
+      (if (infp a (sp))
+	  a
+	(if (infp b (sp))
+	    b
+	  (if (= u 0)
+	      (if (= sgna sgnb)
+	          (zencode sgna (sp))
+	        (zencode 0 (sp)))		
+	    (bf-post-comp u)))))))
+
 )
 

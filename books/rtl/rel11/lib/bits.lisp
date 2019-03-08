@@ -185,12 +185,15 @@
 	     (equal (bits x i j)
                     (1- (expt 2 (1+ (- i j)))))))
 
-(defthmd bits-minus-1
-    (implies (and (natp i)
-		  (natp j)
-		  (>= i j))
-	     (equal (bits -1 i j)
-                    (1- (expt 2 (1+ (- i j)))))))
+(defthmd bits-top-ones
+  (implies (and (natp i)
+                (natp j)
+		(>= i j)
+		(natp x)
+		(< x (expt 2 (1+ i)))
+		(>= x (- (expt 2 (1+ i)) (expt 2 j))))
+	   (equal (bits x i j)
+	          (1- (expt 2 (- (1+ i) j))))))
 
 (defthm bits-bits-sum
   (implies (and (integerp x)
@@ -968,6 +971,12 @@
   (if (= (bitn r (1- n)) 1)
       (- r (expt 2 n))
     r))
+
+(defthm int-si
+  (implies (and (integerp r)
+                (natp n))
+	   (integerp (si r n)))
+  :rule-classes (:type-prescription :rewrite))
 
 (defthm si-bits
     (implies (and (integerp x)

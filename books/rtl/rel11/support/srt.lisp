@@ -29,7 +29,8 @@
     :rule-classes ())
   (defthm x$-constraint
     (and (rationalp (x$))
-         (<= (d$) (x$))
+         ;(<= (d$) (x$))
+	 (> (x$) 0)
          (< (x$) (* 2 (d$))))
     :rule-classes ())
   (defthm a$-constraint

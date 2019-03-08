@@ -9,25 +9,18 @@ Arm from 2016 to the present, in support of the mechanical
 verification of floating-point arithmetic units designed during those
 periods by the respective companies.
 
-The library's primary author is David Russinoff.  Matt Kaufmann, Eric
-Smith, and Hanbing Liu have made significant contributions.  The
-current version resides in the subdirectory "rel11" of this directory.
+I am the library's primary author.  Matt Kaufmann, Eric Smith, and
+Hanbing Liu have made significant contributions.  The current version
+resides in the subdirectory "rel11" of this directory.
 
 The library's core definitions and lemmas are contained in the
-subdirectory "rtl/rel11/lib".  A parallel subdirectory, "support",
+subdirectory "rel11/lib".  A parallel subdirectory, "rel11/support",
 contains a superset of these events, including all sublemmas that were
 required for the proofs of the library lemmas.  The "support"
 directory is organized in such a way as to allow for the evolution of
 "lib", as described in the section 'How to Create a New Release of
 "books/rtl"' below.  Users should consider "lib" to be the RTL
 library, and are discouraged from accessing "support" directly.
-
-The book "lib/top" includes those books of "lib" that are generally
-revelant to floating-point applications.  Other books of "lib",
-pertaining to more specialized theories and applications, may be
-included separately as needed.  There is no guarantee that those
-specialized books are mutually compatible.  See the comments in
-"lib/top.lisp" for information on each of the other books in "lib".
 
 Arithmetic proofs with ACL2 are often cumbersome, but there exist
 general-purpose arithmetic books that make the task more bearable.
@@ -49,7 +42,7 @@ The library files contain virtually no documentation, but are
 documented in a this book:
 
 Russinoff, David M., "Formal Verification of Floating-Point Hardware
-Design: A Mathematical Approach", Springer, August 2018.
+Design: A Mathematical Approach", Springer, 2018.
 
 The books of the "lib" directory correspond to the chapters of the
 book as follows:

@@ -7,4 +7,4 @@ translate.cert: translate.lisp
 clean:
 
 veryclean: clean
-	rm -f *.cert *.*x64fsl *.port
+	rm -f *.cert *.*x64fsl *.port *.cert.time *.cert.out *.fasl
