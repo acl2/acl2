@@ -88,10 +88,10 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Checks if this lambda expression is the {@code if} ACL2 function.
-     * This is always {@code false},
-     * but is needed to implement the abstract {@link Acl2Function#isIf()}
-     * for lambda expressions.
+     * Checks if this lambda expression is
+     * the {@code if} ACL2 primitive function.
+     * This is never the case,
+     * because {@code if} is represented as a {@link Acl2NamedFunction}.
      */
     @Override
     boolean isIf() {
@@ -99,9 +99,10 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
-     * Checks if this function is the {@code or} ACL2 "pseudo-function".
-     * This is not an ACL2 notion; it is an AIJ notion.
-     * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
+     * Checks if this lambda expression is
+     * the {@code or} ACL2 "pseudo-function".
+     * This is never the case,
+     * because {@code or} is represented as a {@link Acl2NamedFunction}.
      */
     @Override
     boolean isOr() {

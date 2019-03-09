@@ -451,7 +451,7 @@ public final class Acl2Symbol extends Acl2Value {
     /**
      * The ACL2 symbol denoted by {@code acl2::binary-*}.
      */
-    public static final Acl2Symbol BINARY_TIMES;
+    public static final Acl2Symbol BINARY_STAR;
 
     /**
      * The ACL2 symbol denoted by {@code acl2::<}.
@@ -583,7 +583,7 @@ public final class Acl2Symbol extends Acl2Value {
         UNARY_MINUS = new Acl2Symbol(Acl2PackageName.ACL2, stringUnaryMinus);
         UNARY_SLASH = new Acl2Symbol(Acl2PackageName.ACL2, stringUnarySlash);
         BINARY_PLUS = new Acl2Symbol(Acl2PackageName.ACL2, stringBinaryPlus);
-        BINARY_TIMES = new Acl2Symbol(Acl2PackageName.ACL2, stringBinaryTimes);
+        BINARY_STAR = new Acl2Symbol(Acl2PackageName.ACL2, stringBinaryTimes);
         LESS_THAN = new Acl2Symbol(Acl2PackageName.LISP, stringLessThan);
         COMPLEX = new Acl2Symbol(Acl2PackageName.ACL2, stringComplex);
         REALPART = new Acl2Symbol(Acl2PackageName.LISP, stringRealpart);
@@ -636,7 +636,7 @@ public final class Acl2Symbol extends Acl2Value {
         initialAcl2Map.put(stringUnaryMinus, UNARY_MINUS);
         initialAcl2Map.put(stringUnarySlash, UNARY_SLASH);
         initialAcl2Map.put(stringBinaryPlus, BINARY_PLUS);
-        initialAcl2Map.put(stringBinaryTimes, BINARY_TIMES);
+        initialAcl2Map.put(stringBinaryTimes, BINARY_STAR);
         initialAcl2Map.put(stringComplex, COMPLEX);
         initialAcl2Map.put(stringBadAtomLessThanOrEqualTo,
                 BAD_ATOM_LESS_THAN_OR_EQUAL_TO);

@@ -6,69 +6,40 @@
 
 package edu.kestrel.acl2.aij;
 
-import java.util.Map;
-
 /**
  * Representation of ACL2 named functions in ACL2 terms.
- * These are just the symbols that name the functions.
+ * These are native functions (subclass {@link Acl2NativeFunction})
+ * and defined functions (subclass {@link Acl2DefinedFunction}).
+ * This abstract superclass contains their common
+ * state (i.e. the name of the function) and
+ * behavior (i.e. equality, hashing, comparison, and string representation).
  */
-public final class Acl2NamedFunction extends Acl2Function {
-
-    //////////////////////////////////////// private members:
-
-    /**
-     * Name of this function.
-     * This is never {@code null}.
-     */
-    private final Acl2Symbol name;
-
-    /**
-     * Constructs an ACL2 named function from its name.
-     */
-    private Acl2NamedFunction(Acl2Symbol name) {
-        assert name != null;
-        this.name = name;
-    }
+public abstract class Acl2NamedFunction extends Acl2Function {
 
     //////////////////////////////////////// package-private members:
 
     /**
+     * Name of this function.
+     * This is never {@code null}.
+     * This is only accessed by the subclasses of this class.
+     */
+    final Acl2Symbol name;
+
+    /**
+     * Constructs an ACL2 named function from its name.
+     * This is only accessed by the subclasses of this class.
+     */
+    Acl2NamedFunction(Acl2Symbol name) {
+        assert name != null;
+        this.name = name;
+    }
+
+    /**
+     * Sets the indices of all the variables in this function.
      * Since a named function has no variables, this method does nothing.
      */
     @Override
     void setVariableIndices() {
-    }
-
-    /**
-     * Applies this ACL2 named function to the given ACL2 values.
-     * The function is called on the given values;
-     * see {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}.
-     *
-     * @throws Acl2EvaluationException if the call to this function fails
-     */
-    @Override
-    Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-        assert values != null;
-        for (Acl2Value value : values) assert value != null;
-        return Acl2Environment.call(this.name, values);
-    }
-
-    /**
-     * Checks if this named function is the {@code if} ACL2 function.
-     */
-    @Override
-    boolean isIf() {
-        return name.equals(Acl2Symbol.IF);
-    }
-
-    /**
-     * Checks if this function is the {@code or} ACL2 "pseudo-function".
-     * This is not an ACL2 notion; it is an AIJ notion.
-     * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
-     */
-    @Override
-    boolean isOr() {
-        return name.equals(Acl2Symbol.OR);
     }
 
     //////////////////////////////////////// public members:
@@ -132,7 +103,9 @@ public final class Acl2NamedFunction extends Acl2Function {
     public static Acl2NamedFunction make(Acl2Symbol name) {
         if (name == null)
             throw new IllegalArgumentException("Null name.");
-        else
-            return new Acl2NamedFunction(name);
+        Acl2NativeFunction function = Acl2NativeFunction.getInstance(name);
+        if (function != null)
+            return function;
+        return Acl2DefinedFunction.getInstance(name);
     }
 }
