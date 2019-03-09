@@ -191,6 +191,9 @@
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
  hierarchical deterministic wallets.</p>
 
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 39 purpose
+ field for deterministic wallets.</p>
+
  <h4>Bytes</h4>
 
  <p>Added fixers @(tsee unsigned-byte-fix), @(tsee signed-byte-fix), @(tsee
