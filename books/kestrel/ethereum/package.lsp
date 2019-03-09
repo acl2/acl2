@@ -27,4 +27,6 @@
                              prefixp
                              string=>nats
                              trim-bendian*
+                             unsigned-byte-fix
+                             unsigned-byte-list-fix
                              std::define-sk)))

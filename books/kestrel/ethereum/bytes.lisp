@@ -1,6 +1,6 @@
 ; Ethereum Library -- Bytes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
+(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,6 +40,11 @@
   (defrule byte-fix-upper-bound
     (< (byte-fix x) 256)
     :rule-classes :linear
+    :enable (byte-fix bytep))
+
+  (defruled byte-fix-rewrite-unsigned-byte-fix
+    (equal (byte-fix x)
+           (unsigned-byte-fix 8 x))
     :enable (byte-fix bytep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,4 +81,10 @@
 
   (defrule cdr-of-byte-list-fix
     (equal (cdr (byte-list-fix x))
-           (byte-list-fix (cdr x)))))
+           (byte-list-fix (cdr x))))
+
+  (defruled byte-list-fix-rewrite-unsigned-byte-list-fix
+    (equal (byte-list-fix x)
+           (unsigned-byte-list-fix 8 x))
+    :enable (byte-fix-rewrite-unsigned-byte-fix
+             unsigned-byte-list-fix)))

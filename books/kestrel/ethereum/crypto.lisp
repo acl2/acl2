@@ -1,6 +1,6 @@
-; Ethereum Library -- Cryptographic Interface
+; Ethereum Library -- Cryptography
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,79 +10,58 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/ethereum/bytes" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "kestrel/crypto/keccak-256-placeholder" :dir :system)
+(include-book "bytes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ crypto
+(defxdoc+ cryptography
   :parents (ethereum)
-  :short "Cryptographic interface for Ethereum."
+  :short "Cryptography in Ethereum."
   :long
   (xdoc::topapp
    (xdoc::p
     "Ethereum uses a number of cryptographic functions
-     that are described in external standards.
-     These cryptographic functions are largely black boxes,
-     in the sense that most of their details
-     are not needed in order to describe the behavior of Ethereum.
-     In other words, the formal model of Ethereum
-     can be parameterized over most of those details.")
+     that are described in external standards.")
    (xdoc::p
-    "We introduce (weakly) constrained ACL2 functions
-     to represent these cryptographic functions.
-     The collection of these functions forms
-     a cryptographic interface for (i.e. used by) Ethereum.")
+    "Our Ethereum model uses cryptographic functions
+     from external libraries.
+     Here we introduce thin wrappers of the library cryptographic functions.
+     The main purpose of these wrappers is
+     to formally relate the cryptographic functions
+     with other functions (e.g. type recognizers) in our Ethereum model.")
    (xdoc::p
-    "Of course,
-     complete specifications and/or implementations of those functions
-     are needed to obtain
-     a complete specification and/or implementation of Ethereum.
-     Such complete specifications/implementations can replace,
-     or be <see topic='@(url defattach)'>attached</see> to,
-     the constrained functions introduced here.")
-   (xdoc::p
-    "We start with just a function for Keccak-256.
-     We will add the others as needed."))
+    "See the cryptographic libraries for details on
+     the formalized cryptographic functions."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection keccak-256
-  :short "Keccak-256 interface."
+(define keccak-256 ((bytes byte-listp))
+  :returns (hash byte-listp
+                 :hints (("Goal"
+                          :in-theory
+                          (enable byte-listp-rewrite-unsigned-byte-listp))))
+  :short "Keccak-256 hash function."
   :long
-  (xdoc::topapp
-   (xdoc::p
-    "This corresponds to @($\\mathtt{KEC}$) [YP:3].
-     It is not defined in [YP], but in
-     <a href=\"https://keccak.team/keccak.html\">the Keccak web site</a>.")
-   (xdoc::p
-    "This function takes as input an arbitrarily long sequence of bytes
-     and returns as output a sequence of 32 bytes (i.e. 256 bits).
-     These properties are expressed by the guard and theorems.")
-   (xdoc::p
-    "We also assume that
-     this function fixes its argument to be a true list of bytes.")
-   (xdoc::def "keccak-256"))
+  (xdoc::topp
+   "This corresponds to @($\\mathtt{KEC}$) [YP:3].")
+  (crypto::keccak-256 bytes)
+  :no-function t
+  ///
 
-  (encapsulate
+  (more-returns
+   (hash true-listp
+         :name true-listp-of-keccak-256
+         :rule-classes :type-prescription)
+   (hash consp
+         :name consp-of-keccak-256
+         :rule-classes :type-prescription)
+   (hash (equal (len hash) 32)
+         :name len-of-keccak-256))
 
-    (((keccak-256 *) => * :formals (bytes) :guard (byte-listp bytes)))
-
-    (local (defun keccak-256 (bytes) (declare (ignore bytes)) (repeat 32 0)))
-
-    (defrule byte-listp-of-keccak-256
-      (byte-listp (keccak-256 bytes)))
-
-    (defrule len-of-keccak-256
-      (equal (len (keccak-256 bytes))
-             32))
-
-    (defrule keccak-256-fixes-input
-      (equal (keccak-256 (byte-list-fix bytes))
-             (keccak-256 bytes))))
-
-  (defrule true-listp-of-keccak-256
-    (true-listp (keccak-256 bytes))
-    :rule-classes :type-prescription))
+  (fty::deffixequiv keccak-256
+    :hints (("Goal"
+             :in-theory
+             (enable byte-list-fix-rewrite-unsigned-byte-list-fix)))))
