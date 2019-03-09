@@ -63,7 +63,7 @@
 	          (if (and (equal (bits (sumshft) 53 0) 0)
                            (equal (stk) 0))
 		      0 1)))
-  :hints (("Goal" :in-theory (enable sovfl-lemma))))
+  :hints (("Goal" :in-theory (enable sovfl) :use (sovfl-lemma))))
 
 (local-defthm snormmask-rewrite
   (implies (= (mulovfl) 0)
@@ -92,7 +92,7 @@
 	          (if (and (equal (bits (sumshft) 52 0) 0)
                            (equal (stk) 0))
 		      0 1)))
-  :hints (("Goal" :in-theory (enable snorm-lemma))))
+  :hints (("Goal" :in-theory (enable snorm) :use (snorm-lemma))))
 
 (defthm gsnorm-0-1
   (and (member (gnorm) '(0 1))
@@ -749,10 +749,17 @@
 		        (:instance exactp-shift (x (abs (+ (a) (b))))
 			                        (n (e1)) (k (+ 51 (expt 2 10))))))))
 
+(local-defthmd rnd-expshft-0-16-a
+  (implies (and (= (mulovfl) 0) (= (expshft) 0) (< (expo (sumshft)) 106) (>= (expo (sumshft)) 54))
+           (> (expo (x1)) 0))
+  :hints (("Goal" :nonlinearp t 
+	          :use (rnd-expshft-0-3 expo-x1))))
+
 (local-defthmd rnd-expshft-0-16
   (implies (and (= (mulovfl) 0) (= (expshft) 0) (< (expo (sumshft)) 106) (>= (expo (sumshft)) 54))
            (equal (expo (z0)) (e1)))
-  :hints (("Goal" :nonlinearp t :use (rnd-expshft-0-3 expo-x1
+  :hints (("Goal" :nonlinearp t 
+	          :use (rnd-expshft-0-3 rnd-expshft-0-16-a
                         (:instance expo-upper-bound (x (x1)))
                         (:instance expo-lower-bound (x (x1)))
 			(:instance expo-unique (x (z0)) (n (e1)))))))

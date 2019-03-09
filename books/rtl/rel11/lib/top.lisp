@@ -20,35 +20,37 @@
 
 (include-book "doc")
 
-;; The books included below are useful for most floating-point applications:
+;; These books are useful for most floating-point applications:
 
-(include-book "basic") ;basic arithmetic functions: floor, ceiling, and remainder
+(include-book "basic") ;basic arithmetic functions: floor, ceiling, and mod
 
 (include-book "bits") ;bit vectors
 
 (include-book "log") ;logical operations
 
-(include-book "reps") ;floating-point formats and representations
-
 (include-book "float") ;floating-point numbers
+
+(include-book "reps") ;floating-point formats and representations
 
 (include-book "round") ;floating-point rounding
 
-(include-book "util") ;misc helpful stuff including a few macros
-
 ;; Special-purpose theories:
+
+(include-book "sqrt") ;approximation to square root
 
 (include-book "add") ;support for reasoning about addition
 
 (include-book "mult") ;integer multiplication
 
-(include-book "div") ;Newton-Raphson division
-
 (include-book "srt") ;SRT division and square root
 
-(include-book "sqrt") ;approximation to square root
+(include-book "div") ;Newton-Raphson division
 
-(include-book "excps")
+(include-book "excps") ;specifications of elementary arithmetic operastions (SSE, x87, Arm)
+
+;; Miscellaneous helpful stuff including a few macros;
+
+(include-book "util") 
 
 ;; This is relevant to code derived from C++:
 

@@ -297,6 +297,8 @@
 			(:instance bitn-lognot (n j) (x (in1lza)))
 			(:instance bitn-lognot (n j) (x (in2lza)))))))
 
+(local-in-theory (enable ash-rewrite))
+
 (local-defthmd w1-rewrite
   (implies (and (not (zp j)) (< j 128))
            (equal (bitn (w1) j)

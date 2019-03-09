@@ -856,6 +856,15 @@
 		          (= (snorm) 0)))))
   :hints (("Goal" :use (rnd-expshft-pos-106 rnd-expshft-0-norm expshft=0-sumshft))))
 
+(local-defthmd norm-19-a
+  (implies (and (= (isspecial) 0)
+                (= (informax) 0)
+                (= (tiny) 0)
+		(= (expo (sumshft)) 106))
+	   (equal (abs (rnd (+ (a) (b)) (mode) 53))
+		  (rnd (abs (+ (a) (b))) (modep) 53)))
+  :hints (("Goal" :in-theory (enable signout-rewrite) :use (a+b<>0 rnd-modep-rmode))))
+
 (local-defthmd norm-19
   (implies (and (= (isspecial) 0)
                 (= (informax) 0)
@@ -868,7 +877,7 @@
 		            (abs (+ (a) (b))))
 	             (and (= (gnorm) 0)
 		          (= (snorm) 0)))))
-  :hints (("Goal" :in-theory (enable signout-rewrite) :use (a+b<>0 norm-18 rnd-modep-rmode))))
+  :hints (("Goal"  :use (norm-18 norm-19-a) :in-theory (theory 'minimal-theory))))
 
 (local-defthm norm-20
   (implies (and (= (isspecial) 0)
