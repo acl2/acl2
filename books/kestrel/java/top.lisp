@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -91,7 +91,7 @@
       has been renamed to @('Acl2ConsPair').")
     (xdoc::li
      "AIJ's evaluator has been extended
-      to recognize a ``primitive pseudo-function'' @('or')
+      to recognize a ``pseudo-function'' @('or')
       and to execute it non-strictly,
       as an optimized version of an @(tsee if)
       whose test and ``then'' branch are the same.
@@ -115,6 +115,19 @@
       on the examples in the paper
       (except for the factorial example,
       where big integer multiplication dominates).")
+    (xdoc::li
+     "The Java representation of ACL2 named functions
+      has been changed to consist of native and defined functions.
+      The former have a native Java implementation,
+      while the latter have a definition
+      in the Java representation of the ACL2 environment.
+      All the ACL2 primitive functions are represented as native functions,
+      but the ``pseudo-function'' @('or') is represented like that as well,
+      and other built-in ACL2 functions could be represented like that as well
+      in the future.
+      Each native function has its own unique Java class and instance:
+      its application to values is now handled via Java's dynamic dispath
+      rather than by cases analysis, thus optimization evaluation.")
     (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare

@@ -731,3 +731,13 @@ Possible counter-example found: ((M2 (SOME 0)) (M1 (SOME 0)))
 })
 
 ")
+
+(defthm poly-ineq-example-with-prog2$
+  (implies (and (real/rationalp x) (real/rationalp y)
+                (<= (+ (* (/ 9 8) x x) (* y y)) 1)
+                (<= (prog2$ (cw "I'm here!~%")
+                            (x^2-y^2 x y))
+                    1))
+           (< y (- (* 3 (- x (/ 17 8)) (- x (/ 17 8))) 3)))
+  :hints(("Goal"
+          :smtlink nil)))

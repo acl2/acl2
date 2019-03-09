@@ -6,8 +6,6 @@
 
 package edu.kestrel.acl2.aij;
 
-import java.util.Map;
-
 /**
  * Representation of ACL2 functions in ACL2 terms.
  * These are named functions (subclass {@link Acl2NamedFunction})
@@ -29,14 +27,7 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     abstract void setVariableIndices();
 
     /**
-     * Applies this ACL2 function to the given ACL2 values.
-     *
-     * @throws Acl2EvaluationException if the application fails
-     */
-    abstract Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException;
-
-    /**
-     * Checks if this function is the {@code if} ACL2 function.
+     * Checks if this function is the {@code if} ACL2 primitive function.
      *
      * @throws IllegalStateException if the "ACL2" package is not defined yet
      */
@@ -48,6 +39,13 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
      * See {@link Acl2FunctionApplication#eval(Acl2Value[])} for details.
      */
     abstract boolean isOr();
+
+    /**
+     * Applies this ACL2 function to the given ACL2 values.
+     *
+     * @throws Acl2EvaluationException if the application fails
+     */
+    abstract Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException;
 
     //////////////////////////////////////// public members:
 
