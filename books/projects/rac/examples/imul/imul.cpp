@@ -1,27 +1,24 @@
 // Simple RAC example: integer multiplication
 
-//#define DEBUG   // uncomment to print intermediate vaules
-//#define SLEC    // uncomment to run SLEC
-//#define HECTOR  // uncomment to run Hector
+//#define DEBUG
 
+#include <stdio.h>
 #include <iostream>
 #include <ac_int.h>
 #include <rac.h>
 using namespace std;
 
-typedef unsigned long uint64; // Just used to facilitate printing
-
 // RAC begin
 
-// This RAC code describes a 32x32 -> 64 unsigned integer multiplier
+// This RAC code describes a 32x32 -> 64 unsigned integer multiplier.
 // Adapted from significand_multiplier_r4_param in Warren Ferguson's
 // library of Verilog reference models.
 
-typedef ac_int<3,false>  ui3; 
 typedef ac_int<32,false> ui32;
-typedef ac_int<33,false> ui33;
-typedef ac_int<35,false> ui35;
 typedef ac_int<64,false> ui64;
+typedef ac_int<35,false> ui35;
+typedef ac_int<3,false>  ui3; 
+typedef ac_int<33,false> ui33;
 typedef ac_int<67,false> ui67;
 
 // Step 1: construct an array of radix-4 digits for a source multiplier.
@@ -172,9 +169,29 @@ ui64 Sum(array<ui64, 17> in) {
 
 ui64 Imul(ui32 s1, ui32 s2) {
 
+#ifdef DEBUG
+   cout << "Operands: " << endl;
+   printf("%s\n", s1.to_string(AC_HEX, false).c_str());
+   printf("%s\n", s2.to_string(AC_HEX, false).c_str());
+#endif
+
   array<ui3, 17> bd = Booth(s1);
 
+#ifdef DEBUG
+   cout << "Booth digits: " << endl;
+   for (int i=0; i<17; i++) {
+     printf("%d: %s\n", i, bd[i].to_string(AC_HEX, false).c_str());
+   }
+#endif
+
   array<ui33, 17> pp = PartialProducts(bd, s2);
+
+#ifdef DEBUG
+   cout << "Partial products:" << endl;
+   for (int i=0; i<17; i++) {
+     printf("%d: %s\n", i, pp[i].to_string(AC_HEX, false).c_str());
+   }
+#endif
 
   array<ui64, 17> tble = Align (bd, pp);
 
@@ -182,26 +199,17 @@ ui64 Imul(ui32 s1, ui32 s2) {
   Hector::cutpoint("tble", tble);
 #endif
 
+#ifdef DEBUG
+   cout << "Aligned partial products:" << endl;
+   for (int i=0; i<17; i++) {
+     printf("%d: %s\n", i, tble[i].to_string(AC_HEX, false).c_str());
+   }
+#endif
+
   ui64 prod = Sum(tble);
 
 #ifdef DEBUG
-   cout << "Operands:" << endl;
-   cout << hex << uint(s1) << endl;
-   cout << hex << uint(s2) << endl;
-   cout << endl << "Booth digits:" << endl;
-   for (int i=0; i<17; i++) {
-     cout << i << ": " << bd[i][2] << bd[i][1] << bd[i][0] << endl;
-   }
-   cout << endl << "Partial products:" << endl;
-   for (int i=0; i<17; i++) {
-     cout << i << ": " << hex << uint64(pp[i]) << endl;
-   }
-   cout << endl << "Aligned partial products:" << endl;
-   for (int i=0; i<17; i++) {
-     cout << i << ": " << hex << uint64(tble[i]) << endl;
-   }
-   cout << endl << "Product:" << endl;
-   cout << hex << uint64(prod) << endl << endl;
+   printf("Product: %s\n\n", prod.to_string(AC_HEX, false).c_str());
 #endif
 
   return prod;
@@ -267,27 +275,29 @@ SC_MODULE(imul) {
 int main (int argc, char *argv[]) {
 
   ui32 src1, src2;
-  ui64 spec, res;
+  ui64 spec_result, imul_result;
   bool passed;
-  
+  uint in1, in2;
+
   while (! cin.eof()) {
 
     // On each iteration of this loop, two 32-bit integers are read in and passed to Imul. 
 
-    uint in1, in2; // operands are read in as uints
     cin >> hex >> in1;
     cin >> hex >> in2;
     src1 = in1;
     src2 = in2;
 
-    tie(passed, spec, res) = ImulTest(src1, src2);
+    tie(passed, spec_result, imul_result) = ImulTest(src1, src2);
 
-    cout << hex << in1 << " " << in2 << " " << uint64(res) << " ";
+    printf("Spec: %s\n", spec_result.to_string(AC_HEX, false).c_str());
+    printf("Imul: %s\n", imul_result.to_string(AC_HEX, false).c_str());
+
     if (passed) {
       cout << "passed" << endl;
     }
     else {
-      cout << hex << "failed (spec: " << uint64(spec) << "; imul: " << uint64(res) << ")" << endl;
+      cout << "failed" << endl;
     }
   }
 

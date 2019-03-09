@@ -1,7 +1,5 @@
 (IN-PACKAGE "RTL")
 
-; Note: Below, :DIR :SYSTEM has been manually moved onto the same line as
-; INCLUDE-BOOK, in order to support the use of cert.pl.
 (INCLUDE-BOOK "rtl/rel11/lib/rac" :DIR :SYSTEM)
 
 (SET-IGNORE-OK T)

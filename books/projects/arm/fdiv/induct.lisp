@@ -1014,7 +1014,8 @@
 		(= (mod (1+ j) 3) 1))
            (equal (si (mod (x! j) (expt 2 57)) 57)
 	          (* (expt 2 56) (r j))))
-  :hints (("Goal" :use (int-r approx-error-4 approx-error-61 (:instance si-bits (x (* (expt 2 56) (r j))) (n 57))))))
+  :hints (("Goal" :in-theory (enable bits-mod)
+	          :use (int-r approx-error-4 approx-error-61 (:instance si-bits (x (* (expt 2 56) (r j))) (n 57))))))
 
 (local-defthmd approx-error-63
   (implies (and (not (specialp))

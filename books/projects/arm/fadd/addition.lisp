@@ -428,7 +428,7 @@
 (local-defthmd sum-1-9
   (integerp (* (expt 2 -53) (siga)))
   :hints (("Goal" :in-theory (enable bits)
-                  :use (sum-1-8 (:instance mod-def (x (siga)) (y (expt 2 53)))))))
+                  :use (sum-1-8 (:instance mod-def (x (siga)) (y (expt 2 54)))))))
 
 (local-defthmd sum-1-10
   (implies (and (= (mulovfl) 0) (= (expb) 0) (not (and (= (bits (sigb) 52 0) 0) (= (mulstk) 0)))
@@ -1056,7 +1056,8 @@
   (implies (and (integerp a) (integerp b) (= (bits a 52 0) 0) (not (= (bits b 52 0) 0)))
            (not (equal (bits (- a b) 52 0) 0)))
   :hints (("Goal" :use ((:instance mod-0-int (m b) (n (expt 2 53)))
-                        (:instance mod-0-int (m (- b)) (n (expt 2 53))))
+			(:instance mod-0-int (m b) (n (expt 2 53)))
+                        (:instance mod-0-int (m (- a b)) (n (expt 2 53))))
 		  :in-theory (enable bits))))
 
 (local-defthm sum-bounds-b-4
