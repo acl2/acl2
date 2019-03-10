@@ -55,12 +55,14 @@
 
   (define bip43-purposep (x)
     :returns (yes/no booleanp)
+    :parents (bip43-purpose)
     :short "Recognizer for @(tsee bip43-purpose)."
     (integer-range-p 1 (expt 2 31) x)
     :no-function t)
 
   (define bip43-purpose-fix ((x bip43-purposep))
     :returns (fixed-x bip43-purposep)
+    :parents (bip43-purpose)
     (mbe :logic (if (bip43-purposep x) x 1)
          :exec x)
     :no-function t
@@ -95,4 +97,51 @@
          (bip32-path-in-tree-p (list purpose-hardened) tree)))
   :no-function t
   :guard-hints (("Goal" :in-theory (enable bip43-purposep ubyte32p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip43-export-key ((tree bip32-key-treep)
+                          (path ubyte32-listp)
+                          (public? booleanp))
+  :guard (and (bip32-path-in-tree-p path tree)
+              (or public? (bip32-key-tree-priv-p tree)))
+  :returns (exported byte-listp)
+  :short "BIP 43 key export."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "[BIP43] prescribes that BIP 32 key serialization be always done
+     with the version numbers of the mainnet,
+     i.e. @(tsee *bip32-version-priv-main*)
+     and @(tsee *bip32-version-pub-main*).")
+   (xdoc::p
+    "This function specializes @(tsee bip32-export-key)
+     by eliminating the boolean argument that selects mainnet or testnet,
+     and by passing @('t') as its value to @(tsee bip32-export-key)."))
+  (bip32-export-key tree path t public?)
+  :no-function t
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip43-import-key ((bytes byte-listp))
+  :returns (mv (error? booleanp)
+               (tree bip32-key-treep))
+  :short "BIP 43 key import."
+  :long
+  (xdoc::topapp
+   (xdoc::p
+    "[BIP43] prescribes that BIP 32 key serialization be always done
+     with the version numbers of the mainnet,
+     i.e. @(tsee *bip32-version-priv-main*)
+     and @(tsee *bip32-version-pub-main*).")
+   (xdoc::p
+    "This function calls @(tsee bip32-import-key)
+     and ensures that the serialized key was for the mainnet."))
+  (b* (((mv error? tree mainnet?) (bip32-import-key bytes))
+       ((when error?) (mv t tree))
+       ((unless mainnet?) (mv t tree)))
+    (mv nil tree))
+  :no-function t
   :hooks (:fix))
