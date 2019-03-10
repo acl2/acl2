@@ -12972,9 +12972,12 @@
            (allow-free-varsp nil)
            (vars (if allow-free-varsp
                      (butlast (cadr x) 1)
-                     (cadr x)))
+                   (cadr x)))
            (dcls (butlast (cddr x) 1))
-           (body (car (last x))))
+           (body (car (last x)))
+           (stobjs-out-simple (if (eq stobjs-out t)
+                                  t
+                                '(nil))))
       (cond
        ((not (arglistp vars))
         (trans-er+? cform x
@@ -13058,7 +13061,7 @@
                             *gratuitous-lambda-object-restriction-msg*))
                          (translate11 guard
                                       nil    ; ilk
-                                      '(nil) ; stobjs-out
+                                      stobjs-out-simple
                                       nil    ; bindings
                                       nil    ; known-stobjs
                                       nil    ; flet-alist
@@ -13143,7 +13146,7 @@
                             *gratuitous-lambda-object-restriction-msg*))
                        (translate11 body
                                     nil    ; ilk
-                                    '(nil) ; stobjs-out
+                                    stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
 
@@ -13190,11 +13193,11 @@
                     ((and free-vars-body (not allow-free-varsp))
                      (trans-er+? cform x
                                  ctx
-                                 "The body of a LAMBDA object or lambda$ ~
-                                  term, may contain no free variables.  This ~
-                                  is violated by the body ~x0, which uses the ~
+                                 "The body of a LAMBDA object or lambda$ term ~
+                                  may contain no free variables.  This is ~
+                                  violated by the body ~x0, which uses the ~
                                   variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
-                                  not among the formals. ~@2"
+                                  not among the formals.  ~@2"
                                  (untranslate tbody nil wrld)
                                  free-vars-body
                                  *gratuitous-lambda-object-restriction-msg*))
@@ -13270,6 +13273,7 @@
                                                (revappend free-vars-body nil)
                                                free-vars-guard))
                                              vars)))
+
                                     (let ((new-tbody
                                            (if (eq stobjs-out t)
 
@@ -13312,7 +13316,10 @@
 ; X here is a form beginning with LOOP$.
 
   (let ((bindings0 bindings) ; save original bindings
-        (bindings nil))      ; set bindings to nil for trans-values calls below
+        (bindings nil)       ; set bindings to nil for trans-values calls below
+        (stobjs-out-simple (if (eq stobjs-out t)
+                               t
+                             '(nil))))
     (mv-let (erp parse)
       (parse-loop$ x)
       (cond
@@ -13345,7 +13352,7 @@
            ((and whenc (eq op 'ALWAYS))
             (trans-er+? cform x ctx
                         "It is illegal in CLTL to have a WHEN clause with an ~
-                     ALWAYS accumulator, so ~x0 is illegal."
+                         ALWAYS accumulator, so ~x0 is illegal."
                         x))
            (t
             (trans-er-let*
@@ -13361,7 +13368,7 @@
                         (not (eq (excart :untranslated :guard untilc) t)))
                    (translate11 (excart :untranslated :guard untilc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13371,7 +13378,7 @@
                (if untilc
                    (translate11 (excart :untranslated :body untilc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13383,7 +13390,7 @@
                         (not (eq (excart :untranslated :guard whenc) t)))
                    (translate11 (excart :untranslated :guard whenc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13393,7 +13400,7 @@
                (if whenc
                    (translate11 (excart :untranslated :body whenc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13405,7 +13412,7 @@
                         (not (eq (excart :untranslated :guard lobodyc) t)))
                    (translate11 (excart :untranslated :guard lobodyc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13415,7 +13422,7 @@
                (if lobodyc
                    (translate11 (excart :untranslated :body lobodyc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13499,6 +13506,7 @@
 ; We have a plain loop$.
                   (tag-loop$
                    x
+
 ; We assume that the translation of a loop$ is always a loop$ scion called on a
 ; quoted LAMBDA object.  So don't simplify, say, (collect$ (lambda$ (v)
 ; (symbolp v)) lst) to (collect$ 'symbolp lst)!  See
@@ -14860,6 +14868,11 @@
                  (cond
                   (erp (mv erp targ2 bindings))
                   ((throw-nonexec-error-p1 targ1 targ2 :non-exec nil)
+
+; This check holds when x is a non-exec call, and corresponds to similar checks
+; using throw-nonexec-error-p in collect-certain-lambda-objects and
+; collect-certain-tagged-loop$s.
+
                    (mv-let
                     (erp targ3 targ3-bindings)
                     (translate11
@@ -15859,6 +15872,10 @@
              flg guard wrld
              (collect-certain-lambda-objects flg body wrld ans1)))
           ans1)))
+   ((throw-nonexec-error-p term :non-exec nil)
+; This check holds when term is the translated version of a non-exec call, as
+; does a similar check using throw-nonexec-error-p1 in translate11.
+    ans)
    ((flambda-applicationp term)
     (collect-certain-lambda-objects
      flg
@@ -15930,6 +15947,10 @@
            (collect-certain-tagged-loop$s flg (fargn term 3)
                                           (add-to-set-equal term ans)))
           (t (add-to-set-equal term ans))))
+   ((throw-nonexec-error-p term :non-exec nil)
+; This check holds when term is the translated version of a non-exec call, as
+; does a similar check using throw-nonexec-error-p1 in translate11.
+    ans)
    ((flambda-applicationp term)
     (collect-certain-tagged-loop$s
      flg

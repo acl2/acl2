@@ -8890,15 +8890,19 @@
                   (cond
                    (erp (mv erp val state))
                    (t (er-let* ((new-lambda$-alist-pairs
-                                 (chk-acceptable-lambda$-translations
-                                  symbol-class
-                                  guards bodies
-                                  ctx wrld state))
+                                 (if non-executablep
+                                     (value nil)
+                                   (chk-acceptable-lambda$-translations
+                                    symbol-class
+                                    guards bodies
+                                    ctx wrld state)))
                                 (new-loop$-alist-pairs
-                                 (chk-acceptable-loop$-translations
-                                  symbol-class
-                                  guards bodies
-                                  ctx wrld state)))
+                                 (if non-executablep
+                                     (value nil)
+                                   (chk-acceptable-loop$-translations
+                                    symbol-class
+                                    guards bodies
+                                    ctx wrld state))))
                         (value (list 'chk-acceptable-defuns
                                      names
                                      arglists

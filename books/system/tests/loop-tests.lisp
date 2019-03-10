@@ -230,7 +230,7 @@
 ; And now we'll repeat all of that with an AS clause
 
 ; SUM
-; simple (in/on/from-to-by) 
+; simple (in/on/from-to-by)
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
           as sym in '(a b c d e f g h i j k l m n o p)
@@ -301,7 +301,7 @@
           sum x)
 
 ; ALWAYS
-; simple (in/on/from-to-by) 
+; simple (in/on/from-to-by)
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
           as sym in '(a b c d e f g h i j k l m n o p)
@@ -335,7 +335,7 @@
 ; ... with until and when -- illegal with always
 
 ; COLLECT
-; simple (in/on/from-to-by) 
+; simple (in/on/from-to-by)
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
           as sym in '(a b c d e f g h i j k l m n o p)
@@ -407,7 +407,7 @@
 
 
 ; APPEND
-; simple (in/on/from-to-by) 
+; simple (in/on/from-to-by)
    (loop$ for x of-type integer
           in (make-list n :initial-element 1)
           as sym in '(a b c d e f g h i j k l m n o p)
@@ -505,7 +505,7 @@
 ; -----------------------------------------------------------------
 ; The Boohoo Problem
 
-; Consider the following defun in a world in which we don't know 
+; Consider the following defun in a world in which we don't know
 ; true-listp-append-rewrite or the earlier mentioned boohoo-lemma.
 
 ; The following will fail.
@@ -655,3 +655,26 @@
    (loop$ for i of-type (satisfies below-11p) from 1 to 10 by 3
           collect i)))
 
+; -----------------------------------------------------------------
+; Relaxing translate
+; These tests failed until we relaxed the translation of loop$ for theorems.
+
+(thm
+ (equal (loop$ for x in '(1 2) collect (mv x x))
+        '((1 1) (2 2))))
+
+(defun-nx loop-test-1-using-my-mv ()
+  (loop$ for x in '(1 2) collect (my-mv x)))
+
+(defun loop-test-2-using-my-mv ()
+  (non-exec (loop$ for x in '(1 2) collect (mv x x))))
+
+(must-fail ; Loop$ translation is not relaxed inside function bodies.
+ (defun bad (lst)
+   (declare (xargs :guard (true-listp lst)))
+   (loop$ for x in lst collect (car (my-mv x)))))
+
+(thm ; Succeeds, but note that we run collect$, not a raw Lisp loop.
+ (implies (warrant my-mv)
+          (equal (loop$ for x in '(1 2 3) collect (car (my-mv x)))
+                 '(1 2 3))))
