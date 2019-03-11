@@ -29,3 +29,40 @@
   (equal
    (len (generate-index-list disk-length block-list-length))
    (nfix block-list-length)))
+
+(defthm
+  member-of-generate-index-list
+  (iff (member-equal
+        x
+        (generate-index-list disk-length block-list-length))
+       (or (and (equal x 0)
+                (zp disk-length)
+                (not (zp block-list-length)))
+           (and (integerp x)
+                (>= x (nfix disk-length))
+                (< x
+                   (nfix (+ disk-length
+                            (nfix block-list-length))))))))
+
+(local
+ ;; borrowed and adapted from books/std/lists/remove.lisp
+ (defthm len-of-remove-when-non-member
+            (implies (not (member a x))
+                     (equal (len (remove a x))
+                            (len x)))))
+
+(defthm
+  generate-index-list-correctness-4
+  (implies
+   (and (integerp x)
+        (natp disk-length)
+        (>= x disk-length)
+        (< x
+           (+ disk-length (nfix block-list-length))))
+   (equal
+    (len
+     (remove-equal
+      x
+      (generate-index-list disk-length block-list-length)))
+    (- (nfix block-list-length) 1))))
+
