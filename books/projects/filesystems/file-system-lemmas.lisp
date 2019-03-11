@@ -4,7 +4,11 @@
 
 (in-package "ACL2")
 
-(local (in-theory (enable true-list-fix)))
+;; Some lemmas below are taken from other books with credit; in most cases they
+;; replaced a theorem developed for this project which either had the same name
+;; as a theorem from a community book (causing a name conflict), or which
+;; rewrote the same target (causing :use hints to become :useless even if the
+;; project-specific lemma was disabled for the goal in question.)
 
 (defthm make-character-list-makes-character-list
   (character-listp (make-character-list x)))
@@ -47,7 +51,7 @@
              (equal (first-n-ac i l ac)
                     (revappend ac (true-list-fix l)))))))
 
-(defthm by-slice-you-mean-the-whole-cake-2
+(defthmd by-slice-you-mean-the-whole-cake-2
   (implies (equal i (len l))
            (equal (take i l) (true-list-fix l))))
 
@@ -83,8 +87,8 @@
   (defthm
     character-listp-of-first-n-ac
     (implies (character-listp l)
-             (equal (character-listp (first-n-ac n l acc))
-                    (and (character-listp (true-list-fix acc))
+             (equal (character-listp (first-n-ac n l ac))
+                    (and (character-listp (true-list-fix ac))
                          (<= (nfix n) (len l)))))))
 
 (defthm character-listp-of-take
@@ -96,8 +100,12 @@
   (implies (and (character-listp l))
            (character-listp (nthcdr n l))))
 
-(defthmd already-a-character-list
-  (implies (character-listp x) (equal (make-character-list x) x)))
+;; The following is redundant with the definition in
+;; books/std/strings/make-character-list.lisp, from where it was taken with
+;; thanks.
+(defthm str::make-character-list-when-character-listp
+  (implies (character-listp x)
+           (equal (make-character-list x) x)))
 
 (defthm make-character-list-of-binary-append
   (equal (make-character-list (binary-append x y))
@@ -128,17 +136,19 @@
                            (y nil)
                            (z l)))))
 
-;; The following is redundant with the definition in std/lists/nth.lisp, from
-;; where it was taken with thanks.
+;; The following is redundant with the definition in books/std/lists/nth.lisp,
+;; from where it was taken with thanks.
 (defthm nth-of-append
   (equal (nth n (append x y))
          (if (< (nfix n) (len x))
              (nth n x)
            (nth (- n (len x)) y))))
 
-(defthm binary-append-is-associative
-  (equal (binary-append (binary-append a b) c)
-         (binary-append a (binary-append b c))))
+;; The following is redundant with the definition in
+;; books/std/lists/append.lisp, from where it was taken with thanks.
+(defthm associativity-of-append
+  (equal (append (append a b) c)
+         (append a (append b c))))
 
 (defthm member-of-a-nat-list
   (implies (and (nat-listp lst)
@@ -151,14 +161,10 @@
                                                              (nat-listp lst))
                                                         (integerp x)))))
 
-(defthm non-nil-nth
-  (implies (and (natp n) (nth n l))
-           (< n (len l)))
-  :rule-classes (:rewrite :linear))
-
 (defthm update-nth-of-boolean-list
-  (implies (and (boolean-listp l) (booleanp val))
-           (boolean-listp (update-nth key val l))))
+  (implies (boolean-listp l)
+           (equal (boolean-listp (update-nth key val l))
+                  (booleanp val))))
 
 (defthm nat-listp-of-binary-append
   (equal (nat-listp (binary-append x y))
@@ -248,6 +254,10 @@
 (defthm len-of-make-list-ac
   (equal (len (make-list-ac n val acc))
          (+ (nfix n) (len acc))))
+
+(defthm consp-of-make-list-ac
+  (iff (consp (make-list-ac n val ac))
+       (or (not (zp n)) (consp ac))))
 
 (defthm boolean-listp-of-make-list-ac
   (implies (booleanp val)
@@ -401,36 +411,6 @@
   (equal (update-nth key val2 (update-nth key val1 l))
          (update-nth key val2 l)))
 
-(encapsulate
-  ()
-
-  (local
-   (include-book "ihs/logops-definitions" :dir :system))
-
-  (local
-   (include-book "ihs/logops-lemmas" :dir :system))
-
-  (local
-   (include-book "arithmetic/top-with-meta" :dir :system))
-
-  (local
-   (defun induction-scheme (bits x)
-     (if (zp bits)
-         x
-       (induction-scheme (- bits 1)
-                         (logcdr x)))))
-
-  (defthmd
-    unsigned-byte-p-alt
-    (implies (natp bits)
-             (equal (unsigned-byte-p bits x)
-                    (and (unsigned-byte-p (+ bits 1) x)
-                         (zp (logand (ash 1 bits) x)))))
-    :hints
-    (("goal" :in-theory (e/d nil (logand ash logcar logcdr)
-                             (logand* ash*))
-      :induct (induction-scheme bits x)))))
-
 ;; This can probably be replaced by a functional instantiation.
 (defthm nat-listp-of-remove
   (implies (nat-listp l)
@@ -510,17 +490,13 @@
                                  (nthcdr i l))
                   l)))
 
-(encapsulate
-  ()
+(defthm true-list-fix-when-true-listp
+  (implies (true-listp x)
+           (equal (true-list-fix x) x)))
 
-  (local
-   (defthm true-list-fix-when-true-listp
-     (implies (true-listp x)
-              (equal (true-list-fix x) x))))
-
-  (defthm true-list-fix-of-coerce
-    (equal (true-list-fix (coerce text 'list))
-           (coerce text 'list))))
+(defthm true-list-fix-of-coerce
+  (equal (true-list-fix (coerce text 'list))
+         (coerce text 'list)))
 
 (defthm len-of-true-list-fix
   (equal (len (true-list-fix x)) (len x)))
@@ -552,10 +528,11 @@
                 (nth (- (len ac) (+ (nfix n) 1)) ac))
                (t (nth (- (nfix n) (len ac)) l)))))
 
+;; Contributed to books/std/lists/nth.lisp
 (defthm nth-of-take
-  (equal (nth n (take i l))
-         (if (>= (nfix n) (nfix i))
-             nil (nth (nfix n) l))))
+  (equal (nth i (take n l))
+         (if (>= (nfix i) (nfix n))
+             nil (nth (nfix i) l))))
 
 (defthm nthcdr-of-nil (equal (nthcdr n nil) nil))
 
@@ -563,10 +540,6 @@
   (implies (and (true-listp l)
                 (>= (nfix n) (len l)))
            (equal (nthcdr n l) nil)))
-
-(defthmd true-list-fix-when-true-listp
-  (implies (true-listp x)
-           (equal (true-list-fix x) x)))
 
 (defthm revappend-of-revappend
   (equal (revappend (revappend x y1) y2)
@@ -694,3 +667,115 @@
   (("goal"
     :use (:instance painful-debugging-lemma-4 (x (+ x y))
                     (y (- y))))))
+
+(defthm
+  painful-debugging-lemma-7
+  (equal (- (- x)) (fix x)))
+
+(defthm
+  painful-debugging-lemma-8
+  (implies (not (zp x))
+           (iff (< (binary-* x (len y)) x)
+                (atom y))))
+
+(defthmd
+  painful-debugging-lemma-9
+  (implies (and (integerp x) (integerp y) (< x y))
+           (equal (< (+ 1 x) y)
+                  (not (equal (+ 1 x) y)))))
+
+(defthmd
+  painful-debugging-lemma-10
+  (implies (not (zp x1))
+           (iff (equal (* x1 (len x2)) 0)
+                (atom x2))))
+
+(defthmd
+  painful-debugging-lemma-11
+  (implies (not (zp x1))
+           (equal (< 0 (* x1 (len x2)))
+                  (consp x2))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/typed-lists/integer-listp.lisp, from where it was taken with
+;; thanks.
+(defthm
+  integerp-of-nth-when-integer-listp
+  (implies (integer-listp x)
+           (iff (integerp (nth n x))
+                (< (nfix n) (len x)))))
+
+(defthm true-list-listp-of-append
+  (equal (true-list-listp (append x y))
+         (and (true-list-listp (true-list-fix x)) (true-list-listp y))))
+
+(defthm rationalp-of-nth-when-rational-listp
+  (implies (rational-listp x)
+           (iff (rationalp (nth n x))
+                (< (nfix n) (len x)))))
+
+(defthm
+  member-of-remove1-assoc
+  (implies
+   (not (member-equal x lst))
+   (not (member-equal x (remove1-assoc-equal key lst)))))
+
+(defthm acl2-count-of-true-list-fix
+  (<= (acl2-count (true-list-fix x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthmd
+  update-nth-of-revappend
+  (equal (update-nth key val (revappend x y))
+         (if (< (nfix key) (len x))
+             (revappend (update-nth (- (len x) (+ 1 (nfix key)))
+                                    val x)
+                        y)
+             (revappend x
+                        (update-nth (- (nfix key) (len x))
+                                    val y)))))
+
+(defthm
+  true-listp-of-update-nth
+  (equal (true-listp (update-nth key val l))
+         (or (>= (nfix key) (len l))
+             (true-listp l)))
+  :hints (("goal" :in-theory (enable update-nth)
+           :induct (update-nth key val l)
+           :expand ((true-listp l)
+                    (:free (x y)
+                           (true-listp (cons x y)))))))
+
+(defthm nthcdr-of-nthcdr
+  (equal (nthcdr a (nthcdr b x))
+         (nthcdr (+ (nfix a) (nfix b)) x))
+  :hints(("goal" :induct (nthcdr b x))))
+
+(defthm
+  take-of-make-character-list
+  (implies (and (<= n (len l)))
+           (equal (take n (make-character-list l))
+                  (make-character-list (take n l))))
+  :hints
+  (("goal"
+    :in-theory (disable first-n-ac-of-make-character-list)
+    :use (:instance first-n-ac-of-make-character-list (i n)
+                    (ac nil)))))
+
+(defthm last-of-member-equal
+  (equal (last (member-equal x lst))
+         (if (member-equal x lst)
+             (last lst)
+             nil)))
+
+(defthm acl2-count-of-member-equal
+  (<= (acl2-count (member-equal x lst))
+      (acl2-count lst))
+  :rule-classes :linear)
+
+(defthm
+  string-listp-of-resize-list
+  (implies (and (string-listp lst)
+                (stringp default-value))
+           (string-listp (resize-list lst n default-value))))
