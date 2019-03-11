@@ -15,6 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection keccak-256-placeholder
+  :parents (placeholders)
   :short "Keccak-256 placeholder."
   :long
   (xdoc::topapp

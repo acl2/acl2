@@ -20,6 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ secp256k1-placeholder
+  :parents (placeholders)
   :short "Elliptic curve secp256k1 placeholder."
   :long
   (xdoc::topapp
