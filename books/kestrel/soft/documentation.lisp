@@ -91,7 +91,7 @@
 
   :long
 
-  (xdoc::p
+  (xdoc::toppstring
    "The macros provided by SOFT are based on the notions
     defined in the sub-topics below.")
 

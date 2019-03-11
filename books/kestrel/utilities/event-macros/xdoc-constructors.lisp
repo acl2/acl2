@@ -224,7 +224,8 @@
   (defmacro xdoc::evmac-section-form-auto (macro)
     (declare (xargs :guard (symbolp macro)))
     `(xdoc::evmac-section-form
-      (xdoc::code-fn (xdoc::evmac-section-form-auto-lines ',macro (w state))))))
+      (xdoc::@code-fn
+       (xdoc::evmac-section-form-auto-lines ',macro (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -340,7 +341,8 @@
            These inputs do not affect the generated events,
            and thus they are ignored for the purpose of redundancy."))
         (xdoc::p
-         (xdoc::app
+         (concatenate
+          'string
           "A call of "
           ,macro-ref
           " whose @(':show-only') input is @('t')
