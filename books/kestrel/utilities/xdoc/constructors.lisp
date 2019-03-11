@@ -1,6 +1,6 @@
 ; XDOC Utilities -- Constructors
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,376 +10,763 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
+(include-book "xdoc/top" :dir :system)
+
+(include-book "tools/flag" :dir :system)
+
+(set-verify-guards-eagerness 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc xdoc::constructors
   :parents (xdoc-utilities)
   :short "Utilities to costruct
-          well-tagged <see topic='@(url xdoc)'>XDOC</see> strings."
+          well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
   "<p>
-   XDOC strings use XML tags, which must be properly matched and nested.
-   The XDOC constructors provided here help build XML strings
-   with properly matched and nested tags.
+   XDOC strings use HTML tags, which must be properly matched and nested.
+   There are also constraints about nesting well-tagged HTML text,
+   e.g. an (un)ordered list must contain a sequence of list items.
+   The XDOC constructors provided here help build HTML strings
+   with properly matched and nested tags
+   that satisfy certain constraints.
    </p>
    <p>
-   As noted <see topic='@(url str::concatenation)'>here</see>,
-   string concatenation is slow in ACL2 in general.
-   These XDOC constructors currently use string concatenation,
-   but they are written in a way that
-   they can be easily made more efficient in the future,
-   if concatenating strings turns out to be too slow
-   in the actual use of these XDOC constructors.
+   Starting with @(tsee stringp) values as the basic building blocks,
+   these XDOC constructors build trees that correspond to the HTML structure;
+   these trees are recognized by the predicate @(tsee xdoc::treep).
+   The function @(tsee xdoc::topstring) turns trees into strings,
+   by recursively turning subtrees into strings,
+   joining those strings,
+   and surrounding them with the HTML tags at the roots of the trees.
    </p>
    <p>
-   Specifically, a recognizer @(tsee xdoc::textp) is provided
-   that is currently a synonym of @(tsee stringp)
-   but could be changed to be something else in the future.
-   The ``bottom'' XDOC constructors (e.g. @(tsee xdoc::p))
-   map strings to @('xdoc::textp') values.
-   The ``intermediate'' XDOC constructors (e.g. @(tsee xdoc::app))
-   map @('xdoc::textp') values to @('xdoc::textp') values.
-   The ``top'' XDOC constructor (i.e. @(tsee xdoc::topapp))
-   maps @('xdoc::textp') values to strings.
-   If these XDOC constructors are used properly,
-   without bypassing the (non-enforced) @('xdoc::textp') abstraction,
-   (e.g. by using @(tsee concatenate) directly)
-   then changing the internal representation of @('xdoc::textp')
-   and the definition of the XDOC constructors accordingly
-   should require no change in calling code.
-   In particular, a @(':long') should be always followed by
-   a call to @(tsee xdoc::topapp).
-   </p>")
+   The string at the leaves of a tree could contain HTML tags.
+   Thus, the XDOC constructors provided here can be used also
+   with XDOC strings built without the constructors.
+   </p>
+   <p>
+   The following XDOC constructors are provided:
+   </p>
+   <ul>
+     <li>@('(xdoc::h1 string)') for level-1 headings</li>
+     <li>@('(xdoc::h2 string)') for level-2 headings</li>
+     <li>@('(xdoc::h3 string)') for level-3 headings</li>
+     <li>@('(xdoc::h4 string)') for level-4 headings</li>
+     <li>@('(xdoc::h5 string)') for level-5 headings</li>
+     <li>@('(xdoc::p string)') for paragraphs</li>
+     <li>@('(xdoc::blockquote tree ... tree)') for quoted blocks</li>
+     <li>@('(xdoc::li tree ... tree)') for (un)ordered list items</li>
+     <li>@('(xdoc::ul li-tree ... li-tree)') for unordered lists</li>
+     <li>@('(xdoc::ol li-tree ... li-tree)') for ordered lists</li>
+     <li>@('(xdoc::dt string)') for description list terms</li>
+     <li>@('(xdoc::dd tree ... tree)') for description list descriptions</li>
+     <li>@('(xdoc::dl dt/dd-tree ... dt/dd-tree)') for description lists</li>
+     <li>@('(xdoc::&& tree ... tree)') to join trees into a tree
+         that will not be surrounded by any tag when turned into a string</li>
+     <li>@('(xdoc::@{} string)') for XDOC code blocks</li>
+     <li>@('(xdoc::@code line ... line)') for XDOC code blocks
+         whose string is constructed by
+         terminating the given lines with newline characters
+         and by joining the terminated lines together</li>
+     <li>@('(xdoc::desc string-or-list-of-strings tree ... tree)')
+         for singleton description lists where
+         the string(s) become(s) the term(s)
+         and the trees become the description</li>
+     <li>@('(xdoc::topstring tree ... tree)') to turn trees into a string,
+         at the top level</li>
+     <li>@('(xdoc::toppstring string)') for a single top-level paragraph</li>
+   </ul>
+   <p>
+   More constructors may be added as needed.
+   </p>
+   <p>
+   Example usage:
+   </p>
+   @({
+     (xdoc::topstring
+       (xdoc::p \"A paragraph.\")
+       (xdoc::ul
+         (xdoc::li \"One.\")
+         (xdoc::li \"Two.\")
+         (xdoc::li \"Three.\"))
+       (xdoc::p \"Another paragraph.\"))
+   })")
 
 (local (set-default-parents xdoc::constructors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xdoc::textp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize XDOC text."
+(defsection xdoc::treep
+  :short "Recognize XDOC trees."
   :long
   "<p>
-   See the discussion <see topic='@(url xdoc::constructors)'>here</see>
-   about the current vs. possible future implementation.
-   </p>"
-  (stringp x))
-
-(define xdoc::text ((string stringp))
-  :returns (text xdoc::textp
-                 :hyp :guard
-                 :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :short "Turn a string into XDOC text."
-  :long
-  "<p>
-   This is currently the identity function
-   because @(tsee xdoc::textp) is currently a synonym of @(tsee stringp),
-   but if the definition of @(tsee xdoc::textp) changes at some point,
-   this function will be changed accordingly.
-   See the discussion <see topic='@(url xdoc::constructors)'>here</see>
-   about the current vs. possible future implementation.
-   </p>"
-  string)
-
-(defsection xdoc::app
-  :short "Concatenate zero or more pieces of XDOC text,
-          at an intermediate level."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values;
-   the result is a @(tsee xdoc::textp) value.
+   These are the trees produced by our XDOC constructors.
    </p>
    <p>
-   This must not be used at the top level, i.e. just after @(':long').
-   It must be used only to concatenate text at an intermediate level.
-   See also @(tsee xdoc::topapp).
-   </p>
-   @(def xdoc::app)"
-  (defmacro xdoc::app (&rest pieces)
-    `(concatenate 'string ,@pieces)))
-
-(defsection xdoc::topapp
-  :short "Concatenate zero or more pieces of XDOC text, at the top level."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values;
-   the result is a string.
-   </p>
-   <p>
-   This must be used only at the top level, i.e. just after @(':long').
-   It must not be used when
-   See also @(tsee xdoc::app).
-   </p>
-   @(def xdoc::topapp)"
-  (defmacro xdoc::topapp (&rest pieces)
-    `(concatenate 'string ,@pieces)))
-
-(define xdoc::tag ((tag-name stringp) (text xdoc::textp))
-  :returns (text1 xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :short "Surround the given text with a tag with the given name."
-  :long
-  "<p>
-   Two new line characters are added at the end,
-   producing a blank line to improve readability
-   when the resulting text is concatenated with other text.
+   These trees have strings at the leaves.
+   A non-leaf node consists of
+   a keyword that corresponds to an HTML tag (e.g. @(':p') for @('<p>')),
+   and zero or more subtrees.
+   The keyword tag may also be @(':@{}'),
+   which corresponds to the XDOC macro @('@({...})');
+   this is not an HTML tag,
+   but essentially behaves like one as far as the XDOC structure is concerned.
+   The keyword tag may also be @(':&&'),
+   which indicates that the strings from the subtrees should be joined
+   without being surrounded by any tag;
+   this is useful to treat lists of subtrees (e.g. lists of paragraphs)
+   as single trees.
+   See @(tsee xdoc::topstring) for details on how the tags are treated.
    </p>"
-  (b* ((open-angle (coerce (list #\<) 'string))
-       (close-angle (coerce (list #\>) 'string))
-       (slash (coerce (list #\/) 'string))
-       (open-tag (concatenate 'string open-angle tag-name close-angle))
-       (close-tag (concatenate 'string open-angle slash tag-name close-angle))
-       (newline (coerce (list #\Newline) 'string)))
-    (concatenate 'string open-tag text close-tag newline newline))
-  :guard-hints (("Goal" :in-theory (enable xdoc::textp))))
 
-(define xdoc::h1 ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML level-1 heading @('\<h1\>...\</h1\>')."
+  (mutual-recursion
+
+   (defun xdoc::treep (x)
+     (or (stringp x)
+         (and (true-listp x)
+              (consp x)
+              (keywordp (car x))
+              (xdoc::tree-listp (cdr x)))))
+
+   (defun xdoc::tree-listp (x)
+     (cond ((atom x) (eq x nil))
+           (t (and (xdoc::treep (car x))
+                   (xdoc::tree-listp (cdr x)))))))
+
+  (defthm xdoc::treep-when-stringp
+    (implies (stringp x)
+             (xdoc::treep x)))
+
+  (defthm xdoc::treep-of-cons
+    (equal (xdoc::treep (cons x y))
+           (and (keywordp x)
+                (xdoc::tree-listp y))))
+
+  (defthm xdoc::tree-listp-when-string-listp
+    (implies (string-listp x)
+             (xdoc::tree-listp x)))
+
+  (defthm xdoc::tree-listp-of-cons
+    (equal (xdoc::tree-listp (cons x y))
+           (and (xdoc::treep x)
+                (xdoc::tree-listp y))))
+
+  (in-theory (disable xdoc::treep xdoc::tree-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::li-treep
+  :short "Recognize XDOC trees for HTML list items
+          in an HTML unordered or ordered list."
+
+  (defun xdoc::li-treep (x)
+    (and (xdoc::treep x)
+         (consp x)
+         (eq (car x) :li)))
+
+  (defun xdoc::li-tree-listp (x)
+    (cond ((atom x) (eq x nil))
+          (t (and (xdoc::li-treep (car x))
+                  (xdoc::li-tree-listp (cdr x))))))
+
+  (defthm xdoc::treep-when-li-treep
+    (implies (xdoc::li-treep x)
+             (xdoc::treep x)))
+
+  (defthm xdoc::tree-listp-when-li-tree-listp
+    (implies (xdoc::li-tree-listp x)
+             (xdoc::tree-listp x)))
+
+  (defthm xdoc::li-treep-of-cons
+    (equal (xdoc::li-treep (cons x y))
+           (and (eq x :li)
+                (xdoc::tree-listp y))))
+
+  (defthm xdoc::li-tree-listp-of-cons
+    (equal (xdoc::li-tree-listp (cons x y))
+           (and (xdoc::li-treep x)
+                (xdoc::li-tree-listp y))))
+
+  (in-theory (disable xdoc::li-treep xdoc::li-tree-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::dt/dd-treep
+  :short "Recognize XDOC trees for HTML terms or descriptions
+          in an HTML description list."
+
+  (defun xdoc::dt/dd-treep (x)
+    (and (xdoc::treep x)
+         (consp x)
+         (or (eq (car x) :dt)
+             (eq (car x) :dd))))
+
+  (defun xdoc::dt/dd-tree-listp (x)
+    (cond ((atom x) (eq x nil))
+          (t (and (xdoc::dt/dd-treep (car x))
+                  (xdoc::dt/dd-tree-listp (cdr x))))))
+
+  (defthm xdoc::treep-when-dt/dd-treep
+    (implies (xdoc::dt/dd-treep x)
+             (xdoc::treep x)))
+
+  (defthm xdoc::tree-listp-when-dt/dd-tree-listp
+    (implies (xdoc::dt/dd-tree-listp x)
+             (xdoc::tree-listp x)))
+
+  (defthm xdoc::dt/dd-treep-of-cons
+    (equal (xdoc::dt/dd-treep (cons x y))
+           (and (or (eq x :dt)
+                    (eq x :dd))
+                (xdoc::tree-listp y))))
+
+  (defthm xdoc::dt/dd-tree-listp-of-cons
+    (equal (xdoc::dt/dd-tree-listp (cons x y))
+           (and (xdoc::dt/dd-treep x)
+                (xdoc::dt/dd-tree-listp y))))
+
+  (in-theory (disable xdoc::dt/dd-treep xdoc::dt/dd-tree-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::make-tree
+  :short "Construct a non-leaf XDOC tree with the given tag and subtrees."
   :long
   "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a heading is expected to be ``atomic''.
+   This is more an internal function than an API function
+   of this library of XDOC constructors.
+   Using this function instead of @(tsee cons) ensures that
+   the arguments have the right types (via the guard)
+   and the result is an XDOC tree (proved as a theorem).
+   It also provides a bit of abstraction over
+   the representation of XDOC trees.
    </p>"
-  (xdoc::tag "h1" (xdoc::text string)))
 
-(define xdoc::h2 ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML level-2 heading @('\<h2\>...\</h2\>')."
-  :long
-  "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a heading is expected to be ``atomic''.
-   </p>"
-  (xdoc::tag "h2" (xdoc::text string)))
+  (defun xdoc::make-tree (tag trees)
+    (declare (xargs :guard (and (keywordp tag) (xdoc::tree-listp trees))))
+    (cons tag trees))
 
-(define xdoc::h3 ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML level-3 heading @('\<h3\>...\</h3\>')."
-  :long
-  "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a heading is expected to be ``atomic''.
-   </p>"
-  (xdoc::tag "h3" (xdoc::text string)))
+  (defthm xdoc::treep-of-make-tree
+    (equal (xdoc::treep (xdoc::make-tree tag trees))
+           (and (keywordp tag)
+                (xdoc::tree-listp trees))))
 
-(define xdoc::h4 ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML level-4 heading @('\<h4\>...\</h4\>')."
-  :long
-  "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a heading is expected to be ``atomic''.
-   </p>"
-  (xdoc::tag "h4" (xdoc::text string)))
+  (defthm xdoc::li-treep-of-make-tree
+    (equal (xdoc::li-treep (xdoc::make-tree tag trees))
+           (and (eq tag :li)
+                (xdoc::tree-listp trees))))
 
-(define xdoc::h5 ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML level-5 heading @('\<h5\>...\</h5\>')."
-  :long
-  "<p>
-   The argument is a string, and not a @(tsee xdoc::textp) value,
-   because a heading is expected to be ``atomic''.
-   </p>"
-  (xdoc::tag "h5" (xdoc::text string)))
+  (defthm xdoc::dt/dd-treep-of-make-tree
+    (equal (xdoc::dt/dd-treep (xdoc::make-tree tag trees))
+           (and (or (eq tag :dt)
+                    (eq tag :dd))
+                (xdoc::tree-listp trees))))
 
-(define xdoc::p ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML paragraph @('\<p\>...\</p\>') from a string."
-  :long
-  "<p>
-   The paragraph just contains the string, i.e. it is ``atomic''.
-   </p>
-   <p>
-   Use @(tsee xdoc::p*) to build non-``atomic'' paragraphs.
-   </p>"
-  (xdoc::tag "p" (xdoc::text string)))
+  (in-theory (disable xdoc::make-tree)))
 
-(defsection xdoc::p*
-  :short "Build an XML paragraph @('\<p\>...\</p\>') from
-          zero or more pieces of XDOC text."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values,
-   which are concatenated into a resulting @(tsee xdoc::textp) value.
-   </p>
-   <p>
-   Use @(tsee xdoc::p) to build ``atomic'' paragraphs.
-   </p>
-   @(def xdoc::p*)"
-  (defmacro xdoc::p* (&rest pieces)
-    `(xdoc::tag "p" (concatenate 'string ,@pieces))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xdoc::topp ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML paragraph @('\<p\>...\</p\>') from a string,
-          at the top level."
-  :long
-  "<p>
-   This provides an abbreviation for the somewhat common case in which
-   a single paragraph is used as an XDOC string.
-   </p>"
-  (xdoc::topapp (xdoc::p string)))
+(defsection xdoc::*newline*
+  :short "The string consisting of exactly the newline character."
+  (defconst xdoc::*newline*
+    (coerce (list #\Newline) 'string)))
 
-(define xdoc::li ((string stringp))
-  :returns (text xdoc::textp)
-  :short "Build an XML list item @('\<li\>...\</li\>') from a string."
-  :long
-  "<p>
-   The list item just contains the string, i.e. it is ``atomic''
-   </p>
-   <p>
-   See @(tsee xdoc::li*) to build non-``atomic'' list items.
-   </p>"
-  (xdoc::tag "li" (xdoc::text string)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::li*
-  :short "Build an XML list item @('\<li\>...\</li\>') from
-          zero or more pieces of XDOC text."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values,
-   which are concatenated into a resulting @(tsee xdoc::textp) value.
-   </p>
-   <p>
-   Use @(tsee xdoc::li) to build ``atomic'' list items.
-   </p>
-   @(def xdoc::li*)"
-  (defmacro xdoc::li* (&rest pieces)
-    `(xdoc::tag "li" (concatenate 'string ,@pieces))))
+(defsection xdoc::h1
+  :short "Construct an XDOC tree for
+          an HTML level-1 heading @('\<h1\>...\</h1\>')
+          from a string."
+  :long "@(def xdoc::h1)"
 
-(defsection xdoc::ul
-  :short "Build an XML unordered list @('\<ul\>...\</ul\>')."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values,
-   which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be
-   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
-   </p>
-   @(def xdoc::ul)"
-  (defmacro xdoc::ul (&rest items)
-    `(xdoc::tag "ul" (concatenate 'string ,@items))))
+  (defund xdoc::h1-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :h1 (list string)))
 
-(defsection xdoc::ol
-  :short "Build an XML ordered list @('\<ol\>...\</ol\>')."
-  :long
-  "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values,
-   which are concatenated into a resulting @(tsee xdoc::textp) value.
-   The arguments are expected to be
-   calls to @(tsee xdoc::li) or @(tsee xdoc::li*).
-   </p>
-   @(def xdoc::ol)"
-  (defmacro xdoc::ol (&rest items)
-    `(xdoc::tag "ol" (concatenate 'string ,@items))))
+  (defmacro xdoc::h1 (string)
+    `(xdoc::h1-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::h2
+  :short "Construct an XDOC tree for
+          an HTML level-2 heading @('\<h2\>...\</h2\>')
+          from a string."
+  :long "@(def xdoc::h2)"
+
+  (defund xdoc::h2-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :h2 (list string)))
+
+  (defmacro xdoc::h2 (string)
+    `(xdoc::h2-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::h3
+  :short "Construct an XDOC tree for
+          an HTML level-3 heading @('\<h3\>...\</h3\>')
+          from a string."
+  :long "@(def xdoc::h3)"
+
+  (defund xdoc::h3-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :h3 (list string)))
+
+  (defmacro xdoc::h3 (string)
+    `(xdoc::h3-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::h4
+  :short "Construct an XDOC tree for
+          an HTML level-4 heading @('\<h4\>...\</h4\>')
+          from a string."
+  :long "@(def xdoc::h4)"
+
+  (defund xdoc::h4-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :h4 (list string)))
+
+  (defmacro xdoc::h4 (string)
+    `(xdoc::h4-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::h5
+  :short "Construct an XDOC tree for
+          an HTML level-5 heading @('\<h5\>...\</h5\>')
+          from a string."
+  :long "@(def xdoc::h5)"
+
+  (defund xdoc::h5-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :h5 (list string)))
+
+  (defmacro xdoc::h5 (string)
+    `(xdoc::h5-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::p
+  :short "Construct an XDOC tree for
+          an HTML paragraph @('\<p\>...\</p\>')
+          from a string."
+  :long "@(def xdoc::p)"
+
+  (defund xdoc::p-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :p (list string)))
+
+  (defmacro xdoc::p (string)
+    `(xdoc::p-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection xdoc::blockquote
-  :short "Build an XML quoted block @('\<blockquote\>...\</blockquote\>')."
+  :short "Construct an XDOC tree for
+          an HTML quoted block @('\<blockquote\>...\</blockquote\>')
+          from a sequence of XDOC trees subtrees."
+  :long "@(def xdoc::blockquote)"
+  (defmacro xdoc::blockquote (&rest trees)
+    `(xdoc::make-tree :blockquote (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::li
+  :short "Construct an XDOC tree for
+          an HTML list item @('\<li\>...\</li\>')
+          from a sequence of XDOC subtrees."
+  :long "@(def xdoc::li)"
+  (defmacro xdoc::li (&rest trees)
+    `(xdoc::make-tree :li (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::ul
+  :short "Construct an XDOC tree for
+          an HTML unordered list @('\<ul\>...\</ul\>')
+          from a sequence of XDOC subtrees for HTML list items."
+  :long "@(def xdoc::ul)"
+
+  (defund xdoc::ul-fn (trees)
+    (declare (xargs :guard (xdoc::li-tree-listp trees)))
+    (xdoc::make-tree :ul trees))
+
+  (defmacro xdoc::ul (&rest trees)
+    `(xdoc::ul-fn (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::ol
+  :short "Construct an XDOC tree for
+          an HTML ordered list @('\<ol\>...\</ol\>')
+          from a sequence of XDOC subtrees for HTML list items."
+  :long "@(def xdoc::ol)"
+
+  (defund xdoc::ol-fn (trees)
+    (declare (xargs :guard (xdoc::li-tree-listp trees)))
+    (xdoc::make-tree :ol trees))
+
+  (defmacro xdoc::ol (&rest trees)
+    `(xdoc::ol-fn (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::dt
+  :short "Construct an XDOC tree for
+          an HTML term @('\<dt\>...\</dt\>')
+          from a string."
+  :long "@(def xdoc::dt)"
+
+  (defund xdoc::dt-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :dt (list string)))
+
+  (defmacro xdoc::dt (string)
+    `(xdoc::dt-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::dd
+  :short "Construct an XDOC tree for
+          an HTML description @('\<dd\>...\</dd\>')
+          from a sequence of XDOC subtrees."
+  :long "@(def xdoc::dd)"
+  (defmacro xdoc::dd (&rest trees)
+    `(xdoc::make-tree :dd (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::dl
+  :short "Construct an XDOC tree for
+          an HTML description list @('\<dl\>...\</dl\>')
+          from a sequence of XDOC tree for HTML terms and descriptions."
+  :long "@(def xdoc::dl)"
+
+  (defund xdoc::dl-fn (trees)
+    (declare (xargs :guard (xdoc::dt/dd-tree-listp trees)))
+    (xdoc::make-tree :dl trees))
+
+  (defmacro xdoc::dl (&rest trees)
+    `(xdoc::dl-fn (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::&&
+  :short "Construct an XDOC tree for
+          a sequence of subtrees to treat as a single tree."
+  :long "@(def xdoc::&&)"
+  (defmacro xdoc::&& (&rest trees)
+    `(xdoc::make-tree :&& (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::@{}
+  :short "Construct an XDOC tree for
+          a preformatted code block @('@({...})')
+          from a string."
   :long
   "<p>
-   The arguments are evaluated and must return @(tsee xdoc::textp) values,
-   which are concatenated into a @(tsee xdoc::textp) value
-   that is tagged and returned.
+   See @(tsee xdoc::@code) for a higher-level XDOC constructor
+   for preformatted code blocks.
    </p>
-   @(def xdoc::blockquote)"
-  (defmacro xdoc::blockquote (&rest items)
-    `(xdoc::tag "blockquote" (concatenate 'string ,@items))))
+   @(def xdoc::@{})"
 
-(defsection xdoc::code
-  :short "Build an XML preformatted code block @('@({...})')."
+  (defund xdoc::@{}-fn (string)
+    (declare (xargs :guard (stringp string)))
+    (xdoc::make-tree :@{} (list string)))
+
+  (defmacro xdoc::@{} (string)
+    `(xdoc::@{}-fn ,string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::@code
+  :short "Construct an XDOC tree for
+          a preformatted code block @('@({...})')
+          from a sequence of strings."
   :long
   "<p>
    The arguments must evaluate to strings that are the lines of the code block,
-   starting with suitable spaces and with no ending new line characters.
+   starting with spaces appropriate for the desired indentation
+   and with no ending new line characters.
    New line characters are automatically added at the end of each line.
-   A new line character is also automatically added after the opening @('@({'),
-   to ensure the proper formatting;
-   a blank line is added after the closing @('})'),
-   to improve readability
-   when the resulting string is combined with others in sequence.
-   </p>
-   @(def xdoc::code)"
-
-  (define xdoc::terminate-lines
-    ((unterminated-lines string-listp)
-     (reversed-current-terminated-lines string-listp))
-    :returns (final-terminated-lines string-listp :hyp :guard)
-    :parents nil
-    (cond ((endp unterminated-lines) (reverse
-                                      reversed-current-terminated-lines))
-          (t (b* ((unterminated-line (car unterminated-lines))
-                  (terminated-line (concatenate 'string
-                                                unterminated-line
-                                                (coerce '(#\Newline) 'string))))
-               (xdoc::terminate-lines
-                (cdr unterminated-lines)
-                (cons terminated-line reversed-current-terminated-lines)))))
-    :prepwork
-    ((local
-      (defthm returns-lemma ; to prove the :RETURNS theorem above
-        (implies (and (string-listp x)
-                      (string-listp y))
-                 (string-listp (revappend x y)))))))
-
-  (define xdoc::code-fn ((lines string-listp))
-    :returns (text xdoc::textp
-                   :hints (("Goal" :in-theory (enable xdoc::textp))))
-    :parents nil
-    (let ((newline (coerce (list #\Newline) 'string))
-          (lines (xdoc::terminate-lines lines nil)))
-      (concatenate 'string
-                   "@({"
-                   newline
-                   (string-append-lst lines)
-                   "})"
-                   newline
-                   newline)))
-
-  (defmacro xdoc::code (&rest lines)
-    `(xdoc::code-fn (list ,@lines))))
-
-(defsection xdoc::desc
-  :short "Build a description."
-  :long
-  "<p>
-   The description consists of
-   an XML paragraph that identifies the thing being described,
-   followed by a sequence of XML paragraphs, lists, and other structures
-   that describe the thing and that are in an XML quoted block.
-   This macro takes as arguments:
-   a string that identifies the thing,
-   which is not evaluated and is surrounded with XML paragraph tags;
-   and a variable number of XML structures that describe the thing,
-   which are evaluated, concatenated, and surrounded with XML quoted block tags.
+   A new line character is also automatically added before all the lines,
+   to ensure the proper formatting in the final XDOC string.
    </p>
    <p>
-   For example, the thing could be the input to an event macro.
-   The text that identifies the input could be a short line,
-   namely the name of the input (perhaps with an indication of a default value).
-   </p>"
-  (defmacro xdoc::desc (desc-id &rest desc-items)
-    (declare (xargs :guard (stringp desc-id)))
-    `(concatenate 'string
-                  (xdoc::p ,desc-id)
-                  (xdoc::blockquote ,@desc-items))))
+   Since the XDOC tree is constructed from a sequence of subtrees,
+   the aforementioned newlines are not
+   directly concatenated with the input strings.
+   Instead, each input string is turned into two strings.
+   </p>
+   <p>
+   This XDOC constructor provides a possibly more convenient way
+   to enter the lines that form the code block,
+   compared to the bare @(tsee xdoc::@{}) XDOC constructor.
+   </p>
+   @(def xdoc::@code)"
 
-(define xdoc::img ((src stringp))
-  :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :short "Build an XML image reference @('<img src=\"...\">')."
+  (defun xdoc::@code-terminate-lines (lines)
+    (declare (xargs :guard (string-listp lines)))
+    (cond ((endp lines) nil)
+          (t (list* (car lines)
+                    xdoc::*newline*
+                    (xdoc::@code-terminate-lines (cdr lines))))))
+
+  (defthm xdoc::string-listp-of-@code-terminate-lines
+    (implies (string-listp lines)
+             (string-listp (xdoc::@code-terminate-lines lines))))
+
+  (in-theory (disable xdoc::@code-terminate-lines))
+
+  (defund xdoc::@code-fn (lines)
+    (declare (xargs :guard (string-listp lines)))
+    (xdoc::make-tree :@{} (cons xdoc::*newline*
+                                (xdoc::@code-terminate-lines lines))))
+
+  (defmacro xdoc::@code (&rest lines)
+    `(xdoc::@code-fn (list ,@lines))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::desc
+  :short "Construct an XDOC tree for a description."
   :long
   "<p>
-   The argument is the value for the @('src') attribute.
-   </p>"
+   This is an HTML description list
+   with a (sequence of) term(s) and a description.
+   It is a higher-level XDOC constructor,
+   which combines lower-level ones into one
+   that may be more convenient to use.
+   </p>
+   <p>
+   The first argument is either a string for a single term
+   or a list of strings for a sequence of terms.
+   </p>
+   @(def xdoc::desc)"
+
+  (defun xdoc::desc-make-dt-trees (strings)
+    (declare (xargs :guard (string-listp strings)))
+    (cond ((endp strings) nil)
+          (t (cons (xdoc::make-tree :dt (list (car strings)))
+                   (xdoc::desc-make-dt-trees (cdr strings))))))
+
+  (defthm xdoc::dt/dd-tree-listp-of-desc-make-dt-trees
+    (implies (string-listp strings)
+             (xdoc::dt/dd-tree-listp (xdoc::desc-make-dt-trees strings))))
+
+  (defund xdoc::desc-fn (dt-part dd-part)
+    (declare (xargs :guard (and (or (stringp dt-part)
+                                    (string-listp dt-part))
+                                (xdoc::tree-listp dd-part))))
+    (let* ((dt-part (if (stringp dt-part) (list dt-part) dt-part))
+           (dt-trees (xdoc::desc-make-dt-trees dt-part))
+           (dd-tree (xdoc::make-tree :dd dd-part)))
+      (xdoc::make-tree :dl (append dt-trees (list dd-tree)))))
+
+  (defmacro xdoc::desc (dt-part &rest dd-part)
+    `(xdoc::desc-fn ,dt-part (list ,@dd-part))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::topstring
+  :short "Turn a list of XDOC trees into the string they represent."
+  :long
+  "<p>
+   An XDOC string has typically the form
+   @({
+     <p>a paragraph</p>
+     <p>another paragraph</p>
+     <ul>
+       <li>an item</li>
+       <li>another item</li>
+     </ul>
+     <p>and so on</p>
+   })
+   i.e. it is a sequence of HTML paragraphs, lists, etc.
+   There is no top-level tag
+   (unlike, say, the @('<html>') tag of HTML pages).
+   </p>
+   <p>
+   This function can be thought of as a top-level tag for XDOC strings,
+   i.e. something like
+   @({
+     <top>
+       <p>a paragraph</p>
+       <p>another paragraph</p>
+       <ul>
+         <li>an item</li>
+         <li>another item</li>
+       </ul>
+       <p>and so on</p>
+     </top>
+   })
+   However, this function does not construct an XDOC tree,
+   but rather the flat string that the sequence of XDOC trees represent.
+   </p>
+   <p>
+   As noted <see topic='@(url str::concatenation)'>here</see>,
+   string concatenation is slow in ACL2 in general.
+   The current implementation of this function
+   uses straighforward string concatenation,
+   but this could be optimized in the future,
+   if concatenating strings turns out to be too slow
+   in the actual usage of these XDOC constructors.
+   </p>
+   <p>
+   An XDOC tree is turned into a string as follows.
+   A leaf tree is already a string and is left unchanged.
+   For a non-leaf tree, the subtrees are recursively turned into strings
+   and concatenated;
+   then the resulting string is surrounded by an opening and closing tag
+   (with a newline just after each of the opening and closing tags)
+   derived directly from the keyword at the root of the tree.
+   There are two special cases:
+   (i) if the keyword at the root of the tree is @(':@{}'),
+   then @('@({') is used as opening ``tag''
+   and @('})') is used as closing ``tag'';
+   (ii) if the keyword at the root of the tree is @(':&&'),
+   then no opening or closing tags are added.
+   </p>
+   <p>
+   The @(tsee symbol-name) of a keyword tag consists of uppercase letters.
+   In order to turn those into lowercase letters,
+   all the characters must satisfy @(tsee standard-char-p).
+   This is always the case for the tags we use,
+   but since the definition of XDOC trees allows arbitrary keywords,
+   we introduce a conversion function from tags to strings
+   that returns the empty string if any characters in the tag name
+   are non-standard.
+   </p>
+   <p>
+   At the top-level, the list of XDOC trees
+   is treated as if they were subtrees
+   (i.e. recursively turned into strings and concatenated,
+   separated by newline characters),
+   but without adding any tag around the whole thing.
+   </p>
+   @(def xdoc::topstring)"
+
+  (defund xdoc::tag-to-string (tag)
+    (declare (xargs :guard (keywordp tag)))
+    (let* ((tag-string (symbol-name tag))
+           (tag-chars (coerce tag-string 'list)))
+      (if (standard-char-listp tag-chars)
+          (string-downcase tag-string)
+        "")))
+
+  (mutual-recursion
+
+   (defun xdoc::topstring-fn (tree)
+     (declare (xargs ::guard (xdoc::treep tree)
+                     :verify-guards nil)) ; done below
+     (cond ((atom tree) tree)
+           (t (let* ((substring (xdoc::topstring-fn-list (cdr tree)))
+                     (tag (car tree))
+                     (open (case tag
+                             (:&& "")
+                             (:@{} (concatenate 'string
+                                                "@({"
+                                                xdoc::*newline*))
+                             (t (concatenate 'string
+                                             "<"
+                                             (xdoc::tag-to-string tag)
+                                             ">"
+                                             xdoc::*newline*))))
+                     (close (case tag
+                              (:&& "")
+                              (:@{} (concatenate 'string
+                                                 "})"
+                                                 xdoc::*newline*))
+                              (t (concatenate 'string
+                                              "</"
+                                              (xdoc::tag-to-string tag)
+                                              ">"
+                                              xdoc::*newline*)))))
+                (concatenate 'string open substring close)))))
+
+   (defun xdoc::topstring-fn-list (trees)
+     (declare (xargs :guard (xdoc::tree-listp trees)))
+     (cond ((endp trees) "")
+           (t (concatenate 'string
+                           (xdoc::topstring-fn (car trees))
+                           (xdoc::topstring-fn-list (cdr trees)))))))
+
+  (make-flag flag-xdoc-top-fn xdoc::topstring-fn)
+
+  (defthm-flag-xdoc-top-fn
+    (defthm xdoc::theorem-for-top-fn
+      (implies (xdoc::treep tree)
+               (stringp (xdoc::topstring-fn tree)))
+      :flag xdoc::topstring-fn)
+    (defthm xdoc::theorem-for-top-fn-list
+      (implies (xdoc::tree-listp trees)
+               (stringp (xdoc::topstring-fn-list trees)))
+      :flag xdoc::topstring-fn-list)
+    :hints (("Goal" :in-theory (enable xdoc::treep))))
+
+  (verify-guards xdoc::topstring-fn
+    :hints (("Goal" :in-theory (enable xdoc::tree-listp))))
+
+  (in-theory (disable xdoc::topstring-fn xdoc::topstring-fn-list))
+
+  (defmacro xdoc::topstring (&rest trees)
+    `(xdoc::topstring-fn-list (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::toppstring
+  :short "Construct a top-level XDOC paragraph from a string."
+  :long
+  "<p>
+   This abbreviates @(tsee xdoc::topstring) applied to a single @(tsee xdoc::p).
+   It is useful for more compact writing of
+   XDOC strings that consist of single paragraphs.
+   In this case, one could just write
+   @('\"<p>...</p>\"') instead of @('(xdoc::toppstring \"...\")'),
+   but the latter may be more error-prone
+   in the sense that closing tag may be forgotten.
+   </p>
+   @(def xdoc::toppstring)"
+  (defmacro xdoc::toppstring (string)
+    `(xdoc::topstring (xdoc::p ,string))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following functions and macros are temporary.
+; They are here for compatibility with some books
+; that use the old XDOC constructors.
+; When all the books are changed to use the new XDOC constructors above,
+; the following functions and macros will be removed.
+
+(defmacro xdoc::textp (x)
+  `(xdoc::treep ,x))
+
+(defmacro xdoc::app (&rest args)
+  `(xdoc::&& ,@args))
+
+(defmacro xdoc::p* (&rest args)
+  `(xdoc::p ,@args))
+
+(defmacro xdoc::li* (&rest args)
+  `(xdoc::li ,@args))
+
+(defmacro xdoc::topapp (&rest args)
+  `(xdoc::topstring ,@args))
+
+(defmacro xdoc::topp (&rest args)
+  `(xdoc::toppstring ,@args))
+
+(defmacro xdoc::code (&rest args)
+  `(xdoc::@code ,@args))
+
+(defund xdoc::img (src)
+  (declare (xargs :guard (stringp src)))
   (concatenate 'string "<img src=\"" src "\"/>"))
 
-(define xdoc::def ((name stringp))
-  :returns (text xdoc::textp :hints (("Goal" :in-theory (enable xdoc::textp))))
-  :short "Build an XDOC definition directive."
-  :long
-  "<p>
-   This is a @('@(def ...)') directive.
-   The name is supplied as an argument.
-   </p>"
+(defund xdoc::def (name)
+  (declare (xargs :guard (stringp name)))
   (concatenate 'string "@(def " name ")"))
