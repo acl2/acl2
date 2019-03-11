@@ -28,7 +28,8 @@
 (defun indices-marked-p (index-list alv)
   (declare (xargs :guard (and (nat-listp index-list) (boolean-listp alv))))
   (or (atom index-list)
-      (and (nth (car index-list) alv) (indices-marked-p (cdr index-list) alv))))
+      (and (equal (nth (car index-list) alv) t)
+           (indices-marked-p (cdr index-list) alv))))
 
 (defthm indices-marked-p-correctness-1
   (implies (and (indices-marked-p index-list alv)
@@ -689,7 +690,7 @@
       (cons
        (cadr (car fs))
        (l4-collect-all-index-lists (remove1-assoc-equal name
-                                                        (cdr fs)))))))))
+                                                       (cdr fs)))))))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-31

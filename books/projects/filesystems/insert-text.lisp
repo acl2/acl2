@@ -74,17 +74,7 @@
   :hints
   (("goal" :use len-of-insert-text)
    ("subgoal 4'''" :expand (len (insert-text nil 0 text)))
-   ("subgoal 1'4'" :expand (len oldtext))))  (defund
-                                               insert-text (oldtext start text)
-                                               (declare (xargs :guard (and (character-listp oldtext)
-                                                                           (natp start)
-                                                                           (stringp text))))
-                                               (let*
-                                                   ((end (+ start (length text)))
-                                                    (newtext (append (make-character-list (take start oldtext))
-                                                                     (coerce text 'list)
-                                                                     (nthcdr end oldtext))))
-                                                 newtext))
+   ("subgoal 1'4'" :expand (len oldtext))))
 
 (defthm
   insert-text-correctness-1
