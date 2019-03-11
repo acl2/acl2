@@ -137,11 +137,21 @@
                (nth (- (len x) (+ 1 (nfix n))) x)
              nil)))
 
+  ;; Mihir M. mod: updated nth-of-take to remove a call to min in the RHS of
+  ;; the rewrite rule.
+  (local
+   (defthm nth-of-first-n-ac
+     (equal (nth n (first-n-ac i l ac))
+            (cond ((>= (nfix n) (+ (len ac) (nfix i)))
+                   nil)
+                  ((< (nfix n) (len ac))
+                   (nth (- (len ac) (+ (nfix n) 1)) ac))
+                  (t (nth (- (nfix n) (len ac)) l))))))
   (defthm nth-of-take
     (equal (nth i (take n l))
-           (if (< (nfix i) (min (nfix n) (len l)))
-               (nth i l)
-             nil)))
+           (if (>= (nfix i) (nfix n))
+               nil (nth (nfix i) l)))
+    :hints (("Goal" :in-theory (enable take))))
 
   (defthm nth-of-make-list-ac
     (equal (nth n (make-list-ac m val acc))
