@@ -27,7 +27,7 @@
   :parents (event-forms)
   :short "Recognize the basic structure of an event form."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Check whether @('x') is a non-empty true list that starts with a symbol
      (like a function or macro call).")

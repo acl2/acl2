@@ -20,7 +20,7 @@
   :parents (rlp)
   :short "Big-endian representation of scalars in RLP."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The library function @(tsee nat=>bendian*),
      when the @('base') argument is 256,

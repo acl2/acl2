@@ -21,7 +21,7 @@
   :parents (rlp)
   :short "RLP encoding."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We specify RLP encoding via functions
      from byte arrays, trees, and scalars
@@ -48,7 +48,7 @@
                                         (width 8))))))
   :short "RLP encoding of a byte array."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This corresponds to @($R_{\\mathrm{b}}$) [YP:(180)].")
    (xdoc::p
@@ -150,7 +150,7 @@
   :parents (rlp-encoding)
   :short "RLP encoding of a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This corresponds to
      @($\\mathtt{RLP}$) [YP:(179)],
@@ -376,7 +376,7 @@
   :parents (rlp-encoding)
   :short "RLP encoding of a scalar."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This corresponds to @($\\mathtt{RLP}$) [YP:(185)].")
    (xdoc::p
@@ -394,7 +394,7 @@
   :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is a declarative, non-executable definition,
      which essentially characterizes the image of @(tsee rlp-encode-tree)
@@ -449,7 +449,7 @@
   :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a byte array."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee rlp-tree-encoding-p).")
    (xdoc::p
@@ -523,7 +523,7 @@
   :parents (rlp-encoding)
   :short "Check if a byte array is an RLP encoding of a scalar."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee rlp-tree-encoding-p).")
    (xdoc::p

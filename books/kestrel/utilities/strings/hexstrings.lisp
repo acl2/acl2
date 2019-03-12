@@ -26,7 +26,7 @@
   :short "Convert a list of natural numbers below 256
           to a string of hexadecimal digits."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are upper case letters.
@@ -59,7 +59,7 @@
   :short "Convert an even-length string of hexadecimal digit characters
           to a list of natural numbers below 256."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "Each pair of hexadecimal digit characters is turned into sa number.
     Each such two-digit hexadecimal notation is treated as big endian,
     i.e. the most significant digit appears first.")

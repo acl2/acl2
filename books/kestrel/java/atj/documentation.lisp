@@ -23,7 +23,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +217,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(atj fn1 ... fnp"
     "     &key"
     "     :java-package  ; default nil"
@@ -348,7 +348,7 @@
      a single public class named as specified by the @(':java-class') input,
      in the package specified by the @(':java-package') input.")
 
-   (xdoc::code
+   (xdoc::@code
     "public class <name> {"
     "    // private static field and methods"
     "    public static void initialize() ..."
@@ -395,7 +395,7 @@
      the description of the @(':java-class') input above,
      in the package specified by the @(':java-package') input.")
 
-   (xdoc::code
+   (xdoc::@code
     "public class <name>Test {"
     "    // private static methods"
     "    public static void main(String[] args) ..."

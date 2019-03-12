@@ -23,7 +23,7 @@
   :parents (kestrel-utilities signed-byte-listp signed-byte-fix)
   :short "Fixing function for @(tsee signed-byte-listp)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee signed-byte-fix) to lists.
      See that function for more information,

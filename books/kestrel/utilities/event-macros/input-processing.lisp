@@ -29,7 +29,7 @@
   :returns (mv erp (hints$ symbol-alistp) state)
   :short "Process the @(':hints') input of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is for event macros that have a @(':hints') input
      for user-supplied hints to prove applicability conditions.")
@@ -118,7 +118,7 @@
   :returns (mv erp (print$ evmac-input-print-p) state)
   :short "Process the @(':print') input of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is for event macros that have a @(':print') input
      to specify what is printed on the screen when the even macro is run.")
@@ -143,7 +143,7 @@
   :returns (mv erp (show-only$ booleanp) state)
   :short "Process the @(':show-only') input of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is for event macros that have a @(':show-only') input
      to specify whether the event expansion should be

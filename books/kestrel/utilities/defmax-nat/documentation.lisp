@@ -22,7 +22,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +65,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defmax-nat f y (x1 ... xn)"
     "  body"
     "  :guard ...          ; default t"
@@ -163,7 +163,7 @@
     (xdoc::p
      "Auxiliary function to test the membership of @('y')
       in the set defined by @('x1'), ..., @('xn').")
-    (xdoc::code
+    (xdoc::@code
      "(defun f.elementp (x1 ... xn y)"
      "  (declare (xargs :guard (and guard<x1,...,xn> (natp y))))"
      "  body<x1,...,xn,y>)"))
@@ -174,7 +174,7 @@
      "Auxiliary predicate asserting that
       @('y') is an upper bound of the set defined by @('x1'), ..., @('xn'),
       along with associated theorems.")
-    (xdoc::code
+    (xdoc::@code
      "(defun-sk f.uboundp (x1 ... xn y)"
      "  (declare (xargs :guard (and guard<x1,...,xn> (natp y))))"
      "  (forall (y1)"
@@ -195,7 +195,7 @@
      "Auxiliary predicate asserting that
       the set defined by @('x1'), ..., @('xn') has a maximum,
       along with associated theorems.")
-    (xdoc::code
+    (xdoc::@code
      "(defun-sk f.existsp (x1 ... xn)"
      "  (declare (xargs :guard guard<x1,...,xn>))"
      "  (exists (y)"
@@ -211,7 +211,7 @@
     (xdoc::p
      "The function that returns the maximum if it exists (otherwise @('nil')),
       along with associated theorems.")
-    (xdoc::code
+    (xdoc::@code
      "(defun f (x1 ... xn)"
      "  (declare (xargs :guard guard<x1,...,xn>))"
      "  (if (f.existsp x1 ... xn)"
@@ -278,7 +278,7 @@
     (xdoc::p
      "The helper theorem to establish that the maximum exists
       by exhibiting a member and a bound of the set.")
-    (xdoc::code
+    (xdoc::@code
      "(defthm f.existsp-when-nonempty-and-bounded"
      "  (implies (and (natp y0)"
      "                (f.elementp x1 ... xn y0)"
@@ -293,7 +293,7 @@
      "The helper theorem to establish that the maximum has a certain value
       by showing that that value is
       both a member and an upper bound of the set.")
-    (xdoc::code
+    (xdoc::@code
      "(defthm f.equal-when-member-and-ubound"
      "  (implies (and (natp y)"
      "                (f.elementp x1 ... xn y)"

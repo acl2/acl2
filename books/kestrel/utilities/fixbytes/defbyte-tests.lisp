@@ -214,4 +214,4 @@
 
 (must-succeed (fty::defbyte byte 8 :long "<p>More doc.</p>"))
 
-(must-succeed (fty::defbyte byte 8 :long (xdoc::topp "More doc.")))
+(must-succeed (fty::defbyte byte 8 :long (xdoc::toppstring "More doc.")))

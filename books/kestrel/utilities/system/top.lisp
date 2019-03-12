@@ -33,7 +33,7 @@
   :parents (kestrel-utilities system-utilities)
   :short "System utilities related to the ACL2 system."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are useful for system programming,
      e.g. to build tools that generate new events

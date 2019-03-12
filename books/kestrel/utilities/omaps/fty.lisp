@@ -20,7 +20,7 @@
   :parents (omaps)
   :short "A <see topic='@(url acl2::fty)'>fixtype</see> of omaps."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to
     the fixtype <see topic='@(url set::set)'>@('set')</see> of osets.")
   (fty::deffixtype map

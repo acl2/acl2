@@ -31,7 +31,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A print specifier is passed as the @(':print') input to a transformation.
@@ -83,7 +83,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "BRIEF SUMMARY (details are skipped here but provided below).  When the
@@ -175,7 +175,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "The @(':hints') keyword for an APT transformation is legal when there is
@@ -185,7 +185,7 @@
      Otherwise its value should be a keyword-value list (see @(see
      keyword-value-listp))")
 
-   (xdoc::code
+   (xdoc::@code
     "(:KWD1 h1 :KWD2 h2 ...)")
 
    (xdoc::p

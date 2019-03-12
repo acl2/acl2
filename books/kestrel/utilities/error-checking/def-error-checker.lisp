@@ -26,12 +26,12 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "This macro generates an error-checking function
      and an associated macro abbreviation of the following form:")
-   (xdoc::code
+   (xdoc::@code
     "(define <name> (<x1> ... <xn>"
     "                (description msgp)"
     "                (error-erp (not (null error-erp))"
@@ -145,7 +145,7 @@
 
    (xdoc::p
     "The macro is called as follows:")
-   (xdoc::code
+   (xdoc::@code
     "(def-error-checker <name>"
     "  (<x1> ... <xn>)"
     "  <short>"
@@ -178,10 +178,10 @@
     :parents (def-error-checker)
     :short "Generate the @(tsee b*) bindings of the error-checking function."
     :long
-    (xdoc::topapp
+    (xdoc::topstring
      (xdoc::p
       "These are the")
-     (xdoc::code
+     (xdoc::@code
       "((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))")
      (xdoc::p
       "bindings,

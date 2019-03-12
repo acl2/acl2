@@ -27,7 +27,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,7 +49,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defset type"
     "        :elt-type ..."
     "        :pred ..."

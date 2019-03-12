@@ -19,7 +19,7 @@
   :parents (macro-libraries system-utilities)
   :short "Concepts and utilities for event macros."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Event macros are macros at the event level.
      ACL2 provides several such macros

@@ -19,7 +19,7 @@
   :parents (ethereum)
   :short "Cryptography in Ethereum."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Ethereum uses a number of cryptographic functions
      that are described in external standards.")
@@ -45,7 +45,7 @@
                           (enable byte-listp-rewrite-unsigned-byte-listp))))
   :short "Keccak-256 hash function."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This corresponds to @($\\mathtt{KEC}$) [YP:3].")
   (crypto::keccak-256 bytes)
   :no-function t

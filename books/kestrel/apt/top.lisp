@@ -39,7 +39,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::img "res/kestrel/apt-logo.png")
 

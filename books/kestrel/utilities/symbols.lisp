@@ -30,7 +30,7 @@
   :parents (symbol-utilities)
   :short "The @(tsee symbol-package-name) of a symbol, but not \"COMMON-LISP\"."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This function is just @(tsee symbol-package-name), except that it it is
      ``safe'' in the sense that it returns a string that is a legal package name
@@ -40,7 +40,7 @@
      otherwise the two functions agree.")
    (xdoc::p
     "Example:")
-   (xdoc::code
+   (xdoc::@code
     "ACL2 !>(symbol-package-name-safe 'car)"
     "\"ACL2\""
     "ACL2 !>(symbol-package-name 'car)"
@@ -58,7 +58,7 @@
   :parents (symbol-utilities)
   :short "Lift @(tsee symbol-package-name) to lists."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This function is named similarly to the built-in @('symbol-name-lst')."))
   (cond ((endp syms) nil)

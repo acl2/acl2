@@ -25,7 +25,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "In SOFT,
@@ -107,7 +107,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "@(tsee defunvar),
@@ -140,7 +140,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A function variable is an uninterpreted ACL2 function
@@ -163,7 +163,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A second-order function is an ACL2 function
@@ -191,7 +191,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A second-order theorem is an ACL2 theorem
@@ -219,7 +219,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "An instance of a second-order function is an ACL2 function
@@ -253,7 +253,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "An instance of a second-order theorem is an ACL2 theorem
@@ -281,7 +281,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A <see topic='@(url acl2::term)'>term</see> @('term') depends on
@@ -307,7 +307,7 @@
 
    (xdoc::p
     "Given")
-   (xdoc::code
+   (xdoc::@code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
     "(defun2 h[?f] (x) (?f (cons x 3)))")
@@ -318,7 +318,7 @@
 
    (xdoc::p
     "Given")
-   (xdoc::code
+   (xdoc::@code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
     "(defun2 h[?f] (x) (?f (cons x 3)))"
@@ -330,7 +330,7 @@
 
    (xdoc::p
     "Given")
-   (xdoc::code
+   (xdoc::@code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
     "(defun2 h[?f] (x) (?f (cons x 3)))"
@@ -348,12 +348,12 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::p
     "A function variable instantiation is
      an <see topic='@(url acl2::alists)'>alist</see>")
-   (xdoc::code
+   (xdoc::@code
     "((fvar1 . fun1) ... (fvarN . funN))")
    (xdoc::p
     "where @('N') is a non-negative integer,
@@ -386,7 +386,7 @@
 
    (xdoc::p
     "Given")
-   (xdoc::code
+   (xdoc::@code
     "(defunvar ?f (*) => *)"
     "(defunvar ?g (*) => *)"
     "(defun2 h[?f] (x) ...)"
@@ -407,11 +407,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defunvar fvar (* ... *) => *"
     "  :print ...)")
 
@@ -439,7 +439,7 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::code
+   (xdoc::@code
     "(defstub fvar (* ... *) => *)")
 
    (xdoc::p
@@ -450,19 +450,19 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A unary function variable:"
     "(defunvar ?f (*) => *)")
 
    (xdoc::h4 "Example 2")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A unary function variable:"
     "(defunvar ?p (*) => *)")
 
    (xdoc::h4 "Example 3")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A binary function variable:"
     "(defunvar ?g (* *) => *)")
 
@@ -484,11 +484,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defun2 sofun (var1 ... varM)"
     "  doc-string"
     "  declaration ... declaration"
@@ -539,7 +539,7 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::code
+   (xdoc::@code
     "(defun sofun (var1 ... varM)"
     "  doc-string"
     "  declaration ... declaration"
@@ -553,7 +553,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A non-recursive function that applies four times"
     ";; its function parameter to its individual parameter:"
     "(defun2 quad[?f] (x)"
@@ -561,7 +561,7 @@
 
    (xdoc::h4 "Example 2")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A recursive predicate that recognizes true lists"
     ";; whose elements satisfy the predicate parameter:"
     "(defun2 all[?p] (l)"
@@ -570,7 +570,7 @@
 
    (xdoc::h4 "Example 3")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A recursive function that homomorphically lifts ?F"
     ";; to operate on true lists whose elements satisfy ?P:"
     "(defun2 map[?f][?p] (l)"
@@ -581,7 +581,7 @@
 
    (xdoc::h4 "Example 4")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A generic folding function on values as binary trees:"
     "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
@@ -609,11 +609,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
     "  body"
     "  :strengthen ..."
@@ -662,7 +662,7 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::code
+   (xdoc::@code
     "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
     "  body"
     "  :strengthen ...)")
@@ -675,7 +675,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A function constrained to return a fixed point of ?F, if any exists:"
     "(defchoose2 fixpoint[?f] x ()"
     "  (equal (?f x) x))")
@@ -697,11 +697,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defun-sk sofun (var1 ... varM)"
     "  body"
     "  :rewrite ..."
@@ -793,7 +793,7 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::code
+   (xdoc::@code
     "(defun-sk sofun (var1 ... varM)"
     "  body"
     "  :rewrite ..."
@@ -811,7 +811,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; A predicate that recognizes injective functions:"
     "(defun-sk2 injective[?f] ()"
     " (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))")
@@ -832,11 +832,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defun-inst fun"
     "  (sofun (fvar1 . fun1) ... (fvarN . funN))"
     "  :verify-guards ..."
@@ -964,8 +964,8 @@
 
    (xdoc::ul
 
-    (xdoc::li*
-     (xdoc::code
+    (xdoc::li
+     (xdoc::@code
       "(defun2 fun ...)")
      (xdoc::p
       "if @('sofun') was introduced via @(tsee defun2).
@@ -981,8 +981,8 @@
        <see topic='@(url termination-theorem)'>termination theorem</see>
        of @('sofun')."))
 
-    (xdoc::li*
-     (xdoc::code
+    (xdoc::li
+     (xdoc::@code
       "(defchoose2 fun (bvar1 ... bvarP) ...)")
      (xdoc::p
       "if @('sofun') was introduced via @(tsee defchoose2).
@@ -993,8 +993,8 @@
        to the body of @('sofun').
        The @(':strengthen') value of @('fun') is the same as @('sofun')."))
 
-    (xdoc::li*
-     (xdoc::code
+    (xdoc::li
+     (xdoc::@code
       "(defun-sk2 fun ...)")
      (xdoc::p
       "if @('sofun') was introduced via @(tsee defun-sk2).
@@ -1011,7 +1011,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Apply ?F four times to X:"
     "(defun2 quad[?f] (x)"
     "  (?f (?f (?f (?f x)))))"
@@ -1025,7 +1025,7 @@
 
    (xdoc::h4 "Example 2")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Recognize true lists of values that satisfy ?P:"
     "(defun2 all[?p] (l)"
     "  (cond ((atom l) (null l))"
@@ -1040,7 +1040,7 @@
 
    (xdoc::h4 "Example 3")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
@@ -1059,7 +1059,7 @@
 
    (xdoc::h4 "Example 4")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Folding function on binary trees:"
     "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
@@ -1071,7 +1071,7 @@
 
    (xdoc::h4 "Example 5")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Return a fixed point of ?F, if any exists:"
     "(defchoose2 fixpoint[?f] x ()"
     "  (equal (?f x) x))"
@@ -1085,7 +1085,7 @@
 
    (xdoc::h4 "Example 6")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Recognize injective functions:"
     "(defun-sk2 injective[?f] ()"
     "  (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))"
@@ -1118,11 +1118,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defthm sothm"
     "  formula"
     "  :rule-classes ..."
@@ -1182,7 +1182,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
@@ -1197,7 +1197,7 @@
 
    (xdoc::h4 "Example 2")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Recognize injective functions:"
     "(defun-sk2 injective[?f] ()"
     "  (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))"
@@ -1209,7 +1209,7 @@
 
    (xdoc::h4 "Example 3")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Folding function on binary trees:"
     "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
@@ -1264,11 +1264,11 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defthm-inst thm"
     "  (sothm (fvar1 . fun1) ... (fvarN . funN))"
     "  :rule-classes ..."
@@ -1315,7 +1315,7 @@
 
    (xdoc::h3 "Generated Events")
 
-   (xdoc::code
+   (xdoc::@code
     "(defthm thm"
     "  formula"
     "  ... ; proof"
@@ -1337,7 +1337,7 @@
 
    (xdoc::h4 "Example 1")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Homomorphically lift ?F to on true lists of ?P values:"
     "(defun2 map[?f][?p] (l)"
     "  (declare (xargs :guard (all[?p] l)))"
@@ -1359,7 +1359,7 @@
 
    (xdoc::h4 "Example 2")
 
-   (xdoc::code
+   (xdoc::@code
     ";; Apply ?F four times to X:"
     "(defun2 quad[?f] (x)"
     "  (?f (?f (?f (?f x)))))"
@@ -1402,7 +1402,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h4 "Nullary Function Variables")
 
@@ -1457,7 +1457,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h4 "Mutual Recursion")
 

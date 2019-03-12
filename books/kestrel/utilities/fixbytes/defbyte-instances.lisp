@@ -19,7 +19,7 @@
   :short "Fixtypes of unsigned and signed bytes of various sizes,
           with some accompanying theorems."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are all generated via @(tsee defbyte).")
    (xdoc::p
@@ -34,7 +34,7 @@
   :short "Specialized form of @(tsee defbyte)
           for ``standard'' unsigned bytes of explicit integer sizes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This macro just takes a positive integer as input.")
    (xdoc::p
@@ -72,7 +72,7 @@
   :short "Specialized form of @(tsee defbyte)
           for ``standard'' signed bytes of explicit integer sizes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This macro just takes a positive integer as input.")
    (xdoc::p

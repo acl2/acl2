@@ -20,7 +20,7 @@
   :parents (basics)
   :short "Scalars."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "[YP:3] says that scalars are
     non-negative integers in the set @($\\mathbb{N}$),
     i.e. natural numbers.

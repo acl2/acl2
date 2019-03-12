@@ -18,7 +18,7 @@
   :parents (placeholders)
   :short "HMAC-SHA-512 placeholder."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "HMAC is specified in the
      <a href=\"https://tools.ietf.org/html/rfc2104\">RFC 2104 standard</a>;

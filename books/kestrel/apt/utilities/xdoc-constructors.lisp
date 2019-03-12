@@ -20,7 +20,7 @@
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url apt)'>APT</see> transformations."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The @('xdoc::desc-apt-input-...') utilities construct
      <see topic='@(url xdoc::desc)'>descriptions</see>
@@ -37,7 +37,7 @@
   :short "Build a description of the @('old') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::desc-apt-input-old"))
   (defmacro xdoc::desc-apt-input-old (&rest additional)
     `(xdoc::desc
@@ -60,7 +60,7 @@
   :short "Build a description of the @(':new-name') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::desc-apt-input-new-name"))
   (defmacro xdoc::desc-apt-input-new-name (&rest additional)
     `(xdoc::desc
@@ -89,7 +89,7 @@
   :short "Build a description of the @(':new-enable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::desc-apt-input-new-enable"))
   (defmacro xdoc::desc-apt-input-new-enable (&rest additional)
     `(xdoc::desc
@@ -111,7 +111,7 @@
   :short "Build a description of the @(':wrapper-name') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::desc-apt-input-wrapper-name"))
   (defmacro xdoc::desc-apt-input-wrapper-name (&rest additional)
     `(xdoc::desc
@@ -137,7 +137,7 @@
   :short "Build a description of the @(':wrapper-enable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::desc-apt-input-wrapper-enable"))
   (defmacro xdoc::desc-apt-input-wrapper-enable (&rest additional)
     `(xdoc::desc
@@ -157,7 +157,7 @@
   :short "Build a description of the @(':thm-name') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The theorem relates the old function to the new function
      when there is no wrapper function,
@@ -205,7 +205,7 @@
   :short "Build a description of the @(':thm-enable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This refers to the theorem that relates the old function
      to either the new function or the wrapper function,
@@ -235,7 +235,7 @@
   :short "Build a description of the @(':non-executable') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This involves the new function,
      and also the wrapper function when present.
@@ -280,7 +280,7 @@
   :short "Build a description of the @(':verify-guards') input
           for the reference documentation of an APT transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This involves the new function,
      and also the wrapper function when present.

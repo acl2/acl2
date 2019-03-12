@@ -23,7 +23,7 @@
   :parents (list-utilities take)
   :short "Some theorems about the built-in function @(tsee take)."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "The theorem @('take-of-1+-to-rcons') is disabled by default.
     It may be useful when reasoning about @(tsee take) and @(tsee rcons).")
 

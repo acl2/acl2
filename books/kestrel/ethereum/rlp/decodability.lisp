@@ -21,7 +21,7 @@
   :parents (rlp)
   :short "Proofs that RLP encodings can be decoded."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We prove that the encoding functions for byte arrays, trees, and scalars
      are injective over the encodable byte arrays, trees, and scalars.
@@ -47,7 +47,7 @@
   :short "Injectivity of @(tsee rlp-encode-bytes),
           over the encodable byte arrays."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We prove, as a preliminary lemma, that
      if two byte arrays are encodable
@@ -107,7 +107,7 @@
           and @(tsee rlp-encode-tree-list),
           over the encodable trees and lists thereof."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is proved by induction.
      There are two theorems:
@@ -357,7 +357,7 @@
   :short "Injectivity of @(tsee rlp-encode-scalar),
           over the encodable scalars."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is also formulated similarly to the other injectivity theorems.
     It readily follows from the injectivity of @(tsee rlp-encode-bytes).")
 
@@ -377,7 +377,7 @@
   :short "Property that no valid RLP byte array encoding
           is a strict prefix of another one."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This actually subsumes the injectivity property,
      because every enconding is a prefix of itself.
@@ -427,7 +427,7 @@
   :short "Property that no valid RLP tree encoding
           is a strict prefix of another one."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is quite analogous to the proof for byte array encoding.")
    (xdoc::p
@@ -475,7 +475,7 @@
   :short "Property that no valid RLP scalar encoding
           is a strict prefix of another one."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This easily follows from the analogous property for byte arrays."))
 

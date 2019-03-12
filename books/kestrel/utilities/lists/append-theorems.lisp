@@ -22,7 +22,7 @@
   :parents (list-utilities append)
   :short "Some theorems about the built-in function @(tsee append)."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "The theorem @('equal-of-appends-decompose') is useful
     to decompose the equality of two @(tsee append)s
     into equalities of the appended lists,

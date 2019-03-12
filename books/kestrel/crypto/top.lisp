@@ -28,7 +28,7 @@
   :parents (cryptography)
   :short "Cryptographic placeholders."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Cryptographic functions are largely black boxes,
      in the sense that most of their details

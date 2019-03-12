@@ -20,8 +20,8 @@
   :parents (alist-utilities alists)
   :short "Keys of the map represented by an alist."
   :long
-  (xdoc::topapp
-   (xdoc::code
+  (xdoc::topstring
+   (xdoc::@code
     "General Forms:"
     "(alist-map-keys alist)"
     "(alist-map-keys alist :test 'eql)   ; same as above (eql as equality test)"

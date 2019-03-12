@@ -19,7 +19,7 @@
   :parents (bitcoin)
   :short "Base58Check encoding."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Base58Check encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
@@ -41,7 +41,7 @@
   :returns (chars base58-character-listp)
   :short "Encode a payload, with a version prefix, in Base58Check."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"

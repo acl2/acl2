@@ -25,7 +25,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,7 +178,7 @@
      (xdoc::p
       "@('(lambda (x1 ... xn) restriction<x1,...,xn>)')
        is preserved across the recursive calls of @('old'):")
-     (xdoc::code
+     (xdoc::@code
       "(implies restriction<x1,...,xn>"
       "         (and (implies context1<x1,...,xn>"
       "                       restriction<update1-x1<x1,...,xn>,"
@@ -197,7 +197,7 @@
      (xdoc::p
       "The restricting predicate is well-defined (according to its guard)
        on every value in the guard of @('old'):")
-     (xdoc::code
+     (xdoc::@code
       "(implies old-guard<x1,...,xn>"
       "         restriction-guard<x1,...,xn>)")
      (xdoc::p
@@ -212,7 +212,7 @@
      "@(':restriction-boolean')"
      (xdoc::p
       "The restricting predicate is boolean-valued:")
-     (xdoc::code
+     (xdoc::@code
       "(booleanp restriction<x1,...,xn>)")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,7 +223,7 @@
      "@('new')"
      (xdoc::p
       "Domain-restricted version of @('old'):")
-     (xdoc::code
+     (xdoc::@code
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
       "  (if (mbt restriction<x1,...,xn>)"
@@ -261,7 +261,7 @@
      "@('old-to-new')"
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
-     (xdoc::code
+     (xdoc::@code
       "(defthm old-to-new"
       "  (implies restriction<x1,...,xn>"
       "           (equal (old x1 ... xn)"

@@ -19,7 +19,7 @@
   :parents (basics)
   :short "Bytes."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "[YP:B] describes @($\\mathbb{O}$) as the set of 8-bit bytes.
     Unless otherwise stated, in the documentation of our Ethereum model,
     the unqualified `byte' denotes an 8-bit byte."))
@@ -53,7 +53,7 @@
   :parents (basics)
   :short "Byte arrays."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "[YP:3] mentions the set @($\\mathbb{B}$) of byte arrays,
     and [YP:(178)] defines it as consisting of all finite sequences of bytes.
     We use true lists of @(see bytes)

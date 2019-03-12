@@ -23,7 +23,7 @@
   :parents (kestrel-utilities unsigned-byte-listp unsigned-byte-fix)
   :short "Fixing function for @(tsee unsigned-byte-listp)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee unsigned-byte-fix) to lists.
      See that function for more information,

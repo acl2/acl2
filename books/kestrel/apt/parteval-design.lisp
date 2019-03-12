@@ -21,7 +21,7 @@
   :parents (design-notes parteval)
   :short "Design notes for the APT partial evaluation transformation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The design of the transformation is described in
      <a href='res/apt/parteval.pdf'>these notes</a>,
