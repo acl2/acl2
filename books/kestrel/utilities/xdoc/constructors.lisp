@@ -370,8 +370,13 @@
           an HTML quoted block @('<blockquote>...</blockquote>')
           from a sequence of XDOC trees subtrees."
   :long "@(def xdoc::blockquote)"
+
+  (defund xdoc::blockquote-fn (trees)
+    (declare (xargs :guard (xdoc::tree-listp trees)))
+    (xdoc::make-tree :blockquote trees))
+
   (defmacro xdoc::blockquote (&rest trees)
-    `(xdoc::make-tree :blockquote (list ,@trees))))
+    `(xdoc::blockquote-fn (list ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -380,8 +385,13 @@
           an HTML list item @('<li>...</li>')
           from a sequence of XDOC subtrees."
   :long "@(def xdoc::li)"
+
+  (defund xdoc::li-fn (trees)
+    (declare (xargs :guard (xdoc::tree-listp trees)))
+    (xdoc::make-tree :li trees))
+
   (defmacro xdoc::li (&rest trees)
-    `(xdoc::make-tree :li (list ,@trees))))
+    `(xdoc::li-fn (list ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,8 +469,13 @@
   :short "Construct an XDOC tree for
           a sequence of subtrees to treat as a single tree."
   :long "@(def xdoc::&&)"
+
+  (defund xdoc::&&-fn (trees)
+    (declare (xargs :guard (xdoc::tree-listp trees)))
+    (xdoc::make-tree :&& trees))
+
   (defmacro xdoc::&& (&rest trees)
-    `(xdoc::make-tree :&& (list ,@trees))))
+    `(xdoc::&&-fn (list ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,39 +552,61 @@
   :short "Construct an XDOC tree for a description."
   :long
   "<p>
-   This is an HTML description list
-   with a (sequence of) term(s) and a description.
-   It is a higher-level XDOC constructor,
+   This consists of
+   a paragraph that identify the thing(s) being described
+   followed by a quoted block of a sequence of trees that describe the thing(s).
+   This is a higher-level XDOC constructor,
    which combines lower-level ones into one
    that may be more convenient to use.
    </p>
    <p>
-   The first argument is either a string for a single term
-   or a list of strings for a sequence of terms.
+   The first argument is either a string for a single thing being described
+   or a list of strings for a multiple things being described.
+   In the latter case, the strings are separated by line breaks
+   in the generated paragraph.
+   </p>
+   <p>
+   An alternative to generating a paragrah followed by a quoted block,
+   is to generate an HTML description list @('<dl>...</dl>')
+   with the thing(s) that are being described as term(s) @('<dt>...</dt>')
+   and with the description trees inside @('<dd>...</dd>').
+   However, the terms in a description list are rendered in bold,
+   so it seems preferable to use a paragraph and a quoted block.
    </p>
    @(def xdoc::desc)"
 
-  (defun xdoc::desc-make-dt-trees (strings)
-    (declare (xargs :guard (string-listp strings)))
-    (cond ((endp strings) nil)
-          (t (cons (xdoc::make-tree :dt (list (car strings)))
-                   (xdoc::desc-make-dt-trees (cdr strings))))))
+  (defun xdoc::desc-things-to-string (things)
+    (declare (xargs :guard (string-listp things)))
+    (cond ((endp things) "")
+          ((endp (cdr things)) (car things))
+          (t (concatenate 'string
+                          (car things)
+                          "<br/>"
+                          (xdoc::desc-things-to-string (cdr things))))))
 
-  (defthm xdoc::dt/dd-tree-listp-of-desc-make-dt-trees
-    (implies (string-listp strings)
-             (xdoc::dt/dd-tree-listp (xdoc::desc-make-dt-trees strings))))
+  (defthm xdoc::stringp-of-desc-things-to-string
+    (implies (string-listp things)
+             (stringp (xdoc::desc-things-to-string things))))
 
-  (defund xdoc::desc-fn (dt-part dd-part)
-    (declare (xargs :guard (and (or (stringp dt-part)
-                                    (string-listp dt-part))
-                                (xdoc::tree-listp dd-part))))
-    (let* ((dt-part (if (stringp dt-part) (list dt-part) dt-part))
-           (dt-trees (xdoc::desc-make-dt-trees dt-part))
-           (dd-tree (xdoc::make-tree :dd dd-part)))
-      (xdoc::make-tree :dl (append dt-trees (list dd-tree)))))
+  (in-theory (disable xdoc::desc-things-to-string))
 
-  (defmacro xdoc::desc (dt-part &rest dd-part)
-    `(xdoc::desc-fn ,dt-part (list ,@dd-part))))
+  (defund xdoc::desc-fn (thing/things description)
+    (declare (xargs :guard (and (or (stringp thing/things)
+                                    (string-listp thing/things))
+                                (xdoc::tree-listp description))
+                    :guard-hints (("Goal" :in-theory (enable
+                                                      xdoc::blockquote-fn
+                                                      xdoc::p-fn)))))
+    (let* ((things (if (stringp thing/things)
+                       (list thing/things)
+                     thing/things))
+           (things-string (xdoc::desc-things-to-string things))
+           (things-tree (xdoc::p things-string))
+           (description-tree (xdoc::blockquote-fn description)))
+      (xdoc::&& things-tree description-tree)))
+
+  (defmacro xdoc::desc (thing/things &rest description)
+    `(xdoc::desc-fn ,thing/things (list ,@description))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
