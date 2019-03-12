@@ -166,6 +166,14 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
+
+ <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
+ inputs known to be equivalent or opposite to each other, not just to
+ constants.  Added @(see aignet::obs-constprop) that combines this
+ with the existing observability transform, which works better than running
+ the two transforms separately.</p>
+
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
  <p>Slightly extended the applicability of the @(tsee apt::tailrec)
@@ -286,6 +294,11 @@
  for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
  additional theorems for lists of byte.  See the documentation for details.</p>
 
+ <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
+
+ <p>Used new ACL2 system features to fix the remaining known soundness bug and
+ remove a trust tag.</p>
+
  <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
 
  <p>Added some theorems about functions on lists.</p>
@@ -369,6 +382,15 @@
  to retrieve an alist of the keyword arguments of a macro, associated to their
  default values.</p>
 
+ <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+
+ <p>The @('use-termhint') utility has been moved to its own book
+ @('std/util/termhints') from its former location at
+ @('clause-processors/use-by-hint').</p>
+
+ <p>Added a new utility, @(see function-termhint), for creating termhints from
+ existing function definitions containing @(see hintcontext) annotations.</p>
+
  <h4>Typed List Utilities</h4>
 
  <p>Refactored the old file
@@ -432,28 +454,6 @@
  to use a tree representation that is converted into a flat string only at the
  top level.  This enforces a better type discipline and facilitates future
  optimizations if needed.</p>
-
- <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
-
- <p>The @('use-termhint') utility has been moved to its own book
- @('std/util/termhints') from its former location at
- @('clause-processors/use-by-hint').</p>
-
- <p>Added a new utility, @(see function-termhint), for creating termhints from
- existing function definitions containing @(see hintcontext) annotations.</p>
-
- <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
-
- <p>Used new ACL2 system features to fix the remaining known soundness bug and
- remove a trust tag.</p>
-
- <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
-
- <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
- inputs known to be equivalent or opposite to each other, not just to
- constants.  Added @(see aignet::obs-constprop) that combines this
- with the existing observability transform, which works better than running
- the two transforms separately.</p>
 
  <h3>Licensing Changes</h3>
 
