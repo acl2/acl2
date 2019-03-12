@@ -110,6 +110,11 @@
  <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
  remove-assoc) from single keys to lists of keys.</p>
 
+ <h4><see topic='@(url crypto::cryptography)'>Cryptography</see></h4>
+
+ <p>Started a library with placeholders for cryptographic functions that will
+ be eventually replaced with complete specifications of those functions.</p>
+
  <h4>Declarative Definitions of Maxima</h4>
 
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
@@ -192,9 +197,9 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
- <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
- placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
- curve.</p>
+ <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
+ the previous placeholders for cryptographic functions into <see topic='@(url
+ crypto::cryptography)'>a new library</see>.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
  hierarchical deterministic wallets.</p>
@@ -259,6 +264,10 @@
  <p>Added several other theorems.  Improved some existing theorems.</p>
 
  <p>Improved some documentation.</p>
+
+ <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
+ the previous placeholders for cryptographic functions into <see topic='@(url
+ crypto::cryptography)'>a new library</see>.</p>
 
  <h4>Filesystem Books</h4>
 
