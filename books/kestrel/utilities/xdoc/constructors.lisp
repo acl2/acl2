@@ -70,9 +70,8 @@
          terminating the given lines with newline characters
          and by joining the terminated lines together</li>
      <li>@('(xdoc::desc string-or-list-of-strings tree ... tree)')
-         for singleton description lists where
-         the string(s) become(s) the term(s)
-         and the trees become the description</li>
+         for descriptions of single or multiple things
+         identified by the strings and described by the trees</li>
      <li>@('(xdoc::topstring tree ... tree)') to turn trees into a string,
          at the top level</li>
      <li>@('(xdoc::toppstring string)') for a single top-level paragraph</li>
@@ -93,7 +92,15 @@
        (xdoc::p \"Another paragraph.\"))
    })")
 
-(local (set-default-parents xdoc::constructors))
+(xdoc::order-subtopics xdoc::constructors nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc xdoc::trees
+  :parents (xdoc::constructors)
+  :short "XDOC trees.")
+
+(local (xdoc::set-default-parents xdoc::trees))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,11 +274,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::*newline*
-  :short "The string consisting of exactly the newline character."
-  :long "@(def xdoc::*newline*)"
-  (defconst xdoc::*newline*
-    (coerce (list #\Newline) 'string)))
+(defxdoc xdoc::primitive-constructors
+  :parents (xdoc::constructors)
+  :short "Primitive XDOC constructors."
+  :long
+  "<p>
+   These construct single trees from subtrees.
+   They all correspond to HTML tags,
+   with the addition of
+   one that corresponds to XDOC's @('@({...})'),
+   one to join trees without tags,
+   and one to turn trees into flat strings at the top level.
+   </p>")
+
+(local (xdoc::set-default-parents xdoc::primitive-constructors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,20 +451,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::&&
-  :short "Construct an XDOC tree for
-          a sequence of subtrees to treat as a single tree."
-  :long "@(def xdoc::&&)"
-
-  (defund xdoc::&&-fn (trees)
-    (declare (xargs :guard (xdoc::tree-listp trees)))
-    (xdoc::make-tree :&& trees))
-
-  (defmacro xdoc::&& (&rest trees)
-    `(xdoc::&&-fn (list ,@trees))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection xdoc::@{}
   :short "Construct an XDOC tree for
           a preformatted code block @('@({...})')
@@ -464,114 +466,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::@code
+(defsection xdoc::&&
   :short "Construct an XDOC tree for
-          a preformatted code block @('@({...})')
-          from a sequence of strings."
-  :long
-  "<p>
-   The arguments must evaluate to strings that are the lines of the code block,
-   starting with spaces appropriate for the desired indentation
-   and with no ending new line characters.
-   New line characters are automatically added at the end of each line.
-   A new line character is also automatically added before all the lines,
-   to ensure the proper formatting in the final XDOC string.
-   </p>
-   <p>
-   Since the XDOC tree is constructed from a sequence of subtrees,
-   the aforementioned newlines are not
-   directly concatenated with the input strings.
-   Instead, each input string is turned into two strings.
-   </p>
-   <p>
-   This XDOC constructor provides a possibly more convenient way
-   to enter the lines that form the code block,
-   compared to the bare @(tsee xdoc::@{}) XDOC constructor.
-   </p>
-   @(def xdoc::@code)"
+          a sequence of subtrees to treat as a single tree."
+  :long "@(def xdoc::&&)"
 
-  (defun xdoc::@code-terminate-lines (lines)
-    (declare (xargs :guard (string-listp lines)))
-    (cond ((endp lines) nil)
-          (t (list* (car lines)
-                    xdoc::*newline*
-                    (xdoc::@code-terminate-lines (cdr lines))))))
+  (defund xdoc::&&-fn (trees)
+    (declare (xargs :guard (xdoc::tree-listp trees)))
+    (xdoc::make-tree :&& trees))
 
-  (defthm xdoc::string-listp-of-@code-terminate-lines
-    (implies (string-listp lines)
-             (string-listp (xdoc::@code-terminate-lines lines))))
-
-  (in-theory (disable xdoc::@code-terminate-lines))
-
-  (defund xdoc::@code-fn (lines)
-    (declare (xargs :guard (string-listp lines)))
-    (xdoc::make-tree :@{} (cons xdoc::*newline*
-                                (xdoc::@code-terminate-lines lines))))
-
-  (defmacro xdoc::@code (&rest lines)
-    `(xdoc::@code-fn (list ,@lines))))
+  (defmacro xdoc::&& (&rest trees)
+    `(xdoc::&&-fn (list ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::desc
-  :short "Construct an XDOC tree for a description."
-  :long
-  "<p>
-   This consists of
-   a paragraph that identify the thing(s) being described
-   followed by a quoted block of a sequence of trees that describe the thing(s).
-   This is a higher-level XDOC constructor,
-   which combines lower-level ones into one
-   that may be more convenient to use.
-   </p>
-   <p>
-   The first argument is either a string for a single thing being described
-   or a list of strings for a multiple things being described.
-   In the latter case, the strings are separated by line breaks
-   in the generated paragraph.
-   </p>
-   <p>
-   An alternative to generating a paragrah followed by a quoted block,
-   is to generate an HTML description list @('<dl>...</dl>')
-   with the thing(s) that are being described as term(s) @('<dt>...</dt>')
-   and with the description trees inside @('<dd>...</dd>').
-   However, the terms in a description list are rendered in bold,
-   so it seems preferable to use a paragraph and a quoted block.
-   </p>
-   @(def xdoc::desc)"
-
-  (defun xdoc::desc-things-to-string (things)
-    (declare (xargs :guard (string-listp things)))
-    (cond ((endp things) "")
-          ((endp (cdr things)) (car things))
-          (t (concatenate 'string
-                          (car things)
-                          "<br/>"
-                          (xdoc::desc-things-to-string (cdr things))))))
-
-  (defthm xdoc::stringp-of-desc-things-to-string
-    (implies (string-listp things)
-             (stringp (xdoc::desc-things-to-string things))))
-
-  (in-theory (disable xdoc::desc-things-to-string))
-
-  (defund xdoc::desc-fn (thing/things description)
-    (declare (xargs :guard (and (or (stringp thing/things)
-                                    (string-listp thing/things))
-                                (xdoc::tree-listp description))
-                    :guard-hints (("Goal" :in-theory (enable
-                                                      xdoc::blockquote-fn
-                                                      xdoc::p)))))
-    (let* ((things (if (stringp thing/things)
-                       (list thing/things)
-                     thing/things))
-           (things-string (xdoc::desc-things-to-string things))
-           (things-tree (xdoc::p things-string))
-           (description-tree (xdoc::blockquote-fn description)))
-      (xdoc::&& things-tree description-tree)))
-
-  (defmacro xdoc::desc (thing/things &rest description)
-    `(xdoc::desc-fn ,thing/things (list ,@description))))
+(defsection xdoc::*newline*
+  :short "The string consisting of exactly the newline character."
+  :long "@(def xdoc::*newline*)"
+  (defconst xdoc::*newline*
+    (coerce (list #\Newline) 'string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,6 +631,130 @@
 
   (defmacro xdoc::topstring (&rest trees)
     `(xdoc::topstring-fn-list (list ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc xdoc::composite-constructors
+  :parents (xdoc::constructors)
+  :short "Composite XDOC constructors."
+  :long
+  "<p>
+   These combine primitive constructors, as well as strings,
+   to provide more convenience of use.
+   </p>")
+
+(local (xdoc::set-default-parents xdoc::composite-constructors))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::@code
+  :short "Construct an XDOC tree for
+          a preformatted code block @('@({...})')
+          from a sequence of strings."
+  :long
+  "<p>
+   The arguments must evaluate to strings that are the lines of the code block,
+   starting with spaces appropriate for the desired indentation
+   and with no ending new line characters.
+   New line characters are automatically added at the end of each line.
+   A new line character is also automatically added before all the lines,
+   to ensure the proper formatting in the final XDOC string.
+   </p>
+   <p>
+   Since the XDOC tree is constructed from a sequence of subtrees,
+   the aforementioned newlines are not
+   directly concatenated with the input strings.
+   Instead, each input string is turned into two strings.
+   </p>
+   <p>
+   This XDOC constructor provides a possibly more convenient way
+   to enter the lines that form the code block,
+   compared to the bare @(tsee xdoc::@{}) XDOC constructor.
+   </p>
+   @(def xdoc::@code)"
+
+  (defun xdoc::@code-terminate-lines (lines)
+    (declare (xargs :guard (string-listp lines)))
+    (cond ((endp lines) nil)
+          (t (list* (car lines)
+                    xdoc::*newline*
+                    (xdoc::@code-terminate-lines (cdr lines))))))
+
+  (defthm xdoc::string-listp-of-@code-terminate-lines
+    (implies (string-listp lines)
+             (string-listp (xdoc::@code-terminate-lines lines))))
+
+  (in-theory (disable xdoc::@code-terminate-lines))
+
+  (defund xdoc::@code-fn (lines)
+    (declare (xargs :guard (string-listp lines)))
+    (xdoc::make-tree :@{} (cons xdoc::*newline*
+                                (xdoc::@code-terminate-lines lines))))
+
+  (defmacro xdoc::@code (&rest lines)
+    `(xdoc::@code-fn (list ,@lines))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::desc
+  :short "Construct an XDOC tree for a description."
+  :long
+  "<p>
+   This consists of
+   a paragraph that identify the thing(s) being described
+   followed by a quoted block of a sequence of trees that describe the thing(s).
+   This is a higher-level XDOC constructor,
+   which combines lower-level ones into one
+   that may be more convenient to use.
+   </p>
+   <p>
+   The first argument is either a string for a single thing being described
+   or a list of strings for a multiple things being described.
+   In the latter case, the strings are separated by line breaks
+   in the generated paragraph.
+   </p>
+   <p>
+   An alternative to generating a paragrah followed by a quoted block,
+   is to generate an HTML description list @('<dl>...</dl>')
+   with the thing(s) that are being described as term(s) @('<dt>...</dt>')
+   and with the description trees inside @('<dd>...</dd>').
+   However, the terms in a description list are rendered in bold,
+   so it seems preferable to use a paragraph and a quoted block.
+   </p>
+   @(def xdoc::desc)"
+
+  (defun xdoc::desc-things-to-string (things)
+    (declare (xargs :guard (string-listp things)))
+    (cond ((endp things) "")
+          ((endp (cdr things)) (car things))
+          (t (concatenate 'string
+                          (car things)
+                          "<br/>"
+                          (xdoc::desc-things-to-string (cdr things))))))
+
+  (defthm xdoc::stringp-of-desc-things-to-string
+    (implies (string-listp things)
+             (stringp (xdoc::desc-things-to-string things))))
+
+  (in-theory (disable xdoc::desc-things-to-string))
+
+  (defund xdoc::desc-fn (thing/things description)
+    (declare (xargs :guard (and (or (stringp thing/things)
+                                    (string-listp thing/things))
+                                (xdoc::tree-listp description))
+                    :guard-hints (("Goal" :in-theory (enable
+                                                      xdoc::blockquote-fn
+                                                      xdoc::p)))))
+    (let* ((things (if (stringp thing/things)
+                       (list thing/things)
+                     thing/things))
+           (things-string (xdoc::desc-things-to-string things))
+           (things-tree (xdoc::p things-string))
+           (description-tree (xdoc::blockquote-fn description)))
+      (xdoc::&& things-tree description-tree)))
+
+  (defmacro xdoc::desc (thing/things &rest description)
+    `(xdoc::desc-fn ,thing/things (list ,@description))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
