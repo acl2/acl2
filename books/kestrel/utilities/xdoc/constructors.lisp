@@ -279,14 +279,9 @@
   :short "Construct an XDOC tree for
           an HTML level-1 heading @('<h1>...</h1>')
           from a string."
-  :long "@(def xdoc::h1)"
-
-  (defund xdoc::h1-fn (string)
+  (defund xdoc::h1 (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :h1 (list string)))
-
-  (defmacro xdoc::h1 (string)
-    `(xdoc::h1-fn ,string)))
+    (xdoc::make-tree :h1 (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -294,14 +289,9 @@
   :short "Construct an XDOC tree for
           an HTML level-2 heading @('<h2>...</h2>')
           from a string."
-  :long "@(def xdoc::h2)"
-
-  (defund xdoc::h2-fn (string)
+  (defund xdoc::h2 (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :h2 (list string)))
-
-  (defmacro xdoc::h2 (string)
-    `(xdoc::h2-fn ,string)))
+    (xdoc::make-tree :h2 (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,14 +299,9 @@
   :short "Construct an XDOC tree for
           an HTML level-3 heading @('<h3>...</h3>')
           from a string."
-  :long "@(def xdoc::h3)"
-
-  (defund xdoc::h3-fn (string)
+  (defund xdoc::h3 (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :h3 (list string)))
-
-  (defmacro xdoc::h3 (string)
-    `(xdoc::h3-fn ,string)))
+    (xdoc::make-tree :h3 (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,14 +309,9 @@
   :short "Construct an XDOC tree for
           an HTML level-4 heading @('<h4>...</h4>')
           from a string."
-  :long "@(def xdoc::h4)"
-
-  (defund xdoc::h4-fn (string)
+  (defund xdoc::h4 (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :h4 (list string)))
-
-  (defmacro xdoc::h4 (string)
-    `(xdoc::h4-fn ,string)))
+    (xdoc::make-tree :h4 (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,14 +319,9 @@
   :short "Construct an XDOC tree for
           an HTML level-5 heading @('<h5>...</h5>')
           from a string."
-  :long "@(def xdoc::h5)"
-
-  (defund xdoc::h5-fn (string)
+  (defund xdoc::h5 (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :h5 (list string)))
-
-  (defmacro xdoc::h5 (string)
-    `(xdoc::h5-fn ,string)))
+    (xdoc::make-tree :h5 (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -354,14 +329,9 @@
   :short "Construct an XDOC tree for
           an HTML paragraph @('<p>...</p>')
           from a string."
-  :long "@(def xdoc::p)"
-
-  (defund xdoc::p-fn (string)
+  (defund xdoc::p (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :p (list string)))
-
-  (defmacro xdoc::p (string)
-    `(xdoc::p-fn ,string)))
+    (xdoc::make-tree :p (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,14 +399,9 @@
   :short "Construct an XDOC tree for
           an HTML term @('<dt>...</dt>')
           from a string."
-  :long "@(def xdoc::dt)"
-
-  (defund xdoc::dt-fn (string)
+  (defund xdoc::dt (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :dt (list string)))
-
-  (defmacro xdoc::dt (string)
-    `(xdoc::dt-fn ,string)))
+    (xdoc::make-tree :dt (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -445,8 +410,13 @@
           an HTML description @('<dd>...</dd>')
           from a sequence of XDOC subtrees."
   :long "@(def xdoc::dd)"
+
+  (defund xdoc::dd-fn (trees)
+    (declare (xargs :guard (xdoc::tree-listp trees)))
+    (xdoc::make-tree :dd trees))
+
   (defmacro xdoc::dd (&rest trees)
-    `(xdoc::make-tree :dd (list ,@trees))))
+    `(xdoc::dd (list ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,15 +457,10 @@
   "<p>
    See @(tsee xdoc::@code) for a higher-level XDOC constructor
    for preformatted code blocks.
-   </p>
-   @(def xdoc::@{})"
-
-  (defund xdoc::@{}-fn (string)
+   </p>"
+  (defund xdoc::@{} (string)
     (declare (xargs :guard (stringp string)))
-    (xdoc::make-tree :@{} (list string)))
-
-  (defmacro xdoc::@{} (string)
-    `(xdoc::@{}-fn ,string)))
+    (xdoc::make-tree :@{} (list string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +561,7 @@
                                 (xdoc::tree-listp description))
                     :guard-hints (("Goal" :in-theory (enable
                                                       xdoc::blockquote-fn
-                                                      xdoc::p-fn)))))
+                                                      xdoc::p)))))
     (let* ((things (if (stringp thing/things)
                        (list thing/things)
                      thing/things))
@@ -699,7 +664,7 @@
   (mutual-recursion
 
    (defun xdoc::topstring-fn (tree)
-     (declare (xargs ::guard (xdoc::treep tree)
+     (declare (xargs :guard (xdoc::treep tree)
                      :verify-guards nil)) ; done below
      (cond ((atom tree) tree)
            (t (let* ((substring (xdoc::topstring-fn-list (cdr tree)))
@@ -767,10 +732,11 @@
    @('\"<p>...</p>\"') instead of @('(xdoc::toppstring \"...\")'),
    but the latter may be more error-prone
    in the sense that closing tag may be forgotten.
-   </p>
-   @(def xdoc::toppstring)"
-  (defmacro xdoc::toppstring (string)
-    `(xdoc::topstring (xdoc::p ,string))))
+   </p>"
+  (defund xdoc::toppstring (string)
+    (declare (xargs :guard (stringp string)
+                    :guard-hints (("Goal" :in-theory (enable xdoc::p)))))
+    (xdoc::topstring (xdoc::p string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
