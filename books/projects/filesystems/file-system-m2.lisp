@@ -1694,8 +1694,7 @@
 (encapsulate
   ()
 
-  (local (include-book "rtl/rel9/arithmetic/top"
-                       :dir :system))
+  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
     cluster-size-of-read-reserved-area
