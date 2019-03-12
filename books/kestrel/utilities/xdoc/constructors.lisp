@@ -277,7 +277,7 @@
 
 (defsection xdoc::h1
   :short "Construct an XDOC tree for
-          an HTML level-1 heading @('\<h1\>...\</h1\>')
+          an HTML level-1 heading @('<h1>...</h1>')
           from a string."
   :long "@(def xdoc::h1)"
 
@@ -292,7 +292,7 @@
 
 (defsection xdoc::h2
   :short "Construct an XDOC tree for
-          an HTML level-2 heading @('\<h2\>...\</h2\>')
+          an HTML level-2 heading @('<h2>...</h2>')
           from a string."
   :long "@(def xdoc::h2)"
 
@@ -307,7 +307,7 @@
 
 (defsection xdoc::h3
   :short "Construct an XDOC tree for
-          an HTML level-3 heading @('\<h3\>...\</h3\>')
+          an HTML level-3 heading @('<h3>...</h3>')
           from a string."
   :long "@(def xdoc::h3)"
 
@@ -322,7 +322,7 @@
 
 (defsection xdoc::h4
   :short "Construct an XDOC tree for
-          an HTML level-4 heading @('\<h4\>...\</h4\>')
+          an HTML level-4 heading @('<h4>...</h4>')
           from a string."
   :long "@(def xdoc::h4)"
 
@@ -337,7 +337,7 @@
 
 (defsection xdoc::h5
   :short "Construct an XDOC tree for
-          an HTML level-5 heading @('\<h5\>...\</h5\>')
+          an HTML level-5 heading @('<h5>...</h5>')
           from a string."
   :long "@(def xdoc::h5)"
 
@@ -352,7 +352,7 @@
 
 (defsection xdoc::p
   :short "Construct an XDOC tree for
-          an HTML paragraph @('\<p\>...\</p\>')
+          an HTML paragraph @('<p>...</p>')
           from a string."
   :long "@(def xdoc::p)"
 
@@ -367,7 +367,7 @@
 
 (defsection xdoc::blockquote
   :short "Construct an XDOC tree for
-          an HTML quoted block @('\<blockquote\>...\</blockquote\>')
+          an HTML quoted block @('<blockquote>...</blockquote>')
           from a sequence of XDOC trees subtrees."
   :long "@(def xdoc::blockquote)"
   (defmacro xdoc::blockquote (&rest trees)
@@ -377,7 +377,7 @@
 
 (defsection xdoc::li
   :short "Construct an XDOC tree for
-          an HTML list item @('\<li\>...\</li\>')
+          an HTML list item @('<li>...</li>')
           from a sequence of XDOC subtrees."
   :long "@(def xdoc::li)"
   (defmacro xdoc::li (&rest trees)
@@ -387,7 +387,7 @@
 
 (defsection xdoc::ul
   :short "Construct an XDOC tree for
-          an HTML unordered list @('\<ul\>...\</ul\>')
+          an HTML unordered list @('<ul>...</ul>')
           from a sequence of XDOC subtrees for HTML list items."
   :long "@(def xdoc::ul)"
 
@@ -402,7 +402,7 @@
 
 (defsection xdoc::ol
   :short "Construct an XDOC tree for
-          an HTML ordered list @('\<ol\>...\</ol\>')
+          an HTML ordered list @('<ol>...</ol>')
           from a sequence of XDOC subtrees for HTML list items."
   :long "@(def xdoc::ol)"
 
@@ -417,7 +417,7 @@
 
 (defsection xdoc::dt
   :short "Construct an XDOC tree for
-          an HTML term @('\<dt\>...\</dt\>')
+          an HTML term @('<dt>...</dt>')
           from a string."
   :long "@(def xdoc::dt)"
 
@@ -432,7 +432,7 @@
 
 (defsection xdoc::dd
   :short "Construct an XDOC tree for
-          an HTML description @('\<dd\>...\</dd\>')
+          an HTML description @('<dd>...</dd>')
           from a sequence of XDOC subtrees."
   :long "@(def xdoc::dd)"
   (defmacro xdoc::dd (&rest trees)
@@ -442,7 +442,7 @@
 
 (defsection xdoc::dl
   :short "Construct an XDOC tree for
-          an HTML description list @('\<dl\>...\</dl\>')
+          an HTML description list @('<dl>...</dl>')
           from a sequence of XDOC tree for HTML terms and descriptions."
   :long "@(def xdoc::dl)"
 
