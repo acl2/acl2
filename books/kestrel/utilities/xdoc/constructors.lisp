@@ -269,6 +269,7 @@
 
 (defsection xdoc::*newline*
   :short "The string consisting of exactly the newline character."
+  :long "@(def xdoc::*newline*)"
   (defconst xdoc::*newline*
     (coerce (list #\Newline) 'string)))
 
