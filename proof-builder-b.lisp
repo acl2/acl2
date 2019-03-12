@@ -1686,6 +1686,14 @@
          (mv t (er hard 'expand-address
                    "Surprise!  Found an unexpected raw-term atom, ~x0."
                    raw-term)))
+        ((and (ffn-symb-p term 'if)
+              (equal (fargn term 1) *t*))
+         (expand-address-recurse
+          :ans (cons 2 rest-addr)
+          :new-addr addr
+          :new-raw-term raw-term
+          :new-term (fargn term 2)
+          :new-iff-flg iff-flg))
         (t
          (let ((dive-fn
                 (cdr (assoc-eq (car raw-term)

@@ -628,13 +628,13 @@
       and thus the two keys would be equal.
       But this contradicts (1) above,
       and thus @(tsee nibblelist-bytelist-map-sup-len-key) must differ
-      from any element @('i') of the set.")
-    (xdoc::p
-     "Every element of the set, including the maximum if it exists,
-      is less than or equal to the length of every key in the map.")
-    (xdoc::p
-     "If the map is empty,
-      then all the natural numbers are in the set.")))
+      from any element @('i') of the set."))
+   (xdoc::p
+    "Every element of the set, including the maximum if it exists,
+     is less than or equal to the length of every key in the map.")
+   (xdoc::p
+    "If the map is empty,
+     then all the natural numbers are in the set."))
 
   (defmax-nat mmp-encode-c-max x (map)
     (mmp-encode-c-exists map x)

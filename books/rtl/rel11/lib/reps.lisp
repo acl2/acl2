@@ -60,9 +60,11 @@
 
 (defnd dp () '(nil 53 11))
 
+(defnd bf () '(nil 8 8))
+
 (defnd ep () '(t 64 15))
 
-(in-theory (disable (sp) (dp) (hp) (ep)))
+(in-theory (disable (sp) (dp) (hp) (bf) (ep)))
 
 (defthm formatp-sp
   (formatp (sp)))

@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "kestrel/crypto/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,4 +45,17 @@
                             ubyte8-list-equiv
                             ubyte8-list-fix
                             ubyte8-listp
-                            ubyte8p)))
+                            ubyte8p
+                            unsigned-byte-fix
+                            unsigned-byte-list-fix
+                            crypto::secp256k1-add
+                            crypto::secp256k1-generator
+                            crypto::secp256k1-infinityp
+                            crypto::secp256k1-mul
+                            crypto::secp256k1-order
+                            crypto::secp256k1-pointp
+                            crypto::secp256k1-priv-key
+                            crypto::secp256k1-priv-key-p
+                            crypto::secp256k1-priv-to-pub
+                            crypto::secp256k1-pub-key
+                            crypto::secp256k1-pub-key-p)))

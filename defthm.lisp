@@ -679,7 +679,7 @@
 ; 'abbreviation from the basic ingredients, preprocessing the hyps and
 ; computing the loop-stopper.  Equiv is an equivalence relation name.
 
-  (let ((hyps (preprocess-hyps hyps))
+  (let ((hyps (preprocess-hyps hyps wrld))
         (loop-stopper (if loop-stopper-lst
                           (remove-irrelevant-loop-stopper-pairs
                            (cadr loop-stopper-lst)
@@ -1666,7 +1666,7 @@
 ; is a ttree that justifies the storage of all the :REWRITE rules.
 
   (chk-acceptable-rewrite-rule1 name match-free loop-stopper
-                                (unprettyify (remove-guard-holders term))
+                                (unprettyify (remove-guard-holders term wrld))
                                 ctx ens wrld state))
 
 ; So now we work on actually generating and adding the rules.
@@ -1772,7 +1772,7 @@
 ; convention.  "Consistency is the hobgoblin of small minds."  Emerson?
 
   (add-rewrite-rule1 rune nume
-                     (unprettyify (remove-guard-holders term))
+                     (unprettyify (remove-guard-holders term wrld))
                      loop-stopper-lst backchain-limit-lst match-free ens wrld))
 
 ;---------------------------------------------------------------------------
@@ -2253,7 +2253,7 @@
 ; messages without causing an error.
 
   (chk-acceptable-linear-rule1 name match-free trigger-terms
-                               (unprettyify (remove-guard-holders term))
+                               (unprettyify (remove-guard-holders term wrld))
                                ctx ens wrld state))
 
 ; And now, to adding :LINEAR rules...
@@ -2300,10 +2300,10 @@
 
 (defun add-linear-rule2 (rune nume trigger-terms hyps concl
                               backchain-limit-lst match-free ens wrld state)
-  (let* ((concl (remove-guard-holders concl))
+  (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
          (lst (external-linearize xconcl ens wrld state))
-         (hyps (preprocess-hyps hyps))
+         (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (all-vars-in-hyps hyps))
          (max-terms
           (or trigger-terms
@@ -2365,7 +2365,7 @@
 ;                (recur-over-break-cons cdr)))))
 
   (add-linear-rule1 rune nume trigger-terms
-                    (unprettyify (remove-guard-holders term))
+                    (unprettyify (remove-guard-holders term wrld))
                     backchain-limit-lst match-free ens wrld state))
 
 ;---------------------------------------------------------------------------
@@ -3203,7 +3203,7 @@
              (chk-triggers match-free name hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
 
-(defun destructure-forward-chaining-term (term)
+(defun destructure-forward-chaining-term (term wrld)
 
 ; We return two lists, hyps and concls, such that term is equivalent to
 ; (implies (and . hyps) (and . concls)).
@@ -3220,7 +3220,7 @@
 ; might have.  But we decided to stick with the ``just do what the user said''
 ; approach.
 
-;   (let ((term (remove-lambdas (remove-guard-holders term))))
+;   (let ((term (remove-lambdas (remove-guard-holders term wrld))))
 ;     (cond ((or (variablep term)
 ;                (fquotep term)
 ;                (not (eq (ffn-symb term) 'implies)))
@@ -3236,7 +3236,7 @@
 ;                                hyps)
 ;                        concls)))))
 
-  (let ((term (remove-lambdas (remove-guard-holders term))))
+  (let ((term (remove-lambdas (remove-guard-holders term wrld))))
     (cond ((or (variablep term)
                (fquotep term)
                (not (eq (ffn-symb term) 'implies)))
@@ -3258,7 +3258,7 @@
 
   (mv-let
    (hyps concls)
-   (destructure-forward-chaining-term term)
+   (destructure-forward-chaining-term term wrld)
    (let ((hyps-vars (all-vars1-lst hyps nil))
          (concls-vars (all-vars1-lst concls nil)))
      (chk-triggers name match-free hyps trigger-terms
@@ -3289,7 +3289,7 @@
 (defun add-forward-chaining-rule (rune nume trigger-terms term match-free wrld)
   (mv-let
    (hyps concls)
-   (destructure-forward-chaining-term term)
+   (destructure-forward-chaining-term term wrld)
    (putprop-forward-chaining-rules-lst rune nume
                                        trigger-terms
                                        hyps concls
@@ -3297,7 +3297,28 @@
                                                             hyps concls
                                                             trigger-terms
                                                             wrld)
-                                       wrld)))
+                                       wrld)))(defun putprop-forward-chaining-rules-lst
+  (rune nume triggers hyps concls match-free wrld)
+  (cond ((null triggers)
+         (put-match-free-value match-free rune wrld))
+        (t (putprop-forward-chaining-rules-lst
+            rune nume
+            (cdr triggers)
+            hyps concls match-free
+            (putprop (ffn-symb (car triggers))
+                     'forward-chaining-rules
+                     (cons (make forward-chaining-rule
+                                 :rune rune
+                                 :nume nume
+                                 :trigger (car triggers)
+                                 :hyps hyps
+                                 :concls concls
+                                 :match-free match-free)
+                           (getpropc (ffn-symb (car triggers))
+                                     'forward-chaining-rules nil wrld))
+                     wrld)))))
+
+
 
 ;---------------------------------------------------------------------------
 ; Section:  :META Rules
@@ -3718,7 +3739,8 @@
                        (normalized-evaluator-cl-set evfn-lst wrld)))
                      (cl-set2
                       (remove-guard-holders-lst-lst
-                       (evaluator-clauses evfn evfn-lst fn-args-lst))))
+                       (evaluator-clauses evfn evfn-lst fn-args-lst)
+                       wrld)))
                 (cond
                  ((not (and (clause-set-subsumes nil cl-set1 cl-set2)
                             (clause-set-subsumes nil cl-set2 cl-set1)))
@@ -5357,7 +5379,7 @@
 ; type-set lemmas in wrld.  The ttree returned contains no 'assumption
 ; tags.
 
-  (let ((term (remove-guard-holders term)))
+  (let ((term (remove-guard-holders term wrld)))
     (mv-let
      (hyps concl)
      (unprettyify-tp term)
@@ -6396,7 +6418,7 @@
 ; are so intermingled that it seemed dubious to separate them into two
 ; functions.
 
-  (let ((pairs (unprettyify (remove-guard-holders term)))
+  (let ((pairs (unprettyify (remove-guard-holders term wrld)))
         (hyp-msg   "~x0 is an unacceptable :CONGRUENCE rule.  The ~
                     single hypothesis of a :CONGRUENCE rule must be a ~
                     term of the form (equiv x y), where equiv has ~
@@ -7020,7 +7042,7 @@
             (make rewrite-rule
                   :rune *fake-rune-for-anonymous-enabled-rule*
                   :nume nil
-                  :hyps (preprocess-hyps hyps)
+                  :hyps (preprocess-hyps hyps wrld)
                   :equiv equiv
                   :lhs (mcons-term fn args)
                   :var-info (var-counts args body)
@@ -8394,7 +8416,7 @@
      ((eq token :FORWARD-CHAINING)
       (cond ((not (assoc-eq :TRIGGER-TERMS seen))
              (mv-let (hyps concls)
-                     (destructure-forward-chaining-term corollary)
+                     (destructure-forward-chaining-term corollary wrld)
                      (declare (ignore concls))
                      (cond ((null hyps)
                             (er soft ctx
@@ -8436,7 +8458,7 @@
       (cond ((not (assoc-eq :TYPED-TERM seen))
              (mv-let
               (hyps concl)
-              (unprettyify-tp (remove-guard-holders corollary))
+              (unprettyify-tp (remove-guard-holders corollary wrld))
               (declare (ignore hyps))
               (let ((pat (cond ((ffn-symb-p concl 'implies)
                                 (find-type-prescription-pat (fargn concl 2)
@@ -8712,11 +8734,11 @@
                               See :DOC linear."
                              name))
                         (t
-                         (let ((terms (remove-guard-holders-lst terms)))
+                         (let ((terms (remove-guard-holders-lst terms wrld)))
                            (er-progn
                             (chk-legal-linear-trigger-terms
                              terms
-                             (unprettyify (remove-guard-holders corollary))
+                             (unprettyify (remove-guard-holders corollary wrld))
                              name ctx state)
                             (value terms)))))))
                     ((eq token :FORWARD-CHAINING)
@@ -8729,7 +8751,8 @@
                                    one trigger.  Your rule class, ~x0, ~
                                    specifies none.  See :DOC forward-chaining."
                                   x))
-                             (t (value (remove-guard-holders-lst terms))))))
+                             (t (value (remove-guard-holders-lst terms
+                                                                 wrld))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
@@ -8876,10 +8899,12 @@
                             (:type-prescription
                              (mv-let
                               (hyps concl)
-                              (unprettyify-tp (remove-guard-holders corollary))
+                              (unprettyify-tp (remove-guard-holders corollary
+                                                                    wrld))
                               (list (cons hyps concl))))
                             (otherwise
-                             (unprettyify (remove-guard-holders corollary))))))
+                             (unprettyify (remove-guard-holders corollary
+                                                                wrld))))))
                      (cond
                       ((not (member-eq token
                                        '(:REWRITE :META :LINEAR
@@ -11137,7 +11162,8 @@
 
             (let ((attached-fns
                    (attached-fns (canonical-ancestors-lst
-                                  (all-ffn-symbs (remove-guard-holders tterm)
+                                  (all-ffn-symbs (remove-guard-holders tterm
+                                                                       wrld)
                                                  nil)
                                   wrld)
                                  wrld)))

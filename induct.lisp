@@ -2957,14 +2957,14 @@
 ; the hint-settings is non-nil and non-*t*, then we explore the clause
 ; set {{v}} for candidates.
 
-  (let ((cl-set (remove-guard-holders-lst-lst cl-set))
+  (let ((cl-set (remove-guard-holders-lst-lst cl-set wrld))
         (pool-name
          (tilde-@-pool-name-phrase forcing-round pool-lst))
         (induct-hint-val
          (let ((induct-hint-val0
                 (cdr (assoc-eq :induct hint-settings))))
            (and induct-hint-val0
-                (remove-guard-holders induct-hint-val0)))))
+                (remove-guard-holders induct-hint-val0 wrld)))))
     (mv-let
      (erp new-pspv state)
      (load-hint-settings-into-pspv

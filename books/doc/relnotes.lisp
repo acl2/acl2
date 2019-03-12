@@ -110,6 +110,11 @@
  <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
  remove-assoc) from single keys to lists of keys.</p>
 
+ <h4><see topic='@(url crypto::cryptography)'>Cryptography</see></h4>
+
+ <p>Started a library with placeholders for cryptographic functions that will
+ be eventually replaced with complete specifications of those functions.</p>
+
  <h4>Declarative Definitions of Maxima</h4>
 
  <p>Added a macro @(tsee defmax-nat) to declaratively define the maximum of a
@@ -166,6 +171,14 @@
 
  <h3>Changes to Existing Libraries</h3>
 
+ <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
+
+ <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
+ inputs known to be equivalent or opposite to each other, not just to
+ constants.  Added @(see aignet::obs-constprop) that combines this
+ with the existing observability transform, which works better than running
+ the two transforms separately.</p>
+
  <h4><see topic='@(url apt::apt)'>APT</see></h4>
 
  <p>Slightly extended the applicability of the @(tsee apt::tailrec)
@@ -184,12 +197,15 @@
 
  <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
 
- <p>Renamed `cryptographic interface' to `cryptographic placeholders'.  Added
- placeholders for RIPEMD-160, Hash160, HMAC-SHA-512, and the secp256k1 elliptic
- curve.</p>
+ <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
+ the previous placeholders for cryptographic functions into <see topic='@(url
+ crypto::cryptography)'>a new library</see>.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
  hierarchical deterministic wallets.</p>
+
+ <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 43 for
+ deterministic wallets.</p>
 
  <h4>Bytes</h4>
 
@@ -249,6 +265,10 @@
 
  <p>Improved some documentation.</p>
 
+ <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
+ the previous placeholders for cryptographic functions into <see topic='@(url
+ crypto::cryptography)'>a new library</see>.</p>
+
  <h4>Filesystem Books</h4>
 
  <p>The filesystem books @('[books]/projects/filesystems/') have been
@@ -282,6 +302,11 @@
  @(tsee fty::defbyte), which generates a fixtype and some additional theorems
  for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
  additional theorems for lists of byte.  See the documentation for details.</p>
+
+ <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
+
+ <p>Used new ACL2 system features to fix the remaining known soundness bug and
+ remove a trust tag.</p>
 
  <h4><see topic='@(url list-utilities)'>List Utilities</see></h4>
 
@@ -366,6 +391,15 @@
  to retrieve an alist of the keyword arguments of a macro, associated to their
  default values.</p>
 
+ <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+
+ <p>The @('use-termhint') utility has been moved to its own book
+ @('std/util/termhints') from its former location at
+ @('clause-processors/use-by-hint').</p>
+
+ <p>Added a new utility, @(see function-termhint), for creating termhints from
+ existing function definitions containing @(see hintcontext) annotations.</p>
+
  <h4>Typed List Utilities</h4>
 
  <p>Refactored the old file
@@ -428,27 +462,12 @@
 
  <p>Improved and extended some documentation.</p>
 
- <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
+ <h4><see topic='@(url xdoc-utilities)'>XDOC Utilities</see></h4>
 
- <p>The @('use-termhint') utility has been moved to its own book
- @('std/util/termhints') from its former location at
- @('clause-processors/use-by-hint').</p>
-
- <p>Added a new utility, @(see function-termhint), for creating termhints from
- existing function definitions containing @(see hintcontext) annotations.</p>
-
- <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
-
- <p>Used new ACL2 system features to fix the remaining known soundness bug and
- remove a trust tag.</p>
-
- <h4><see topic='@(url aignet::aignet)'>Aignet library</see></h4>
-
- <p>Improved the @(see aignet::constprop) transform so that it canonicalizes
- inputs known to be equivalent or opposite to each other, not just to
- constants.  Added @(see aignet::obs-constprop) that combines this
- with the existing observability transform, which works better than running
- the two transforms separately.</p>
+ <p>Improved the <see topic='@(url xdoc::constructors)'>XDOC constructors</see>
+ to use a tree representation that is converted into a flat string only at the
+ top level.  This enforces a better type discipline and facilitates future
+ optimizations if needed.</p>
 
  <h3>Licensing Changes</h3>
 

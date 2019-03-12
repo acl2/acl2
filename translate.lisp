@@ -4357,11 +4357,53 @@
 
   (let* ((formals (lambda-object-formals x))
          (dcl (lambda-object-dcl x))
-         (body1 (lambda-object-body x))
-         (body (if (lambda$-bodyp body1)
-; Body1 is (RETURN-LAST 'PROGN '(LAMBDA$ ...) body) and we want body.
-                   (fargn body1 3)
-                   body1)))
+         (body
+
+; At one time we gave special treatment to the tagged lambda case,
+; (lambda$-bodyp body), in which case body is (RETURN-LAST 'PROGN '(LAMBDA$
+; ...) body2) and we replaced body by (fargn body 3).  However, this caused odd
+; behavior for the following thm until we started removing guard-holders from
+; lambda bodies (more on that below).
+
+; (defun f1 (lst) (loop$ for x in lst collect (car (cons x (cons x nil)))))
+; (defun f2 (lst) (loop$ for x in lst collect (car (list x x))))
+; (thm (equal (f1 lst) (f2 lst)))
+
+; The checkpoint looked trivial: equality of something to itself!
+
+;   (EQUAL (COLLECT$ (LAMBDA$ (X)
+;                             (DECLARE (IGNORABLE X))
+;                             (CAR (LIST X X)))
+;                    LST)
+;          (COLLECT$ (LAMBDA$ (X)
+;                             (DECLARE (IGNORABLE X))
+;                             (CAR (LIST X X)))
+;                    LST))
+
+; However, after this change we can see the difference:
+
+;   (EQUAL (COLLECT$ (LAMBDA$ (X)
+;                             (DECLARE (IGNORABLE X))
+;                             (PROG2$ '(LAMBDA$ (X)
+;                                               (DECLARE (IGNORABLE X))
+;                                               (CAR (CONS X (CONS X NIL))))
+;                                     (CAR (LIST X X))))
+;                    LST)
+;          (COLLECT$ (LAMBDA$ (X)
+;                             (DECLARE (IGNORABLE X))
+;                             (PROG2$ '(LAMBDA$ (X)
+;                                               (DECLARE (IGNORABLE X))
+;                                               (CAR (LIST X X)))
+;                                     (CAR (LIST X X))))
+;                    LST))
+
+; This problem has disappeared when guard-holders are removed from the
+; normalized definition bodies.  But rather than rely on that, we just do the
+; simple thing here and display the tagged lambdas as they are.  Even if tagged
+; lambdas are unlikely to appear in practice, at least we can see what is
+; really going on when they do.
+
+          (lambda-object-body x)))
     `(lambda$ ,formals
               ,@(if dcl
                     `((declare ,@(untranslate1-lambda-object-edcls
@@ -4648,7 +4690,7 @@
 
 ; Here we handle the most common case, where we are untranslating the
 ; translation of (time$ ...).  With some effort we could also handle supplied
-; keyword arguments for time$ calls.  It should be reasonable rare to hit this
+; keyword arguments for time$ calls.  It should be reasonably rare to hit this
 ; case, since remove-guard-holders often eliminates calls of return-last before
 ; untranslate is called, and for the remaining cases it is probably infrequent
 ; to have calls of time$ with keyword arguments.
@@ -7041,7 +7083,7 @@
 
 ; At the other extreme, we could adopt the Lisp hacker approach and give the
 ; raw Lisp loop$ a slightly different semantics than loop.  For example,
-; we could arrange for 
+; we could arrange for
 
 ; (loop$ for v of-type integer in '(1 2 3 iv) sum (foo 1 v))
 
@@ -7098,7 +7140,7 @@
 
 ; ACL2 !>(time$ (loop$ for i OF-TYPE INTEGER                   ; note type spec
 ;                      in *m* sum (* (if (evenp i) +1 -1) i)))
-; ; (EV-REC *RETURN-LAST-ARG3* . #@127#) took 
+; ; (EV-REC *RETURN-LAST-ARG3* . #@127#) took
 ; ; 0.36 seconds realtime, 0.36 seconds runtime
 ; ; (16,000,032 bytes allocated).
 ; 500000
@@ -7130,7 +7172,7 @@
 ;  BAR
 
 ; ACL2 !>(time$ (bar *m*))
-; ; (EV-REC *RETURN-LAST-ARG3* . #@126#) took 
+; ; (EV-REC *RETURN-LAST-ARG3* . #@126#) took
 ; ; 0.01 seconds realtime, 0.01 seconds runtime
 ; ; (16 bytes allocated).
 ; 500000
@@ -7524,7 +7566,7 @@
 ;       (integer-listp newv)))
 
 ; The mempos hypothesis tells us newv is a member of (when$ ... (until
-; ... (tails lst))).  We know that lst is a list of integers.  Our proof 
+; ... (tails lst))).  We know that lst is a list of integers.  Our proof
 ; of this conjecture involves moving the mempos through the when$ and until$.
 ; This is done with lemmas from the loop$ book:
 
@@ -7560,7 +7602,7 @@
 ; Mempos becomes more important when we consider fancy loop$s.
 
 ; -----------------------------------------------------------------
-; Section 7:  An Example Plain Loop$, the :Guard Clause, 
+; Section 7:  An Example Plain Loop$, the :Guard Clause,
 ;            and Guard Conjectures
 
 ; For this example we define three renamings of integerp: int1p, int2p, and
@@ -11029,7 +11071,7 @@
                (msg
                 "Illegal LOOP$ Syntax.  The form ~X01 cannot be parsed as a ~
                 LOOP$ statement.  The symbol FOR must immediately follow the ~
-                LOOP$ and it does not here." 
+                LOOP$ and it does not here."
                 stmt)))))
 
 (defun make-plain-loop$-lambda-object (v spec carton)
@@ -11517,6 +11559,24 @@
                             nil))
                   bindings)))))
 
+(defun weak-apply$-badge-alistp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+;               (symbolp (caar x)) ; should be true, but not needed
+                (weak-apply$-badge-p (cdar x))
+                (weak-apply$-badge-alistp (cdr x))))))
+
+(defun ilks-plist-worldp (wrld)
+  (declare (xargs :guard t))
+  (and (plist-worldp wrld)
+       (let ((tbl (fgetprop 'badge-table 'table-alist
+                            nil wrld)))
+         (and (alistp tbl)
+              (weak-apply$-badge-alistp
+               (cdr (assoc-equal :badge-userfn-structure
+                                 tbl)))))))
+
 (defun ilks-per-argument-slot (fn wrld)
 
 ; This function is used by translate11 to keep track of the required ilk of
@@ -11559,6 +11619,8 @@
 ; translate from distinguishing supplying a lambda$ in an ordinary slot versus
 ; supplying it to an unbadged function.  Oh well!
 
+  (declare (xargs :guard (and (symbolp fn)
+                              (ilks-plist-worldp wrld))))
   (cond ((eq fn 'apply$) '(:FN? NIL)) ; Note change of :FN to :FN?
         ((eq fn 'ev$) '(:EXPR NIL))
         (t (let ((bdg (get-badge fn wrld)))
@@ -11568,7 +11630,7 @@
               (t (let ((ilks (access apply$-badge bdg :ilks)))
                    (if (eq ilks t) ; tame userfn
                        nil
-                       ilks))))))))
+                     ilks))))))))
 
 (mutual-recursion
 
@@ -12910,9 +12972,12 @@
            (allow-free-varsp nil)
            (vars (if allow-free-varsp
                      (butlast (cadr x) 1)
-                     (cadr x)))
+                   (cadr x)))
            (dcls (butlast (cddr x) 1))
-           (body (car (last x))))
+           (body (car (last x)))
+           (stobjs-out-simple (if (eq stobjs-out t)
+                                  t
+                                '(nil))))
       (cond
        ((not (arglistp vars))
         (trans-er+? cform x
@@ -12996,7 +13061,7 @@
                             *gratuitous-lambda-object-restriction-msg*))
                          (translate11 guard
                                       nil    ; ilk
-                                      '(nil) ; stobjs-out
+                                      stobjs-out-simple
                                       nil    ; bindings
                                       nil    ; known-stobjs
                                       nil    ; flet-alist
@@ -13081,7 +13146,7 @@
                             *gratuitous-lambda-object-restriction-msg*))
                        (translate11 body
                                     nil    ; ilk
-                                    '(nil) ; stobjs-out
+                                    stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
 
@@ -13128,11 +13193,11 @@
                     ((and free-vars-body (not allow-free-varsp))
                      (trans-er+? cform x
                                  ctx
-                                 "The body of a LAMBDA object or lambda$ ~
-                                  term, may contain no free variables.  This ~
-                                  is violated by the body ~x0, which uses the ~
+                                 "The body of a LAMBDA object or lambda$ term ~
+                                  may contain no free variables.  This is ~
+                                  violated by the body ~x0, which uses the ~
                                   variable~#1~[~/s~] ~&1 which ~#1~[is~/are~] ~
-                                  not among the formals. ~@2"
+                                  not among the formals.  ~@2"
                                  (untranslate tbody nil wrld)
                                  free-vars-body
                                  *gratuitous-lambda-object-restriction-msg*))
@@ -13209,19 +13274,30 @@
                                                free-vars-guard))
                                              vars)))
 
-                                    (cond
-                                     ((null edcls1)
-                                      `(QUOTE
-                                        (LAMBDA ,vars1
-                                                ,(tag-translated-lambda$-body
-                                                  x tbody))))
-                                     (t
-                                      `(QUOTE
-                                        (LAMBDA
-                                         ,vars1
-                                         (DECLARE ,@edcls1)
-                                         ,(tag-translated-lambda$-body
-                                                  x tbody)))))))
+                                    (let ((new-tbody
+                                           (if (eq stobjs-out t)
+
+; Normally we tag the translated lambda body.  But we don't want to do that
+; when proving theorems.  Without this special case for stobjs-out = t, the
+; following theorem would not be proved trivially.  (For a related comment
+; pertaining to lambdas in definition bodies, rather than at the top level, see
+; untranslate1-lambda-object.)
+
+; (thm (equal (loop$ for x in lst collect (car (cons x (cons x nil))))
+;             (loop$ for x in lst collect (car (list x x)))))
+
+                                               tbody
+                                             (tag-translated-lambda$-body
+                                              x tbody))))
+                                      (cond
+                                       ((null edcls1)
+                                        `(QUOTE (LAMBDA ,vars1 ,new-tbody)))
+                                       (t
+                                        `(QUOTE
+                                          (LAMBDA
+                                           ,vars1
+                                           (DECLARE ,@edcls1)
+                                           ,new-tbody)))))))
                               stobjs-out bindings known-stobjs flet-alist
                               cform ctx wrld state-vars))))))))))))))))))
    (t (trans-er+? cform x ctx
@@ -13240,7 +13316,10 @@
 ; X here is a form beginning with LOOP$.
 
   (let ((bindings0 bindings) ; save original bindings
-        (bindings nil))      ; set bindings to nil for trans-values calls below
+        (bindings nil)       ; set bindings to nil for trans-values calls below
+        (stobjs-out-simple (if (eq stobjs-out t)
+                               t
+                             '(nil))))
     (mv-let (erp parse)
       (parse-loop$ x)
       (cond
@@ -13273,7 +13352,7 @@
            ((and whenc (eq op 'ALWAYS))
             (trans-er+? cform x ctx
                         "It is illegal in CLTL to have a WHEN clause with an ~
-                     ALWAYS accumulator, so ~x0 is illegal."
+                         ALWAYS accumulator, so ~x0 is illegal."
                         x))
            (t
             (trans-er-let*
@@ -13289,7 +13368,7 @@
                         (not (eq (excart :untranslated :guard untilc) t)))
                    (translate11 (excart :untranslated :guard untilc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13299,7 +13378,7 @@
                (if untilc
                    (translate11 (excart :untranslated :body untilc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13311,7 +13390,7 @@
                         (not (eq (excart :untranslated :guard whenc) t)))
                    (translate11 (excart :untranslated :guard whenc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13321,7 +13400,7 @@
                (if whenc
                    (translate11 (excart :untranslated :body whenc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13333,7 +13412,7 @@
                         (not (eq (excart :untranslated :guard lobodyc) t)))
                    (translate11 (excart :untranslated :guard lobodyc)
                                 nil                 ; ilk
-                                '(nil)              ; stobjs-out
+                                stobjs-out-simple
                                 nil                 ; bindings
                                 nil                 ; known-stobjs
                                 nil                 ; flet-alist
@@ -13343,7 +13422,7 @@
                (if lobodyc
                    (translate11 (excart :untranslated :body lobodyc)
                                 nil           ; ilk
-                                '(nil)        ; stobjs-out
+                                stobjs-out-simple
                                 nil           ; bindings
                                 nil           ; known-stobjs
                                 nil           ; flet-alist
@@ -13427,6 +13506,7 @@
 ; We have a plain loop$.
                   (tag-loop$
                    x
+
 ; We assume that the translation of a loop$ is always a loop$ scion called on a
 ; quoted LAMBDA object.  So don't simplify, say, (collect$ (lambda$ (v)
 ; (symbolp v)) lst) to (collect$ 'symbolp lst)!  See
@@ -13613,8 +13693,8 @@
 
 ; (1) We allow a non-tame symbol into the :FN slot of APPLY$ because the
 ; warrants for mapping functions call APPLY$ on quoted non-tame symbols, e.g.,
-; (APPLY$ 'COLLECT ...) = (COLLECT ...).  Recall that the ``ilk'' for the first
-; arg of APPLY$ is :FN? as per ilks-per-argument-slot.
+; (APPLY$ 'COLLECT$ ...) = (COLLECT$ ...).  Recall that the ``ilk'' for the
+; first arg of APPLY$ is :FN? as per ilks-per-argument-slot.
 
 ; (2) We allow a defconst symbol to slip any kind of quoted object into a :FN
 ; slot.  This is a deliberate choice.  We wanted an escape mechanism for the
@@ -14788,6 +14868,11 @@
                  (cond
                   (erp (mv erp targ2 bindings))
                   ((throw-nonexec-error-p1 targ1 targ2 :non-exec nil)
+
+; This check holds when x is a non-exec call, and corresponds to similar checks
+; using throw-nonexec-error-p in collect-certain-lambda-objects and
+; collect-certain-tagged-loop$s.
+
                    (mv-let
                     (erp targ3 targ3-bindings)
                     (translate11
@@ -15787,6 +15872,10 @@
              flg guard wrld
              (collect-certain-lambda-objects flg body wrld ans1)))
           ans1)))
+   ((throw-nonexec-error-p term :non-exec nil)
+; This check holds when term is the translated version of a non-exec call, as
+; does a similar check using throw-nonexec-error-p1 in translate11.
+    ans)
    ((flambda-applicationp term)
     (collect-certain-lambda-objects
      flg
@@ -15832,7 +15921,7 @@
 ; them all.  If flg is :top we do not collect marked loop$ terms occurring in
 ; other marked loop$ terms.  For example, the translation of
 
-; (loop$ for v in lst 
+; (loop$ for v in lst
 ;        collect (loop$ for u in v collect expr))
 
 ; is
@@ -15858,6 +15947,10 @@
            (collect-certain-tagged-loop$s flg (fargn term 3)
                                           (add-to-set-equal term ans)))
           (t (add-to-set-equal term ans))))
+   ((throw-nonexec-error-p term :non-exec nil)
+; This check holds when term is the translated version of a non-exec call, as
+; does a similar check using throw-nonexec-error-p1 in translate11.
+    ans)
    ((flambda-applicationp term)
     (collect-certain-tagged-loop$s
      flg

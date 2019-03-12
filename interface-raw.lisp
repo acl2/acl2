@@ -1280,21 +1280,23 @@
       (translate11-loop$
        x
        '(nil) ; stobjs-out
-       nil ; bindings
-       nil ; known-stobjs
-       nil ; flet-alist
+       nil    ; bindings
+       nil    ; known-stobjs
+       nil    ; flet-alist
        x
        'oneify
        w
        *default-state-vars*)
       (declare (ignore bindings))
       (if flg
-          (interface-er "Implementation error: translate11-loop$ in oneify ~
-                         encountered an untranslatable LOOP$, ~x0, even ~
-                         though it was supposedly translated successfully ~
-                         earlier.  Please contat the ACL2 implementors."
-                        x)
-          (oneify tx fns w program-p))))
+          `(interface-er "Implementation error: translate11-loop$ in oneify ~
+                          encountered an untranslatable LOOP$, ~x0.  We ~
+                          thought that this could only happen under a call of ~
+                          non-exec, in which case we should never be ~
+                          executing this code!  Please contact the ACL2 ~
+                          implementors."
+                         ',x)
+        (oneify tx fns w program-p))))
    ((not (symbolp (car x)))
     (oneify
      (list* 'let (listlis (cadr (car x))
@@ -5847,7 +5849,7 @@
                (unless (eq name *special-cltl-cmd-attachment-mark-name*)
 
 ; See maybe-push-undo-stack for relevant discussion of the condition above.
-             
+
                  (install-for-add-trip
                   (cond ((symbolp x)
                          (set-attachment-symbol-form x nil))

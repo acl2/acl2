@@ -24,14 +24,15 @@
      ((mv & val state)
       (getenv$ "RM_INPUT" state))
      (fat32-pathname (pathname-to-fat32-pathname (coerce val 'list)))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     ((mv fs &)
+      (fat32-in-memory-to-m1-fs fat32-in-memory))
      ((mv & error-code &)
       (m1-lstat fs fat32-pathname))
      ((unless (equal error-code 0))
       (mv fat32-in-memory state))
      ((mv fs & &)
       (m1-unlink fs fat32-pathname))
-     (fat32-in-memory
+     ((mv fat32-in-memory &)
       (m1-fs-to-fat32-in-memory fat32-in-memory fs))
      ;; ((mv errmsg opts ?extra-args) (parse-rm-opts argv))
      (state

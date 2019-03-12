@@ -17,6 +17,11 @@
 (include-book "file-system-4")
 (include-book "fat32")
 
+(local
+ (in-theory (e/d
+             ((:rewrite fat32-entry-list-p-of-update-nth . 2))
+             ((:rewrite fat32-entry-list-p-of-update-nth . 1)))))
+
 ;; question: if fat entries are 28 bits long, then how is the maximum size
 ;; determined to be 4 GB?
 ;; also, how are we gonna do this without a feasible length restriction?
@@ -1825,116 +1830,31 @@
                                              fa-table)))))))
 
 (defthm
-  l6-wrchs-correctness-1-lemma-28
+  l6-wrchs-correctness-1-lemma-29
   (implies
-   (and (bounded-nat-listp file-index-list (len fa-table))
-        (<= (len fa-table) *ms-bad-cluster*))
-   (fat32-masked-entry-list-p file-index-list))
-  :hints (("goal" :in-theory (enable fat32-masked-entry-p))))
-
-(defthm
-  find-n-free-clusters-correctness-6
-  (implies
-   (and (fat32-entry-list-p fa-table)
-        (>= (len fa-table) *ms-first-data-cluster*)
-        (natp n))
-   (no-duplicatesp-equal (find-n-free-clusters fa-table n)))
+   (and (natp file-length)
+        (no-duplicatesp-equal file-index-list)
+        (feasible-file-length-p (len file-index-list)
+                                file-length)
+        (lower-bounded-integer-listp
+         file-index-list *ms-first-data-cluster*)
+        (bounded-nat-listp file-index-list (len fa-table))
+        (consp file-index-list)
+        (fat32-entry-list-p fa-table)
+        (<= (len fa-table) *ms-bad-cluster*)
+        (<= *ms-first-data-cluster* (len fa-table)))
+   (equal (fat32-build-index-list
+           (set-indices-in-fa-table
+            fa-table file-index-list
+            (append (cdr file-index-list)
+                    (list *ms-end-of-clusterchain*)))
+           (car file-index-list)
+           file-length *blocksize*)
+          (mv file-index-list 0)))
   :hints
-  (("goal" :in-theory (disable find-n-free-blocks-correctness-6)
-    :use (:instance find-n-free-blocks-correctness-6
-                    (alv (fa-table-to-alv fa-table))))))
-
-(encapsulate
-  ()
-
-  (local
-   (defun
-     induction-scheme
-     (file-index-list file-length)
-     (if (or (not (integerp file-length))
-             (<= file-length 0))
-         file-index-list
-         (induction-scheme (cdr file-index-list)
-                           (nfix (- file-length *blocksize*))))))
-
-  (defthm
-    l6-wrchs-correctness-1-lemma-29
-    (implies
-     (and (natp file-length)
-          (no-duplicatesp-equal file-index-list)
-          (feasible-file-length-p (len file-index-list)
-                                  file-length)
-          (lower-bounded-integer-listp
-           file-index-list *ms-first-data-cluster*)
-          (bounded-nat-listp file-index-list (len fa-table))
-          (<= (len file-index-list)
-              (count-free-blocks (fa-table-to-alv fa-table)))
-          (consp file-index-list)
-          (fat32-entry-list-p fa-table)
-          (<= (len fa-table) *ms-bad-cluster*)
-          (<= *ms-first-data-cluster* (len fa-table)))
-     (equal (fat32-build-index-list
-             (set-indices-in-fa-table
-              fa-table file-index-list
-              (append (cdr file-index-list)
-                      (list *ms-end-of-clusterchain*)))
-             (car file-index-list)
-             file-length *blocksize*)
-            (mv file-index-list 0)))
-    :hints
-    (("goal"
-      :in-theory (enable set-indices-in-fa-table
-                         lower-bounded-integer-listp)
-      :induct (induction-scheme file-index-list file-length))
-     ("subgoal *1/2.25'"
-      :in-theory (enable feasible-file-length-p))
-     ("subgoal *1/2.22'"
-      :in-theory (enable feasible-file-length-p))
-     ("subgoal *1/2.19'"
-      :in-theory (disable fat32-update-lower-28-correctness-2)
-      :use (:instance fat32-update-lower-28-correctness-2
-                      (entry (nth (car file-index-list) fa-table))
-                      (masked-entry (cadr file-index-list))))
-     ("subgoal *1/2.19.2"
-      :in-theory (enable fat32-masked-entry-p))
-     ("subgoal *1/2.19.1"
-      :expand (set-indices-in-fa-table
-               fa-table file-index-list
-               (cons (cadr file-index-list)
-                     (append (cddr file-index-list)
-                             '(268435455))))
-      :in-theory (disable set-indices-in-fa-table-correctness-4
-                          set-indices-in-fa-table-correctness-3
-                          l6-wrchs-correctness-1-lemma-28
-                          fat32-update-lower-28-correctness-2)
-      :use
-      ((:instance set-indices-in-fa-table-correctness-4
-                  (key (car file-index-list))
-                  (val (fat32-update-lower-28
-                        (nth (car file-index-list) fa-table)
-                        (cadr file-index-list)))
-                  (l fa-table)
-                  (index-list (cdr file-index-list))
-                  (value-list (append (cddr file-index-list)
-                                      '(268435455))))
-       (:instance
-        set-indices-in-fa-table-correctness-3
-        (n (car file-index-list))
-        (fa-table
-         (update-nth (car file-index-list)
-                     (fat32-update-lower-28
-                      (nth (car file-index-list) fa-table)
-                      (cadr file-index-list))
-                     fa-table))
-        (index-list (cdr file-index-list))
-        (value-list (append (cddr file-index-list)
-                            '(268435455))))
-       l6-wrchs-correctness-1-lemma-28
-       (:instance fat32-update-lower-28-correctness-2
-                  (entry (nth (car file-index-list) fa-table))
-                  (masked-entry (cadr file-index-list)))))
-     ("subgoal *1/1'''"
-      :in-theory (enable feasible-file-length-p)))))
+  (("goal"
+    :in-theory (enable feasible-file-length-p)
+    :do-not-induct t)))
 
 (defthm
   l6-wrchs-correctness-1-lemma-30

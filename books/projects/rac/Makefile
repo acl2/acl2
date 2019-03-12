@@ -1,4 +1,4 @@
-export ACL2?=/acl2
+export ACL2?=~/acl2
 export RAC?=${ACL2}/books/projects/rac
 
 all:

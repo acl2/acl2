@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
+(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,7 +45,12 @@
   (defruled byte-fix-rewrite-dab-digit-fix-256
     (equal (byte-fix digits)
            (dab-digit-fix 256 digits))
-    :enable (byte-fix dab-digit-fix dab-digitp bytep)))
+    :enable (byte-fix dab-digit-fix dab-digitp bytep))
+
+  (defruled byte-fix-rewrite-unsigned-byte-fix
+    (equal (byte-fix x)
+           (unsigned-byte-fix 8 x))
+    :enable (byte-fix bytep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +100,13 @@
            (dab-digit-list-fix 256 digits))
     :enable (dab-digit-list-fix
              byte-list-fix
-             byte-fix-rewrite-dab-digit-fix-256)))
+             byte-fix-rewrite-dab-digit-fix-256))
+
+  (defruled byte-list-fix-rewrite-unsigned-byte-list-fix
+    (equal (byte-list-fix x)
+           (unsigned-byte-list-fix 8 x))
+    :enable (byte-fix-rewrite-unsigned-byte-fix
+             unsigned-byte-list-fix)))
 
 (defsection byte-list-equiv-ext
   :extension byte-list-equiv

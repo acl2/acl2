@@ -8,13 +8,15 @@
      ((mv fat32-in-memory &)
       (disk-image-to-fat32-in-memory
        fat32-in-memory val state))
-     (fs-ref (fat32-in-memory-to-m1-fs fat32-in-memory))
+     ((mv fs-ref &)
+      (fat32-in-memory-to-m1-fs fat32-in-memory))
      ((mv & val state)
       (getenv$ "INPUT" state))
      ((mv fat32-in-memory &)
       (disk-image-to-fat32-in-memory
        fat32-in-memory val state))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory)))
+     ((mv fs &)
+      (fat32-in-memory-to-m1-fs fat32-in-memory)))
   (mv
        (good-bye
         (if (m1-dir-equiv fs-ref fs)

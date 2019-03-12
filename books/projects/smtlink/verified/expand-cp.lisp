@@ -350,6 +350,14 @@
     (defthm consp-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
       (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
                (consp (assoc-equal foo (ex-args->fn-lvls x)))))
+
+    (defthm last-<=
+      (<= (acl2-count (last x))
+          (acl2-count x)))
+
+    (defthm last-pseudo-term-list-is-pseudo-term-list
+      (implies (pseudo-term-listp x)
+               (pseudo-term-listp (last x))))
     )
 
   (local (in-theory (enable expand-measure)))
@@ -400,7 +408,12 @@
       :verify-guards nil
       :hints
       (("Goal"
-        :use ((:instance sum-lvls-decrease-after-update
+        :in-theory (e/d ()
+                        (last-<=
+                         sum-lvls-decrease-after-update))
+        :use ((:instance last-<=
+                         (x (CDR (CAR (EX-ARGS->TERM-LST EXPAND-ARGS)))))
+              (:instance sum-lvls-decrease-after-update
                          (fn (car (car (ex-args->term-lst expand-args))))
                          (fn-lvls (ex-args->fn-lvls expand-args))))))
       (b* ((expand-args (ex-args-fix expand-args))
@@ -476,6 +489,21 @@
                  (flex? (fncall-of-flextype fn-call fty-info))
                  (lvl-item (assoc-equal fn-call a.fn-lvls))
                  (extract-res (meta-extract-formula fn-call state))
+                 ((if (equal fn-call 'return-last))
+                  (b* ((actuals-res
+                        (expand (change-ex-args a :term-lst (last fn-actuals))
+                                fty-info state))
+                       ((ex-outs ac) actuals-res)
+                       (rest-res
+                        (expand (change-ex-args a :term-lst rest
+                                                :expand-lst ac.expanded-fn-lst)
+                                fty-info state))
+                       ((ex-outs r) rest-res))
+                    (make-ex-outs
+                     :expanded-term-lst (cons
+                                         (car ac.expanded-term-lst)
+                                         r.expanded-term-lst)
+                     :expanded-fn-lst r.expanded-fn-lst)))
                  ((if (or basic-function flex?
                           (<= a.wrld-fn-len 0) (and lvl-item (zp (cdr lvl-item)))
                           (equal extract-res ''t)))
@@ -505,7 +533,7 @@
                   (prog2$
                    (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
                    (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
+                 ;; (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
                  ;; Adding function symbol into expand-lst
                  (updated-expand-lst
                   (if (assoc-equal term a.expand-lst)
@@ -573,7 +601,7 @@
             (prog2$
              (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
              (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-           (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
+           ;; (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
            (updated-expand-lst
             (if (assoc-equal term a.expand-lst)
                 a.expand-lst (cons `(,term . ,term) a.expand-lst)))

@@ -851,7 +851,9 @@
 
 (defnd ep () '(t 64 15))
 
-(in-theory (disable (hp) (sp) (dp) (ep)))
+(defnd bf () '(nil 8 8))
+
+(in-theory (disable (hp) (sp) (dp) (ep) (bf)))
 
 (defund sgnf (x f)
   (declare (xargs :guard (encodingp x f)

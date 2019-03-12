@@ -102,6 +102,14 @@ public final class Acl2Environment {
             return packageWitnessName;
     }
 
+    /**
+     * Returns the lambda expression that defines a named function.
+     * The result is {@code null} if the function is not defined.
+     */
+    static Acl2LambdaExpression getFunctionDef(Acl2Symbol functionName) {
+        return functionDefs.get(functionName);
+    }
+
     //////////////////////////////////////// public members:
 
     /**
@@ -195,23 +203,18 @@ public final class Acl2Environment {
 
     /**
      * Calls the named ACL2 function on the given values.
-     * If the referenced function has a definition,
-     * its body is evaluated with respect to a binding
-     * of the given values to the function's parameters.
-     * If the referenced function is primitive,
-     * the native implementation is invoked on the given values.
      *
-     * @throws IllegalArgumentException if function or values is null,
+     * @throws IllegalArgumentException if functionName or values is null,
      *                                  or any value is null
      * @throws Acl2EvaluationException  if the function is
-     *                                  neither defined nor primitive,
+     *                                  neither defined nor native,
      *                                  or values.length differs from
-     *                                  the function'a arity,
+     *                                  the function's arity,
      *                                  or the function call fails
      */
-    public static Acl2Value call(Acl2Symbol function, Acl2Value[] values)
+    public static Acl2Value call(Acl2Symbol functionName, Acl2Value[] values)
             throws Acl2EvaluationException {
-        if (function == null)
+        if (functionName == null)
             throw new IllegalArgumentException("Null function.");
         if (values == null)
             throw new IllegalArgumentException("Null value array.");
@@ -219,18 +222,7 @@ public final class Acl2Environment {
             if (values[i] == null)
                 throw new IllegalArgumentException
                         ("Null value at index " + i + ".");
-        Acl2LambdaExpression definiens = functionDefs.get(function);
-        if (definiens == null)
-            return Acl2Primitive.call(function, values);
-        int len = values.length;
-        Acl2Symbol[] parameters = definiens.getParameters();
-        if (parameters.length != len)
-            throw new Acl2EvaluationException
-                    ("Called "
-                            + parameters.length
-                            + "-ary function on "
-                            + len
-                            + (len == 1 ? " argument." : " arguments."));
-        return definiens.getBody().eval(values);
+        Acl2NamedFunction function = Acl2NamedFunction.make(functionName);
+        return function.apply(values);
     }
 }

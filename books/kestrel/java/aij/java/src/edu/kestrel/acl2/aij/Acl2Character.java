@@ -147,7 +147,7 @@ public final class Acl2Character extends Acl2Value {
             return characters[jchar];
         else
             throw new IllegalArgumentException
-                    ("Invalid character jchar: '" + jchar + "'.");
+                    ("Invalid character: '" + jchar + "'.");
     }
 
     /**

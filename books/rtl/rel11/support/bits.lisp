@@ -848,6 +848,19 @@
                     (1- (expt 2 (1+ (- i j))))))
     :enable neg-digits-1)
 
+(defthmd bits-top-ones
+  (implies (and (natp i)
+                (natp j)
+		(>= i j)
+		(natp x)
+		(< x (expt 2 (1+ i)))
+		(>= x (- (expt 2 (1+ i)) (expt 2 j))))
+	   (equal (bits x i j)
+	          (1- (expt 2 (- (1+ i) j)))))
+  :hints (("Goal" :use ((:instance neg-bits-1 (x (- x (expt 2 (1+ i)))))
+			(:instance mod-bits-equal (y (- x (expt 2 (1+ i)))))
+			(:instance mod-mult (m x) (n (expt 2 (1+ i))) (a -1))))))
+
 (defruled bits-minus-1
     (implies (and (natp i)
 		  (natp j)
@@ -2663,6 +2676,13 @@
 ; (defnd ui (r) ... )
 
 ; (defund si (r n) ... )
+
+(defthm int-si
+  (implies (and (integerp r)
+                (natp n))
+	   (integerp (si r n)))
+  :rule-classes (:type-prescription :rewrite)
+  :hints (("Goal" :in-theory (enable si))))
 
 (defrulel si-as-si-r
   (implies (bvecp r n)

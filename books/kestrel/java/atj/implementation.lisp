@@ -1443,8 +1443,7 @@
        which, if executed as such by AIJ, would evaluate @('a') twice.
        (ACL2 relies on the underlying Lisp platform to optimize this situation.)
        AIJ provides support for a ``pseudo-function'' @('or')
-       that is treated like a primitive
-       and that evaluates its arguments non-strictly;
+       that evaluates its arguments non-strictly;
        see the documentation of AIJ for details.
        Thus, ATJ recognizes (translated) terms of the form @('(if a a b)'),
        which are likely derived from @('(or a b)'),

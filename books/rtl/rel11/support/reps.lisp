@@ -50,6 +50,10 @@
 ; (defnd ep () ... )
 ; (in-theory (disable (sp) (dp) (ep)))
 
+(defthm formatp-bf
+  (formatp (bf))
+  :hints (("Goal" :in-theory (enable bf formatp))))
+
 (defthm formatp-hp
   (formatp (hp))
   :hints (("Goal" :in-theory (enable hp formatp))))
