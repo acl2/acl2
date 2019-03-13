@@ -1257,6 +1257,16 @@
 
   (local (in-theory (disable ACL2::TAKE-OF-TOO-MANY)))
 
+  (local (defthm member-take-when-index-of-greater-than-length-lemma-1
+           (implies (and k (member-equal k (take w x)))
+                    (< (acl2::index-of k (take w x))
+                       (len x)))
+           :hints
+           (("goal" :induct (take w x)
+             :expand (:free (k x y)
+                            (acl2::index-of k (cons x y)))))
+           :rule-classes (:rewrite :linear)))
+
   (local (defthm member-take-when-index-of-greater-than-length
            (implies (and (member k (take w x))
                          k)

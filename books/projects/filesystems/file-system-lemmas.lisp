@@ -531,8 +531,9 @@
 ;; Contributed to books/std/lists/nth.lisp
 (defthm nth-of-take
   (equal (nth i (take n l))
-         (if (>= (nfix i) (nfix n))
-             nil (nth (nfix i) l))))
+         (if (< (nfix i) (nfix n))
+             (nth i l)
+             nil)))
 
 (defthm nthcdr-of-nil (equal (nthcdr n nil) nil))
 
