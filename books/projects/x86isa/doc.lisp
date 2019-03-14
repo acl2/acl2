@@ -350,12 +350,12 @@
  <p>Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann</p>
 
  <p>Questions or Suggestions? Email Shilpi:
- <tt>shigoel@cs.utexas.edu</tt></p>
+ <tt>shigoel@gmail.com</tt>.</p>
 
  <h5>Contributors to the x86 ISA Model</h5>
 
- <p>Thanks to Rob Sumners (Centaur Technology) for adding support for detecting
- decode-time exceptions.</p>
+ <p>Thanks to Rob Sumners for adding support for detecting decode-time
+ exceptions.</p>
 
  <p>Thanks to Alessandro Coglio (Kestrel Institute and Kestrel Technology LLC)
  for adding support for 32-bit mode and for improving the documentation of
