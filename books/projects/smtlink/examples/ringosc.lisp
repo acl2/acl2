@@ -92,6 +92,7 @@
        ((unless (ringosc3-one-safe-state r first)) nil))
     (ringosc3-one-safe-trace r rest)))
 
+(acl2::without-waterfall-parallelism ; MattK. mod for ACL2(p)
 (defthm ringosc3-one-safe-lemma
   (implies (and (ringosc3-p r)
                 (any-trace-p tr)
@@ -146,6 +147,7 @@
                                              :level 0)
                              ))
            )))
+)
 
 (defthm ringosc3-one-safe
   (implies (and (ringosc3-p r)
