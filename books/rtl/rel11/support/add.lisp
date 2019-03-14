@@ -890,6 +890,34 @@
                               (integerp n))))
   (bits (lognot (logxor (p0 a b) (* 2 (k0 a b n)))) (1- n) 0))
 
+(defthmd p0-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(integerp j))
+	   (equal (bitn (p0 a b) j)
+	          (if (= (bitn a j) (bitn b j))
+		      0 1))))
+
+(defthmd k0-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(natp j)
+                (natp n)
+                (< j n))
+	   (equal (bitn (k0 a b n) j)
+	          (if (and (= (bitn a j) 0) (= (bitn b j) 0))
+		      1 0))))
+
+(defthmd w0-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(not (zp n))
+                (not (zp j))
+		(< j n))
+	   (equal (bitn (w0 a b n) j)
+	          (if (= (bitn (p0 a b) j) (bitn (k0 a b n) (1- j)))
+		      1 0))))
+
 (defthm lza-thm
   (implies (and (not (zp n))
                 (bvecp a n)

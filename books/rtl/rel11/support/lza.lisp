@@ -41,7 +41,7 @@
            (bvecp (w0 a b n) n))
   :hints (("Goal" :in-theory (enable w0))))
 
-(local-defthmd p0-rewrite
+(defthmd p0-rewrite
   (implies (and (integerp a)
                 (integerp b)
 		(integerp j))
@@ -52,7 +52,7 @@
                   :use ((:instance bitn-0-1 (x a) (n j))
 		        (:instance bitn-0-1 (x b) (n j))))))
 
-(local-defthmd k0-rewrite
+(defthmd k0-rewrite
   (implies (and (integerp a)
                 (integerp b)
 		(natp j)
@@ -69,7 +69,7 @@
 			(:instance bitn-lognot (n j) (x a))
 			(:instance bitn-lognot (n j) (x b))))))
 
-(local-defthmd w0-rewrite
+(defthmd w0-rewrite
   (implies (and (integerp a)
                 (integerp b)
 		(not (zp n))

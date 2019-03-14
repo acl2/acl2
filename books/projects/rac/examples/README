@@ -1,6 +1,6 @@
 This subdirectory contains two examples of RAC programs:
 
-  hello.cpp: a mindless example intended to illustrate the MASC parser.
+  hello.cpp: a mindless example intended to illustrate the RAC parser.
 
   imul/imul.cpp: a toy integer multiplier, described in the ACL22014 paper
 
