@@ -215,18 +215,20 @@
        (defrule ,(mk-name fn "-VALUE-WHEN-ERROR")
          (implies (mv-nth 0 ,fn-call)
                   (equal (mv-nth 1 ,fn-call) 0))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str)))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           ))
+                  ))
 
        (defrule ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
          (implies (app-view x86)
                   (equal (mv-nth 2 ,fn-call) x86))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str)))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           ))
+                  ))
 
        (defrule ,(mk-name "MV-NTH-2-" fn "-IN-SYSTEM-LEVEL-NON-MARKING-VIEW")
          (implies (and (not (app-view x86))
@@ -234,19 +236,19 @@
                        (x86p x86)
                        (not (mv-nth 0 ,fn-call)))
                   (equal (mv-nth 2 ,fn-call) x86))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str)))))
+         :enable (,@(and signed?                         
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           ))))
 
        (defrule ,(mk-name "XR-" fn "-STATE-APP-VIEW")
          (implies (app-view x86)
                   (equal (xr fld index (mv-nth 2 ,fn-call))
                          (xr fld index x86)))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str)))))
+         :enable (,@(and signed?                         
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           ))))
 
        (defrule ,(mk-name "XR-" fn "-STATE-SYS-VIEW")
          (implies (and (not (app-view x86))
@@ -257,13 +259,13 @@
                            `((member-equal fld *x86-field-names-as-keywords*))))
                   (equal (xr fld index (mv-nth 2 ,fn-call))
                          (xr fld index x86)))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           )))
          ,@(if (< size 10)
                nil
-             `(:disable (rb unsigned-byte-p signed-byte-p))))
+             `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
 
        (defrule ,(mk-name fn "-XW-APP-VIEW")
          (implies
@@ -290,10 +292,10 @@
            ;; No need for the conclusion about the state; see
            ;; ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
            ))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           )))
          :disable (rb))
 
        (defrule ,(mk-name fn "-XW-SYS-VIEW")
@@ -332,13 +334,13 @@
                         '(xw fld index value x86)
                         fn-call))
             (xw fld index value (mv-nth 2 ,fn-call)))))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           )))
          ,@(if (< size 10)
                nil
-             `(:disable (rb unsigned-byte-p signed-byte-p))))
+             `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
 
        (defrule ,(mk-name fn "-XW-SYS-VIEW-RFLAGS-NOT-AC")
          (implies
@@ -364,10 +366,10 @@
                         '(xw :rflags 0 value x86)
                         fn-call))
             (xw :rflags 0 value (mv-nth 2 ,fn-call)))))
-         :enable (,lin-mem-fn-name
-                  ,@(and signed?
-                         ;; Enable unsigned linear memory function too.
-                         `(,(mk-name "RML" size-str))))
+         :enable (,@(and signed?
+                         `(,lin-mem-fn-name
+                           ;; ,(mk-name "RML" size-str)
+                           )))
          :disable (rb unsigned-byte-p signed-byte-p))
 
        (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
@@ -484,10 +486,7 @@
     ;; Note: A #GP exception should be thrown here instead of an #AC fault when
     ;; the address is not aligned.  See Intel Manuals, Volume 3, Section 6.15,
     ;; Exception and Interrupt Reference, Interrupt 17 Alignment Check
-    ;; Exception (#AC).
-    (local (in-theory (e/d (unsigned-byte-p
-                            signed-byte-p)
-                           (force (force)))))
+    ;; Exception (#AC).    
     ,(gen-read-function :size 128
                         :signed? nil
                         :check-alignment?-var t
