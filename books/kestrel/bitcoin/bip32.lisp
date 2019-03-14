@@ -588,6 +588,7 @@
                      (set::in prefix paths))))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-path-set-closedp
     :args ((paths bip32-path-setp))
     :hints (("Goal"
@@ -729,6 +730,7 @@
                      (not (mv-nth 0 (bip32-ckd* root path))))))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-valid-keys-p
     :args ((root bip32-ext-key-p) (tree bip32-index-treep))
     :hints (("Goal"
@@ -810,6 +812,7 @@
                      (bytep (+ (byte-fix init) (len path))))))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-valid-depths-p
     :args ((init bytep) (tree bip32-index-treep))
     :hints (("Goal"
@@ -1281,6 +1284,7 @@
   :skolem-name bip32-serialized-key-witness
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-serialized-key-p
     :args ((bytes byte-listp))
     :hints (("Goal"
@@ -1686,6 +1690,7 @@
                    (< (len path) 4)))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-compliant-depth-p
     :args ((tree bip32-key-treep))
     :hints (("Goal"
@@ -1764,6 +1769,8 @@
                        (not (bip32-path-in-tree-p path tree))))))
   ///
 
+  ;; boilerplate:
+
   (fty::deffixequiv bip32-compliant-addresses-for-limit-p
     :args ((tree bip32-key-treep))
     :hints (("Goal"
@@ -1840,7 +1847,7 @@
   :guard (bip32-path-in-tree-p (list account-index chain-index) tree)
   :returns (yes/no booleanp)
   :short "Check if the address keys under a given chain key in a tree
-          comply with the BIP 32 wallet structure.."
+          comply with the BIP 32 wallet structure."
   :long
   (xdoc::toppstring
    "This is obtained by existentially quantifying the address index limit
@@ -1852,6 +1859,7 @@
                 tree account-index chain-index address-index-limit)))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-compliant-addresses-p
     :args ((tree bip32-key-treep)
            (account-index ubyte32p)
@@ -1923,7 +1931,7 @@
      this is not explicitly said in [BIP32], but it seems reasonable.")
    (xdoc::p
     "Furthermore, in this predicate we require the address keys under each chain
-     to be compliant with the BIP structure.
+     to be compliant with the BIP 32 structure.
      We are defining key tree compliance incrementally here."))
   (forall (chain-index)
           (implies (ubyte32p chain-index)
@@ -1938,6 +1946,7 @@
                        (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-compliant-chains-p
     :args ((tree bip32-key-treep) (account-index ubyte32p))
     :hints (("Goal"
@@ -1967,7 +1976,7 @@
                                                  (account-index-limit natp))
   :returns (yes/no booleanp)
   :short "Check if the account keys in a tree
-          comply with the BIP32 wallet structure,
+          comply with the BIP 32 wallet structure,
           for a given account index limit."
   :long
   (xdoc::topstring
@@ -2011,6 +2020,7 @@
                            (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-compliant-accounts-for-limit-p
     :args ((tree bip32-key-treep) (account-index-limit natp))
     :hints (("Goal"
@@ -2051,6 +2061,7 @@
                (bip32-compliant-accounts-for-limit-p tree account-index-limit)))
   ///
 
+  ;; boilerplate:
   (fty::deffixequiv bip32-compliant-accounts-p
     :args ((tree bip32-key-treep))
     :hints (("Goal"
@@ -2076,9 +2087,12 @@
      (which includes the compliance of the chain and address keys),
      we also require the tree to be rooted at the master private key.
      That is, we exclude subtrees of the master tree
-     used for partial sharing."))
+     used for partial sharing.")
+   (xdoc::p
+    "We also require the tree to have depth below 4."))
   (and (bip32-compliant-accounts-p tree)
        (equal 0 (bip32-key-tree->root-depth tree))
-       (bip32-key-tree-priv-p tree))
+       (bip32-key-tree-priv-p tree)
+       (bip32-compliant-depth-p tree))
   :no-function t
   :hooks (:fix))
