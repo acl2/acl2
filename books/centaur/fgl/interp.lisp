@@ -523,6 +523,8 @@
           (mv nil nil))))
     (mv nil nil))
   ///
+  
+
   (defret gl-apply-match-not-correct
     (implies ok
              (iff (base-gl-object-eval negated-arg env logicman)
@@ -972,7 +974,11 @@
              (interp-st-bfrs-ok new-interp-st)))
 
   (defret lbfr-p-of-<fn>
-    (lbfr-p ite (interp-st->logicman new-interp-st))))
+    (lbfr-p ite (interp-st->logicman new-interp-st)))
+
+  (Defret interp-st->stack-of-<fn>
+    (equal (interp-st->stack new-interp-st)
+           (interp-st->stack interp-st))))
 
 
 
@@ -1191,7 +1197,7 @@
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020 (pseudo-term-list-binding-count args) 20)
         :returns (mv err
-                     (args gl-objectlist-p)
+                     (arg-objs gl-objectlist-p)
                      new-interp-st
                      new-state)
         (b* (((when (atom args)) (mv nil nil interp-st state))
@@ -1759,7 +1765,9 @@
                      xbfr
                      new-interp-st
                      new-state)
-        (b* (((mv not-matched neg-arg)
+        (b* (((unless (mbt (gl-object-case xobj :g-apply)))
+              (mv "Impossible" nil interp-st state))
+             ((mv not-matched neg-arg)
               (gl-apply-match-not xobj))
              ((when not-matched)
               (b* (((mv err bfr interp-st state)
@@ -2132,19 +2140,311 @@
           (mv err (cons arg1 args) interp-st state))))))
 
 
+(local (defun find-flag-is-hyp (clause)
+         (if (atom clause)
+             nil
+           (let ((lit (car clause)))
+             (case-match lit
+               (('not ('acl2::flag-is ('quote val))) val)
+               (& (find-flag-is-hyp (cdr clause))))))))
 
 
+(defsection stack-isomorphic-of-gl-interp
+
+  (define scratchobj-isomorphic ((x scratchobj-p) (y scratchobj-p))
+    (and (eq (scratchobj-kind x) (scratchobj-kind y))
+         (scratchobj-case x
+           :gl-objlist (eql (len x.val) (len (scratchobj-gl-objlist->val y)))
+           :bfrlist (eql (len x.val) (len (scratchobj-bfrlist->val y)))
+           :cinstlist (eql (len x.val) (len (scratchobj-cinstlist->val y)))
+           :otherwise t))
+    ///
+    (defequiv scratchobj-isomorphic)
+
+    (defcong scratchobj-isomorphic equal (scratchobj-kind x) 1)
+
+    (defthm len-gl-objlist-when-scratchobj-isomorphic
+      (implies (and (scratchobj-isomorphic x y)
+                    (scratchobj-case x :gl-objlist))
+               (= (len (scratchobj-gl-objlist->val x))
+                  (len (scratchobj-gl-objlist->val y))))
+      :rule-classes :linear)
+
+    (defthm len-bfrlist-when-scratchobj-isomorphic
+      (implies (and (scratchobj-isomorphic x y)
+                    (scratchobj-case x :bfrlist))
+               (= (len (scratchobj-bfrlist->val x))
+                  (len (scratchobj-bfrlist->val y))))
+      :rule-classes :linear)
+
+    (defthm len-cinstlist-when-scratchobj-isomorphic
+      (implies (and (scratchobj-isomorphic x y)
+                    (scratchobj-case x :cinstlist))
+               (= (len (scratchobj-cinstlist->val x))
+                  (len (scratchobj-cinstlist->val y))))
+      :rule-classes :linear))
+
+  (define scratchlist-isomorphic ((x scratchlist-p) (y scratchlist-p))
+    (if (atom x)
+        (atom y)
+      (and (consp y)
+           (scratchobj-isomorphic (car x) (car y))
+           (scratchlist-isomorphic (cdr x) (cdr y))))
+    ///
+    (defequiv scratchlist-isomorphic)
+
+    (defcong scratchlist-isomorphic scratchobj-isomorphic (car x) 1
+      :hints(("Goal" :in-theory (enable default-car))))
+    (defcong scratchlist-isomorphic scratchlist-isomorphic (cdr x) 1)
+    
+    (defcong scratchobj-isomorphic scratchlist-isomorphic (cons x y) 1)
+    (defcong scratchlist-isomorphic scratchlist-isomorphic (cons x y) 2))
+
+  (define minor-frame-scratch-isomorphic ((x minor-frame-p) (y minor-frame-p))
+    (scratchlist-isomorphic (minor-frame->scratch x) (minor-frame->scratch y))
+    ///
+    (defequiv minor-frame-scratch-isomorphic)
+
+    (defcong minor-frame-scratch-isomorphic scratchlist-isomorphic (minor-frame->scratch x) 1)
+
+    (defcong scratchlist-isomorphic minor-frame-scratch-isomorphic (minor-frame bindings scratch debug) 2)
+
+    (defthm minor-frame-scratch-isomorphic-normalize-minor-frame
+      (implies (syntaxp (not (and (Equal bindings ''nil)
+                                  (equal debug ''nil))))
+               (minor-frame-scratch-isomorphic (minor-frame bindings scratch debug)
+                                               (minor-frame nil scratch nil)))))
+
+  (define minor-stack-scratch-isomorphic ((x minor-stack-p) (y minor-stack-p))
+    (and (minor-frame-scratch-isomorphic (car x) (car y))
+         (if (atom (cdr x))
+             (atom (cdr y))
+           (and (consp (cdr y))
+                (minor-stack-scratch-isomorphic (cdr x) (cdr y)))))
+    ///
+    (defequiv minor-stack-scratch-isomorphic)
+
+    (defcong minor-stack-scratch-isomorphic minor-frame-scratch-isomorphic (car x) 1
+      :hints(("Goal" :in-theory (enable default-car))))
+    (defcong minor-stack-scratch-isomorphic minor-stack-scratch-isomorphic (cdr x) 1
+      :hints(("Goal" :in-theory (enable default-car))))
+    
+    (defcong minor-frame-scratch-isomorphic minor-stack-scratch-isomorphic (cons x y) 1)
+
+    (defthm minor-stack-scratch-isomorphic-cons-cdr-congruence
+      (implies (minor-stack-scratch-isomorphic x y)
+               (minor-stack-scratch-isomorphic (cons frame (cdr x))
+                                               (cons frame (cdr y))))
+      :rule-classes :congruence))
+
+
+  (define major-frame-scratch-isomorphic ((x major-frame-p) (y major-frame-p))
+    (minor-stack-scratch-isomorphic (major-frame->minor-stack x) (major-frame->minor-stack y))
+    ///
+    (defequiv major-frame-scratch-isomorphic)
+
+    (defcong major-frame-scratch-isomorphic minor-stack-scratch-isomorphic (major-frame->minor-stack x) 1)
+
+    (defcong minor-stack-scratch-isomorphic major-frame-scratch-isomorphic (major-frame bindings debug minor-stack) 3)
+
+    (defthm major-frame-scratch-isomorphic-normalize-major-frame
+      (implies (syntaxp (not (and (Equal bindings ''nil)
+                                  (equal debug ''nil))))
+               (major-frame-scratch-isomorphic (major-frame bindings debug minor-stack)
+                                               (major-frame nil nil minor-stack)))))
+
+  (define major-stack-scratch-isomorphic ((x major-stack-p) (y major-stack-p))
+    (and (major-frame-scratch-isomorphic (car x) (car y))
+         (if (atom (cdr x))
+             (atom (cdr y))
+           (and (consp (cdr y))
+                (major-stack-scratch-isomorphic (cdr x) (cdr y)))))
+    ///
+    (defequiv major-stack-scratch-isomorphic)
+
+    (defcong major-stack-scratch-isomorphic major-frame-scratch-isomorphic (car x) 1
+      :hints(("Goal" :in-theory (enable default-car))))
+    (defcong major-stack-scratch-isomorphic major-stack-scratch-isomorphic (cdr x) 1
+      :hints(("Goal" :in-theory (enable default-car))))
+    
+    (defcong major-frame-scratch-isomorphic major-stack-scratch-isomorphic (cons x y) 1)
+
+    (defthm major-stack-scratch-isomorphic-cons-cdr-congruence
+      (implies (major-stack-scratch-isomorphic x y)
+               (major-stack-scratch-isomorphic (cons frame (cdr x))
+                                               (cons frame (cdr y))))
+      :rule-classes :congruence))
+
+
+  (define interp-st-scratch-isomorphic (x y)
+    :non-executable t
+    :verify-guards nil
+    (major-stack-scratch-isomorphic (interp-st->stack x) (interp-st->stack y))
+    ///
+    (defequiv interp-st-scratch-isomorphic)
+
+    (defcong interp-st-scratch-isomorphic major-stack-scratch-isomorphic (interp-st->stack x) 1)
+
+    (defcong major-stack-scratch-isomorphic interp-st-scratch-isomorphic (update-interp-st->stack stack x) 1)
+
+    (defthm update-interp-st->stack-norm-under-interp-st-scratch-isomorphic
+      (implies (syntaxp (not (equal x ''nil)))
+               (interp-st-scratch-isomorphic
+                (update-interp-st->stack stack x)
+                (update-interp-st->stack stack nil))))
+
+    (defthm interp-st-scratch-isomorphic-of-update-interp-st->stack-identity
+      (interp-st-scratch-isomorphic
+       (update-interp-st->stack (major-stack-fix (interp-st->stack interp-st)) x)
+       interp-st))
+
+    (defthm interp-st-scratch-isomorphic-of-update-interp-st->stack-identity2
+      (interp-st-scratch-isomorphic
+       (update-interp-st->stack (interp-st->stack interp-st) x)
+       interp-st))
+
+    (def-updater-independence-thm interp-st-scratch-isomorphic-identity
+      (implies (major-stack-equiv (interp-st->stack new) (interp-st->stack old))
+               (equal (interp-st-scratch-isomorphic new x)
+                      (interp-st-scratch-isomorphic old x)))))
+  
+
+  (defcong major-stack-scratch-isomorphic
+    major-stack-scratch-isomorphic (stack$a-pop-scratch stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defcong major-stack-scratch-isomorphic
+    major-stack-scratch-isomorphic (stack$a-pop-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame))))
+
+  (defcong major-stack-scratch-isomorphic
+    major-stack-scratch-isomorphic (stack$a-pop-minor-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame))))
+
+  (defcong major-stack-scratch-isomorphic
+    major-stack-scratch-isomorphic (stack$a-set-bindings bindings stack) 2
+    :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
+
+  (defthm stack$a-pop-scratch-of-stack$a-push-scratch
+    (equal (stack$a-pop-scratch (stack$a-push-scratch obj stack))
+           (major-stack-fix stack))
+    :hints(("Goal" :in-theory (enable stack$a-push-scratch stack$a-pop-scratch default-car)
+            :expand ((major-stack-fix stack)))))
+
+
+  (defthm stack$a-pop-frame-of-stack$a-set-bindings
+    (equal (stack$a-pop-frame (stack$a-set-bindings bindings stack))
+           (stack$a-pop-frame stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-bindings))))
+
+  (defthm stack$a-pop-frame-of-stack$a-set-debug
+    (equal (stack$a-pop-frame (stack$a-set-debug obj stack))
+           (stack$a-pop-frame stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-set-debug))))
+
+  (defthm stack$a-pop-frame-of-stack$a-push-frame
+    (equal (stack$a-pop-frame (stack$a-push-frame stack))
+           (major-stack-fix stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame stack$a-push-frame))))
+
+  (defthm stack$a-pop-minor-frame-of-stack$a-set-minor-bindings
+    (equal (stack$a-pop-minor-frame (stack$a-set-minor-bindings bindings stack))
+           (stack$a-pop-minor-frame stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-minor-bindings))))
+
+  (defthm stack$a-pop-minor-frame-of-stack$a-set-minor-debug
+    (equal (stack$a-pop-minor-frame (stack$a-set-minor-debug obj stack))
+           (stack$a-pop-minor-frame stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-set-minor-debug))))
+
+  (defthm stack$a-pop-minor-frame-of-stack$a-push-minor-frame
+    (equal (stack$a-pop-minor-frame (stack$a-push-minor-frame stack))
+           (major-stack-fix stack))
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame stack$a-push-minor-frame
+                                      major-stack-fix default-car))))
+
+
+  (defthm major-stack-scratch-isomorphic-of-add-binding
+    (major-stack-scratch-isomorphic (stack$a-add-binding var val stack) stack)
+    :hints(("Goal" :in-theory (enable stack$a-add-binding major-stack-scratch-isomorphic
+                                      major-frame-scratch-isomorphic))))
+
+  (defthm major-stack-scratch-isomorphic-of-set-bindings
+    (major-stack-scratch-isomorphic (stack$a-set-bindings bindings stack) stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-bindings major-stack-scratch-isomorphic
+                                      major-frame-scratch-isomorphic))))
+
+  (defthm major-stack-scratch-isomorphic-of-add-minor-bindings
+    (major-stack-scratch-isomorphic (stack$a-add-minor-bindings bindings stack) stack)
+    :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings
+                                      major-stack-scratch-isomorphic
+                                      major-frame-scratch-isomorphic
+                                      minor-stack-scratch-isomorphic
+                                      minor-frame-scratch-isomorphic))))
+
+  (defthm major-stack-scratch-isomorphic-of-syntax-bind
+    (interp-st-scratch-isomorphic
+     (mv-nth 2 (gl-interp-syntax-bind first last interp-st state))
+     interp-st)
+    :hints(("Goal" :in-theory (enable gl-interp-syntax-bind))))
+
+  (defthm major-stack-scratch-isomorphic-of-relieve-hyp-synp
+    (interp-st-scratch-isomorphic
+      (mv-nth 2 (gl-rewrite-relieve-hyp-synp synp form vars untrans interp-st state))
+      interp-st)
+    :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp))))
+  
+  (defthm major-stack-scratch-isomorphic-of-gl-primitive-fncall
+    (interp-st-scratch-isomorphic
+     (mv-nth 2 (gl-primitive-fncall fn args dont interp-st state))
+     interp-st)
+    :hints(("Goal" :in-theory (enable gl-primitive-fncall
+                                      gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive))))
+
+
+  (progn
+    (with-output
+      :off (event)
+      :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+      (std::defret-mutual-generate interp-st-scratch-isomorphic-of-<fn>
+        :return-concls ((new-interp-st               (interp-st-scratch-isomorphic new-interp-st
+                                                                                   (double-rewrite interp-st))))
+        :rules ((t (:add-keyword :hints ('(:do-not-induct t)
+                                         (let ((flag (find-flag-is-hyp clause)))
+                                           (and flag
+                                                (prog2$ (cw "flag: ~x0~%" flag)
+                                                        '(:no-op t))))))))
+        :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))))))
+
+
+(local
+ (defthm major-stack-bfrlist-of-atom
+   (implies (atom x)
+            (equal (major-stack-bfrlist x) nil))
+   :hints(("Goal" :in-theory (enable major-stack-bfrlist
+                                     default-car)))
+   :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 (local
  (defthm major-stack-bfrlist-of-stack$a-push-scratch
    (set-equiv (major-stack-bfrlist (stack$a-push-scratch obj stack))
-              (append (gl-object-bfrlist obj)
+              (append (scratchobj->bfrlist obj)
                       (major-stack-bfrlist stack)))
-   :hints(("Goal" :in-theory (enable major-stack-bfrlist
+   :hints(("Goal" :in-theory (enable ;; major-stack-bfrlist
                                      major-frame-bfrlist
-                                     minor-stack-bfrlist
-                                     minor-frame-bfrlist
-                                     stack$a-push-scratch)))))
+                                     ;; minor-stack-bfrlist
+                                      minor-frame-bfrlist
+                                     stack$a-push-scratch
+                                     ;; acl2::set-unequal-witness-rw
+                                     )
+           :expand ((major-stack-bfrlist stack)
+                    (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+           :do-not-induct t))))
 
 
 (local (defthm gl-objectlist-bfrlist-of-append
@@ -2152,31 +2452,6 @@
                 (append (gl-objectlist-bfrlist x)
                         (gl-objectlist-bfrlist y)))
          :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist append)))))
-
-(local
- (defthm major-stack-bfrlist-of-stack$a-pushlist-scratch
-   (set-equiv (major-stack-bfrlist (stack$a-pushlist-scratch objs stack))
-                    (append (gl-objectlist-bfrlist objs)
-                            (major-stack-bfrlist stack)))
-   :hints(("Goal" :in-theory (enable major-stack-bfrlist
-                                     major-frame-bfrlist
-                                     minor-stack-bfrlist
-                                     minor-frame-bfrlist
-                                     stack$a-pushlist-scratch)
-           :do-not-induct t))))
-
-(local
- (defthm major-stack-bfrlist-of-stack$a-push-bool-scratch
-   (set-equiv (major-stack-bfrlist (stack$a-push-bool-scratch obj stack))
-                    (cons obj
-                          (major-stack-bfrlist stack)))
-   :hints(("Goal" :in-theory (enable stack$a-push-bool-scratch
-                                     major-stack-bfrlist
-                                     major-frame-bfrlist
-                                     minor-frame-bfrlist
-                                     minor-stack-bfrlist
-                                     acl2::set-unequal-witness-rw)
-           :do-not-induct t))))
 
 (local (defthm member-nthcdr
          (implies (not (member v x))
@@ -2190,22 +2465,9 @@
          :hints(("Goal" :in-theory (enable nthcdr)))))
 
 (local
- (defthm major-stack-bfrlist-of-stack$a-pop-bool-scratch
-   (implies (not (member v (major-stack-bfrlist stack)))
-            (not (member v (major-stack-bfrlist (stack$a-pop-bool-scratch n stack)))))
-   :hints(("Goal" :in-theory (enable stack$a-pop-bool-scratch
-                                     major-stack-bfrlist
-                                     major-frame-bfrlist
-                                     minor-frame-bfrlist
-                                     minor-stack-bfrlist)
-           :expand ((major-stack-bfrlist stack)
-                    (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
-           :do-not-induct t))))
-
-(local
  (defthm major-stack-bfrlist-of-stack$a-pop-scratch
    (implies (not (member v (major-stack-bfrlist stack)))
-            (not (member v (major-stack-bfrlist (stack$a-pop-scratch n stack)))))
+            (not (member v (major-stack-bfrlist (stack$a-pop-scratch stack)))))
    :hints(("Goal" :in-theory (enable stack$a-pop-scratch
                                      major-stack-bfrlist
                                      major-frame-bfrlist
@@ -2304,8 +2566,8 @@
      (implies (not (member v (major-stack-bfrlist stack)))
               (not (member v (gl-object-alist-bfrlist (stack$a-bindings stack)))))
      :hints(("Goal" :in-theory (enable stack$a-bindings
-                                       major-stack-bfrlist
                                        major-frame-bfrlist)
+             :expand ((major-stack-bfrlist stack))
              :do-not-induct t))))
 
 (local
@@ -2321,31 +2583,19 @@
                     (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
            :do-not-induct t))))
 
-(local
-   (defthm gl-objectlist-bfrlist-of-stack$a-scratch
-     (implies (not (member v (major-stack-bfrlist stack)))
-              (not (member v (gl-objectlist-bfrlist (stack$a-scratch stack)))))
-     :hints(("Goal" :in-theory (enable stack$a-scratch
-                                       major-stack-bfrlist
-                                       major-frame-bfrlist
-                                       minor-stack-bfrlist
-                                       minor-frame-bfrlist)
-             :expand ((major-stack-bfrlist stack)
-                      (minor-stack-bfrlist (major-frame->minor-stack (car stack))) )
-             :do-not-induct t))))
 
 (local
-   (defthm bfrlist-of-stack$a-bool-scratch
+ (defthm scratchobj->bfrlist-of-stack$a-top-scratch
      (implies (not (member v (major-stack-bfrlist stack)))
-              (not (member v (stack$a-bool-scratch stack))))
-     :hints(("Goal" :in-theory (enable stack$a-bool-scratch
-                                       major-stack-bfrlist
+              (not (member v (scratchobj->bfrlist (stack$a-top-scratch stack)))))
+     :hints(("Goal" :in-theory (enable stack$a-top-scratch
                                        major-frame-bfrlist
-                                       minor-stack-bfrlist
                                        minor-frame-bfrlist)
              :expand ((major-stack-bfrlist stack)
-                      (minor-stack-bfrlist (major-frame->minor-stack (car stack))) )
+                      (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
              :do-not-induct t))))
+
+
 
 (local
  (defthm major-stack-bfrlist-of-stack$a-set-debug
@@ -2414,26 +2664,6 @@
                   (bfr-p (car x)))
          :hints(("Goal" :in-theory (enable default-car bfr-listp)))))
 
-(local (defthm bfr-listp-of-bool-scratch-when-stack-ok
-         (implies (bfr-listp (major-stack-bfrlist stack))
-                  (bfr-listp (stack$a-bool-scratch stack)))
-         :hints(("Goal" :in-theory (enable stack$a-bool-scratch)
-                 :expand ((major-stack-bfrlist stack)
-                          (major-frame-bfrlist (car stack))
-                          (minor-stack-bfrlist (major-frame->minor-stack (car stack)))
-                          (minor-frame-bfrlist (car (major-frame->minor-stack (car stack)))))
-                 :do-not-induct t))))
-
-(local (defthm bfr-listp-bfrlist-of-scratch-when-stack-ok
-         (implies (bfr-listp (major-stack-bfrlist stack))
-                  (bfr-listp (gl-objectlist-bfrlist (stack$a-scratch stack))))
-         :hints(("Goal" :in-theory (enable stack$a-scratch
-                                           major-frame-bfrlist
-                                           minor-frame-bfrlist)
-                 :expand ((major-stack-bfrlist stack)
-                          (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
-                 :do-not-induct t))))
-
 
 ;; (local (in-theory (disable bfr-listp-of-gl-objectlist-bfrlist
 ;;                            bfr-listp-of-gl-object-bfrlist)))
@@ -2459,13 +2689,7 @@
 
 (local (in-theory (disable member-equal)))
 
-(local (defun find-flag-is-hyp (clause)
-         (if (atom clause)
-             nil
-           (let ((lit (car clause)))
-             (case-match lit
-               (('not ('acl2::flag-is ('quote val))) val)
-               (& (find-flag-is-hyp (cdr clause))))))))
+
 
 (encapsulate nil
   (local (defthm pseudo-var-listp-when-nonnil-symbol-listp
@@ -2486,7 +2710,81 @@
   :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist gl-object-alist-bfrlist pairlis$
                                     pseudo-var-list-p len))))
 
-(local (in-theory (enable stack-peek-scratch)))
+
+(defcong major-stack-scratch-isomorphic
+  scratchobj-isomorphic
+  (stack$a-top-scratch stack) 1
+  :hints(("Goal" :in-theory (enable stack$a-top-scratch))))
+
+(defthm stack$a-top-scratch-of-stack$a-push-scratch
+  (equal (stack$a-top-scratch (stack$a-push-scratch obj stack))
+         (scratchobj-fix obj))
+  :hints(("Goal" :in-theory (enable stack$a-push-scratch stack$a-top-scratch))))
+
+(local (defthm bfr-p-of-scratchobj-bfr->val
+         (implies (double-rewrite (scratchobj-case x :bfr))
+                  (equal (bfr-p (scratchobj-bfr->val x))
+                         (bfr-listp (scratchobj->bfrlist x))))
+         :hints(("Goal" :in-theory (enable scratchobj->bfrlist)))))
+
+
+(local
+ (encapsulate nil
+   
+   (local (include-book "scratchobj"))
+
+   (make-event
+    (cons 'progn
+          (acl2::template-proj
+           '(defthm bfrlist-of-scratchobj-<kind>->val-double-rewrite
+              (implies (double-rewrite (scratchobj-case x :<kind>))
+                       (equal (<prefix>-bfrlist (scratchobj-<kind>->val x))
+                              (scratchobj->bfrlist x))))
+           (scratchobj-tmplsubsts (acl2::remove-assoc
+                                   :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*))))))))
+
+
+
+
+(defcong interp-st-scratch-isomorphic interp-st-scratch-isomorphic
+  (update-interp-st->reclimit reclimit interp-st) 2
+  :hints(("Goal" :in-theory (enable interp-st-scratch-isomorphic))))
+
+(Defcong major-stack-scratch-isomorphic major-stack-scratch-isomorphic
+  (stack$a-push-scratch obj stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-push-scratch))))
+
+(Defcong major-stack-scratch-isomorphic major-stack-scratch-isomorphic
+  (stack$a-pop-scratch stack) 1
+  :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+(defthm major-stack-scratch-isomorphic-of-gl-primitive-fncall-double
+    (interp-st-scratch-isomorphic
+     (mv-nth 2 (gl-primitive-fncall fn args dont interp-st state))
+     (Double-rewrite interp-st))
+    :hints(("Goal" :in-theory (enable gl-primitive-fncall
+                                      gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive))))
+
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+  (std::defret-mutual len-of-gl-interp-arglist
+    (defret len-of-gl-interp-arglist
+      (implies (not err)
+               (equal (len arg-objs) (len args)))
+      :fn gl-interp-arglist)
+    :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
+    :skip-others t))
+
+(local (in-theory (disable BFR-LISTP$-WHEN-SUBSETP-EQUAL
+                           acl2::subsetp-append1
+                           acl2::subsetp-of-cons
+                           acl2::subsetp-trans2)))
 
 (progn
   (with-output
@@ -2500,12 +2798,15 @@
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
       :return-concls ((xbfr                        (interp-st-bfr-p xbfr new-interp-st))
                       ((gl-object-p x)             (interp-st-bfr-listp (gl-object-bfrlist x) new-interp-st))
+                      ((gl-objectlist-p x)         (interp-st-bfr-listp (gl-objectlist-bfrlist x) new-interp-st))
                       (new-interp-st               (interp-st-bfrs-ok new-interp-st)))
       :rules ((t (:add-keyword :hints ('(:do-not-induct t)
                                        (let ((flag (find-flag-is-hyp clause)))
                                          (and flag
                                               (prog2$ (cw "flag: ~x0~%" flag)
-                                                      '(:no-op t))))))))
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
 
 
