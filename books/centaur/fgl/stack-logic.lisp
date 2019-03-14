@@ -243,6 +243,13 @@
   :returns (obj scratchobj-p)
   (scratchobj-fix (car (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
 
+(define stack$a-nth-scratch ((n natp)
+                             (x major-stack-p))
+  :guard (< n (stack$a-scratch-len x))
+  :guard-hints (("goal" :in-theory (enable stack$a-scratch-len)))
+  :returns (obj scratchobj-p)
+  (scratchobj-fix (nth n (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
+
 
 (define stack$a-pop-scratch ((x major-stack-p))
   :guard (< 0 (stack$a-scratch-len x))
@@ -256,6 +263,33 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
+(define stack$a-pop-multi-scratch ((n natp)
+                                   (x major-stack-p))
+  :guard (< n (stack$a-scratch-len x))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :scratch
+                                                                         (nthcdr n nframe.scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+
+(define stack$a-push-scratch ((obj scratchobj-p)
+                              (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack))) 
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :scratch (cons
+                                                                                   obj
+                                                                                   nframe.scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
 
 (local
  (progn
@@ -263,15 +297,8 @@
      '(progn (define stack$a-push-scratch-<kind> ((obj <pred>)
                                                   (x major-stack-p))
                :returns (stack major-stack-p)
-               (b* (((major-frame jframe) (car x))
-                    ((minor-frame nframe) (car jframe.minor-stack))) 
-                 (major-stack-fix (cons (change-major-frame jframe :minor-stack
-                                                            (cons (change-minor-frame nframe
-                                                                                      :scratch (cons
-                                                                                                (scratchobj-<kind> obj)
-                                                                                                nframe.scratch))
-                                                                  (cdr jframe.minor-stack)))
-                                        (cdr x)))))
+               :enabled t
+               (stack$a-push-scratch (scratchobj-<kind> obj) x))
 
              (define stack$a-top-scratch-<kind> ((x major-stack-p))
                :guard (and (< 0 (stack$a-scratch-len x))
@@ -279,7 +306,18 @@
                :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
                                                         stack$a-top-scratch)))
                :returns (obj <pred>)
-               (scratchobj-<kind>->val (car (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
+               :enabled t
+               (scratchobj-<kind>->val (stack$a-top-scratch x)))
+
+             (define stack$a-nth-scratch-<kind> ((n natp)
+                                                 (x major-stack-p))
+               :guard (and (< n (stack$a-scratch-len x))
+                           (scratchobj-case (stack$a-nth-scratch n x) :<kind>))
+               :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
+                                                        stack$a-nth-scratch)))
+               :returns (obj <pred>)
+               :enabled t
+               (scratchobj-<kind>->val (stack$a-nth-scratch n x)))
 
              (define stack$a-pop-scratch-<kind> ((x major-stack-p))
                :guard (and (< 0 (stack$a-scratch-len x))
@@ -345,3 +383,152 @@
 
 
 
+
+
+
+
+
+;; BOZO Unfortunately scratchobj-bfrlist is the constructor for the bfrlist
+;; kind of scratchobj so we use an unconventional name.
+(define scratchobj->bfrlist ((x scratchobj-p))
+  :returns (bfrs)
+  (scratchobj-case x
+    :gl-obj (gl-object-bfrlist x.val)
+    :gl-objlist (gl-objectlist-bfrlist x.val)
+    :bfr (list x.val)
+    :bfrlist x.val
+    :cinst (constraint-instance-bfrlist x.val)
+    :cinstlist (constraint-instancelist-bfrlist x.val))
+  ///
+  (local (include-book "scratchobj"))
+  (make-event
+   `(defthm scratchobj->bfrlist-of-make-scratchobjs
+      (and ,@(acl2::template-proj
+              '(equal (scratchobj->bfrlist (scratchobj-<kind> x))
+                      (<prefix>-bfrlist x))
+              (scratchobj-tmplsubsts (acl2::remove-assoc
+                                      :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*))))
+           (equal (scratchobj->bfrlist (scratchobj-bfr x)) (list x))
+           (equal (scratchobj->bfrlist (scratchobj-bfrlist x)) (true-list-fix x)))))
+
+  (deffixequiv scratchobj->bfrlist)
+
+  (make-event
+   (cons 'progn
+         (acl2::template-proj
+          '(defthm bfrlist-of-scratchobj-<kind>->val
+             (implies (scratchobj-case x :<kind>)
+                      (equal (<prefix>-bfrlist (scratchobj-<kind>->val x))
+                             (scratchobj->bfrlist x))))
+          (scratchobj-tmplsubsts (acl2::remove-assoc
+                                  :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*))))))
+
+  (defthm bfrlist-of-scratchobj-bfr->val
+    (implies (and (not (member v (scratchobj->bfrlist x)))
+                  (scratchobj-case x :bfr))
+             (not (equal v (scratchobj-bfr->val x)))))
+
+  (defthm bfrlist-of-scratchobj-bfrlist->val
+    (implies (and (not (member v (scratchobj->bfrlist x)))
+                  (scratchobj-case x :bfrlist))
+             (not (member v (scratchobj-bfrlist->val x))))))
+
+  
+
+(define scratchlist-bfrlist ((x scratchlist-p))
+  :returns (bfrs)
+  (if (atom x)
+      nil
+    (append (scratchobj->bfrlist (car x))
+            (scratchlist-bfrlist (cdr x))))
+  ///
+  (defthm scratchlist-bfrlist-of-cons
+    (equal (scratchlist-bfrlist (cons a b))
+           (append (scratchobj->bfrlist a)
+                   (scratchlist-bfrlist b))))
+
+  (defthm scratchobj->bfrlist-of-car
+    (implies (not (member v (scratchlist-bfrlist x)))
+             (not (member v (scratchobj->bfrlist (car x))))))
+
+  (defthm scratchlist-bfrlist-of-car
+    (implies (not (member v (scratchlist-bfrlist x)))
+             (not (member v (scratchlist-bfrlist (cdr x)))))))
+
+(define minor-frame-bfrlist ((x minor-frame-p))
+  :returns (bfrs)
+  (b* (((minor-frame x)))
+    (append (gl-object-alist-bfrlist x.bindings)
+            (scratchlist-bfrlist x.scratch)))
+  ///
+  (defthm minor-frame-bfrlist-of-minor-frame
+    (equal (minor-frame-bfrlist (minor-frame bindings scratch debug))
+           (append (gl-object-alist-bfrlist bindings)
+                   (scratchlist-bfrlist scratch))))
+
+  (defthm bfrlist-of-minor-frame->bindings
+    (implies (not (member v (minor-frame-bfrlist x)))
+             (not (member v (gl-object-alist-bfrlist (minor-frame->bindings x))))))
+
+  (defthm bfrlist-of-minor-frame->scratch
+    (implies (not (member v (minor-frame-bfrlist x)))
+             (not (member v (scratchlist-bfrlist (minor-frame->scratch x)))))))
+
+(define minor-stack-bfrlist ((x minor-stack-p))
+  :returns (bfrs)
+  :ruler-extenders (binary-append)
+  (append (minor-frame-bfrlist (car x))
+          (and (consp (cdr x))
+               (minor-stack-bfrlist (cdr x))))
+  ///
+  (defthm minor-stack-bfrlist-of-cons
+    (equal (minor-stack-bfrlist (cons a b))
+           (append (minor-frame-bfrlist a)
+                   (minor-stack-bfrlist b))))
+
+  (defthm minor-frame-bfrlist-of-car
+    (implies (not (member v (minor-stack-bfrlist x)))
+             (not (member v (minor-frame-bfrlist (car x))))))
+
+  (defthm minor-stack-bfrlist-of-car
+    (implies (not (member v (minor-stack-bfrlist x)))
+             (not (member v (minor-stack-bfrlist (cdr x)))))))
+
+(define major-frame-bfrlist ((x major-frame-p))
+  :returns (bfrs)
+  (b* (((major-frame x)))
+    (append (gl-object-alist-bfrlist x.bindings)
+            (minor-stack-bfrlist x.minor-stack)))
+  ///
+  (defthm major-frame-bfrlist-of-major-frame
+    (equal (major-frame-bfrlist (major-frame bindings debug minor-stack))
+           (append (gl-object-alist-bfrlist bindings)
+                   (minor-stack-bfrlist minor-stack))))
+
+  (defthm bfrlist-of-major-frame->bindings
+    (implies (not (member v (major-frame-bfrlist x)))
+             (not (member v (gl-object-alist-bfrlist (major-frame->bindings x))))))
+
+  (defthm bfrlist-of-major-frame->minor-stack
+    (implies (not (member v (major-frame-bfrlist x)))
+             (not (member v (minor-stack-bfrlist (major-frame->minor-stack x)))))))
+
+(define major-stack-bfrlist ((x major-stack-p))
+  :returns (bfrs)
+  :ruler-extenders (binary-append)
+  (append (major-frame-bfrlist (car x))
+          (and (consp (cdr x))
+               (major-stack-bfrlist (cdr x))))
+  ///
+  (defthm major-stack-bfrlist-of-cons
+    (equal (major-stack-bfrlist (cons a b))
+           (append (major-frame-bfrlist a)
+                   (major-stack-bfrlist b))))
+
+  (defthm major-frame-bfrlist-of-car
+    (implies (not (member v (major-stack-bfrlist x)))
+             (not (member v (major-frame-bfrlist (car x))))))
+
+  (defthm major-stack-bfrlist-of-car
+    (implies (not (member v (major-stack-bfrlist x)))
+             (not (member v (major-stack-bfrlist (cdr x)))))))

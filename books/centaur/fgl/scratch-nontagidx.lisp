@@ -559,7 +559,8 @@
 (define scratch-nontagidx-offset ((x scratch-nontagidx-p)
                                   (offset integerp))
   :returns (new-x scratch-nontagidx-p
-                  :hints(("Goal" :in-theory (disable ash-of-+))))
+                  :hints(("Goal" :in-theory (disable ash-of-+)))
+                  :rule-classes (:rewrite (:type-prescription :typed-term new-x)))
   :guard (<= (- offset) (scratch-nontagidx-to-index x))
   :guard-hints (("goal" :in-theory (enable scratch-nontagidx-to-index))
                 (and stable-under-simplificationp

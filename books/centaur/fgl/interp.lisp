@@ -41,6 +41,7 @@
 (include-book "std/util/defret-mutual-generate" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 
+(local (std::add-default-post-define-hook :fix))
 
 (def-updater-independence-thm bfr-listp$-of-interp-st->logicman-extension
   (implies (and (logicman-extension-p (interp-st->logicman new)
@@ -61,11 +62,9 @@
 ;;            (logicman-extension-p (interp-st->logicman new) prev)))
 
 
+
 (define interp-st-bfrs-ok (interp-st)
-  (b* ((constraint-db (interp-st->constraint-db interp-st))
-       (constraint-insts (interp-st->constraint-inst-stack interp-st))
-       (thenvals (interp-st->thenval-stack interp-st))
-       (elsevals (interp-st->elseval-stack interp-st)))
+  (b* ((constraint-db (interp-st->constraint-db interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (bvar-db (interp-st->bvar-db interp-st))
                 (stack (interp-st->stack interp-st))
@@ -75,9 +74,6 @@
                (b* ((bfrstate (logicman->bfrstate)))
                  (and (bfr-listp (major-stack-bfrlist (stack-extract stack)))
                       (bfr-listp (constraint-db-bfrlist constraint-db))
-                      (bfr-listp (constraint-instancelist-bfrlist constraint-insts))
-                      (bfr-listp (gl-objectlist-bfrlist thenvals))
-                      (bfr-listp (gl-objectlist-bfrlist elsevals))
                       (ec-call (logicman-pathcond-p-fn pathcond logicman))
                       (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
                       (not (consp (bvar-db-bfrlist bvar-db)))
@@ -93,13 +89,6 @@
                     (logicman-pathcond-p (interp-st->pathcond interp-st))
                     (logicman-pathcond-p (interp-st->constraint interp-st))
                     (not (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
-                    (bfr-listp (gl-objectlist-bfrlist (interp-st->thenval-stack interp-st)))
-                    (bfr-listp (gl-objectlist-bfrlist (interp-st->elseval-stack interp-st)))
-                    (implies (gl-objectlist-p (interp-st->thenval-stack interp-st))
-                             (gl-bfr-objectlist-p (interp-st->thenval-stack interp-st)))
-                    (implies (gl-objectlist-p (interp-st->elseval-stack interp-st))
-                             (gl-bfr-objectlist-p (interp-st->elseval-stack interp-st)))
-                    (bfr-listp (constraint-instancelist-bfrlist (interp-st->constraint-inst-stack interp-st)))
                     (interp-st-nvars-ok interp-st)
                     (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
                                           (interp-st->logicman interp-st)))))
@@ -117,15 +106,7 @@
                   (equal (interp-st-get :constraint new)
                          (interp-st-get :constraint old))
                   (equal (interp-st-get :bvar-db new)
-                         (interp-st-get :bvar-db old))
-                  (equal (interp-st-get :constraint new)
-                         (interp-st-get :constraint old))
-                  (equal (interp-st-get :constraint-inst-stack new)
-                         (interp-st-get :constraint-inst-stack old))
-                  (equal (interp-st-get :thenval-stack new)
-                         (interp-st-get :thenval-stack old))
-                  (equal (interp-st-get :elseval-stack new)
-                         (interp-st-get :elseval-stack old)))
+                         (interp-st-get :bvar-db old)))
              (equal (interp-st-bfrs-ok new)
                     (interp-st-bfrs-ok old))))
 
@@ -163,24 +144,6 @@
                   (logicman-check-nvars (next-bvar new-bvar-db) (interp-st->logicman interp-st)))
              (interp-st-bfrs-ok (update-interp-st->bvar-db new-bvar-db interp-st))))
 
-  (defthm interp-st-bfrs-ok-of-update-constraint-inst-stack
-    (implies (And (interp-st-bfrs-ok interp-st)
-                  (bfr-listp (constraint-instancelist-bfrlist new-constraint-stack)
-                             (logicman->bfrstate (interp-st->logicman interp-st))))
-             (interp-st-bfrs-ok (update-interp-st->constraint-inst-stack new-constraint-stack interp-st))))
-
-  (defthm interp-st-bfrs-ok-of-update-thenval-stack
-    (implies (And (interp-st-bfrs-ok interp-st)
-                  (bfr-listp (gl-objectlist-bfrlist new-thenval-stack)
-                             (logicman->bfrstate (interp-st->logicman interp-st))))
-             (interp-st-bfrs-ok (update-interp-st->thenval-stack new-thenval-stack interp-st))))
-
-  (defthm interp-st-bfrs-ok-of-update-elseval-stack
-    (implies (And (interp-st-bfrs-ok interp-st)
-                  (bfr-listp (gl-objectlist-bfrlist new-elseval-stack)
-                             (logicman->bfrstate (interp-st->logicman interp-st))))
-             (interp-st-bfrs-ok (update-interp-st->elseval-stack new-elseval-stack interp-st))))
-
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar
     (implies (and (interp-st-bfrs-ok interp-st)
                   (not (consp (gl-object-bfrlist x))))
@@ -199,80 +162,6 @@
 
 )
 
-(local (define bfr-listp-witness (x (bfrstate bfrstate-p))
-         (if (atom x)
-             'not-a-bfr
-           (if (bfr-p (car x))
-               (bfr-listp-witness (cdr x) bfrstate)
-             (car x)))
-         ///
-         (local (defthm not-a-bfr-is-not-a-bfr
-                  (not (bfr-p 'not-a-bfr))
-                  :hints(("Goal" :in-theory (enable bfr-p)))))
-
-         (defthm bfr-listp-witness-not-bfr-p
-           (not (bfr-p (bfr-listp-witness x bfrstate) bfrstate)))
-
-         (defthmd bfr-listp-when-not-member-witness
-           (implies (not (member (bfr-listp-witness x bfrstate) x))
-                    (bfr-listp x bfrstate))
-           :hints(("Goal" :in-theory (enable bfr-listp))))
-         
-         (local (defthm member-bfr-list-when-not-bfr-p
-                  (implies (and (bfr-listp x bfrstate)
-                                (not (bfr-p v bfrstate)))
-                           (not (member v x)))))
-
-         (defthm not-member-bfr-listp-witness-when-bfr-listp
-           (implies (bfr-listp x bfrstate)
-                    (not (member (bfr-listp-witness y bfrstate) x))))))
-
-
-(defsection bfrlist-of-gl-object-accessors
-  (local (in-theory (enable* gl-object-bfrlist-when-thms)))
-
-  (defthm bfrlist-of-g-ite-accessors
-    (implies (and (gl-object-case x :g-ite)
-                  (not (member v (gl-object-bfrlist x))))
-             (b* (((g-ite x)))
-               (and (not (member v (gl-object-bfrlist x.test)))
-                    (not (member v (gl-object-bfrlist x.then)))
-                    (not (member v (gl-object-bfrlist x.else)))))))
-
-  (defthm bfrlist-of-g-boolean-accessor
-    (implies (and (gl-object-case x :g-boolean)
-                  (not (member v (gl-object-bfrlist x))))
-             (b* (((g-boolean x)))
-               (not (equal v x.bool)))))
-
-  (defthm bfrlist-of-g-integer-accessor
-    (implies (and (gl-object-case x :g-integer)
-                  (not (member v (gl-object-bfrlist x))))
-             (b* (((g-integer x)))
-               (not (member v x.bits)))))
-
-  (defthm bfrlist-of-g-apply-accessor
-    (implies (and (gl-object-case x :g-apply)
-                  (not (member v (gl-object-bfrlist x))))
-             (b* (((g-apply x)))
-               (not (member v (gl-objectlist-bfrlist x.args))))))
-
-  (defthm bfrlist-of-g-cons-accessor
-    (implies (and (gl-object-case x :g-cons)
-                  (not (member v (gl-object-bfrlist x))))
-             (b* (((g-cons x)))
-               (and (not (member v (gl-object-bfrlist x.car)))
-                    (not (member v (gl-object-bfrlist x.cdr)))))))
-
-  (defthm member-gl-objectlist-bfrlist-of-cdr
-    (implies (not (member v (gl-objectlist-bfrlist x)))
-             (not (member v (gl-objectlist-bfrlist (cdr x)))))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
-
-  (defthm member-gl-object-bfrlist-of-car
-    (implies (not (member v (gl-objectlist-bfrlist x)))
-             (not (member v (gl-object-bfrlist (car x)))))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist)))))
 
 
 
@@ -389,7 +278,7 @@
                   (not (g-concretelist-p args))))
         (mv nil nil))
        ((mv err ans)
-        (magic-ev-fncall fn (g-concretelist-vals args) state t nil)))
+        (magic-ev-fncall (pseudo-fn-fix fn) (g-concretelist-vals args) state t nil)))
     (mv (not err) (g-concrete ans)))
   ///
   (defret gl-object-bfrlist-of-<fn>
@@ -410,7 +299,7 @@
 
 (define gl-interp-time$-arg ((arg gl-object-p) (x pseudo-termp))
   (b* ((arg (gl-object-case arg :g-concrete (and (true-listp arg.val) arg.val) :otherwise nil))
-       (term-descrip (pseudo-term-case x :fncall x.fn :otherwise x)))
+       (term-descrip (pseudo-term-case x :fncall x.fn :otherwise (pseudo-term-fix x))))
     (if arg
         (b* ((msg (nth 3 arg)))
           (if msg
@@ -493,7 +382,9 @@
   (b* (((mv synp-ok synp-term untrans) (match-syntax-bind-synp synp-arg))
        ((unless (and synp-ok (pseudo-term-case x :var)))
         ;; We could go ahead and simulate x anyway but this does seem like an error.
-        (gl-interp-error :msg (gl-msg "Bad syntax-bind form: args ~x0, ~x1." synp-arg x)))
+        (gl-interp-error :msg (gl-msg "Bad syntax-bind form: args ~x0, ~x1."
+                                      (pseudo-term-fix synp-arg)
+                                      (pseudo-term-fix x))))
        (varname (acl2::pseudo-term-var->name x))
        (bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
@@ -523,7 +414,7 @@
                          (not (member v (gl-object-bfrlist val))))
                     (not (member v (major-stack-bfrlist (stack$a-add-binding var val stack)))))
            :hints (("goal" :expand ((major-stack-bfrlist stack))
-                    :in-theory (enable major-frame-bfrlist
+                    :in-theory (enable stack$a-add-binding major-frame-bfrlist
                                        major-stack-bfrlist)))))
 
   (local (in-theory (disable stack$a-add-binding)))
@@ -543,7 +434,7 @@
 
 (define gl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
   :returns (new-contexts equiv-contextsp)
-  (and (equal contexts '(iff)) '(iff)))
+  (and (equal (equiv-contexts-fix contexts) '(iff)) '(iff)))
 
 ;; (define interp-st-checkpoint-p (chp interp-st)
 ;;   :enabled t
@@ -679,8 +570,10 @@
                              (and (gl-object-alist-p x)
                                   (bfr-listp (gl-object-alist-bfrlist x))))
                       :hints(("Goal" :in-theory (enable gl-bfr-object-alist-p-implies-gl-object-alist-p))))))
+  :hooks ((:fix :omit (synp-type)))
   (b* ((bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
+       (form (pseudo-term-fix form))
        ((mv ok val) (acl2::magic-ev form bindings state t t))
        ((unless ok)
         (gl-interp-error
@@ -1035,22 +928,22 @@
 
 
 
-(define glcp-unify-term/gobj-list-prefix ((pat pseudo-term-listp)
-                                        (x gl-objectlist-p)
-                                        (alist gl-object-alist-p))
-  ;; Same as glcp-unify-term/gobj-list but doesn't complain about extra or missing elements of x.
-  ;; Equivalent to (glcp-unify-term/gobj-list pat (take (len pat) x) alist).
-  (b* (((when (atom pat)) (mv t (gl-object-alist-fix alist)))
-       ((mv ok alist) (glcp-unify-term/gobj (car pat) (car x) alist))
-       ((unless ok) (mv nil nil)))
-    (glcp-unify-term/gobj-list-prefix (cdr pat) (cdr x) alist))
-  ///
-  (defthm glcp-unify-term/gobj-list-prefix-elim
-    (equal (glcp-unify-term/gobj-list-prefix pat x alist)
-           (glcp-unify-term/gobj-list pat (take (len pat) x) alist))
-    :hints(("Goal" :induct (glcp-unify-term/gobj-list-prefix pat x alist)
-            :expand ((:free (x) (glcp-unify-term/gobj-list pat x alist))
-                     (take (len pat) x))))))
+;; (define glcp-unify-term/gobj-list-prefix ((pat pseudo-term-listp)
+;;                                         (x gl-objectlist-p)
+;;                                         (alist gl-object-alist-p))
+;;   ;; Same as glcp-unify-term/gobj-list but doesn't complain about extra or missing elements of x.
+;;   ;; Equivalent to (glcp-unify-term/gobj-list pat (take (len pat) x) alist).
+;;   (b* (((when (atom pat)) (mv t (gl-object-alist-fix alist)))
+;;        ((mv ok alist) (glcp-unify-term/gobj (car pat) (car x) alist))
+;;        ((unless ok) (mv nil nil)))
+;;     (glcp-unify-term/gobj-list-prefix (cdr pat) (cdr x) alist))
+;;   ///
+;;   (defthm glcp-unify-term/gobj-list-prefix-elim
+;;     (equal (glcp-unify-term/gobj-list-prefix pat x alist)
+;;            (glcp-unify-term/gobj-list pat (take (len pat) x) alist))
+;;     :hints(("Goal" :induct (glcp-unify-term/gobj-list-prefix pat x alist)
+;;             :expand ((:free (x) (glcp-unify-term/gobj-list pat x alist))
+;;                      (take (len pat) x))))))
 
 
 
@@ -1154,34 +1047,23 @@
                 (if (zp n) a (mv-nth (1- n) b)))
          :hints(("Goal" :in-theory (enable mv-nth)))))
 
-(defthm gl-object-alist-p-of-stack$a-bindings
-  (gl-object-alist-p (stack$a-bindings stack)))
 
-(defthm gl-object-alist-p-of-stack$a-minor-bindings
-  (gl-object-alist-p (stack$a-minor-bindings stack)))
+(local (defthm len-cdr-less-when-consp
+         (implies (consp x)
+                  (< (len (cdr x)) (len x)))
+         :rule-classes :linear))
 
-(defthm gl-object-alist-p-of-stack$a-scratch
-  (gl-objectlist-p (stack$a-scratch stack)))
+(local (defthm stack$a-open-nth-scratch
+         (implies (syntaxp (quotep n))
+                  (equal (stack$a-nth-scratch n stack)
+                         (if (zp n)
+                             (stack$a-top-scratch stack)
+                           (stack$a-nth-scratch (1- n)
+                                                (stack$a-pop-scratch stack)))))
+         :hints(("Goal" :in-theory (enable stack$a-top-scratch stack$a-pop-scratch stack$a-nth-scratch)))))
+
 
 (local (in-theory (disable (tau-system) len default-car default-cdr
-                           STACK$A-PUSH-BOOL-SCRATCH
-                           STACK$A-POP-SCRATCH
-                           STACK$A-PUSH-SCRATCH
-                           STACK$A-POP-BOOL-SCRATCH
-                           STACK$A-SET-BINDINGS
-                           STACK$A-SET-DEBUG
-                           STACK$A-SET-MINOR-DEBUG
-                           STACK$A-SET-MINOR-BINDINGS
-                           STACK$A-POP-FRAME
-                           STACK$A-PUSH-FRAME
-                           STACK$A-PUSH-MINOR-FRAME
-                           STACK$A-BOOL-SCRATCH
-                           STACK$A-POP-MINOR-FRAME
-                           STACK$A-ADD-MINOR-BINDINGS
-                           STACK$A-MINOR-BINDINGS
-                           STACK$A-SCRATCH
-                           STACK$A-BINDINGS
-                           stack$a-pushlist-scratch
                            pseudo-termp
                            pseudo-term-listp
                            fgetprop
@@ -1293,21 +1175,15 @@
                                        (second x.args)
                                        (third x.args)
                                        interp-st state))
-               
-               (scratch (interp-st-scratch interp-st))
+
                ((interp-st-bind
                  (equiv-contexts nil))
-                ((gl-interp-recursive-call err interp-st state)
-                 ;; pushes the results from the args onto the scratch frame
+                ((gl-interp-recursive-call err args interp-st state)
                  (gl-interp-arglist x.args interp-st state)))
 
                ((when err)
-                ;; pop off any arguments that were added to scratch before the error
-                (b* ((interp-st (interp-st-pop-scratch (- (len (interp-st-scratch interp-st))
-                                                          (len scratch))
-                                                       interp-st)))
-                  (mv err nil interp-st state))))
-            (gl-interp-fncall x.fn (len x.args) interp-st state))))
+                (mv err nil interp-st state)))
+            (gl-interp-fncall x.fn args interp-st state))))
 
       (define gl-interp-arglist ((args pseudo-term-listp)
                                  (interp-st interp-st-bfrs-ok)
@@ -1315,14 +1191,18 @@
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020 (pseudo-term-list-binding-count args) 20)
         :returns (mv err
+                     (args gl-objectlist-p)
                      new-interp-st
                      new-state)
-        (b* (((when (atom args)) (mv nil interp-st state))
+        (b* (((when (atom args)) (mv nil nil interp-st state))
              ((gl-interp-recursive-call err arg1 interp-st state)
               (gl-interp-term-equivs (car args) interp-st state))
-             ((when err) (mv err interp-st state))
-             (interp-st (interp-st-push-scratch arg1 interp-st)))
-          (gl-interp-arglist (cdr args) interp-st state)))
+             ((when err) (mv err nil interp-st state))
+             (interp-st (interp-st-push-scratch-gl-obj arg1 interp-st))
+             ((mv err rest interp-st state)
+              (gl-interp-arglist (cdr args) interp-st state))
+             ((mv arg interp-st) (interp-st-pop-scratch-gl-obj interp-st)))
+          (mv err (cons arg rest) interp-st state)))
 
       (define gl-interp-bindinglist ((bindings cmr::bindinglist-p)
                                      (interp-st interp-st-bfrs-ok)
@@ -1336,19 +1216,17 @@
                      new-state)
         (b* (((when (atom bindings)) (mv nil interp-st state))
              ((cmr::binding x1) (car bindings))
-             ((gl-interp-recursive-call err interp-st state)
+             ((gl-interp-recursive-call err args interp-st state)
               (gl-interp-arglist x1.args interp-st state))
              ((when err) (mv err interp-st state))
-             (argslen (len x1.args))
-             (args (interp-st-peek-scratch argslen interp-st))
-             (interp-st (interp-st-pop-scratch argslen interp-st))
              (interp-st (interp-st-add-minor-bindings (pairlis$ x1.formals args) interp-st)))
           (gl-interp-bindinglist (cdr bindings) interp-st state)))
       
       (define gl-interp-fncall ((fn pseudo-fnsym-p)
-                                (arity natp)
+                                (args gl-objectlist-p)
                                 (interp-st interp-st-bfrs-ok)
                                 state)
+        :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
         :measure (list (nfix (interp-st->reclimit interp-st))
                        0 0 1)
         :returns (mv err
@@ -1358,8 +1236,6 @@
         (b* (((gl-function-mode fn-mode)
               (gl-function-mode-fix!
                (cdr (hons-assoc-equal fn (table-alist 'gl-fn-modes (w state))))))
-             (args (interp-st-peek-scratch arity interp-st))
-             (interp-st (interp-st-pop-scratch arity interp-st))
              ((mv successp ans)
               (fncall-try-concrete-eval fn args fn-mode.dont-concrete-exec state))
              ((when successp)
@@ -1368,35 +1244,33 @@
              ((when (zp reclimit))
               (gl-interp-error
                :msg (gl-msg "The recursion limit ran out.")))
-             (interp-st (interp-st-pushlist-scratch args interp-st))
+             (interp-st (interp-st-push-scratch-gl-objlist args interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((gl-interp-recursive-call err successp ans interp-st state)
-               (gl-rewrite-fncall fn arity fn-mode.dont-rewrite interp-st state)))
+               (gl-rewrite-fncall fn args fn-mode.dont-rewrite interp-st state)))
              ((when err)
-              (b* ((interp-st (interp-st-pop-scratch arity interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
              ((when successp)
-              (b* ((interp-st (interp-st-pop-scratch arity interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st)))
                 (mv nil ans interp-st state)))
-             (args (take arity (interp-st-scratch interp-st)))
+             (args (interp-st-top-scratch-gl-objlist interp-st))
              ((mv successp ans interp-st state)
               (gl-primitive-fncall fn args fn-mode.dont-primitive-exec interp-st state))
              ((when successp)
-              (b* ((interp-st (interp-st-pop-scratch arity interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st)))
                 (mv nil ans interp-st state)))
-             (args (take arity (interp-st-scratch interp-st)))
+             (args (interp-st-top-scratch-gl-objlist interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((mv err successp ans interp-st state)
                (gl-interp-fn-definition fn args fn-mode.dont-expand-def interp-st state)))
-             (scratch (interp-st-scratch interp-st))
-             (interp-st (interp-st-pop-scratch arity interp-st))
+             ((mv args interp-st) (interp-st-pop-scratch-gl-objlist interp-st))
              ((when err)
               (mv err nil interp-st state))
              ((when successp)
-              (mv nil ans interp-st state))
-             (args (take arity scratch)))
+              (mv nil ans interp-st state)))
           (mv nil (g-apply fn args) interp-st state)))
 
       (define gl-interp-fn-definition ((fn pseudo-fnsym-p)
@@ -1430,11 +1304,11 @@
 
 
       (define gl-rewrite-fncall ((fn pseudo-fnsym-p)
-                                 (arity natp)
+                                 (args gl-objectlist-p)
                                  (dont)
                                  (interp-st interp-st-bfrs-ok)
                                  state)
-        ;; :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
+        :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
         :measure (list (nfix (interp-st->reclimit interp-st)) 20000 0 0)
         :returns (mv err successp
                      (ans gl-object-p)
@@ -1451,14 +1325,20 @@
              ((when (zp reclimit))
               (gl-interp-error
                :msg (gl-msg "The recursion limit ran out.")
-               :nvals 2)))
-          (gl-rewrite-try-rules rules fn arity interp-st state)))
+               :nvals 2))
+             (interp-st (interp-st-push-scratch-gl-objlist args interp-st))
+             ((mv err successp ans interp-st state)
+              (gl-rewrite-try-rules rules fn interp-st state))
+             (interp-st (interp-st-pop-scratch interp-st)))
+          (mv err successp ans interp-st state)))
+          
 
       (define gl-rewrite-try-rules ((rules pseudo-rewrite-rule-listp)
                                     (fn pseudo-fnsym-p)
-                                    (arity natp)
                                     (interp-st interp-st-bfrs-ok)
                                     state)
+        :guard (and (< 0 (interp-st-scratch-len interp-st))
+                    (scratchobj-case (interp-st-top-scratch interp-st) :gl-objlist))
         ;; :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
         :measure (list (nfix (interp-st->reclimit interp-st)) 10000 (len rules) 0)
         :returns (mv err successp
@@ -1467,18 +1347,19 @@
                      new-state)
         (b* (((when (atom rules))
               (mv nil nil nil interp-st state))
+             (args (interp-st-top-scratch-gl-objlist interp-st))
              ((gl-interp-recursive-call err successp ans interp-st state)
-              (gl-rewrite-try-rule (car rules) fn arity interp-st state))
+              (gl-rewrite-try-rule (car rules) fn args interp-st state))
              ((when (or err successp))
               (mv err successp ans interp-st state)))
-          (gl-rewrite-try-rules (cdr rules) fn arity interp-st state)))
+          (gl-rewrite-try-rules (cdr rules) fn interp-st state)))
 
       (define gl-rewrite-try-rule ((rule pseudo-rewrite-rule-p)
                                    (fn pseudo-fnsym-p)
-                                   (arity natp)
+                                   (args gl-objectlist-p)
                                    (interp-st interp-st-bfrs-ok)
                                    state)
-        ;; :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
+        :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
         :measure (list (nfix (interp-st->reclimit interp-st)) 10000 0 0)
         :returns (mv err successp
                      (ans gl-object-p)
@@ -1492,7 +1373,8 @@
                                         (pseudo-termp rule.lhs)))
                              (pseudo-term-case rule.lhs
                                :fncall (and (eq rule.lhs.fn (pseudo-fnsym-fix fn))
-                                            (eql (len rule.lhs.args) (lnfix arity)))
+                                            ;; (eql (len rule.lhs.args) (len args))
+                                            )
                                :otherwise nil)))
               (gl-interp-error
                :msg (gl-msg "Malformed rewrite rule: ~x0~%" rule)
@@ -1502,9 +1384,9 @@
                           (member rule.equiv (interp-st->equiv-contexts interp-st))))
               (mv nil nil nil interp-st state))
              (rule.lhs.args (pseudo-term-call->args rule.lhs))
-             ((mv unify-ok bindings) (glcp-unify-term/gobj-list-prefix rule.lhs.args
-                                                                       (interp-st-scratch interp-st)
-                                                                       nil))
+             ((mv unify-ok bindings) (glcp-unify-term/gobj-list rule.lhs.args
+                                                                args
+                                                                nil))
              ((unless unify-ok) (mv nil nil nil interp-st state))
              ((unless (mbt (pseudo-term-listp rule.hyps)))
               (gl-interp-error
@@ -1658,27 +1540,24 @@
         (b* (((gl-interp-recursive-call err testbfr interp-st state)
               (gl-interp-test test interp-st state))
              ((when err) (mv err nil interp-st state))
-             (interp-st (interp-st-push-bool-scratch testbfr interp-st))
+             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              ((gl-interp-recursive-call err then-unreachable thenval interp-st state)
               ;; pushes val onto scratch if not unreachable
               (gl-maybe-interp testbfr then interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-bool-scratch 1 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (interp-st (interp-st-push-scratch thenval interp-st))
-             ;; note: testbool may have changed if we simplified the logicman
-             (testbfr (first (interp-st-bool-scratch interp-st)))
+             (testbfr (interp-st-top-scratch-bfr interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj thenval interp-st))
              ((gl-interp-recursive-call err else-unreachable elseval interp-st state)
               ;; pushes val onto scratch if not unreachable
               (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-scratch 1 interp-st))
-                   (interp-st (interp-st-pop-bool-scratch 1 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st))
+                   (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (thenval (first (interp-st-scratch interp-st)))
-             (testbfr (first (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-pop-scratch 1 interp-st))
-             (interp-st (interp-st-pop-bool-scratch 1 interp-st))
+             ((mv thenval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
+             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
              ((when then-unreachable)
               (if else-unreachable
                   (mv :unreachable nil interp-st state)
@@ -1707,20 +1586,17 @@
               ((gl-interp-recursive-call err testval interp-st state)
                (gl-interp-term-equivs test interp-st state)))
              ((when err) (mv err nil interp-st state))
-             (interp-st (interp-st-push-scratch testval interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj testval interp-st))
              ((gl-interp-recursive-call err testbfr interp-st state)
               (gl-interp-simplify-if-test testval interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-scratch 1 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (interp-st (interp-st-push-bool-scratch testbfr interp-st))
+             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              ((gl-interp-recursive-call err else-unreachable elseval interp-st state)
-              ;; pushes val onto scratch if not unreachable
               (gl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
-             (testval (first (interp-st-scratch interp-st)))
-             (testbfr (first (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-pop-scratch 1 interp-st))
-             (interp-st (interp-st-pop-bool-scratch 1 interp-st))
+             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv testval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
              ((when err)
               (mv err nil interp-st state))
              ((when else-unreachable)
@@ -1822,34 +1698,37 @@
         (b* (((unless (mbt (gl-object-case xobj :g-ite)))
               (gl-interp-error :msg (gl-msg "Impossible case")))
              ((g-ite xobj))
-             (interp-st (interp-st-push-scratch xobj.else interp-st))
-             (interp-st (interp-st-push-scratch xobj.then interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj xobj.else interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj xobj.then interp-st))
+             ;; scratch: xobj.then, xobj.else
              ((gl-interp-recursive-call err test-bfr interp-st state)
               (gl-interp-simplify-if-test xobj.test interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-scratch 2 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st))
+                   (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (xobj.then (car (interp-st-scratch interp-st)))
-             (interp-st (interp-st-push-bool-scratch test-bfr interp-st))
-             (interp-st (interp-st-pop-scratch 1 interp-st))
+             ((mv xobj.then interp-st) (interp-st-pop-scratch-gl-obj interp-st))
+             (interp-st (interp-st-push-scratch-bfr test-bfr interp-st))
+             ;; scratch: test-bfr, xobj.else
              ((gl-interp-recursive-call err then-unreachable then-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.then interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-bool-scratch 1 interp-st))
-                   (interp-st (interp-st-pop-scratch 1 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st))
+                   (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (test-bfr (car (interp-st-bool-scratch interp-st)))
-             (xobj.else (car (interp-st-scratch interp-st)))
-             (interp-st (interp-st-push-bool-scratch then-bfr interp-st))
-             (interp-st (interp-st-pop-scratch 1 interp-st))
+             ((mv test-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv xobj.else interp-st) (interp-st-pop-scratch-gl-obj interp-st))
+             (interp-st (interp-st-push-scratch-bfr then-bfr interp-st))
+             (interp-st (interp-st-push-scratch-bfr test-bfr interp-st))
+             ;; scratch: test-bfr, then-bfr
              ((mv err else-unreachable else-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.else interp-st state))
              ((when err)
-              (b* ((interp-st (interp-st-pop-bool-scratch 2 interp-st)))
+              (b* ((interp-st (interp-st-pop-scratch interp-st))
+                   (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             (then-bfr (car (interp-st-bool-scratch interp-st)))
-             (test-bfr (cadr (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-pop-bool-scratch 2 interp-st))
+             ((mv test-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv then-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
              ((mv err bfr interp-st)
               (gl-interp-finish-simplify-if-test-ite
                test-bfr then-bfr else-bfr then-unreachable else-unreachable interp-st)))
@@ -1953,13 +1832,12 @@
              ((mv bfr interp-st)
               (interp-st-add-term-bvar xobj interp-st state))
 
-             (interp-st (interp-st-push-bool-scratch bfr interp-st))
+             (interp-st (interp-st-push-scratch-bfr bfr interp-st))
 
              ((mv err interp-st state)
               (gl-interp-add-constraints xobj interp-st state))
 
-             (bfr (car (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-pop-bool-scratch 1 interp-st))
+             ((mv bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
 
              ((when err)
               (mv err nil interp-st state)))
@@ -1994,13 +1872,13 @@
              (reclimit (interp-st->reclimit interp-st))
              ((when (zp reclimit))
               (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 0))
-             (interp-st (update-interp-st->constraint-inst-stack
-                         (append constraint-substs (interp-st->constraint-inst-stack interp-st))
-                         interp-st))
+             ;; (interp-st (update-interp-st->constraint-inst-stack
+             ;;             (append constraint-substs (interp-st->constraint-inst-stack interp-st))
+             ;;             interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((mv err interp-st state)
-               (gl-interp-add-constraints-for-substs (len constraint-substs) interp-st state)))
+               (gl-interp-add-constraints-for-substs constraint-substs interp-st state)))
              (interp-st (stobj-let ((pathcond (interp-st->pathcond interp-st)))
                                    (pathcond)
                                    (update-pathcond-enabledp pathcond-enabledp pathcond)
@@ -2009,29 +1887,36 @@
       
 
 
-      (define gl-interp-add-constraints-for-substs ((n natp)
+      (define gl-interp-add-constraints-for-substs ((substs constraint-instancelist-p)
                                                     (interp-st interp-st-bfrs-ok)
                                                     state)
-        :guard (<= n (len (interp-st->constraint-inst-stack interp-st)))
+        :guard (interp-st-bfr-listp (constraint-instancelist-bfrlist substs))
         :measure (list (nfix (interp-st->reclimit interp-st))
                        10000
-                       (nfix n)
+                       (len substs)
                        10)
         :returns (mv err
                      new-interp-st
                      new-state)
-        (b* (((when (zp n)) (mv nil interp-st state))
-             ((constraint-instance sub1) (car (interp-st->constraint-inst-stack interp-st)))
-             (interp-st (update-interp-st->constraint-inst-stack
-                         (cdr (interp-st->constraint-inst-stack interp-st))
-                         interp-st))
+        (b* (((when (atom substs)) (mv nil interp-st state))
+             ((constraint-instance sub1) (car substs))
              (thm-body (meta-extract-formula sub1.thmname state))
              ((unless (pseudo-termp thm-body))
-              (gl-interp-add-constraints-for-substs (1- n) interp-st state))
+              (gl-interp-add-constraints-for-substs (cdr substs) interp-st state))
+             (interp-st (interp-st-push-scratch-cinstlist (cdr substs) interp-st))
              (interp-st (interp-st-push-frame sub1.subst interp-st))
              ((gl-interp-recursive-call err bfr interp-st state)
-              (gl-interp-test thm-body interp-st state))
+              (mbe :logic (b* ((len (len (cdr substs)))
+                               ((mv err bfr interp-st state)
+                                (gl-interp-test thm-body interp-st state))
+                               (interp-st1 (non-exec (interp-st-pop-frame interp-st)))
+                               (rest (non-exec (interp-st-top-scratch-cinstlist interp-st1)))
+                               ((unless (eql (len rest) len))
+                                (mv "Impossible" bfr interp-st state)))
+                            (mv err bfr interp-st state))
+                   :exec (gl-interp-test thm-body interp-st state)))
              (interp-st (interp-st-pop-frame interp-st))
+             ((mv rest interp-st) (interp-st-pop-scratch-cinstlist interp-st))
              ((when err)
               (mv err interp-st state))
              ((mv contra interp-st) (stobj-let ((constraint-pathcond (interp-st->constraint interp-st))
@@ -2052,7 +1937,7 @@
                             '@ 'gl-interp-error-debug-obj)
                :debug-obj sub1
                :nvals 0)))
-          (gl-interp-add-constraints-for-substs (1- n) interp-st state)))
+          (gl-interp-add-constraints-for-substs rest interp-st state)))
       
 
       (define gl-interp-merge-branches ((testbfr interp-st-bfr-p)
@@ -2112,24 +1997,24 @@
              (reclimit (interp-st->reclimit interp-st))
              ((when (zp reclimit))
               (gl-interp-error :msg (gl-msg "The recursion limit ran out.")))
-             (interp-st (interp-st-push-scratch elseval interp-st))
-             (interp-st (interp-st-push-scratch thenval interp-st))
-             (interp-st (interp-st-push-scratch (g-boolean testbfr) interp-st))
-             (interp-st (interp-st-push-bool-scratch testbfr interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj elseval interp-st))
+             (interp-st (interp-st-push-scratch-gl-obj thenval interp-st))
+             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
+             (interp-st (interp-st-push-scratch-gl-objlist
+                         (list (g-boolean testbfr) thenval elseval)
+                         interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((mv err successp ans interp-st state)
-               (gl-rewrite-try-rules rules 'if 3 interp-st state)))
-             (scratch (interp-st-scratch interp-st))
-             (testbfr (car (interp-st-bool-scratch interp-st)))
-             (interp-st (interp-st-pop-scratch 3 interp-st))
-             (interp-st (interp-st-pop-bool-scratch 1 interp-st))
+               (gl-rewrite-try-rules rules 'if interp-st state)))
+             (interp-st (interp-st-pop-scratch interp-st))
+             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv thenval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
+             ((mv elseval interp-st) (interp-st-pop-scratch-gl-obj interp-st))
              ((when err)
               (mv err nil interp-st state))
              ((when successp)
-              (mv nil ans interp-st state))
-             (elseval (third scratch))
-             (thenval (second scratch)))
+              (mv nil ans interp-st state)))
           (if switchedp
               (gl-interp-merge-branch-subterms
                (interp-st-bfr-not testbfr)
@@ -2165,23 +2050,25 @@
              ((when (zp reclimit))
               (gl-interp-error :msg (gl-msg "The recursion limit ran out.")))
 
-             (scratch (interp-st-scratch interp-st))
-             (thenval-stack (interp-st->thenval-stack interp-st))
-             (elseval-stack (interp-st->elseval-stack interp-st))
-             (interp-st (update-interp-st->thenval-stack (append thenargs thenval-stack) interp-st))
-             (interp-st (update-interp-st->elseval-stack (append elseargs elseval-stack) interp-st))
-             (interp-st (interp-st-push-bool-scratch testbfr interp-st))
-             ;; pops args off thenval/elseval-stack, pushes onto scratch
+             ;; (scratch (interp-st-scratch interp-st))
+             ;; (thenval-stack (interp-st->thenval-stack interp-st))
+             ;; (elseval-stack (interp-st->elseval-stack interp-st))
+             ;; (interp-st (update-interp-st->thenval-stack (append thenargs thenval-stack) interp-st))
+             ;; (interp-st (update-interp-st->elseval-stack (append elseargs elseval-stack) interp-st))
+             ;; (interp-st (interp-st-push-bool-scratch testbfr interp-st))
+             ;; ;; pops args off thenval/elseval-stack, pushes onto scratch
+
+             
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
-              ((gl-interp-recursive-call err interp-st state)
-               (gl-interp-merge-branch-args (len thenargs) interp-st state)))
-             (interp-st (interp-st-pop-bool-scratch 1 interp-st))
+              ((gl-interp-recursive-call err args interp-st state)
+               (gl-interp-merge-branch-args testbfr thenargs elseargs interp-st state)))
+
              ((when err)
               ;; pop off any args pushed on before error
-              (b* ((interp-st (interp-st-pop-scratch (- (len (interp-st-scratch interp-st))
-                                                        (len scratch))
-                                                     interp-st))
+              (b* (;; (interp-st (interp-st-pop-scratch (- (len (interp-st-scratch interp-st))
+                   ;;                                      (len scratch))
+                   ;;                                   interp-st))
                    ;; (new-thenval-stack (interp-st->thenval-stack interp-st))
                    ;; (interp-st (update-interp-st->thenval-stack
                    ;;             (nthcdr (- (len new-thenval-stack)
@@ -2196,44 +2083,53 @@
                    ;;             interp-st))
                    )
                 (mv err nil interp-st state))))
-          (gl-interp-fncall thenfn (len thenargs) interp-st state)))
+          (gl-interp-fncall thenfn args interp-st state)))
 
-      (define gl-interp-merge-branch-args (;; (testbfr interp-st-bfr-p)
-                                           (n natp)
-                                           ;; (thenargs gl-objectlist-p)
-                                           ;; (elseargs gl-objectlist-p)
+      (define gl-interp-merge-branch-args ((testbfr interp-st-bfr-p)
+                                           (thenargs gl-objectlist-p)
+                                           (elseargs gl-objectlist-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
-        ;; :guard (and (eql (len thenargs) (len elseargs))
-        ;;             (interp-st-bfr-listp (gl-objectlist-bfrlist thenargs))
-        ;;             (interp-st-bfr-listp (gl-objectlist-bfrlist elseargs)))
+        :guard (and (eql (len thenargs) (len elseargs))
+                    (interp-st-bfr-listp (gl-objectlist-bfrlist thenargs))
+                    (interp-st-bfr-listp (gl-objectlist-bfrlist elseargs)))
         :measure (list (nfix (interp-st->reclimit interp-st))
-                       3000 n 0)
+                       3000 (len thenargs) 0)
         :returns (mv err
+                     (args gl-objectlist-p)
                      new-interp-st
                      new-state)
-        (b* (((when (zp n))
-              (mv nil interp-st state))
-             (thenstack (interp-st->thenval-stack interp-st))
-             (thenval (car thenstack))
-             (interp-st (update-interp-st->thenval-stack (cdr thenstack) interp-st))
-             (elsestack (interp-st->elseval-stack interp-st))
-             (elseval (car elsestack))
-             (interp-st (update-interp-st->elseval-stack (cdr elsestack) interp-st))
-             
+        (b* (((when (atom thenargs))
+              (mv nil nil interp-st state))
+             ;; (thenstack (interp-st->thenval-stack interp-st))
+             ;; (thenval (car thenstack))
+             ;; (interp-st (update-interp-st->thenval-stack (cdr thenstack) interp-st))
+             ;; (elsestack (interp-st->elseval-stack interp-st))
+             ;; (elseval (car elsestack))
+             ;; (interp-st (update-interp-st->elseval-stack (cdr elsestack) interp-st))
+             (interp-st (interp-st-push-scratch-gl-objlist (cdr thenargs) interp-st))
+             (interp-st (interp-st-push-scratch-gl-objlist (cdr elseargs) interp-st))
+             (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              ((gl-interp-recursive-call err ans interp-st state)
-              (gl-interp-merge-branches (car (interp-st-bool-scratch interp-st))
-                                        thenval elseval interp-st state))
+              (mbe :logic
+                   (b* ((then-len (len (cdr thenargs)))
+                        ((mv err ans interp-st state)
+                         (gl-interp-merge-branches testbfr (car thenargs) (car elseargs) interp-st state))
+                        ((unless (eql then-len (len (interp-st-nth-scratch-gl-objlist 2 interp-st))))
+                         (mv "Impossible" ans interp-st state)))
+                     (mv err ans interp-st state))
+                   :exec (gl-interp-merge-branches testbfr (car thenargs) (car elseargs) interp-st state)))
+             ((mv testbfr interp-st) (interp-st-pop-scratch-bfr interp-st))
+             ((mv rest-elseargs interp-st) (interp-st-pop-scratch-gl-objlist interp-st))
+             ((mv rest-thenargs interp-st) (interp-st-pop-scratch-gl-objlist interp-st))
+             
              ((when err)
-              (b* ((interp-st (update-interp-st->thenval-stack
-                               (nthcdr (1- n) (interp-st->thenval-stack interp-st))
-                               interp-st))
-                   (interp-st (update-interp-st->elseval-stack
-                               (nthcdr (1- n) (interp-st->elseval-stack interp-st))
-                               interp-st)))
-                (mv err interp-st state)))
-             (interp-st (interp-st-push-scratch ans interp-st)))
-          (gl-interp-merge-branch-args (1- n) interp-st state))))))
+              (mv err nil interp-st state))
+             (interp-st (interp-st-push-scratch-gl-obj ans interp-st))
+             ((mv err args interp-st state)
+              (gl-interp-merge-branch-args testbfr rest-thenargs rest-elseargs interp-st state))
+             ((mv arg1 interp-st) (interp-st-pop-scratch-gl-obj interp-st)))
+          (mv err (cons arg1 args) interp-st state))))))
 
 
 

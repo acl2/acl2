@@ -36,25 +36,27 @@
 (progn
 
   (defconst *scratchobj-types*
-    '((:gl-obj gl-object-p gl-object-fix 0)
-      (:gl-objlist gl-objectlist-p gl-objectlist-fix 1)
-      (:bfr t nil 2)
-      (:bfrlist true-listp llist-fix 3 :rule-classes :type-prescription)
-      (:cinst constraint-instance-p constraint-instance-fix 4)
-      (:cinstlist constraint-instancelist-p constraint-instancelist-fix 5)))
+    '((:gl-obj gl-object-p gl-object-fix gl-object 0)
+      (:gl-objlist gl-objectlist-p gl-objectlist-fix gl-objectlist 1)
+      (:bfr t nil bfr 2)
+      (:bfrlist true-listp llist-fix bfrlist 3 :rule-classes :type-prescription)
+      (:cinst constraint-instance-p constraint-instance-fix constraint-instance 4)
+      (:cinstlist constraint-instancelist-p constraint-instancelist-fix constraint-instancelist 5)))
 
 
   (defun scratchobj-tmplsubst (tuple lastp)
     (declare (xargs :mode :program))
-    (b* (((list* kind pred fix code ruleclasses) tuple))
+    (b* (((list* kind pred fix prefix code ruleclasses) tuple))
       (acl2::make-tmplsubst :atoms `((:<kind> . ,kind)
                                      (:<kindcase> . ,(if lastp t kind))
                                      (<codecase> . ,(if lastp t code))
                                      (<pred> . ,pred)
+                                     (<prefix> . ,prefix)
                                      (<fix> . ,fix)
                                      (<code> . ,code)
                                      (<ruleclass> . ,ruleclasses))
-                            :strs `(("<KIND>" . ,(symbol-name kind)))
+                            :strs `(("<KIND>" . ,(symbol-name kind))
+                                    ("<PREFIX>" . ,(symbol-name prefix)))
                             :pkg-sym 'fgl::foo
                             :features (and (eq pred t) '(:no-pred)))))
   

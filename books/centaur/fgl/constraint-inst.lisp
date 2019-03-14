@@ -32,6 +32,8 @@
 
 (include-book "bfr")
 
+(local (std::add-default-post-define-hook :fix))
+
 (defprod constraint-instance
   ((thmname symbolp)
    (subst gl-object-alist-p))
