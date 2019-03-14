@@ -27,5 +27,5 @@
   :parents (kestrel-utilities strings)
   :short "Some utilities for @(see strings) (and @(see characters))."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "These utilities may be eventually integrated into @(see std/strings)."))

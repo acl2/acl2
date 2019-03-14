@@ -34,7 +34,7 @@
   :parents (string-utilities code-char)
   :short "@(tsee code-char) is injective on natural numbers below 256."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "Note that the injectivity of @(tsee char-code) over characters
     is expressed by the theorem
     <see topic='@(url str::char-code-lemmas)'>@('equal-of-char-code')</see>.")

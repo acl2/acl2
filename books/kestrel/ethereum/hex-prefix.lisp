@@ -20,7 +20,7 @@
   :parents (ethereum)
   :short "Hex-prefix encoding."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "Hex-prefix is an encoding method for Ethereum,
     described in [YP:C] and in
     <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator\"
@@ -39,7 +39,7 @@
   :parents (hex-prefix)
   :short "Hex-prefix encoding function."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This corresponds to @($\\mathtt{HP}$) [YP:(186)] [YP:(187)].")
    (xdoc::p
@@ -75,7 +75,7 @@
      :parents (hp-encode hex-prefix)
      :short "Turn a even-length sequence of nibbles into a sequence of bytes."
      :long
-     (xdoc::topp
+     (xdoc::toppstring
       "This calculates the bytes of the result of @($\\mathtt{HP}$)
        that come after the first byte,
        in the way described by [YP:(186)].")
@@ -95,7 +95,7 @@
   :parents (hex-prefix)
   :short "Check if a byte array is a hex-prefix encoding."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is a declarative, non-executable definition,
     which essentially characterizes the image of @(tsee hp-encode).")
   (exists (nibbles flag)
@@ -139,7 +139,7 @@
   :parents (hex-prefix)
   :short "Hex-prefix decoding function."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "If the argument byte array is the result of encoding
      some nibble array and boolean flag,

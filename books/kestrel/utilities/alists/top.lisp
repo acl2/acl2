@@ -23,6 +23,6 @@
   :parents (kestrel-utilities alists)
   :short "Some utilities for @(see alists)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These utilities may be eventually integrated into @(see std/alists).")))

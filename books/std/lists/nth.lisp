@@ -139,7 +139,7 @@
 
   (defthm nth-of-take
     (equal (nth i (take n l))
-           (if (< (nfix i) (min (nfix n) (len l)))
+           (if (< (nfix i) (nfix n))
                (nth i l)
              nil)))
 

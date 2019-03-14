@@ -22,7 +22,7 @@
   :short "A library of omaps (ordered maps),
           i.e. finite maps represented as strictly ordered alists."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is related to the library of
      <see topic='@(url set::std/osets)'>osets (ordered sets)</see>,
@@ -130,7 +130,7 @@
   :parents (omaps)
   :short "Recognize omaps."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to the definition of @(tsee set::setp),
     but each element of the list is checked to be a @(tsee cons) pair
     and the ordering comparison is performed on the @(tsee car)s.")
@@ -162,7 +162,7 @@
   :parents (omaps)
   :short "Fixing function for omaps."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to @(tsee set::sfix) for osets.")
   (mbe :logic (if (mapp x) x nil)
        :exec x)
@@ -179,7 +179,7 @@
   :parents (omaps)
   :short "Check if an omap is empty."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to @(tsee set::empty) for osets.")
   (null (mfix map))
   ///
@@ -201,7 +201,7 @@
   :parents (omaps)
   :short "Smallest key, and associated value, of a non-empty omap."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to @(tsee set::head) for osets.")
   (let ((pair (car (mfix map))))
     (mv (car pair) (cdr pair)))
@@ -256,7 +256,7 @@
   :parents (omaps)
   :short "Rest of a non-empty omap after removing its smallest pair."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to @(tsee set::tail) for osets.")
   (cdr (mfix map))
   :guard-hints (("Goal" :in-theory (enable empty)))
@@ -291,7 +291,7 @@
   :parents (omaps)
   :short "Set a key to a value in an omap."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "If the key is not already in the map, it is added, with the value.
      If the key is already in the map, the new value overrides the old value.")
@@ -383,7 +383,7 @@
   :parents (omaps)
   :short "Update a map with another map."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This lifts @(tsee update) from a single key and value
     to a set of key-value pairs, passed as the first argument map.
     If a key is in the second but not in the first map,
@@ -420,7 +420,7 @@
   :parents (omaps)
   :short "Remove a key, and associated value, from an omap."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is similar to @(tsee set::delete) for osets.")
   (cond ((empty map) nil)
         (t (mv-let (key0 val0)
@@ -444,7 +444,7 @@
   :parents (omaps)
   :short "Remove keys, and associated values, from an omap."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This lifts @(tsee delete) from a single key to a set of keys.")
   (cond ((set::empty keys) (mfix map))
         (t (delete (set::head keys) (delete* (set::tail keys) map))))
@@ -469,7 +469,7 @@
   :parents (omaps)
   :short "Check if a key is in an omap."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "If the key is present, return the @(tsee cons) pair with the key.
      Otherwise, return @('nil').")
@@ -509,7 +509,7 @@
   :parents (omaps)
   :short "Check if every key in a non-empty set is in an omap."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This lifts @(tsee in) to sets of keys.
     However, this returns a boolean,
     while @(tsee in) returns a @(tsee listp).")
@@ -554,7 +554,7 @@
   :parents (omaps)
   :short "Set of values associated to a set of keys in an omap."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This lifts @(tsee lookup) to sets of keys.")
   (cond ((set::empty keys) nil)
         ((mbt (if (in (set::head keys) map) t nil))
@@ -583,7 +583,7 @@
   :parents (omaps)
   :short "Set of keys to which a value is associated."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The resulting set is empty if the value is not in the omap.
      The resulting set is a singleton
@@ -614,7 +614,7 @@
   :parents (omaps)
   :short "Set of keys to which any value in a set is associated."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This lifts @(tsee rlookup*) to sets of values.")
   (cond ((set::empty vals) nil)
         (t (set::union (rlookup (set::head vals) map)
@@ -640,7 +640,7 @@
   :parents (omaps)
   :short "Restrict an omap to a set of keys."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This drops all the keys of the omap
     that are not in the given set of keys.")
   (cond ((empty map) nil)
@@ -711,7 +711,7 @@
   :short "Check if two omaps are compatible, in the sense that
           they map their common keys to the same values."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This definition is not optimal for execution.
     The compatibility of two omaps can be checked
     by linearly scanning through them in order.
@@ -742,7 +742,7 @@
   :parents (omaps)
   :short "Check if an omap is a submap of another omap."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is true when every key in the first omap is also in the second omap,
      and the two omaps agree on the common keys.")
@@ -772,7 +772,7 @@
   :parents (omaps)
   :short "Size of an omap."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is the number of keys in the omap.")
    (xdoc::p

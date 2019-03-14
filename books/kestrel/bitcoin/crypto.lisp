@@ -22,7 +22,7 @@
   :parents (bitcoin)
   :short "Cryptography in Bitcoin."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Bitcoin uses a number of cryptographic functions
      that are described in external standards.")
@@ -133,7 +133,7 @@
                            (enable byte-listp-rewrite-unsigned-byte-listp))))
   :short "Represent a point in compressed or uncompressed form."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "See @(tsee crypto::secp256k1-point-to-bytes).")
   (crypto::secp256k1-point-to-bytes point compressp)
   :no-function t
@@ -153,7 +153,7 @@
   :returns (hash byte-listp)
   :short "Hash160 function."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is SHA-256 followed by RIPEMD-160.
      It is sometimes called `Hash160',

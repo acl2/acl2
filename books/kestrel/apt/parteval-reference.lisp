@@ -26,7 +26,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +137,7 @@
      "@('new')"
      (xdoc::p
       "Specialized version of @('old'):")
-     (xdoc::code
+     (xdoc::@code
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
       "  old-body<x1,...,xn,c1,...,cm>)"
@@ -152,7 +152,7 @@
      "@('old-to-new')"
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
-     (xdoc::code
+     (xdoc::@code
       "(defthm old-to-new"
       "  (implies (and (equal y1 c1)"
       "                ..."

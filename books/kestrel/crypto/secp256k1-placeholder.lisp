@@ -23,7 +23,7 @@
   :parents (placeholders)
   :short "Elliptic curve secp256k1 placeholder."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The secp256k1 elliptic curve is specified in
      <a href=\"http://www.secg.org/sec1-v2.pdf\"
@@ -48,7 +48,7 @@
 (defsection secp256k1-field
   :short "Fixtype of the elements of the field."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "These are natural numbers below @($p$).")
 
   (define secp256k1-fieldp (x)
@@ -139,7 +139,7 @@
 (defsection secp256k1-priv-key
   :short "Fixtype of private keys."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "A private key is a positive integer below @($n$).")
 
   (define secp256k1-priv-key-p (x)
@@ -183,7 +183,7 @@
 (defsection secp256k1-pub-key
   :short "Fixtype of public keys."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "A public key is a point that is not the point at infinity.")
 
   (define secp256k1-pub-key-p (x)
@@ -225,7 +225,7 @@
 (defsection secp256k1-add
   :short "Addition of two points on the curve."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "For now we do not require the points to be on the curve,
      but just to be two points with coordinates in the field,
@@ -277,7 +277,7 @@
 (defsection secp256k1-mul
   :short "Multiplication of a point on the curve by a number."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "For now we do not require the point to be on the curve,
      but just to have coordinates in the field,
@@ -343,7 +343,7 @@
   :returns (pub secp256k1-pub-key-p)
   :short "Calculate a public key from a private key."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This consists in multiplying the generator by the private key.")
   (b* ((priv (mbe :logic (secp256k1-priv-key-fix priv) :exec priv))
        (pub (secp256k1-mul priv (secp256k1-generator))))
@@ -365,7 +365,7 @@
                       acl2::unsigned-byte-listp-rewrite-dab-digit-listp))))
   :short "Represent a point in compressed or uncompressed form."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is specified in Section 2.3.3 of SEC 1.")
   (b* (((secp256k1-point point) point))
     (cond ((secp256k1-infinityp point) (list 0))

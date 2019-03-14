@@ -22,7 +22,7 @@
   :parents (bitcoin)
   :short "Base58 encoding and decoding."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Base58 encoding is described in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding\"
@@ -100,7 +100,7 @@
 (defsection base58-character
   :short "Base58 characters."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "These are the characters in @(tsee *base58-characters*).")
   (fty::deffixtype base58-character
     :pred base58-characterp
@@ -175,7 +175,7 @@
 (defsection base58-value
   :short "Base58 values."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "These are digits in base 58.")
   (fty::deffixtype base58-value
     :pred base58-valuep
@@ -239,7 +239,7 @@
                  :hints (("Goal" :in-theory (enable base58-value-fix))))
   :short "Turn a Base58 value into the corresponding character."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "The correspondence is given
     in the table
     in Section `Base58 symbol chart'
@@ -258,7 +258,7 @@
                                                    base58-characterp))))
   :short "Turn a Base58 character into the corresponding value."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is the inverse of @(tsee base58-val=>char).")
   (index-of (base58-character-fix char) *base58-characters*)
   :hooks (:fix))
@@ -350,7 +350,7 @@
   :short "Turn a list of bytes into
           the corresponding list of Base58 characters."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is described in bullets 4, 5, and 6 in
      <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Creating_a_Base58Check_string\"
@@ -411,7 +411,7 @@
   :short "Turn a list of Base58 characters
           into the corresponding list of bytes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is not explicitly described in [Wiki] or [MB],
      but is, implicitly, the inverse of encoding.")

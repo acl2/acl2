@@ -783,27 +783,6 @@
 ; When all the books are changed to use the new XDOC constructors above,
 ; the following functions and macros will be removed.
 
-(defmacro xdoc::textp (x)
-  `(xdoc::treep ,x))
-
-(defmacro xdoc::app (&rest args)
-  `(xdoc::&& ,@args))
-
-(defmacro xdoc::p* (&rest args)
-  `(xdoc::p ,@args))
-
-(defmacro xdoc::li* (&rest args)
-  `(xdoc::li ,@args))
-
-(defmacro xdoc::topapp (&rest args)
-  `(xdoc::topstring ,@args))
-
-(defmacro xdoc::topp (&rest args)
-  `(xdoc::toppstring ,@args))
-
-(defmacro xdoc::code (&rest args)
-  `(xdoc::@code ,@args))
-
 (defund xdoc::img (src)
   (declare (xargs :guard (stringp src)))
   (concatenate 'string "<img src=\"" src "\"/>"))

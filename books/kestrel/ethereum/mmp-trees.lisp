@@ -25,7 +25,7 @@
   :parents (ethereum)
   :short "Modified Merkle Patricia trees."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "A Modified Merkle Patricia tree
      (which we abbreviate as `MMP tree'
@@ -55,7 +55,7 @@
   :parents (mmp-trees)
   :short "Finite maps from byte arrays to byte arrays."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We introduce a <see topic='@(url acl2::fty)'>fixtype</see> for finite maps
      from <see topic='@(url byte-arrays)'>byte arrays</see> to byte arrrays,
@@ -91,7 +91,7 @@
     :parents (bytelist-bytelist-map)
     :short "Recognize finite maps from byte arrays to byte arrays."
     :long
-    (xdoc::topp
+    (xdoc::toppstring
      "This definition is similar to @(tsee omap::mapp),
       but it also requires keys and values to be true lists of bytes.")
     (if (atom x)
@@ -189,7 +189,7 @@
   :parents (mmp-trees)
   :short "Finite maps from nibble arrays to byte arrays."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We introduce a <see topic='@(url acl2::fty)'>fixtype</see> for finite maps
      from <see topic='@(url nibble-arrays)'>nibble arrays</see>
@@ -205,7 +205,7 @@
     :parents (nibblelist-bytelist-map)
     :short "Recognize finite maps from nibble arrays to byte arrays."
     :long
-    (xdoc::topp
+    (xdoc::toppstring
      "This definition is similar to @(tsee omap::mapp),
       but it also requires keys and values to be true lists of bytes.")
     (if (atom x)
@@ -305,7 +305,7 @@
   :short "Turn (i) a finite map from byte arrays to byte arrays
           into (ii) a finite map from nibble arrays to byte arrays."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This corresponds to @($y$) [YP:(190), YP:(191)].")
   (b* (((unless (mbt (bytelist-bytelist-mapp map))) nil)
        ((when (omap::empty map)) nil)
@@ -327,7 +327,7 @@
      :parents (bytelist-to-nibblelist-keys)
      :short "Turn a sequence of bytes into a sequence of nibbles."
      :long
-     (xdoc::topp
+     (xdoc::toppstring
       "This corresponds to [YP:(191)],
        but here the conversion is expressed via recursion instead of indexing.")
      (b* (((when (endp bytes)) nil)
@@ -353,7 +353,7 @@
   :short "Universally quantified formula
           in the second case of the definition of @($c$) [YP:(194)]."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is used (indirectly) in the definition of @(tsee mmp-encode-c),
      hence the name.")
@@ -433,7 +433,7 @@
   :short "Existentially quantified formula
           in the second case of the definition of @($c$) [YP:(194)]."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is used (indirectly) in the definition of @(tsee mmp-encode-c),
      hence the name.")
@@ -487,7 +487,7 @@
   :short "Natural number supremum of the lenghts of the keys
           in a map from nibble arrays to byte arrays."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is 0 if the map is empty.
      Otherwise, it is the maximum key length.
@@ -540,7 +540,7 @@
   :short "Value of the maximum operator
           in the second case of the definition of @($c$) [YP:(194)]."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is used in the definition of @(tsee mmp-encode-c),
      hence the name.")
@@ -846,7 +846,7 @@
   :short "Submaps used to define @($u(0),\\ldots,u(15)$)
           in the third case of the definition of @($c$) [YP:(194)]."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is used in the definition of @(tsee mmp-encode-c),
      hence the name.")
@@ -988,7 +988,7 @@
   :parents (mmp-trees)
   :short "Definition of @($n$) [YP:(193)] and @($c$) [YP:(194)]."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "@(tsee mmp-encode-n) corresponds to @($n$),
      while @(tsee mmp-encode-c) corresponds to @($c$).
@@ -1411,7 +1411,7 @@
   :parents (mmp-trees)
   :short "Encode a finite map into an MMP tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This corresponds to the definition of @($\\mathtt{TRIE}$) [YP:(192)].")
    (xdoc::p
@@ -1483,7 +1483,7 @@
   :short "Check if a root and database are an MMP encoding
           of a finite map from byte arrays to byte arrays."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is a declarative, non-executable definition,
      which essentially characterizes the image of @(tsee mmp-encode)
@@ -1545,7 +1545,7 @@
   :parents (mmp-trees)
   :short "Decode an MMP tree into a finite map."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "If the MMP tree encodes some finite map, we return that map,
      along with @('nil') as the error flag (i.e. no error).
@@ -1619,7 +1619,7 @@
   :parents (mmp-trees)
   :short "Read the value associated to a key in an MMP tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We require (in the guard) that the MMP tree is valid,
      i.e. it encodes a finite map.")
@@ -1663,7 +1663,7 @@
   :parents (mmp-trees)
   :short "Write a value for a key in an MMP tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We require (in the guard) that the MMP tree is valid,
      i.e. it encodes a finite map.")

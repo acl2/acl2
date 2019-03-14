@@ -1044,7 +1044,7 @@
   :parents (world-queries)
   :short "Keyword arguments of a macro, in order, with their default values."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Starting from the full argument list of the macro,
      first we find @('&key') in the list;
@@ -1086,7 +1086,7 @@
   :parents (world-queries)
   :short "Logic-friendly variant of @(tsee macro-keyword-args)."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This returns the same result as @(tsee macro-keyword-args),
     but it has a stronger guard,
     is guard-verified,

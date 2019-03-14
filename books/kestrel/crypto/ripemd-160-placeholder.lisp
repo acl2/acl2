@@ -18,7 +18,7 @@
   :parents (placeholders)
   :short "RIPEMD-160 placeholder."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "RIPEMD-160 is specified in
      <a href=\"https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf\"

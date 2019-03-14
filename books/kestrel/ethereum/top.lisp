@@ -24,7 +24,7 @@
   :parents (acl2::kestrel-books acl2::projects)
   :short "A library for Ethereum."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Currently this library contains a formal model of some aspects of
      the <a href=\"https://ethereum.org\">Ethereum</a> ``world computer''.

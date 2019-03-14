@@ -194,4 +194,4 @@
 
 (must-succeed*
  (fty::defbyte byte 4)
- (fty::defbytelist bytes byte :long (xdoc::topp "More doc.")))
+ (fty::defbytelist bytes byte :long (xdoc::toppstring "More doc.")))

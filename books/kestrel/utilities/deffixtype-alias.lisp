@@ -23,7 +23,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "Introduction")
 
@@ -63,7 +63,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(deffixtype-alias alias"
     "  type"
     "  :pred ..."
@@ -127,7 +127,7 @@
 (defsection deffixtype-alias-implementation
   :parents (deffixtype-alias)
   :short "Implementation of @(tsee deffixtype-alias)."
-  :long (xdoc::topapp (xdoc::def "deffixtype-alias"))
+  :long (xdoc::topstring (xdoc::def "deffixtype-alias"))
 
   (define deffixtype-alias-fn (alias type pred fix equiv (wrld plist-worldp))
     :returns (event "A @(tsee pseudo-event-formp).")

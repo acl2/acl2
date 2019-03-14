@@ -24,7 +24,7 @@
   :parents (kestrel-utilities unsigned-byte-p)
   :short "Fixing function for @(tsee unsigned-byte-p)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Since the set denoted by @(tsee unsigned-byte-p)
      is empty for some values of @('bits')

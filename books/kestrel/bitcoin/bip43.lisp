@@ -18,7 +18,7 @@
   :parents (bitcoin)
   :short "Bitcoin Improvement Proposal (BIP) 43."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is described at
      <a href=\"https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki\"
@@ -36,7 +36,7 @@
 (defsection bip43-purpose
   :short "Purposes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "[BIP43] recommends to index of the first level of a BIP 32 key tree
      as an indication of ``purpose''.
@@ -87,7 +87,7 @@
   :returns (yes/no booleanp)
   :short "Check if a key tree includes a subtree for a given purpose."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We check if the tree is rooted at the private master key
      and includes the singleton path with the (hardened) purpose number."))
@@ -109,7 +109,7 @@
   :returns (exported byte-listp)
   :short "BIP 43 key export."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "[BIP43] prescribes that BIP 32 key serialization be always done
      with the version numbers of the mainnet,
@@ -130,7 +130,7 @@
                (tree bip32-key-treep))
   :short "BIP 43 key import."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "[BIP43] prescribes that BIP 32 key serialization be always done
      with the version numbers of the mainnet,

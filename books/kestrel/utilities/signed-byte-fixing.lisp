@@ -24,7 +24,7 @@
   :parents (kestrel-utilities signed-byte-p)
   :short "Fixing function for @(tsee signed-byte-p)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Since the set denoted by @(tsee signed-byte-p)
      is empty for some values of @('bits')

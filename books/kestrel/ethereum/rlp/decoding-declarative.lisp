@@ -18,7 +18,7 @@
   :parents (rlp)
   :short "Declarative definitions of RLP decoding."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We specify RLP decoding via functions
      from byte arrays
@@ -46,7 +46,7 @@
   :parents (rlp-decoding-declarative)
   :short "RLP decoding of a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "If the byte array encodes some tree, we return that tree,
      along with a @('nil') error flag.
@@ -123,7 +123,7 @@
   :parents (rlp-decoding-declarative)
   :short "RLP decoding of a byte array."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
      If the returned error flag is @('t'),
@@ -236,7 +236,7 @@
   :parents (rlp-decoding-declarative)
   :short "RLP decoding of a scalar."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee rlp-decode-tree).
      If the returned error flag is @('t'),

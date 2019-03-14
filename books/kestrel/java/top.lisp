@@ -21,7 +21,7 @@
   :parents (acl2::kestrel-books acl2::projects)
   :short "An ACL2 library for Java."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Currently this library contains:")
    (xdoc::ul
@@ -66,7 +66,7 @@
   :parents (aij atj)
   :short "ACL2-2018 Workshop paper on AIJ and ATJ."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The <a href=\"https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1\"
      >ACL2-2018 Workshop paper on AIJ and ATJ</a>

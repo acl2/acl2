@@ -20,8 +20,8 @@
   :parents (alist-utilities alists)
   :short "Values of the map represented by an alist."
   :long
-  (xdoc::topapp
-   (xdoc::code
+  (xdoc::topstring
+   (xdoc::@code
     "General Forms:"
     "(alist-map-vals alist)"
     "(alist-map-vals alist :test 'eql)   ; same as above (eql as equality test)"

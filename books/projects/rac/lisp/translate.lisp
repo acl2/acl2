@@ -64,7 +64,7 @@ a statement block.  The parser generates an S-expression for each statement as f
   occurs and term is a term that is expected to evaluate to true.
 
 A return statement may occur only in the final statement of a function body.  More
-precisely, we assume that every function body is admissible, where a statement block is
+precisely, we assume that every function body is admissible, where a statement block
 is said to be an admissible function body if (a) no return statement occurs in any
 statement of the block other than the final one and (b) the final statement is either
 a return statement or an if statement with non-trivial right branch such that both
@@ -505,3 +505,14 @@ are more than one).  The test of the IF is simply the test of the loop.
                       ()
                       state)))
 
+
+;; The following function is used to pretty-print the parser output for readability:
+
+(defun pretty-print (infile outfile state)
+  (mv-let (foo lst state)
+          (read-list infile () state)
+          (declare (ignore foo))
+          (write-list lst
+                      outfile
+                      ()
+                      state)))

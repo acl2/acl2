@@ -27,7 +27,7 @@
 
 ;; Usage:
 ;;
-;;   (defbytelistoflen 'B 32)
+;;   (defbytelistoflen B 32)
 ;;
 ;; defines the fixtype B32, including:
 ;;

@@ -34,7 +34,7 @@
   :parents (kestrel-utilities lists)
   :short "Some utilities for @(see lists)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are for lists with elements of any types,
      similarly to @(see std/lists).

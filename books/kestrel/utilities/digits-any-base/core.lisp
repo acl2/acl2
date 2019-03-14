@@ -25,7 +25,7 @@
   :short "Conversions between natural numbers
           and their representations as digits in arbitrary bases."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "In these utilities, the digits are natural numbers below the base.
      The base (a natural number above 1) is supplied as argument.")
@@ -46,7 +46,7 @@
   :returns (yes/no booleanp)
   :short "Recognize valid bases for representing natural numbers as digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The fixing function for this predicate is @(tsee dab-base-fix)
      and the fixtype for this predicate is @('dab-base').")
@@ -101,7 +101,7 @@
   :short "Recognize valid digits
           for representing natural numbers as digits in the specified base."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The fixing function for this predicate is @(tsee dab-digit-fix)."))
   (and (natp x)
@@ -240,7 +240,7 @@
   :short "Tail-recursive code for the execution of
           @(tsee bendian=>nat) and @(tsee lendian=>nat)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This interprets the digits in big-endian order.
      Thus, @(tsee bendian=>nat) calls this function on the digits directly,
@@ -267,7 +267,7 @@
           @(tsee nat=>bendian*) and @(tsee nat=>lendian*)
           (and, indirectly, of their variants)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This calculates the digits in big-endian order.
      Thus, @(tsee nat=>bendian*) returns the resulting digits directly,
@@ -363,7 +363,7 @@
   :short "Convert a natural number to
           its minimum-length little-endian list of digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The resulting list is empty if @('nat') is 0.
      The @('*') in the name of this function can be read as `zero or more'
@@ -521,7 +521,7 @@
   :short "Convert a natural number to
           its non-empty minimum-length little-endian list of digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The resulting list is never empty; it is @('(0)') if @('nat') is 0.
      The @('+') in the name of this function can be read as `one or more'
@@ -548,7 +548,7 @@
   :short "Convert a natural number to
           its little-endian list of digits of specified length."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The number must be representable in the specified number of digits.
      The resulting list starts with zero or more 0s.")
@@ -652,7 +652,7 @@
   :short "Convert a natural number to
           its minimum-length big-endian list of digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The resulting list is empty if @('nat') is 0.
      The @('*') in the name of this function can be read as `zero or more'
@@ -724,7 +724,7 @@
   :short "Convert a natural number to
           its non-empty minimum-length big-endian list of digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The resulting list is never empty; it is @('(0)') if @('nat') is 0.
      The @('+') in the name of this function can be read as `one or more'
@@ -751,7 +751,7 @@
   :short "Convert a natural number to
           its big-endian list of digits of specified length."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The number must be representable in the specified number of digits.
      The resulting list starts with zero or more 0s.")
@@ -790,7 +790,7 @@
 (defsection nat=>digits=>nat-inversion-theorems
   :short "Theorems about converting natural numbers to digits and back."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "@(tsee lendian=>nat) is left inverse of
      @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
@@ -849,7 +849,7 @@
   :short "Theorems about the injectivity of
           the conversions from natural numbers to digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The conversions from natural numbers to digits
      are injective over natural numbers.
@@ -948,7 +948,7 @@
   :short "Remove all the most significant zero digits
           from a big-endian representation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This produces a minimal-length representation with the same value.")
    (xdoc::p
@@ -1021,7 +1021,7 @@
   :short "Remove all the most significant zero digits
           from a little-endian representation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This produces a minimal-length representation with the same value.")
    (xdoc::p
@@ -1111,7 +1111,7 @@
           from a big-endian representation,
           but leave one zero if all the digits are zero."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This produces a minimal-length non-empty representation
      with the same value.")
@@ -1149,7 +1149,7 @@
           from a little-endian representation,
           but leave one zero if all the digits are zero."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This produces a minimal-length non-empty representation
      with the same value.")
@@ -1184,7 +1184,7 @@
 (defsection digits=>nat=>digits-inversion-theorems
   :short "Theorems about converting digits to natural numbers and back."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "@(tsee lendian=>nat) is right inverse of
      @(tsee nat=>lendian*), @(tsee nat=>lendian+), and @(tsee nat=>lendian),
@@ -1269,7 +1269,7 @@
   :short "Theorems about the injectivity of
           the conversions from digits to natural numbers."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The conversions from digits to natural numbers are injective
      over digits without superfluous zeros in the most significant positions.
@@ -1386,7 +1386,7 @@
   :short "Event form to introduce additional return type theorems for
           the conversions from natural numbers to digits."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "See @(tsee defthm-dab-return-types).")
   (b* ((equality (formula eq-thm-name nil wrld))
        (dab-digit-listp-call (cadr equality))
@@ -1468,7 +1468,7 @@
   :short "Introduce additional return type theorems for
           the conversions from natural numbers to digits."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Given an equality theorem of the form
      @('(equal (dab-digit-listp BASE VAR) TERM<VAR>)'),

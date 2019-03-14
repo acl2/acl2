@@ -29,7 +29,7 @@
 
   :long
 
-  (xdoc::topapp
+  (xdoc::topstring
 
    (xdoc::h3 "Introduction")
 
@@ -55,7 +55,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::code
+   (xdoc::@code
     "(defbytelist type"
     "             byte"
     "             :pred ..."

@@ -24,7 +24,7 @@
   :parents (common-concepts)
   :short "Notion of redundancy for APT transformations."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "A call of an APT transformation is redundant if and only if
      it is identical to a previous successful call of the same transformation

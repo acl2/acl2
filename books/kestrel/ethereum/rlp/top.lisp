@@ -25,7 +25,7 @@
   :parents (ethereum)
   :short "Recursive Length Prefix (RLP)."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "RLP is a serialization (encoding) method for Ethereum,
     described in [YP:B] and in
     <a href=\"https://github.com/ethereum/wiki/wiki/RLP\">Page `RLP'

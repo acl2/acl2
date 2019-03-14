@@ -21,7 +21,7 @@
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The @('xdoc::evmac-section-...') utilities construct level-3 sections.
      Some are relatively thin wrappers,
@@ -45,14 +45,14 @@
   :short "Construct the introduction section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-section-intro"))
 
   (defconst xdoc::*evmac-section-intro-title*
     "Introduction")
 
   (defmacro xdoc::evmac-section-intro (&rest content)
-    `(xdoc::app
+    `(xdoc::&&
       (xdoc::h3 xdoc::*evmac-section-intro-title*)
       ,@content)))
 
@@ -62,14 +62,14 @@
   :short "Construct the general form section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-section-form"))
 
   (defconst xdoc::*evmac-section-form-title*
     "General Form")
 
   (defmacro xdoc::evmac-section-form (&rest content)
-    `(xdoc::app
+    `(xdoc::&&
       (xdoc::h3 xdoc::*evmac-section-form-title*)
       ,@content)))
 
@@ -79,7 +79,7 @@
   :short "Construct and fill the general form section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The section is filled with a form that starts with the macro name,
      followed by the required arguments, one per line, vertically aligned;
@@ -233,14 +233,14 @@
   :short "Construct the inputs section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-section-inputs"))
 
   (defconst xdoc::*evmac-section-inputs-title*
     "Inputs")
 
   (defmacro xdoc::evmac-section-inputs (&rest content)
-    `(xdoc::app
+    `(xdoc::&&
       (xdoc::h3 xdoc::*evmac-section-inputs-title*)
       ,@content)))
 
@@ -250,7 +250,7 @@
   :short "Construct the applicability conditions section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-section-appconds"))
 
   (defconst xdoc::*evmac-section-appconds-title*
@@ -264,7 +264,7 @@
                                     "`"
                                     xdoc::*evmac-section-inputs-title*
                                     "' section")))
-      `(xdoc::app
+      `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-appconds-title*)
         (xdoc::p
          (concatenate
@@ -291,25 +291,25 @@
   :short "Construct the generated events section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-section-generated"))
 
   (defconst xdoc::*evmac-section-generated-title*
     "Generated Events")
 
   (defmacro xdoc::evmac-section-generated (&rest content)
-    `(xdoc::app
+    `(xdoc::&&
       (xdoc::h3 xdoc::*evmac-section-generated-title*)
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection xdoc::evmac-section-redundancy
-  :returns (text xdoc::textp)
+  :returns (text xdoc::treep)
   :short "Construct the redundancy section
           of the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This assumes an event macro with a @(':print') and @(':show-only') inputs
      with specific meanings.
@@ -325,7 +325,7 @@
     (declare (xargs :guard (symbolp macro)))
     (let* ((macro-name (string-downcase (symbol-name macro)))
            (macro-ref (concatenate 'string "@('" macro-name "')")))
-      `(xdoc::app
+      `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
         (xdoc::p
          (concatenate
@@ -355,7 +355,7 @@
   :short "Construct a description of the @(':hints') input
           for the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-input-hints"))
 
   (defmacro xdoc::evmac-input-hints (&rest additional)
@@ -399,7 +399,7 @@
   :short "Construct a description of the @(':print') input
           for the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-input-print"))
 
   (defmacro xdoc::evmac-input-print (macro &rest additional)
@@ -451,7 +451,7 @@
           (the ones that form the result as well as some ancillary ones)."))
         (xdoc::p
          "These are ordered printing levels")
-        (xdoc::code
+        (xdoc::@code
          "nil < :error < :result < :info < :all")
         (xdoc::p
          "where the amount of printed material increases monotonically.")
@@ -473,7 +473,7 @@
   :short "Construct a description of the @(':show-only') input
           for the reference documentation of an event macro."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::def "xdoc::evmac-input-show-only"))
 
   (defmacro xdoc::evmac-input-show-only (macro &rest additional)

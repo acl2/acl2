@@ -21,7 +21,7 @@
   :short "Conversions between natural numbers
           and their representations as digits in power-of-two bases."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "When the base is a (positive) power of 2,
      digits are <see topic='@(url unsigned-byte-p)'>unsigned bytes</see>
@@ -35,7 +35,7 @@
 (defsection digit-pow2-unsigned-byte-equivalence
   :short "Equivalences between digits and bytes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These rules are disabled by default.
      They can be selectively enabled for specific proofs as needed.")

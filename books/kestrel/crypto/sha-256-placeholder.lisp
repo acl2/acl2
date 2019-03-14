@@ -18,7 +18,7 @@
   :parents (placeholders)
   :short "SHA-256 placeholder."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "SHA-256 is specified in the
      <a href=\"https://csrc.nist.gov/publications/detail/fips/180/4/final\"

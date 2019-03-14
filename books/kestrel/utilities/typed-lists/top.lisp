@@ -21,7 +21,7 @@
   :parents (kestrel-utilities lists)
   :short "Some utilities for typed @(see lists)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are for lists with elements of homogeneous types,
      similarly to @(see std/typed-lists).

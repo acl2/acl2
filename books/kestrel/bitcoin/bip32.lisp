@@ -27,7 +27,7 @@
   :parents (bitcoin)
   :short "Bitcoin Improvement Proposal (BIP) 32."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is described at
      <a href=\"https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki\"
@@ -99,7 +99,7 @@
   :parents (bip32)
   :short "Library extensions for BIP 32."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "These will be moved to the appropriate libraries.")
 
   (defrule ubyte32-list-fix-of-take
@@ -121,7 +121,7 @@
 (defsection bip32-chain-code
   :short "Chain codes."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "A chain code consists of 32 bytes.
     Chain codes are used in both extended private and public keys.")
 
@@ -228,7 +228,7 @@
                (child bip32-ext-priv-key-p))
   :short "Private child key derivation."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is the function @($\\mathsf{CKDpriv}$) in [BIP32].")
    (xdoc::p
@@ -276,7 +276,7 @@
                (child bip32-ext-pub-key-p))
   :short "Public child key derivation from public parent key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is the function @($\\mathsf{CKDpub}$) in [BIP32].")
    (xdoc::p
@@ -324,7 +324,7 @@
                (child bip32-ext-key-p))
   :short "Child key derivation from parent key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is the sum of @(tsee bip32-ckd-priv) and @(tsee bip32-ckd-pub).
      It maps (extended) parent private keys to (extended) child private keys
@@ -351,7 +351,7 @@
   :returns (extpubkey bip32-ext-pub-key-p)
   :short "Calculate an extended public key from an extended private key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is the function @($\\mathsf{N}$) in [BIP32]."))
   (b* (((bip32-ext-priv-key private) private)
@@ -369,7 +369,7 @@
   :short "Public child key derivation from private parent key,
           for both hardened and non-hardened child keys."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "There is no explicitly named function for this in [BIP32],
      but this corresponds to the expression
@@ -397,7 +397,7 @@
   :short "Public child key derivation from private parent key,
           for non-hardedned child keys only."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "There is no explicitly named function for this in [BIP32],
      but this corresponds to the expression
@@ -432,7 +432,7 @@
 (defxdoc bip32-path
   :short "Paths in key trees."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "As explained in [BIP32],
      the derivation of child keys from parent keys give rise to key trees.
@@ -520,7 +520,7 @@
   :pred bip32-path-setp
   :short "Osets of paths in key trees."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "At any point in time, a system (e.g. wallet) contains
      a relatively small subset
@@ -554,7 +554,7 @@
   :returns (yes/no booleanp)
   :short "Check if a set of key tree paths is closed under prefix."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The set of paths of a tree is closed under prefix:
      if a path is in the tree, every prefix path is in the tree too.
@@ -642,7 +642,7 @@
 (defsection bip32-index-tree
   :short "Index trees underlying key trees."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "As defined later, a key tree includes a tree of indices,
      represented as a closed non-empty set of paths.")
@@ -708,7 +708,7 @@
   :returns (yes/no booleanp)
   :short "Check if all the derived keys in a tree are valid."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Given a root key, every path in a tree must correspond to a valid key.
      That is, all the key derivations along the path must be valid.")
@@ -776,7 +776,7 @@
   :returns (yes/no booleanp)
   :short "Check if all the key depths in a tree are valid."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "When a key is serialized, its depth in the tree is represented in 1 byte.
      Thus, in order for keys to be serializable, the maximum depth must be 255.
@@ -924,7 +924,7 @@
   :returns (yes/no booleanp)
   :short "Check if a key tree consists of private keys."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "We check whether the root is an extended private key.")
   (bip32-ext-key-case (bip32-key-tree->root-key tree) :priv)
   :no-function t
@@ -936,7 +936,7 @@
   :returns (yes/no booleanp)
   :short "Check if a path designates a key in a key tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The empty path always designates a key: the one at the root.")
    (xdoc::p
@@ -1003,7 +1003,7 @@
                (new-tree bip32-key-treep))
   :short "Extend a key tree with a key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The new key is identified by
      (i) the path of its parent and (ii) the child index of the new key.
@@ -1049,7 +1049,7 @@
   :returns (key secp256k1-priv-key-p)
   :short "Retrieve the private key designated by a path in a key tree."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "The tree must consist of private keys, as expressed by the guard.")
   (b* ((root-extkey (bip32-key-tree->root-key tree))
        (root-extprivkey (bip32-ext-key-priv->get root-extkey))
@@ -1070,7 +1070,7 @@
   :returns (key secp256k1-pub-key-p)
   :short "Retrieven the public key designated by a path in a key tree."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "The tree may consist of private or public keys.")
   (b* ((root-extkey (bip32-key-tree->root-key tree))
        ((mv error? extkey) (bip32-ckd* root-extkey path))
@@ -1102,7 +1102,7 @@
   :returns (id byte-listp)
   :short "Identifier of an extended key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The section `Key identifiers' of [BIP32] says that
      an extended key is identified by
@@ -1130,7 +1130,7 @@
   :returns (fp byte-listp)
   :short "Fingerprint of an extended key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The section `Key identifiers' of [BIP32]
      says that the first 32 bits (i.e. 4 bytes) of a key identifier
@@ -1148,7 +1148,7 @@
 (defsection bip32-serialization-versions
   :short "Versions bytes for serializing extended keys."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are for private or public keys, for mainnet or testnet:
      four possible combinations.")
@@ -1202,7 +1202,7 @@
   :returns (bytes byte-listp)
   :short "Serialize an extended key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Besides the key, from which chain code and key data are obtained,
      this function takes additional arguments necessary for
@@ -1257,7 +1257,7 @@
   :returns (yes/no booleanp)
   :short "Check if a sequence of bytes is a serialized extended key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is a declarative, non-executable definition,
      which essentially characterizes the image of @(tsee bip32-serialize-key)
@@ -1378,7 +1378,7 @@
                (mainnet? booleanp))
   :short "Deserialize an extended key."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is declaratively specified as the inverse of serialization.")
    (xdoc::p
@@ -1455,7 +1455,7 @@
   :returns (exported byte-listp)
   :short "Export a key from a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The key to export is designated by a path,
      which must be a valid path in the tree.")
@@ -1533,7 +1533,7 @@
                (mainnet? booleanp))
   :short "Import a key into a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We deserialize the key into its components,
      which we use to construct a singleton key tree
@@ -1572,7 +1572,7 @@
                (key bip32-ext-priv-key-p))
   :short "Generate a master key from a seed."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The exact generation of the seed is not specified in [BIP32],
      so it is an input to this function.")
@@ -1625,7 +1625,7 @@
                (tree bip32-key-treep))
   :short "Generate a key tree with (just) a master key from a seed."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee bip32-master-key) from a single key
      to a singleton tree containing the key at the root,
@@ -1646,7 +1646,7 @@
   :parents (bip32)
   :short "Wallet structure."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "[BIP32] describes a recommended structure for the key tree.
      This is illustrated in a figure in [BIP32],
@@ -1672,7 +1672,7 @@
   :short "Check if the depth of a key tree
           complies with the BIP 32 wallet structure."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "According to the figure in [BIP32],
      the key tree stops at depth 3,
@@ -1709,7 +1709,7 @@
           comply with the BIP 32 wallet structure,
           for a given address index limit."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The chain key is identified by an account index and a chain index,
      passed as arguments to this predicate.
@@ -1842,7 +1842,7 @@
   :short "Check if the address keys under a given chain key in a tree
           comply with the BIP 32 wallet structure.."
   :long
-  (xdoc::topp
+  (xdoc::toppstring
    "This is obtained by existentially quantifying the address index limit
     in @(tsee bip32-compliant-addresses-for-limit-p).
     See the documentation of that function for details.")
@@ -1904,7 +1904,7 @@
   :short "Check if the chain keys under a given account key in a tree
           comply with the BIP 32 wallet structure."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee bip32-compliant-addresses-p)
      and @(tsee bip32-compliant-addresses-for-limit-p),
@@ -1970,7 +1970,7 @@
           comply with the BIP32 wallet structure,
           for a given account index limit."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee bip32-compliant-addresses-for-limit-p).")
    (xdoc::p
@@ -2043,7 +2043,7 @@
   :short "Check if the account keys in a tree
           comply with the BIP 32 wallet structure."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee bip32-compliant-addresses-p)."))
   (exists (account-index-limit)
@@ -2070,7 +2070,7 @@
   :returns (yes/no booleanp)
   :short "Check if a key tree complies with the BIP 32 wallet structure."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Besides requiring the account keys to comply
      (which includes the compliance of the chain and address keys),

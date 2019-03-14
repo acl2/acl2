@@ -19,7 +19,7 @@
   :short "AIJ (<b>A</b>CL2 <b>I</b>n <b>J</b>ava)
           is a deep embedding of ACL2 in Java."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "AIJ is a deep embedding in Java
      of an executable, side-effect-free, non-stobj-accessing

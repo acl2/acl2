@@ -27,7 +27,7 @@
   :parents (rlp)
   :short "Executable definitions of RLP decoding."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We provide executable definitions of RLP decoding for
      trees, byte arrays, and scalars.
@@ -154,7 +154,7 @@
   :short "Parse the RLP encoding of a tree,
           returning any extra bytes for further parsing."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This function returns an error result (@('nil') if no error),
      the decoded tree,
@@ -539,7 +539,7 @@
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a tree."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "We simply parse the tree
      and ensure that there are no remaining bytes.
@@ -691,7 +691,7 @@
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a byte array."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This has the same form as the alternative definition rule
      of @(tsee rlp-decode-bytes) in terms of @(tsee rlp-decode-tree).
@@ -723,7 +723,7 @@
   :parents (rlp-decoding-executable)
   :short "Executable RLP decoding of a scalar."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This has the same form as the alternative definition rule
      of @(tsee rlp-decode-scalar) in terms of @(tsee rlp-decode-bytes).

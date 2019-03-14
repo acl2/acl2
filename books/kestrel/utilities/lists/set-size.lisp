@@ -21,8 +21,8 @@
   :parents (list-utilities lists)
   :short "Size of a set represented as a list."
   :long
-  (xdoc::topapp
-   (xdoc::code
+  (xdoc::topstring
+   (xdoc::@code
     "General Forms:"
     "(set-size x)"
     "(set-size x :test 'eql)   ; same as above (eql as equality test)"
@@ -125,7 +125,7 @@
   :parents (set-size-theorems)
   :short "Lemmas useful to prove some of the theorems about @(tsee set-size)."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "The lemma @('len-when-no-duplicatesp-and-subsetp')
      is used to prove the theorem @('set-size-when-subsetp'), and

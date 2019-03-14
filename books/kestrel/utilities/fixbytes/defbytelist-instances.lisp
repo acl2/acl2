@@ -20,7 +20,7 @@
   :short "Fixtypes of true lists of unsigned and signed bytes of various sizes,
           with some accompanying theorems."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "These are all generated via @(tsee defbytelist).")
    (xdoc::p
@@ -39,7 +39,7 @@
           for ``standard'' true lists of
           unsigned bytes of explicit integer sizes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This macro just takes a positive integer as input.")
    (xdoc::p
@@ -77,7 +77,7 @@
           for ``standard'' true lists of
           signed bytes of explicit integer sizes."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "This macro just takes a positive integer as input.")
    (xdoc::p

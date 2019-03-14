@@ -18,7 +18,7 @@
   :parents (placeholders)
   :short "Keccak-256 placeholder."
   :long
-  (xdoc::topapp
+  (xdoc::topstring
    (xdoc::p
     "Keccak-256 is specified in the
      <a href=\"https://keccak.team/keccak.html\">Keccak web site</a>,
