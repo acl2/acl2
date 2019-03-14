@@ -21081,19 +21081,21 @@
                       inst.mnemonic
                     (symbol-name inst.mnemonic)))
         (fn-info  (if inst.fn
-                      (concatenate
-                       'string
-                       "@(tsee "
-                       (str::pretty (car inst.fn) :config *x86isa-printconfig*)
-                       ") "
-                       (if (cdr inst.fn)
-                           (concatenate
-                            'string
-                            "<tt>"
-                            (str::pretty (cdr inst.fn)
-                                         :config *x86isa-printconfig*)
-                            "</tt>")
-                         ""))
+                      (if (eql (car inst.fn) :NO-INSTRUCTION)
+                          "NO INSTRUCTION"
+                        (concatenate
+                         'string
+                         "@(tsee "
+                         (str::pretty (car inst.fn) :config *x86isa-printconfig*)
+                         ") "
+                         (if (cdr inst.fn)
+                             (concatenate
+                              'string
+                              "<tt>"
+                              (str::pretty (cdr inst.fn)
+                                           :config *x86isa-printconfig*)
+                              "</tt>")
+                           "")))
                     ""))
         (extra-info `(,@(and opcode.mode   `((:MODE ,opcode.mode)))
                       ,@(and opcode.pfx    `((:PFX  ,opcode.pfx)))
