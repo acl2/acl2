@@ -1,0 +1,347 @@
+; GL - A Symbolic Simulation Framework for ACL2
+; Copyright (C) 2008-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
+
+(in-package "FGL")
+
+(include-book "gl-object")
+(include-book "constraint-inst")
+
+(local (include-book "scratchobj"))
+
+(local (std::add-default-post-define-hook :fix))
+
+
+
+;; This book defines a stack containing "major frames", each containing a stack
+;; of "minor frames".  Each major and minor frame contains a binding alist and
+;; perhaps some debug info.  The complete set of bindings at a given point in
+;; symbolic execution is the local minor frame bindings appended to the local
+;; major frame bindings.  Each minor frame also contains a scratch
+;; stack, which is a stack of objects of various types.
+
+;; This two-dimensional nesting approach supports the style of symbolic
+;; execution we do in GL, specifically late binding of free variables in hyps
+;; and RHSes of rules (used for an extension of syntaxp/bind-free).
+
+;; Major stack frames correspond to places in symbolic execution where we enter
+;; an entirely new namespace, such as when we enter the body of a function or
+;; begin relieving the hyps/executing the RHS of a rewrite rule under the
+;; unification substitution.
+
+;; Minor stack frames correspond essentially to entries into lambda bodies.
+;; Except, we process nestings of lambdas into bindinglists (see
+;; centaur/meta/bindinglist) so that if a lambda call is nested directly inside
+;; a lambda body, we reuse the outer frame.  In classical ACL2, each lambda
+;; binds all the variables that are used in its body and so a lambda body is in
+;; its very own namespace.  However, when we process lambdas into bindinglists,
+;; we throw out variables that are bound to themselves, and compensate by
+;; appending the new bindings to the existing bindings.  This helps to support
+;; late bindings by allowing us to leave variables unbound until they are
+;; "really used", that is, passed into a function or bound to a different
+;; variable in a lambda.
+
+;; A stack has one or more major stack frames.  A major stack frame has a base
+;; binding list, a debug area, and one or more minor stack frames.  A minor
+;; stack frame has a binding list, two scratch lists: one for gl-objects and
+;; one for BFRs, and a debug area.
+
+;; See stack.lisp for the stobj implementation of the stack.
+
+
+
+(make-event
+ `(progn
+    (fty::deftagsum scratchobj
+      :layout :tree
+      . ,(acl2::template-proj '(:<kind> ((val <pred> . <ruleclass>)))
+                              *scratchobj-tmplsubsts*))
+
+    (defenum scratchobj-kind-p ,(acl2::template-proj :<kind> *scratchobj-tmplsubsts*))))
+
+(make-event
+ `(progn
+    (define scratchobj-kind->code ((x scratchobj-kind-p))
+      (case x
+        ,@(acl2::template-proj '(:<kindcase> <code>) *scratchobj-tmplsubsts*))
+      ///
+      (local (in-theory (enable scratchobj-kind-fix))))
+
+    (define scratchobj-code->kind ((x natp))
+      :returns (kind scratchobj-kind-p)
+      (case (lnfix x)
+        ,@(acl2::template-proj '(<codecase> :<kind>) *scratchobj-tmplsubsts*))
+      ///
+      (defthm scratchobj-code->kind-of-scratchobj-kind->code
+        (equal (scratchobj-code->kind (scratchobj-kind->code kind))
+               (scratchobj-kind-fix kind))
+        :hints(("Goal" :in-theory (enable scratchobj-kind->code scratchobj-kind-fix)))))))
+
+
+
+(fty::deflist scratchlist :elt-type scratchobj :true-listp t)
+
+(fty::defprod minor-frame
+  ((bindings gl-object-alist-p)
+   (scratch scratchlist-p)
+   (debug)))
+
+(fty::deflist minor-stack :elt-type minor-frame :true-listp t :non-emptyp t
+  ///
+  (defthm minor-stack-p-of-cons-cdr
+    (implies (and (minor-stack-p x)
+                  (minor-frame-p a))
+             (minor-stack-p (cons a (cdr x))))
+    :hints(("Goal" :in-theory (enable minor-stack-p)))))
+
+(make-event
+ `(fty::defprod major-frame
+    ((bindings gl-object-alist-p)
+     (debug)
+     (minor-stack minor-stack-p :default ',(list (make-minor-frame))))))
+
+(fty::deflist major-stack :elt-type major-frame :true-listp t :non-emptyp t
+  ///
+  (defthm major-stack-p-of-cons-cdr
+    (implies (and (major-stack-p x)
+                  (major-frame-p a))
+             (major-stack-p (cons a (cdr x))))
+    :hints(("Goal" :in-theory (enable major-stack-p)))))
+
+
+
+
+(define stack$a-frames ((x major-stack-p))
+  (len (major-stack-fix x)))
+
+(define stack$a-push-frame ((x major-stack-p))
+  :returns (stack major-stack-p)
+  (cons (make-major-frame) (major-stack-fix x)))
+
+(define stack$a-minor-frames ((x major-stack-p))
+  (len (major-frame->minor-stack (car x))))
+
+(define stack$a-push-minor-frame ((x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x)))
+    (major-stack-fix
+     (cons (change-major-frame jframe :minor-stack
+                               (cons (make-minor-frame) jframe.minor-stack))
+           (cdr x)))))
+
+(define stack$a-set-bindings ((bindings gl-object-alist-p)
+                              (x major-stack-p))
+  :returns (stack major-stack-p)  
+  (major-stack-fix (cons (change-major-frame (car x) :bindings bindings)
+                         (cdr x))))
+
+(define stack$a-add-binding ((var pseudo-var-p)
+                             (val gl-object-p)
+                             (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame frame) (car x)))
+    (major-stack-fix (cons (change-major-frame frame :bindings (cons (cons (pseudo-var-fix var)
+                                                                           (gl-object-fix val))
+                                                                     frame.bindings))
+                           (cdr x)))))
+
+(define stack$a-set-debug (debug
+                           (x major-stack-p))
+  :returns (stack major-stack-p)
+  (major-stack-fix (cons (change-major-frame (car x) :debug debug)
+                         (cdr x))))
+
+
+(local (defthm gl-object-alist-p-of-append
+           (implies (and (gl-object-alist-p x)
+                         (gl-object-alist-p y))
+                    (gl-object-alist-p (append x y)))))
+
+(define stack$a-set-minor-bindings ((bindings gl-object-alist-p)
+                                    (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       (nframe (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe :bindings bindings)
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+(define stack$a-add-minor-bindings ((bindings gl-object-alist-p)
+                                    (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :bindings (append bindings nframe.bindings))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+
+(define stack$a-set-minor-debug ((debug)
+                                 (x major-stack-p))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       (nframe (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe :debug debug)
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+(define stack$a-bindings ((x major-stack-p))
+  :returns (binings gl-object-alist-p)
+  (major-frame->bindings (car x)))
+
+
+(define stack$a-minor-bindings ((x major-stack-p))
+  :returns (binings gl-object-alist-p)
+  (minor-frame->bindings (car (major-frame->minor-stack (car x)))))
+
+
+(define stack$a-debug ((x major-stack-p))
+  (major-frame->debug (car x)))
+
+
+(define stack$a-minor-debug ((x major-stack-p))
+  (minor-frame->debug (car (major-frame->minor-stack (car x)))))
+
+
+(define stack$a-scratch-len ((x major-stack-p))
+  (len (minor-frame->scratch (car (major-frame->minor-stack (car x))))))
+
+
+(define stack$a-top-scratch ((x major-stack-p))
+  :guard (< 0 (stack$a-scratch-len x))
+  :guard-hints (("goal" :in-theory (enable stack$a-scratch-len)))
+  :returns (obj scratchobj-p)
+  (scratchobj-fix (car (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
+
+
+(define stack$a-pop-scratch ((x major-stack-p))
+  :guard (< 0 (stack$a-scratch-len x))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :scratch
+                                                                         (cdr nframe.scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
+
+(local
+ (progn
+   (defconst *scratchobj-template*
+     '(progn (define stack$a-push-scratch-<kind> ((obj <pred>)
+                                                  (x major-stack-p))
+               :returns (stack major-stack-p)
+               (b* (((major-frame jframe) (car x))
+                    ((minor-frame nframe) (car jframe.minor-stack))) 
+                 (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                                            (cons (change-minor-frame nframe
+                                                                                      :scratch (cons
+                                                                                                (scratchobj-<kind> obj)
+                                                                                                nframe.scratch))
+                                                                  (cdr jframe.minor-stack)))
+                                        (cdr x)))))
+
+             (define stack$a-top-scratch-<kind> ((x major-stack-p))
+               :guard (and (< 0 (stack$a-scratch-len x))
+                           (scratchobj-case (stack$a-top-scratch x) :<kind>))
+               :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
+                                                        stack$a-top-scratch)))
+               :returns (obj <pred>)
+               (scratchobj-<kind>->val (car (minor-frame->scratch (car (major-frame->minor-stack (car x)))))))
+
+             (define stack$a-pop-scratch-<kind> ((x major-stack-p))
+               :guard (and (< 0 (stack$a-scratch-len x))
+                           (scratchobj-case (stack$a-top-scratch x) :<kind>))
+               :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
+                                                        stack$a-top-scratch)))
+               :enabled t
+               (mv (stack$a-top-scratch-<kind> x)
+                   (stack$a-pop-scratch x)))))))
+
+(make-event
+ (cons 'progn (acl2::template-proj *scratchobj-template*
+                                   *scratchobj-tmplsubsts*)))
+
+
+
+
+
+
+
+
+
+(local (defthm len-gt-0
+         (equal (< 0 (len x))
+                (consp x))))
+
+(local (defthm <-cancel
+         (implies (syntaxp (and (quotep c1) (quotep c2)))
+                  (equal (< c1 (+ c2 x))
+                         (< (- c1 c2) (fix x))))
+         :hints (("goal" :Cases ((< c1 (+ c2 x)))))))
+
+(define stack$a-pop-minor-frame ((x major-stack-p))
+  :guard (and (< 1 (stack$a-minor-frames x))
+              (eql (stack$a-scratch-len x) 0))
+  :guard-hints (("goal" :in-theory (enable stack$a-minor-frames)))
+  :returns (stack major-stack-p)
+  (b* (((major-frame jframe) (car x)))
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack (cdr jframe.minor-stack))
+                           (cdr x)))))
+
+(define stack$a-pop-frame ((x major-stack-p))
+  :guard (and (< 1 (stack$a-frames x))
+              (eql 1 (stack$a-minor-frames x))
+              (eql 0 (stack$a-scratch-len x)))
+  :guard-hints (("goal" :in-theory (enable stack$a-frames)))
+  :returns (stack major-stack-p)
+  (major-stack-fix (cdr x)))
+
+(define stack$a-extract ((x major-stack-p))
+  :enabled t
+  (major-stack-fix x))
+
+
+
+
+
+(define create-stack$a ()
+  :enabled t
+  :returns (stack major-stack-p)
+  (list (make-major-frame)))
+
+
+
+

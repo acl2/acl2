@@ -31,9 +31,10 @@
 (in-package "FGL")
 
 (include-book "clause-processors/unify-subst" :dir :system)
-(include-book "glcp-unify-thms")
+(include-book "glcp-unify-defs")
 (include-book "clause-processors/magic-ev" :dir :system)
 (include-book "centaur/meta/term-vars" :dir :system)
+(include-book "constraint-inst")
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -617,27 +618,6 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 (local (in-theory (disable symbol-alistp)))
 
-(defprod constraint-instance
-  ((thmname symbolp)
-   (subst gl-object-alist-p))
-  :layout :tree)
-
-(fty::deflist constraint-instancelist :elt-type constraint-instance :true-listp t)
-
-(define constraint-instance-bfrlist ((x constraint-instance-p))
-  (gl-object-alist-bfrlist (constraint-instance->subst x)))
-
-(define constraint-instancelist-bfrlist ((x constraint-instancelist-p))
-  (if (atom x)
-      nil
-    (append (constraint-instance-bfrlist (car x))
-            (constraint-instancelist-bfrlist (cdr x))))
-  ///
-  (defthm constraint-instancelist-bfrlist-of-append
-    (equal (constraint-instancelist-bfrlist (append a b))
-           (append (constraint-instancelist-bfrlist a)
-                   (constraint-instancelist-bfrlist b)))
-    :hints(("Goal" :in-theory (enable constraint-instancelist-bfrlist)))))
 
 
 (define gbc-substs-check-syntaxp ((substs gl-object-alistlist-p)

@@ -54,9 +54,6 @@
       (pathcond :type pathcond)
       (constraint :type pathcond)
       (constraint-db :type (satisfies constraint-db-p))
-      (constraint-inst-stack :type (satisfies constraint-instancelist-p))
-      (thenval-stack :type (satisfies gl-objectlist-p))
-      (elseval-stack :type (satisfies gl-objectlist-p))
       (prof :type interp-profiler)
       (backchain-limit :type integer :initially -1)
       ;; (bvar-mode :type t)
@@ -362,11 +359,19 @@
              (stack-minor-frames stack)
              frames))
 
+(define interp-st-scratch-len (interp-st)
+  :enabled t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (len)
+             (stack-scratch-len stack)
+             len))
+
 (define interp-st-pop-frame (interp-st)
   :enabled t
   :inline t
   :guard (and (< 1 (interp-st-stack-frames interp-st))
-              (eql 1 (interp-st-stack-minor-frames interp-st)))
+              (eql 1 (interp-st-stack-minor-frames interp-st))
+              (eql 0 (interp-st-scratch-len interp-st)))
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
              (stack-pop-frame stack)
@@ -375,69 +380,14 @@
 (define interp-st-pop-minor-frame (interp-st)
   :enabled t
   :inline t
-  :guard (< 1 (interp-st-stack-minor-frames interp-st))
+  :guard (and (< 1 (interp-st-stack-minor-frames interp-st))
+              (eql 0 (interp-st-scratch-len interp-st)))
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
              (stack-pop-minor-frame stack)
              interp-st))
 
-(define interp-st-push-scratch ((x gl-object-p)
-                                interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (stack)
-             (stack-push-scratch x stack)
-             interp-st))
 
-(define interp-st-pushlist-scratch ((x gl-objectlist-p)
-                                    interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (stack)
-             (stack-pushlist-scratch x stack)
-             interp-st))
-
-(define interp-st-push-bool-scratch (x interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (stack)
-             (stack-push-bool-scratch x stack)
-             interp-st))
-
-(define interp-st-scratch (interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (len)
-             (stack-scratch stack)
-             len))
-
-(define interp-st-bool-scratch (interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (len)
-             (stack-bool-scratch stack)
-             len))
-
-(define interp-st-scratch-len (interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (len)
-             (stack-scratch-len stack)
-             len))
-
-(define interp-st-bool-scratch-len (interp-st)
-  :enabled t
-  :inline t
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (len)
-             (stack-bool-scratch-len stack)
-             len))
 
 (define interp-st-pop-scratch ((n natp)
                                 interp-st)
@@ -449,25 +399,36 @@
              (stack-pop-scratch n stack)
              interp-st))
 
-(define interp-st-pop-bool-scratch ((n natp)
-                                    interp-st)
-  :enabled t
-  :inline t
-  :guard (<= n (interp-st-bool-scratch-len interp-st))
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (stack)
-             (stack-pop-bool-scratch n stack)
-             interp-st))
 
-(define interp-st-peek-scratch ((n natp)
-                                interp-st)
-  :enabled t
-  :inline t
-  :guard (<= n (interp-st-scratch-len interp-st))
-  (stobj-let ((stack (interp-st->stack interp-st)))
-             (args)
-             (stack-peek-scratch n stack)
-             args))
+(defsection interp-st-push/pop-scratch-kinds
+  (local (include-book "scratchobj"))
+  (make-event
+   (acl2::template-proj
+    '(progn
+       (define interp-st-push-scratch-<kind> ((x <pred>)
+                                              interp-st)
+         :enabled t
+         :inline t
+         (stobj-let ((stack (interp-st->stack interp-st)))
+                    (stack)
+                    (stack-push-scratch-<kind> x stack)
+                    interp-st))
+       (define interp-st-top-scratch-<kind> (interp-st)
+         :enabled t
+         :inline t
+         (stobj-let ((stack (interp-st->stack interp-st)))
+                    (obj)
+                    (stack-top-scratch-<kind> x stack)
+                    obj))
+
+       (define interp-st-pop-scratch-<kind> (interp-st)
+         :enabled t
+         :inline t
+         (stobj-let ((stack (interp-st->stack interp-st)))
+                    (obj stack)
+                    (stack-pop-scratch-<kind> x stack)
+                    (mv obj interp-st))))
+    *scratchobj-tmplsubsts*)))
 
 (define interp-st-add-binding ((var pseudo-var-p)
                                (val gl-object-p)
