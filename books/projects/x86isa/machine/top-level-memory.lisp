@@ -185,7 +185,7 @@
 
        (b* (((when (and
                     (/= proc-mode #.*64-bit-mode*)
-                    (= seg-reg *cs*)
+                    (= seg-reg #.*cs*)
                     (eq r-x :r)
                     (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
                          (r (code-segment-descriptor-attributesBits->r attr)))
@@ -520,7 +520,7 @@
    mode.  In 64-bit mode, the R bit of the code segment descriptor is
    ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (= seg-reg *cs*)
+                   (= seg-reg #.*cs*)
                    (eq r-x :r)
                    (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
                         (r (code-segment-descriptor-attributesBits->r attr)))
@@ -669,7 +669,7 @@
    mode.  In 64-bit mode, the R bit of the code segment descriptor is
    ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (= seg-reg *cs*)
+                   (= seg-reg #.*cs*)
                    (eq r-x :r)
                    (b* ((attr (loghead 16 (xr :seg-hidden-attr seg-reg x86)))
                         (r (code-segment-descriptor-attributesBits->r attr)))
@@ -830,7 +830,7 @@
        :long ,long-doc-string
 
        (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                        (or (= seg-reg *cs*)
+                        (or (= seg-reg #.*cs*)
                             (b* ((attr (loghead
                                         16 (xr :seg-hidden-attr seg-reg x86)))
                                  (w (data-segment-descriptor-attributesBits->w
@@ -1010,7 +1010,7 @@
    These checks may be slightly optimized using the invariant that
    SS.W must be 1 when SS is loaded.</p>"
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (or (= seg-reg *cs*)
+                   (or (= seg-reg #.*cs*)
                        (b* ((attr (loghead
                                    16 (xr :seg-hidden-attr seg-reg x86)))
                             (w (data-segment-descriptor-attributesBits->w
@@ -1126,7 +1126,7 @@
    These checks may be slightly optimized using the invariant that
    SS.W must be 1 when SS is loaded.</p>"
   (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (or (= seg-reg *cs*)
+                   (or (= seg-reg #.*cs*)
                        (b* ((attr (loghead
                                    16 (xr :seg-hidden-attr seg-reg x86)))
                             (w (data-segment-descriptor-attributesBits->w
