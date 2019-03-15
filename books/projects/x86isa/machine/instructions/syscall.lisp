@@ -322,11 +322,6 @@
        (x86 (!seg-hidden-limiti #.*cs* cs-hidden-limit x86))
        (x86 (!seg-hidden-attri #.*cs* cs-attr x86))
 
-       ;; CPL     <- 0;
-       (current-cs-register (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))
-       (current-cs-register (!segment-selectorBits->rpl 0 current-cs-register))
-       (x86 (!seg-visiblei #.*cs* current-cs-register x86))
-
        ;; SS.Selector <- IA32_STAR[47:32] + 8; (* SS just above CS *)
        (new-ss-selector
         (+ (part-select star :low 32 :high 47) 8))
