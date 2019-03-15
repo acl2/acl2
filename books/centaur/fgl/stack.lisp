@@ -1936,26 +1936,30 @@
   (defret len-scratch-of-<fn>
     (<= (len (nth *stack$c-scratchi1* stack$c))
         (len (nth *stack$c-scratchi1* new-stack$c)))
-    :rule-classes :linear)
+    :rule-classes :linear))
 
-  (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
-    (implies (and (scratch-nontagidx-p i)
-                  (not (and (<= (scratch-nontagidx-fix min) i)
-                            (< i (scratch-nontagidx-fix max)))))
-             (iff (range-scratch-entry-equiv min max x (update-stack$c-scratch-entry i obj y))
-                  (range-scratch-entry-equiv min max x y)))
-    :hints (("goal" :in-theory (enable range-scratch-entry-equiv-necc))))
+(local
+ (defsection range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range
+   (local (in-theory (enable update-stack$c-scratch-entry)))
 
-  (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-1
-    (implies (and (scratch-nontagidx-p i)
-                  (not (and (<= (scratch-nontagidx-fix min) i)
-                            (< i (scratch-nontagidx-fix max)))))
-             (iff (range-scratch-entry-equiv min max (update-stack$c-scratch-entry i obj x) y)
-                  (range-scratch-entry-equiv min max x y)))
-    :hints (("goal" :use ((:instance range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
-                           (x y) (y x)))
-             :in-theory (e/d (range-scratch-entry-equiv-commute)
-                             (range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2))))))
+   (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
+     (implies (and (scratch-nontagidx-p i)
+                   (not (and (<= (scratch-nontagidx-fix min) i)
+                             (< i (scratch-nontagidx-fix max)))))
+              (iff (range-scratch-entry-equiv min max x (update-stack$c-scratch-entry i obj y))
+                   (range-scratch-entry-equiv min max x y)))
+     :hints (("goal" :in-theory (enable range-scratch-entry-equiv-necc))))
+
+   (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-1
+     (implies (and (scratch-nontagidx-p i)
+                   (not (and (<= (scratch-nontagidx-fix min) i)
+                             (< i (scratch-nontagidx-fix max)))))
+              (iff (range-scratch-entry-equiv min max (update-stack$c-scratch-entry i obj x) y)
+                   (range-scratch-entry-equiv min max x y)))
+     :hints (("goal" :use ((:instance range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
+                            (x y) (y x)))
+              :in-theory (e/d (range-scratch-entry-equiv-commute)
+                              (range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2)))))))
 
 
 

@@ -285,15 +285,19 @@
     (equal (gl-object-bfrlist ans) nil)))
 
 
+(define interp-st-restore-reclimit ((reclimit natp)
+                                    interp-st)
+  :guard (acl2::nat-equiv reclimit (interp-st->reclimit interp-st))
+  :inline t
+  :enabled t
+  (mbe :logic (update-interp-st->reclimit (lnfix reclimit) interp-st)
+       :exec interp-st))
+
 (def-b*-binder gl-interp-recursive-call
   :body
-  `(b* (((mv . ,args)
-         (mbe :logic
-              (b* ((reclimit (interp-st->reclimit interp-st))
-                   ((mv . ,args) . ,forms)
-                   (interp-st (update-interp-st->reclimit reclimit interp-st)))
-                (mv . ,args))
-              :exec (progn$ . ,forms))))
+  `(b* ((interp-recursive-call-reclimit (lnfix (interp-st->reclimit interp-st)))
+        ((mv . ,args) . ,forms)
+        (interp-st (interp-st-restore-reclimit interp-recursive-call-reclimit interp-st)))
      ,rest-expr))
 
 
@@ -1759,8 +1763,8 @@
               (b* ((interp-st (interp-st-pop-scratch interp-st))
                    (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             ((mv xobj.then interp-st) (interp-st-pop-scratch-gl-obj interp-st))
-             (interp-st (interp-st-push-scratch-bfr test-bfr interp-st))
+             (xobj.then (interp-st-top-scratch-gl-obj interp-st))
+             (interp-st (interp-st-update-scratch-bfr 0 test-bfr interp-st))
              ;; scratch: test-bfr, xobj.else
              ((gl-interp-recursive-call err then-unreachable then-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.then interp-st state))
@@ -1768,10 +1772,9 @@
               (b* ((interp-st (interp-st-pop-scratch interp-st))
                    (interp-st (interp-st-pop-scratch interp-st)))
                 (mv err nil interp-st state)))
-             ((mv test-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
-             ((mv xobj.else interp-st) (interp-st-pop-scratch-gl-obj interp-st))
-             (interp-st (interp-st-push-scratch-bfr then-bfr interp-st))
-             (interp-st (interp-st-push-scratch-bfr test-bfr interp-st))
+             (test-bfr (interp-st-top-scratch-bfr interp-st))
+             (xobj.else (interp-st-nth-scratch-gl-obj 1 interp-st))
+             (interp-st (interp-st-update-scratch-bfr 1 then-bfr interp-st))
              ;; scratch: test-bfr, then-bfr
              ((mv err else-unreachable else-bfr interp-st state)
               (gl-interp-maybe-simplify-if-test test-bfr xobj.else interp-st state))
@@ -2244,7 +2247,10 @@
     (defcong scratchlist-isomorphic scratchlist-isomorphic (cdr x) 1)
     
     (defcong scratchobj-isomorphic scratchlist-isomorphic (cons x y) 1)
-    (defcong scratchlist-isomorphic scratchlist-isomorphic (cons x y) 2))
+    (defcong scratchlist-isomorphic scratchlist-isomorphic (cons x y) 2)
+
+    (defcong scratchlist-isomorphic equal (len x) 1
+      :hints(("Goal" :in-theory (enable len)))))
 
   (define minor-frame-scratch-isomorphic ((x minor-frame-p) (y minor-frame-p))
     (scratchlist-isomorphic (minor-frame->scratch x) (minor-frame->scratch y))
@@ -2281,7 +2287,10 @@
       (implies (minor-stack-scratch-isomorphic x y)
                (minor-stack-scratch-isomorphic (cons frame (cdr x))
                                                (cons frame (cdr y))))
-      :rule-classes :congruence))
+      :rule-classes :congruence)
+
+    (defcong minor-stack-scratch-isomorphic acl2::pos-equiv (len x) 1
+      :hints(("Goal" :in-theory (enable len pos-fix)))))
 
 
   (define major-frame-scratch-isomorphic ((x major-frame-p) (y major-frame-p))
@@ -2319,7 +2328,10 @@
       (implies (major-stack-scratch-isomorphic x y)
                (major-stack-scratch-isomorphic (cons frame (cdr x))
                                                (cons frame (cdr y))))
-      :rule-classes :congruence))
+      :rule-classes :congruence)
+
+    (defcong major-stack-scratch-isomorphic acl2::pos-equiv (len x) 1
+      :hints(("Goal" :in-theory (enable len pos-fix)))))
 
 
   (define interp-st-scratch-isomorphic (x y)
@@ -2370,6 +2382,13 @@
   (defcong major-stack-scratch-isomorphic
     major-stack-scratch-isomorphic (stack$a-set-bindings bindings stack) 2
     :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
+
+  (defcong scratchlist-isomorphic scratchlist-isomorphic (update-nth n obj x) 3
+    :hints(("Goal" :in-theory (enable update-nth))))
+
+  (defcong major-stack-scratch-isomorphic
+    major-stack-scratch-isomorphic (stack$a-update-scratch n obj stack) 3
+    :hints(("Goal" :in-theory (enable stack$a-update-scratch))))
 
   (defthm stack$a-pop-scratch-of-stack$a-push-scratch
     (equal (stack$a-pop-scratch (stack$a-push-scratch obj stack))
@@ -2453,7 +2472,21 @@
                                       gl-bool-primitive))))
 
 
-  (progn
+  (defthmd stack$a-update-scratch-in-terms-of-push-pop
+    (implies (syntaxp (quotep n))
+             (equal (stack$a-update-scratch n obj stack)
+                    (if (zp n)
+                        (stack$a-push-scratch obj (stack$a-pop-scratch stack))
+                      (stack$a-push-scratch (stack$a-top-scratch stack)
+                                            (stack$a-update-scratch
+                                             (1- n) obj (stack$a-pop-scratch stack))))))
+    :hints(("Goal" :in-theory (enable stack$a-update-scratch
+                                      stack$a-push-scratch
+                                      stack$a-pop-scratch
+                                      stack$a-top-scratch))))
+
+  (encapsulate nil
+    (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
     (with-output
       :off (event)
       :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
@@ -2486,6 +2519,29 @@
                                      ;; minor-stack-bfrlist
                                       minor-frame-bfrlist
                                      stack$a-push-scratch
+                                     ;; acl2::set-unequal-witness-rw
+                                     )
+           :expand ((major-stack-bfrlist stack)
+                    (minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+           :do-not-induct t))))
+
+(local
+ (defthm scratchlist-bfrlist-of-update-nth
+   (implies (and (not (member v (scratchobj->bfrlist obj)))
+                 (not (member v (scratchlist-bfrlist x))))
+            (not (member v (scratchlist-bfrlist (update-nth n obj x)))))
+   :hints(("Goal" :in-theory (enable update-nth)))))
+
+(local
+ (defthm bfrlist-of-stack$a-update-scratch
+   (implies (and (not (member v (scratchobj->bfrlist obj)))
+                 (not (member v (major-stack-bfrlist stack))))
+            (not (member v (major-stack-bfrlist (stack$a-update-scratch n obj stack)))))
+   :hints(("Goal" :in-theory (enable ;; major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     ;; minor-stack-bfrlist
+                                      minor-frame-bfrlist
+                                     stack$a-update-scratch
                                      ;; acl2::set-unequal-witness-rw
                                      )
            :expand ((major-stack-bfrlist stack)
@@ -2827,6 +2883,17 @@
     :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
     :skip-others t))
 
+
+(defthm stack$a-pop-scratch-of-stack$a-update-0
+  (equal (stack$a-pop-scratch (stack$a-update-scratch 0 obj stack))
+         (stack$a-pop-scratch stack))
+  :hints(("Goal" :in-theory (enable stack$a-pop-scratch stack$a-update-scratch))))
+
+(defthm stack$a-top-scratch-of-stack$a-update-0
+  (equal (stack$a-top-scratch (stack$a-update-scratch 0 obj stack))
+         (scratchobj-fix obj))
+  :hints(("Goal" :in-theory (enable stack$a-top-scratch stack$a-update-scratch))))
+
 (local (in-theory (disable BFR-LISTP$-WHEN-SUBSETP-EQUAL
                            acl2::subsetp-append1
                            acl2::subsetp-of-cons
@@ -2947,6 +3014,23 @@
            lst)
     :hints(("Goal" :in-theory (enable maybe-cons)))))
 
+(define maybe-incr (do-it x)
+  :verify-guards nil
+  (if do-it (+ 1 (nfix x)) (nfix x))
+  ///
+  (defcong iff equal (maybe-incr do-it x) 1))
+
+(define maybe-decr (do-it x)
+  :verify-guards nil
+  (if do-it (nfix (+ -1 (nfix x))) (nfix x))
+  ///
+  (defcong iff equal (maybe-decr do-it x) 1)
+
+  (defthm maybe-decr-of-maybe-incr
+    (equal (maybe-decr do-it (maybe-incr do-it x))
+           (nfix x))
+    :hints(("Goal" :in-theory (enable maybe-incr)))))
+
 
 
 (define logicman-pathcond-eval-checkpoints (env pathcond logicman)
@@ -2993,7 +3077,12 @@
     :hints(("Goal" :in-theory (enable maybe-cdr)
             :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman)
                      (logicman-pathcond-eval-checkpoints env (pathcond-rewind (lbfr-mode) pathcond) logicman))))
-    :fn pathcond-rewind))
+    :fn pathcond-rewind)
+
+  (defthm len-of-logicman-pathcond-eval-checkpoints
+    (implies (nth *pathcond-enabledp* pathcond)
+             (equal (len (logicman-pathcond-eval-checkpoints env pathcond logicman))
+                    (pathcond-rewind-stack-len (lbfr-mode) pathcond)))))
 
 
 (define logicman-pathcond-eval-checkpoints! (env pathcond logicman)
@@ -3076,7 +3165,16 @@
 
   (defthm logicman-pathcond-eval-checkpoints!-of-update-pathcond-enabledp
     (equal (logicman-pathcond-eval-checkpoints! env (update-nth *pathcond-enabledp* v pathcond) logicman)
-           (logicman-pathcond-eval-checkpoints! env pathcond logicman))))
+           (logicman-pathcond-eval-checkpoints! env pathcond logicman)))
+
+  (defthm pathcond-rewind-stack-len-of-update-pathcond-enabledp
+    (equal (pathcond-rewind-stack-len mode (update-nth *pathcond-enabledp* v pathcond))
+           (pathcond-rewind-stack-len mode pathcond))
+    :hints(("Goal" :in-theory (enable pathcond-rewind-stack-len))))
+
+  (defthm len-of-logicman-pathcond-eval-checkpoints!
+    (equal (len (logicman-pathcond-eval-checkpoints! env pathcond logicman))
+           (pathcond-rewind-stack-len (lbfr-mode) pathcond))))
 
 
 (progn
@@ -3108,6 +3206,191 @@
       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
 
 
+(def-updater-independence-thm logicman->mode-of-interp-st-logicman-extension
+  (implies (logicman-extension-p (interp-st->logicman new)
+                                 (interp-st->logicman old))
+           (equal (logicman->mode (interp-st->logicman new))
+                  (logicman->mode (interp-st->logicman old)))))
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-logicman->mode
+      :rules ((t (:add-concl (equal (logicman->mode (interp-st->logicman new-interp-st))
+                                    (logicman->mode (interp-st->logicman interp-st))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
 
 
 
+(defthm pathcond-rewind-stack-len-of-pathcond-rewind
+  (equal (pathcond-rewind-stack-len mode (pathcond-rewind mode pathcond))
+         (maybe-decr (nth *pathcond-enabledp* pathcond)
+                     (pathcond-rewind-stack-len mode pathcond)))
+  :hints(("Goal" :in-theory (enable maybe-decr pos-fix nfix))
+         (and stable-under-simplificationp
+              '(:in-theory (enable pathcond-rewind)))))
+
+(defret pathcond-rewind-stack-len-of-logicman-pathcond-assume-maybe
+  (implies (and (equal mode (logicman->mode logicman))
+                (not contradictionp))
+           (equal (pathcond-rewind-stack-len mode new-pathcond)
+                  (maybe-incr (nth *pathcond-enabledp* pathcond)
+                              (pathcond-rewind-stack-len mode pathcond))))
+  :hints(("Goal" :in-theory (enable maybe-incr pos-fix nfix))
+         (and stable-under-simplificationp
+              '(:in-theory (enable logicman-pathcond-assume))))
+  :fn logicman-pathcond-assume)
+
+(defret pathcond-rewind-stack-len-of-interp-st-pathcond-assume-maybe
+  (implies (and (equal mode (interp-st-bfr-mode interp-st))
+                (not contra))
+           (equal (pathcond-rewind-stack-len mode (interp-st->pathcond new-interp-st))
+                  (maybe-incr (nth *pathcond-enabledp* (interp-st->pathcond interp-st))
+                              (pathcond-rewind-stack-len mode (interp-st->pathcond interp-st)))))
+  :hints(("Goal" :in-theory (enable interp-st-pathcond-assume)))
+  :fn interp-st-pathcond-assume)
+
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond-stack-length
+      :rules ((t (:add-concl (implies (and (not (gl-interp-real-errorp err))
+                                           (equal mode (logicman->mode (interp-st->logicman interp-st))))
+                                      (equal (pathcond-rewind-stack-len
+                                              mode
+                                              (interp-st->pathcond new-interp-st))
+                                             (pathcond-rewind-stack-len
+                                              mode (interp-st->pathcond interp-st)))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-reclimit
+      :rules ((t (:add-concl (acl2::nat-equiv
+                              (interp-st->reclimit new-interp-st)
+                              (interp-st->reclimit interp-st)))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-reclimit-natp
+      :rules ((t (:add-concl (implies (natp (interp-st->reclimit interp-st))
+                                      (natp (interp-st->reclimit new-interp-st))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+;; (local (defthmd redundant-update-nth
+;;          (implies (< (nfix n) (len x))
+;;                   (equal (update-nth n (nth n x) x)
+;;                          x))
+;;          :hints(("Goal" :in-theory (enable update-nth nth len)))))
+
+;; (local (defthm interp-st-redundant-update-reclimit
+;;          (implies (and (interp-stp interp-st)
+;;                        (equal reclimit (double-rewrite (ifix (interp-st->reclimit interp-st)))))
+;;                   (equal (update-interp-st->reclimit reclimit interp-st)
+;;                          interp-st))
+;;          :hints(("Goal" :in-theory (e/d (update-interp-st->reclimit interp-st->reclimit
+;;                                            interp-stp
+;;                                            redundant-update-nth)
+;;                                         (equal-len-hyp))))))
+
+(local (defthm alistp-when-gl-object-alist-p-rw
+         (implies (gl-object-alist-p x)
+                  (alistp x))
+         :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
+
+
+(local (Defthm stack$a-scratch-len-of-set-minor-debug
+         (equal (stack$a-scratch-len (stack$a-set-minor-debug obj stack))
+                (stack$a-scratch-len stack))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-set-minor-debug)))))
+
+(local (Defthm stack$a-scratch-len-of-set-minor-bindings
+         (equal (stack$a-scratch-len (stack$a-set-minor-bindings obj stack))
+                (stack$a-scratch-len stack))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-set-minor-bindings)))))
+
+(local (Defthm stack$a-scratch-len-of-push-minor-frame
+         (equal (stack$a-scratch-len (stack$a-push-minor-frame stack))
+                0)
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-push-minor-frame)))))
+
+(defcong major-stack-scratch-isomorphic equal (stack$a-scratch-len x) 1
+  :hints(("Goal" :in-theory (enable stack$a-scratch-len))))
+
+(defcong major-stack-scratch-isomorphic equal (stack$a-minor-frames x) 1
+  :hints(("Goal" :in-theory (e/d (stack$a-minor-frames pos-fix)
+                                 (minor-stack-scratch-isomorphic-implies-pos-equiv-len-1))
+          :use ((:instance minor-stack-scratch-isomorphic-implies-pos-equiv-len-1
+                 (x (major-frame->minor-stack (car x)))
+                 (x-equiv (major-frame->minor-stack (car x-equiv))))))))
+
+(defcong major-stack-scratch-isomorphic equal (stack$a-frames x) 1
+  :hints(("Goal" :in-theory (e/d (stack$a-frames pos-fix)
+                                 (major-stack-scratch-isomorphic-implies-pos-equiv-len-1))
+          :use ((:instance major-stack-scratch-isomorphic-implies-pos-equiv-len-1)))))
+
+(local (Defthm stack$a-minor-frames-of-set-minor-debug
+         (equal (stack$a-minor-frames (stack$a-set-minor-debug obj stack))
+                (stack$a-minor-frames stack))
+         :hints(("Goal" :in-theory (enable stack$a-minor-frames
+                                           stack$a-set-minor-debug
+                                           len)))))
+
+(local (Defthm stack$a-minor-frames-of-set-minor-bindings
+         (equal (stack$a-minor-frames (stack$a-set-minor-bindings obj stack))
+                (stack$a-minor-frames stack))
+         :hints(("Goal" :in-theory (enable stack$a-minor-frames
+                                           stack$a-set-minor-bindings
+                                           len)))))
+
+(local (Defthm stack$a-minor-frames-of-push-minor-frame
+         (equal (stack$a-minor-frames (stack$a-push-minor-frame stack))
+                (+ 1 (stack$a-minor-frames stack)))
+         :hints(("Goal" :in-theory (enable stack$a-minor-frames
+                                           stack$a-push-minor-frame)))))
+
+(defthm posp-of-stack$a-minor-frames
+  (posp (stack$a-minor-frames stack$c))
+  :hints(("Goal" :in-theory (enable stack$a-minor-frames)))
+  :rule-classes :type-prescription)
+
+(defthm posp-of-stack$a-frames
+  (posp (stack$a-frames stack$c))
+  :hints(("Goal" :in-theory (enable stack$a-frames)))
+  :rule-classes :type-prescription)
+
+(verify-guards gl-interp-term)

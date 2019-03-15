@@ -454,6 +454,16 @@
                        (stack-nth-scratch-<kind> n stack)
                        obj))
 
+          (define interp-st-update-scratch-<kind> ((n natp) (obj <pred>) interp-st)
+            :enabled t :hooks nil
+            :inline t
+            :guard (and (< n (interp-st-scratch-len interp-st))
+                        (scratchobj-case (interp-st-nth-scratch n interp-st) :<kind>))
+            (stobj-let ((stack (interp-st->stack interp-st)))
+                       (stack)
+                       (stack-update-scratch-<kind> n obj stack)
+                       interp-st))
+
           (define interp-st-pop-scratch-<kind> (interp-st)
             :enabled t :hooks nil
             :inline t
