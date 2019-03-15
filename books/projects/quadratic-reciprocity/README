@@ -37,7 +37,7 @@ number theory.  It includes the following ACL2 books:
 
   eisenstein
       A formalization of Eisenstein's proof of the law of quadratic reciprocity:
-        If p and q are distinct odd primes, then 
+        If p and q are distinct odd primes, then
           (p is a quadratic residue mod q <=> q is a quadratic residue mod p)
             <=>
           ((p-1)/2) * ((q-1)/2) is even.
@@ -50,4 +50,3 @@ number theory.  It includes the following ACL2 books:
 
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
- 
