@@ -429,7 +429,12 @@
     (implies (interp-st-bfrs-ok interp-st)
              (and (interp-st-bfrs-ok new-interp-st)
                   (lbfr-listp (gl-object-bfrlist ans)
-                              (interp-st->logicman new-interp-st))))))
+                              (interp-st->logicman interp-st)))))
+
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :stack))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))))
 
 
 (define gl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
@@ -478,7 +483,16 @@
     (implies (and (not contra)
                   (equal mode (logicman->mode (interp-st->logicman interp-st))))
              (equal (pathcond-rewind mode (interp-st->pathcond new-interp-st))
-                    (pathcond-fix (interp-st->pathcond interp-st))))))
+                    (pathcond-fix (interp-st->pathcond interp-st)))))
+
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+          (nth *pathcond-enabledp* (interp-st->pathcond interp-st))))
+
+  (defret <fn>-pathcond-when-contra
+    (implies contra
+             (pathcond-equiv (interp-st->pathcond new-interp-st)
+                             (interp-st->pathcond interp-st)))))
              
 
 
@@ -630,10 +644,16 @@
   (local (in-theory (disable stack$a-set-bindings
                              stack$a-bindings
                              stack$a-minor-bindings)))
+
   (local (in-theory (enable bfr-listp-when-not-member-witness)))
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (interp-st-bfrs-ok interp-st)
-             (interp-st-bfrs-ok new-interp-st))))
+             (interp-st-bfrs-ok new-interp-st)))
+  
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :stack))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))))
 
 
 
@@ -924,7 +944,28 @@
                                       gl-intcdr-primitive
                                       gl-bool-primitive
                                       gl-objectlist-bfrlist
-                                      bfr-listp-when-not-member-witness)))))
+                                      bfr-listp-when-not-member-witness))))
+
+  (defret interp-st-get-of-gl-primitive-fncall
+    (implies (not (equal (interp-st-field-fix key) :logicman))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))
+    :hints(("Goal" :in-theory (enable gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive))))
+
+  (defret logicman-extension-of-<fn>
+    (implies (equal old (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old))
+    :hints(("Goal" :in-theory (enable gl-int-primitive
+                                      gl-intcons-primitive
+                                      gl-endint-primitive
+                                      gl-intcar-primitive
+                                      gl-intcdr-primitive
+                                      gl-bool-primitive)))))
                                       
       
 
@@ -976,9 +1017,14 @@
   (defret lbfr-p-of-<fn>
     (lbfr-p ite (interp-st->logicman new-interp-st)))
 
-  (Defret interp-st->stack-of-<fn>
-    (equal (interp-st->stack new-interp-st)
-           (interp-st->stack interp-st))))
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :logicman))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret logicman-extension-p-of-<fn>
+    (implies (equal old-logicman (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman))))
 
 
 
@@ -1416,7 +1462,7 @@
               ((gl-interp-recursive-call err successp interp-st state)
                (gl-rewrite-relieve-hyps rule.hyps interp-st state)))
 
-             ((unless successp)
+             ((unless (and** successp (not err)))
               (b* ((interp-st (interp-st-pop-frame interp-st)))
                 (mv err nil nil interp-st state)))
 
@@ -2791,16 +2837,268 @@
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
     (std::defret-mutual-generate interp-st-bfrs-ok-of-<fn>
+      :formal-hyps
+      (((interp-st-bfr-p x)           (lbfr-p x (interp-st->logicman interp-st)))
+       ((gl-object-p x)               (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman interp-st)))
+       ((gl-objectlist-p x)           (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman interp-st)))
+       (interp-st                     (interp-st-bfrs-ok interp-st))
+       ((constraint-instancelist-p x) (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman interp-st))))
+      :return-concls
+      ((xbfr                        (lbfr-p xbfr (interp-st->logicman new-interp-st)))
+       ((gl-object-p x)             (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman new-interp-st)))
+       ((gl-objectlist-p x)         (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman new-interp-st)))
+       (new-interp-st               (interp-st-bfrs-ok new-interp-st)))
+      :rules
+      ((t (:add-keyword :hints ('(:do-not-induct t)
+                                (let ((flag (find-flag-is-hyp clause)))
+                                  (and flag
+                                       (prog2$ (cw "flag: ~x0~%" flag)
+                                               '(:no-op t)))))))
+       ((:fnname gl-rewrite-try-rules)
+        (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+
+;; (define logicman-pathcond-eval! (env pathcond &optional (logicman 'logicman))
+;;   (declare (Xargs :non-executable t))
+;;   :no-function t
+;;   :verify-guards nil
+;;   (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-eval!-fn (list env pathcond logicman))
+;;           (logicman-pathcond-eval env (update-nth *pathcond-enabledp* t (pathcond-fix pathcond)) logicman))
+;;   ///
+;;   (local (defthm update-nth-of-update-nth
+;;            (equal (update-nth n a (update-nth n b x))
+;;                   (update-nth n a x))
+;;            :hints(("Goal" :in-theory (enable update-nth)))))
+
+;;   (defthm logicman-pathcond-eval!-of-update-pathcond-enabledp
+;;     (equal (logicman-pathcond-eval! env (update-nth *pathcond-enabledp* v pathcond) logicman)
+;;            (logicman-pathcond-eval! env pathcond logicman))
+;;     :hints(("Goal" :in-theory (enable pathcond-fix))))
+
+;;   (defthm logicman-pathcond-eval!-of-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (logicman-pathcond-p pathcond old))
+;;              (equal (logicman-pathcond-eval! env pathcond new)
+;;                     (logicman-pathcond-eval! env pathcond old))))
+
+;;   (def-updater-independence-thm logicman-pathcond-eval!-of-interp-st-logicman-extension
+;;     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+;;                   (logicman-pathcond-p pathcond (interp-st->logicman old)))
+;;              (equal (logicman-pathcond-eval! env pathcond (interp-st->logicman new))
+;;                     (logicman-pathcond-eval! env pathcond (interp-st->logicman old)))))
+
+;;   ;; (defthm logicman-pathcond-eval!-of-logicman-pathcond-assume
+;;   ;;   (implies (not contradictionp)
+;;   ;;            (equal (logicman-pathcond-eval! env new-pathcond)
+;;   ;;                   (and (logicman-pathcond-eval! env pathcond)
+;;   ;;                        (or (not (pathcond-enabledp pathcond))
+;;   ;;                            (bfr-eval x env))))))
+;;   )
+
+
+(define gl-interp-real-errorp (err)
+  (and err (not (eq err :unreachable))))
+
+(defthm pathcond-enabledp-of-pathcond-rewind
+  (iff (nth *pathcond-enabledp* (pathcond-rewind mode pathcond))
+       (nth *pathcond-enabledp* pathcond))
+  :hints(("Goal" :in-theory (e/d (pathcond-rewind) (nth-add1 nth update-nth)))))
+
+(defthm pathcond-enabledp-of-interp-st-pathcond-rewind
+  (iff (nth *pathcond-enabledp* (pathcond-rewind mode pathcond))
+       (nth *pathcond-enabledp* pathcond))
+  :hints(("Goal" :in-theory (e/d (pathcond-rewind) (nth-add1 nth update-nth)))))
+
+
+
+(local (in-theory (disable nth update-nth)))
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond-enabledp
+      :rules ((t (:add-concl (implies (not (gl-interp-real-errorp err))
+                                      (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
+                                            (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
+                 (:add-keyword :hints ('(:do-not-induct t :expand :lambdas)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '( :expand :lambdas))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+(define maybe-cons (do-it val lst)
+  :verify-guards nil
+  (if do-it (cons val lst) lst)
+  ///
+  (defcong iff equal (maybe-cons do-it val lst) 1))
+
+(define maybe-cdr (do-it lst)
+  :verify-guards nil
+  (if do-it (cdr lst) lst)
+  ///
+  (defcong iff equal (maybe-cdr do-it lst) 1)
+  (defthm maybe-cdr-of-maybe-cons
+    (equal (maybe-cdr do-it (maybe-cons do-it val lst))
+           lst)
+    :hints(("Goal" :in-theory (enable maybe-cons)))))
+
+
+
+(define logicman-pathcond-eval-checkpoints (env pathcond logicman)
+  :non-executable t
+  :no-function t
+  :verify-guards nil
+  :measure (pathcond-rewind-stack-len (lbfr-mode) pathcond)
+  (if (or (zp (pathcond-rewind-stack-len (lbfr-mode) pathcond))
+          (not (pathcond-enabledp pathcond)))
+      nil
+    (b* ((pathcond (pathcond-rewind (lbfr-mode) pathcond))
+         (eval (logicman-pathcond-eval env pathcond logicman)))
+      (cons eval (logicman-pathcond-eval-checkpoints env pathcond logicman))))
+  ///
+  (deffixequiv logicman-pathcond-eval-checkpoints)
+
+  (defthm logicman-pathcond-eval-checkpoints-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (logicman-pathcond-p pathcond old))
+             (equal (logicman-pathcond-eval-checkpoints env pathcond new)
+                    (logicman-pathcond-eval-checkpoints env pathcond old))))
+
+  (def-updater-independence-thm logicman-pathcond-eval-checkpoints-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (logicman-pathcond-p pathcond (interp-st->logicman old)))
+             (equal (logicman-pathcond-eval-checkpoints env pathcond (interp-st->logicman new))
+                    (logicman-pathcond-eval-checkpoints env pathcond (interp-st->logicman old)))))
+
+  (defret logicman-pathcond-eval-checkpoints-of-logicman-pathcond-assume
+    (implies (and (not contradictionp)
+                  (equal (logicman->mode logicman) (logicman->mode logicman1)))
+             (equal (logicman-pathcond-eval-checkpoints env new-pathcond logicman1)
+                    (maybe-cons (nth *pathcond-enabledp* pathcond)
+                                (logicman-pathcond-eval env pathcond logicman1)
+                                (logicman-pathcond-eval-checkpoints env pathcond logicman1))))
+    :hints(("Goal" :in-theory (enable maybe-cons)))
+    :fn logicman-pathcond-assume)
+
+  (defret logicman-pathcond-eval-checkpoints-of-pathcond-rewind
+    (implies (equal bfr-mode (lbfr-mode))
+             (equal (logicman-pathcond-eval-checkpoints env new-pathcond logicman)
+                    (maybe-cdr (nth *pathcond-enabledp* pathcond)
+                               (logicman-pathcond-eval-checkpoints env pathcond logicman))))
+    :hints(("Goal" :in-theory (enable maybe-cdr)
+            :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman)
+                     (logicman-pathcond-eval-checkpoints env (pathcond-rewind (lbfr-mode) pathcond) logicman))))
+    :fn pathcond-rewind))
+
+
+(define logicman-pathcond-eval-checkpoints! (env pathcond logicman)
+  :non-executable t
+  :no-function t
+  :verify-guards nil
+  (logicman-pathcond-eval-checkpoints env (update-nth *pathcond-enabledp* t pathcond) logicman)
+  ///
+  (deffixequiv logicman-pathcond-eval-checkpoints)
+
+  (defthm update-pathcond-enabledp-under-pathcond-equiv
+    (implies (iff* enabledp (pathcond-enabledp pathcond))
+             (pathcond-equiv (update-nth *pathcond-enabledp* enabledp pathcond)
+                             pathcond))
+    :hints(("Goal" :in-theory (enable pathcond-fix))))
+
+  (fty::deffixcong pathcond-equiv pathcond-equiv (update-nth n v x) x
+    :hints(("Goal" :in-theory (enable pathcond-fix))))
+
+  ;; (local (defthm logicman-pathcond-eval-checkpoints-of-update-pathcond-enabledp
+  ;;          (implies (nth *pathcond-enabledp* pathcond)
+  ;;                   (equal (logicman-pathcond-eval-checkpoints
+  ;;                           env (update-nth *pathcond-enabledp* t pathcond) logicman)
+  ;;                          (logicman-pathcond-eval-checkpoints
+  ;;                           env pathcond logicman)))
+  ;;          :hints(("Goal" :in-theory (e/d (logicman-pathcond-eval-checkpoints)
+  ;;                                         (LOGICMAN-PATHCOND-EVAL-CHECKPOINTS-OF-PATHCOND-REWIND)))
+  ;;                 (and (equal id (acl2::parse-clause-id "Subgoal *1/3'10'"))
+  ;;                      '(:error t)))))
+
+  (defthm logicman-pathcond-eval-checkpoints!-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (logicman-pathcond-p pathcond old))
+             (equal (logicman-pathcond-eval-checkpoints! env pathcond new)
+                    (logicman-pathcond-eval-checkpoints! env pathcond old))))
+
+  (def-updater-independence-thm logicman-pathcond-eval-checkpoints!-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (logicman-pathcond-p pathcond (interp-st->logicman old)))
+             (equal (logicman-pathcond-eval-checkpoints! env pathcond (interp-st->logicman new))
+                    (logicman-pathcond-eval-checkpoints! env pathcond (interp-st->logicman old)))))
+
+  (defret logicman-pathcond-eval-checkpoints!-of-logicman-pathcond-assume
+    (implies (and (not contradictionp)
+                  (equal (logicman->mode logicman) (logicman->mode logicman1)))
+             (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman1)
+                    (maybe-cons (nth *pathcond-enabledp* pathcond)
+                                (logicman-pathcond-eval env pathcond logicman1)
+                                (logicman-pathcond-eval-checkpoints! env pathcond logicman1))))
+    :hints(("Goal" :in-theory (enable maybe-cons))
+           (and stable-under-simplificationp
+                '(:in-theory (enable logicman-pathcond-assume))))
+    :fn logicman-pathcond-assume)
+
+  (defret logicman-pathcond-eval-checkpoints!-of-interp-st-pathcond-assume
+    (implies (and (not contra)
+                  (equal (logicman->mode (interp-st->logicman interp-st)) (logicman->mode logicman1)))
+             (equal (logicman-pathcond-eval-checkpoints! env (interp-st->pathcond new-interp-st) logicman1)
+                    (maybe-cons (nth *pathcond-enabledp* (interp-st->pathcond interp-st))
+                                (logicman-pathcond-eval env (interp-st->pathcond interp-st) logicman1)
+                                (logicman-pathcond-eval-checkpoints! env (interp-st->pathcond interp-st) logicman1))))
+    :hints(("Goal" :in-theory (e/d (interp-st-pathcond-assume)
+                                   (logicman-pathcond-eval-checkpoints!))))
+    :fn interp-st-pathcond-assume)
+
+  (defret logicman-pathcond-eval-checkpoints!-of-pathcond-rewind
+    (implies (equal bfr-mode (lbfr-mode))
+             (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman)
+                    (maybe-cdr (nth *pathcond-enabledp* pathcond)
+                               (logicman-pathcond-eval-checkpoints! env pathcond logicman))))
+    :hints(("Goal" :in-theory (enable maybe-cdr))
+           (and stable-under-simplificationp
+                '(:in-theory (enable pathcond-rewind))))
+    :fn pathcond-rewind)
+
+  (local (defthm update-nth-of-update-nth
+           (equal (update-nth n a (update-nth n b x))
+                  (update-nth n a x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (defthm logicman-pathcond-eval-checkpoints!-of-update-pathcond-enabledp
+    (equal (logicman-pathcond-eval-checkpoints! env (update-nth *pathcond-enabledp* v pathcond) logicman)
+           (logicman-pathcond-eval-checkpoints! env pathcond logicman))))
+
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond
       :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
                     ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
                     ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
                     (interp-st                     (interp-st-bfrs-ok interp-st))
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
-      :return-concls ((xbfr                        (interp-st-bfr-p xbfr new-interp-st))
-                      ((gl-object-p x)             (interp-st-bfr-listp (gl-object-bfrlist x) new-interp-st))
-                      ((gl-objectlist-p x)         (interp-st-bfr-listp (gl-objectlist-bfrlist x) new-interp-st))
-                      (new-interp-st               (interp-st-bfrs-ok new-interp-st)))
-      :rules ((t (:add-keyword :hints ('(:do-not-induct t)
+      :rules ((t (:add-concl (implies (not (gl-interp-real-errorp err))
+                                      (equal (logicman-pathcond-eval-checkpoints!
+                                              env
+                                              (interp-st->pathcond new-interp-st)
+                                              (interp-st->logicman new-interp-st))
+                                             (logicman-pathcond-eval-checkpoints!
+                                              env
+                                              (interp-st->pathcond interp-st)
+                                              (interp-st->logicman interp-st)))))
+                 (:add-keyword :hints ('(:do-not-induct t)
                                        (let ((flag (find-flag-is-hyp clause)))
                                          (and flag
                                               (prog2$ (cw "flag: ~x0~%" flag)
@@ -2808,8 +3106,6 @@
               ((:fnname gl-rewrite-try-rules)
                (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
-
-
 
 
 

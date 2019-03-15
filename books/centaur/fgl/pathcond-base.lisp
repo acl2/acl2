@@ -197,6 +197,7 @@
                          pathcond)
   :guard (< 0 (pathcond-rewind-stack-len bfr-mode pathcond))
   :guard-hints (("goal" :in-theory (enable pathcond-rewind-stack-len)))
+  :returns new-pathcond
   (b* ((pathcond (pathcond-fix pathcond))
        ((unless (pathcond-enabledp pathcond))
         pathcond))
@@ -229,7 +230,21 @@
   (local (defthm update-nth-lemma
            (implies (equal x (update-nth n val y))
                     (equal (update-nth n val1 x)
-                           (update-nth n val1 y))))))
+                           (update-nth n val1 y)))))
+
+  (local (defthm len-of-ubdd-list-fix
+           (equal (len (ubdd-list-fix x)) (len x))
+           :hints(("Goal" :in-theory (enable len ubdd-list-fix)))))
+
+  (local (defthm len-cdr-when-positive
+           (equal (len (cdr x)) (+ -1 (pos-fix (len x))))
+           :hints(("Goal" :in-theory (enable len pos-fix)))))
+
+  (defthm rewind-stack-len-of-pathcond-rewind
+    (implies (pathcond-enabledp pathcond)
+             (equal (pathcond-rewind-stack-len bfr-mode (pathcond-rewind bfr-mode pathcond))
+                    (1- (pos-fix (pathcond-rewind-stack-len bfr-mode pathcond)))))
+    :hints(("Goal" :in-theory (e/d (pathcond-rewind-stack-len ubdd-list-fix pos-fix))))))
 
 
 

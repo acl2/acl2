@@ -32,6 +32,7 @@
 
 (include-book "logicman")
 (include-book "pathcond-base")
+(include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
@@ -425,7 +426,7 @@
            (implies (and (equal val (nth n x))
                          (< (nfix n) (len x)))
                     (equal (update-nth n val x) x))
-           :hints(("Goal" :in-theory (enable nth update-nth)))))
+           :hints(("Goal" :in-theory (enable nth update-nth len)))))
 
   (local (defthm len-of-pathcond-fix
            (equal (len (pathcond-fix x)) 6)
@@ -480,7 +481,19 @@
                                       bfr-varname-p
                                       bfr-fix
                                       bfr-nvars
-                                      bfr->aignet-lit)))))
+                                      bfr->aignet-lit))))
+
+  (defret pathcond-enabledp-of-<fn>
+    (iff* (nth *pathcond-enabledp* new-pathcond)
+          (nth *pathcond-enabledp* pathcond)))
+
+  (defret pathcond-rewind-stack-len-of-<fn>
+    (implies (and (not contradictionp)
+                  (pathcond-enabledp pathcond)
+                  (equal mode (lbfr-mode)))
+             (equal (pathcond-rewind-stack-len mode new-pathcond)
+                    (+ 1 (pathcond-rewind-stack-len mode pathcond))))
+    :hints(("Goal" :in-theory (enable pathcond-rewind-stack-len)))))
 
 
                                   

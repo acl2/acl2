@@ -39,6 +39,8 @@
 (include-book "centaur/fty/bitstruct" :dir :system)
 (include-book "prof")
 
+(local (std::add-default-post-define-hook :fix))
+
 (fty::defbitstruct interp-flags
   ((intro-bvars booleanp :default t)
    (intro-synvars booleanp :default t)
@@ -211,7 +213,7 @@
 
 (define interp-st-prof-push (name interp-st)       
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -220,7 +222,7 @@
 
 (define interp-st-prof-pop-increment (successp interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -229,7 +231,7 @@
 
 (define interp-st-prof-simple-increment-def (name interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -238,7 +240,7 @@
 
 (define interp-st-prof-simple-increment-exec (name interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -247,7 +249,7 @@
 
 (define interp-st-prof-simple-increment-g (name interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -256,7 +258,7 @@
 
 (define interp-st-prof-unwind-stack (interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -264,7 +266,7 @@
    interp-st))
 
 (define interp-st-prof-print-report (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (res)
@@ -272,7 +274,7 @@
    res))
 
 (define interp-st-prof-report (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -281,7 +283,7 @@
 
 (define interp-st-prof-reset (interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -290,7 +292,7 @@
 
 (define interp-st-prof-enable (interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -299,7 +301,7 @@
 
 (define interp-st-prof-disable (interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -308,7 +310,7 @@
 
 (define interp-st-prof-enabledp (interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (enabledp)
@@ -317,7 +319,7 @@
 
 (define update-interp-st-prof-enabledp ((val booleanp) interp-st)
   :returns (new-interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let
    ((interp-profiler (interp-st->prof interp-st)))
    (interp-profiler)
@@ -328,7 +330,7 @@
 
 
 (define interp-st-bindings (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (bindings)
@@ -336,7 +338,7 @@
              bindings))
 
 (define interp-st-minor-bindings (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (bindings)
@@ -344,7 +346,7 @@
              bindings))
 
 (define interp-st-stack-frames (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (frames)
@@ -352,7 +354,7 @@
              frames))
 
 (define interp-st-stack-minor-frames (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (frames)
@@ -360,14 +362,14 @@
              frames))
 
 (define interp-st-scratch-len (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let ((stack (interp-st->stack interp-st)))
              (len)
              (stack-scratch-len stack)
              len))
 
 (define interp-st-pop-frame (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (and (< 1 (interp-st-stack-frames interp-st))
               (eql 1 (interp-st-stack-minor-frames interp-st))
@@ -378,7 +380,7 @@
              interp-st))
 
 (define interp-st-pop-minor-frame (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (and (< 1 (interp-st-stack-minor-frames interp-st))
               (eql 0 (interp-st-scratch-len interp-st)))
@@ -390,7 +392,7 @@
 
 
 (define interp-st-pop-scratch (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (< 0 (interp-st-scratch-len interp-st))
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -399,7 +401,7 @@
              interp-st))
 
 (define interp-st-top-scratch (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (< 0 (interp-st-scratch-len interp-st))
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -408,7 +410,7 @@
              obj))
 
 (define interp-st-nth-scratch ((n natp) interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (< n (interp-st-scratch-len interp-st))
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -426,14 +428,14 @@
       ,(acl2::template-append
         '((define interp-st-push-scratch-<kind> ((x <pred>)
                                                  interp-st)
-            :enabled t
+            :enabled t :hooks nil
             :inline t
             (stobj-let ((stack (interp-st->stack interp-st)))
                        (stack)
                        (stack-push-scratch-<kind> x stack)
                        interp-st))
           (define interp-st-top-scratch-<kind> (interp-st)
-            :enabled t
+            :enabled t :hooks nil
             :inline t
             :guard (and (< 0 (interp-st-scratch-len interp-st))
                         (scratchobj-case (interp-st-top-scratch interp-st) :<kind>))
@@ -443,7 +445,7 @@
                        obj))
 
           (define interp-st-nth-scratch-<kind> ((n natp) interp-st)
-            :enabled t
+            :enabled t :hooks nil
             :inline t
             :guard (and (< n (interp-st-scratch-len interp-st))
                         (scratchobj-case (interp-st-nth-scratch n interp-st) :<kind>))
@@ -453,7 +455,7 @@
                        obj))
 
           (define interp-st-pop-scratch-<kind> (interp-st)
-            :enabled t
+            :enabled t :hooks nil
             :inline t
             :guard (and (< 0 (interp-st-scratch-len interp-st))
                         (scratchobj-case (interp-st-top-scratch interp-st) :<kind>))
@@ -466,7 +468,7 @@
 (define interp-st-add-binding ((var pseudo-var-p)
                                (val gl-object-p)
                                interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -475,7 +477,7 @@
 
 (define interp-st-set-bindings ((bindings gl-object-alist-p)
                                 interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -484,7 +486,7 @@
 
 (define interp-st-add-minor-bindings ((bindings gl-object-alist-p)
                                       interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -493,7 +495,7 @@
 
 (define interp-st-set-minor-bindings ((bindings gl-object-alist-p)
                                       interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -502,7 +504,7 @@
 
 (define interp-st-push-frame ((bindings gl-object-alist-p)
                               interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -511,7 +513,7 @@
              interp-st))
 
 (define interp-st-push-minor-frame (interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -521,7 +523,7 @@
              interp-st))
 
 (define interp-st-set-debug (debug interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -529,7 +531,7 @@
              interp-st))
 
 (define interp-st-set-minor-debug (debug interp-st)
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -625,14 +627,14 @@
 
 
 (define interp-st-bfr-p (x &optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (ok)
              (lbfr-p x)
              ok))
 
 (define interp-st-bfr-fix (x &optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   :guard (interp-st-bfr-p x)
   (mbe :logic (stobj-let ((logicman (interp-st->logicman interp-st)))
                          (new-x)
@@ -641,7 +643,7 @@
        :exec x))
 
 (define interp-st-bfr-listp (x &optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (ok)
              (lbfr-listp x)
@@ -649,21 +651,21 @@
 
 
 (define interp-st-bfr-mode (&optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (mode)
              (logicman->mode logicman)
              mode))
 
 (define interp-st-bfr-state (&optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (bfrstate)
              (logicman->bfrstate logicman)
              bfrstate))
 
 (define interp-st-bfr-not (x &optional (interp-st 'interp-st))
-  :enabled t
+  :enabled t :hooks nil
   :inline t
   :guard (interp-st-bfr-p x)
   (stobj-let ((logicman (interp-st->logicman interp-st)))
@@ -698,8 +700,8 @@
               (logicman (interp-st->logicman interp-st)))
              (bfr bvar-db logicman)
              (b* ((nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar x bvar-db))
-                  (bvar-db (maybe-add-equiv-term x nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (gl-object-fix x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term (gl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
@@ -748,8 +750,8 @@
                   ((when var)
                    (mv (bfr-var var logicman) bvar-db logicman))
                   (nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar x bvar-db))
-                  (bvar-db (maybe-add-equiv-term x nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (gl-object-fix x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term (gl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
