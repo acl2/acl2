@@ -106,7 +106,7 @@
 (defstobj stack$c
   (stack$c-minor :type (array t (2)) :resizable t)
   (stack$c-major :type (array t (2)) :resizable t)
-  (stack$c-scratch :type (array t (1)) :resizable t :initially 0)
+  (stack$c-scratch :type (array t (2)) :resizable t :initially 0)
   (stack$c-frame-top-minor :type (array (unsigned-byte 32) (0)) :resizable t :initially 0)
   (stack$c-frame-next-scratch :type (array (and (unsigned-byte 32)
                                                 (satisfies scratch-nontagidx-p))
@@ -734,6 +734,14 @@
                        (unsigned-byte-p 60 (nth-scratch i (nth *stack$c-scratchi1* stack$c)))))
          :hints (("goal" :use stack$c-scratch-codeslots-ok-necc))))
 
+(local (defthm stack$c-scratch-codeslots-ok-of-update-nontagidx
+         (implies (and (stack$c-scratch-codeslots-ok stack$c)
+                       (scratch-nontagidx-p n))
+                  (stack$c-scratch-codeslots-ok
+                   (update-nth-scratch-array *stack$c-scratchi1* n val stack$c)))
+         :hints ((and stable-under-simplificationp
+                      `(:expand (,(car (last clause))))))))
+
 
 
 
@@ -752,8 +760,8 @@
            (stack$c-minor-length stack$c))
        (<= (stack$c-top-minor stack$c)
            (stack$c-frame-next-scratch-length stack$c))
-       (<= (stack$c-next-scratch stack$c)
-           (stack$c-scratch-length stack$c))))
+       (< (stack$c-next-scratch stack$c)
+          (stack$c-scratch-length stack$c))))
 
 
 
@@ -872,44 +880,126 @@
     :hints(("Goal" :in-theory (enable logsquash-is-ash-of-logtail bitops::logsquash)))))
 
 
+(make-event
+ `(progn
+    (define scratchobj-code/val-okp ((code natp) (val))
+      (case (lnfix code)
+        . ,(acl2::template-proj
+            '(<codecase> (:@ (not :no-pred) (<pred> val))
+                         (:@ :no-pred t))
+            *scratchobj-tmplsubsts*))
+      ///
+      . ,(acl2::template-proj
+          '(defthm scratchobj-code/val-okp-of-<kind>
+             (:@ (not :no-pred)
+              (implies (<pred> val)
+                       (scratchobj-code/val-okp <code> val)))
+             (:@ :no-pred
+              (scratchobj-code/val-okp <code> val)))
+          *scratchobj-tmplsubsts*))
 
+    (define code/val->scratchobj ((code natp) (val))
+      :guard (scratchobj-code/val-okp code val)
+      :guard-hints (("goal" :in-theory (enable scratchobj-code/val-okp)))
+      :returns (obj scratchobj-p)
+      (scratchobj-fix
+       (case (lnfix code)
+         . ,(acl2::template-proj
+             '(<codecase> (scratchobj-<kind> val))
+             *scratchobj-tmplsubsts*)))
+      ///
+      ,@(acl2::template-proj
+         '(defthm scratchobj-<kind>->val-of-code/val->scratchobj
+            (equal (scratchobj-<kind>->val
+                    (code/val->scratchobj <code> val))
+                   (:@ (not :no-pred) (<fix> val))
+                   (:@ :no-pred val)))
+         *scratchobj-tmplsubsts*)
+
+      ,@(acl2::template-proj
+         '(defret scratchobj-<kind>->val-of-code/val->scratchobj-by-kind
+            (implies (equal (scratchobj-code->kind code) :<kind>)
+                     (equal (scratchobj-<kind>->val obj)
+                            (:@ (not :no-pred) (<fix> val))
+                            (:@ :no-pred val)))
+            :hints(("Goal" :in-theory (enable scratchobj-code->kind))))
+         *scratchobj-tmplsubsts*)
+
+      (defret scratchobj-kind-of-<fn>
+        (equal (scratchobj-kind obj)
+               (scratchobj-code->kind code))
+        :hints(("Goal" :in-theory (enable scratchobj-code->kind)))))
+
+    (define scratchobj->val ((x scratchobj-p))
+      :returns (val)
+      (scratchobj-case x
+        . ,(acl2::template-append
+            '(:<kind> x.val)
+            *scratchobj-tmplsubsts*))
+      ///
+      (defthm scratchobj-code/val-okp-of-scratchobj->val
+        (scratchobj-code/val-okp (scratchobj-kind->code (scratchobj-kind obj))
+                                 (scratchobj->val obj))
+        :hints(("Goal" :in-theory (enable scratchobj-kind->code
+                                          scratchobj-code/val-okp))))
+
+      (defthm code/val->scratchobj-of-scratchobj->val
+        (equal (code/val->scratchobj (scratchobj-kind->code (scratchobj-kind obj))
+                                     (scratchobj->val obj))
+               (scratchobj-fix obj))
+        :hints(("Goal" :in-theory (enable scratchobj-kind->code
+                                          code/val->scratchobj))))
+
+      ,@(acl2::template-proj
+         '(defthm scratchobj->val-of-scratchobj-<kind>
+            (equal (scratchobj->val (scratchobj-<kind> val))
+                   (:@ (not :no-pred) (<fix> val))
+                   (:@ :no-pred val)))
+         *scratchobj-tmplsubsts*))))
 
 ;; (define stack$c-bounds-ok (stack$c)
 ;;   :enabled t
 
 
-(make-event
- `(defun-sk stack$c-scratch-welltyped (stack$c)
-    (forall i
-            (implies (and (scratch-nontagidx-p i)
-                          (< i (stack$c-next-scratch stack$c)))
-                     (let ((kind (scratchobj-code->kind (scratch-entry-kindcode i stack$c)))
-                           (entry (nth-scratch i (nth *stack$c-scratchi1* stack$c))))
-                       (and . ,(acl2::template-append
-                                '((:@ (not :no-pred)
-                                   (implies (equal kind :<kind>)
-                                            (<pred> entry))))
-                                *scratchobj-tmplsubsts*)))))
-    :rewrite :direct))
+(defun-sk stack$c-scratch-welltyped (stack$c)
+  (forall i
+          (implies (and (scratch-nontagidx-p i)
+                        (< i (stack$c-next-scratch stack$c)))
+                   (let ((code (scratch-entry-kindcode i stack$c))
+                         (entry (nth-scratch i (nth *stack$c-scratchi1* stack$c))))
+                     (scratchobj-code/val-okp code entry))))
+  :rewrite :direct)
 
 (in-theory (disable stack$c-scratch-welltyped
                     stack$c-scratch-welltyped-necc))
 
 (local (in-theory (enable stack$c-scratch-welltyped-necc)))
 
-(local
- (make-event
- `(defthmd stack$c-scratch-welltyped-casesplit
-    (implies (and (stack$c-scratch-welltyped stack$c)
-                  (scratch-nontagidx-p i)
-                  (case-split (< i (stack$c-next-scratch stack$c))))
-             (let ((kind (scratchobj-code->kind (scratch-entry-kindcode i stack$c)))
-                   (entry (nth-scratch i (nth *stack$c-scratchi1* stack$c))))
-               (and . ,(acl2::template-append
-                        '((:@ (not :no-pred)
-                           (implies (equal kind :<kind>)
-                                    (<pred> entry))))
-                        *scratchobj-tmplsubsts*)))))))
+(defthmd stack$c-scratch-welltyped-casesplit
+  (implies (and (stack$c-scratch-welltyped stack$c)
+                (scratch-nontagidx-p i)
+                (case-split (< i (stack$c-next-scratch stack$c))))
+           (let ((code (scratch-entry-kindcode i stack$c))
+                 (entry (nth-scratch i (nth *stack$c-scratchi1* stack$c))))
+             (scratchobj-code/val-okp code entry))))
+
+(make-event
+ (cons 'progn
+       (acl2::template-append
+        '((:@ (not :no-pred)
+           (defthm stack$c-scratch-welltyped-implies-<kind>
+             (implies (and (stack$c-scratch-welltyped stack$c)
+                           (scratch-nontagidx-p i)
+                           (< i (stack$c-next-scratch stack$c)))
+                      (let ((code (scratch-entry-kindcode i stack$c))
+                            (entry (nth-scratch i (nth *stack$c-scratchi1* stack$c))))
+                        (implies (equal (scratchobj-code->kind code) :<kind>)
+                                 (<pred> entry))))
+             :hints (("goal" :use stack$c-scratch-welltyped-necc
+                      :in-theory (e/d (scratchobj-code/val-okp
+                                       scratchobj-code->kind)
+                                      (stack$c-scratch-welltyped-necc)))))))
+        *scratchobj-tmplsubsts*)))
 
 
 
@@ -954,9 +1044,7 @@
     (b* ((n (scratch-nontagidx-fix n))
          (code (scratch-entry-kindcode n stack$c))
          (val (stack$c-scratchi n stack$c)))
-      (scratchobj-fix
-       (case code
-         ,@(acl2::template-proj '(<codecase> (scratchobj-<kind> val)) *scratchobj-tmplsubsts*))))
+      (code/val->scratchobj code val))
     ///
     ;; (defthm stack$c-scratch-entry-of-update-nth-scratch
     ;;   (implies (and (scratch-nontagidx-p m)
@@ -971,6 +1059,9 @@
                            (stack$c-scratchi (scratch-nontagidx-fix n) old)))
                (equal (stack$c-scratch-entry n new)
                       (stack$c-scratch-entry n old))))))
+
+
+
 
 (local
  (defsection range-scratch-entry-equiv
@@ -1127,7 +1218,12 @@
 
    (defthm range-scratch-entry-equiv-when-range-scratch-entry-equiv
      (implies (range-scratch-entry-equiv min max x y)
-              (range-scratch-entry-equiv min max x y)))))
+              (range-scratch-entry-equiv min max x y)))
+
+   (defthmd range-scratch-entry-equiv-commute
+     (implies (range-scratch-entry-equiv min max y x)
+              (range-scratch-entry-equiv min max x y))
+     :hints(("Goal" :in-theory (enable range-scratch-entry-equiv-necc))))))
    
 
 
@@ -1570,9 +1666,9 @@
                   ;; (< (ash (nfix tail) 4) (stack$c-next-scratch stack$c))
                   )
              (stack$c-bounds-ok new-stack$c))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))
-                   :in-theory (enable max len-of-update-nth-scratch)))))
+    :hints (("goal" :in-theory (enable max len-of-update-nth-scratch))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
 
   (local (defthm equal-ash
            (implies (natp n)
@@ -1769,7 +1865,12 @@
 
   (defret nth-of-<fn>
     (implies (not (equal (nfix m) *stack$c-scratchi1*))
-             (equal (nth m new-stack$c) (nth m stack$c)))))
+             (equal (nth m new-stack$c) (nth m stack$c))))
+
+  (defret len-scratch-of-<fn>
+    (<= (len (nth *stack$c-scratchi1* stack$c))
+        (len (nth *stack$c-scratchi1* new-stack$c)))
+    :rule-classes :linear))
 
 
 
@@ -1780,6 +1881,83 @@
                        (< (nfix n) (len x)))
                   (equal (update-nth n val x) x))
          :hints(("Goal" :in-theory (enable nth update-nth len)))))
+
+(define update-stack$c-scratch-entry ((n scratch-nontagidx-p)
+                                      (obj scratchobj-p)
+                                      (stack$c stack$c-okp))
+  :guard (<= n (stack$c-next-scratch stack$c))
+  :returns (new-stack$c)
+  :guard-hints (("goal" :do-not-induct t
+                 :in-theory (enable len-of-update-nth-scratch)))
+  (b* ((n (scratch-nontagidx-fix n))
+       (code (scratchobj-kind->code (scratchobj-kind obj)))
+       (val (scratchobj->val obj))
+       (stack$c (update-stack$c-scratchi n val stack$c)))
+    (update-scratch-entry-kindcode n code stack$c))
+  ///
+  (defthm stack$c-scratch-entry-of-update-stack$c-scratch-entry
+    (equal (stack$c-scratch-entry m (update-stack$c-scratch-entry n obj stack$c))
+           (if (scratch-nontagidx-equiv n m)
+               (scratchobj-fix obj)
+             (stack$c-scratch-entry m stack$c)))
+    :hints(("Goal" :in-theory (enable stack$c-scratch-entry))))
+
+  (defthm nth-of-update-stack$c-scratch-entry
+    (implies (not (equal (nfix m) *stack$c-scratchi1*))
+             (equal (nth m (update-stack$c-scratch-entry n obj stack$c))
+                    (nth m stack$c))))
+
+
+  (local (in-theory (enable len-of-update-nth-scratch)))
+
+  (defret stack$c-okp-of-<fn>
+    (implies (stack$c-okp stack$c)
+             (stack$c-okp new-stack$c))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (car (last clause))))
+                   (and (member (car lit) '(stack$c-major-frames-welltyped
+                                            stack$c-minor-frames-welltyped
+                                            stack$c-major-frames-bounded
+                                            stack$c-minor-frames-bounded
+                                            stack$c-top-minor-ordered
+                                            stack$c-scratch-codeslots-ok
+                                            stack$c-next-scratch-ordered
+                                            stack$c-next-scratch-bounded
+                                            stack$c-top-minor-bounded
+                                            stack$c-scratch-welltyped))
+                        `(:expand (,lit)))))))
+
+  (defret scratchobj-code/val-okp-of-<fn>
+    (b* ((code (scratch-entry-kindcode n new-stack$c))
+         (val (nth-scratch n (nth *stack$c-scratchi1* new-stack$c))))
+      (implies (scratch-nontagidx-p n)
+               (scratchobj-code/val-okp code val))))
+
+  (defret len-scratch-of-<fn>
+    (<= (len (nth *stack$c-scratchi1* stack$c))
+        (len (nth *stack$c-scratchi1* new-stack$c)))
+    :rule-classes :linear)
+
+  (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
+    (implies (and (scratch-nontagidx-p i)
+                  (not (and (<= (scratch-nontagidx-fix min) i)
+                            (< i (scratch-nontagidx-fix max)))))
+             (iff (range-scratch-entry-equiv min max x (update-stack$c-scratch-entry i obj y))
+                  (range-scratch-entry-equiv min max x y)))
+    :hints (("goal" :in-theory (enable range-scratch-entry-equiv-necc))))
+
+  (defthm range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-1
+    (implies (and (scratch-nontagidx-p i)
+                  (not (and (<= (scratch-nontagidx-fix min) i)
+                            (< i (scratch-nontagidx-fix max)))))
+             (iff (range-scratch-entry-equiv min max (update-stack$c-scratch-entry i obj x) y)
+                  (range-scratch-entry-equiv min max x y)))
+    :hints (("goal" :use ((:instance range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2
+                           (x y) (y x)))
+             :in-theory (e/d (range-scratch-entry-equiv-commute)
+                             (range-scratch-entry-equiv-of-update-stack$c-scratch-entry-out-of-range-2))))))
+
+
 
 
 (define maybe-grow-list ((threshold natp)
@@ -2558,6 +2736,13 @@
                        (> (scratch-nontagidx-to-index c) (nfix x))))
          :hints (("Goal" :use index-to-scratch-nontagidx->-const))))
 
+(local (defthmd index-to-scratch-nontagidx-<
+         (implies (and ;; (syntaxp (quotep c))
+                   (scratch-nontagidx-p c))
+                  (iff (< c (index-to-scratch-nontagidx x))
+                       (< (scratch-nontagidx-to-index c) (nfix x))))
+         :hints (("Goal" :use index-to-scratch-nontagidx-<-const))))
+
 (define stack$c-nth-scratch ((n natp)
                              (stack$c stack$c-okp))
   :guard-hints (("goal" :in-theory (e/d (stack$c-scratch-len
@@ -2599,6 +2784,197 @@
                                     stack$c-build-top-major-frame
                                     stack$c-build-minor-frame)
                                    (scratch-decr-nontagidx-in-terms-of-conversions))))))
+
+
+(local (defthm stack$c-okp-of-maybe-resize-stack$c-scratch
+         (implies (stack$c-okp stack$c)
+                  (stack$c-okp
+                   (update-nth *stack$c-scratchi1*
+                               (maybe-grow-list
+                                n 0
+                                (nth *stack$c-scratchi1* stack$c))
+                               stack$c)))
+         :hints ((and stable-under-simplificationp
+                      (let ((lit (car (last clause))))
+                        (and (member (car lit) '(stack$c-major-frames-welltyped
+                                                 stack$c-minor-frames-welltyped
+                                                 stack$c-major-frames-bounded
+                                                 stack$c-minor-frames-bounded
+                                                 stack$c-top-minor-ordered
+                                                 stack$c-scratch-codeslots-ok
+                                                 stack$c-next-scratch-ordered
+                                                 stack$c-next-scratch-bounded
+                                                 stack$c-top-minor-bounded
+                                                 stack$c-scratch-welltyped))
+                             `(:expand (,lit))))))))
+
+
+
+(define stack$c-push-scratch ((obj scratchobj-p)
+                              (stack$c stack$c-okp))
+  :returns (new-stack$c)
+  :guard-debug t
+  :guard-hints (("goal" :do-not-induct t
+                 :use ((:instance stack$c-okp-of-maybe-resize-stack$c-scratch
+                        (n (+ 1 (scratch-incr-nontagidx (stack$c-next-scratch stack$c))))))
+                 :in-theory (disable stack$c-okp-of-maybe-resize-stack$c-scratch))
+                )
+  :prepwork ((local (in-theory (enable len-of-update-nth-scratch
+                                       stack$c-scratch-welltyped-casesplit))))
+  (b* ((next (stack$c-next-scratch stack$c))
+       (next-next (scratch-incr-nontagidx next))
+       (stack$c (maybe-resize-stack$c-scratch (+ 1 next-next) stack$c))
+       (stack$c (update-stack$c-scratch-entry next obj stack$c)))
+    (update-stack$c-next-scratch next-next stack$c))
+  ///
+  (local (defthm stack$c-okp-of-update-stack$c-next-scratch
+           (implies (and (stack$c-okp stack$c)
+                         (equal next (scratch-incr-nontagidx
+                                      (stack$c-next-scratch stack$c)))
+                         (scratchobj-code/val-okp
+                          (scratch-entry-kindcode (stack$c-next-scratch stack$c) stack$c)
+                          (nth-scratch (stack$c-next-scratch stack$c)
+                                       (nth *stack$c-scratchi1* stack$c)))
+                         (< next (len (nth *stack$c-scratchi1* stack$c))))
+                    (stack$c-okp (update-stack$c-next-scratch next stack$c)))
+           :hints ((and stable-under-simplificationp
+                        (let ((lit (car (last clause))))
+                          (and (member (car lit) '(stack$c-major-frames-welltyped
+                                                   stack$c-minor-frames-welltyped
+                                                   stack$c-major-frames-bounded
+                                                   stack$c-minor-frames-bounded
+                                                   stack$c-top-minor-ordered
+                                                   stack$c-scratch-codeslots-ok
+                                                   stack$c-next-scratch-ordered
+                                                   stack$c-next-scratch-bounded
+                                                   stack$c-top-minor-bounded
+                                                   stack$c-scratch-welltyped))
+                               `(:expand (,lit))))))))
+           
+
+
+
+  (defret stack$c-okp-of-<fn>
+    (implies (stack$c-okp stack$c)
+             (stack$c-okp new-stack$c))
+    :hints(("Goal" :in-theory (disable stack$c-okp
+                                       update-stack$c-next-scratch))))
+
+  (defret stack$c-extract-of-<fn>
+    (implies (stack$c-okp stack$c)
+             (equal (stack$c-extract new-stack$c)
+                    (stack$a-push-scratch obj (stack$c-extract stack$c))))
+    :hints (("goal" :in-theory (e/d (stack$c-extract
+                                     stack$c-build-top-major-frame
+                                     stack$c-build-minor-frame
+                                     stack$a-push-scratch)
+                                    (scratch-incr-nontagidx-in-terms-of-conversions
+                                     scratch-decr-nontagidx-in-terms-of-conversions))
+             :expand
+             ((:free (x)
+               (stack$c-build-major-frames (nth-nat *stack$c-top-frame1* stack$c)
+                                           x))
+              (:free (x bottom)
+               (stack$c-build-minor-frames bottom
+                                           (nth-nat *stack$c-top-minor1* stack$c)
+                                           x))
+              (:free (x bottom)
+               (stack$c-build-scratch
+                bottom
+                (scratch-incr-nontagidx (NTH-NONTAG *stack$c-next-scratch1* STACK$C))
+                x))
+              (:free (x)
+               (stack$c-scratch-entry
+                (nth-nontag *stack$c-next-scratch1* stack$c) x))
+              (:free (x)
+               (stack$c-scratch-entry 1 x)))
+             :cases ((zp (SCRATCH-NONTAGIDX-TO-INDEX (NTH-NONTAG 7 STACK$C))))))))
+                  
+
+(local (defthm stack$c-top-minor-0-when-stack$c-okp
+         (implies (equal 0 (nth-nat *stack$c-top-minor1* stack$c))
+                  (equal (stack$c-top-minor-bounded limit stack$c)
+                         (zp limit)))
+         :hints (("goal" :use ((:instance stack$c-top-minor-bounded-necc
+                                (j 0)))
+                  :expand ((stack$c-top-minor-bounded limit stack$c))
+                  :in-theory (disable stack$c-top-minor-bounded-necc)))))
+
+
+
+(define stack$c-update-scratch ((n natp)
+                                (obj scratchobj-p)
+                                (stack$c stack$c-okp))
+  :guard-hints (("goal" :in-theory (e/d (stack$c-scratch-len
+                                         index-to-scratch-nontagidx-<))
+                 :do-not-induct t))
+  :guard-debug t
+  :guard (< n (stack$c-scratch-len stack$c))
+  :returns new-stack$c
+  (update-stack$c-scratch-entry
+   (scratch-nontagidx-offset (stack$c-next-scratch stack$c) (+ -1 (- (lnfix n))))
+   obj
+   stack$c)
+  ///
+
+  (defret stack$c-okp-of-<fn>
+    (implies (stack$c-okp stack$c)
+             (stack$c-okp new-stack$c))
+    :hints(("Goal" :in-theory (disable stack$c-okp))))
+             
+
+  (local (defthm scratch-nontagidx-to-index-monotonic-linear
+           (implies (< (scratch-nontagidx-fix x) (scratch-nontagidx-fix y))
+                    (< (scratch-nontagidx-to-index x) (scratch-nontagidx-to-index y)))
+           :rule-classes :linear))
+
+
+  (local (defthm equal-of-index-to-scratch-nontagidx
+           (implies (scratch-nontagidx-p x)
+                    (equal (equal x (index-to-scratch-nontagidx y))
+                           (equal (scratch-nontagidx-to-index x) (nfix y))))
+           :hints (("goal" :use ((:instance index-to-scratch-nontagidx-equal
+                                  (x (scratch-nontagidx-to-index x))
+                                  (y (nfix y))))))))
+
+  (local (defthm stack$c-build-scratch-of-update-stack$c-scratch-entry
+           (implies (and (< (scratch-nontagidx-fix n) (scratch-nontagidx-fix top))
+                         (<= (scratch-nontagidx-fix bottom) (scratch-nontagidx-fix n)))
+                    (equal (stack$c-build-scratch bottom top
+                                                  (update-stack$c-scratch-entry n obj stack$c))
+                           (update-nth (+ -1 (- (scratch-nontagidx-to-index top)
+                                                (scratch-nontagidx-to-index n)))
+                                       (scratchobj-fix obj)
+                                       (stack$c-build-scratch bottom top stack$c))))
+           :hints (("goal" :induct (stack$c-build-scratch bottom top stack$c)
+                    :in-theory (enable (:i stack$c-build-scratch)
+                                       update-nth
+                                       index-to-scratch-nontagidx-<)
+                    :expand ((:free (x) (stack$c-build-scratch bottom top x)))))))
+
+  (local (in-theory (enable INDEX-TO-SCRATCH-NONTAGIDX->
+                            INDEX-TO-SCRATCH-NONTAGIDX-<)))
+
+  (local (defthm stack$c-next-scratch-ordered-lemma2
+           (implies (and (stack$c-next-scratch-ordered (nth-nat *stack$c-top-minor1* stack$c) stack$c)
+                         (natp i)
+                         (<= i (+ -1 (nth-nat *stack$c-top-minor1* stack$c))))
+                    (<= (scratch-nontagidx-to-index
+                         (nth-nontag i (nth *stack$c-frame-next-scratchi1* stack$c)))
+                        (scratch-nontagidx-to-index
+                         (nth-nontag (+ -1 (nth-nat *stack$c-top-minor1* stack$c)) (nth *stack$c-frame-next-scratchi1* stack$c)))))
+           :rule-classes :linear))
+
+  (defthm stack$c-extract-of-<fn>
+    (implies (and (stack$c-okp stack$c)
+                  (< (nfix n) (stack$c-scratch-len stack$c)))
+             (equal (stack$c-extract (stack$c-update-scratch n obj stack$c))
+                    (stack$a-update-scratch n obj (stack$c-extract stack$c))))
+    :hints(("Goal" :in-theory (e/d (stack$a-update-scratch
+                                    stack$c-scratch-len
+                                    stack$c-extract
+                                    stack$c-build-top-major-frame
+                                    stack$c-build-minor-frame))))))
 
 
 
@@ -2743,6 +3119,22 @@
 ;;                       '(:in-theory (enable scratch-nontagidx-fix))))
 ;;          :rule-classes :forward-chaining))
 
+(local (defthm unsigned-byte-p-of-scratch-nontagidx-offset
+         (implies (and (unsigned-byte-p m x)
+                       (scratch-nontagidx-p x)
+                       (<= (ifix n) 0)
+                       (posp m))
+                  (unsigned-byte-p m (scratch-nontagidx-offset x n)))
+         :hints(("Goal" :in-theory (e/d (unsigned-byte-p)
+                                        (scratch-nontagidx-offset-in-terms-of-conversions
+                                         scratch-nontagidx-offset-decr-strict-rw
+                                         scratch-nontagidx-offset-decr-strict))
+                 :use ((:instance scratch-nontagidx-offset-decr-strict
+                        (k n))))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable scratch-nontagidx-offset-in-terms-of-conversions))))))
+                  
+
 
 (local
  (defconst *scratchobj-push/top-template*
@@ -2751,71 +3143,23 @@
                                            (stack$c stack$c-okp))
         :returns (new-stack$c)
         :guard-debug t
-        :guard-hints (("goal" :do-not-induct t)
-                      (and stable-under-simplificationp
-                           '(:in-theory (enable maybe-grow-list
-                                                update-nth-redundant-free)))
-                      )
+        :guard-hints (("goal" :do-not-induct t
+                       :in-theory (enable stack$c-push-scratch
+                                          update-stack$c-scratch-entry)))
         :prepwork ((local (in-theory (enable len-of-update-nth-scratch
                                              stack$c-scratch-welltyped-casesplit))))
-        (b* ((next (stack$c-next-scratch stack$c))
-             (next-next (scratch-incr-nontagidx next))
-             (stack$c (maybe-resize-stack$c-scratch (+ 1 next-next) stack$c))
-             (stack$c (update-scratch-entry-kindcode next (scratchobj-kind->code :<kind>) stack$c))
-             (stack$c (update-stack$c-scratchi next
-                                               (:@ :no-pred obj)
-                                               (:@ (not :no-pred) (<fix> obj))
-                                               stack$c)))
-          (update-stack$c-next-scratch next-next stack$c))
-        ///
-        
-
-        (defret stack$c-okp-of-<fn>
-          (implies (stack$c-okp stack$c)
-                   (stack$c-okp new-stack$c))
-          :hints ((and stable-under-simplificationp
-                       (let ((lit (car (last clause))))
-                         (and (member (car lit) '(stack$c-major-frames-welltyped
-                                                  stack$c-minor-frames-welltyped
-                                                  stack$c-major-frames-bounded
-                                                  stack$c-minor-frames-bounded
-                                                  stack$c-top-minor-ordered
-                                                  stack$c-scratch-codeslots-ok
-                                                  stack$c-next-scratch-ordered
-                                                  stack$c-next-scratch-bounded
-                                                  stack$c-top-minor-bounded
-                                                  stack$c-scratch-welltyped))
-                              `(:expand (,lit)))))))
-
-        (defret stack$c-extract-of-<fn>
-          (implies (stack$c-okp stack$c)
-                   (equal (stack$c-extract new-stack$c)
-                          (stack$a-push-scratch-<kind> obj (stack$c-extract stack$c))))
-          :hints (("goal" :in-theory (e/d (stack$c-extract
-                                           stack$c-build-top-major-frame
-                                           stack$c-build-minor-frame
-                                           stack$a-push-scratch)
-                                          (scratch-incr-nontagidx-in-terms-of-conversions
-                                           scratch-decr-nontagidx-in-terms-of-conversions))
-                   :expand
-                   ((:free (x)
-                     (stack$c-build-major-frames (nth-nat *stack$c-top-frame1* stack$c)
-                                                 x))
-                    (:free (x bottom)
-                     (stack$c-build-minor-frames bottom
-                                                 (nth-nat *stack$c-top-minor1* stack$c)
-                                                 x))
-                    (:free (x bottom)
-                     (stack$c-build-scratch
-                      bottom
-                      (scratch-incr-nontagidx (NTH-NONTAG *stack$c-next-scratch1* STACK$C))
-                      x))
-                    (:free (x)
-                     (stack$c-scratch-entry
-                      (nth-nontag *stack$c-next-scratch1* stack$c) x))
-                    (:free (x)
-                     (stack$c-scratch-entry 1 x)))
-                   :cases ((zp (SCRATCH-NONTAGIDX-TO-INDEX (NTH-NONTAG 7 STACK$C))))))))
+        :enabled t
+        (mbe :logic (stack$c-push-scratch (scratchobj-<kind> obj) stack$c)
+             :exec
+             (b* ((next (stack$c-next-scratch stack$c))
+                  (next-next (scratch-incr-nontagidx next))
+                  (stack$c (maybe-resize-stack$c-scratch (+ 1 next-next) stack$c))
+                  (stack$c (update-stack$c-scratchi next
+                                                    (:@ :no-pred obj)
+                                                    (:@ (not :no-pred) (<fix> obj))
+                                                    stack$c))
+                  (stack$c (update-scratch-entry-kindcode next (scratchobj-kind->code :<kind>) stack$c)))
+               (update-stack$c-next-scratch next-next stack$c))))
 
       (define stack$c-top-scratch-<kind> ((stack$c stack$c-okp))
         :guard (and (< 0 (stack$c-scratch-len stack$c))
@@ -2824,31 +3168,15 @@
                                                  stack$c-top-scratch
                                                  stack$c-scratch-entry)
                        :do-not-induct t))
-        (:@ :no-pred (stack$c-scratchi (scratch-decr-nontagidx (stack$c-next-scratch stack$c))
-                                 stack$c))
-        (:@ (not :no-pred)
-         (<fix> (stack$c-scratchi (scratch-decr-nontagidx (stack$c-next-scratch stack$c))
-                                 stack$c)))
-        ///
-        (local (defthm stack$c-top-scratch-<kind>-in-terms-of-stack$c-top-scratch
-                 (implies (and (stack$c-okp stack$c)
-                               (< 0 (stack$c-scratch-len stack$c))
-                               (scratchobj-case (stack$c-top-scratch stack$c) :<kind>))
-                          (equal (stack$c-top-scratch-<kind> stack$c)
-                                 (scratchobj-<kind>->val (stack$a-top-scratch (stack$c-extract stack$c)))))
-                 :hints(("Goal" :in-theory (enable stack$c-top-scratch
-                                                   stack$c-scratch-entry)))))
-
-        (defthm stack$a-top-scratch-<kind>-of-stack$c-extract
-          (implies (and (stack$c-okp stack$c)
-                        (< 0 (stack$c-scratch-len stack$c))
-                        (scratchobj-case (stack$c-top-scratch stack$c) :<kind>))
-                   (equal (stack$a-top-scratch-<kind> (stack$c-extract stack$c))
-                          (stack$c-top-scratch-<kind> stack$c)))
-          :hints(("Goal" :in-theory (e/d (stack$a-top-scratch-<kind>
-                                          stack$a-top-scratch)
-                                         (stack$c-top-scratch-<kind>
-                                          stack$a-top-scratch-of-stack$c-extract))))))
+        :enabled t
+        (mbe :logic
+             (scratchobj-<kind>->val (stack$c-top-scratch stack$c))
+             :exec
+             (:@ :no-pred (stack$c-scratchi (scratch-decr-nontagidx (stack$c-next-scratch stack$c))
+                                            stack$c))
+             (:@ (not :no-pred)
+              (<fix> (stack$c-scratchi (scratch-decr-nontagidx (stack$c-next-scratch stack$c))
+                                       stack$c)))))
 
       (define stack$c-nth-scratch-<kind> ((n natp)
                                           (stack$c stack$c-okp))
@@ -2859,58 +3187,65 @@
                                                  stack$c-scratch-entry)
                                               (scratch-nontagidx-offset-in-terms-of-conversions))
                        :do-not-induct t))
-        (:@ :no-pred (stack$c-scratchi (scratch-nontagidx-offset (stack$c-next-scratch stack$c)
-                                                                 (1- (- (lnfix n))))
-                                 stack$c))
-        (:@ (not :no-pred)
-         (<fix> (stack$c-scratchi (scratch-nontagidx-offset (stack$c-next-scratch stack$c)
-                                                            (1- (- (lnfix n))))
-                                 stack$c)))
-        ///
-        (local (defthm stack$c-nth-scratch-<kind>-in-terms-of-stack$c-nth-scratch
-                 (implies (and (stack$c-okp stack$c)
-                               (< (nfix n) (stack$c-scratch-len stack$c))
-                               (scratchobj-case (stack$c-nth-scratch n stack$c) :<kind>))
-                          (equal (stack$c-nth-scratch-<kind> n stack$c)
-                                 (scratchobj-<kind>->val (stack$a-nth-scratch n (stack$c-extract stack$c)))))
-                 :hints(("Goal" :in-theory (enable stack$c-nth-scratch
-                                                   stack$c-scratch-entry)))))
-
-        (defthm stack$a-nth-scratch-<kind>-of-stack$c-extract
-          (implies (and (stack$c-okp stack$c)
-                        (< (nfix n) (stack$c-scratch-len stack$c))
-                        (scratchobj-case (stack$c-nth-scratch n stack$c) :<kind>))
-                   (equal (stack$a-nth-scratch-<kind> n (stack$c-extract stack$c))
-                          (stack$c-nth-scratch-<kind> n stack$c)))
-          :hints(("Goal" :in-theory (e/d (stack$a-nth-scratch-<kind>
-                                          stack$a-nth-scratch)
-                                         (stack$c-nth-scratch-<kind>
-                                          stack$a-nth-scratch-of-stack$c-extract))))))
-
-      (define stack$c-pop-scratch-<kind> ((stack$c stack$c-okp))
-        :guard (and (< 0 (stack$c-scratch-len stack$c))
-                    (scratchobj-case (stack$c-top-scratch stack$c) :<kind>))
-        :guard-hints (("goal" :in-theory (enable stack$c-scratch-len
-                                                 stack$c-top-scratch-<kind>
-                                                 stack$c-top-scratch
-                                                 stack$c-pop-scratch
-                                                 stack$c-scratch-entry)
-                       :do-not-induct t))
         :enabled t
-        (mbe :logic (b* ((obj (stack$c-top-scratch-<kind> stack$c))
-                         (stack$c (stack$c-pop-scratch stack$c)))
-                      (mv obj stack$c))
+        (mbe :logic (scratchobj-<kind>->val (stack$c-nth-scratch n stack$c))
              :exec
-             (b* ((next (stack$c-next-scratch stack$c))
-                  (next-next (scratch-decr-nontagidx next))
-                  (obj (stack$c-scratchi next-next stack$c))
-                  (stack$c (update-stack$c-scratchi next-next 0 stack$c))
-                  (stack$c (update-stack$c-next-scratch next-next stack$c)))
-               (mv 
-                (:@ :no-pred obj)
-                (:@ (not :no-pred)
-                 (<fix> obj))
-                stack$c)))))))
+             (:@ :no-pred (stack$c-scratchi (scratch-nontagidx-offset (stack$c-next-scratch stack$c)
+                                                                      (1- (- (lnfix n))))
+                                            stack$c))
+             (:@ (not :no-pred)
+              (<fix> (stack$c-scratchi (scratch-nontagidx-offset (stack$c-next-scratch stack$c)
+                                                                 (1- (- (lnfix n))))
+                                       stack$c)))))
+
+      (define stack$c-update-scratch-<kind> ((n natp)
+                                             (obj <pred>)
+                                             (stack$c stack$c-okp))
+        :guard-hints (("goal" :in-theory (e/d (stack$c-scratch-len
+                                               index-to-scratch-nontagidx-<
+                                               stack$c-update-scratch
+                                               update-stack$c-scratch-entry
+                                               len-of-update-nth-scratch)
+                                              (scratch-nontagidx-offset-in-terms-of-conversions))
+                       :do-not-induct t))
+        :guard-debug t
+        :guard (< n (stack$c-scratch-len stack$c))
+        :returns new-stack$c
+        :enabled t
+        (mbe :logic
+             (stack$c-update-scratch n (scratchobj-<kind> obj) stack$c)
+             :Exec
+             (b* ((idx (scratch-nontagidx-offset (stack$c-next-scratch stack$c) (+ -1 (- (lnfix n)))))
+                  (stack$c (update-stack$c-scratchi idx
+                                                    (:@ :no-pred obj) (:@ (not :no-pred) (<fix> obj))
+                                                    stack$c)))
+               (update-scratch-entry-kindcode idx <code> stack$c))))
+
+
+        (define stack$c-pop-scratch-<kind> ((stack$c stack$c-okp))
+          :guard (and (< 0 (stack$c-scratch-len stack$c))
+                      (scratchobj-case (stack$c-top-scratch stack$c) :<kind>))
+          :guard-hints (("goal" :in-theory (enable stack$c-scratch-len
+                                                   stack$c-top-scratch-<kind>
+                                                   stack$c-top-scratch
+                                                   stack$c-pop-scratch
+                                                   stack$c-scratch-entry)
+                         :do-not-induct t))
+          :enabled t
+          (mbe :logic (b* ((obj (stack$c-top-scratch-<kind> stack$c))
+                           (stack$c (stack$c-pop-scratch stack$c)))
+                        (mv obj stack$c))
+               :exec
+               (b* ((next (stack$c-next-scratch stack$c))
+                    (next-next (scratch-decr-nontagidx next))
+                    (obj (stack$c-scratchi next-next stack$c))
+                    (stack$c (update-stack$c-scratchi next-next 0 stack$c))
+                    (stack$c (update-stack$c-next-scratch next-next stack$c)))
+                 (mv 
+                  (:@ :no-pred obj)
+                  (:@ (not :no-pred)
+                   (<fix> obj))
+                  stack$c)))))))
 
 (local (in-theory (disable acl2::nth-when-too-large-cheap
                            acl2::loghead-identity
@@ -3088,6 +3423,13 @@
 
 
 (defsection create-stack$c
+  (local (defthm nth-open-cons
+           (equal (nth n (cons a b))
+                  (if (zp n)
+                      a
+                    (nth (1- n) b)))
+           :hints(("Goal" :in-theory (enable nth)))))
+
   (defthm stack$c-okp-of-create-stack$c
     (stack$c-okp (create-stack$c))
     :hints(("Goal" :in-theory (enable stack$c-major-frames-welltyped
@@ -3138,13 +3480,13 @@
 (local (in-theory (disable stack$c-okp create-stack$c (create-stack$c))))
 
 
-(local
- (make-event
-  `(in-theory (disable . ,(acl2::template-append
-                           '(stack$a-top-scratch-<kind>
-                             stack$a-nth-scratch-<kind>
-                             stack$a-push-scratch-<kind>)
-                           *scratchobj-tmplsubsts*)))))
+;; (local
+;;  (make-event
+;;   `(in-theory (disable . ,(acl2::template-append
+;;                            '(stack$a-top-scratch-<kind>
+;;                              stack$a-nth-scratch-<kind>
+;;                              stack$a-push-scratch-<kind>)
+;;                            *scratchobj-tmplsubsts*)))))
 
 (make-event
  `(defabsstobj-events stack
@@ -3169,13 +3511,16 @@
               (stack-debug :logic stack$a-debug :exec stack$c-debug)
               (stack-minor-debug :logic stack$a-minor-debug :exec stack$c-minor-debug)
               (stack-scratch-len :logic stack$a-scratch-len :exec stack$c-scratch-len)
+              (stack-push-scratch :logic stack$a-push-scratch :exec stack$c-push-scratch :protect t)
               (stack-top-scratch :logic stack$a-top-scratch :exec stack$c-top-scratch)
               (stack-nth-scratch :logic stack$a-nth-scratch :exec stack$c-nth-scratch)
+              (stack-update-scratch :logic stack$a-update-scratch :exec stack$c-update-scratch :protect t)
               (stack-pop-scratch :logic stack$a-pop-scratch :exec stack$c-pop-scratch :protect t)
               ,@(acl2::template-append
                  '((stack-push-scratch-<kind> :logic stack$a-push-scratch-<kind> :exec stack$c-push-scratch-<kind> :protect t)
                    (stack-top-scratch-<kind> :logic stack$a-top-scratch-<kind> :exec stack$c-top-scratch-<kind>)
                    (stack-nth-scratch-<kind> :logic stack$a-nth-scratch-<kind> :exec stack$c-nth-scratch-<kind>)
+                   (stack-update-scratch-<kind> :logic stack$a-update-scratch-<kind> :exec stack$c-update-scratch-<kind> :protect t)
                    (stack-pop-scratch-<kind> :logic stack$a-pop-scratch-<kind> :exec stack$c-pop-scratch-<kind> :protect t))
                  *scratchobj-tmplsubsts*)
               (stack-pop-minor-frame :logic stack$a-pop-minor-frame :exec stack$c-pop-minor-frame :protect t)

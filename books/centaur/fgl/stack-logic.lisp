@@ -83,15 +83,23 @@
       . ,(acl2::template-proj '(:<kind> ((val <pred> . <ruleclass>)))
                               *scratchobj-tmplsubsts*))
 
-    (defenum scratchobj-kind-p ,(acl2::template-proj :<kind> *scratchobj-tmplsubsts*))))
+    (defenum scratchobj-kind-p ,(acl2::template-proj :<kind> *scratchobj-tmplsubsts*))
+
+    (defthm scratchobj-kind-p-of-scratchobj-kind
+      (scratchobj-kind-p (scratchobj-kind x))
+      :hints(("Goal" :in-theory (enable scratchobj-kind))))))
 
 (make-event
  `(progn
     (define scratchobj-kind->code ((x scratchobj-kind-p))
+      :returns (code natp :rule-classes :type-prescription)
       (case x
         ,@(acl2::template-proj '(:<kindcase> <code>) *scratchobj-tmplsubsts*))
       ///
-      (local (in-theory (enable scratchobj-kind-fix))))
+      (local (in-theory (enable scratchobj-kind-fix)))
+
+      (defret unsigned-byte-p-of-<fn>
+        (unsigned-byte-p 4 code)))
 
     (define scratchobj-code->kind ((x natp))
       :returns (kind scratchobj-kind-p)
@@ -290,6 +298,24 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
+(fty::deffixcong scratchobj-equiv scratchlist-equiv (update-nth n v x) v)
+
+(define stack$a-update-scratch ((n natp)
+                                (obj scratchobj-p)
+                                (x major-stack-p))
+  :returns (stack major-stack-p)
+  :guard (< n (stack$a-scratch-len x))
+  :guard-hints (("goal" :in-theory (enable stack$a-scratch-len)))
+  (b* (((major-frame jframe) (car x))
+       ((minor-frame nframe) (car jframe.minor-stack))) 
+    (major-stack-fix (cons (change-major-frame jframe :minor-stack
+                                               (cons (change-minor-frame nframe
+                                                                         :scratch (update-nth n
+                                                                                              obj
+                                                                                              nframe.scratch))
+                                                     (cdr jframe.minor-stack)))
+                           (cdr x)))))
+
 
 (local
  (progn
@@ -318,6 +344,16 @@
                :returns (obj <pred>)
                :enabled t
                (scratchobj-<kind>->val (stack$a-nth-scratch n x)))
+
+             (define stack$a-update-scratch-<kind> ((n natp)
+                                                    (obj <pred>)
+                                                    (x major-stack-p))
+               :guard (< n (stack$a-scratch-len x))
+               :guard-hints (("goal" :in-theory (enable stack$a-scratch-len
+                                                        stack$a-nth-scratch)))
+               :returns (stack major-stack-p)
+               :enabled t
+               (stack$a-update-scratch n (scratchobj-<kind> obj) x))
 
              (define stack$a-pop-scratch-<kind> ((x major-stack-p))
                :guard (and (< 0 (stack$a-scratch-len x))
