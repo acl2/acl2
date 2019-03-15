@@ -3,7 +3,7 @@
 (local (include-book "arithmetic-5/top" :dir :system)) ;; It's hard to do any arithmetic without something like this
 
 ;; This book contains a proof of Gauss's Lemma:  Let p be prime and assume that
-;; m is not divisible by p.  Let mu be the number of elements of the set 
+;; m is not divisible by p.  Let mu be the number of elements of the set
 ;;    {mod(m,p), mod(2*m,p), ..., mod(((p-1)/2)*m}
 ;; that exceed (p-1)/2.  Then m is a quadratic residue mod p iff mu is even.
 
@@ -15,14 +15,14 @@
 (include-book "euler")
 
 (defun mu (n m p)
-  (if (zp n) 
+  (if (zp n)
       0
     (if (> (mod (* m n) p) (/ (1- p) 2))
 	(1+ (mu (1- n) m p))
       (mu (1- n) m p))))
 
 (defun reflections (n m p)
-  (if (zp n) 
+  (if (zp n)
       ()
     (if (> (mod (* m n) p) (/ (1- p) 2))
         (cons (- p (mod (* m n) p))
@@ -45,7 +45,7 @@
 		  (not (zp j))
 		  (< j (/ p 2))
 		  (not (= j i))
-		  (integerp m)		  
+		  (integerp m)
 		  (not (divides p m)))
 	     (not (equal (+ (mod (* m i) p) (mod (* m j) p)) p)))
   :hints (("Goal" :use ((:instance divides-leq (x p) (y (+ i j)))
@@ -121,8 +121,8 @@
            (equal (times-list (reflections (+ -1/2 (* 1/2 p)) m p))
                   (fact (/ (1- p) 2))))
   :hints (("Goal" :use (perm-reflections
-			(:instance perm-times-list 
-				   (l1 (positives (/ (1- p) 2))) 
+			(:instance perm-times-list
+				   (l1 (positives (/ (1- p) 2)))
 				   (l2 (reflections (/ (1- p) 2) m p)))))))
 
 ;;  We have an alternative method for computing the same product:
@@ -144,30 +144,30 @@
 			(mod (times-list (mod-prods n m p)) p)
 		      (mod (- (times-list (mod-prods n m p))) p))))
   :rule-classes ()
-  :hints (("Subgoal *1/3" :use ((:instance mod-times-mod 
+  :hints (("Subgoal *1/3" :use ((:instance mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (mod (* m n) p))
 					   (n p))
-				(:instance mod-times-mod 
+				(:instance mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (mod (* m n) p))
-					   (n p))))	  
+					   (n p))))
 	  ("Subgoal *1/2" :use ((:instance evenp-oddp (m (mu (1- n) m p)))
-				(:instance mod-times-mod 
+				(:instance mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (times-list (mod-prods (1- n) m p)))
 					   (c (- (mod (* m n) p)))
 					   (n p))
-				(:instance mod-times-mod 
+				(:instance mod-times-mod
 					   (a (times-list (reflections (1- n) m p)))
 					   (b (- (times-list (mod-prods (1- n) m p))))
 					   (c (- (mod (* m n) p)))
 					   (n p))))))
 
-;; Gauss's Lemma follows from the equation of the two expressions 
-;; for the product.  We consider two cases according to the parity 
+;; Gauss's Lemma follows from the equation of the two expressions
+;; for the product.  We consider two cases according to the parity
 ;; of mu:
 
 (defthm euler-mu-even
@@ -194,11 +194,11 @@
   :hints (("Goal" :use ((:instance times-list-reflection-mod-prods (n (/ (1- p) 2)))
 			(:instance mod-mod-prods (n (/ (1- p) 2)))
 			(:instance not-divides-p-fact (n (/ (1- p) 2)))
-			(:instance mod-times-prime 
+			(:instance mod-times-prime
 				   (a (- (fact (/ (1- p) 2)))) (b (expt m (/ (1- p) 2))) (c -1))
 			(:instance mod-mult (m -1) (a 1) (n p))
 			(:instance divides-product (x p) (y (- (fact (/ (1- p) 2)))) (z -1))
-			(:instance mod-times-mod 
+			(:instance mod-times-mod
 				   (a (times-list (mod-prods (/ (1- p) 2) m p)))
 				   (b (* (fact (/ (1- p) 2)) (expt m (/ (1- p) 2))))
 				   (c -1)
@@ -283,7 +283,7 @@
 			(:instance member-positives (x (mod p 8)) (n 7))
 			(:instance divides-mod-0 (n 8) (a p))))))
 
-(defthm second-supplement    
+(defthm second-supplement
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (iff (residue 2 p)
