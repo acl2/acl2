@@ -53,7 +53,7 @@
     (declare (xargs :guard (posp size)))
     `(defbyte
        ,(acl2::packn (list 'acl2::ubyte size))
-       ,size
+       :size ,size
        :signed nil
        :pred ,(acl2::packn (list 'acl2::ubyte size 'p))
        :fix ,(acl2::packn (list 'acl2::ubyte size '-fix))
@@ -91,7 +91,7 @@
     (declare (xargs :guard (posp size)))
     `(defbyte
        ,(acl2::packn (list 'acl2::sbyte size))
-       ,size
+       :size ,size
        :signed t
        :pred ,(acl2::packn (list 'acl2::sbyte size 'p))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-fix))

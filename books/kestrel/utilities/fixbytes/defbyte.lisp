@@ -55,7 +55,7 @@
 
    (xdoc::@code
     "(defbyte type"
-    "         size"
+    "         :size ..."
     "         :signed ..."
     "         :pred ..."
     "         :fix ..."
@@ -73,14 +73,15 @@
      "A symbol that specifies the name of the fixtype."))
 
    (xdoc::desc
-    "@('size')"
+    "@(':size')"
     (xdoc::p
      "A term that specifies the size of the bytes in bits.
       This must be one of the following:
       (1) an explicit positive integer value;
       (2) a named constant whose value is a positive integer;
       (3) a call of a nullary function (defined or constrained)
-      that is guard-verified and provably denotes a positive integer."))
+      that is guard-verified and provably denotes a positive integer.
+      This input must be supplied; there is no default."))
 
    (xdoc::desc
     "@(':signed')"
@@ -468,8 +469,8 @@
   :short "Definition of the @(tsee defbyte) macro."
   :long "@(def defbyte)"
   (defmacro defbyte (type
-                     size
                      &key
+                     size
                      signed
                      pred
                      fix

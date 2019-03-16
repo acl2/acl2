@@ -24,7 +24,8 @@
     the elements of the set @($\\mathbb{N}_{256}$) [YP:3],
     i.e. natural numbers below 256."))
 
-(fty::defbyte word 256
+(fty::defbyte word
+  :size 256
   :pred wordp
   :parents (words)
   :short "Fixtype of words.")

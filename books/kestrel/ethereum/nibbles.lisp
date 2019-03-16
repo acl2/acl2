@@ -22,7 +22,8 @@
    "[YP:C] describes @($\\mathbb{Y}$) as the set of nibbles,
     which consist of 4 bits."))
 
-(fty::defbyte nibble 4
+(fty::defbyte nibble
+  :size 4
   :pred nibblep
   :parents (nibbles)
   :short "Fixtype of nibbles.")

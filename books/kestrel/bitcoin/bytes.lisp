@@ -24,7 +24,8 @@
    "In Bitcoin, as in most modern contexts,
     the unqualified term `byte' denotes an (unsigned) 8-bit byte."))
 
-(fty::defbyte byte 8
+(fty::defbyte byte
+  :size 8
   :pred bytep
   :parents (bytes)
   :short "Fixtype of bytes.")

@@ -60,7 +60,8 @@
 ;; This will be redundant if fixbytes/instances.lisp
 ;; has been loaded, but if not, we need it here.
 
-(fty::defbyte ubyte8 8
+(fty::defbyte ubyte8
+  :size 8
   :signed nil
   :pred ubyte8p
   :parents (defbyte-instances))

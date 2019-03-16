@@ -24,7 +24,8 @@
     Unless otherwise stated, in the documentation of our Ethereum model,
     the unqualified `byte' denotes an 8-bit byte."))
 
-(fty::defbyte byte 8
+(fty::defbyte byte
+  :size 8
   :pred bytep
   :parents (bytes)
   :short "Fixtype of bytes.")
