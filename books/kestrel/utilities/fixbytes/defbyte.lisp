@@ -307,6 +307,7 @@
            (and (<= (- (expt 2 (1- z))) 0)
                 (< 0 (expt 2 (1- z)))
                 (< 0 (expt 2 z))))
+  :rule-classes nil
   :prep-books ((include-book "arithmetic/top" :dir :system)))
 
 (define defbyte-fn (type
