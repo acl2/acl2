@@ -45,7 +45,8 @@
     analogously to our model of
     <see topic='@(url byte-arrays)'>byte arrays</see>."))
 
-(fty::defbytelist nibble-list nibble
+(fty::defbytelist nibble-list
+  :elt-type nibble
   :pred nibble-listp
   :parents (nibble-arrays)
   :short "Fixtype of nibble arrays.")

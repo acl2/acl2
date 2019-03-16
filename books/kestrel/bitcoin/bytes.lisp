@@ -63,7 +63,8 @@
    "These are finite lists of bytes,
     which model byte arrays in particular."))
 
-(fty::defbytelist byte-list byte
+(fty::defbytelist byte-list
+  :elt-type byte
   :pred byte-listp
   :parents (byte-sequences)
   :short "Fixtype of true lists of @(see byte)s.")

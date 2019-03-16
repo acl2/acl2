@@ -57,7 +57,7 @@
 
    (xdoc::@code
     "(defbytelist type"
-    "             byte"
+    "             :elt-type"
     "             :pred ..."
     "             :fix ..."
     "             :equiv ..."
@@ -74,7 +74,7 @@
      "A symbol that specifies the name of the fixtype."))
 
    (xdoc::desc
-    "@('byte')"
+    "@(':elt-type')"
     (xdoc::p
      "A symbol that names a fixtype previously introduced via @(tsee defbyte).
       This is the type of the elements of the generated list type."))
@@ -155,7 +155,7 @@
   :default-parent t)
 
 (define defbytelist-fn (type
-                        byte
+                        elt-type
                         pred
                         fix
                         equiv
@@ -170,16 +170,16 @@
        ((unless (symbolp type))
         (raise "The TYPE input must be a symbol, ~
                 but it is ~x0 instead." type))
-       ;; validate the BYTE input:
-       ((unless (symbolp byte))
-        (raise "The BYTE input must be a symbol,
-                but it is ~x0 instead." byte))
+       ;; validate the :ELT-TYPE input:
+       ((unless (symbolp elt-type))
+        (raise "The :ELT-TYPE input must be a symbol,
+                but it is ~x0 instead." elt-type))
        (table (table-alist *defbyte-table-name* wrld))
-       (pair (assoc-eq byte table))
+       (pair (assoc-eq elt-type table))
        ((unless pair)
-        (raise "The ~x0 input must name a type ~
+        (raise "The :ELT-TYPE input ~x0 must name a type ~
                 previously introduced via DEFBYTE, ~
-                but this is not the case." byte))
+                but this is not the case." elt-type))
        ;; retrieve the necessary information from the DEFBYTE table:
        (info (cdr pair))
        (size (defbyte-info->size info))
@@ -225,7 +225,7 @@
        ;; generated events:
        (deflist-event
          `(fty::deflist ,type
-            :elt-type ,byte
+            :elt-type ,elt-type
             ,@(and parents (list :parents parents))
             ,@(and short (list :short short))
             ,@(and long (list :long long))
@@ -269,8 +269,8 @@
   :short "Definition of the @(tsee defbytelist) macro."
   :long "@(def defbytelist)"
   (defmacro defbytelist (type
-                         byte
                          &key
+                         elt-type
                          pred
                          fix
                          equiv
@@ -279,7 +279,7 @@
                          long)
     `(make-event (defbytelist-fn
                    ',type
-                   ',byte
+                   ',elt-type
                    ',pred
                    ',fix
                    ',equiv

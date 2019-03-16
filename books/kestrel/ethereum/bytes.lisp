@@ -60,7 +60,8 @@
     We use true lists of @(see bytes)
     to model byte arrays in our Ethereum model."))
 
-(fty::defbytelist byte-list byte
+(fty::defbytelist byte-list
+  :elt-type byte
   :pred byte-listp
   :parents (byte-arrays)
   :short "Fixtype of byte arrays.")

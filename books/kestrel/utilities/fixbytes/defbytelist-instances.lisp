@@ -58,7 +58,7 @@
     (declare (xargs :guard (posp size)))
     `(defbytelist
        ,(acl2::packn (list 'acl2::ubyte size '-list))
-       ,(acl2::packn (list 'acl2::ubyte size))
+       :elt-type ,(acl2::packn (list 'acl2::ubyte size))
        :pred ,(acl2::packn (list 'acl2::ubyte size '-listp))
        :fix ,(acl2::packn (list 'acl2::ubyte size '-list-fix))
        :equiv ,(acl2::packn (list 'acl2::ubyte size '-list-equiv))
@@ -96,7 +96,7 @@
     (declare (xargs :guard (posp size)))
     `(defbytelist
        ,(acl2::packn (list 'acl2::sbyte size '-list))
-       ,(acl2::packn (list 'acl2::sbyte size))
+       :elt-type ,(acl2::packn (list 'acl2::sbyte size))
        :pred ,(acl2::packn (list 'acl2::sbyte size '-listp))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-list-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-list-equiv))

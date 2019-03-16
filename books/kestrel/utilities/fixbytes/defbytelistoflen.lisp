@@ -66,7 +66,8 @@
   :pred ubyte8p
   :parents (defbyte-instances))
 
-(fty::defbytelist ubyte8-list ubyte8
+(fty::defbytelist ubyte8-list
+  :elt-type ubyte8
   :pred ubyte8-listp)
 
 
