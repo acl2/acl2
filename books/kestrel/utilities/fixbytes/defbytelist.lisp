@@ -174,17 +174,20 @@
        ((unless (symbolp elt-type))
         (raise "The :ELT-TYPE input must be a symbol,
                 but it is ~x0 instead." elt-type))
-       (table (table-alist *defbyte-table-name* wrld))
-       (pair (assoc-eq elt-type table))
-       ((unless pair)
+       (defbyte-table (table-alist *defbyte-table-name* wrld))
+       (defbyte-pair (assoc-eq elt-type defbyte-table))
+       ((unless defbyte-pair)
         (raise "The :ELT-TYPE input ~x0 must name a type ~
                 previously introduced via DEFBYTE, ~
                 but this is not the case." elt-type))
-       ;; retrieve the necessary information from the DEFBYTE table:
-       (info (cdr pair))
-       (size (defbyte-info->size info))
-       (signed (defbyte-info->signed info))
-       (bytep (defbyte-info->pred info))
+       ;; retrieve size and signedness from the DEFBYTE table:
+       (defbyte-info (cdr defbyte-pair))
+       (size (defbyte-info->size defbyte-info))
+       (signed (defbyte-info->signed defbyte-info))
+       ;; retrieve element type recognizer from the fixtype table:
+       (fty-table (get-fixtypes-alist wrld))
+       (fty-info (find-fixtype elt-type fty-table))
+       (bytep (fixtype->pred fty-info))
        ;; validate the :PRED input:
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~

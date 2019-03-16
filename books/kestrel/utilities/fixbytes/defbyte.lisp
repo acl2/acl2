@@ -225,10 +225,7 @@
              (symbolp size)
              (and (acl2::tuplep 1 size)
                   (symbolp (car size)))))
-   (signed "Whether the bytes are signed or not." booleanp)
-   (pred "The name of the recognizer." symbolp)
-   (fix "The name of the fixer." symbolp)
-   (equiv "The name of the equivalence." symbolp))
+   (signed "Whether the bytes are signed or not." booleanp))
   :pred defbyte-infop)
 
 (defval *defbyte-table-name*
@@ -449,11 +446,7 @@
        (table-event
         `(table ,*defbyte-table-name*
            ',type
-           ',(make-defbyte-info :size size
-                                :signed signed
-                                :pred pred
-                                :fix fix
-                                :equiv equiv))))
+           ',(make-defbyte-info :size size :signed signed))))
     ;; top-level event:
     `(encapsulate
        ()
