@@ -47,7 +47,32 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     private static final Map<Acl2Symbol, Acl2DefinedFunction> functions =
             new HashMap<>();
 
+    /**
+     * Definiens of this function.
+     * This is set, once, to the lambda expression that defines this function
+     * by {@link #setDefiniens(Acl2LambdaExpression)}.
+     * This definiens is the same as the one stored in {@link Acl2Environment},
+     * but it is cached here for speed during evaluation.
+     */
+    private Acl2LambdaExpression definiens = null;
+
     //////////////////////////////////////// package-private members:
+
+    /**
+     * Sets the definiens of this function.
+     * This is called by {@link
+     * Acl2Environment#addFunctionDef(Acl2Symbol, Acl2Symbol[], Acl2Term)}
+     * at the same time that
+     * the definition of this function is added to the ACL2 environment.
+     */
+    void setDefiniens(Acl2LambdaExpression definiens) {
+        assert definiens != null;
+        if (this.definiens != null)
+            throw new IllegalStateException
+                    ("Definiens of function " + this.name
+                            + "already set to " + this.definiens + ".");
+        this.definiens = definiens;
+    }
 
     /**
      * Checks if this defined function is
@@ -73,8 +98,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
 
     /**
      * Applies this ACL2 defined function to the given ACL2 values.
-     * The definition of the function is retrieved by the environment.
-     * The resulting lambda expression is applied to the values.
+     * The defining lambda expression is applied to the values.
      *
      * @throws Acl2EvaluationException if the call to this function fails
      */
@@ -82,11 +106,10 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
         assert values != null;
         for (Acl2Value value : values) assert value != null;
-        Acl2LambdaExpression def = Acl2Environment.getFunctionDef(this.name);
-        if (def == null)
+        if (definiens == null)
             throw new Acl2EvaluationException
                     ("Undefined function: " + this.name + ".");
-        return def.apply(values);
+        return definiens.apply(values);
     }
 
     /**
