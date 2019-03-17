@@ -99,7 +99,8 @@
    this EIP describes an improved signature scheme
    that involves chain identifiers.
    EIP 155 lists some chain identifiers, one of which is larger than a byte.
-   So we use the library type @(tsee nat) for this component of a transaction.
+   So we use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
+   for this component of a transaction.
    </p>"
   ((nonce word)
    (gas-price word)
