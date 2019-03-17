@@ -10,6 +10,7 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/utilities/deflist-of-len" :dir :system)
 (include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
@@ -50,15 +51,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc byte-arrays
+(defxdoc+ byte-arrays
   :parents (basics)
   :short "Byte arrays."
   :long
-  (xdoc::toppstring
-   "[YP:3] mentions the set @($\\mathbb{B}$) of byte arrays,
-    and [YP:(178)] defines it as consisting of all finite sequences of bytes.
-    We use true lists of @(see bytes)
-    to model byte arrays in our Ethereum model."))
+  (xdoc::topstring
+   (xdoc::p
+    "[YP:3] mentions the set @($\\mathbb{B}$) of byte arrays,
+     and [YP:(178)] defines it as consisting of all finite sequences of bytes.
+     [YP:3] also introduces the notation @($\\mathbb{B}_k$) to denote
+     the set of byte arrays of length @($k$).")
+   (xdoc::p
+    "We use true lists of @(see bytes)
+     to model byte arrays in our Ethereum model.
+     We introduce a fixtype @(tsee byte-list) to model @($\\mathbb{B}$).
+     We also introduce fixtypes @('byte-list<k>'),
+     for various values of @('<k>'),
+     to model @($\\mathbb{B}_k$) for the corresponding values of @($k$)."))
+  :order-subtopics t)
 
 (fty::defbytelist byte-list
   :elt-type byte
@@ -90,3 +100,33 @@
            (unsigned-byte-list-fix 8 x))
     :enable (byte-fix-rewrite-unsigned-byte-fix
              unsigned-byte-list-fix)))
+
+(fty::deflist-of-len byte-list20
+  :list-type byte-list
+  :length 20
+  :pred byte-list20p
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays of length 20."
+  :long
+  (xdoc::toppstring
+   "These may represent addresses [YP:4.1]."))
+
+(fty::deflist-of-len byte-list32
+  :list-type byte-list
+  :length 32
+  :pred byte-list32p
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays of length 32."
+  :long
+  (xdoc::toppstring
+   "These may represent Keccak-256 hashes."))
+
+(fty::deflist-of-len byte-list64
+  :list-type byte-list
+  :length 64
+  :pred byte-list64p
+  :parents (byte-arrays)
+  :short "Fixtype of byte arrays of length 64."
+  :long
+  (xdoc::toppstring
+   "These may represent Keccak-512 hashes."))
