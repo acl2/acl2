@@ -131,6 +131,12 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
+ <h4>Fixtypes for Fixed-Length Lists</h4>
+
+ <p>Added a macro @(tsee fty::delist-of-len) that generates fixtypes for lists
+ of specified lengths, based on existing fixtypes of lists of arbitrary
+ lenghts (introduced via @(tsee fty::deflist)).</p>
+
  <h4>Fixtypes for Osets</h4>
 
  <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
