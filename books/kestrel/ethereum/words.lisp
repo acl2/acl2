@@ -29,3 +29,11 @@
   :pred wordp
   :parents (words)
   :short "Fixtype of words.")
+
+(defsection wordp-ext
+  :extension wordp
+
+  (defrule natp-when-wordp
+    (implies (wordp x)
+             (natp x))
+    :rule-classes :compound-recognizer))
