@@ -1,4 +1,4 @@
-; Fixtypes of Lists of Specified Lenghts -- Generator
+; Fixtypes of Lists of Specified Lenghts -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
