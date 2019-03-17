@@ -133,7 +133,7 @@
 
  <h4>Fixtypes for Fixed-Length Lists</h4>
 
- <p>Added a macro @(tsee fty::delist-of-len) that generates fixtypes for lists
+ <p>Added a macro @(tsee fty::deflist-of-len) that generates fixtypes for lists
  of specified lengths, based on existing fixtypes of lists of arbitrary
  lenghts (introduced via @(tsee fty::deflist)).</p>
 
