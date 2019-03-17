@@ -83,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test the BYTE input:
+; test the :ELT-TYPE input:
 
 (must-fail (fty::defbytelist byte-list :elt-type "string"))
 
