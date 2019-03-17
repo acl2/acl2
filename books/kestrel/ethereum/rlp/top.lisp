@@ -1,4 +1,4 @@
-; Ethereum Library -- RLP (Recursive Length Prefix)
+; Ethereum -- RLP (Recursive Length Prefix)
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

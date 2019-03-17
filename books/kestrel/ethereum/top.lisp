@@ -1,4 +1,4 @@
-; Ethereum Library
+; Ethereum
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
