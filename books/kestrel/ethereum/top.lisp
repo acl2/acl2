@@ -17,6 +17,7 @@
 (include-book "rlp/top")
 (include-book "hex-prefix")
 (include-book "mmp-trees")
+(include-book "transactions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

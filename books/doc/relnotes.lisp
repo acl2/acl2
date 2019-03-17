@@ -270,6 +270,9 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
+ <p>Added a formalization of the format of transactions and of their RLP
+ encoding.</p>
+
  <p>Added several other theorems.  Improved some existing theorems.</p>
 
  <p>Improved some documentation.</p>
