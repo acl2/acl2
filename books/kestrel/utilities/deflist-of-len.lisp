@@ -6,7 +6,7 @@
 ;
 ; Authors:
 ;   Alessandro Coglio (coglio@kestrel.edu)
-;   Eric McCarthy (last name at same site)
+;   Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,15 +137,15 @@
 
    (xdoc::desc
     (list
-     "list-pred-when-pred-rewrite"
-     "list-pred-when-pred-forward")
+     "@('list-pred-when-pred-rewrite')"
+     "@('list-pred-when-pred-forward')")
     (xdoc::p
      "A rewrite rule and a forward chaining rule
       saying that a value satisfies @('list-pred')
       when it satisfies @('pred')."))
 
    (xdoc::desc
-    "len-when-pred-tau"
+    "@('len-when-pred-tau')"
     (xdoc::p
      "A tau system rule saying that if a value satisfies @('pred')
       then its length is the one specified by @(':length')."))
