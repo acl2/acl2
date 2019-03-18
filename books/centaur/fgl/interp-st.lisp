@@ -50,21 +50,23 @@
 
 (make-event
  `(defconst *interp-st-fields*
+    ;; note: predfn is required if fix is provided
     '((stack :type stack)
       (logicman :type logicman)
       (bvar-db :type bvar-db)
       (pathcond :type pathcond)
       (constraint :type pathcond)
-      (constraint-db :type (satisfies constraint-db-p))
+      (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :predfn constraint-db-p)
       (prof :type interp-profiler)
-      (backchain-limit :type integer :initially -1)
+      (backchain-limit :type integer :initially -1 :fix lifix :predfn integerp)
       ;; (bvar-mode :type t)
-      (equiv-contexts :type (satisfies equiv-contextsp))
-      (reclimit :type (integer 0 *) :initially 0)
-      (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config))
+      (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :predfn equiv-contextsp)
+      (reclimit :type (integer 0 *) :initially 0 :fix lnfix :predfn natp)
+      (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config) :fix glcp-config-fix :predfn glcp-config-p)
       (flags :type (and (unsigned-byte 60)
                         (satisfies interp-flags-p))
-             :initially ,(make-interp-flags)))))
+             :initially ,(make-interp-flags)
+             :fix interp-flags-fix :predfn interp-flags-p))))
 
 
 (local (defun member-eq-tree (x tree)
@@ -80,6 +82,9 @@
              nil
            (cons (b* ((name (caar fields))
                       (type (cadr (assoc-keyword :type (cdar fields))))
+                      (initially (cadr (assoc-keyword :initially (cdar fields))))
+                      (fix (cadr (assoc-keyword :fix (cdar fields))))
+                      (predfn (cadr (assoc-keyword :predfn (cdar fields))))
                       (type-pred (acl2::translate-declaration-to-guard type name nil))
                       (typep (and type-pred (not (member-eq-tree 'satisfies type))))
                       (pred (or type-pred
@@ -90,17 +95,23 @@
                       (- (and (not pred)
                               (er hard? 'interp-st-fields-to-templates
                                   "couldn't figure out the predicate for the type of ~x0~%" (car fields)))))
-                   (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
+                   (acl2::make-tmplsubst :atoms `((<field> . ,name)
                                                   (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
                                                   (<fieldcase> . ,(if (atom (cdr fields))
                                                                       t
                                                                     (intern$ (symbol-name (caar fields)) "KEYWORD")))
-                                                  (<type> . ,(third (car fields)))
-                                                  (<rest> . ,(cdddr (car fields)))
-                                                  (<pred> . ,pred))
-                                         :features (cond ((eq pred t) '(:no-pred))
-                                                         (typep '(:type-pred))
-                                                         (t nil))
+                                                  (<type> . ,type)
+                                                  (<initially> . ,(and initially
+                                                                       `(:initially ,initially)))
+                                                  (<pred> . ,pred)
+                                                  (<predfn> . ,predfn)
+                                                  (<fix> . ,fix))
+                                         :features (append (cond ((eq pred t) '(:no-pred))
+                                                                 (typep '(:type-pred)) 
+                                                                 (t nil))
+                                                           (if fix
+                                                               '(:fix)
+                                                             '(:no-fix)))
                                          :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
                                          :pkg-sym 'fgl::foo))
                  (interp-st-fields-to-templates (cdr fields))))))
@@ -113,9 +124,40 @@
 (make-event
  (acl2::template-subst
   '(defstobj interp-st
-     (:@proj fields (interp-st-><field> :type <type> . <rest>)))
+     (:@proj fields (interp-st-><field> :type <type> . <initially>))
+     :renaming ((:@append fields
+                 (:@ :fix
+                  (interp-st-><field> interp-st-><field>1)
+                  (update-interp-st-><field> update-interp-st-><field>1)))))
   :subsubsts `((fields . ,*interp-st-field-templates*))))
 
+
+(local (defthm unsigned-byte-60-when-interp-flags
+         (implies (interp-flags-p x)
+                  (unsigned-byte-p 60 x))
+         :hints(("Goal" :in-theory (enable interp-flags-p)))))
+
+(local (in-theory (disable unsigned-byte-p)))
+
+(make-event
+ (cons
+  'progn
+  (acl2::template-append
+   '((:@ :fix
+      (define interp-st-><field> (interp-st)
+        :inline t
+        :returns (<field> <predfn> (:@ :type-pred
+                                    :rule-classes (:rewrite (:type-prescription :typed-term <field>))))
+        (mbe :logic (<fix> (interp-st-><field>1 interp-st))
+             :exec (interp-st-><field>1 interp-st)))
+
+      (define update-interp-st-><field> ((x <predfn> :type <type>)
+                                         interp-st)
+        :split-types t
+        :inline t
+        (mbe :logic (update-interp-st-><field>1 (<fix> x) interp-st)
+             :exec (update-interp-st-><field>1 x interp-st)))))
+     *interp-st-field-templates*)))
 
 (make-event
  (acl2::template-subst
@@ -140,6 +182,11 @@
      (local (in-theory (enable interp-st-get
                                interp-st-field-fix
                                interp-stp)))
+     (local (in-theory (enable (:@append fields
+                                (:@ :fix
+                                 interp-st-><field>
+                                 update-interp-st-><field>)))))
+
      (:@append fields
       (def-updater-independence-thm interp-st-><field>-updater-independence
         (implies (equal (interp-st-get :<field> new)
@@ -163,7 +210,8 @@
 
       (defthm interp-st-><field>-of-update-interp-st-><field>
         (equal (interp-st-><field> (update-interp-st-><field> x interp-st))
-               x))
+               (:@ :fix (<fix> x))
+               (:@ :no-fix x)))
 
       (:@ :type-pred
        (defthm interp-st-implies-<field>-type
@@ -199,8 +247,7 @@
 
 
 (defthm interp-st-implies-natp-flags
-  (implies (interp-stp interp-st)
-           (natp (interp-st->flags interp-st)))
+  (natp (interp-st->flags interp-st))
   :hints(("Goal" :in-theory (enable interp-st->flags)))
   :rule-classes :type-prescription)
 
@@ -457,8 +504,7 @@
           (define interp-st-update-scratch-<kind> ((n natp) (obj <pred>) interp-st)
             :enabled t :hooks nil
             :inline t
-            :guard (and (< n (interp-st-scratch-len interp-st))
-                        (scratchobj-case (interp-st-nth-scratch n interp-st) :<kind>))
+            :guard (< n (interp-st-scratch-len interp-st))
             (stobj-let ((stack (interp-st->stack interp-st)))
                        (stack)
                        (stack-update-scratch-<kind> n obj stack)

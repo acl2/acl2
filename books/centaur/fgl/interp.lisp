@@ -438,7 +438,10 @@
   (defret interp-st-get-of-<fn>
     (implies (not (equal (interp-st-field-fix key) :stack))
              (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+                    (interp-st-get key interp-st))))
+
+  (defret multivalues-of-<fn>
+    (equal (list . <values>) <call>)))
 
 
 (define gl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
@@ -504,7 +507,7 @@
   :guard (stobj-let ((pathcond (interp-st->pathcond interp-st))
                      (logicman (interp-st->logicman interp-st)))
                     (ok)
-                    (< 0 (pathcond-rewind-stack-len (lbfr-mode) pathcond))
+                    (pathcond-rewind-ok (lbfr-mode) pathcond)
                     ok)
   :returns new-interp-st
   :enabled t
@@ -657,7 +660,11 @@
   (defret interp-st-get-of-<fn>
     (implies (not (equal (interp-st-field-fix key) :stack))
              (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st)))))
+                    (interp-st-get key interp-st))))
+
+  (defret multivalues-of-<fn>
+    (equal (list . <values>)
+           <call>)))
 
 
 
@@ -694,7 +701,7 @@
   ;; then merge the args, i.e. (list (g-boolean b)) (list (g-boolean c))
   ;; in which when we merge the first arg we get back to
   ;; (if test (g-boolean b) (g-boolean c)) and get stuck in an infinite loop.
-  :returns (mv (fn pseudo-fnsym-p)
+  :returns (mv (fn pseudo-fnsym-p :rule-classes (:rewrite (:type-prescription :typed-term fn)))
                (args gl-objectlist-p))
   (gl-object-case x
     ;; :g-boolean (mv 'bool (list (gl-object-fix x)))
@@ -1134,6 +1141,7 @@
                            acl2::lower-bound-of-len-when-sublistp
                            append)))
 
+
 (set-state-ok t)
 
 
@@ -1342,21 +1350,21 @@
                      new-state)
         (b* (((when dont)
               (mv nil nil nil interp-st state))
-             ((mv ok formals body)
-              (acl2::fn-get-def fn state))
-             ((unless ok)
+             (rules (fn-definition-rules fn (glcp-config->definition-table
+                                             (interp-st->config interp-st))
+                                         (w state)))
+             ((unless rules)
               (mv nil nil nil interp-st state))
-             ((unless (eql (len formals) (len args)))
+             (reclimit (interp-st->reclimit interp-st))
+             ((when (zp reclimit))
               (gl-interp-error
-               :msg (gl-msg "Error interpreting a call of ~x0: it was given ~x1 arguments but has ~x2 formals."
-                            fn (len args) (len formals))
+               :msg (gl-msg "The recursion limit ran out.")
                :nvals 2))
-             (interp-st (interp-st-push-frame (pairlis$ formals args) interp-st))
-             (interp-st (interp-st-set-debug fn interp-st))
-             ((mv err ans interp-st state)
-              (gl-interp-term-equivs body interp-st state))
-             (interp-st (interp-st-pop-frame interp-st)))
-          (mv err (not err) ans interp-st state)))
+             (interp-st (interp-st-push-scratch-gl-objlist args interp-st))
+             ((mv err successp ans interp-st state)
+              (gl-rewrite-try-rules rules fn interp-st state))
+             (interp-st (interp-st-pop-scratch interp-st)))
+          (mv err successp ans interp-st state)))
 
 
       (define gl-rewrite-fncall ((fn pseudo-fnsym-p)
@@ -1537,7 +1545,8 @@
       (define gl-interp-return-last ((return-last-fnname pseudo-termp)
                                      (first-arg pseudo-termp)
                                      (last-arg pseudo-termp)
-                                     interp-st state)
+                                     (interp-st interp-st-bfrs-ok)
+                                     state)
         :measure (list (nfix (interp-st->reclimit interp-st)) 2020
                        (+ (pseudo-term-binding-count first-arg)
                           (pseudo-term-binding-count last-arg))
@@ -1704,7 +1713,8 @@
               (mv nil t nil interp-st state))
              (reclimit (interp-st->reclimit interp-st))
              ((when (zp reclimit))
-              (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 2))
+              (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
+                (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 2)))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))
               ((mv err ans interp-st state)
@@ -1919,6 +1929,9 @@
              (interp-st (update-interp-st->constraint-db constraint-db interp-st))
              ((unless constraint-substs)
               (mv nil interp-st state))
+             (reclimit (interp-st->reclimit interp-st))
+             ((when (zp reclimit))
+              (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 0))
              ;; Disable the pathcond so that constraint thms are simulated in an empty (universal) context.
              ((mv pathcond-enabledp interp-st) (stobj-let ((pathcond (interp-st->pathcond interp-st)))
                                                           (enabledp pathcond)
@@ -1926,9 +1939,6 @@
                                                                (pathcond (update-pathcond-enabledp nil pathcond)))
                                                             (mv enabledp pathcond))
                                                           (mv enabledp interp-st)))
-             (reclimit (interp-st->reclimit interp-st))
-             ((when (zp reclimit))
-              (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 0))
              ;; (interp-st (update-interp-st->constraint-inst-stack
              ;;             (append constraint-substs (interp-st->constraint-inst-stack interp-st))
              ;;             interp-st))
@@ -2501,6 +2511,7 @@
         :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))))))
 
 
+
 (local
  (defthm major-stack-bfrlist-of-atom
    (implies (atom x)
@@ -2883,6 +2894,17 @@
     :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
     :skip-others t))
 
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+  (std::defret-mutual true-listp-of-gl-interp-arglist
+    (defret true-listp-of-gl-interp-arglist
+      (true-listp arg-objs)
+      :fn gl-interp-arglist
+      :rule-classes :type-prescription)
+    :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
+    :skip-others t))
+
 
 (defthm stack$a-pop-scratch-of-stack$a-update-0
   (equal (stack$a-pop-scratch (stack$a-update-scratch 0 obj stack))
@@ -2987,9 +3009,9 @@
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
     (std::defret-mutual-generate <fn>-preserves-pathcond-enabledp
-      :rules ((t (:add-concl (implies (not (gl-interp-real-errorp err))
+      :rules ((t (:add-concl ;; (implies t ;; (not (gl-interp-real-errorp err))
                                       (iff* (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
-                                            (nth *pathcond-enabledp* (interp-st->pathcond interp-st)))))
+                                            (nth *pathcond-enabledp* (interp-st->pathcond interp-st))))
                  (:add-keyword :hints ('(:do-not-induct t :expand :lambdas)
                                        (let ((flag (find-flag-is-hyp clause)))
                                          (and flag
@@ -3187,15 +3209,15 @@
                     ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
                     (interp-st                     (interp-st-bfrs-ok interp-st))
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
-      :rules ((t (:add-concl (implies (not (gl-interp-real-errorp err))
-                                      (equal (logicman-pathcond-eval-checkpoints!
-                                              env
-                                              (interp-st->pathcond new-interp-st)
-                                              (interp-st->logicman new-interp-st))
-                                             (logicman-pathcond-eval-checkpoints!
-                                              env
-                                              (interp-st->pathcond interp-st)
-                                              (interp-st->logicman interp-st)))))
+      :rules ((t (:add-concl ;;(implies (not (gl-interp-real-errorp err))
+                  (equal (logicman-pathcond-eval-checkpoints!
+                          env
+                          (interp-st->pathcond new-interp-st)
+                          (interp-st->logicman new-interp-st))
+                         (logicman-pathcond-eval-checkpoints!
+                          env
+                          (interp-st->pathcond interp-st)
+                          (interp-st->logicman interp-st))))
                  (:add-keyword :hints ('(:do-not-induct t)
                                        (let ((flag (find-flag-is-hyp clause)))
                                          (and flag
@@ -3257,12 +3279,14 @@
   :fn interp-st-pathcond-assume)
 
 
+
+
 (progn
   (with-output
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
-    (std::defret-mutual-generate <fn>-preserves-pathcond-stack-length
-      :rules ((t (:add-concl (implies (and (not (gl-interp-real-errorp err))
+    (std::defret-mutual-generate <fn>-preserves-pathcond-stack-length1
+      :rules ((t (:add-concl (implies (and ;; (not (gl-interp-real-errorp err))
                                            (equal mode (logicman->mode (interp-st->logicman interp-st))))
                                       (equal (pathcond-rewind-stack-len
                                               mode
@@ -3393,4 +3417,154 @@
   :hints(("Goal" :in-theory (enable stack$a-frames)))
   :rule-classes :type-prescription)
 
-(verify-guards gl-interp-term)
+
+(local (defthm pathcond-rewind-ok-by-stack-len
+         (implies (and (equal stack-len (pathcond-rewind-stack-len bfr-mode pathcond))
+                       (bind-free (case-match stack-len
+                                    (('maybe-incr cond x) `((cond . ,cond) (x . ,x)))))
+                       (equal stack-len (maybe-incr cond x))
+                       (iff* cond (nth *pathcond-enabledp* pathcond)))
+                  (pathcond-rewind-ok bfr-mode pathcond))
+         :hints(("Goal" :in-theory (enable pathcond-rewind-ok maybe-incr)))))
+
+(defthm gl-object-alist-p-of-pairlis$
+  (implies (and (gl-objectlist-p vals)
+                (pseudo-var-list-p vars)
+                (equal (len vars) (len vals)))
+           (gl-object-alist-p (pairlis$ vars vals)))
+  :hints(("Goal" :in-theory (enable pairlis$ gl-object-alist-p))))
+
+
+
+(local (Defthm stack$a-scratch-len-of-push-scratch
+         (equal (stack$a-scratch-len (stack$a-push-scratch obj stack))
+                (+ 1 (stack$a-scratch-len stack)))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-push-scratch)))))
+
+(local (Defthm stack$a-scratch-len-of-pop-scratch
+         (equal (stack$a-scratch-len (stack$a-pop-scratch stack))
+                (nfix (+ -1 (stack$a-scratch-len stack))))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-pop-scratch len)))))
+
+(local (Defthm stack$a-scratch-len-of-update-scratch
+         (implies (< (nfix n) (stack$a-scratch-len stack))
+                  (equal (stack$a-scratch-len (stack$a-update-scratch n obj stack))
+                         (stack$a-scratch-len stack)))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-update-scratch len)))))
+
+(local (Defthm stack$a-frames-of-push-frame
+         (equal (stack$a-frames (stack$a-push-frame stack))
+                (+ 1 (stack$a-frames stack)))
+         :hints(("Goal" :in-theory (enable stack$a-frames
+                                           stack$a-push-frame)))))
+
+(local (Defthm stack$a-minor-frames-of-push-frame
+         (equal (stack$a-minor-frames (stack$a-push-frame stack))
+                1)
+         :hints(("Goal" :in-theory (enable stack$a-minor-frames
+                                           stack$a-push-frame)))))
+
+(local (Defthm stack$a-minor-frames-of-set-debug
+         (equal (stack$a-minor-frames (stack$a-set-debug obj stack))
+                (stack$a-minor-frames stack))
+         :hints(("Goal" :in-theory (enable stack$a-minor-frames
+                                           stack$a-set-debug)))))
+
+(local (Defthm stack$a-frames-of-set-debug
+         (equal (stack$a-frames (stack$a-set-debug obj stack))
+                (stack$a-frames stack))
+         :hints(("Goal" :in-theory (enable stack$a-frames
+                                           stack$a-set-debug len)))))
+
+(local (Defthm stack$a-scratch-len-of-set-debug
+         (equal (stack$a-scratch-len (stack$a-set-debug obj stack))
+                (stack$a-scratch-len stack))
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-set-debug)))))
+
+(local (Defthm stack$a-scratch-len-of-push-frame
+         (equal (stack$a-scratch-len (stack$a-push-frame stack))
+                0)
+         :hints(("Goal" :in-theory (enable stack$a-scratch-len
+                                           stack$a-push-frame)))))
+
+(defcong scratchobj-isomorphic major-stack-scratch-isomorphic (stack$a-push-scratch obj stack) 1
+  :hints(("Goal" :in-theory (enable stack$a-push-scratch))))
+
+
+
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-return-values-correct
+      :rules ((t (:add-concl (equal (list . <values>)
+                                    <call>))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+(defsection gl-interp-term-guards
+  (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
+
+  (local (in-theory (disable w)))
+
+  (local (defthm bfr-varname-p-of-get-term->bvar$a
+           (b* ((bvar-db (interp-st->bvar-db interp-st))
+                (logicman (interp-st->logicman interp-st))
+                (bvar (get-term->bvar$a obj bvar-db)))
+             (implies (and (interp-st-bfrs-ok interp-st)
+                           bvar)
+                      (bfr-varname-p bvar logicman)))
+           :hints(("Goal" :in-theory (enable interp-st-bfrs-ok)))))
+
+  (local
+   (defthm len-cinstlist-when-scratchobj-isomorphic-rw
+     (implies (and (scratchobj-isomorphic y (double-rewrite x))
+                   (syntaxp (not (equal y x)))
+                   (scratchobj-case y :cinstlist))
+              (equal (len (scratchobj-cinstlist->val x))
+                     (len (scratchobj-cinstlist->val y))))))
+
+  (local
+   (defthm len-gl-objlist-when-scratchobj-isomorphic-rw
+     (implies (and (scratchobj-isomorphic y (double-rewrite x))
+                   (syntaxp (not (equal y x)))
+                   (scratchobj-case y :gl-objlist))
+              (equal (len (scratchobj-gl-objlist->val x))
+                     (len (scratchobj-gl-objlist->val y))))))
+
+
+  (local (defthm eqlablep-of-rewrite-rule->equiv
+           (implies (pseudo-rewrite-rule-p rule)
+                    (eqlablep (acl2::rewrite-rule->equiv rule)))
+           :hints(("Goal" :in-theory (enable pseudo-rewrite-rule-p)))))
+  
+  ;; ugh
+  (local (defthm booleanp-of-interp-st-pathcond-enabledp
+           (implies (interp-stp interp-st)
+                    (booleanp (nth *pathcond-enabledp* (interp-st->pathcond interp-st))))
+           :hints(("Goal" :in-theory (enable interp-stp pathcondp interp-st->pathcond)))
+           :rule-classes :type-prescription))
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (verify-guards gl-interp-term
+      :guard-debug t)))
+
+
+
+
+
+
+
+
+

@@ -67,8 +67,8 @@
                          (pseudo-termp x.lhs)
                          (pseudo-termp x.rhs)
                          (symbolp x.equiv)
-                         (not (eq x.equiv 'quote))
-                         (not (eq x.subclass 'acl2::meta))))))))
+                         (not (equal x.equiv 'quote))
+                         (not (equal x.subclass 'acl2::meta))))))))
 
 (define mextract-good-rewrite-rulesp (rules)
   (if (atom rules)
@@ -298,3 +298,20 @@
              (mextract-good-rewrite-rulesp rules)))
 
   (memoize 'fn-rewrite-rules))
+
+
+(define fn-definition-rules ((fn symbolp) deftable (wrld plist-worldp))
+  :returns (rules pseudo-rewrite-rule-listp)
+  (b* ((runes-look (hons-assoc-equal fn deftable))
+       (runes (if runes-look
+                  (cdr runes-look)
+                `((:definition ,fn))))
+       (lemmas (fgetprop fn 'acl2::lemmas nil wrld)))
+    (filter-rewrite-rules lemmas (list-fix runes)))
+  ///
+  (std::defret mextract-good-rewrite-rulesp-of-fn-definition-rules
+    (implies (and (acl2::mextract-ev-global-facts)
+                  (equal wrld (w state)))
+             (mextract-good-rewrite-rulesp rules)))
+
+  (memoize 'fn-definition-rules))

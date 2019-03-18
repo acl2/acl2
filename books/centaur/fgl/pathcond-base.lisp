@@ -193,10 +193,15 @@
          (implies (natp x)
                   (rationalp x))))
 
+(define pathcond-rewind-ok ((bfr-mode bfr-mode-p) pathcond)
+  (or (not (pathcond-enabledp pathcond))
+      (< 0 (pathcond-rewind-stack-len bfr-mode pathcond))))
+
 (define pathcond-rewind ((bfr-mode bfr-mode-p)
                          pathcond)
-  :guard (< 0 (pathcond-rewind-stack-len bfr-mode pathcond))
-  :guard-hints (("goal" :in-theory (enable pathcond-rewind-stack-len)))
+  :guard (pathcond-rewind-ok bfr-mode pathcond)
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-stack-len
+                                           pathcond-rewind-ok)))
   :returns new-pathcond
   (b* ((pathcond (pathcond-fix pathcond))
        ((unless (pathcond-enabledp pathcond))
