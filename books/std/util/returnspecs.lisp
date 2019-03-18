@@ -646,11 +646,11 @@ For example, @('natp-of-foo').</dd>
   (b* ((call (cons name-fn formals))
        (both-subst `(("<CALL>" . ,call)
                      ("<FN>" . ,name)
-                     ("<FN!>" . ,name-fn)))
+                     ("<FN!>" . ,name-fn)
+                     ("<VALUES>" . ,names)))
        ((when (eql (len names) 1))
         (mv both-subst (cons (cons (car names) call) both-subst))))
     (mv both-subst (append both-subst (returnspec-mv-nth-subst names 0 call)))))
-       
 
 (defun returnspec-thms (name name-fn specs world)
   "Returns EVENTS"
