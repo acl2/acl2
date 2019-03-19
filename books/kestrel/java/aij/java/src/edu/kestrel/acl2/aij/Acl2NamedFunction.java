@@ -46,21 +46,15 @@ public abstract class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Checks if this ACL2 named function is equal to the argument object.
+     * The only way in which code external to AIJ can create named functions
+     * is through the {@link #make(Acl2Symbol)} method:
+     * since both defined and native functions are interned
+     * (see {@link Acl2DefinedFunction} and {@link Acl2NativeFunction}),
+     * two named functions are equal iff they are the same object.
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Acl2NamedFunction)) return false;
-        Acl2NamedFunction that = (Acl2NamedFunction) o;
-        return name.equals(that.name);
-    }
-
-    /**
-     * Returns a hash code for this ACL2 named function.
-     */
-    @Override
-    public int hashCode() {
-        return name.hashCode();
+        return this == o;
     }
 
     /**

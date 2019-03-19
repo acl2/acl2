@@ -1,4 +1,4 @@
-; Ethereum Library
+; Ethereum
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -17,6 +17,7 @@
 (include-book "rlp/top")
 (include-book "hex-prefix")
 (include-book "mmp-trees")
+(include-book "transactions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
