@@ -4,7 +4,12 @@
 
 (in-package "RTL")
 
-(include-book "support/gauss")
+(local (include-book "support/gauss"))
+
+;; Also defined in the RTL library.
+(defund fl (x)
+  (declare (xargs :guard (real/rationalp x)))
+  (floor x 1))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event

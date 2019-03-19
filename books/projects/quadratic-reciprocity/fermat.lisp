@@ -4,7 +4,7 @@
 
 (in-package "RTL")
 
-(include-book "support/fermat")
+(local (include-book "support/fermat"))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event
