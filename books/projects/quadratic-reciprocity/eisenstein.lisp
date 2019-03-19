@@ -4,7 +4,7 @@
 
 (in-package "RTL")
 
-(include-book "support/eisenstein")
+(local (include-book "support/eisenstein"))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event

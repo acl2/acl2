@@ -332,6 +332,21 @@
  sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
  the appropriate SBCL source code line.</p>
 
+ <h4>Quadratic Reciprocity</h4>
+
+ <p>In @('projects/quadratic-reciprocity/'), certain include-books, namely
+ those that bring in books from @('support/'), have been made local.  This follows
+ the standard pattern of putting all proof work in separate \"support books\"
+ which are included only locally in the main files.  (The main files simply
+ re-iterate, redundantly, the events to be exported.)  If this change causes
+ proof failures, and your development includes books such as
+ @('projects/quadratic-reciprocity/fermat'), consider now also including the
+ corresponding support books (e.g.,
+ @('projects/quadratic-reciprocity/support/fermat')).  (Actually, to get
+ broken proofs working again, it may suffice to include simpler books that were
+ previously brought in via the support books, such as
+ @('rtl/rel11/support/basic') or @('rtl/rel11/support/util').)</p>
+
  <h4>RAC: Restricted Algorithmic C</h4>
 
  <p>Minor modifications of @('projects/rac/') include a bug fix in the parser

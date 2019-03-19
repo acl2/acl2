@@ -5,7 +5,7 @@
 (in-package "RTL")
 (include-book "xdoc/top" :dir :system)
 
-(include-book "support/euclid")
+(local (include-book "support/euclid"))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event
