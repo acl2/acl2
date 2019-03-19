@@ -198,14 +198,12 @@
 
 
 
-(defun make-apply (name fns world)
+(defun make-apply (name evname fns world)
   (declare (xargs :mode :program))
-  (b* ((ev (intern-in-package-of-symbol
-            (concatenate 'string (symbol-name name) "-EV")
-            name))
+  (b* ((ev evname)
        (ev-lst (intern-in-package-of-symbol
-                (concatenate 'string (symbol-name name) "-EV-LST")
-                name)))
+                (concatenate 'string (symbol-name evname) "-LIST")
+                evname)))
   `(progn
      (defun ,(intern-in-package-of-symbol
               (concatenate 'string (symbol-name name) "-ARITIES")
@@ -236,8 +234,8 @@
 
 
 
-(defmacro defapply (name fns)
-  `(make-event (make-apply ',name ',fns (w state))))
+(defmacro defapply (name evname fns)
+  `(make-event (make-apply ',name ',evname ',fns (w state))))
 
 (logic)
 
