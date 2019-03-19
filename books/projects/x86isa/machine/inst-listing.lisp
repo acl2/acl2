@@ -39,7 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "inst-structs")
-(local (include-book "std/strings/pretty" :dir :system))
+(include-book "std/strings/pretty" :dir :system)
 
 (defsection opcode-maps
   :parents (instructions x86-decoder)
@@ -3301,7 +3301,7 @@
     ;; This leads me to infer that even though the source operand
     ;; is obtained from the SIB byte, we should not #UD when the
     ;; SIB byte is not present (i.e., when ModR/M.r/m != #b100 --
-    ;; See Table 2-2 in Intel Vol. 2).    
+    ;; See Table 2-2 in Intel Vol. 2).
     (INST "BNDLDX"
           (OP :OP #xF1A
               :MOD :MEM
@@ -3359,7 +3359,7 @@
           'NIL
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
                  ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.                 
+                 ;;   Intel MPX is enabled.
                  (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
                  ;; In Compatibility/Protected Mode:
                  ;; - If 67H prefix is used and CS.D=1.
@@ -20874,15 +20874,338 @@
 
 ;; ----------------------------------------------------------------------
 
-(defsection filtering-instructions
-  :parents (opcode-maps)
-  :short "Some Functions to operate on the ACL2 representation of Intel's Opcode
-  Maps"
-  )
+;; Creating documentation for the implemented opcodes:
 
-(local (xdoc::set-default-parents 'filtering-instructions))
+(defconst *x86isa-printconfig*
+  (str::make-printconfig
+   :home-package (pkg-witness "X86ISA")
+   :print-base 16
+   :print-radix t
+   :print-lowercase t))
+
+(defconst *x86isa-printconfig-uppercase*
+  (str::make-printconfig
+   :home-package (pkg-witness "X86ISA")
+   :print-base 16
+   :print-radix t
+   :print-lowercase nil))
+
+(defconst *x86isa-printconfig-base-10*
+  (str::make-printconfig
+   :home-package (pkg-witness "X86ISA")
+   :print-base 10
+   :print-radix nil
+   :print-lowercase nil))
+
+(defconst *x86isa-printconfig-base-10-lowercase*
+  (str::make-printconfig
+   :home-package (pkg-witness "X86ISA")
+   :print-base 10
+   :print-radix nil
+   :print-lowercase t))
+
+(define create-inst-doc ((inst inst-p)
+                         &key
+                         ((fn-ok? booleanp
+                                  "Include information about the semantic
+                          function in the documentation or not")
+                          't)
+                         ((arg-ok? booleanp
+                                   "Include information about the
+                          operands (@('inst.operands') field) in the
+                          documentation or not")
+                          'nil))
+
+  :guard-hints (("Goal" :in-theory (e/d () (subseq))))
+  :returns (inst-doc-string stringp)
+
+  :prepwork
+
+  ((define symbol-list-to-string ((lst symbol-listp))
+     :returns (newstr stringp :hyp :guard)
+     (if (atom lst)
+         ""
+       (if (eql (len lst) 1)
+           (str::cat ":" (symbol-name (car lst)))
+         (str::cat ":" (symbol-name (car lst)) " "
+                   (symbol-list-to-string (cdr lst))))))
+
+   (define create-extra-info-doc-string (info
+                                         (text stringp))
+     :returns (doc stringp :hyp :guard)
+
+     (if info
+         (let* ((info-string (cond ((symbolp info)
+                                    (str::cat ":" (symbol-name info)))
+                                   ((symbol-listp info)
+                                    (symbol-list-to-string info))
+                                   (t
+                                    (str::pretty
+                                     info
+                                     :config
+                                     *x86isa-printconfig-base-10*)))))
+           (str::cat "<tr><td> @('" text "') </td>"
+                     "<td> @('" info-string "') </td> </tr>"))
+       ""))
+
+   (define create-extra-info-doc ((opcode strict-opcode-p))
+     :returns (doc stringp :hyp :guard)
+
+     (b* (((opcode opcode))
+          (feat-doc  (create-extra-info-doc-string opcode.feat ":FEAT "))
+          (vex-doc   (create-extra-info-doc-string opcode.vex  ":VEX "))
+          (evex-doc  (create-extra-info-doc-string opcode.evex ":EVEX "))
+          (pfx-doc   (create-extra-info-doc-string opcode.pfx  ":PFX "))
+          (mode-doc  (create-extra-info-doc-string opcode.mode ":MODE "))
+          (reg-doc   (create-extra-info-doc-string opcode.reg  ":REG "))
+          (mod-doc   (create-extra-info-doc-string opcode.mod  ":MOD "))
+          (r/m-doc   (create-extra-info-doc-string opcode.r/m  ":R/M "))
+          (rex-doc   (create-extra-info-doc-string opcode.rex  ":REX "))
+          (extra-info (str::cat "<table>"
+                                mode-doc pfx-doc reg-doc
+                                mod-doc r/m-doc rex-doc
+                                vex-doc evex-doc feat-doc
+                                "</table>")))
+       extra-info))
+
+   (define gen-addressing-method-code-doc ((z-info alistp))
+     ;; (gen-addressing-method-code-doc *Z-addressing-method-info*)
+     :prepwork
+     ((define get-addressing-method-doc ((code addressing-method-code-p))
+        :returns (str stringp)
+        (b* ((alst (cdr (assoc-equal code *Z-addressing-method-info*)))
+             (doc (cdr (assoc-equal :doc alst)))
+             ((unless doc) ""))
+          doc)))
+     (if (endp z-info)
+         nil
+       (b* ((code (caar z-info))
+            ((unless (addressing-method-code-p code))
+             (er hard? __function__ "~% Bad code ~x0 encountered! ~%" code))
+            (codestr (str::pretty code :config *x86isa-printconfig-base-10*))
+            (docstr (str::cat "@(' " codestr "'): " (get-addressing-method-doc code)))
+            (topic-name (intern$ (str::cat codestr "-Z-ADDRESSING-METHOD") "X86ISA"))
+            (form `((defxdoc ,topic-name
+                      ;; We intentionally don't define a parent here.  We can
+                      ;; wrap the call of this function inside an appropriate
+                      ;; defsection if we want to generate addressing method
+                      ;; information.
+                      :long ,docstr)))
+            (rest (gen-addressing-method-code-doc (cdr z-info))))
+         (append form rest))))
+
+   (define gen-operand-type-code-doc ((info alistp))
+     ;; (gen-operand-type-code-doc *operand-type-code-info*)
+     :prepwork
+     ((define get-operand-type-code-doc ((code operand-type-code-p))
+        :returns (str stringp)
+        (b* ((alst (cdr (assoc-equal code *operand-type-code-info*)))
+             (doc (cdr (assoc-equal :doc alst)))
+             ((unless doc) ""))
+          doc)))
+     (if (endp info)
+         nil
+       (b* ((code (caar info))
+            ((unless (operand-type-code-p code))
+             (er hard? __function__ "~% Bad code ~x0 encountered! ~%" code))
+            (codestr (str::pretty code :config *x86isa-printconfig-base-10-lowercase*))
+            (docstr (str::cat "@(' " codestr "'): " (get-operand-type-code-doc code)))
+            (topic-name (intern$
+                         (str::upcase-string (str::cat codestr "-OPERAND-TYPE-CODE"))
+                         "X86ISA"))
+            (form `((defxdoc ,topic-name
+                      ;; We intentionally don't define a parent here.  We can
+                      ;; wrap the call of this function inside an appropriate
+                      ;; defsection if we want to generate operand code type
+                      ;; information.
+                      :long ,docstr)))
+            (rest (gen-operand-type-code-doc (cdr info))))
+         (append form rest))))
+
+   (define create-arg-doc ((x operand-type-p))
+     :returns (xstr stringp)
+     (cond
+      ((atom x) " ")
+      ((eql (len x) 1)
+       (b* ((possible-code (nth 0 x))
+            (codestr (str::pretty possible-code :config *x86isa-printconfig-base-10*))
+            (topic-name (str::cat codestr "-Z-ADDRESSING-METHOD")))
+         (if (addressing-method-code-p possible-code)
+             (str::cat "[<a href=\"index.html?topic=X86ISA____" topic-name "\">" codestr "</a>] ")
+           (str::cat "[@('" codestr "')] "))))
+      ((eql (len x) 2)
+       (b* ((addressing-mode (nth 0 x))
+            (addressing-mode-str ;; Addressing Method Code in Upper Case
+             (str::pretty addressing-mode :config *x86isa-printconfig-base-10*))
+            (addressing-mode-topic-name
+             (str::cat addressing-mode-str "-Z-ADDRESSING-METHOD"))
+            (operand-code (nth 1 x))
+            (operand-code-str ;; Operand Type Code in Lower Case
+             (str::pretty operand-code :config *x86isa-printconfig-base-10-lowercase*))
+            (operand-code-topic-name
+             (str::upcase-string (str::cat operand-code-str "-OPERAND-TYPE-CODE"))))
+         (str::cat
+          "[<a href=\"index.html?topic=X86ISA____" addressing-mode-topic-name "\">"
+          addressing-mode-str
+          "</a> - <a href=\"index.html?topic=X86ISA____" operand-code-topic-name "\">"
+          operand-code-str "</a>] ")))
+      (t " ")))
+
+   (define create-args-doc ((operands maybe-operands-p))
+     :prepwork ((local (in-theory (e/d (maybe-operands-p) ()))))
+     :returns (docstr stringp)
+     (b* (((unless operands)
+           ;; Instruction does not require any operands.
+           "<td> </td>")
+          ((operands operands))
+          (op1 (create-arg-doc operands.op1))
+          ((if (eql operands.op2 nil))
+           (str::cat "<td> " op1 " </td>"))
+          (op2 (create-arg-doc operands.op2))
+          ((if (eql operands.op3 nil))
+           (str::cat "<td> " op1 ", " op2 " </td>"))
+          (op3 (create-arg-doc operands.op3))
+          ((if (eql operands.op4 nil))
+           (str::cat "<td> " op1 ", " op2 ", " op3 " </td>"))
+          (op4 (create-arg-doc operands.op4)))
+       (str::cat "<td> " op1 ", " op2 ", " op3 ", " op4 " </td>")))
+
+   (defthm inst-p-implies-mnemonic-p
+     (implies (inst-p x)
+              (mnemonic-p (inst->mnemonic x)))
+     :hints (("Goal" :in-theory (e/d (inst-p) ())))
+     :rule-classes :forward-chaining)
+
+   (defthm inst-p-implies-mnemonic-p-alt
+     (implies (and (inst-p x)
+                   (not (stringp (inst->mnemonic x))))
+              ;; (keywordp (inst->mnemonic x))
+              (symbolp (inst->mnemonic x)))
+     :hints (("Goal"
+              :use ((:instance inst-p-implies-mnemonic-p))
+              :in-theory (e/d (mnemonic-p inst->mnemonic)
+                              (inst-p-implies-mnemonic-p)))))
+
+   (defthm inst-p-implies-consp-fn
+     (implies (and (inst-p x)
+                   (inst->fn x))
+              (consp (inst->fn x)))
+     :hints (("Goal" :in-theory (e/d (fn-desc-p inst->fn fn-desc-p) ())))))
+
+  (b* (((inst inst))
+       (opcode inst.opcode)
+       ((opcode opcode))
+       ;; We only add the low 8 bits of the opcode in the documentation for
+       ;; three reasons: (1) to save horizontal space in the table; (2) the
+       ;; table headings will list whether we're dealing with one-, two-, or
+       ;; three-byte map, and in the last two cases, will mention whether the
+       ;; opcode bytes begin with 0F_38 or 0F_3A; and (3) VEX- and EVEX-encoded
+       ;; opcodes don't really have two- or three-byte opcodes because the map
+       ;; is encoded in the VEX/EVEX prefixes, so it can be misleading to list
+       ;; their opcode as two or three bytes long.
+       (opcode-byte (loghead 8 opcode.op))
+       (mnemonic (if (stringp inst.mnemonic)
+                     inst.mnemonic
+                   (symbol-name inst.mnemonic)))
+       (fn-info  (if (and fn-ok? inst.fn)
+                     (if (eql (car inst.fn) :NO-INSTRUCTION)
+                         "@('NO INSTRUCTION')"
+                       (concatenate
+                        'string
+                        "@(tsee "
+                        (str::pretty (car inst.fn) :config *x86isa-printconfig*)
+                        ") "
+                        (if (cdr inst.fn)
+                            (concatenate
+                             'string
+                             "-- <br/><tt>"
+                             (str::pretty (cdr inst.fn)
+                                          :config *x86isa-printconfig*)
+                             "</tt>")
+                          "")))
+                   ""))
+       (fn-info (if fn-ok?
+                    (concatenate
+                     'string
+                     " <td> " fn-info                 " </td> ")
+                  ""))
+       ;; --------------------------------------------------
+       ;; Constructing extra-info documentation:
+       (extra-info (create-extra-info-doc opcode))
+       ;; --------------------------------------------------
+       ;; Constructing operands' documentation, if necessary:
+       (arg-str (if arg-ok? (create-args-doc inst.operands) ""))
+       ;; --------------------------------------------------
+       (doc-string
+        (concatenate
+         'string
+         "<tr> "
+         " <td> " (subseq (str::hexify-width opcode-byte 2) 3 nil) " </td> "
+         " <td> " mnemonic                " </td> "
+         " <td> " extra-info              " </td> "
+                  arg-str
+                  fn-info
+         "</tr>")))
+    doc-string))
+
+(define create-insts-doc-aux ((inst-lst inst-list-p)
+                              &key
+                              ((fn-ok? booleanp
+                                       "Include information about the semantic
+                          function in the documentation or not")
+                               't)
+                              ((arg-ok? booleanp
+                                        "Include information about the
+                          operands (@('inst.operands') field) in the
+                          documentation or not")
+                               'nil))
+
+  :returns (insts-doc-string stringp)
+
+  (if (endp inst-lst)
+      ""
+    (concatenate
+     'string
+     (create-inst-doc (car inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok?)
+     (create-insts-doc-aux (cdr inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok?))))
+
+(define create-insts-doc ((inst-lst inst-list-p)
+                          &key
+                          ((fn-ok? booleanp
+                                   "Include information about the semantic
+                          function in the documentation or not")
+                           't)
+                          ((arg-ok? booleanp
+                                    "Include information about the
+                          operands (@('inst.operands') field) in the
+                          documentation or not")
+                           'nil))
+
+  :returns (insts-doc-string stringp)
+
+  (b* ((insts-doc-string (create-insts-doc-aux
+                          inst-lst :fn-ok? fn-ok? :arg-ok? arg-ok?))
+       (table-header-1 "<th> Opcode </th>")
+       (table-header-2 "<th> Mnemonic </th>")
+       (table-header-3 "<th> Other Information </th>")
+       (table-header-4 (if fn-ok?
+                           "<th> Semantic Function </th>"
+                         ""))
+       (table-header-5 (if arg-ok?
+                           "<th> Operands </th>"
+                         ""))
+       (table-header (concatenate
+                      'string "<tr> "
+                      table-header-1 table-header-2
+                      table-header-3 table-header-4
+                      table-header-5
+                      " </tr>")))
+    (concatenate
+     'string
+     "<table> " table-header insts-doc-string " </table>")))
 
 (define select-opcode-map ((map-key keywordp))
+  :parents (filtering-instructions)
   :guard (member-equal
           map-key
           '(:one-byte
@@ -20898,263 +21221,9 @@
     ((:0F-38-three-byte :vex-0F-38 :evex-0F-38) *0F-38-three-byte-opcode-map*)
     ((:0F-3A-three-byte :vex-0F-3A :evex-0F-3A) *0F-3A-three-byte-opcode-map*)))
 
-;; Right now, we can't select AVX instructions using the function
-;; select-insts. The reason is that VEX/EVEX-encoded instructions (but probably
-;; just EVEX-encoded --- I'm being extra cautious here) may be missing
-;; operands' information (i.e., their :vex or :evex fields may be empty)
-;; because Intel manuals are missing that information.  So selecting an
-;; instruction based on the presence or absence of the :vex or :evex fields
-;; would result in false matches.  However, all AVX instructions (I believe)
-;; have proper CPUID feature flags.  Thus, for now, we can do selection of AVX
-;; instructions using the functions remove-insts-with-feat and
-;; keep-insts-with-feat below.
-
-;; I've tried to store all CPUID feature flag information in the :feat field of
-;; the opcode, but there are a few cases where that information is in the
-;; :excep field of inst instead (just three at this count: SAHF, LAHF, and
-;; XSAVEOPT).  The reason they're separate is that in these cases, the absence
-;; of one feature flag by itself is not enough to cause a #UD --- either we
-;; need at least one flag to be present (and the dispatch functions check
-;; whether ALL the flags are present in :FEAT) or the #UD also depends on the
-;; mode of operation of the processor. Search for FEATURE-FLAG-MACRO in the
-;; inst-listings to see those cases.
-
-(define remove-insts-with-feat ((inst-lst inst-list-p)
-                                (feat acl2::keyword-listp))
-  :short "Remove all instructions from @('inst-lst') that have ANY feature
-  present in @('feat')"
-  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
-  ;; set to :rem once we have operands' spec. for EVEX instructions.
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-  (if (endp inst-lst)
-      nil
-    (b* ((inst (car inst-lst))
-         (rest (remove-insts-with-feat (cdr inst-lst) feat))
-         ((inst inst))
-         (opcode inst.opcode)
-         ((opcode opcode))
-         ((when (any-present-in feat opcode.feat)) rest))
-      (cons inst rest))))
-
-(define keep-insts-with-feat ((inst-lst inst-list-p)
-                              (feat acl2::keyword-listp))
-  :short "Keep all instructions from @('inst-lst') that have ANY feature
-  present in @('feat')"
-  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
-  ;; set to :get once we have operands' spec. for EVEX instructions.
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-
-  (if (endp inst-lst)
-      nil
-    (b* ((inst (car inst-lst))
-         (rest (keep-insts-with-feat (cdr inst-lst) feat))
-         ((inst inst))
-         (opcode inst.opcode)
-         ((opcode opcode))
-         ((when (any-present-in feat opcode.feat)) (cons inst rest)))
-      rest)))
-
-(define select-insts ((inst-lst inst-list-p)
-                      &key
-                      ((get/rem (member-equal get/rem '(:get :rem))
-                                "Either get or remove the selected instructions")
-                       ':get)
-                      ((opcode (or (eql opcode nil) (24bits-p opcode))
-                               "If specified, select all instructions with the
-                                same opcode")
-                       'nil)
-                      ((mode op-mode-p
-                             "If specified, select all instructions with the
-                                same mode of operation")
-                       'nil)
-                      ((prefix op-pfx-p
-                               "If specified, select all instructions with the
-                                same prefix")
-                       'nil)
-                      ((vex? booleanp
-                             "If @('t'), select all instructions with a non-nil
-                             @('opcode.vex') field")
-                       'nil)
-                      ((fn? booleanp
-                            "If @('t'), select all instructions with a non-nil
-                             @('inst.fn') field")
-                       'nil))
-
-  :short "Select instructions satisfying some conditions, and then either
-  remove the selection or keep only the selection"
-
-  :guard
-  ;; Specify at least one of the following keys.
-  (or opcode mode prefix vex? fn?)
-
-  :returns (new-inst-lst inst-list-p
-                         :hyp (inst-list-p inst-lst))
-
-  (b* (((when (endp inst-lst)) nil)
-       (rest (select-insts (cdr inst-lst)
-                           ;; Remember to add key/vals here too if you expand
-                           ;; the formals!
-                           :get/rem get/rem
-                           :opcode opcode
-                           :mode mode
-                           :prefix prefix
-                           :vex? vex?
-                           :fn? fn?))
-       (inst (car inst-lst))
-       ((inst inst))
-       ((opcode inst.opcode))
-       (match? (and (if (not opcode)
-                        t
-                      (equal opcode inst.opcode.op))
-                    (if (not mode)
-                        t
-                      (equal mode inst.opcode.mode))
-                    (if (not prefix)
-                        t
-                      (if (equal prefix :no-prefix)
-                          (or (equal prefix inst.opcode.pfx)
-                              (not inst.opcode.pfx))
-                        (equal prefix inst.opcode.pfx)))
-                    (if (not vex?)
-                        t
-                      (if inst.opcode.vex t nil))
-                    (if (not fn?)
-                        t
-                      (if inst.fn t nil)))))
-    (if (eql get/rem :get)
-        (append (and match? (list inst)) rest)
-      (append (if match? nil (list inst)) rest))))
-
-;; ----------------------------------------------------------------------
-
-;; Creating documentation for the implemented opcodes:
-
-(local
- (defconst *x86isa-printconfig*
-   (str::make-printconfig
-    :home-package (pkg-witness "X86ISA")
-    :print-base 16
-    :print-radix t
-    :print-lowercase t)))
-
-(local
- (defconst *x86isa-printconfig-uppercase*
-   (str::make-printconfig
-    :home-package (pkg-witness "X86ISA")
-    :print-base 16
-    :print-radix t
-    :print-lowercase nil)))
-
-(local
- (define create-inst-doc ((inst inst-p))
-
-   :returns (inst-doc-string stringp)
-
-   :prepwork
-   ((defthm inst-p-implies-mnemonic-p
-      (implies (inst-p x)
-               (mnemonic-p (inst->mnemonic x)))
-      :hints (("Goal" :in-theory (e/d (inst-p) ())))
-      :rule-classes :forward-chaining)
-
-    (defthm inst-p-implies-mnemonic-p-alt
-      (implies (and (inst-p x)
-                    (not (stringp (inst->mnemonic x))))
-               ;; (keywordp (inst->mnemonic x))
-               (symbolp (inst->mnemonic x)))
-      :hints (("Goal"
-               :use ((:instance inst-p-implies-mnemonic-p))
-               :in-theory (e/d (mnemonic-p inst->mnemonic)
-                               (inst-p-implies-mnemonic-p)))))
-
-    (defthm inst-p-implies-consp-fn
-      (implies (and (inst-p x)
-                    (inst->fn x))
-               (consp (inst->fn x)))
-      :hints (("Goal" :in-theory (e/d (fn-desc-p inst->fn fn-desc-p) ())))))
-   (b* (((inst inst))
-        (opcode inst.opcode)
-        ((opcode opcode))
-        (mnemonic (if (stringp inst.mnemonic)
-                      inst.mnemonic
-                    (symbol-name inst.mnemonic)))
-        (fn-info  (if inst.fn
-                      (if (eql (car inst.fn) :NO-INSTRUCTION)
-                          "NO INSTRUCTION"
-                        (concatenate
-                         'string
-                         "@(tsee "
-                         (str::pretty (car inst.fn) :config *x86isa-printconfig*)
-                         ") "
-                         (if (cdr inst.fn)
-                             (concatenate
-                              'string
-                              "<tt>"
-                              (str::pretty (cdr inst.fn)
-                                           :config *x86isa-printconfig*)
-                              "</tt>")
-                           "")))
-                    ""))
-        (extra-info `(,@(and opcode.mode   `((:MODE ,opcode.mode)))
-                      ,@(and opcode.pfx    `((:PFX  ,opcode.pfx)))
-                      ,@(and opcode.reg    `((:REG  ,opcode.reg)))
-                      ,@(and opcode.mod    `((:MOD  ,opcode.mod)))
-                      ,@(and opcode.r/m    `((:R/M  ,opcode.r/m)))
-                      ,@(and opcode.rex    `((:REX  ,opcode.rex)))
-                      ,@(and opcode.vex    `((:VEX  ,opcode.vex)))
-                      ,@(and opcode.evex   `((:EVEX ,opcode.evex)))
-                      ,@(and opcode.feat   `((:FEAT ,opcode.feat)))))
-        (extra-info (if extra-info
-                        (str::pretty extra-info
-                                     :config
-                                     *x86isa-printconfig-uppercase*)
-                      ""))
-        (doc-string
-         (concatenate
-          'string
-          "<tr> "
-          " <td> " (str::hexify opcode.op) " </td> "
-          " <td> " mnemonic                " </td> "
-          " <td> " extra-info              " </td>"
-          " <td> " fn-info                 " </td> "
-          "</tr>")))
-     doc-string)))
-
-(local
- (define create-insts-doc-aux ((inst-lst inst-list-p))
-
-   :returns (insts-doc-string stringp)
-
-   (if (endp inst-lst)
-       ""
-     (concatenate
-      'string
-      (create-inst-doc (car inst-lst))
-      (create-insts-doc-aux (cdr inst-lst))))))
-
-(local
- (define create-insts-doc ((inst-lst inst-list-p))
-
-   :returns (insts-doc-string stringp)
-
-   (b* ((insts-doc-string (create-insts-doc-aux inst-lst))
-        (table-header-1 "<th> Opcode </th>")
-        (table-header-2 "<th> Mnemonic </th>")
-        (table-header-3 "<th> Other Information </th>")
-        (table-header-4 "<th> Semantic Function </th>")
-        (table-header (concatenate
-                       'string "<tr> "
-                       table-header-1 table-header-2
-                       table-header-3 table-header-4
-                       " </tr>")))
-     (concatenate
-      'string
-      "<table> " table-header insts-doc-string " </table>"))))
-
-
 (make-event
+ ;; To generate ALL the instructions, including the unimplemented ones, set
+ ;; :fn? to nil in the following forms.
  (b* ((one (create-insts-doc
             (select-insts *one-byte-opcode-map*
                           :get/rem :get
@@ -21174,21 +21243,21 @@
    `(progn
       (defsection one-byte-opcodes-map
         :parents (implemented-opcodes)
-        :short "List of implemented instructions whose opcode is one byte long"
+        :short "List of <b>implemented</b> instructions whose opcode is one byte long"
         :long ,one)
       (defsection two-byte-opcodes-map
         :parents (implemented-opcodes)
-        :short "List of implemented instructions whose opcode is two bytes long,
+        :short "List of <b>implemented</b> instructions whose opcode is two bytes long,
        beginning with @('0F'); includes VEX/EVEX instructions too"
         :long ,two)
       (defsection 0F-38-three-byte-opcodes-map
         :parents (implemented-opcodes)
-        :short "List of implemented instructions whose opcode is three bytes
+        :short "List of <b>implemented</b> instructions whose opcode is three bytes
        long, beginning with @('0F_38'); includes VEX/EVEX instructions too"
         :long ,three-1)
       (defsection 0F-3A-three-byte-opcodes-map
         :parents (implemented-opcodes)
-        :short "List of implemented instructions whose opcode is three bytes
+        :short "List of <b>implemented</b> instructions whose opcode is three bytes
        long, beginning with @('0F_3A'); includes VEX/EVEX instructions too"
         :long ,three-2))))
 
@@ -21200,7 +21269,7 @@
   "<p>We support decoding of all the x86 instructions in the one-, two-, and
  three-byte opcode maps, including the AVX/AVX2/AVX512 extensions.  However, a
  fraction of those are actually implemented in this model --- when we say
- 'implemented' instructions, we mean instructions that have a semantic function
+ <i>implemented</i> instructions, we mean instructions that have a semantic function
  that models its effects on the machine's state.</p>
 
  <p>For a listing of all such supported instructions, see @(see

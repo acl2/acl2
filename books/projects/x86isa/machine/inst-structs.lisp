@@ -73,76 +73,76 @@
 
   (list
 
-   ;; A Direct address: the instruction has no ModR/M byte; the
-   ;; address of the operand is encoded in the instruction. No base
-   ;; register, index register, or scaling factor can be applied (for
-   ;; example far JMP (EA)).
+   '(A (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "Direct address: the instruction has no ModR/M byte; the address
+             of the operand is encoded in the instruction. No base register,
+             index register, or scaling factor can be applied (for example far
+             JMP (EA))."))
 
-   '(A (:modr/m? . nil) (:vex? . nil))
+   '(B (:modr/m? . nil) (:vex? . t)
+       (:doc .
+             "The VEX.vvvv field of the VEX prefix selects a general purpose
+             register."))
 
-   ;; B The VEX.vvvv field of the VEX prefix selects a general purpose
-   ;; register.
 
-   '(B (:modr/m? . nil) (:vex? . t))
+   '(C (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The reg field of the ModR/M byte selects a control register (for
+             example MOV (0F20, 0F22))."))
 
-   ;; C The reg field of the ModR/M byte selects a control register
-   ;; (for example MOV (0F20, 0F22)).
+   '(D (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The reg field of the ModR/M byte selects a debug register (for
+             example MOV (0F21,0F23))."))
 
-   '(C (:modr/m? . t) (:vex? . nil))
+   '(E (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "A ModR/M byte follows the opcode and specifies the operand. The
+             operand is either a general-purpose register or a memory
+             address. If it is a memory address the address is computed from a
+             segment register and any of the following values: a base register,
+             an index register, a scaling factor,a displacement."))
 
-   ;; D The reg field of the ModR/M byte selects a debug register (for
-   ;; example MOV (0F21,0F23)).
+   '(F (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "EFLAGS/RFLAGS Register."))
 
-   '(D (:modr/m? . t) (:vex? . nil))
+   '(G (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The reg field of the ModR/M byte selects a general register (for
+             example AX (000))."))
 
-   ;; E A ModR/M byte follows the opcode and specifies the
-   ;; operand. The operand is either a general-purpose register or a
-   ;; memory address. If it is a memory address the address is
-   ;; computed from a segment register and any of the following
-   ;; values: a base register, an index register, a scaling factor, a
-   ;; displacement.
+   '(H (:modr/m? . nil) (:vex? . t)
+       (:doc .
+             "The VEX.vvvv field of the VEX prefix selects a 128-bit XMM
+             register or a 256-bit YMM register determined by operand type. For
+             legacy SSE encodings this operand does not exist, changing the
+             instruction to destructive form."))
 
-   '(E (:modr/m? . t) (:vex? . nil))
+   '(I (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "Immediate data: the operand value is encoded in subsequent bytes
+             of the instruction."))
 
-   ;; F EFLAGS/RFLAGS Register.
-
-   '(F (:modr/m? . nil) (:vex? . nil))
-
-   ;; G The reg field of the ModR/M byte selects a general register
-   ;; (for example AX (000)).
-
-   '(G (:modr/m? . t) (:vex? . nil))
-
-   ;; H The VEX.vvvv field of the VEX prefix selects a 128-bit XMM
-   ;; register or a 256-bit YMM register determined by operand
-   ;; type. For legacy SSE encodings this operand does not exist,
-   ;; changing the instruction to destructive form.
-
-   '(H (:modr/m? . nil) (:vex? . t))
-
-   ;; I Immediate data: the operand value is encoded in subsequent
-   ;; bytes of the instruction.
-
-   '(I (:modr/m? . nil) (:vex? . nil))
-
-   ;; J The instruction contains a relative offset to be added to the
-   ;; instruction pointer register (for example JMP (0E9), LOOP).
-
-   '(J (:modr/m? . nil) (:vex? . nil))
+   '(J (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "The instruction contains a relative offset to be added to the
+             instruction pointer register (for example JMP (0E9), LOOP)."))
 
    ;; Important: Note that rB, mB are not listed as Z addressing methods in the
    ;; Intel manuals (May 2018 edition).  I borrowed them from the following:
    ;; http://sandpile.org/x86/opc_enc.htm.
 
-   ;; rB: modr/m.reg is used to access bound registers (added as a part of the
-   ;; Intel MPX Programming Environment).
+   '(rB (:modr/m? . t) (:vex? . nil)
+        (:doc .
+              "modr/m.reg is used to access bound registers (added as a part of
+              the Intel MPX Programming Environment)."))
 
-   '(rB (:modr/m? . t) (:vex? . nil))
-
-   ;; mB: modr/m.r/m is used to access bound registers (added as a part of the
-   ;; Intel MPX Programming Environment).
-
-   '(mB (:modr/m? . t) (:vex? . nil))
+   '(mB (:modr/m? . t) (:vex? . nil)
+        (:doc .
+              "modr/m.r/m is used to access bound registers (added as a part of
+              the Intel MPX Programming Environment)."))
 
    ;; Important: Addressing info with "K-" prefix below does not appear in the
    ;; Intel Manuals (dated May, 2018).  The Intel manuals do not define a Z
@@ -152,103 +152,100 @@
    ;; Source: Section 2.6.3 (Opmask Register Encoding), specifically, Table
    ;; 2-33 (Opmask Register Specifier Encoding), Intel Vol. 2
 
-   ;; K-reg: modr/m.reg is used to access opmask registers k0-k7 (common
-   ;; usages: source).
+   '(K-reg (:modr/m? . t) (:vex? . nil)
+           (:doc .
+                 "modr/m.reg is used to access opmask registers k0-k7 (common
+                 usages: source). "))
 
-   '(K-reg (:modr/m? . t) (:vex? . nil))
+   '(K-vex (:modr/m? . nil) (:vex? . t)
+           (:doc .
+                 "VEX.vvvv is used to access opmask registers k0-k7 (common
+                 usages: 2nd source)."))
 
-   ;; K-vex: VEX.vvvv is used to access opmask registers k0-k7 (common usages:
-   ;; 2nd source).
+   '(K-r/m (:modr/m? . t) (:vex? . nil)
+           (:doc .
+                 "modr/m.r/m is used to access opmask registers k0-k7 (common
+                 usages: 1st source)."))
 
-   '(K-vex (:modr/m? . nil) (:vex? . t))
+   '(K-evex (:modr/m? . nil) (:vex? . nil) (:evex? . t)
+            (:doc .
+                  "EVEX.aaa is used to access opmask registers k0-k4 (common
+                  usages: Opmask)."))
 
-   ;; K-r/m: modr/m.r/m is used to access opmask registers k0-k7 (common
-   ;; usages: 1st source).
+   '(L (:modr/m? . nil) (:vex? . t)
+       (:doc .
+             "The upper 4 bits of the 8-bit immediate selects a 128-bit XMM
+             register or a 256-bit YMM register determined by operand
+             type. (the MSB is ignored in 32-bit mode)"))
 
-   '(K-r/m (:modr/m? . t) (:vex? . nil))
+   '(M (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The ModR/M byte may refer only to memory (for example BOUND, LES,
+             LDS, LSS, LFS, LGS, CMPXCHG8B)."))
 
-   ;; K-evex: EVEX.aaa is used to access opmask registers k0-k4 (common usages:
-   ;; Opmask).
+   '(N (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The R/M field of the ModR/M byte selects a packed-quadword MMX
+             technology register."))
 
-   '(K-evex (:modr/m? . nil) (:vex? . nil) (:evex? . t))
+   '(O (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "The instruction has no ModR/M byte. The offset of the operand is
+             coded as a word or double word (depending on address size
+             attribute) in the instruction. No base register index register or
+             scaling factor can be applied (for example MOV (A0-A3))."))
 
-   ;; L The upper 4 bits of the 8-bit immediate selects a 128-bit XMM
-   ;; register or a 256-bit YMM register determined by operand
-   ;; type. (the MSB is ignored in 32-bit mode)
+   '(P (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The reg field of the ModR/M byte selects a packed quadword MMX
+             technology register."))
 
-   '(L (:modr/m? . nil) (:vex? . t))
+   '(Q (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "A ModR/M byte follows the opcode and specifies the operand. The
+             operand is either an MMX technology register or a memory
+             address. If it is a memory address the address is computed from a
+             segment register and any of the following values: a base register,
+             an index register, a scaling factor, and a displacement."))
 
-   ;; M The ModR/M byte may refer only to memory (for example BOUND,
-   ;; LES, LDS, LSS, LFS, LGS, CMPXCHG8B).
+   '(R (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The R/M field of the ModR/M byte may refer only to a general
+             register (for example MOV (0F20-0F23))."))
 
-   '(M (:modr/m? . t) (:vex? . nil))
+   '(S (:modr/m? . t) (:vex? . nil)
+       (:doc .
+             "The reg field of the ModR/M byte selects a segment register (for
+             example MOV (8C,8E))."))
 
-   ;; N The R/M field of the ModR/M byte selects a packed-quadword MMX
-   ;; technology register.
+   '(U (:modr/m? . t) (:vex? . t)
+       (:doc .
+             "The R/M field of the ModR/M byte selects a 128-bit XMM register
+             or a 256-bit YMM register determined by operand type."))
 
-   '(N (:modr/m? . t) (:vex? . nil))
+   '(V (:modr/m? . t) (:vex? . t)
+       (:doc .
+             "The reg field of the ModR/M byte selects a 128-bit XMM register
+             or a 256-bit YMM register determined by operand type."))
 
-   ;; O The instruction has no ModR/M byte. The offset of the operand
-   ;; is coded as a word or double word (depending on address size
-   ;; attribute) in the instruction. No base register index register
-   ;; or scaling factor can be applied (for example MOV (A0-A3)).
+   '(W (:modr/m? . t) (:vex? . t)
+       (:doc .
+             "A ModR/M byte follows the opcode and specifies the operand. The
+             operand is either a 128-bit XMM register, a 256-bit YMM
+             register (determined by operand type), or a memory address. If it
+             is a memory address the address is computed from a segment
+             register and any of the following values: a base register, an
+             index register, a scaling factor,and a displacement."))
 
-   '(O (:modr/m? . nil) (:vex? . nil))
+   '(X (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "Memory addressed by the DS:rSI register pair (for example MOVS,
+             CMPS, OUTS, or LODS)."))
 
-   ;; P The reg field of the ModR/M byte selects a packed quadword MMX
-   ;; technology register.
-
-   '(P (:modr/m? . t) (:vex? . nil))
-
-   ;; Q A ModR/M byte follows the opcode and specifies the
-   ;; operand. The operand is either an MMX technology register or a
-   ;; memory address. If it is a memory address the address is
-   ;; computed from a segment register and any of the following
-   ;; values: a base register, an index register, a scaling factor, and a
-   ;; displacement.
-
-   '(Q (:modr/m? . t) (:vex? . nil))
-
-   ;; R The R/M field of the ModR/M byte may refer only to a general
-   ;; register (for example MOV (0F20-0F23)).
-
-   '(R (:modr/m? . t) (:vex? . nil))
-
-   ;; S The reg field of the ModR/M byte selects a segment register
-   ;; (for example MOV (8C,8E)).
-
-   '(S (:modr/m? . t) (:vex? . nil))
-
-   ;; U The R/M field of the ModR/M byte selects a 128-bit XMM
-   ;; register or a 256-bit YMM register determined by operand type.
-
-   '(U (:modr/m? . t) (:vex? . t))
-
-   ;; V The reg field of the ModR/M byte selects a 128-bit XMM
-   ;; register or a 256-bit YMM register determined by operand type.
-
-   '(V (:modr/m? . t) (:vex? . t))
-
-   ;; W A ModR/M byte follows the opcode and specifies the
-   ;; operand. The operand is either a 128-bit XMM register, a 256-bit
-   ;; YMM register (determined by operand type), or a memory
-   ;; address. If it is a memory address the address is computed from
-   ;; a segment register and any of the following values: a base
-   ;; register, an index register, a scaling factor, and a displacement.
-
-   '(W (:modr/m? . t) (:vex? . t))
-
-   ;; X Memory addressed by the DS:rSI register pair (for example MOVS,
-   ;; CMPS, OUTS, or LODS).
-
-   '(X (:modr/m? . nil) (:vex? . nil))
-
-   ;; Y Memory addressed by the ES:rDI register pair (for example MOVS,
-   ;; CMPS, INS, STOS, or SCAS).
-
-   '(Y (:modr/m? . nil) (:vex? . nil))
-
-   ))
+   '(Y (:modr/m? . nil) (:vex? . nil)
+       (:doc .
+             "Memory addressed by the ES:rDI register pair (for example MOVS,
+             CMPS, INS, STOS, or SCAS)."))))
 
 (make-event
  `(defenum addressing-method-code-p
@@ -257,60 +254,85 @@
     :short "Codes for Operand Addressing Method; See Intel Vol. 2,
   Appendix A.2.1"))
 
-(defenum operand-type-code-p
-  (
-   ;; A.2.2 Codes for Operand Type
+(defconst *operand-type-code-info*
 
-   ;; The following abbreviations are used to document operand types:
+  ;; See Intel Vol. 2, A.2.2 Codes for Operand Types
+  ;; The following abbreviations are used to document operand types:
 
-   a ;; Two one-word operands in memory or two double-word operands in
-   ;; memory, depending on operand-size attribute (used only by the BOUND
-   ;; instruction).
+  (list
 
-   b ;; Byte, regardless of operand-size attribute.
 
-   c ;; Byte or word, depending on operand-size attribute.
+   '(a
+     (:doc . "Two one-word operands in memory or two double-word operands in
+       memory,depending on operand-size attribute (used only by the BOUND
+       instruction)."))
 
-   d ;; Doubleword, regardless of operand-size attribute.
+   '(b
+     (:doc . "Byte, regardless of operand-size attribute."))
 
-   dq ;; Double-quadword, regardless of operand-size attribute.
+   '(c
+     (:doc . "Byte or word, depending on operand-size attribute."))
 
-   p ;; 32-bit, 48-bit, or 80-bit pointer, depending on operand-size
-   ;; attribute.
+   '(d
+     (:doc . "Doubleword, regardless of operand-size attribute."))
 
-   pd ;; 128-bit or 256-bit packed double-precision floating-point data.
+   '(dq
+     (:doc . "Double-quadword, regardless of operand-size attribute."))
 
-   pi ;; Quadword MMX technology register (for example: mm0).
+   '(p
+     (:doc . "32-bit, 48-bit, or 80-bit pointer, depending on operand-size
+       attribute."))
 
-   ps ;; 128-bit or 256-bit packed single-precision floating-point data.
+   '(pd
+     (:doc . "128-bit or 256-bit packed double-precision floating-point data."))
 
-   q ;; Quadword, regardless of operand-size attribute.
+   '(pi
+     (:doc . "Quadword MMX technology register (for example: mm0)."))
 
-   qq ;; Quad-Quadword (256-bits), regardless of operand-size attribute.
+   '(ps
+     (:doc . "128-bit or 256-bit packed single-precision floating-point data."))
 
-   s ;; 6-byte or 10-byte pseudo-descriptor.
+   '(q
+     (:doc . "Quadword, regardless of operand-size attribute."))
 
-   sd ;; Scalar element of a 128-bit double-precision floating data.
+   '(qq
+     (:doc . "Quad-Quadword (256-bits), regardless of operand-size attribute."))
 
-   ss ;; Scalar element of a 128-bit single-precision floating data.
+   '(s
+     (:doc . "6-byte or 10-byte pseudo-descriptor."))
 
-   si ;; Doubleword integer register (for example: eax).
+   '(sd
+     (:doc . "Scalar element of a 128-bit double-precision floating data."))
 
-   v ;; Word, doubleword or quadword (in 64-bit mode), depending on
-   ;; operand-size attribute.
+   '(ss
+     (:doc . "Scalar element of a 128-bit single-precision floating data."))
 
-   w ;; Word, regardless of operand-size attribute.
+   '(si
+     (:doc . "Doubleword integer register (for example: eax)."))
 
-   x ;; dq or qq based on the operand-size attribute.
+   '(v
+     (:doc . "Word, doubleword or quadword (in 64-bit mode), depending on
+       operand-size attribute."))
 
-   y ;; Doubleword or quadword (in 64-bit mode), depending on operand-size
-   ;; attribute.
+   '(w
+     (:doc . "Word, regardless of operand-size attribute."))
 
-   z ;; Word for 16-bit operand-size or doubleword for 32 or 64-bit
-   ;; operand-size.
-   )
-  :parents (opcode-maps)
-  :short "Codes for Operand Type; See Intel Vol. 2, Appendix A.2.2")
+   '(x
+     (:doc . "dq or qq based on the operand-size attribute."))
+
+   '(y
+     (:doc . "Doubleword or quadword (in 64-bit mode), depending on
+       operand-size attribute."))
+
+   '(z
+     (:doc . "Word for 16-bit operand-size or doubleword for 32 or 64-bit
+       operand-size."))))
+
+(make-event
+ `(defenum operand-type-code-p
+    ,(strip-cars *operand-type-code-info*)
+    :parents (opcode-maps)
+    :short "Codes for Operand Type; See Intel Vol. 2, Appendix A.2.2"))
 
 (defconst *opcode-map-superscripts*
 
@@ -680,7 +702,9 @@
                    (acl2-numberp (nth 0 x))
                    (addressing-method-code-p (nth 0 x)))
              (if (equal (len x) 2)
-                 (operand-type-code-p (nth 1 x))
+                 (and
+                  (addressing-method-code-p (nth 0 x))
+                  (operand-type-code-p (nth 1 x)))
                nil))))
   ///
   (define operand-type-fix ((x operand-type-p))
@@ -952,5 +976,140 @@
            (acl2::keyword-listp x))
   :hints (("Goal" :in-theory (e/d (maybe-evex-p evex-p) ())))
   :rule-classes :forward-chaining)
+
+;; ----------------------------------------------------------------------
+
+(defsection filtering-instructions
+  :parents (opcode-maps)
+  :short "Some Functions to operate on the ACL2 representation of Intel's Opcode
+  Maps"
+  )
+
+(local (xdoc::set-default-parents 'filtering-instructions))
+
+;; Right now, we can't select AVX instructions using the function
+;; select-insts. The reason is that VEX/EVEX-encoded instructions (but probably
+;; just EVEX-encoded --- I'm being extra cautious here) may be missing
+;; operands' information (i.e., their :vex or :evex fields may be empty)
+;; because Intel manuals are missing that information.  So selecting an
+;; instruction based on the presence or absence of the :vex or :evex fields
+;; would result in false matches.  However, all AVX instructions (I believe)
+;; have proper CPUID feature flags.  Thus, for now, we can do selection of AVX
+;; instructions using the functions remove-insts-with-feat and
+;; keep-insts-with-feat below.
+
+;; I've tried to store all CPUID feature flag information in the :feat field of
+;; the opcode, but there are a few cases where that information is in the
+;; :excep field of inst instead (just three at this count: SAHF, LAHF, and
+;; XSAVEOPT).  The reason they're separate is that in these cases, the absence
+;; of one feature flag by itself is not enough to cause a #UD --- either we
+;; need at least one flag to be present (and the dispatch functions check
+;; whether ALL the flags are present in :FEAT) or the #UD also depends on the
+;; mode of operation of the processor. Search for FEATURE-FLAG-MACRO in the
+;; inst-listings to see those cases.
+
+(define remove-insts-with-feat ((inst-lst inst-list-p)
+                                (feat acl2::keyword-listp))
+  :short "Remove all instructions from @('inst-lst') that have ANY feature
+  present in @('feat')"
+  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
+  ;; set to :rem once we have operands' spec. for EVEX instructions.
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+  (if (endp inst-lst)
+      nil
+    (b* ((inst (car inst-lst))
+         (rest (remove-insts-with-feat (cdr inst-lst) feat))
+         ((inst inst))
+         (opcode inst.opcode)
+         ((opcode opcode))
+         ((when (any-present-in feat opcode.feat)) rest))
+      (cons inst rest))))
+
+(define keep-insts-with-feat ((inst-lst inst-list-p)
+                              (feat acl2::keyword-listp))
+  :short "Keep all instructions from @('inst-lst') that have ANY feature
+  present in @('feat')"
+  ;; TODO: Replace with select-insts, with :vex and :evex set to t and :get/rem
+  ;; set to :get once we have operands' spec. for EVEX instructions.
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+
+  (if (endp inst-lst)
+      nil
+    (b* ((inst (car inst-lst))
+         (rest (keep-insts-with-feat (cdr inst-lst) feat))
+         ((inst inst))
+         (opcode inst.opcode)
+         ((opcode opcode))
+         ((when (any-present-in feat opcode.feat)) (cons inst rest)))
+      rest)))
+
+(define select-insts ((inst-lst inst-list-p)
+                      &key
+                      ((get/rem (member-equal get/rem '(:get :rem))
+                                "Either get or remove the selected instructions")
+                       ':get)
+                      ((opcode (or (eql opcode nil) (24bits-p opcode))
+                               "If specified, select all instructions with the
+                                same opcode")
+                       'nil)
+                      ((mode op-mode-p
+                             "If specified, select all instructions with the
+                                same mode of operation")
+                       'nil)
+                      ((prefix op-pfx-p
+                               "If specified, select all instructions with the
+                                same prefix")
+                       'nil)
+                      ((vex? booleanp
+                             "If @('t'), select all instructions with a non-nil
+                             @('opcode.vex') field")
+                       'nil)
+                      ((fn? booleanp
+                            "If @('t'), select all instructions with a non-nil
+                             @('inst.fn') field")
+                       'nil))
+
+  :short "Select instructions satisfying some conditions, and then either
+  remove the selection or keep only the selection"
+
+  :returns (new-inst-lst inst-list-p
+                         :hyp (inst-list-p inst-lst))
+
+  (b* (((when (endp inst-lst)) nil)
+       (rest (select-insts (cdr inst-lst)
+                           ;; Remember to add key/vals here too if you expand
+                           ;; the formals!
+                           :get/rem get/rem
+                           :opcode opcode
+                           :mode mode
+                           :prefix prefix
+                           :vex? vex?
+                           :fn? fn?))
+       (inst (car inst-lst))
+       ((inst inst))
+       ((opcode inst.opcode))
+       (match? (and (if (not opcode)
+                        t
+                      (equal opcode inst.opcode.op))
+                    (if (not mode)
+                        t
+                      (equal mode inst.opcode.mode))
+                    (if (not prefix)
+                        t
+                      (if (equal prefix :no-prefix)
+                          (or (equal prefix inst.opcode.pfx)
+                              (not inst.opcode.pfx))
+                        (equal prefix inst.opcode.pfx)))
+                    (if (not vex?)
+                        t
+                      (if inst.opcode.vex t nil))
+                    (if (not fn?)
+                        t
+                      (if inst.fn t nil)))))
+    (if (eql get/rem :get)
+        (append (and match? (list inst)) rest)
+      (append (if match? nil (list inst)) rest))))
 
 ;; ----------------------------------------------------------------------

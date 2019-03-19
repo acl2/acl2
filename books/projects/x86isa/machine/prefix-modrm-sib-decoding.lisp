@@ -42,9 +42,10 @@
 (in-package "X86ISA")
 
 (include-book "../utils/structures")
-(include-book "inst-listing")
 (include-book "top-level-memory")
 (include-book "dispatch-macros")
+(include-book "inst-structs")
+(local (include-book "inst-listing"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ----------------------------------------------------------------------

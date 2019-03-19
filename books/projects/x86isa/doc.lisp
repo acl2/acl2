@@ -40,6 +40,7 @@
 
 ;; x86 ISA model specification
 (include-book "machine/x86" :ttags :all)
+(include-book "machine/inst-listing" :ttags :all)
 
 ;; Misc. tools
 (include-book "tools/execution/top" :ttags :all)
