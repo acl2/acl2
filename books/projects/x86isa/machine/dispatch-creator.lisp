@@ -338,7 +338,8 @@ opcode maps."
   :guard-hints (("Goal"
                  :in-theory
                  (e/d ()
-                      (endp
+                      (acl2::member-of-cons
+                       endp
                        keywordp
                        acl2::keyword-listp
                        len
