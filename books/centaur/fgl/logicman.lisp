@@ -2240,23 +2240,19 @@ logicman stobj.  If no logicman argument is supplied, the variable named
        (defthm-<name>-gl-object-eval-flag
          (defthm <name>-gl-object-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
-                         (lgl-bfr-object-p x old))
+                         (lbfr-listp (gl-object-bfrlist x) old))
                     (equal (<name>-gl-object-eval x env new)
                            (<name>-gl-object-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<name>-gl-object-eval x env logicman))
-                               (gl-bfr-object-p x old))
-                     :in-theory (disable gl-bfr-object-p-when-gl-object-p
-                                         gl-bfr-objectlist-p-when-gl-objectlist-p)))
+                               (gl-object-bfrlist x))))
            :flag <name>-gl-object-eval)
          (defthm <name>-gl-objectlist-eval-of-logicman-extension
            (implies (and (bind-logicman-extension new old)
-                         (lgl-bfr-objectlist-p x old))
+                         (lbfr-listp (gl-objectlist-bfrlist x) old))
                     (equal (<name>-gl-objectlist-eval x env new)
                            (<name>-gl-objectlist-eval x env old)))
            :hints ('(:expand ((:free (logicman) (<name>-gl-objectlist-eval x env logicman))
-                              (gl-bfr-objectlist-p x old))
-                     :in-theory (disable gl-bfr-object-p-when-gl-object-p
-                                         gl-bfr-objectlist-p-when-gl-objectlist-p)))
+                              (gl-objectlist-bfrlist x))))
             :flag <name>-gl-objectlist-eval)
          :hints (("goal" :induct (<name>-gl-object-eval-flag flag x env old))))
 
@@ -2363,7 +2359,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                 return-last synp
                                 cons
                                 intcons intcons* endint
-                                intcar intcdr))
+                                intcar intcdr)) 
 
 (acl2::def-ev-pseudo-term-fty-support base-apply-ev base-apply-ev-lst)
 

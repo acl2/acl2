@@ -481,6 +481,10 @@
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 
+  (defret interp-st->constraint-of-interp-st-pathcond-assume
+    (equal (interp-st->constraint new-interp-st)
+           (pathcond-fix (interp-st->constraint interp-st))))
+
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (and (interp-st-bfr-p test)
                   (interp-st-bfrs-ok interp-st))
@@ -3111,7 +3115,9 @@
   :non-executable t
   :no-function t
   :verify-guards nil
-  (logicman-pathcond-eval-checkpoints env (update-nth *pathcond-enabledp* t pathcond) logicman)
+  (b* ((pathcond (update-nth *pathcond-enabledp* t pathcond)))
+    (cons (logicman-pathcond-eval env pathcond logicman)
+          (logicman-pathcond-eval-checkpoints env pathcond logicman)))
   ///
   (deffixequiv logicman-pathcond-eval-checkpoints)
 
@@ -3152,7 +3158,7 @@
                   (equal (logicman->mode logicman) (logicman->mode logicman1)))
              (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman1)
                     (maybe-cons (nth *pathcond-enabledp* pathcond)
-                                (logicman-pathcond-eval env pathcond logicman1)
+                                (logicman-pathcond-eval env new-pathcond logicman1)
                                 (logicman-pathcond-eval-checkpoints! env pathcond logicman1))))
     :hints(("Goal" :in-theory (enable maybe-cons))
            (and stable-under-simplificationp
@@ -3164,20 +3170,23 @@
                   (equal (logicman->mode (interp-st->logicman interp-st)) (logicman->mode logicman1)))
              (equal (logicman-pathcond-eval-checkpoints! env (interp-st->pathcond new-interp-st) logicman1)
                     (maybe-cons (nth *pathcond-enabledp* (interp-st->pathcond interp-st))
-                                (logicman-pathcond-eval env (interp-st->pathcond interp-st) logicman1)
+                                (logicman-pathcond-eval env (interp-st->pathcond new-interp-st) logicman1)
                                 (logicman-pathcond-eval-checkpoints! env (interp-st->pathcond interp-st) logicman1))))
     :hints(("Goal" :in-theory (e/d (interp-st-pathcond-assume)
                                    (logicman-pathcond-eval-checkpoints!))))
     :fn interp-st-pathcond-assume)
 
   (defret logicman-pathcond-eval-checkpoints!-of-pathcond-rewind
-    (implies (equal bfr-mode (lbfr-mode))
+    (implies (and (equal bfr-mode (lbfr-mode))
+                  (pathcond-rewind-ok bfr-mode pathcond))
              (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman)
                     (maybe-cdr (nth *pathcond-enabledp* pathcond)
                                (logicman-pathcond-eval-checkpoints! env pathcond logicman))))
-    :hints(("Goal" :in-theory (enable maybe-cdr))
+    :hints(("Goal" :in-theory (enable maybe-cdr)
+            :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman)))
            (and stable-under-simplificationp
-                '(:in-theory (enable pathcond-rewind))))
+                '(:in-theory (enable pathcond-rewind pathcond-rewind-ok)))
+           )
     :fn pathcond-rewind)
 
   (local (defthm update-nth-of-update-nth
@@ -3196,36 +3205,10 @@
 
   (defthm len-of-logicman-pathcond-eval-checkpoints!
     (equal (len (logicman-pathcond-eval-checkpoints! env pathcond logicman))
-           (pathcond-rewind-stack-len (lbfr-mode) pathcond))))
+           (+ 1 (pathcond-rewind-stack-len (lbfr-mode) pathcond)))))
 
 
-(progn
-  (with-output
-    :off (event)
-    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
-    (std::defret-mutual-generate <fn>-preserves-pathcond
-      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
-                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
-                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
-                    (interp-st                     (interp-st-bfrs-ok interp-st))
-                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
-      :rules ((t (:add-concl ;;(implies (not (gl-interp-real-errorp err))
-                  (equal (logicman-pathcond-eval-checkpoints!
-                          env
-                          (interp-st->pathcond new-interp-st)
-                          (interp-st->logicman new-interp-st))
-                         (logicman-pathcond-eval-checkpoints!
-                          env
-                          (interp-st->pathcond interp-st)
-                          (interp-st->logicman interp-st))))
-                 (:add-keyword :hints ('(:do-not-induct t)
-                                       (let ((flag (find-flag-is-hyp clause)))
-                                         (and flag
-                                              (prog2$ (cw "flag: ~x0~%" flag)
-                                                      '(:no-op t)))))))
-              ((:fnname gl-rewrite-try-rules)
-               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
-      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
 
 
 (def-updater-independence-thm logicman->mode-of-interp-st-logicman-extension
@@ -3285,7 +3268,7 @@
   (with-output
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
-    (std::defret-mutual-generate <fn>-preserves-pathcond-stack-length1
+    (std::defret-mutual-generate <fn>-preserves-pathcond-stack-length
       :rules ((t (:add-concl (implies (and ;; (not (gl-interp-real-errorp err))
                                            (equal mode (logicman->mode (interp-st->logicman interp-st))))
                                       (equal (pathcond-rewind-stack-len
@@ -3298,6 +3281,153 @@
                                          (and flag
                                               (prog2$ (cw "flag: ~x0~%" flag)
                                                       '(:no-op t))))))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond-rewind-ok
+      :rules ((t (:add-concl (implies (equal mode (logicman->mode (interp-st->logicman interp-st)))
+                                      (iff (pathcond-rewind-ok mode (interp-st->pathcond new-interp-st))
+                                           (pathcond-rewind-ok mode (interp-st->pathcond interp-st)))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t))))))))
+      :hints (("goal" :do-not-induct t :in-theory (enable pathcond-rewind-ok)))
+      :no-induction-hint t)))
+
+
+
+(local (defret pathcond-rewind-ok-of-interp-st-pathcond-assume
+         (implies (and (not contra)
+                       (equal bfr-mode (logicman->mode (interp-st->logicman interp-st))))
+                  (pathcond-rewind-ok bfr-mode (interp-st->pathcond new-interp-st)))
+         :hints(("Goal" :in-theory (enable interp-st-pathcond-assume pathcond-rewind-ok
+                                           maybe-incr)))
+         :fn interp-st-pathcond-assume))
+
+(progn
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      :rules ((t (:add-concl ;;(implies (not (gl-interp-real-errorp err))
+                  (equal (logicman-pathcond-eval-checkpoints!
+                          env
+                          (interp-st->pathcond new-interp-st)
+                          (interp-st->logicman new-interp-st))
+                         (logicman-pathcond-eval-checkpoints!
+                          env
+                          (interp-st->pathcond interp-st)
+                          (interp-st->logicman interp-st))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
+
+(defsection pathcond-eval-preserved
+
+  (local
+   (defthm pathcond-eval-equal-when-eval-checkpoints!-equal
+     (implies (and (equal evals (logicman-pathcond-eval-checkpoints! env pathcond logicman))
+                   (bind-free (case-match evals
+                                (('logicman-pathcond-eval-checkpoints! prev-env prev-pathcond prev-logicman)
+                                 (and (equal prev-env env)
+                                      (not (equal pathcond prev-pathcond))
+                                      `((prev-pathcond . ,prev-pathcond)
+                                        (prev-logicman . ,prev-logicman))))
+                                (& nil)))
+                   (equal evals (logicman-pathcond-eval-checkpoints! env prev-pathcond prev-logicman))
+                   (iff* (pathcond-enabledp pathcond) (pathcond-enabledp prev-pathcond)))
+              (equal (logicman-pathcond-eval env pathcond logicman)
+                     (logicman-pathcond-eval env prev-pathcond prev-logicman)))
+     :hints (("Goal" :in-theory (enable logicman-pathcond-eval-checkpoints! iff*)))))
+     
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-preserves-pathcond-eval
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      :rules ((t (:add-concl ;;(implies (not (gl-interp-real-errorp err))
+                  (equal (logicman-pathcond-eval
+                          env
+                          (interp-st->pathcond new-interp-st)
+                          (interp-st->logicman new-interp-st))
+                         (logicman-pathcond-eval
+                          env
+                          (interp-st->pathcond interp-st)
+                          (interp-st->logicman interp-st))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      :hints (("goal" :do-not-induct t))
+      :no-induction-hint t)))
+
+(defsection constraint-eval-tightens
+
+  (local (defret logicman-pathcond-eval-of-assume-tightens
+           (implies (not (logicman-pathcond-eval env pathcond logicman))
+                    (not (logicman-pathcond-eval env new-pathcond logicman)))
+           :hints (("goal" :cases (contradictionp))
+                   (and stable-under-simplificationp
+                        '(:cases ((pathcond-enabledp pathcond)))))
+           :fn logicman-pathcond-assume))
+
+  (local (def-updater-independence-thm logicman-pathcond-eval-of-interp-st-logicman-extension
+           (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                         (logicman-pathcond-p pathcond (interp-st->logicman old)))
+                    (equal (logicman-pathcond-eval env pathcond (interp-st->logicman new))
+                           (logicman-pathcond-eval env pathcond (interp-st->logicman old))))))
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-constraint-eval-tightens
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      :rules ((t (:add-concl ;;(implies (not (gl-interp-real-errorp err))
+                  (iff (logicman-pathcond-eval
+                        env
+                        (interp-st->constraint new-interp-st)
+                        (interp-st->logicman new-interp-st))
+                       (and* (logicman-pathcond-eval
+                              env
+                              (interp-st->constraint interp-st)
+                              (interp-st->logicman interp-st))
+                             (hide (logicman-pathcond-eval
+                                    env
+                                    (interp-st->constraint new-interp-st)
+                                    (interp-st->logicman new-interp-st))))))
+                 (:add-keyword :hints ('(:do-not-induct t :expand ((:free (x) (hide x))))
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world)))))
 
 
@@ -3566,5 +3696,836 @@
 
 
 
+;; (fty::defmap eval-env :key-type pseudo-var :true-listp t)
+
+;; (fty::defprod ev-constraint-instance
+;;   ((thmname symbolp)
+;;    (subst eval-env-p))
+;;   :layout :tree)
+
+;; (fty::deflist ev-constraint-instancelist :elt-type ev-constraint-instance :true-listp t)
+
+;; (local
+;;  (progn
+;;    (include-book "scratchobj")
+;;    (defconst *ev-scratchobj-type-mapping*
+;;      '((:gl-obj . t)
+;;        (:gl-objlist . true-listp)
+;;        (:bfr . booleanp)
+;;        (:bfrlist . boolean-listp)
+;;        (:cinst . ev-constraint-instance-p)
+;;        (:cinstlist . ev-constraint-instancelist-p)))
+;;    (defun scratchobj-tmplsubst-add-evtypes (x)
+;;      (declare (xargs :mode :program))
+;;      (if (atom x)
+;;          nil
+;;        (b* (((acl2::tmplsubst x1) (car x))
+;;             (kindlook (assoc :<kind> x1.atoms))
+;;             ((unless kindlook) (er hard? 'scratchobj-tmplsubst-add-evtypes "failed to find :<kind>"))
+;;             (kind (cdr kindlook))
+;;             (evtype-look (assoc kind *ev-scratchobj-type-mapping*))
+;;             ((unless evtype-look) (er hard? 'scratchobj-tmplsubst-add-evtypes "failed to find: ~x0" kind))
+;;             (evtype (cdr evtype-look)))
+;;          (cons (acl2::change-tmplsubst
+;;                 x1 :atoms (cons `(<evtype> . ,evtype) x1.atoms))
+;;                (scratchobj-tmplsubst-add-evtypes (cdr x))))))
+
+;;    (defconst *scratchobj-evtypes-tmplsubsts*
+;;      (scratchobj-tmplsubst-add-evtypes *scratchobj-tmplsubsts*))))
+            
+         
+;; (make-event
+;;  `(progn
+;;     (fty::deftagsum ev-scratchobj
+;;       :layout :tree
+;;       . ,(acl2::template-proj '(:<kind> ((val <evtype>)))
+;;                               *scratchobj-evtypes-tmplsubsts*))
+
+;;     (defthm scratchobj-kind-p-of-ev-scratchobj-kind
+;;       (scratchobj-kind-p (ev-scratchobj-kind x))
+;;       :hints(("Goal" :in-theory (enable ev-scratchobj-kind))))))
+
+
+;; (fty::deflist ev-scratchlist :elt-type ev-scratchobj :true-listp t)
+
+;; (fty::defprod ev-minor-frame
+;;   ((bindings eval-env-p)
+;;    (scratch ev-scratchlist-p)
+;;    (debug)))
+
+;; (fty::deflist ev-minor-stack :elt-type ev-minor-frame :true-listp t :non-emptyp t
+;;   ///
+;;   (defthm ev-minor-stack-p-of-cons-cdr
+;;     (implies (and (ev-minor-stack-p x)
+;;                   (ev-minor-frame-p a))
+;;              (ev-minor-stack-p (cons a (cdr x))))
+;;     :hints(("Goal" :in-theory (enable ev-minor-stack-p)))))
+
+;; (make-event
+;;  `(fty::defprod ev-major-frame
+;;     ((bindings eval-env-p)
+;;      (debug)
+;;      (minor-stack ev-minor-stack-p :default ',(list (make-ev-minor-frame))))))
+
+;; (fty::deflist ev-major-stack :elt-type ev-major-frame :true-listp t :non-emptyp t
+;;   ///
+;;   (defthm ev-major-stack-p-of-cons-cdr
+;;     (implies (and (ev-major-stack-p x)
+;;                   (ev-major-frame-p a))
+;;              (ev-major-stack-p (cons a (cdr x))))
+;;     :hints(("Goal" :in-theory (enable ev-major-stack-p)))))
+
+(define gl-object-ev ((x gl-object-p)
+                      (env gl-env-p)
+                      &optional (logicman 'logicman))
+  :guard (lbfr-listp (gl-object-bfrlist x))
+  :returns (new-x gl-object-p)
+  (g-concrete (base-gl-object-eval x env))
+  ///
+
+  (defthm gl-object-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (gl-object-bfrlist x) old))
+             (equal (gl-object-ev x env new)
+                    (gl-object-ev x env old)))
+    :hints(("Goal" :in-theory (enable gl-object-bfrlist))))
+
+  (def-updater-independence-thm gl-object-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman old)))
+             (equal (gl-object-ev x env (interp-st->logicman new))
+                    (gl-object-ev x env (interp-st->logicman old))))))
+
+(define gl-objectlist-ev ((x gl-objectlist-p)
+                      (env gl-env-p)
+                      &optional (logicman 'logicman))
+  :guard (lbfr-listp (gl-objectlist-bfrlist x))
+  :returns (new-x gl-objectlist-p)
+  (if (atom x)
+      nil
+    (cons (gl-object-ev (car x) env)
+          (gl-objectlist-ev (cdr x) env)))
+  ///
+
+  (defthm gl-objectlist-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (gl-objectlist-bfrlist x) old))
+             (equal (gl-objectlist-ev x env new)
+                    (gl-objectlist-ev x env old)))
+    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+
+  (def-updater-independence-thm gl-objectlist-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman old)))
+             (equal (gl-objectlist-ev x env (interp-st->logicman new))
+                    (gl-objectlist-ev x env (interp-st->logicman old))))))
+
+
+
+
+(define gl-object-alist-ev ((x gl-object-alist-p)
+                                   (env gl-env-p)
+                                   &optional (logicman 'logicman))
+  :guard (lbfr-listp (gl-object-alist-bfrlist x))
+  :guard-hints (("goal" :in-theory (enable gl-object-alist-bfrlist)))
+  :returns (ans gl-object-alist-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (pseudo-var-p (caar x))))
+        (cons (cons (caar x)
+                    (gl-object-ev (cdar x) env))
+              (gl-object-alist-ev (cdr x) env))
+      (gl-object-alist-ev (cdr x) env)))
+  ///
+  (local (in-theory (enable gl-object-alist-fix)))
+
+  (defthm gl-object-alist-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (gl-object-alist-bfrlist x) old))
+             (equal (gl-object-alist-ev x env new)
+                    (gl-object-alist-ev x env old)))
+    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist))))
+
+  (def-updater-independence-thm gl-object-alist-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (gl-object-alist-bfrlist x) (interp-st->logicman old)))
+             (equal (gl-object-alist-ev x env (interp-st->logicman new))
+                    (gl-object-alist-ev x env (interp-st->logicman old))))))
+
+(define constraint-instance-ev ((x constraint-instance-p)
+                                       (env gl-env-p)
+                                       &optional (logicman 'logicman))
+  :guard (lbfr-listp (constraint-instance-bfrlist x))
+  :returns (ev constraint-instance-p)
+  (b* (((constraint-instance x)))
+    (make-constraint-instance
+     :thmname x.thmname
+     :subst (gl-object-alist-ev x.subst env)))
+  ///
+  (defthm constraint-instance-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (constraint-instance-bfrlist x) old))
+             (equal (constraint-instance-ev x env new)
+                    (constraint-instance-ev x env old))))
+
+  (def-updater-independence-thm constraint-instance-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (constraint-instance-bfrlist x) (interp-st->logicman old)))
+             (equal (constraint-instance-ev x env (interp-st->logicman new))
+                    (constraint-instance-ev x env (interp-st->logicman old))))))
+
+(define constraint-instancelist-ev ((x constraint-instancelist-p)
+                                           (env gl-env-p)
+                                           &optional (logicman 'logicman))
+  :guard (lbfr-listp (constraint-instancelist-bfrlist x))
+  :returns (ev constraint-instancelist-p)
+  (if (atom x)
+      nil
+    (cons (constraint-instance-ev (car x) env)
+          (constraint-instancelist-ev (cdr x) env)))
+  ///
+  (defthm constraint-instancelist-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (constraint-instancelist-bfrlist x) old))
+             (equal (constraint-instancelist-ev x env new)
+                    (constraint-instancelist-ev x env old))))
+
+  (def-updater-independence-thm constraint-instancelist-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman old)))
+             (equal (constraint-instancelist-ev x env (interp-st->logicman new))
+                    (constraint-instancelist-ev x env (interp-st->logicman old))))))
+
+(define scratchobj-ev ((x scratchobj-p)
+                              (env gl-env-p)
+                              &optional (logicman 'logicman))
+  :guard (lbfr-listp (scratchobj->bfrlist x))
+  :returns (ev scratchobj-p)
+  (scratchobj-case x
+    :gl-obj (scratchobj-gl-obj (gl-object-ev x.val env))
+    :gl-objlist (scratchobj-gl-objlist (gl-objectlist-ev x.val env))
+    :bfr (scratchobj-bfr (gobj-bfr-eval x.val env))
+    :bfrlist (scratchobj-bfrlist (gobj-bfr-list-eval x.val env))
+    :cinst (scratchobj-cinst (constraint-instance-ev x.val env))
+    :cinstlist (scratchobj-cinstlist (constraint-instancelist-ev x.val env)))
+  ///
+  (defthm scratchobj-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (scratchobj->bfrlist x) old))
+             (equal (scratchobj-ev x env new)
+                    (scratchobj-ev x env old))))
+
+  (def-updater-independence-thm scratchobj-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (scratchobj->bfrlist x) (interp-st->logicman old)))
+             (equal (scratchobj-ev x env (interp-st->logicman new))
+                    (scratchobj-ev x env (interp-st->logicman old))))))
+
+(define scratchlist-ev ((x scratchlist-p)
+                        (env gl-env-p)
+                        &optional (logicman 'logicman))
+  :guard (lbfr-listp (scratchlist-bfrlist x))
+  :returns (ev scratchlist-p)
+  (if (atom x)
+      nil
+    (cons (scratchobj-ev (car x) env)
+          (scratchlist-ev (cdr x) env)))
+  ///
+  (defthm scratchlist-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (scratchlist-bfrlist x) old))
+             (equal (scratchlist-ev x env new)
+                    (scratchlist-ev x env old))))
+
+  (def-updater-independence-thm scratchlist-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (scratchlist-bfrlist x) (interp-st->logicman old)))
+             (equal (scratchlist-ev x env (interp-st->logicman new))
+                    (scratchlist-ev x env (interp-st->logicman old))))))
+
+(define minor-frame-ev ((x minor-frame-p)
+                               (env gl-env-p)
+                               &optional (logicman 'logicman))
+  :guard (lbfr-listp (minor-frame-bfrlist x))
+  :returns (ev minor-frame-p)
+  (b* (((minor-frame x)))
+    (make-minor-frame
+     :bindings (gl-object-alist-ev x.bindings env)
+     :debug x.debug
+     :scratch (scratchlist-ev x.scratch env)))
+  ///
+  (defthm minor-frame-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (minor-frame-bfrlist x) old))
+             (equal (minor-frame-ev x env new)
+                    (minor-frame-ev x env old))))
+
+  (def-updater-independence-thm minor-frame-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (minor-frame-bfrlist x) (interp-st->logicman old)))
+             (equal (minor-frame-ev x env (interp-st->logicman new))
+                    (minor-frame-ev x env (interp-st->logicman old))))))
+
+(define minor-stack-ev ((x minor-stack-p)
+                               (env gl-env-p)
+                               &optional (logicman 'logicman))
+  :guard (lbfr-listp (minor-stack-bfrlist x))
+  :returns (ev minor-stack-p)
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (minor-frame-ev (car x) env)
+        (and (consp (cdr x))
+             (minor-stack-ev (cdr x) env)))
+  ///
+  (defthm minor-stack-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (minor-stack-bfrlist x) old))
+             (equal (minor-stack-ev x env new)
+                    (minor-stack-ev x env old))))
+
+  (def-updater-independence-thm minor-stack-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (minor-stack-bfrlist x) (interp-st->logicman old)))
+             (equal (minor-stack-ev x env (interp-st->logicman new))
+                    (minor-stack-ev x env (interp-st->logicman old))))))
+
+
+
+(define major-frame-ev ((x major-frame-p)
+                               (env gl-env-p)
+                               &optional (logicman 'logicman))
+  :guard (lbfr-listp (major-frame-bfrlist x))
+  :returns (ev major-frame-p)
+  (b* (((major-frame x)))
+    (make-major-frame
+     :bindings (gl-object-alist-ev x.bindings env)
+     :debug x.debug
+     :minor-stack (minor-stack-ev x.minor-stack env)))
+  ///
+  (defthm major-frame-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (major-frame-bfrlist x) old))
+             (equal (major-frame-ev x env new)
+                    (major-frame-ev x env old))))
+
+  (def-updater-independence-thm major-frame-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (major-frame-bfrlist x) (interp-st->logicman old)))
+             (equal (major-frame-ev x env (interp-st->logicman new))
+                    (major-frame-ev x env (interp-st->logicman old))))))
+
+(define major-stack-ev ((x major-stack-p)
+                               (env gl-env-p)
+                               &optional (logicman 'logicman))
+  :guard (lbfr-listp (major-stack-bfrlist x))
+  :returns (ev major-stack-p)
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (major-frame-ev (car x) env)
+        (and (consp (cdr x))
+             (major-stack-ev (cdr x) env)))
+  ///
+  (defthm major-stack-ev-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp (major-stack-bfrlist x) old))
+             (equal (major-stack-ev x env new)
+                    (major-stack-ev x env old))))
+
+  (def-updater-independence-thm major-stack-ev-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (major-stack-bfrlist x) (interp-st->logicman old)))
+             (equal (major-stack-ev x env (interp-st->logicman new))
+                    (major-stack-ev x env (interp-st->logicman old))))))
+
+
+(defsection stack-semantics-preserved-lemmas
+  (local (in-theory (enable major-stack-ev
+                            minor-stack-ev
+                            major-frame-ev
+                            minor-frame-ev)))
+
+  (defthm scratchlist-ev-of-cdr
+    (equal (scratchlist-ev (cdr x) env)
+           (cdr (scratchlist-ev x env)))
+    :hints(("Goal" :in-theory (enable scratchlist-ev))))
+
+  (defthm scratchlist-ev-of-cons
+    (equal (scratchlist-ev (cons x y) env)
+           (cons (scratchobj-ev x env)
+                 (scratchlist-ev y env)))
+    :hints(("Goal" :in-theory (enable scratchlist-ev))))
+
+  (defthm scratchlist-ev-of-nil
+    (equal (scratchlist-ev nil env) nil)
+    :hints(("Goal" :in-theory (enable scratchlist-ev))))
+
+  (defthm gl-object-alist-ev-of-nil
+    (equal (gl-object-alist-ev nil env) nil)
+    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+
+  (defthm major-stack-ev-of-stack$a-pop-scratch
+    (equal (major-stack-ev (stack$a-pop-scratch stack) env)
+           (stack$a-pop-scratch (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defthm major-stack-ev-of-stack$a-push-scratch
+    (equal (major-stack-ev (stack$a-push-scratch obj stack) env)
+           (stack$a-push-scratch
+            (scratchobj-ev obj env)
+            (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-push-scratch))))
+
+  (defthm major-stack-ev-of-stack$a-pop-frame
+    (equal (major-stack-ev (stack$a-pop-frame stack) env)
+           (stack$a-pop-frame (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame default-car))))
+
+  (defthm major-stack-ev-of-stack$a-set-bindings
+    (equal (major-stack-ev (stack$a-set-bindings bindings stack) env)
+           (stack$a-set-bindings (gl-object-alist-ev bindings env)
+                                 (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
+
+  (defthm major-stack-ev-of-stack$a-push-frame
+    (equal (major-stack-ev (stack$a-push-frame stack) env)
+           (stack$a-push-frame (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-push-frame))))
+
+  (defthm major-stack-ev-of-stack$a-set-debug
+    (equal (major-stack-ev (stack$a-set-debug obj stack) env)
+           (stack$a-set-debug obj (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-debug))))
+
+  (defthm gl-object-alist-ev-of-append
+    (equal (gl-object-alist-ev (append a b) env)
+           (append (gl-object-alist-ev a env)
+                   (gl-object-alist-ev b env)))
+    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+
+  (defthm major-stack-ev-of-stack$a-add-minor-bindings
+    (equal (major-stack-ev (stack$a-add-minor-bindings bindings stack) env)
+           (stack$a-add-minor-bindings
+            (gl-object-alist-ev bindings env)
+            (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings))))
+
+  (defthm major-stack-ev-of-stack$a-pop-minor-frame
+    (equal (major-stack-ev (stack$a-pop-minor-frame stack) env)
+           (stack$a-pop-minor-frame (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame))))
+
+  (defthm major-stack-ev-of-stack$a-set-minor-debug
+    (equal (major-stack-ev (stack$a-set-minor-debug obj stack) env)
+           (stack$a-set-minor-debug obj (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-minor-debug))))
+
+  (defthm major-stack-ev-of-stack$a-set-minor-bindings
+    (equal (major-stack-ev (stack$a-set-minor-bindings bindings stack) env)
+           (stack$a-set-minor-bindings
+            (gl-object-alist-ev bindings env)
+            (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-set-minor-bindings))))
+
+  (defthm major-stack-ev-of-stack$a-push-minor-frame
+    (equal (major-stack-ev (stack$a-push-minor-frame stack) env)
+           (stack$a-push-minor-frame (major-stack-ev stack env)))
+    :hints(("Goal" :in-theory (enable stack$a-push-minor-frame)))))
+
+
+(define stack-equiv-except-top-bindings ((x major-stack-p)
+                                         (y major-stack-p))
+
+  (b* (((major-frame x1) (car x))
+       ((major-frame y1) (car y)))
+    (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
+     (equal x1.debug y1.debug)
+     (minor-stack-equiv x1.minor-stack y1.minor-stack)
+     (if (atom (cdr x))
+         (atom (cdr y))
+       (and (consp (cdr y))
+            (major-stack-equiv (cdr x) (cdr y))))))
+  ///
+  (defequiv stack-equiv-except-top-bindings)
+
+  (local (defthm len-equal-when-major-stack-fix
+           (implies (and (equal (major-stack-fix x) (major-stack-fix y))
+                         (consp x) (consp y))
+                    (equal (equal (len x) (len y)) t))
+           :hints (("Goal" :use ((:instance len-of-major-stack-fix)
+                                 (:instance len-of-major-stack-fix (x y)))
+                    :in-theory (disable len-of-major-stack-fix)))))
+
+  (local (defthm equal-+-1
+           (equal (equal (+ 1 x) (+ 1 y))
+                  (equal (fix x) (fix y)))))
+  
+  (defcong stack-equiv-except-top-bindings equal (stack$a-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-frames len))))
+
+  (defcong stack-equiv-except-top-bindings equal (stack$a-minor-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-minor-frames len))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (major-stack-ev stack env logicman) 1
+    :hints(("Goal" :in-theory (enable major-stack-ev major-frame-ev))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-scratch stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-minor-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame))))
+
+  (defcong stack-equiv-except-top-bindings
+    equal
+    (stack$a-pop-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame
+                                      major-stack-fix default-car))))
+
+  (defret stack-equiv-except-top-bindings-of-gl-interp-syntax-bind
+    (implies (equal logicman (interp-st->logicman new-interp-st))
+             (stack-equiv-except-top-bindings
+              (major-stack-ev
+               (interp-st->stack new-interp-st)
+               env logicman)
+              (major-stack-ev
+               (interp-st->stack interp-st)
+               env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable gl-interp-syntax-bind
+                                      stack$a-add-binding
+                                      major-stack-ev
+                                      major-frame-ev)))
+    :fn gl-interp-syntax-bind)
+
+  (defret stack-equiv-except-top-bindings-of-gl-rewrite-relieve-hyp-synp
+    (implies (equal logicman (interp-st->logicman new-interp-st))
+             (stack-equiv-except-top-bindings
+              (major-stack-ev
+               (interp-st->stack new-interp-st)
+               env logicman)
+              (major-stack-ev
+               (interp-st->stack interp-st)
+               env (interp-st->logicman interp-st))))
+    :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
+                                      stack$a-set-bindings
+                                      major-stack-ev
+                                      major-frame-ev)))
+    :fn gl-rewrite-relieve-hyp-synp))
+
+
+(define minor-stack-equiv-except-top-bindings ((x minor-stack-p)
+                                               (y minor-stack-p))
+
+  (b* (((minor-frame x1) (car x))
+       ((minor-frame y1) (car y)))
+    (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
+     (equal x1.debug y1.debug)
+     (scratchlist-equiv x1.scratch y1.scratch)
+     (if (atom (cdr x))
+         (atom (cdr y))
+       (and (consp (cdr y))
+            (minor-stack-equiv (cdr x) (cdr y))))))
+  ///
+  (defequiv minor-stack-equiv-except-top-bindings))
+
+(define stack-equiv-except-top-major/minor-bindings ((x major-stack-p)
+                                                     (y major-stack-p))
+
+  (b* (((major-frame x1) (car x))
+       ((major-frame y1) (car y)))
+    (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
+     (equal x1.debug y1.debug)
+     (minor-stack-equiv-except-top-bindings x1.minor-stack y1.minor-stack)
+     (if (atom (cdr x))
+         (atom (cdr y))
+       (and (consp (cdr y))
+            (major-stack-equiv (cdr x) (cdr y))))))
+  ///
+  (defequiv stack-equiv-except-top-major/minor-bindings)
+  (local (in-theory (enable minor-stack-equiv-except-top-bindings)))
+
+  (local (defthm len-equal-when-major-stack-fix
+           (implies (and (equal (major-stack-fix x) (major-stack-fix y))
+                         (consp x) (consp y))
+                    (equal (equal (len x) (len y)) t))
+           :hints (("Goal" :use ((:instance len-of-major-stack-fix)
+                                 (:instance len-of-major-stack-fix (x y)))
+                    :in-theory (disable len-of-major-stack-fix)))))
+
+  (local (defthm equal-+-1
+           (equal (equal (+ 1 x) (+ 1 y))
+                  (equal (fix x) (fix y)))))
+  
+  (defcong stack-equiv-except-top-major/minor-bindings equal (stack$a-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-frames len))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings equal (stack$a-minor-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-minor-frames len))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-major/minor-bindings
+    (major-stack-ev stack env logicman) 1
+    :hints(("Goal" :in-theory (enable major-stack-ev major-frame-ev minor-stack-ev minor-frame-ev))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-major/minor-bindings
+    (stack$a-pop-scratch stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    equal
+    (stack$a-pop-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame
+                                      major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-major/minor-bindings-of-stack$a-add-minor-bindings
+    (stack-equiv-except-top-major/minor-bindings
+     (stack$a-add-minor-bindings bindings stack)
+     stack)
+  :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-minor-frame stack)
+    1
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame
+                                      stack-equiv-except-top-bindings))))
+
+  (defrefinement stack-equiv-except-top-bindings
+    stack-equiv-except-top-major/minor-bindings
+    :hints(("Goal" :in-theory (enable stack-equiv-except-top-bindings)))))
+
+
+
+
+(defsection gl-interp-stack-equiv-except-top-bindings
+  (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
+
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-stack-equiv-except-top-bindings
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      :rules ((t (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((not (:fnname gl-interp-bindinglist))
+               (:add-concl (stack-equiv-except-top-bindings
+                            (major-stack-ev (interp-st->stack new-interp-st)
+                                            env
+                                            (interp-st->logicman new-interp-st))
+                            (major-stack-ev (interp-st->stack interp-st)
+                                            env
+                                            (interp-st->logicman interp-st)))))
+              ((:fnname gl-interp-bindinglist)
+               (:add-concl (stack-equiv-except-top-major/minor-bindings
+                            (major-stack-ev (interp-st->stack new-interp-st)
+                                            env
+                                            (interp-st->logicman new-interp-st))
+                            (major-stack-ev (interp-st->stack interp-st)
+                                            env
+                                            (interp-st->logicman interp-st)))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
+      :mutual-recursion gl-interp)))
+
+(defsection stack-bindings-extension-p
+  (define gl-bindings-extension-p ((x gl-object-alist-p)
+                                   (y gl-object-alist-p))
+    (or (gl-object-alist-equiv x y)
+        (and (consp x)
+             (gl-bindings-extension-p (cdr x) y)))
+    ///
+
+    (deffixequiv gl-bindings-extension-p
+      :hints(("Goal" :in-theory (enable gl-object-alist-fix))))
+
+    (defthm gl-bindings-extension-p-transitive
+      (implies (and (gl-bindings-extension-p x y)
+                    (gl-bindings-extension-p y z))
+               (gl-bindings-extension-p x z))
+      :hints (("Goal" :induct (gl-bindings-extension-p x y))))
+
+    (defthm gl-bindings-extension-p-self
+      (gl-bindings-extension-p x x)
+      :hints (("goal" :expand ((gl-bindings-extension-p x x))))))
+
+
+  (define stack-bindings-equiv ((x major-stack-p)
+                                (y major-stack-p))
+    (b* (((major-frame x1) (car x))
+         ((major-frame y1) (car y)))
+      (gl-object-alist-equiv x1.bindings y1.bindings))
+    ///
+    (defequiv stack-bindings-equiv)
+
+    (defrefinement major-stack-equiv stack-bindings-equiv)
+
+    ;; (defthm stack-bindings-equiv-major-frame->bindings-congruence
+    ;;   (implies (stack-bindings-equiv x y)
+    ;;            (gl-object-alist-equiv (major-frame->bindings (car x))
+    ;;                                   (major-frame->bindings (car y))))
+    ;;   :rule-classes :congruence)
+
+    (defcong stack-bindings-equiv equal (stack$a-bindings x) 1
+      :hints(("Goal" :in-theory (enable stack$a-bindings))))
+
+    (defcong gl-object-alist-equiv stack-bindings-equiv (stack$a-set-bindings bindings x) 1
+      :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
+
+    (local (defun def-stack-bindings-equiv-identity-fn (op)
+             (let ((fn (car op)))
+               `(progn (defthm ,(intern-in-package-of-symbol
+                                 (concatenate 'string "STACK-BINDINGS-EQUIV-OF-" (symbol-name fn))
+                                 fn)
+                         (stack-bindings-equiv ,op stack)
+                         :hints(("Goal" :in-theory (enable ,fn))))
+                       (defcong stack-bindings-equiv stack-bindings-equiv ,op
+                         ,(+ 1 (- (len (cdr op))
+                                  (len (member 'stack (cdr op))))))))))
+
+    (local (defmacro def-stack-bindings-equiv-identity (op)
+             `(make-event (def-stack-bindings-equiv-identity-fn ',op))))
+
+    (def-stack-bindings-equiv-identity (stack$a-push-minor-frame stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-pop-minor-frame stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-set-debug obj stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-set-minor-debug obj stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-set-minor-bindings bindings stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-add-minor-bindings bindings stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-pop-scratch stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-push-scratch obj stack))
+
+    (def-stack-bindings-equiv-identity (stack$a-update-scratch n obj stack)))
+
+  (define stack-bindings-extension-p ((x major-stack-p)
+                                      (y major-stack-p))
+    (b* (((major-frame x1) (car x))
+         ((major-frame y1) (car y)))
+      (gl-bindings-extension-p x1.bindings y1.bindings))
+    ///
+    (defthmd stack-bindings-extension-p-transitive
+      (implies (and (stack-bindings-extension-p x y)
+                    (stack-bindings-extension-p y z))
+               (stack-bindings-extension-p x z)))
+
+    (defthm stack-bindings-extension-p-self
+      (stack-bindings-extension-p x x))
+
+    (def-updater-independence-thm stack-bindings-extension-p-trans-rw
+      (implies (and (syntaxp (not (equal old older)))
+                    (stack-bindings-extension-p new old)
+                    (stack-bindings-extension-p old older))
+               (stack-bindings-extension-p new older)))
+
+    (defthm stack-bindings-extension-p-of-stack$a-add-binding
+      (stack-bindings-extension-p (stack$a-add-binding var val stack) stack)
+      :hints(("Goal" :in-theory (enable stack$a-add-binding
+                                        gl-bindings-extension-p))))
+
+    (defcong stack-bindings-equiv equal (stack-bindings-extension-p x y) 1
+      :hints(("Goal" :in-theory (enable stack-bindings-equiv))))
+    (defcong stack-bindings-equiv equal (stack-bindings-extension-p x y) 2
+      :hints(("Goal" :in-theory (enable stack-bindings-equiv))))
+
+    (defret stack-bindings-extension-p-of-gl-interp-syntax-bind
+      (implies (equal (major-stack-ev (interp-st->stack new-interp-st) env logicman)
+                      (major-stack-ev (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+               (stack-bindings-extension-p
+                (major-stack-ev (interp-st->stack new-interp-st) env logicman)
+                (major-stack-ev (interp-st->stack interp-st) env
+                                (interp-st->logicman interp-st))))
+      :hints(("Goal" :in-theory (enable gl-interp-syntax-bind
+                                        stack$a-add-binding
+                                        major-stack-ev
+                                        major-frame-ev
+                                        gl-object-alist-ev
+                                        gl-bindings-extension-p)))
+      :fn gl-interp-syntax-bind)
+
+    (local (Defthm gl-bindings-extension-p-of-append
+             (gl-bindings-extension-p (Append a b) b)
+             :hints(("Goal" :in-theory (enable gl-bindings-extension-p append)))))
+
+    (defret stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp
+      (implies (equal (major-stack-ev (interp-st->stack new-interp-st) env logicman)
+                      (major-stack-ev (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+               (stack-bindings-extension-p
+                (major-stack-ev (interp-st->stack new-interp-st) env
+                                logicman)
+                (major-stack-ev (interp-st->stack interp-st) env
+                                (interp-st->logicman interp-st))))
+      :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
+                                        stack$a-set-bindings
+                                        stack$a-bindings
+                                        major-stack-ev
+                                        major-frame-ev)))
+      :fn gl-rewrite-relieve-hyp-synp)
+
+    (def-updater-independence-thm ev-interp-st-stack-bindings-extension-p-trans-rw
+      (implies (and (syntaxp (not (equal old older)))
+                    (stack-bindings-extension-p
+                     (major-stack-ev (interp-st->stack new) env logicman)
+                     (major-stack-ev (interp-st->stack old) env
+                                     (interp-st->logicman old)))
+                    (stack-bindings-extension-p
+                     (major-stack-ev (interp-st->stack old) env
+                                     (interp-st->logicman old))
+                     older))
+               (stack-bindings-extension-p
+                (major-stack-ev (interp-st->stack new) env logicman) older))
+      :hints(("Goal" :in-theory (enable stack-bindings-extension-p-transitive))))))
+                        
+
+
+(defsection gl-interp-stack-bindings-extension
+  (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
+
+  
+
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-stack-bindings-extended
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      :rules ((t (:add-concl (stack-bindings-extension-p
+                              (major-stack-ev (interp-st->stack new-interp-st)
+                                              env
+                                              (interp-st->logicman new-interp-st))
+                              (major-stack-ev (interp-st->stack interp-st)
+                                              env
+                                              (interp-st->logicman interp-st))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
+      :mutual-recursion gl-interp)))
 
 
