@@ -88,7 +88,8 @@ return value satisfying the given criteria, simple to @('has-formal').</li>
 <ul>
 <li>@('(:add-hyp term)') adds @('term') as a hypothesis.</li>
 <li>@('(:add-concl term)') adds @('term') as a conclusion, conjoined with any others.</li>
-
+<li>@('(:add-bindings . bindings)') adds the given bindings as B* bindings, after
+binding the return values but outside of both the hyps and conclusions.</li>
 <li>@('(:each-formal :type type :var var :action action)'), where each action is
 an @('add-hyp') or @('add-concl') form, adds the given hyp or conclusion for
 each formal with the given type, with @('var') in these actions replaced by the
@@ -277,6 +278,7 @@ function names. For example:</p>
   (thmname
    hyps
    concls
+   bindings
    keywords
    fn))
 
@@ -284,6 +286,10 @@ function names. For example:</p>
   (and (not (and (consp (cdr action))
                  (not (cddr action))))
        (msg "Bad add-hyp/concl action: ~x0" action)))
+
+(defun dmgen-check-add-bindings-action (action)
+  (and (not (true-listp (cdr action)))
+       (msg "Bad add-bindings action: ~x0" action)))
 
 (defun dmgen-check-formal/return-action (action)
   (if (atom action)
@@ -362,6 +368,7 @@ function names. For example:</p>
     (case (car action)
       ((:add-hyp :add-concl) (dmgen-check-add-hyp/concl-action action))
       ((:each-formal :each-return) (dmgen-check-each-formal/return-action action))
+      (:add-bindings (dmgen-check-add-bindings-action action))
       (:add-keyword (dmgen-check-add-keyword-action action))
       (:set-thmname (dmgen-check-set-thmname-action action))
       (t (msg "Bad action: ~x0" action)))))
@@ -387,6 +394,7 @@ function names. For example:</p>
     (case (car action)
       (:add-hyp   (change-dmgen-defret-form form :hyps (cons (cadr action) form.hyps)))
       (:add-concl (change-dmgen-defret-form form :concls (cons (cadr action) form.concls)))
+      (:add-bindings (change-dmgen-defret-form form :bindings (append form.bindings (cddr action))))
       (:each-formal (dmgen-each-formal-action
                      (cadr (assoc-keyword :type (cdr action)))
                      (cadr (assoc-keyword :var (cdr action)))
@@ -425,8 +433,9 @@ function names. For example:</p>
     (if (not form.concls)
         nil
       `((defret ,form.thmname
-          (implies (and . ,form.hyps)
-                   (and . ,form.concls))
+          (b* ,form.bindings
+            (implies (and . ,form.hyps)
+                     (and . ,form.concls)))
           ,@form.keywords
           :fn ,form.fn)))))
 
