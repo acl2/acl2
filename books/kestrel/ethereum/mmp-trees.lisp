@@ -1462,7 +1462,7 @@
      once we disambiguate the definition of @($\\mathtt{TRIE}$).")
    (xdoc::p
     "We note that another possible interpretation might be
-     to define @($\\mathtt{TRIE}(\\mathfrak{I})$ as
+     to define @($\\mathtt{TRIE}(\\mathfrak{I})$) as
      @($\\mathtt{KEC}(n(\\mathfrak{I},0))$) (i.e. @($n$) instead of @($c$)).
      But this would involve a double hash for the common case,
      and would never allow the empty byte sequence.")
