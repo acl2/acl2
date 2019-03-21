@@ -14850,7 +14850,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
-; Keep this in sync with the #+acl2-loop-only definition of get-global (which
+; Keep this in sync with the #-acl2-loop-only definition of get-global (which
 ; uses qfuncall).
 
   (declare (xargs :guard (and (symbolp x)
