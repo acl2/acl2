@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ xdoc::evmac-constructors
-  :parents (event-macros xdoc::constructors)
+  :parents (event-macros xdoc::composite-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>."
   :long
