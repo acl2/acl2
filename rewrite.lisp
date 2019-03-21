@@ -12199,14 +12199,6 @@
 
 ; Next we develop the logical and raw Lisp definitions of ev-fncall+.
 
-(defun all-function-symbolps (fns wrld)
-  (declare (xargs :mode :logic
-                  :guard (plist-worldp wrld)))
-  (cond ((atom fns) (equal fns nil))
-        (t (and (symbolp (car fns))
-                (function-symbolp (car fns) wrld)
-                (all-function-symbolps (cdr fns) wrld)))))
-
 (defun badged-fns-of-world (wrld)
 
 ; We return the list of badged functions in wrld, but in a way that can be
@@ -12221,59 +12213,6 @@
               (let ((syms (strip-cars badge-alist)))
                 (and (all-function-symbolps syms wrld)
                      syms))))))
-
-(defun unknown-constraints-table-guard (key val wrld)
-  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate.")
-        (ctx 'unknown-constraints-table-guard))
-    (and (eq key :supporters)
-         (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                            (global-val 'embedded-event-lst wrld))))
-           (cond
-            ((null ee-entries)
-             (er hard ctx er-msg
-                 "it is not being made in the scope of a non-trivial ~
-                  encapsulate"))
-            ((cdr ee-entries)
-             (er hard ctx er-msg
-                 (msg "it is being made in the scope of nested non-trivial ~
-                       encapsulates.  In particular, an enclosing encapsulate ~
-                       introduces function ~x0, while an encapsulate superior ~
-                       to that one introduces function ~x1"
-                      (caar (cadr (car ee-entries)))
-                      (caar (cadr (cadr ee-entries))))))
-            ((not (all-function-symbolps val wrld))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, is not a list of known function symbols"
-                      val)))
-            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                                 val))
-             (er hard ctx er-msg
-                 (msg "the value, ~x0, does not include all of the signature ~
-                       functions of the partial-encapsulate"
-                      val)))
-            (t t))))))
-
-(table unknown-constraints-table nil nil
-       :guard
-       (unknown-constraints-table-guard key val world))
-
-(defmacro set-unknown-constraints-supporters (&rest fns)
-  `(table unknown-constraints-table
-          :supporters
-
-; Notice that by including the newly-constrained functions in the supporters,
-; we are guaranteeing that this table event is not redundant.  To see this,
-; first note that we are inside a non-trivial encapsulate (see
-; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
-; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
-; would have rejected a previous attempt to set to these supporters, since they
-; were not function symbols at that time.
-
-          (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                             (global-val 'embedded-event-lst world))))
-            (union-equal (strip-cars (cadr (car ee-entries)))
-                         ',fns))))
 
 (partial-encapsulate
 

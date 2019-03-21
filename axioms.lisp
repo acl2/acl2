@@ -1958,13 +1958,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (if p (if q t nil) t))
 
 (defthm iff-implies-equal-implies-1
-  (implies (iff y y-equiv)
-           (equal (implies x y) (implies x y-equiv)))
+  (implies (iff x x-equiv)
+           (equal (implies x y) (implies x-equiv y)))
   :rule-classes (:congruence))
 
 (defthm iff-implies-equal-implies-2
-  (implies (iff x x-equiv)
-           (equal (implies x y) (implies x-equiv y)))
+  (implies (iff y y-equiv)
+           (equal (implies x y) (implies x y-equiv)))
   :rule-classes (:congruence))
 
 #+acl2-loop-only
@@ -3386,11 +3386,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (and (consp (car x))
                 (symbolp (car (car x)))
                 (symbol-alistp (cdr x))))))
-
-(defthm symbol-alistp-forward-to-eqlable-alistp
-  (implies (symbol-alistp x)
-           (eqlable-alistp x))
-  :rule-classes :forward-chaining)
 
 (defthm symbol-alistp-forward-to-eqlable-alistp
   (implies (symbol-alistp x)
