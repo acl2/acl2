@@ -1404,7 +1404,6 @@
     :parents (process-smtlink-hints)
     :returns (subgoal-lst pseudo-term-list-listp)
     (b* ((cl (pseudo-term-list-fix cl))
-         (cl (remove-hint-please cl))
          ((unless (smtlink-hint-syntax-p user-hint))
           (prog2$ (cw "User provided Smtlink hint can't be applied because of ~
     syntax error in the hints: ~q0Therefore proceed without Smtlink...~%" user-hint)
@@ -1571,14 +1570,6 @@
 
   (encapsulate ()
     (local (in-theory (enable process-hint)))
-
-    (defthm correctness-of-remove-hint-please-with-process-hint
-      (implies (and (pseudo-term-listp cl)
-                    (alistp b))
-               (iff (ev-process-hint (disjoin (remove-hint-please cl)) b)
-                    (ev-process-hint (disjoin cl) b)))
-      :hints (("Goal"
-               :in-theory (enable hint-please remove-hint-please) )))
 
     (defthm correctness-of-process-hint
       (implies (and (pseudo-term-listp cl)

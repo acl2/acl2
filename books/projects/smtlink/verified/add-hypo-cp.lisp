@@ -80,14 +80,11 @@
 
   (define add-hypo-cp ((cl pseudo-term-listp)
                        (smtlink-hint t))
-    :returns (subgoal-lst pseudo-term-list-listp
-                          :hints (("Goal"
-                                   :in-theory (enable remove-hint-please))))
+    :returns (subgoal-lst pseudo-term-list-listp)
     (b* (((unless (pseudo-term-listp cl)) nil)
          ((unless (smtlink-hint-p smtlink-hint))
-          (list (remove-hint-please cl)))
+          (list cl))
          ((smtlink-hint h) smtlink-hint)
-         (cl (remove-hint-please cl))
          (hinted-hypos h.hypotheses)
          (next-cp (cdr (assoc-equal 'add-hypo *SMT-architecture*)))
          ((if (null next-cp)) (list cl))
@@ -102,14 +99,6 @@
   ;; proving correctness of the clause processor
   (local (in-theory (enable add-hypo-cp)))
 
-  (defthm correctness-of-remove-hint-please-with-ev-add-hypo
-    (implies (and (pseudo-term-listp cl)
-                  (alistp b))
-             (iff (ev-add-hypo (disjoin (remove-hint-please cl)) b)
-                  (ev-add-hypo (disjoin cl) b)))
-    :hints (("Goal"
-             :in-theory (enable hint-please remove-hint-please) )))
-
   (defthm correctness-of-add-hypos
     (implies (and (pseudo-term-listp cl)
                   (alistp b)
@@ -120,7 +109,7 @@
     :hints (("Goal"
              :in-theory (disable add-hypo-subgoals-correctness)
              :use ((:instance add-hypo-subgoals-correctness
-                              (g (disjoin (remove-hint-please cl)))
+                              (g (disjoin cl))
                               (hinted-hypos (smtlink-hint->hypotheses smtlink-hint))
                               (b b)))))
     :rule-classes :clause-processor)

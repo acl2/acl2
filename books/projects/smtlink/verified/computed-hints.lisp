@@ -122,9 +122,13 @@
 
   (define SMT-computed-hint (cl)
     (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
-      `(:computed-hint-replacement
-        ((SMT-computed-hint clause))
-        ,@kwd-alist)))
+      `(:computed-hint-replacement ((SMT-delayed-hint clause ',kwd-alist))
+        :clause-processor (remove-hint-please clause))))
+
+  (define SMT-delayed-hint (cl kwd-alist)
+    (declare (ignore cl))
+    `(:computed-hint-replacement ((SMT-computed-hint clause))
+      ,@kwd-alist))
 
   (logic)
 
