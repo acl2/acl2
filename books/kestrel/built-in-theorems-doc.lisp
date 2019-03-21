@@ -177,7 +177,8 @@
    @(def default-imagpart)
    @(def commutativity-2-of-+)
    @(def fold-consts-in-+)
-   @(def distributivity-of-minus-over-+)")
+   @(def distributivity-of-minus-over-+)
+   @(def pos-listp-forward-to-integer-listp)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +214,8 @@
    @(def equal-char-code)
    @(def default-char-code)
    @(def default-code-char)
-   @(def make-character-list-make-character-list)")
+   @(def make-character-list-make-character-list)
+   @(def true-listp-explode-atom)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +274,8 @@
    @(def symbol-<-irreflexive)
    @(def default-intern-in-package-of-symbol)
    @(def default-symbol-name)
-   @(def default-symbol-package-name)")
+   @(def default-symbol-package-name)
+   @(def symbol-listp-cdr-assoc-equal)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -313,7 +316,6 @@
    @(def true-listp-take)
    @(def keyword-value-listp-forward-to-true-listp)
    @(def true-list-listp-forward-to-true-listp)
-   @(def pseudo-term-listp-forward-to-true-listp)
    @(def true-listp-nthcdr-type-prescription)
    @(def keyword-value-listp-assoc-keyword)
    @(def acl2-number-listp-forward-to-true-listp)
@@ -381,6 +383,19 @@
   :long
   "@(def natp-random$)
    @(def random$-linear)")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc built-in-theorems-about-system-utilities
+  :parents (built-in-theorems)
+  :short "Built-in theorems about system utilities."
+  :long
+  "@(def pseudo-term-listp-forward-to-true-listp)
+   @(def legal-variable-or-constant-namep-implies-symbolp)
+   @(def termp-implies-pseudo-termp)
+   @(def term-listp-implies-pseudo-term-listp)
+   @(def arities-okp-implies-arity)
+   @(def arities-okp-implies-logicp)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
