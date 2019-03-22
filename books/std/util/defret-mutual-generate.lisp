@@ -254,7 +254,7 @@ function names. For example:</p>
    (if (atom condition)
        condition
      (case (car condition)
-       ((and or) (dmgen-eval-conditionlist 'and (cdr condition) guts))
+       ((and or) (dmgen-eval-conditionlist (car condition) (cdr condition) guts))
        (not (not (dmgen-eval-condition (cadr condition) guts)))
        ((:has-formal :has-return)
         (b* ((type (cadr (assoc-keyword :type (cdr condition))))
@@ -288,7 +288,7 @@ function names. For example:</p>
        (msg "Bad add-hyp/concl action: ~x0" action)))
 
 (defun dmgen-check-add-bindings-action (action)
-  (and (not (true-listp (cdr action)))
+  (and (not (true-listp (cadr action)))
        (msg "Bad add-bindings action: ~x0" action)))
 
 (defun dmgen-check-formal/return-action (action)
@@ -394,7 +394,7 @@ function names. For example:</p>
     (case (car action)
       (:add-hyp   (change-dmgen-defret-form form :hyps (cons (cadr action) form.hyps)))
       (:add-concl (change-dmgen-defret-form form :concls (cons (cadr action) form.concls)))
-      (:add-bindings (change-dmgen-defret-form form :bindings (append form.bindings (cddr action))))
+      (:add-bindings (change-dmgen-defret-form form :bindings (append form.bindings (cadr action))))
       (:each-formal (dmgen-each-formal-action
                      (cadr (assoc-keyword :type (cdr action)))
                      (cadr (assoc-keyword :var (cdr action)))
