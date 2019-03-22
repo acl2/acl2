@@ -22,8 +22,8 @@
   architecture of Smtlink."
   :long "<p>Smtlink uses @(tsee ACL2::computed-hints) and @(tsee
   ACL2::clause-processor) for controlling the several translation steps. To use
-  Smtlink, the user first install the computed hint @(tsee
-  SMT::SMT-computed-hint). When the user uses :smtlink in @(tsee ACL2::hints),
+  Smtlink, the user first installs the computed hint,
+  @('SMT::SMT-computed-hint'). When the user uses :smtlink in @(tsee ACL2::hints),
   it macro-expands into a :clause-processor hint. This applies the first
   clause-processor for parsing @(tsee SMT::smtlink-hint). This clause-processor
   also add @('(SMT::hint-please some-hint)') into the clause as the first in
