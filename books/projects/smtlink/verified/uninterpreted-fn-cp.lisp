@@ -418,7 +418,6 @@
        (smtlink-hint (smtlink-hint-fix smtlink-hint))
        ((smtlink-hint h) smtlink-hint)
        (fn-lst (make-alist-fn-lst h.functions))
-       (cl (remove-hint-please cl))
        (G (disjoin cl))
        (args (generate-fn-hint-lst (make-fhg-args
                                     :term-lst (list G)
@@ -500,8 +499,7 @@
   :guard-debug t
   (b* (((unless (pseudo-term-listp cl)) nil)
        ((unless (smtlink-hint-p smtlink-hint))
-        (list (remove-hint-please cl)))
-       (cl (remove-hint-please cl))
+        (list cl))
        (G (disjoin cl))
        ((smtlink-hint h) smtlink-hint)
        (uninterpreted (uninterpreted-fn-helper cl h))
@@ -528,14 +526,6 @@
 ;; proving correctness of the uninterpreted-fn-cp clause processor
 (local (in-theory (enable uninterpreted-fn-cp)))
 
-(defthm correctness-of-remove-hint-please-with-ev-uninterpreted
-  (implies (and (pseudo-term-listp cl)
-                (alistp b))
-           (iff (ev-uninterpreted (disjoin (remove-hint-please cl)) b)
-                (ev-uninterpreted (disjoin cl) b)))
-  :hints (("Goal"
-           :in-theory (enable hint-please remove-hint-please) )))
-
 (defthm correctness-of-uninterpreted-fn-cp
   (implies (and (pseudo-term-listp cl)
                 (alistp b)
@@ -546,19 +536,17 @@
   :hints (("Goal"
            :in-theory (disable uninterpreted-subgoals-correctness)
            :use ((:instance uninterpreted-subgoals-correctness
-                            (g (disjoin (remove-hint-please cl)))
+                            (g (disjoin cl))
                             (hint-pair-lst
                              (uninterpreted->returns
-                              (uninterpreted-fn-helper (remove-hint-please cl)
-                                                       smtlink-hint)))
+                              (uninterpreted-fn-helper cl smtlink-hint)))
                             (tag :return)
                             (b b))
                  (:instance uninterpreted-subgoals-correctness
-                            (g (disjoin (remove-hint-please cl)))
+                            (g (disjoin cl))
                             (hint-pair-lst
                              (uninterpreted->more-returns
-                              (uninterpreted-fn-helper (remove-hint-please cl)
-                                                       smtlink-hint)))
+                              (uninterpreted-fn-helper cl smtlink-hint)))
                             (tag :more-return)
                             (b b)))))
   :rule-classes :clause-processor)

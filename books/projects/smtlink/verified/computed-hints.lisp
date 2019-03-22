@@ -18,7 +18,47 @@
 
 (defsection SMT-computed-hints
   :parents (verified)
-  :short "Define Smtlink computed-hints"
+  :short "This document discusses how computed-hints are used in the
+  architecture of Smtlink."
+  :long "<p>Smtlink uses @(tsee ACL2::computed-hints) and @(tsee
+  ACL2::clause-processor) for controlling the several translation steps. To use
+  Smtlink, the user first install the computed hint @(tsee
+  SMT::SMT-computed-hint). When the user uses :smtlink in @(tsee ACL2::hints),
+  it macro-expands into a :clause-processor hint. This applies the first
+  clause-processor for parsing @(tsee SMT::smtlink-hint). This clause-processor
+  also add @('(SMT::hint-please some-hint)') into the clause as the first in
+  the disjunction. The SMT::SMT-computed-hint will recognize clauses that
+  matches the form @('(('hint-please ) . term)'). It extracts the
+  @('some-hint') from the clause, and install below
+  @(':computed-hint-replacement'):</p>
+
+@({
+`(:computed-hint-replacement ((SMT-delayed-hint clause ',some-hint))
+  :clause-processor (remove-hint-please clause))
+})
+
+<p>This @(':computed-hint-replacement') does two things: clearing up
+the @('SMT::hint-please') disjunct from the clause with the hint
+@(':clause-processor (remove-hint-please clause)'), and install another
+computed-hint called @('SMT::SMT-delayed-hint') for actually applying
+@('some-hint') to the cleaned-up new subgoal.</p>
+
+<p>We started out using just one computed-hint that recognizes
+@('SMT::hint-please') and applies the hint. This results in a rewrite-loop that
+resembles the one described at @(tsee ACL2::using-computed-hints-6). The
+problem is that, when a user supplies a @(':use') hint, the computed-hint would
+generate a new subgoal that still contains the @('SMT::hint-please'). The
+@('SMT::hint-please') then triggers the computed-hint again, applying the
+@(':use') hint, which generates a new subgoal that still contains the
+@('SMT::hint-please'). This then triggers the computed-hint again ... you get
+the idea. To solve this problem, we add this one additional step of
+clause-processor to remove the @('SMT::hint-please') disjunct from the clause.
+Then install another computed-hint called @('SMT::SMT-delayed-hint') for
+running the real hints on the subgoal. Because this new subgoal doesn't contain
+@('SMT::hint-please'), the @('SMT::SMT-computed-hint') won't get in the way.
+It works fine even when the @('some-hint') is again a @(':smtlink') hint,
+allowing the user to use Smtlink inside of a Smtlink proof.</p>
+"
 
   ;; verified version of split-kwd-alist
   (define my-split-kwd-alist ((key symbolp)
@@ -122,9 +162,13 @@
 
   (define SMT-computed-hint (cl)
     (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
-      `(:computed-hint-replacement
-        ((SMT-computed-hint clause))
-        ,@kwd-alist)))
+      `(:computed-hint-replacement ((SMT-delayed-hint clause ',kwd-alist))
+        :clause-processor (remove-hint-please clause))))
+
+  (define SMT-delayed-hint (cl kwd-alist)
+    (declare (ignore cl))
+    `(:computed-hint-replacement ((SMT-computed-hint clause))
+      ,@kwd-alist))
 
   (logic)
 

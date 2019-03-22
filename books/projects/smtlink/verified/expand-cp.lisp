@@ -412,7 +412,7 @@
                         (last-<=
                          sum-lvls-decrease-after-update))
         :use ((:instance last-<=
-                         (x (CDR (CAR (EX-ARGS->TERM-LST EXPAND-ARGS)))))
+                         (x (cdr (car (ex-args->term-lst expand-args)))))
               (:instance sum-lvls-decrease-after-update
                          (fn (car (car (ex-args->term-lst expand-args))))
                          (fn-lvls (ex-args->fn-lvls expand-args))))))
@@ -707,7 +707,6 @@
 (define generate-fty-types-top ((hints smtlink-hint-p)
                                 (flextypes-table alistp))
   :returns (updated-hints smtlink-hint-p)
-  :guard-debug t
   (b* ((hints (smtlink-hint-fix hints))
        ((smtlink-hint h) hints)
        ((unless (alistp flextypes-table)) h)
@@ -716,7 +715,6 @@
                                 h.fty-info nil nil))
        (fty-types (reverse ordered-acc)))
     (change-smtlink-hint h :fty-types fty-types)))
-
 
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
@@ -779,7 +777,7 @@
   :returns (subgoal-lst pseudo-term-list-listp)
   (b* (((unless (pseudo-term-listp cl)) nil)
        ((unless (smtlink-hint-p smtlink-hint))
-        (list (remove-hint-please cl)))
+        (list cl))
        (G (disjoin cl))
        (hinted-expanded-G
         (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
@@ -787,7 +785,7 @@
        (main-hint (hint-pair->hints hinted-expanded-G))
        ;; generate first clause
        (next-cp (cdr (assoc-equal 'expand *SMT-architecture*)))
-       ((if (null next-cp)) (list (remove-hint-please cl)))
+       ((if (null next-cp)) (list cl))
        (the-hint
         `(:clause-processor (,next-cp clause ',smtlink-hint)))
        (cl0 `((hint-please ',the-hint) ,expanded-G))
@@ -797,18 +795,10 @@
     `(,cl0 ,cl1)))
 
 (defmacro expand-cp (clause hint)
-  `(expand-cp-fn clause (expand-cp-helper (remove-hint-please ,clause) ,hint state)))
+  `(expand-cp-fn clause (expand-cp-helper ,clause ,hint state)))
 
 ;; proving correctness of the expansion clause processor
 (local (in-theory (enable expand-cp-fn)))
-
-(defthm correctness-of-remove-hint-please-with-ev-expand-cp
-  (implies (and (pseudo-term-listp cl)
-                (alistp b))
-           (iff (ev-expand-cp (disjoin (remove-hint-please cl)) b)
-                (ev-expand-cp (disjoin cl) b)))
-  :hints (("Goal"
-           :in-theory (enable hint-please remove-hint-please) )))
 
 (defthm correctness-of-expand-cp
   (implies (and (pseudo-term-listp cl)

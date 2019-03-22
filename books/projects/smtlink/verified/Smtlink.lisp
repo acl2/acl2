@@ -1569,15 +1569,16 @@
   (def-join-thms ev-process-hint)
 
   (encapsulate ()
-               (local (in-theory (enable process-hint)))
-               (defthm correctness-of-process-hint
-                 (implies (and (pseudo-term-listp cl)
-                               (alistp b)
-                               (ev-process-hint
-                                (conjoin-clauses (process-hint cl hint))
-                                b))
-                          (ev-process-hint (disjoin cl) b))
-                 :rule-classes :clause-processor))
+    (local (in-theory (enable process-hint)))
+
+    (defthm correctness-of-process-hint
+      (implies (and (pseudo-term-listp cl)
+                    (alistp b)
+                    (ev-process-hint
+                     (conjoin-clauses (process-hint cl hint))
+                     b))
+               (ev-process-hint (disjoin cl) b))
+      :rule-classes :clause-processor))
 
   ;; Smtlink is a macro that generates a clause processor hint. This clause
   ;;   processor hint generates a clause, with which a new smt-hint is attached.

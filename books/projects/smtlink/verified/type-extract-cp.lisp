@@ -60,9 +60,8 @@
     :returns (subgoal-lst pseudo-term-list-listp)
     (b* (((unless (pseudo-term-listp cl)) nil)
          ((unless (smtlink-hint-p smtlink-hint))
-          (list (remove-hint-please cl)))
+          (list cl))
          ((smtlink-hint h) smtlink-hint)
-         (cl (remove-hint-please cl))
          (G (disjoin cl))
          (type-decl-list h.type-decl-list)
          (G/type h.expanded-G/type)
@@ -85,18 +84,10 @@
 
   (defmacro type-extract-cp (clause hint)
     `(type-extract-fn clause
-                      (type-extract-helper (remove-hint-please ,clause) ,hint state)))
+                      (type-extract-helper ,clause ,hint state)))
 
   ;; proving correctness of the type-extract clause processor
   (local (in-theory (enable type-extract-fn type-hyp hint-please hide)))
-
-  (defthm correctness-of-remove-hint-please-with-ev-extract
-    (implies (and (pseudo-term-listp cl)
-                  (alistp b))
-             (iff (ev-extract (disjoin (remove-hint-please cl)) b)
-                  (ev-extract (disjoin cl) b)))
-    :hints (("Goal"
-             :in-theory (enable hint-please remove-hint-please) )))
 
   (defthm correctness-of-type-extract-cp
     (implies (and (pseudo-term-listp cl)
