@@ -766,8 +766,10 @@
    ((endp type-alist) nil)
    ((contains-assumptionp (cddar type-alist))
     (remove-assumption-entries-from-type-alist (cdr type-alist)))
-   (t (cons (car type-alist)
-            (remove-assumption-entries-from-type-alist (cdr type-alist))))))
+   (t (cons-with-hint
+       (car type-alist)
+       (remove-assumption-entries-from-type-alist (cdr type-alist))
+       type-alist))))
 
 (defun force-assumption1
   (rune target term type-alist rewrittenp immediatep ttree)

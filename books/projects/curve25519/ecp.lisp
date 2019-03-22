@@ -1,12 +1,16 @@
 (in-package "RTL")
 
 (include-book "projects/quadratic-reciprocity/pratt" :dir :system)
+(local (include-book "projects/quadratic-reciprocity/support/pratt" :dir :system))
+(include-book "rtl/rel11/support/util" :dir :system) ;for local-defthmd
+(local (include-book "rtl/rel11/support/basic" :dir :system))
+(include-book "projects/quadratic-reciprocity/euler" :dir :system) ;for residue
 
 (include-book "arithmetic-5/top" :dir :system)
 
-(in-theory (disable ACL2::|(mod (+ x y) z) where (<= 0 z)| ACL2::|(mod (+ x (- (mod a b))) y)| 
+(in-theory (disable ACL2::|(mod (+ x y) z) where (<= 0 z)| ACL2::|(mod (+ x (- (mod a b))) y)|
                     ACL2::|(mod (mod x y) z)| ACL2::|(mod (+ x (mod a b)) y)| ACL2::cancel-mod-+
-                    ACL2::mod-cancel-*-const ACL2::simplify-products-gather-exponents-equal 
+                    ACL2::mod-cancel-*-const ACL2::simplify-products-gather-exponents-equal
                     ACL2::simplify-products-gather-exponents-< ACL2::|(mod (+ 1 x) y)|
                     ACL2::cancel-mod-+ ACL2::reduce-additive-constant-< ACL2::|(floor x 2)|
                     ACL2::|(equal x (if a b c))| ACL2::|(equal (if a b c) x)| acl2::|(mod (- x) y)|))
@@ -15,7 +19,8 @@
 
 (defthm primep-p
   (primep (p))
-  :hints (("Goal" :use (primep-25519))))
+  :hints (("Goal" :use (primep-25519)
+           :in-theory (disable (:e primep)))))
 
 (defthm p-nat
   (natp (p))
@@ -305,7 +310,7 @@
            (equal (mod (* (mod (* n a) (p)) (frcp a)) (p))
                   (mod (* (mod m (p)) (frcp a)) (p)))))
 
-(defthmd f*/ 
+(defthmd f*/
   (implies (and (integerp n)
                 (integerp m)
                 (integerp a)
@@ -336,7 +341,7 @@
       (and (fp (x r))
            (fp (y r))
            (= (fexpt (y r) 2)
-              (f+ (f+ (fexpt (x r) 3) 
+              (f+ (f+ (fexpt (x r) 3)
                       (f* (a) (fexpt (x r) 2)))
                   (x r))))))
 
@@ -473,7 +478,7 @@
            (equal (mod (* (frcp (expt x 2)) (expt (1- (expt x 2)) 2)) (p))
                   (mod (expt (* (frcp x) (1- (expt x 2))) 2) (p))))
   :hints (("Goal" :in-theory (enable frcp-expt)
-                  :use ((:instance mod*rewrite-1 (a (expt (frcp x) 2)) (b (expt (1- (expt x 2)) 2))))))) 
+                  :use ((:instance mod*rewrite-1 (a (expt (frcp x) 2)) (b (expt (1- (expt x 2)) 2)))))))
 
 (local-defthmd ec-x-0-12
   (implies (and (integerp x)
@@ -712,7 +717,7 @@
   :rule-classes ()
   :hints (("Goal" :in-theory (enable ecp)
                   :use ((:instance odd-char (n (y r)))
-                        (:instance mod-equal-0 (a (y r)) (b (- (y r))) (n (p))))))) 
+                        (:instance mod-equal-0 (a (y r)) (b (- (y r))) (n (p)))))))
 
 (defun o () '(0 . 0))
 
@@ -842,7 +847,7 @@
                         (:instance divides-minus (y (x1))(x (p)))
                         (:instance divides-minus (y (- (x1)))(x (p)))
                         (:instance divides-mod-0 (a (x1))(n (p)))
-                        (:instance divides-mod-0 (a (- (x1)))(n (p)))) 
+                        (:instance divides-mod-0 (a (- (x1)))(n (p))))
                  :in-theory (enable ec+slope))))
 
 (local-defthmd p0+p1<>p0-8
@@ -1010,7 +1015,7 @@
                           (+ (a) (x0) (x1)))
                        (p))))
   :hints (("Goal" :use (ecp-assumption p0+p1=p0-p1-7 p0+p1=p0-p1-13
-                        (:instance x= (r1 (p0)) (r2 (p1))))))) 
+                        (:instance x= (r1 (p0)) (r2 (p1)))))))
 
 (in-theory (disable (ec+slope) (ec-) (ec+)))
 

@@ -131,6 +131,12 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
+ <h4>Fixtypes for Fixed-Length Lists</h4>
+
+ <p>Added a macro @(tsee fty::deflist-of-len) that generates fixtypes for lists
+ of specified lengths, based on existing fixtypes of lists of arbitrary
+ lenghts (introduced via @(tsee fty::deflist)).</p>
+
  <h4>Fixtypes for Osets</h4>
 
  <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
@@ -264,6 +270,9 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
+ <p>Added a formalization of the format of transactions and of their RLP
+ encoding.</p>
+
  <p>Added several other theorems.  Improved some existing theorems.</p>
 
  <p>Improved some documentation.</p>
@@ -322,6 +331,21 @@
  message gives instructions for how to avoid the error by rebuilding SBCL from
  sources after doing a specified edit.  Thanks to Stas Boukarev for pointing to
  the appropriate SBCL source code line.</p>
+
+ <h4>Quadratic Reciprocity</h4>
+
+ <p>In @('projects/quadratic-reciprocity/'), certain include-books, namely
+ those that bring in books from @('support/'), have been made local.  This follows
+ the standard pattern of putting all proof work in separate \"support books\"
+ which are included only locally in the main files.  (The main files simply
+ re-iterate, redundantly, the events to be exported.)  If this change causes
+ proof failures, and your development includes books such as
+ @('projects/quadratic-reciprocity/fermat'), consider now also including the
+ corresponding support books (e.g.,
+ @('projects/quadratic-reciprocity/support/fermat')).  (Actually, to get
+ broken proofs working again, it may suffice to include simpler books that were
+ previously brought in via the support books, such as
+ @('rtl/rel11/support/basic') or @('rtl/rel11/support/util').)</p>
 
  <h4>RAC: Restricted Algorithmic C</h4>
 
@@ -452,6 +476,11 @@
  memory functions to take into account the W bit of data segment descriptors,
  in 32-bit mode: if W = 0, the data segment is read-only and thus writing data
  to it is not allowed; writing to a code segment is not allowed either.</p>
+
+ <p>Opcode maps are now represented using @(see fty::defprod)s, which makes it
+ easier to operate on them in order to automatically generate dispatch
+ functions and documentation, and to precompute some kinds of decoding
+ information.</p>
 
  <p>Extended effective-to-linear address translation to check that the visible
  part of the DS, ES, FS, and GS segment registers does not contain a null

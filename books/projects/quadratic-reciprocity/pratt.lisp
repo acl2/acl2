@@ -4,7 +4,15 @@
 
 (in-package "RTL")
 
-(include-book "support/pratt")
+(include-book "euclid")
+(include-book "fermat")
+
+(local (include-book "support/pratt"))
+
+;; Also defined in the RTL library.
+(defund fl (x)
+  (declare (xargs :guard (real/rationalp x)))
+  (floor x 1))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event
@@ -34,7 +42,7 @@
                 (< (order r p) p))))
 
 (defthmd order-1
-  (implies (and (not (zp p)) 
+  (implies (and (not (zp p))
                 (order r p))
            (equal (mod-expt r (order r p) p) 1)))
 
@@ -66,7 +74,7 @@
 
 ;; If r as order p-1, then (r mod p, r^2 mod p, ..., r^(p-1) mod p)
 ;; is a sequence of distinct integers between 1 and p-1, and therefore,
-;; by the pigeonhole principle, a permutation of (1, 2, ..., p-1): 
+;; by the pigeonhole principle, a permutation of (1, 2, ..., p-1):
 
 (defun mod-powers (r p n)
   (if (zp n)
@@ -98,7 +106,7 @@
                 (divides q p))
            (divides q (mod (expt q k) p))))
 
-;; It follows that if q divides p and r has order p-1 mod p, 
+;; It follows that if q divides p and r has order p-1 mod p,
 ;; then since q = r^j mod p, q must divide
 ;;    (r^j mod p)^p-1 mod p = (r^p-1 mod p) mod p = 1,
 ;; and therefore q = 1:
@@ -185,7 +193,7 @@
   (and (factorization n f e)
        (all-prime f)))
 
-;; This follows from Euclid's Theorem, which states that if a prime 
+;; This follows from Euclid's Theorem, which states that if a prime
 ;; divides a product, then it divides one of the factors:
 
 (defthmd all-prime-factors
@@ -196,7 +204,7 @@
 
 ;; If r^p-1 mod p = 1 but r is not of order p-1, then the order of r
 ;; must divide (p-1)/q for some prime factor q of p-1:
-             
+
 (defun max-order-by-factorization (r p f)
   (if (consp f)
       (and (not (= (mod-expt r (/ (1- p) (car f)) p) 1))
@@ -208,7 +216,7 @@
 (defthmd lucas
   (implies (and (natp p)
                 (> p 1)
-                (prime-factorization (1- p) f e)                
+                (prime-factorization (1- p) f e)
                 (not (zp r))
                 (< r p)
                 (= (mod-expt r (1- p) p) 1)
@@ -232,26 +240,26 @@
                   (max-order-by-factorization r p f))))
 
 ;; In order to apply Lucas's Theorem, we must be able to factor p-1 and
-;; find a primitive root of p.  Primes generally have small primitive 
+;; find a primitive root of p.  Primes generally have small primitive
 ;; roots, so that the following may be expected to find one quickly:
 
 (defun find-prim-root (p f k)
   (declare (xargs :measure (nfix (- p k))))
   (if (and (not (zp p)) (not (zp k)) (< k p))
-      (if (and (= (fast-mod-expt k (1- p) p) 1) 
+      (if (and (= (fast-mod-expt k (1- p) p) 1)
                (fast-max-fact k p f))
           k
         (find-prim-root p f (1+ k)))
     ()))
 
-;; A certificate for a prime p is either (), indicating thet p is small 
+;; A certificate for a prime p is either (), indicating thet p is small
 ;; enough to be certified by direct computation, or a list (r f e c), where
 ;;   r is a primitive root of p
 ;;   f is a list of the prime factors of p-1
 ;;   e is a list of the exponents corresponding to f
 ;;   c is a list of certificates for the members of f
 
-;; Here is a certificate for a pretty big prime, p = 31757755568855353, where p-1 has only small 
+;; Here is a certificate for a pretty big prime, p = 31757755568855353, where p-1 has only small
 ;; prime factors:
 
 ;;  (10 (2 3 31 107 223 4153 430751) (3 1 1 1 1 1 1) (() () () () () () ()))

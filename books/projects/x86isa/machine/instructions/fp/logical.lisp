@@ -90,8 +90,7 @@
 
   :operation t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
@@ -180,8 +179,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
@@ -275,8 +273,7 @@
   "<h3>Op/En = RMI: \[OP XMM, XMM/M, IMM\]</h3>
   0F C2: CMPPS xmm1, xmm2/m128, imm8<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cmpps-Op/En-RMI)
@@ -434,8 +431,7 @@
   "<h3>Op/En = RMI: \[OP XMM, XMM/M, IMM\]</h3>
   66 0F C2: CMPPD xmm1, xmm2/m128, imm8<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-cmppd-Op/En-RMI)
@@ -571,8 +567,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-comis?/ucomis?-Op/En-RM)

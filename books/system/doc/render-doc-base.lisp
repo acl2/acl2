@@ -160,8 +160,10 @@
        (escape-char
         #\' "<<quote>>"
         (escape-char
-         #\, "<<comma>>"
-         name))))))))
+         #\` "<<backquote>>"
+         (escape-char
+          #\, "<<comma>>"
+          name)))))))))
 
 (defattach rendered-name rendered-name-acl2-doc)
 

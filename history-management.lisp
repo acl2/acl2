@@ -10340,14 +10340,6 @@
            (and (body fn nil wrld)
                 t))))
 
-(defconst *unknown-constraints*
-
-; This value must not be a function symbol, because functions may need to
-; distinguish conses whose car is this value from those consisting of function
-; symbols.
-
-  :unknown-constraints)
-
 (defun constraint-info (fn wrld)
 
 ; This function returns a pair (mv flg x).  In the simplest and perhaps most

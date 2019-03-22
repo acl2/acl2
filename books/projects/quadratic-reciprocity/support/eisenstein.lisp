@@ -398,7 +398,7 @@
            (not (< (* i p) a)))
   :hints (("goal" :use (hack-1) :in-theory (theory 'minimal-theory)))
   :rule-classes ())
-  
+
 (defthm wins1-upper-bnd-lemma
     (implies (and (not (zp n))
 		  (not (zp p))

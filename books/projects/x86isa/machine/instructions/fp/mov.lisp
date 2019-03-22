@@ -68,8 +68,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-RM)
@@ -148,8 +147,7 @@
 
   :sp/dp t
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movss/movsd-Op/En-MR)
@@ -220,8 +218,7 @@
      0F 28: MOVAPS xmm1, xmm2/m128<br/>
   66 0F 28: MOVAPD xmm1, xmm2/m128<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-RM)
@@ -287,8 +284,7 @@
      0F 29: MOVAPS xmm2/m128, xmm1<br/>
   66 0F 29: MOVAPD xmm2/m128, xmm1<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movaps/movapd-Op/En-MR)
@@ -365,8 +361,7 @@
  implementation when data addresses are not aligned on an 8-byte
  boundary.</p>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-RM)
@@ -434,8 +429,7 @@
   66 0F 11: MOVUPD xmm2/m128, xmm1<br/>
   F3 0F 7F: MOVDQU xmm2/m128, xmm1<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movups/movupd/movdqu-Op/En-MR)
@@ -509,8 +503,7 @@
      0F 12: MOVLPS xmm, m64<br/>
   66 0F 12: MOVLPD xmm, m64<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-RM)
@@ -578,8 +571,7 @@
      0F 13: MOVLPS m64, xmm<br/>
   66 0F 13: MOVLPD m64, xmm<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movlps/movlpd-Op/En-MR)
@@ -649,8 +641,7 @@
      0F 16: MOVHPS xmm, m64<br/>
   66 0F 16: MOVHPD xmm, m64<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-RM)
@@ -719,8 +710,7 @@
      0F 17: MOVHPS m64, xmm<br/>
   66 0F 17: MOVHPD m64, xmm<br/>"
 
-  :returns (x86 x86p :hyp (and (x86p x86)
-                               (canonical-address-p temp-rip)))
+  :returns (x86 x86p :hyp (x86p x86))
 
   :body
   (b* ((ctx 'x86-movhps/movhpd-Op/En-MR)

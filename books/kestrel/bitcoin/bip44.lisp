@@ -589,7 +589,8 @@
     (with the understanding that they have to be increased by @($2^{31}$)
     to be used as indices in the tree)."))
 
-(fty::defbyte bip44-coin-type 31
+(fty::defbyte bip44-coin-type
+  :size 31
   :parents (coin-types)
   :short "Fixtype of coin types.")
 

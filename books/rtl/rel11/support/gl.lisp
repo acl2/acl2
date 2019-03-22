@@ -7,6 +7,7 @@
 (local (include-book "float"))
 (include-book "rac")
 
+(local (include-book "basic"))
 (local (include-book "arithmetic-5/top" :dir :system))
 
 ;;;**********************************************************************

@@ -3,12 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
-
-; Copyright (C) 2018, Centaur Technology, Inc.
+; Copyright (C) 2018, Shilpi Goel
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -39,7 +34,7 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Original Author(s):
-; Shilpi Goel         <shilpi@centtech.com>
+; Shilpi Goel         <shigoel@gmail.com>
 
 (in-package "X86ISA")
 (include-book "../utils/structures")

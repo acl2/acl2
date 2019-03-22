@@ -36,7 +36,7 @@
 ; Original Author(s):
 ;   Alessandro Coglio <coglio@kestrel.edu>
 ; Contributing Author(s):
-;  Shilpi Goel <shilpi@centtech.com>
+;  Shilpi Goel <shigoel@gmail.com>
 
 (in-package "X86ISA")
 

@@ -1,3 +1,4 @@
+
 ; APT Utilities -- XDOC Constructors
 ;
 ; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
@@ -16,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ xdoc::apt-constructors
-  :parents (utilities xdoc::constructors)
+  :parents (utilities xdoc::composite-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url apt)'>APT</see> transformations."
   :long

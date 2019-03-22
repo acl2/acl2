@@ -45,7 +45,7 @@
 (include-book "decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "std/util/defenum" :dir :system)
-;; (include-book "exceptions")
+(include-book "inst-structs")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -56,67 +56,6 @@
   (#.*gpr-access* #.*xmm-access*)
   :parents (decoding-utilities)
   :short "Kind of register access (e.g., GPR or XMM)")
-
-(defenum operand-type-code-p
-  (
-   ;; A.2.2 Codes for Operand Type
-
-   ;; The following abbreviations are used to document operand types:
-
-   a ;; Two one-word operands in memory or two double-word operands in
-   ;; memory, depending on operand-size attribute (used only by the BOUND
-   ;; instruction).
-
-   b ;; Byte, regardless of operand-size attribute.
-
-   c ;; Byte or word, depending on operand-size attribute.
-
-   d ;; Doubleword, regardless of operand-size attribute.
-
-   dq ;; Double-quadword, regardless of operand-size attribute.
-
-   p ;; 32-bit, 48-bit, or 80-bit pointer, depending on operand-size
-   ;; attribute.
-
-   pd ;; 128-bit or 256-bit packed double-precision floating-point data.
-
-   pi ;; Quadword MMX technology register (for example: mm0).
-
-   ps ;; 128-bit or 256-bit packed single-precision floating-point data.
-
-   q  ;; Quadword, regardless of operand-size attribute.
-
-   qq ;; Quad-Quadword (256-bits), regardless of operand-size attribute.
-
-   s ;; 6-byte or 10-byte pseudo-descriptor.
-
-   sd ;; Scalar element of a 128-bit double-precision floating data.
-
-   ss ;; Scalar element of a 128-bit single-precision floating data.
-
-   si ;; Doubleword integer register (for example: eax).
-
-   v ;; Word, doubleword or quadword (in 64-bit mode), depending on
-   ;; operand-size attribute.
-
-   w ;; Word, regardless of operand-size attribute.
-
-   x ;; dq or qq based on the operand-size attribute.
-
-   y ;; Doubleword or quadword (in 64-bit mode), depending on operand-size
-   ;; attribute.
-
-   z ;; Word for 16-bit operand-size or doubleword for 32 or 64-bit
-   ;; operand-size.
-   )
-  :parents (decoding-utilities)
-  :short "Codes for Operand Type; See Intel Vol. 2, Appendix A.2.2")
-
-(defenum addressing-method-code-p
-  (strip-cars *Z-addressing-method-info*)
-  :parents (decoding-utilities)
-  :short "Codes for Operand Addressing Method; See Intel Vol. 2,
-  Appendix A.2.1")
 
 (define get-operand-size
   ((addressing-method-code addressing-method-code-p)

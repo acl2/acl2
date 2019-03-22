@@ -3036,6 +3036,101 @@
       (true-listp args)
     (apply$-lambda-guard fn args)))
 
+(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
+  (cond ((endp embedded-event-lst)
+         nil)
+        ((and (eq (caar embedded-event-lst) 'encapsulate)
+              (cadar embedded-event-lst))
+         (cons (car embedded-event-lst)
+               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
+        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
+
+(defun all-function-symbolps (fns wrld)
+  (declare (xargs :mode :logic
+                  :guard (plist-worldp wrld)))
+  (cond ((atom fns) (equal fns nil))
+        (t (and (symbolp (car fns))
+                (function-symbolp (car fns) wrld)
+                (all-function-symbolps (cdr fns) wrld)))))
+
+(defconst *unknown-constraints*
+
+; This value must not be a function symbol, because functions may need to
+; distinguish conses whose car is this value from those consisting of function
+; symbols.
+
+  :unknown-constraints)
+
+(defun unknown-constraints-table-guard (key val wrld)
+  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
+                 because ~@0.  See :DOC partial-encapsulate.")
+        (ctx 'unknown-constraints-table-guard))
+    (and (eq key :supporters)
+         (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                            (global-val 'embedded-event-lst wrld))))
+           (cond
+            ((null ee-entries)
+             (er hard ctx er-msg
+                 "it is not being made in the scope of a non-trivial ~
+                  encapsulate"))
+            ((cdr ee-entries)
+             (er hard ctx er-msg
+                 (msg "it is being made in the scope of nested non-trivial ~
+                       encapsulates.  In particular, an enclosing encapsulate ~
+                       introduces function ~x0, while an encapsulate superior ~
+                       to that one introduces function ~x1"
+                      (caar (cadr (car ee-entries)))
+                      (caar (cadr (cadr ee-entries))))))
+            ((not (all-function-symbolps val wrld))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, is not a list of known function symbols"
+                      val)))
+            ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                                 val))
+             (er hard ctx er-msg
+                 (msg "the value, ~x0, does not include all of the signature ~
+                       functions of the partial-encapsulate"
+                      val)))
+            (t t))))))
+
+(table unknown-constraints-table nil nil
+       :guard
+       (unknown-constraints-table-guard key val world))
+
+(defmacro set-unknown-constraints-supporters (&rest fns)
+  `(table unknown-constraints-table
+          :supporters
+
+; Notice that by including the newly-constrained functions in the supporters,
+; we are guaranteeing that this table event is not redundant.  To see this,
+; first note that we are inside a non-trivial encapsulate (see
+; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
+; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
+; would have rejected a previous attempt to set to these supporters, since they
+; were not function symbols at that time.
+
+          (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                             (global-val 'embedded-event-lst world))))
+            (union-equal (strip-cars (cadr (car ee-entries)))
+                         ',fns))))
+
+(partial-encapsulate
+ ((ev-fncall-rec-logical-unknown-constraints
+   (fn args w user-stobj-alist big-n safe-mode gc-off
+       latches hard-error-returns-nilp aok
+       warranted-fns)
+   (mv t t t)))
+ nil ; Imagine that extra constraints are just evaluation results.
+ (logic)
+ (local (defun ev-fncall-rec-logical-unknown-constraints
+            (fn args w user-stobj-alist big-n safe-mode gc-off
+                latches hard-error-returns-nilp aok
+                warranted-fns)
+          (declare (ignore fn args w user-stobj-alist big-n safe-mode gc-off
+                           latches hard-error-returns-nilp aok
+                           warranted-fns))
+          (mv nil nil nil))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -3378,8 +3473,8 @@
                  (body (body fn nil w))
                  (attachment (and aok
 
-; We do not use (all-attachments w) below, because warrants are not in that
-; structure.
+; We do not use (all-attachments w) below, because attachments from defwarrant
+; are not reflected in that structure.
 
                                   (cdr (attachment-pair fn w)))))
              (mv-let
@@ -3421,16 +3516,39 @@
                                          latches))
                 ((member-eq fn '(pkg-witness pkg-imports))
                  (mv t (unknown-pkg-error-msg fn (car args)) latches))
-                (attachment
+                (attachment ; hence aok
                  (ev-fncall-rec-logical attachment args w user-stobj-alist
                                         (decrement-big-n big-n)
                                         safe-mode gc-off latches
                                         hard-error-returns-nilp aok
                                         warranted-fns))
                 ((null body)
-                 (ev-fncall-null-body-er
-                  (and (not aok) attachment)
-                  fn args latches))
+
+; At one time we always returned in this case:
+;   (ev-fncall-null-body-er (and (not aok) attachment) fn args latches)
+; where (and (not aok) attachment) is actually equal to attachment.  However,
+; that doesn't explain the behavior when evaluating a function introduced with
+; partial-encapsulate that has raw Lisp code for evaluation.  So we just punt
+; here with a generic function introduced with partial-encapsulate.  We don't
+; expect to hit this case in practice, since normally ev-fncall-rec calls
+; raw-ev-fncall to get its result.  If we do hit it in practice, we could
+; consider giving a raw Lisp definition to
+; ev-fncall-rec-logical-unknown-constraints that calls the partially
+; constrained functions.
+
+                 (cond
+                  ((eq (car (getpropc fn 'constrainedp nil w))
+                       *unknown-constraints*)
+                   (ev-fncall-rec-logical-unknown-constraints
+                    fn args w user-stobj-alist
+                    (decrement-big-n big-n)
+                    safe-mode gc-off latches hard-error-returns-nilp aok
+                    warranted-fns))
+                  (t ; e.g., when admitting a fn called in its measure theorem
+                   (ev-fncall-null-body-er attachment ; hence aok
+                                           (car args) ; fn
+                                           (cadr args) ; args
+                                           latches))))
                 (t
                  (mv-let
                    (er val latches)
@@ -9372,15 +9490,6 @@
 
 (defun chk-defuns-tuples (lst local-p ctx wrld state)
   (cmp-to-error-triple (chk-defuns-tuples-cmp lst local-p ctx wrld)))
-
-(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
-  (cond ((endp embedded-event-lst)
-         nil)
-        ((and (eq (caar embedded-event-lst) 'encapsulate)
-              (cadar embedded-event-lst))
-         (cons (car embedded-event-lst)
-               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
-        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
 
 (defun name-dropper (lst)
 

@@ -4,14 +4,19 @@
 
 (in-package "RTL")
 
-(include-book "support/gauss")
+(local (include-book "support/gauss"))
+
+;; Also defined in the RTL library.
+(defund fl (x)
+  (declare (xargs :guard (real/rationalp x)))
+  (floor x 1))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
 
 ;; This book contains a proof of Gauss's Lemma:  Let p be prime and assume that
-;; m is not divisible by p.  Let mu be the number of elements of the set 
+;; m is not divisible by p.  Let mu be the number of elements of the set
 ;;    {mod(m,p), mod(2*m,p), ..., mod(((p-1)/2)*m}
 ;; that exceed (p-1)/2.  Then m is a quadratic residue mod p iff mu is even.
 
@@ -23,14 +28,14 @@
 (include-book "euler")
 
 (defun mu (n m p)
-  (if (zp n) 
+  (if (zp n)
       0
     (if (> (mod (* m n) p) (/ (1- p) 2))
 	(1+ (mu (1- n) m p))
       (mu (1- n) m p))))
 
 (defun reflections (n m p)
-  (if (zp n) 
+  (if (zp n)
       ()
     (if (> (mod (* m n) p) (/ (1- p) 2))
         (cons (- p (mod (* m n) p))
@@ -53,7 +58,7 @@
 		  (not (zp j))
 		  (< j (/ p 2))
 		  (not (= j i))
-		  (integerp m)		  
+		  (integerp m)
 		  (not (divides p m)))
 	     (not (equal (+ (mod (* m i) p) (mod (* m j) p)) p))))
 
@@ -99,8 +104,8 @@
 		      (mod (- (times-list (mod-prods n m p))) p))))
   :rule-classes ())
 
-;; Gauss's Lemma follows from the equation of the two expressions 
-;; for the product.  We consider two cases according to the parity 
+;; Gauss's Lemma follows from the equation of the two expressions
+;; for the product.  We consider two cases according to the parity
 ;; of mu:
 
 (defthm euler-mu-even
@@ -174,7 +179,7 @@
 
 ;; The desired result now follows by a simple case analysis:
 
-(defthm second-supplement    
+(defthm second-supplement
     (implies (and (primep p)
 		  (not (= p 2)))
 	     (iff (residue 2 p)

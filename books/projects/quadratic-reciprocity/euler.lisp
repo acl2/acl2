@@ -4,7 +4,7 @@
 
 (in-package "RTL")
 
-(include-book "support/euler")
+(local (include-book "support/euler"))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event

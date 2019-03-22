@@ -122,12 +122,18 @@
       while the latter have a definition
       in the Java representation of the ACL2 environment.
       All the ACL2 primitive functions are represented as native functions,
-      but the ``pseudo-function'' @('or') is represented like that as well,
+      the ``pseudo-function'' @('or') is represented like that as well,
       and other built-in ACL2 functions could be represented like that as well
       in the future.
       Each native function has its own unique Java class and instance:
       its application to values is now handled via Java's dynamic dispath
-      rather than by cases analysis, thus optimization evaluation.")
+      rather than by cases analysis, thus optimization evaluation.
+      Each defined function has its own unique instance as well
+      (so, all the ACL2 named functions are interned),
+      and its representation includes its definition,
+      so that evaluation no longer needs to
+      look up the function definition in the environment,
+      resulting in increased execution speed.")
     (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare

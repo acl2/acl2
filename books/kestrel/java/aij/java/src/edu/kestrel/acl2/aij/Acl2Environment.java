@@ -138,10 +138,15 @@ public final class Acl2Environment {
         if (functionDefs.containsKey(name))
             throw new IllegalStateException
                     ("Function already defined: \"" + name + "\".");
+        Acl2NamedFunction function = Acl2NamedFunction.make(name);
+        if (function instanceof Acl2NativeFunction)
+            throw new IllegalArgumentException
+                    ("Attempting to define the native function " + name + ".");
         Acl2LambdaExpression definiens =
                 Acl2LambdaExpression.make(parameters, body);
         definiens.setVariableIndices();
         functionDefs.put(name, definiens);
+        ((Acl2DefinedFunction) function).setDefiniens(definiens);
     }
 
     /**
