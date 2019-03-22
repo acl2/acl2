@@ -38,6 +38,10 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arith-lemmas"))
 
+; Matt K. mod to avoid ACL2(p) errors from (bfr-reasoning).
+#+acl2-par
+(set-waterfall-parallelism nil)
+
 (local (defthm equal-complexes-rw
          (implies (and (acl2-numberp x)
                        (rationalp a)
@@ -604,7 +608,7 @@ for computing:</p>
   :returns (bound posp :rule-classes :type-prescription)
   (max (len x) 1)
   ///
-  (local 
+  (local
    (defthm s-endp-true-by-len
      (implies (<= (len x) 1)
               (s-endp x))
@@ -1256,7 +1260,7 @@ for computing:</p>
          (bfr-logapp-nus w (s-take w x)
                          (bfr-logapp-russ (cdr n) (bfr-logtail-ns w x) y)))
        (bfr-logapp-russ (cdr n) x y)))))
-    
+
 
 ;; (defsymbolic bfr-logapp-uss ((w n)
 ;;                              (n u)
