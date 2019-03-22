@@ -25,7 +25,7 @@
   Smtlink, the user first install the computed hint @(tsee
   SMT::SMT-computed-hint). When the user uses :smtlink in @(tsee ACL2::hints),
   it macro-expands into a :clause-processor hint. This applies the first
-  clause-processor for parsing @(tsee SMT::smtlink-hint). This clause-processor
+  clause-processor for parsing @(tsee SMT::smt-hint). This clause-processor
   also add @('(SMT::hint-please some-hint)') into the clause as the first in
   the disjunction. The SMT::SMT-computed-hint will recognize clauses that
   matches the form @('(('hint-please ) . term)'). It extracts the
@@ -161,11 +161,19 @@ allowing the user to use Smtlink inside of a Smtlink proof.</p>
                  (& (extract-hint-wrapper (cdr cl))))))))
 
   (define SMT-computed-hint (cl)
+    :parents (SMT-computed-hints)
+    :short "@('SMT::SMT-computed-hint') extract the actual hints from the
+    @('SMT::hint-please') disjunct, apply the @('SMT::remove-hint-please')
+    clause-processor, and install the @(tsee SMT::SMT-delayed-hint) for
+    applying the actual hints."
     (b* (((mv & kwd-alist) (extract-hint-wrapper cl)))
       `(:computed-hint-replacement ((SMT-delayed-hint clause ',kwd-alist))
         :clause-processor (remove-hint-please clause))))
 
   (define SMT-delayed-hint (cl kwd-alist)
+    :parents (SMT-computed-hints)
+    :short "@('SMT::SMT-delayed-hints') applies the hints @('kwd-alist') and
+    install the @(tsee SMT::SMT-computed-hint) back."
     (declare (ignore cl))
     `(:computed-hint-replacement ((SMT-computed-hint clause))
       ,@kwd-alist))
