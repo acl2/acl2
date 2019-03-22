@@ -412,7 +412,7 @@
                         (last-<=
                          sum-lvls-decrease-after-update))
         :use ((:instance last-<=
-                         (x (CDR (CAR (EX-ARGS->TERM-LST EXPAND-ARGS)))))
+                         (x (cdr (car (ex-args->term-lst expand-args)))))
               (:instance sum-lvls-decrease-after-update
                          (fn (car (car (ex-args->term-lst expand-args))))
                          (fn-lvls (ex-args->fn-lvls expand-args))))))
@@ -707,7 +707,6 @@
 (define generate-fty-types-top ((hints smtlink-hint-p)
                                 (flextypes-table alistp))
   :returns (updated-hints smtlink-hint-p)
-  :guard-debug t
   (b* ((hints (smtlink-hint-fix hints))
        ((smtlink-hint h) hints)
        ((unless (alistp flextypes-table)) h)
@@ -716,7 +715,6 @@
                                 h.fty-info nil nil))
        (fty-types (reverse ordered-acc)))
     (change-smtlink-hint h :fty-types fty-types)))
-
 
 ;; -----------------------------------------------------------------
 ;;       Define evaluators
