@@ -18,6 +18,7 @@
 (include-book "base58check")
 (include-book "bip32")
 (include-book "bip43")
+(include-book "bip44")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
