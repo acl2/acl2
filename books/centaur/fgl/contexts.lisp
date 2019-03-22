@@ -32,20 +32,84 @@
 
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "logicman")
+(include-book "centaur/misc/starlogic" :dir :system)
 
 (define equiv-context-p (x)
-  (or (symbolp x)
-      (pseudo-termp x))
+  (or (pseudo-fnsym-p x)
+      (and (consp x)
+           (pseudo-termp (car x))
+           (equiv-context-p (cdr x))))
   ///
   (define equiv-context-fix ((x equiv-context-p))
     :Returns (new-x equiv-context-p)
-    (pseudo-term-fix x)
+    (mbe :logic (if (atom x)
+                    (pseudo-fnsym-fix x)
+                  (cons (pseudo-term-fix (car x))
+                        (equiv-context-fix (cdr x))))
+         :exec x)
     ///
     (defthm equiv-context-fix-when-equiv-context-p
       (implies (equiv-context-p x)
                (equal (equiv-context-fix x) x)))
 
+    ;; (defthm len-of-equiv-context-fix
+    ;;   (equal (len (equiv-context-fix x)) (len x)))
+
     (fty::deffixtype equiv-context :pred equiv-context-p :fix equiv-context-fix :equiv equiv-context-equiv
-      :define t)))
+      :define t))
+
+  (defthm pseudo-fnsym-p-of-equiv-context-when-atom
+    (implies (atom x)
+             (equal (equiv-context-p x)
+                    (pseudo-fnsym-p x))))
+
+  (defthm equiv-context-p-of-cdr
+    (implies (equiv-context-p x)
+             (equiv-context-p (cdr x)))))
 
 (fty::deflist equiv-contexts :pred equiv-contextsp :elt-type equiv-context-p :true-listp t)
+
+
+
+(define fgl-ev-equiv-context-equiv ((context equiv-context-p) x y)
+  :measure (len (equiv-context-fix context))
+  (b* ((context (equiv-context-fix context)))
+    (cond ((not context) (equal x y))
+          ((atom context)
+           (fgl-ev (pseudo-term-fncall context (list (pseudo-term-quote x)
+                                                     (pseudo-term-quote y)))
+                   nil))
+          (t (fgl-ev-equiv-context-equiv
+              (cdr context)
+              (fgl-ev (car context) `((x . ,x)))
+              (fgl-ev (car context) `((x . ,y)))))))
+  ///
+  (defthm fgl-ev-equiv-context-equiv-equal
+    (equal (fgl-ev-equiv-context-equiv nil x y)
+           (equal x y)))
+
+  (defthm fgl-ev-equiv-context-equiv-iff
+    (equal (fgl-ev-equiv-context-equiv 'iff x y)
+           (iff* x y))))
+
+(define fgl-ev-context-equiv ((contexts equiv-contextsp) x y)
+  (if (atom contexts)
+      (equal x y)
+    (or (fgl-ev-equiv-context-equiv (car contexts) x y)
+        (fgl-ev-context-equiv (cdr contexts) x y)))
+  ///
+  (defthm fgl-ev-context-equiv-reflective
+    (fgl-ev-context-equiv contexts x x))
+
+  (defthm fgl-ev-context-equiv-nil
+    (equal (fgl-ev-context-equiv nil x y)
+           (equal x y)))
+
+  (defthm fgl-ev-context-equiv-iff
+    (equal (fgl-ev-context-equiv '(iff) x y)
+           (iff* x y))))
+
+
+
+

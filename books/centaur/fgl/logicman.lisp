@@ -2393,7 +2393,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   fgl-object-alist-eval
   fgl-apply
   fgl-ev
-  (equal not if
+  (equal not if iff
          int bool concrete
          return-last synp
          cons
