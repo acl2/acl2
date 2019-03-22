@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection hmac-sha-512
+(defsection hmac-sha-512-placeholder
   :parents (placeholders)
   :short "HMAC-SHA-512 placeholder."
   :long
@@ -72,7 +72,7 @@
        (declare (ignore key text))
        (make-list 64 :initial-element 0)))
 
-    (defrule byte-list-of-hmac-sha-512
+    (defrule unsigned-byte-listp-8-of-hmac-sha-512
       (unsigned-byte-listp 8 (hmac-sha-512 key text)))
 
     (defrule len-of-hmac-sha-512

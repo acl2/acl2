@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection ripemd-160
+(defsection ripemd-160-placeholder
   :parents (placeholders)
   :short "RIPEMD-160 placeholder."
   :long
