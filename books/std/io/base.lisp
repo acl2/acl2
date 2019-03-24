@@ -715,15 +715,25 @@ foo
   (defthm
     stringp-of-read-file-into-string1
     (implies
-     (and
-      (symbolp channel)
-      (open-input-channel-p channel
-                            :character state)
-      (state-p state)
-      (not (null (mv-nth 0
-                         (read-file-into-string1 channel state ans bound)))))
-     (stringp (mv-nth 0
-                      (read-file-into-string1 channel state ans bound)))))
+     (not
+      (null
+       (mv-nth 0
+               (read-file-into-string1 channel state ans bound))))
+     (stringp
+      (mv-nth 0
+              (read-file-into-string1 channel state ans bound))))
+    :rule-classes
+    (:rewrite
+     (:type-prescription
+      :corollary
+      (or
+       (null
+        (mv-nth 0
+                (read-file-into-string1 channel state ans bound)))
+       (stringp
+        (mv-nth
+         0
+         (read-file-into-string1 channel state ans bound)))))))
 
   (defthm
     state-p1-of-read-file-into-string1
