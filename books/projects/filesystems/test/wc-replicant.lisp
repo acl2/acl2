@@ -1,42 +1,5 @@
-(include-book "../file-system-m2")
-(include-book "centaur/getopt/top" :dir :system)
+(include-book "../test-stuff")
 (include-book "oslib/argv" :dir :system)
-
-(defoptions wc-opts
-  :parents (demo2)
-  :tag :demo2
-
-  ((bytes    "Count bytes"
-             booleanp
-             :rule-classes :type-prescription
-             :alias #\c)
-
-   (lines "Count lines"
-          booleanp
-          :rule-classes :type-prescription
-          :alias #\l)
-
-   (words "Count words"
-           booleanp
-           :rule-classes :type-prescription
-           :alias #\w)))
-
-(defun wc-helper (text nl nw nc beginning-of-word-p pos)
-  (declare (xargs :measure (nfix (- (length text) pos))))
-  (if
-      (zp (- (length text) pos))
-      (mv nl nw nc)
-    (b*
-        ((c (char text pos))
-         (nc (+ nc 1))
-         (nl (if (equal c #\newline) (+ nl 1) nl))
-         ((mv beginning-of-word-p nw)
-          (if (or (equal c #\space) (equal c #\newline) (equal c #\tab))
-              (mv t nw)
-            (if beginning-of-word-p
-                (mv nil (+ nw 1))
-              (mv beginning-of-word-p nw)))))
-      (wc-helper text nl nw nc beginning-of-word-p (+ pos 1)))))
 
 (b*
     (((mv & val state)

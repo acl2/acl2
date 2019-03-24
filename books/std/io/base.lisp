@@ -705,7 +705,45 @@ foo
                      state))
      :hints(("Goal" :in-theory (e/d (read-object state-p1)))))))
 
+(defsection std/io/read-file-into-string
+  :parents (std/io read-file-into-string)
 
+  :long "<p>See @(see read-file-into-string).</p>"
+
+  (local (in-theory (disable read-char$ open-input-channel-p1)))
+
+  (defthm
+    stringp-of-read-file-into-string1
+    (implies
+     (not
+      (null
+       (mv-nth 0
+               (read-file-into-string1 channel state ans bound))))
+     (stringp
+      (mv-nth 0
+              (read-file-into-string1 channel state ans bound))))
+    :rule-classes
+    (:rewrite
+     (:type-prescription
+      :corollary
+      (or
+       (null
+        (mv-nth 0
+                (read-file-into-string1 channel state ans bound)))
+       (stringp
+        (mv-nth
+         0
+         (read-file-into-string1 channel state ans bound)))))))
+
+  (defthm
+    state-p1-of-read-file-into-string1
+    (implies
+     (and (symbolp channel)
+          (open-input-channel-p channel
+                                :character state)
+          (state-p state))
+     (state-p1 (mv-nth 1
+                       (read-file-into-string1 channel state ans bound))))))
 
 ; -----------------------------------------------------------------------------
 ;
