@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "../er-soft-plus")
-(include-book "event-forms")
+(include-book "event-form-lists")
 (include-book "fresh-names")
 (include-book "../prove-interface")
 (include-book "../symbol-symbol-alists")

@@ -29,17 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-event-form-listp nil))
-
-(assert! (pseudo-event-form-listp '((defun f (x) x)
-                                    (encapsulate () (defun f (x) x)))))
-
-(assert! (not (pseudo-event-form-listp 2)))
-
-(assert! (not (pseudo-event-form-listp '(defun f (x) x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (maybe-pseudo-event-formp nil))
 
 (assert! (maybe-pseudo-event-formp '(defun f (x) x)))
