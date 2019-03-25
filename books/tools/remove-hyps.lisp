@@ -52,8 +52,8 @@
   :parents (proof-automation debugging)
   :short "Macro for defining a theorem with a minimal set of hypotheses"
   :long "<p>For a call of @(tsee defthm), @(tsee defthmd), or @(tsee thm), the
- application of @('remove-hyps') results in a a minimal set of hypotheses.
- For example:</p>
+ application of @('remove-hyps') attempts to produce a minimal set of
+ hypotheses.  For example:</p>
 
  @({
  (remove-hyps
@@ -79,6 +79,15 @@
                      (NTH (- N (LEN X)) Y))))
    :RULE-CLASSES NIL)
  })
+
+ <p>Note however that @('remove-hyps') works by removing one hypothesis at a
+ time, with each resulting proof attempt made using a limited number of
+ steps (see @(see with-prover-step-limit)) that depends on the number of steps
+ taken before removing the hypothesis.  So if the removal of a hypothesis
+ requires a proof that takes sufficiently many more steps than the original
+ proof, or if two or more hypotheses must be removed together for the proof to
+ succeed with fewer hypotheses, then the result will not have a minimal set of
+ hypotheses.</p>
 
  <p>Acceptable forms are as follows, where @('HYP') can be a conjunction of
  hypotheses, @('(and HYP1 ... HYPn)'), and ``@('defthm NAME')'' may be
