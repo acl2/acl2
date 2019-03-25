@@ -34,7 +34,7 @@
 
 
 
-(fty::defalist calist :pred calistp :key-type aig :val-type bit :true-listp t :unique-keys t)
+(fty::defalist calist :pred calistp :val-type bit :true-listp t :unique-keys t)
 
 ;; (define alist-remove-dups (x)
 ;;   :hooks :fix
@@ -114,10 +114,10 @@
          :hints (("goal" :use bitp-lookup-when-calistp
                   :in-theory (disable bitp-lookup-when-calistp)))))
 
-(define calist-lookup ((x aig-p) (calist calistp))
+(define calist-lookup (x (calist calistp))
   :inline t
   :returns (res acl2::maybe-bitp :rule-classes :type-prescription)
-  (cdr (hons-get (aig-fix x)
+  (cdr (hons-get x
                  (calist-fix calist))))
 
 (local (in-theory (enable calist-lookup)))
@@ -131,7 +131,7 @@
 
 (local (in-theory (disable nth update-nth bitp)))
 
-(define calist-stobj-acons$c ((key aig-p)
+(define calist-stobj-acons$c (key
                               (val bitp)
                               calist-stobj$c)
   :guard (and (equal (calist-stobj->len$c calist-stobj$c)
@@ -190,7 +190,7 @@
   :enabled t
   (len (calist-fix calist)))
 
-(define calist-stobj-acons$a ((key aig-p)
+(define calist-stobj-acons$a (key
                               (val bitp)
                               (calist calist-stobjp$a))
   :guard (not (calist-lookup key (calist-stobj-access$a calist)))

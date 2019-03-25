@@ -169,10 +169,13 @@
                           logicman
                           state)
   :guard (and (bvar-list-okp bvars bvar-db)
-              (logicman-check-nvars (next-bvar bvar-db)))
+              (equal (next-bvar bvar-db) (bfr-nvars)))
   :returns (mv ok
                (new-x gl-object-p)
                (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:expand ((bvar-list-okp$a bvars bvar-db))
+                       :in-theory (enable bfr-varname-p))))
   (b* ((pathcond (pathcond-fix pathcond))
        ((when (atom bvars)) (mv nil nil pathcond))
        (bvar (lnfix (car bvars)))
@@ -200,7 +203,7 @@
                                bvar-db
                                logicman
                                state)
-  :guard (logicman-check-nvars (next-bvar bvar-db))
+  :guard (equal (next-bvar bvar-db) (bfr-nvars))
   :measure (nfix clk)
   :returns (mv error
                (replacement gl-object-p)

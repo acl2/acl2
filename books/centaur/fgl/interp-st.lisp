@@ -735,7 +735,7 @@
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
              (ok)
-             (logicman-check-nvars (next-bvar bvar-db) logicman)
+             (equal (next-bvar bvar-db) (bfr-nvars))
              ok))
 
 
@@ -750,9 +750,7 @@
 (define interp-st-add-term-bvar ((x gl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
-  :prepwork ((local (in-theory (enable interp-st-nvars-ok
-                                       logicman-check-nvars
-                                       ))))
+  :prepwork ((local (in-theory (enable interp-st-nvars-ok))))
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
              (bfr bvar-db logicman)
@@ -783,11 +781,11 @@
     (implies (equal old-logicman (interp-st->logicman interp-st))
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
-  (defret logicman-check-nvars-of-<fn>
-    (implies (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
-                                   (interp-st->logicman interp-st))
-             (logicman-check-nvars (next-bvar$a (interp-st->bvar-db new-interp-st))
-                                   (interp-st->logicman new-interp-st))))
+  (defret nvars-ok-of-<fn>
+    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                    (bfr-nvars (interp-st->logicman interp-st)))
+             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+                    (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
@@ -798,7 +796,6 @@
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
   :prepwork ((local (in-theory (enable interp-st-nvars-ok
-                                       logicman-check-nvars
                                        bfr-varname-p))))
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
@@ -833,11 +830,11 @@
     (implies (equal old-logicman (interp-st->logicman interp-st))
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
-  (defret logicman-check-nvars-of-<fn>
-    (implies (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
-                                   (interp-st->logicman interp-st))
-             (logicman-check-nvars (next-bvar$a (interp-st->bvar-db new-interp-st))
-                                   (interp-st->logicman new-interp-st))))
+  (defret nvars-ok-of-<fn>
+    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                    (bfr-nvars (interp-st->logicman interp-st)))
+             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+                    (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))

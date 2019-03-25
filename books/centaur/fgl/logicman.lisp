@@ -38,7 +38,6 @@
 (include-book "bfr")
 (include-book "arith-base")
 ;; (include-book "pathcond-stobj")
-(include-book "centaur/ubdds/deps" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
 (include-book "defapply")
 (local (include-book "theory"))
@@ -206,11 +205,14 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                          (bfrstate)
                          (bfrstate bfr-mode (1- (aignet::num-fanins aignet)))
                          bfrstate)
-      :otherwise (bfrstate bfr-mode 0)))
+      :otherwise (stobj-let ((aignet (logicman->aignet logicman)))
+                            (bfrstate)
+                            (bfrstate bfr-mode (aignet::num-ins aignet))
+                            bfrstate)))
   ///
   (def-updater-independence-thm logicman->bfrstate-updater-independence
-    (implies (and (equal (aignet::fanin-count (logicman->aignet new))
-                         (aignet::fanin-count (logicman->aignet old)))
+    (implies (and (equal (logicman->aignet new)
+                         (logicman->aignet old))
                   (equal (logicman->mode new)
                          (logicman->mode old)))
              (equal (logicman->bfrstate new)
@@ -220,7 +222,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (equal (bfrstate->mode bfrstate)
            (bfr-mode-fix (lbfr-mode))))
 
-  (defret bfrstate->bound-of-logicman->bfrstate
+  (defret bfrstate->bound-of-logicman->bfrstate-aignet
     (implies (lbfr-mode-is :aignet)
              (equal (bfrstate->bound bfrstate)
                     (aignet::fanin-count (logicman->aignet logicman)))))
@@ -316,7 +318,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     (implies (logicman-extension-p new old)
              (bfrstate>= (logicman->bfrstate new)
                          (logicman->bfrstate old)))
-    :hints(("Goal" :in-theory (enable ;; logicman->bfrstate
+    :hints(("Goal" :in-theory (enable logicman->bfrstate
                                       bfrstate>=))))
 
   (local (in-theory (disable bfrstate>=-when-logicman-extension
@@ -832,13 +834,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (define bfr-nvars (&optional (logicman 'logicman))
   ;; :guard (logicman-nvars-ok)
 ;;  :prepwork ((local (in-theory (enable logicman-nvars-ok))))
-  (b* (((unless (lbfr-mode-is :aignet)) 0))
-    (mbe :logic (non-exec (aignet::num-ins (logicman->aignet logicman)))
-         :exec (stobj-let
-                ((aignet (logicman->aignet logicman)))
-                (nvars)
-                (aignet::num-ins aignet)
-                nvars)))
+  (mbe :logic (non-exec (aignet::num-ins (logicman->aignet logicman)))
+       :exec (stobj-let
+              ((aignet (logicman->aignet logicman)))
+              (nvars)
+              (aignet::num-ins aignet)
+              nvars))
   ///
   (def-updater-independence-thm bfr-nvars-updater-independence
     (implies (and (equal (aignet::num-ins (logicman->aignet new))
@@ -851,6 +852,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
              (<= (bfr-nvars old) (bfr-nvars new)))
     :hints(("Goal" :in-theory (enable logicman-extension-p)))
     :rule-classes ((:linear :trigger-terms ((bfr-nvars new)))))
+
+  (defthm bfrstate->bound-of-logicman->bfrstate-non-aignet
+    (implies (not (lbfr-mode-is :aignet))
+             (equal (bfrstate->bound (logicman->bfrstate))
+                    (bfr-nvars logicman)))
+    :hints(("Goal" :in-theory (enable logicman->bfrstate))))
 
   ;; (defthm logicman-nvars-ok-implies
   ;;   (implies (and (logicman-nvars-ok)
@@ -877,19 +884,15 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (define logicman-add-var (;; (obj gl-object-p)
                           &optional (logicman 'logicman))
   :returns (new-logicman)
-  (b* (((unless (lbfr-mode-is :aignet))
-        logicman))
-    (stobj-let
-     ((aignet (logicman->aignet logicman)))
-     (aignet)
-     (aignet::aignet-add-in aignet)
-     logicman))
+  (stobj-let
+   ((aignet (logicman->aignet logicman)))
+   (aignet)
+   (aignet::aignet-add-in aignet)
+   logicman)
   ///
   (defret bfr-nvars-of-<fn>
     (equal (bfr-nvars new-logicman)
-           (if (lbfr-mode-is :aignet)
-               (+ 1 (bfr-nvars logicman))
-             (bfr-nvars logicman)))
+           (+ 1 (bfr-nvars logicman)))
     :hints(("Goal" :in-theory (enable bfr-nvars))))
 
   (defret logicman-get-of-logicman-add-var
@@ -909,8 +912,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   ;; :guard-hints (("goal" :in-theory (enable logicman-nvars-ok bfr-nvars)))
   ;;; (and (natp x)
        ;; (< x (bfr-nvars))
-       (or (not (lbfr-mode-is :aignet))
-           (< (lnfix x) (bfr-nvars)))
+  (< (lnfix x) (bfr-nvars))
                 ;; (non-exec (< x (aignet::num-ins (logicman->aignet logicman)))))))
   ///
   ;; (def-updater-independence-thm bfr-varname-p-updater-independence
@@ -933,24 +935,20 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable logicman-extension-p)))))
 
-  (defthm bfr-varname-p-when-not-aignet
-    (implies (not (lbfr-mode-is :aignet))
-             (bfr-varname-p x)))
-
   (defthm bfr-varname-p-nvars-of-logicman-add-var
     (bfr-varname-p (bfr-nvars logicman)
                    (logicman-add-var logicman))
     :hints(("Goal" :in-theory (enable bfr-nvars logicman-add-var)))))
 
-(define logicman-check-nvars ((n natp) &optional (logicman 'logicman))
-  (or (not (lbfr-mode-is :aignet))
-      (equal (bfr-nvars) (lnfix n)))
-  ///
-  (defthm bfr-varname-p-when-logicman-check-nvars
-    (implies (and (logicman-check-nvars n)
-                  (< (nfix v) (nfix n)))
-             (bfr-varname-p v))
-    :hints(("Goal" :in-theory (enable bfr-varname-p)))))
+;; (define logicman-check-nvars ((n natp) &optional (logicman 'logicman))
+;;   (or (not (lbfr-mode-is :aignet))
+;;       (equal (bfr-nvars) (lnfix n)))
+;;   ///
+;;   (defthm bfr-varname-p-when-logicman-check-nvars
+;;     (implies (and (logicman-check-nvars n)
+;;                   (< (nfix v) (nfix n)))
+;;              (bfr-varname-p v))
+;;     :hints(("Goal" :in-theory (enable bfr-varname-p)))))
 
 
 ;; (define bfr-varname-p (x)
@@ -1112,7 +1110,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                       :hints(("Goal" :in-theory (enable nth))))))
   (b* ((bfrstate (logicman->bfrstate)))
     (bfrstate-case
-      :bdd (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix x))))
+      :bdd (nth v (acl2::ubdd-deps (bfr-fix x)))
       :aig (set::in (lnfix v) (acl2::aig-vars (bfr-fix x)))
       :aignet
       (b* ((lit (bfr->aignet-lit x)))
@@ -1275,7 +1273,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                (lbfr-case
                                  :aignet nil
                                  :otherwise
-                                 '(:in-theory (enable bfr-p aig-p))))))
+                                 '(:in-theory (enable bfr-p aig-p
+                                                      bfr-nvars)))))
+                :hyp (< (nfix n) (bfr-nvars logicman)))
   :guard-hints (("goal" :in-theory (enable bfr-varname-p bfr-nvars)))
   (b* ((bfrstate (logicman->bfrstate)))
     (bfrstate-case
@@ -1317,6 +1317,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                               bfr-eval
                                               bfr-fix
                                               aig-fix
+                                              bfr-nvars
                                               bfr-lookup)))))
     :otf-flg t)
 
@@ -1349,39 +1350,49 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 (local (defthm aig-p-when-bfr-p
          (implies (and (bfr-p x)
-                       (bfrstate-mode-is :aig))
-                  (aig-p x))
+                       (bfrstate-mode-is :aig)
+                       (equal bound (bfrstate->bound bfrstate)))
+                  (aig-p x bound))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
 (local (defthm aig-p-of-bfr-fix
-         (implies (and (bfrstate-mode-is :aig))
-                  (aig-p (bfr-fix x)))
+         (implies (and (bfrstate-mode-is :aig)
+                       (equal bound (bfrstate->bound bfrstate)))
+                  (aig-p (bfr-fix x) bound))
          :hints (("goal" :use ((:instance aig-p-when-bfr-p
                                 (x (bfr-fix x))))
                   :in-theory (disable aig-p-when-bfr-p)))))
 
 (local (defthm bfr-p-when-aig-p
          (implies (and (bfrstate-mode-is :aig)
-                       (aig-p x))
+                       (aig-p x (bfrstate->bound bfrstate)))
                   (bfr-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
 (local (defthm ubdd-p-when-bfr-p
          (implies (and (bfr-p x)
-                       (bfrstate-mode-is :bdd))
-                  (acl2::ubddp x))
-         :hints(("Goal" :in-theory (enable bfr-p)))))
+                       (bfrstate-mode-is :bdd)
+                       (equal bound (bfrstate->bound bfrstate)))
+                  (and (ubddp x bound)
+                       (acl2::ubddp x)))
+         :hints(("Goal" :in-theory (enable bfr-p))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable ubddp))))))
 
 (local (defthm ubdd-p-of-bfr-fix
-         (implies (and (bfrstate-mode-is :bdd))
-                  (acl2::ubddp (bfr-fix x)))
+         (implies (and (bfrstate-mode-is :bdd)
+                       (equal bound (bfrstate->bound bfrstate)))
+                  (and (ubddp (bfr-fix x) bound)
+                       (acl2::ubddp (bfr-fix x))))
          :hints (("goal" :use ((:instance ubdd-p-when-bfr-p
                                 (x (bfr-fix x))))
-                  :in-theory (disable ubdd-p-when-bfr-p)))))
+                  :in-theory (disable ubdd-p-when-bfr-p))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable ubddp))))))
 
 (local (defthm bfr-p-when-ubdd-p
          (implies (and (bfrstate-mode-is :bdd)
-                       (acl2::ubddp x))
+                       (ubddp x (bfrstate->bound bfrstate)))
                   (bfr-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
@@ -1391,7 +1402,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                          (bfrstate-mode-is :aignet)
                          (not (booleanp x)))
                     (aignet::aignet-litp x (logicman->aignet logicman))))
-         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp)))))
+         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp logicman->bfrstate)))))
 
 (local (defthm bfr-p-when-aignet-litp
          (b* ((bfrstate (logicman->bfrstate)))
@@ -1401,7 +1412,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                          (not (equal x 1))
                          (not (equal x 0)))
                     (bfr-p x)))
-         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp)))))
+         :hints(("Goal" :in-theory (enable bfr-p aignet::aignet-idp logicman->bfrstate)))))
 
 (local (defthm bfr-mode-is-possibilities
          (or (bfr-mode-is :aig)
@@ -1740,6 +1751,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                 '(:in-theory (enable bfr-fix acl2::aig-or))))))
 
 
+(local (defthm ubddp-implies-ubddp
+         (implies (ubddp x bound)
+                  (acl2::ubddp x))
+         :hints(("Goal" :in-theory (enable ubddp)))
+         :rule-classes :forward-chaining))
+
 (define bfr-xor ((x lbfr-p)
                  (y lbfr-p)
                  &optional (logicman 'logicman))
@@ -1748,7 +1765,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   :guard-hints (("goal" :do-not-induct t
                  :in-theory (enable bfr-not acl2::aig-xor acl2::q-xor))
                 (and stable-under-simplificationp '(:in-theory (enable bfr-p))))
-
+  :guard-debug t
   (mbe :logic
        (b* ((x (lbfr-fix x))
             (y (lbfr-fix y)))

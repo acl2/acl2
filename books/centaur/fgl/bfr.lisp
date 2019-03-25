@@ -28,10 +28,10 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "FGL")
+ (in-package "FGL")
 (include-book "std/util/defenum" :dir :system)
 (include-book "nat-var-aig")
-(include-book "centaur/ubdds/lite" :dir :system)
+(include-book "ubdd")
 (include-book "centaur/satlink/litp" :dir :system)
 (include-book "gl-object")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -338,9 +338,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 (define bfrstate>= ((x bfrstate-p) (y bfrstate-p))
   (and (eql (bfrstate->mode x) (bfrstate->mode y))
-       (b* ((bfr-mode (bfrstate->mode x)))
-         (or (not (bfr-mode-is :aignet))
-             (>= (bfrstate->bound x) (bfrstate->bound y)))))
+       (>= (bfrstate->bound x) (bfrstate->bound y)))
   ///
   (defthm bfrstate>=-self
     (bfrstate>= x x))
@@ -351,9 +349,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                     (bfrstate->mode y))))
 
   (defthmd bfrstate>=-implies-bound
-    (implies (and (bfrstate>= x y)
-                  (b* ((bfr-mode (bfrstate->mode x)))
-                    (bfr-mode-is :aignet)))
+    (implies (bfrstate>= x y)
              (>= (bfrstate->bound x) (bfrstate->bound y)))
     :rule-classes (:rewrite :linear)))
 
@@ -361,8 +357,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 (define bfr-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
   :short "Recognizer for valid Boolean Function Representation (@(see bfr)) objects."
   (bfrstate-case
-    :aig (aig-p x)
-    :bdd (acl2::ubddp x)
+    :aig (aig-p x (bfrstate->bound bfrstate))
+    :bdd (ubddp x (bfrstate->bound bfrstate))
     :aignet
     (or (booleanp x)
         (and (satlink::litp x)
@@ -372,7 +368,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   ///
   (defthm bfr-p-of-constants
     (and (bfr-p t)
-         (bfr-p nil)))
+         (bfr-p nil))
+    :hints(("Goal" :in-theory (enable aig-p ubddp))))
 
   (defthm bfr-p-when-bfrstate>=
     (implies (and (bfrstate>= new old)
@@ -383,11 +380,11 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
   (defthm bfr-p-in-terms-of-aig-p
     (equal (bfr-p x (bfrstate (bfrmode :aig) bound))
-           (aig-p x)))
+           (aig-p x bound)))
 
   (defthm bfr-p-in-terms-of-ubddp
     (equal (bfr-p x (bfrstate (bfrmode :bdd) bound))
-           (acl2::ubddp x))))
+           (ubddp x bound))))
 
 
 
@@ -448,8 +445,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   :returns (new-x bfr-p)
   :prepwork ((local (in-theory (enable bfr-p aignet-lit->bfr))))
   (mbe :logic (bfrstate-case
-                :aig (aig-fix x)
-                :bdd (acl2::ubdd-fix x)
+                :aig (aig-fix x (bfrstate->bound bfrstate))
+                :bdd (ubdd-fix x (bfrstate->bound bfrstate))
                 :aignet
                 (if (booleanp x)
                     x
@@ -1040,7 +1037,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   ///
   (local (defthm not-a-bfr-is-not-a-bfr
            (not (bfr-p 'not-a-bfr))
-           :hints(("Goal" :in-theory (enable bfr-p)))))
+           :hints(("Goal" :in-theory (enable bfr-p aig-p ubddp)))))
 
   (defthm bfr-listp-witness-not-bfr-p
     (not (bfr-p (bfr-listp-witness x bfrstate) bfrstate)))

@@ -77,7 +77,7 @@
                       (ec-call (logicman-pathcond-p-fn pathcond logicman))
                       (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
                       (not (consp (bvar-db-bfrlist bvar-db)))
-                      (logicman-check-nvars (next-bvar bvar-db) logicman)))
+                      (equal (next-bvar bvar-db) (bfr-nvars logicman))))
                ok))
   ///
   (defthm interp-st-bfrs-ok-implies
@@ -90,8 +90,8 @@
                     (logicman-pathcond-p (interp-st->constraint interp-st))
                     (not (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
                     (interp-st-nvars-ok interp-st)
-                    (logicman-check-nvars (next-bvar$a (interp-st->bvar-db interp-st))
-                                          (interp-st->logicman interp-st)))))
+                    (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                           (bfr-nvars (interp-st->logicman interp-st))))))
     :hints(("Goal" :in-theory (enable interp-st-nvars-ok))))
 
   (acl2::def-updater-independence-thm interp-st-bfrs-ok-updater-independence
@@ -115,8 +115,7 @@
     (implies (and (interp-st-bfrs-ok interp-st)
                   (logicman-extension-p new-logicman (interp-st->logicman interp-st))
                   (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st))))
-             (interp-st-bfrs-ok (update-interp-st->logicman new-logicman interp-st)))
-    :hints(("Goal" :in-theory (enable logicman-check-nvars))))
+             (interp-st-bfrs-ok (update-interp-st->logicman new-logicman interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-stack
     (implies (And (interp-st-bfrs-ok interp-st)
@@ -141,7 +140,7 @@
   (defthm interp-st-bfrs-ok-of-update-bvar-db
     (implies (And (interp-st-bfrs-ok interp-st)
                   (not (bvar-db-bfrlist new-bvar-db))
-                  (logicman-check-nvars (next-bvar new-bvar-db) (interp-st->logicman interp-st)))
+                  (equal (next-bvar new-bvar-db) (bfr-nvars (interp-st->logicman interp-st))))
              (interp-st-bfrs-ok (update-interp-st->bvar-db new-bvar-db interp-st))))
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar
@@ -1963,11 +1962,14 @@
              ((when (gl-interp-check-reclimit interp-st))
               (gl-interp-error
                :msg (gl-msg "The recursion limit ran out.")))
+             (interp-st (interp-st-push-scratch-gl-obj xobj interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
               ((gl-interp-recursive-call successp ans interp-st state)
                (gl-rewrite-fncall xobj.fn xobj.args fn-mode.dont-rewrite-under-if-test interp-st state)))
+
+             ((mv xobj interp-st) (interp-st-pop-scratch-gl-obj interp-st))
              ;; ((when err)
              ;;  (mv nil interp-st state))
              ((when successp)
@@ -2914,7 +2916,7 @@
 
 (defthm bfr-p-of-bool-fix
   (bfr-p (bool-fix x))
-  :hints(("Goal" :in-theory (enable bfr-p aig-p acl2::ubddp))))
+  :hints(("Goal" :in-theory (enable bfr-p aig-p acl2::ubddp ubddp max-depth))))
 
 
 (local (in-theory (disable member-equal)))
@@ -3801,7 +3803,7 @@
              (implies (and (interp-st-bfrs-ok interp-st)
                            bvar)
                       (bfr-varname-p bvar logicman)))
-           :hints(("Goal" :in-theory (enable interp-st-bfrs-ok)))))
+           :hints(("Goal" :in-theory (enable interp-st-bfrs-ok bfr-varname-p)))))
 
   (local
    (defthm len-cinstlist-when-scratchobj-isomorphic-rw
@@ -5026,8 +5028,144 @@
              (iff (interp-st-bvar-db-ok new env)
                   (interp-st-bvar-db-ok old env)))
     :hints ((and stable-under-simplificationp
-                 (let ((lit (assoc 'interp-st-bvar-db-ok clause)))
-                   `(:expand (,lit)))))))
+                 (let* ((lit (assoc 'interp-st-bvar-db-ok clause))
+                        (other (if (eq (cadr lit) 'new) 'old 'new)))
+                   `(:expand (,lit)
+                     :use ((:instance interp-st-bvar-db-ok-necc
+                            (interp-st ,other)
+                            (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))
+                     :in-theory (e/d (bfr-varname-p)
+                                     (interp-st-bvar-db-ok-necc)))))))
+
+  ;; (local (defthm interp-st-bvar-db-ok-necc-free
+  ;;          (b* ((bvar-db (interp-st->bvar-db interp-st))
+  ;;               (logicman (interp-st->logicman interp-st)))
+  ;;            (implies (and (interp-st-bvar-db-ok interp-st env)
+  ;;                          (case-split
+  ;;                            (equal (fgl-object-eval (get-bvar->term$a n bvar-db1)
+  ;;                                                    env logicman1)
+  ;;                                   (fgl-object-eval (get-bvar->term$a n bvar-db)
+  ;;                                                    env logicman)))
+  ;;                          (<= (base-bvar$a bvar-db) (nfix n))
+  ;;                          (< (nfix n) (next-bvar$a bvar-db)))
+  ;;                     (iff* (fgl-object-eval (get-bvar->term$a n bvar-db1)
+  ;;                                            env logicman1)
+  ;;                           (gobj-bfr-eval (bfr-var n) env logicman))))))
+
+  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar
+    (implies (and (not (interp-st-bvar-db-ok interp-st env))
+                  (interp-st-bfrs-ok interp-st))
+             (not (interp-st-bvar-db-ok new-interp-st env)))
+    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar bfr-varname-p)
+                                   (interp-st-bvar-db-ok-necc))
+            :expand ((interp-st-bvar-db-ok interp-st env))
+            :use ((:instance interp-st-bvar-db-ok-necc
+                   (interp-st new-interp-st)
+                   (n (interp-st-bvar-db-ok-witness interp-st env))))
+            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
+                                   (interp-st->logicman interp-st)))))
+    :otf-flg t
+    :fn interp-st-add-term-bvar)
+
+  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar-unique
+    (implies (and (not (interp-st-bvar-db-ok interp-st env))
+                  (interp-st-bfrs-ok interp-st))
+             (not (interp-st-bvar-db-ok new-interp-st env)))
+    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar-unique bfr-varname-p)
+                                   (interp-st-bvar-db-ok-necc))
+            :expand ((interp-st-bvar-db-ok interp-st env))
+            :use ((:instance interp-st-bvar-db-ok-necc
+                   (interp-st new-interp-st)
+                   (n (interp-st-bvar-db-ok-witness interp-st env))))
+            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
+                                   (interp-st->logicman interp-st)))))
+    :otf-flg t
+    :fn interp-st-add-term-bvar-unique)
+
+  (local (in-theory (disable not)))
+
+  (local
+   (with-output
+     :off (event)
+     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+     (std::defret-mutual-generate <fn>-bvar-db-ok-doesnt-get-fixed-somehow
+       
+       :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                     ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                     ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                     (interp-st                     (interp-st-bfrs-ok interp-st))
+                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+       
+       :rules ((t (:add-concl (implies (not (interp-st-bvar-db-ok interp-st env))
+                                       (not (interp-st-bvar-db-ok new-interp-st env))))
+                  (:add-keyword :hints ('(:do-not-induct t)
+                                        (let ((flag (find-flag-is-hyp clause)))
+                                          (and flag
+                                               (prog2$ (cw "flag: ~x0~%" flag)
+                                                       '(:no-op t)))))))
+               ((:fnname gl-rewrite-try-rules)
+                (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+
+       :hints ((acl2::just-expand-mrec-default-hint 'gl-interp-term id nil world))
+       :mutual-recursion gl-interp)))
+
+
+  (define interp-st-bvar-db-ok* (interp-st env)
+    :verify-guards nil
+    (interp-st-bvar-db-ok interp-st env))
+
+  (local (in-theory (enable interp-st-bvar-db-ok*)))
+
+  (with-output
+    :off (event)
+    :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+    (std::defret-mutual-generate <fn>-bvar-db-ok-implies-previous-ok
+      
+      :formal-hyps (((interp-st-bfr-p x)           (interp-st-bfr-p x))
+                    ((gl-object-p x)               (interp-st-bfr-listp (gl-object-bfrlist x)))
+                    ((gl-objectlist-p x)           (interp-st-bfr-listp (gl-objectlist-bfrlist x)))
+                    (interp-st                     (interp-st-bfrs-ok interp-st))
+                    ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
+      
+      :rules ((t (:add-concl (iff* (interp-st-bvar-db-ok new-interp-st env)
+                                   (and (interp-st-bvar-db-ok* new-interp-st env)
+                                        (interp-st-bvar-db-ok interp-st env))))
+                 (:add-keyword :hints ('(:do-not-induct t)
+                                       (let ((flag (find-flag-is-hyp clause)))
+                                         (and flag
+                                              (prog2$ (cw "flag: ~x0~%" flag)
+                                                      '(:no-op t)))))))
+              ((:fnname gl-rewrite-try-rules)
+               (:add-hyp (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist))))
+      
+      :hints (("goal" :do-not-induct t))
+      :no-induction-hint t
+      :mutual-recursion gl-interp)))
+
+
+(defret interp-st-bvar-db-ok-of-add-term-bvar-implies
+  (implies (interp-st-bvar-db-ok new-interp-st env)
+           (iff* (gobj-bfr-eval bfr env (interp-st->logicman new-interp-st))
+                 (fgl-object-eval x env (interp-st->logicman new-interp-st))))
+  :fn interp-st-add-term-bvar
+  :hints(("Goal" :in-theory (enable interp-st-add-term-bvar)
+          :use ((:instance interp-st-bvar-db-ok-necc
+                 (interp-st new-interp-st)
+                 (n (next-bvar (interp-st->bvar-db interp-st))))))))
+
+(defret interp-st-bvar-db-ok-of-add-term-bvar-unique-implies
+  (implies (interp-st-bvar-db-ok new-interp-st env)
+           (iff* (gobj-bfr-eval bfr env (interp-st->logicman new-interp-st))
+                 (fgl-object-eval x env (interp-st->logicman new-interp-st))))
+  :fn interp-st-add-term-bvar-unique
+  :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique)
+          :use ((:instance interp-st-bvar-db-ok-necc
+                 (interp-st new-interp-st)
+                 (n (next-bvar (interp-st->bvar-db interp-st))))
+                (:instance interp-st-bvar-db-ok-necc
+                 (interp-st new-interp-st)
+                 (n (get-term->bvar x (interp-st->bvar-db interp-st))))))))
+                                      
 
 
 
@@ -5035,6 +5173,12 @@
 (defsection gl-interp-correct
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
 
+
+  (def-updater-independence-thm fgl-objectlist-eval-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman old)))
+             (equal (fgl-objectlist-eval x env (interp-st->logicman new))
+                    (fgl-objectlist-eval x env (interp-st->logicman old)))))
   
 
 
@@ -5183,7 +5327,8 @@
                                                       (interp-st->logicman interp-st))
                               (logicman-pathcond-eval (gl-env->bfr-vals env)
                                                       (interp-st->constraint new-interp-st)
-                                                      (interp-st->logicman new-interp-st))))
+                                                      (interp-st->logicman new-interp-st))
+                              (interp-st-bvar-db-ok new-interp-st env)))
                (:add-bindings
                 ((new-logicman (interp-st->logicman new-interp-st))
                  (logicman (interp-st->logicman interp-st))

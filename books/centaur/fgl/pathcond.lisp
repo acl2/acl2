@@ -52,19 +52,42 @@
                                           (aignet::aignet-pathcond-p aignet-pathcond aignet)
                                           ans)
                                ans)
-            :otherwise t))
+            :bdd (and (lbfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
+                      (lbfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
+            :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
+                            (ans)
+                            (lbfr-listp (alist-keys (calist-stobj-access calist-stobj)))
+                            ans)))
   ///
   (defthm logicman-pathcond-p-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (logicman-pathcond-p pathcond old))
              (logicman-pathcond-p pathcond new))
-    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable logicman-extension-p)))))
 
-  (def-updater-independence-thm logicman-pathcond-p-updater-independence
-    (implies (equal (pathcond-aignet new) (pathcond-aignet old))
-             (equal (logicman-pathcond-p new logicman)
-                    (logicman-pathcond-p old logicman))))
+  ;; (def-updater-independence-thm logicman-pathcond-p-updater-independence
+  ;;   (implies (equal (pathcond-aignet new) (pathcond-aignet old))
+  ;;            (equal (logicman-pathcond-p new logicman)
+  ;;                   (logicman-pathcond-p old logicman))))
 
+
+  (local (defthm bfr-listp-alist-keys-of-rewind-calist
+           (implies (bfr-listp (alist-keys (calist-fix calist)))
+                    (bfr-listp (alist-keys (rewind-calist n calist))))
+           :hints(("Goal" :in-theory (enable rewind-calist alist-keys)))))
+
+  (local (defthm ubdd-fix-preserves-bfr-p
+           (implies (and (bfr-p x)
+                         (bfrstate-mode-is :bdd))
+                    (bfr-p (acl2::ubdd-fix x)))
+           :hints(("Goal" :in-theory (enable bfr-p ubddp)))))
+
+  (local (defthm ubdd-list-fix-preserves-bfr-listp
+           (implies (and (bfr-listp x)
+                         (bfrstate-mode-is :bdd))
+                    (bfr-listp (ubdd-list-fix x)))
+           :hints(("Goal" :in-theory (enable bfr-listp$ ubdd-list-fix)))))
 
   (defthm logicman-pathcond-p-of-pathcond-rewind
     (implies (and (logicman-pathcond-p x)
@@ -87,20 +110,29 @@
                           (:instance aignet::nbalist-extension-of-nbalist-stobj-rewind
                            (x (nth *pathcond-aignet* x))
                            (len 0)))))))))
-                                   
 
 
+
+
+
+(local (defthm ubdd-fix-of-ubdd-fix
+         (equal (ubdd-fix (acl2::ubdd-fix x) bound)
+                (ubdd-fix x bound))
+         :hints(("Goal" :in-theory (enable ubdd-fix)))))
 
 (define logicman-pathcond-eval (env pathcond &optional (logicman 'logicman))
   (declare (xargs :non-executable t))
   :no-function t
   :verify-guards nil
+  :hooks ((:fix :hints ((and stable-under-simplificationp
+                             '(:in-theory (enable bfr-eval bfr-fix))))))
   (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-eval-fn (list env pathcond logicman))
           (if (pathcond-enabledp pathcond)
               (lbfr-case
-                :bdd (b* ((pathcond-bdd (mbe :logic (acl2::ubdd-fix (pathcond-bdd pathcond))
+                :bdd (b* ((pathcond-bdd (mbe :logic ;; (lbfr-fix (pathcond-bdd pathcond))
+                                             (acl2::ubdd-fix (pathcond-bdd pathcond))
                                              :exec (pathcond-bdd pathcond))))
-                       (bfr-eval pathcond-bdd env))
+                       (acl2::eval-bdd pathcond-bdd env))
                 :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
                                 (ans)
                                 (calist-eval calist-stobj env)
@@ -134,15 +166,28 @@
                         (let ((lit (assoc 'aignet-pathcond-eval clause)))
                           `(:expand (,lit)))))))
 
+  (local (defthm bfr-nvars-of-logicman-extension-rw
+           (implies (logicman-extension-p new old)
+                    (<= (bfr-nvars old) (bfr-nvars new)))
+           :hints (("goal" :use bfr-nvars-of-logicman-extension))))
+
+
+  (local (defthm ubdd-fix-when-ubddp-of-ubdd-fix
+           (implies (ubddp (acl2::ubdd-fix x) bound)
+                    (equal (ubdd-fix x bound)
+                           (acl2::ubdd-fix x)))
+           :hints(("Goal" :in-theory (enable ubdd-fix ubddp)))))
+
   (defthm logicman-pathcond-eval-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
                   (logicman-pathcond-p pathcond old))
              (equal (logicman-pathcond-eval env pathcond new)
                     (logicman-pathcond-eval env pathcond old)))
-    :hints(("Goal" :in-theory (enable logicman-pathcond-p logicman-extension-p))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-p))
            (acl2::use-termhint
             (lbfr-case old
-              :bdd '(:in-theory (enable bfr-eval bfr-fix))
+              :bdd '(:in-theory (enable bfr-eval bfr-fix bfr-p))
+              :aignet '(:in-theory (enable logicman-extension-p))
               :otherwise nil))))
 
   (defthm logicman-pathcond-eval-when-not-enabled
@@ -211,6 +256,11 @@
   ;;                   (not (equal (aignet::aignet-pathcond-implies-logic x aignet pathcond) b)))))
   ;; (local (acl2::use-trivial-ancestors-check))
 
+
+  (local (defthm ubddp-of-ubdd-fix
+           (acl2::ubddp (ubdd-fix x bound))
+           :hints(("Goal" :in-theory (enable ubdd-fix)))))
+
   (defret eval-when-logicman-pathcond-implies
     (implies (and (logicman-pathcond-eval env pathcond)
                   ans)
@@ -237,58 +287,63 @@
     :hints (("goal" :use eval-when-logicman-pathcond-implies))))
 
 
-(define logicman-pathcond-depends-on ((v natp)
-                                      pathcond
-                                      &optional (logicman 'logicman))
-  (lbfr-case
-    :bdd (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix (pathcond-bdd pathcond)))))
-    :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                    (dep)
-                    (calist-depends-on v (calist-stobj-access calist-stobj))
-                    dep)
-    :aignet (stobj-let ((aignet (logicman->aignet logicman)))
-                       (dep)
-                       (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                                  (dep)
-                                  (non-exec
-                                   (ec-call (aignet::nbalist-depends-on
-                                             v aignet-pathcond aignet)))
-                                  dep)
-                       dep))
-  ///
+;; (define logicman-pathcond-depends-on ((v natp)
+;;                                       pathcond
+;;                                       &optional (logicman 'logicman))
+;;   (lbfr-case
+;;     :bdd (ec-call (nth v (acl2::ubdd-deps (acl2::ubdd-fix (pathcond-bdd pathcond)))))
+;;     :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
+;;                     (dep)
+;;                     (calist-depends-on v (calist-stobj-access calist-stobj))
+;;                     dep)
+;;     :aignet (stobj-let ((aignet (logicman->aignet logicman)))
+;;                        (dep)
+;;                        (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+;;                                   (dep)
+;;                                   (non-exec
+;;                                    (ec-call (aignet::nbalist-depends-on
+;;                                              v aignet-pathcond aignet)))
+;;                                   dep)
+;;                        dep))
+;;   ///
 
-  (local #!acl2
-         (defthm eval-bdd-of-update-when-not-dependent-fix
-           (implies (not (nth n (ubdd-deps (ubdd-fix x))))
-                    (equal (eval-bdd x (update-nth n v env))
-                           (eval-bdd x env)))
-           :hints (("goal" :use ((:instance eval-bdd-of-update-when-not-dependent
-                                  (x (ubdd-fix x))))
-                    :in-theory (disable eval-bdd-of-update-when-not-dependent)))))
+;;   (local #!acl2
+;;          (defthm eval-bdd-of-update-when-not-dependent-fix
+;;            (implies (not (nth n (ubdd-deps (ubdd-fix x))))
+;;                     (equal (eval-bdd x (update-nth n v env))
+;;                            (eval-bdd x env)))
+;;            :hints (("goal" :use ((:instance eval-bdd-of-update-when-not-dependent
+;;                                   (x (ubdd-fix x))))
+;;                     :in-theory (disable eval-bdd-of-update-when-not-dependent)))))
 
-    (local (defthm alist-to-bitarr-of-cons
-           (acl2::bits-equiv (alist-to-bitarr max (cons (cons var val) alist) bitarr)
-                             (if (and (natp var)
-                                      (< var (nfix max)))
-                                 (update-nth var (bool->bit val) (alist-to-bitarr max alist bitarr))
-                               (alist-to-bitarr max alist bitarr)))
-           :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
+;;     (local (defthm alist-to-bitarr-of-cons
+;;            (acl2::bits-equiv (alist-to-bitarr max (cons (cons var val) alist) bitarr)
+;;                              (if (and (natp var)
+;;                                       (< var (nfix max)))
+;;                                  (update-nth var (bool->bit val) (alist-to-bitarr max alist bitarr))
+;;                                (alist-to-bitarr max alist bitarr)))
+;;            :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
            
 
-  (defthm logicman-pathcond-eval-of-set-var-when-not-depends-on
-    (implies (and (not (logicman-pathcond-depends-on v pathcond)))
-             (equal (logicman-pathcond-eval (bfr-set-var v val env) pathcond)
-                    (logicman-pathcond-eval env pathcond)))
-    :hints(("Goal" :in-theory (enable logicman-pathcond-eval bfr-eval bfr-fix
-                                      bfr-set-var bfr-varname-p bfr-nvars))))
+;;   (defthm logicman-pathcond-eval-of-set-var-when-not-depends-on
+;;     (implies (and (not (logicman-pathcond-depends-on v pathcond)))
+;;              (equal (logicman-pathcond-eval (bfr-set-var v val env) pathcond)
+;;                     (logicman-pathcond-eval env pathcond)))
+;;     :hints(("Goal" :in-theory (enable logicman-pathcond-eval bfr-eval bfr-fix
+;;                                       bfr-set-var bfr-varname-p bfr-nvars))))
 
-  (defthm logicman-pathcond-depends-on-of-logicman-extension
-    (implies (and (bind-logicman-extension new old)
-                  (logicman-pathcond-p pathcond old)
-                  (not (logicman-pathcond-depends-on v pathcond old)))
-             (not (logicman-pathcond-depends-on v pathcond new)))
-    :hints(("Goal" :in-theory (enable logicman-extension-p logicman-pathcond-p)))))
+;;   (defthm logicman-pathcond-depends-on-of-logicman-extension
+;;     (implies (and (bind-logicman-extension new old)
+;;                   (logicman-pathcond-p pathcond old)
+;;                   (not (logicman-pathcond-depends-on v pathcond old)))
+;;              (not (logicman-pathcond-depends-on v pathcond new)))
+;;     :hints(("Goal" :in-theory (enable logicman-extension-p logicman-pathcond-p)))))
 
+
+(local (defthm ubddp-when-ubddp
+         (implies (ubddp x bound)
+                  (acl2::ubddp x))
+         :hints(("Goal" :in-theory (enable ubddp)))))
 
 (define logicman-pathcond-assume ((x lbfr-p)
                                   pathcond
@@ -382,12 +437,46 @@
                                   (calist-stobj calist) (x lit)))
                     :in-theory (disable calist-extension-p-of-calist-assume)))))
 
+
+  (local (defun aig-listp (x bound)
+           (if (atom x)
+               t
+             (and (aig-p (car x) bound)
+                  (aig-listp (cdr x) bound)))))
+
+  (local (defthmd bfr-listp-when-aig-mode
+           (implies (bfrstate-mode-is :aig)
+                    (equal (bfr-listp x)
+                           (aig-listp x (bfrstate->bound bfrstate))))
+           :hints(("Goal" :in-theory (enable bfr-listp bfr-p)))))
+
+  (local (defthm aig-listp-of-calist-assume
+           (implies (and (aig-listp (alist-keys (calist-fix calist)) bound)
+                         (aig-p x bound))
+                    (aig-listp (alist-keys (mv-nth 1 (calist-assume x calist))) bound))
+           :hints(("Goal" :in-theory (enable calist-assume alist-keys)))))
+
+  (local (defthm bfr-mode-fix-possibilities
+           (or (bfr-mode-is :aig)
+               (bfr-mode-is :bdd)
+               (bfr-mode-is :aignet))
+           :rule-classes ((:forward-chaining :trigger-terms ((bfr-mode-fix bfr-mode))))))
+
+  (local (defthm bfr-listp-of-calist-assume
+           (implies (and (bfr-listp (alist-keys (calist-fix calist)))
+                         (bfr-p x)
+                         (bfrstate-mode-is :aig))
+                    (bfr-listp (alist-keys (mv-nth 1 (calist-assume x calist)))))
+           :hints(("Goal" :in-theory (enable bfr-listp-when-aig-mode bfr-p)))))
+
   (defret logicman-pathcond-p-of-<fn>
     (implies (and (logicman-pathcond-p pathcond)
                   (lbfr-p x))
              (logicman-pathcond-p new-pathcond))
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable logicman-pathcond-p)))))
+                 '(:in-theory (enable logicman-pathcond-p)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable bfr-p)))))
   
 
   (defret logicman-pathcond-assume-correct
@@ -471,17 +560,17 @@
   ;;                                         ci-id aignet)
   ;;                             (depends-on lit ci-id aignet))))))
 
-  (defret logicman-pathcond-depends-on-of-logicman-pathcond-assume
-    (implies (and (not (logicman-pathcond-depends-on v pathcond))
-                  (not (bfr-depends-on v x ))
-                  (bfr-varname-p v))
-             (not (logicman-pathcond-depends-on v new-pathcond)))
-    :hints(("Goal" :in-theory (enable logicman-pathcond-depends-on
-                                      bfr-depends-on
-                                      bfr-varname-p
-                                      bfr-fix
-                                      bfr-nvars
-                                      bfr->aignet-lit))))
+  ;; (defret logicman-pathcond-depends-on-of-logicman-pathcond-assume
+  ;;   (implies (and (not (logicman-pathcond-depends-on v pathcond))
+  ;;                 (not (bfr-depends-on v x ))
+  ;;                 (bfr-varname-p v))
+  ;;            (not (logicman-pathcond-depends-on v new-pathcond)))
+  ;;   :hints(("Goal" :in-theory (enable logicman-pathcond-depends-on
+  ;;                                     bfr-depends-on
+  ;;                                     bfr-varname-p
+  ;;                                     bfr-fix
+  ;;                                     bfr-nvars
+  ;;                                     bfr->aignet-lit))))
 
   (defret pathcond-enabledp-of-<fn>
     (iff* (nth *pathcond-enabledp* new-pathcond)

@@ -105,8 +105,8 @@
   (local (defthm calist-fix-of-cons-tmp
          (equal (calist-fix (cons pair calist))
                 (if (and (consp pair)
-                         (not (hons-assoc-equal (aig-fix (car pair)) (calist-fix calist))))
-                    (cons (cons (aig-fix (car pair))
+                         (not (hons-assoc-equal (car pair) (calist-fix calist))))
+                    (cons (cons (car pair)
                                 (bfix (cdr pair)))
                           (calist-fix calist))
                   (calist-fix calist)))
@@ -115,7 +115,7 @@
   (defthm calist-lookup-of-cons
     (equal (calist-lookup k1 (cons pair calist))
            (if (or (atom pair)
-                   (not (equal (aig-fix k1) (aig-fix (car pair))))
+                   (not (equal k1 (car pair)))
                    (calist-lookup (car pair) calist))
                (calist-lookup k1 calist)
              (bfix (cdr pair)))))
@@ -124,7 +124,7 @@
     (equal (calist-fix (cons pair calist))
            (if (and (consp pair)
                     (not (calist-lookup (car pair) calist)))
-               (cons (cons (aig-fix (car pair))
+               (cons (cons (car pair)
                            (bfix (cdr pair)))
                      (calist-fix calist))
              (calist-fix calist))))
@@ -142,15 +142,15 @@
     (equal (calist-lookup k x)
            (b* ((x (calist-fix x))
                 ((unless (consp x)) nil)
-                ((when (equal (aig-fix k) (caar x))) (cdar x)))
+                ((when (equal k (caar x))) (cdar x)))
              (calist-lookup k (cdr x))))
-    :hints(("Goal" :expand ((hons-assoc-equal (aig-fix k) (calist-fix x)))))
+    :hints(("Goal" :expand ((hons-assoc-equal k (calist-fix x)))))
     :rule-classes :definition)
 
   (defthm calist-lookup-in-cdr-when-car
     (implies (and (calistp x)
                   (consp x)
-                  (equal (aig-fix k) (caar x)))
+                  (equal k (caar x)))
              (not (calist-lookup k (cdr x))))
     :hints(("Goal" :in-theory (enable calist-lookup calistp))))
 
@@ -160,7 +160,6 @@
   (defthm calistp-of-cons-when-not-calist-lookup
     (implies (and (calistp x)
                   (consp pair)
-                  (aig-p (car pair))
                   (bitp (cdr pair))
                   (not (calist-lookup (car pair) x)))
              (calistp (cons pair x))))
@@ -177,7 +176,7 @@
   (b* ((calist (calist-fix calist)))
     (if (atom calist)
         t
-      (and (eql (bool->bit (acl2::aig-eval (aig-fix (caar calist)) env))
+      (and (eql (bool->bit (acl2::aig-eval (caar calist) env))
                 (lbfix (cdar calist)))
            (calist-eval (cdr calist) env))))
   ///
@@ -185,7 +184,7 @@
     (equal (calist-eval (cons pair calist) env)
            (and (or (not (consp pair))
                     (calist-lookup (car pair) calist)
-                    (equal (bool->bit (acl2::aig-eval (aig-fix (car pair)) env))
+                    (equal (bool->bit (acl2::aig-eval (car pair) env))
                            (bfix (cdr pair))))
                 (calist-eval calist env)))
     :hints(("Goal" :expand ((calist-eval (cons pair calist) env)))))
@@ -197,26 +196,26 @@
     (implies (and (calist-eval calist env)
                   (calist-lookup aig calist))
              (equal (calist-lookup aig calist)
-                    (bool->bit (acl2::aig-eval (aig-fix aig) env))))
+                    (bool->bit (acl2::aig-eval aig env))))
     :hints(("Goal" :in-theory (enable calist-lookup-redef))))
 
   (defthm calist-eval-implies-lookup-not-equal-negated-eval
     (implies (and (syntaxp (Quotep b))
                   (calist-eval calist env)
-                  (equal b (b-not (bool->bit (acl2::aig-eval (aig-fix aig) env)))))
+                  (equal b (b-not (bool->bit (acl2::aig-eval aig env)))))
              (not (equal (calist-lookup aig calist) b)))
     :hints(("Goal" :use calist-eval-implies-lookup
             :in-theory (disable calist-eval-implies-lookup)))))
 
 (define calist-eval-badguy ((calist calistp) env)
-  :returns (bad-aig aig-p)
+  :returns (bad-aig)
   :measure (len (calist-fix calist))
   (b* ((calist (calist-fix calist))
        ((when (atom calist)) nil)
-       ((when (eql (bool->bit (acl2::aig-eval (aig-fix (caar calist)) env))
+       ((when (eql (bool->bit (acl2::aig-eval (caar calist) env))
                    (lbfix (cdar calist))))
         (calist-eval-badguy (cdr calist) env)))
-    (aig-fix (caar calist)))
+    (caar calist))
   ///
   (local (defthm equal-1-when-bitp
            (implies (and (bitp x)
@@ -347,7 +346,7 @@
   :measure (len (calist-fix x))
   (b* ((x (calist-fix x))
        ((when (atom x)) nil))
-    (or (set::in (lnfix v) (acl2::aig-vars (aig-fix (caar x))))
+    (or (set::in (lnfix v) (acl2::aig-vars (caar x)))
         (calist-depends-on v (cdr x))))
   ///
   (local (defthm aig-eval-of-cons-env-when-not-member-aig-vars
@@ -369,12 +368,11 @@
                     (calist-eval x env)))
     :hints(("Goal" :in-theory (enable calist-eval)))))
 
-(define aig-norm ((x aig-p))
-  :returns (mv (abs aig-p)
+(define aig-norm (x)
+  :returns (mv (abs)
                (negp booleanp :rule-classes :type-prescription))
-  :measure (acl2-count (aig-fix x))
-  (b* ((x (aig-fix x))
-       ((when (booleanp x)) (mv nil x))
+  :measure (acl2-count x)
+  (b* (((when (booleanp x)) (mv nil x))
        ((when (atom x)) (mv x nil))
        ((when (eq (cdr x) nil)) (b* (((mv abs neg) (aig-norm (car x))))
                                   (mv abs (not neg)))))
@@ -382,11 +380,11 @@
   ///
   (defret aig-eval-of-aig-norm
     (equal (acl2::aig-eval abs env)
-           (xor negp (acl2::aig-eval (aig-fix x) env)))
+           (xor negp (acl2::aig-eval x env)))
     :hints(("Goal" :in-theory (enable acl2::aig-eval))))
 
   (defret acl2-count-of-<fn>
-    (<= (acl2-count abs) (acl2-count (aig-fix x)))
+    (<= (acl2-count abs) (acl2-count x))
     :rule-classes ((:linear :trigger-terms ((acl2-count abs)))))
 
   (defret cdr-not-nil-of-aig-norm
@@ -394,8 +392,13 @@
              (cdr abs)))
 
   (defret member-vars-of-aig-norm
-    (implies (not (set::in v (acl2::aig-vars (aig-fix x))))
-             (not (set::in v (acl2::aig-vars abs))))))
+    (implies (not (set::in v (acl2::aig-vars x)))
+             (not (set::in v (acl2::aig-vars abs)))))
+
+  (defret aig-p-of-aig-norm
+    (implies (aig-p x bound)
+             (aig-p abs bound))
+    :hints(("Goal" :in-theory (enable aig-p)))))
        
 
 ;; Note: This is a less expensive version that stops when it gets to a
@@ -439,20 +442,20 @@
 ;;              (equal res (bool->bit (acl2::aig-eval (aig-fix x) env))))))
 
 (local (defthm aig-atom-p-when-consp
-         (implies (aig-p x)
+         (implies (aig-p x bound)
                   (iff (acl2::aig-atom-p x)
                        (atom x)))
          :hints(("Goal" :in-theory (enable aig-p acl2::aig-atom-p)))))
 
 
-(define calist-implies ((x aig-p) (calist calistp))
+(define calist-implies (x (calist calistp))
   :returns (res acl2::maybe-bitp :rule-classes :type-prescription)
-  :measure (acl2-count (aig-fix x))
+  :measure (acl2-count x)
   (b* (((mv abs neg) (aig-norm x))
        ((when (booleanp abs)) (b-xor (bool->bit abs) (bool->bit neg)))
        (look (calist-lookup abs calist))
        ((when look) (b-xor look (bool->bit neg)))
-       ((when (atom abs)) nil)
+       ((when (acl2::aig-atom-p abs)) nil)
        (car (calist-implies (car abs) calist))
        ((when (eql car 0)) (bool->bit neg))
        (cdr (calist-implies (cdr abs) calist))
@@ -464,7 +467,7 @@
   (defret eval-when-calist-implies
     (implies (and (calist-eval calist env)
                   res)
-             (equal res (bool->bit (acl2::aig-eval (aig-fix x) env))))
+             (equal res (bool->bit (acl2::aig-eval x env))))
     :hints(("Goal" :induct t)
            (and stable-under-simplificationp
                 '(:use ((:instance aig-eval-of-aig-norm))
@@ -474,9 +477,9 @@
   (memoize 'calist-implies))
 
 
-(define calist-assume ((x aig-p) (calist-stobj))
+(define calist-assume (x (calist-stobj))
   :returns (mv contradictionp (new-calist calistp))
-  :measure (acl2-count (aig-fix x))
+  :measure (acl2-count x)
   :verify-guards nil
   (b* (((mv abs neg) (aig-norm x))
        (calist-stobj (calist-stobj-fix calist-stobj))
@@ -485,7 +488,7 @@
         (mv (eql look (bool->bit neg)) calist-stobj))
        ((when (booleanp abs))
         (mv (eq abs neg) calist-stobj))
-       ((when (or neg (atom abs)))
+       ((when (or neg (acl2::aig-atom-p abs)))
         (b* ((calist-stobj (calist-stobj-acons abs (b-not (bool->bit neg)) calist-stobj)))
           (mv nil calist-stobj)))
        ((mv contradictionp calist-stobj) (calist-assume (car abs) calist-stobj))
@@ -496,7 +499,7 @@
 
   (defret calist-assume-correct
     (implies (and (calist-eval calist-stobj env)
-                  (acl2::aig-eval (aig-fix x) env))
+                  (acl2::aig-eval x env))
              (and (not contradictionp)
                   (calist-eval new-calist env)))
     :hints(("Goal" :induct t)
@@ -509,7 +512,7 @@
     (implies (not contradictionp)
              (equal (calist-eval new-calist env)
                     (and (calist-eval calist-stobj env)
-                         (acl2::aig-eval (aig-fix x) env))))
+                         (acl2::aig-eval x env))))
     :hints(("Goal" :induct t)
            (and stable-under-simplificationp
                 '(:use ((:instance aig-eval-of-aig-norm))
@@ -518,7 +521,7 @@
 
   (defret calist-assume-contradictionp-correct
     (implies (and contradictionp
-                  (acl2::aig-eval (aig-fix x) env))
+                  (acl2::aig-eval x env))
              (not (calist-eval calist-stobj env))))
 
   (defret calist-extension-p-of-calist-assume
@@ -539,7 +542,7 @@
 
   (defret calist-depends-on-of-calist-assume
     (implies (and (not (calist-depends-on v calist-stobj))
-                  (not (set::in (nfix v) (acl2::aig-vars (aig-fix x)))))
+                  (not (set::in (nfix v) (acl2::aig-vars x))))
              (not (calist-depends-on v new-calist)))
     :hints (("goal" :induct <call>
              :expand (<call>))
