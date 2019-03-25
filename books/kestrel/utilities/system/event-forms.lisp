@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/xdoc/constructors" :dir :system)
 
@@ -42,15 +42,6 @@
     (equal (pseudo-event-formp (cons a b))
            (and (symbolp a)
                 (true-listp b)))))
-
-(std::deflist pseudo-event-form-listp (x)
-  (pseudo-event-formp x)
-  :parents (event-forms)
-  :short "Recognize true lists whose elements all have the
-          <see topic='@(url pseudo-event-formp)'>basic structure
-          of an event form</see>."
-  :true-listp t
-  :elementp-of-nil nil)
 
 (define maybe-pseudo-event-formp (x)
   :returns (yes/no booleanp)

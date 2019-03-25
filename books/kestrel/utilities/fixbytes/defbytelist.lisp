@@ -12,6 +12,7 @@
 
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/typed-lists/signed-byte-listp" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "defbyte")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -418,6 +418,13 @@
  to retrieve an alist of the keyword arguments of a macro, associated to their
  default values.</p>
 
+ <p>The file @('kestrel/utilities/system/event-forms.lisp') has been split,
+ with material on lists of event forms put into the new file
+ @('kestrel/utilities/system/event-form-lists.lisp').  When @('event-forms') is
+ included, @(tsee std::deflist) is now no longer brought in, so
+ @('std/util/deflist') may now need to be explicitly included in more
+ places.</p>
+
  <h4><see topic='@(url use-termhint)'>Termhint utility</see></h4>
 
  <p>The @('use-termhint') utility has been moved to its own book
