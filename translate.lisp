@@ -11179,9 +11179,9 @@
         (t (mv t
                (msg
                 "Illegal LOOP$ Syntax.  The form ~X01 cannot be parsed as a ~
-                LOOP$ statement.  The symbol FOR must immediately follow the ~
-                LOOP$ and it does not here."
-                stmt)))))
+                 LOOP$ statement.  The symbol FOR must immediately follow the ~
+                 LOOP$ and it does not here."
+                stmt nil)))))
 
 (defun make-plain-loop$-lambda-object (v spec carton)
 
