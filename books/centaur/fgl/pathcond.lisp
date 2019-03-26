@@ -66,10 +66,9 @@
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable logicman-extension-p)))))
 
-  ;; (def-updater-independence-thm logicman-pathcond-p-updater-independence
-  ;;   (implies (equal (pathcond-aignet new) (pathcond-aignet old))
-  ;;            (equal (logicman-pathcond-p new logicman)
-  ;;                   (logicman-pathcond-p old logicman))))
+  (defthm logicman-pathcond-p-of-update-enabledp
+    (equal (logicman-pathcond-p (update-nth *pathcond-enabledp* enp pathcond) logicman)
+           (logicman-pathcond-p pathcond logicman)))
 
 
   (local (defthm bfr-listp-alist-keys-of-rewind-calist

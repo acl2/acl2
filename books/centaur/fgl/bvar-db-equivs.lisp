@@ -268,7 +268,20 @@
   (defthm next-bvar$a-of-maybe-add-equiv-term
     (equal (next-bvar$a (maybe-add-equiv-term x bvar bvar-db state))
            (next-bvar$a bvar-db))
-    :hints(("Goal" :in-theory (enable maybe-add-equiv-term)))))
+    :hints(("Goal" :in-theory (enable maybe-add-equiv-term))))
+
+  (defthm base-bvar$a-of-maybe-add-equiv-term
+    (equal (base-bvar$a (maybe-add-equiv-term x bvar bvar-db state))
+           (base-bvar$a bvar-db))
+    :hints(("Goal" :in-theory (enable maybe-add-equiv-term))))
+
+  (defthm get-bvar->term$a-of-maybe-add-equiv-term
+    (equal (get-bvar->term$a n (maybe-add-equiv-term x bvar bvar-db state))
+           (get-bvar->term$a n bvar-db)))
+
+  (defthm get-term->bvar$a-of-maybe-add-equiv-term
+    (equal (get-term->bvar$a obj (maybe-add-equiv-term x bvar bvar-db state))
+           (get-term->bvar$a obj bvar-db))))
 
 
 
