@@ -1035,6 +1035,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::topstring-@def
+  :parents (xdoc::generic-composite-constructors)
+  :short "Construct an XDOC string with a single definition directive."
+  :long
+  "<p>
+   Sometimes a @(':long') documentation string
+   consists of a single definition preprocessor directive.
+   This macro wraps the arguments (often just one string)
+   into a definition directive tree and then calls @(tsee xdoc::topstring).
+   </p>
+   @(def xdoc::topstring-@def)"
+
+  (defmacro xdoc::topstring-@def (&rest trees)
+    `(xdoc::topstring (xdoc::@def ,@trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::desc
   :parents (xdoc::generic-composite-constructors)
   :short "Construct an XDOC tree for a description."
