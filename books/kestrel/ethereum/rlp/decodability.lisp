@@ -357,7 +357,7 @@
   :short "Injectivity of @(tsee rlp-encode-scalar),
           over the encodable scalars."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is also formulated similarly to the other injectivity theorems.
     It readily follows from the injectivity of @(tsee rlp-encode-bytes).")
 

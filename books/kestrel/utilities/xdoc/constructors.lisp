@@ -1019,7 +1019,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::toppstring
+(defsection xdoc::topstring-p
   :parents (xdoc::generic-composite-constructors)
   :short "Construct an XDOC string with a single paragraph."
   :long
@@ -1028,9 +1028,9 @@
    This macro wraps the arguments (often just one string)
    into a paragraph tree and then calls @(tsee xdoc::topstring).
    </p>
-   @(def xdoc::toppstring)"
+   @(def xdoc::topstring-p)"
 
-  (defmacro xdoc::toppstring (&rest trees)
+  (defmacro xdoc::topstring-p (&rest trees)
     `(xdoc::topstring (xdoc::p ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1171,3 +1171,6 @@
 (defun xdoc::@code-fn (lines)
   (declare (xargs :guard (string-listp lines)))
   (xdoc::codeblock-fn lines))
+
+(defmacro xdoc::toppstring (&rest args)
+  `(xdoc::topstring-p ,@args))

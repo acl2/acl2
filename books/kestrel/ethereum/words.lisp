@@ -18,7 +18,7 @@
   :parents (basics)
   :short "Words."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "[YP:9.1] defines the size of words as 256 bits.
     We formalize words as
     the elements of the set @($\\mathbb{N}_{256}$) [YP:3],

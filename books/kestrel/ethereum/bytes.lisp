@@ -20,7 +20,7 @@
   :parents (basics)
   :short "Bytes."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "[YP:B] describes @($\\mathbb{O}$) as the set of 8-bit bytes.
     Unless otherwise stated, in the documentation of our Ethereum model,
     the unqualified `byte' denotes an 8-bit byte."))
@@ -108,7 +108,7 @@
   :parents (byte-arrays)
   :short "Fixtype of byte arrays of length 20."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These may represent addresses [YP:4.1]."))
 
 (fty::deflist-of-len byte-list32
@@ -118,7 +118,7 @@
   :parents (byte-arrays)
   :short "Fixtype of byte arrays of length 32."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These may represent Keccak-256 hashes."))
 
 (fty::deflist-of-len byte-list64
@@ -128,5 +128,5 @@
   :parents (byte-arrays)
   :short "Fixtype of byte arrays of length 64."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These may represent Keccak-512 hashes."))

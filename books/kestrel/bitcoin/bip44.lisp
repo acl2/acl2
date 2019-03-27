@@ -582,7 +582,7 @@
 (defxdoc bip44-coin-types
   :short "Coin types."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "According to [BIP44], these are indices in the key tree,
     for which hardened keys must be used.
     Thus, we model coin types as 31-bit unsigned bytes

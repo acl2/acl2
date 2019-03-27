@@ -20,7 +20,7 @@
   :parents (list-utilities rev)
   :short "Some theorems about the library function @(tsee rev)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The theorems @('car-of-rev-rewrite-car-of-last')
     and @('car-of-last-rewrite-car-of-rev')
     are disabled by default.

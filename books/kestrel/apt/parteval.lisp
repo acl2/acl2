@@ -78,7 +78,7 @@
   :parents (parteval-implementation)
   :short "Input processing performed by @(tsee parteval)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This involves validating the inputs.
     When validation fails, <see topic='@(url er)'>soft errors</see> occur.
     Thus, generally the input processing functions return
@@ -286,7 +286,7 @@
   :mode :program
   :short "Process all the inputs."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The inputs are processed
     in the order in which they appear in the documentation,
     except that @(':verify-guards') is processed just before @('static')
@@ -425,7 +425,7 @@
   :short "Generate the equalities whose conjunction forms
           the antecedent of the theorem relating old and new function."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Each equality has the form @('(equal yj cj)').")
   (b* (((when (endp static$)) nil)
        ((cons arg$ static$) static$)
@@ -609,7 +609,7 @@
           process the inputs, and
           generate the event to submit."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "If this call to the transformation is redundant,
     a message to that effect is printed on the screen.
     If the transformation is redundant and @(':show-only') is @('t'),

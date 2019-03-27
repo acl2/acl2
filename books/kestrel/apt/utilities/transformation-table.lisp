@@ -86,7 +86,7 @@
   :short "Create an event form to
           record a transformation call into the transformation table."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The @(':print') and @(':show-only') inputs, if present,
      are removed from the call prior to recording it.
      See the discussion <see topic='@(url transformation-table)'>here</see>

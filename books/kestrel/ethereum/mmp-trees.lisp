@@ -91,7 +91,7 @@
     :parents (bytelist-bytelist-map)
     :short "Recognize finite maps from byte arrays to byte arrays."
     :long
-    (xdoc::toppstring
+    (xdoc::topstring-p
      "This definition is similar to @(tsee omap::mapp),
       but it also requires keys and values to be true lists of bytes.")
     (if (atom x)
@@ -205,7 +205,7 @@
     :parents (nibblelist-bytelist-map)
     :short "Recognize finite maps from nibble arrays to byte arrays."
     :long
-    (xdoc::toppstring
+    (xdoc::topstring-p
      "This definition is similar to @(tsee omap::mapp),
       but it also requires keys and values to be true lists of bytes.")
     (if (atom x)
@@ -305,7 +305,7 @@
   :short "Turn (i) a finite map from byte arrays to byte arrays
           into (ii) a finite map from nibble arrays to byte arrays."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This corresponds to @($y$) [YP:(190), YP:(191)].")
   (b* (((unless (mbt (bytelist-bytelist-mapp map))) nil)
        ((when (omap::empty map)) nil)
@@ -327,7 +327,7 @@
      :parents (bytelist-to-nibblelist-keys)
      :short "Turn a sequence of bytes into a sequence of nibbles."
      :long
-     (xdoc::toppstring
+     (xdoc::topstring-p
       "This corresponds to [YP:(191)],
        but here the conversion is expressed via recursion instead of indexing.")
      (b* (((when (endp bytes)) nil)

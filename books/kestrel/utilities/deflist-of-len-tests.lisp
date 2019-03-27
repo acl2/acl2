@@ -163,4 +163,4 @@
  (fty::deflist-of-len mylist
                       :list-type nat-list
                       :length 10
-                      :long (xdoc::toppstring "More doc.")))
+                      :long (xdoc::topstring-p "More doc.")))

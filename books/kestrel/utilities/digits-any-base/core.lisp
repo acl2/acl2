@@ -1386,7 +1386,7 @@
   :short "Event form to introduce additional return type theorems for
           the conversions from natural numbers to digits."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "See @(tsee defthm-dab-return-types).")
   (b* ((equality (formula eq-thm-name nil wrld))
        (dab-digit-listp-call (cadr equality))

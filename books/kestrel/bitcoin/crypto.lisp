@@ -133,7 +133,7 @@
                            (enable byte-listp-rewrite-unsigned-byte-listp))))
   :short "Represent a point in compressed or uncompressed form."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "See @(tsee crypto::secp256k1-point-to-bytes).")
   (crypto::secp256k1-point-to-bytes point compressp)
   :no-function t

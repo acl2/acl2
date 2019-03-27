@@ -99,7 +99,7 @@
   :parents (bip32)
   :short "Library extensions for BIP 32."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These will be moved to the appropriate libraries.")
 
   (defrule ubyte32-list-fix-of-take
@@ -121,7 +121,7 @@
 (defsection bip32-chain-code
   :short "Chain codes."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "A chain code consists of 32 bytes.
     Chain codes are used in both extended private and public keys.")
 
@@ -927,7 +927,7 @@
   :returns (yes/no booleanp)
   :short "Check if a key tree consists of private keys."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "We check whether the root is an extended private key.")
   (bip32-ext-key-case (bip32-key-tree->root-key tree) :priv)
   :no-function t
@@ -1052,7 +1052,7 @@
   :returns (key secp256k1-priv-key-p)
   :short "Retrieve the private key designated by a path in a key tree."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The tree must consist of private keys, as expressed by the guard.")
   (b* ((root-extkey (bip32-key-tree->root-key tree))
        (root-extprivkey (bip32-ext-key-priv->get root-extkey))
@@ -1073,7 +1073,7 @@
   :returns (key secp256k1-pub-key-p)
   :short "Retrieven the public key designated by a path in a key tree."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The tree may consist of private or public keys.")
   (b* ((root-extkey (bip32-key-tree->root-key tree))
        ((mv error? extkey) (bip32-ckd* root-extkey path))
@@ -1849,7 +1849,7 @@
   :short "Check if the address keys under a given chain key in a tree
           comply with the BIP 32 wallet structure."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is obtained by existentially quantifying the address index limit
     in @(tsee bip32-compliant-addresses-for-limit-p).
     See the documentation of that function for details.")

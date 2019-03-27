@@ -32,7 +32,7 @@
   :short "Convert a true list of natural numbers below 256
           to the corresponding true list of characters."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This operation has
     a natural-recursive definition for logic reasoning
     and a tail-recursive executional for execution.")
@@ -96,7 +96,7 @@
   :short "Convert a true list of characters
           to the corresponding true list of natural numbers below 256."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This operation has
     a natural-recursive definition for logic reasoning
     and a tail-recursive executional for execution.")

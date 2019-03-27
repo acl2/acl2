@@ -20,7 +20,7 @@
   :parents (ethereum)
   :short "Hex-prefix encoding."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Hex-prefix is an encoding method for Ethereum,
     described in [YP:C] and in
     <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator\"
@@ -75,7 +75,7 @@
      :parents (hp-encode hex-prefix)
      :short "Turn a even-length sequence of nibbles into a sequence of bytes."
      :long
-     (xdoc::toppstring
+     (xdoc::topstring-p
       "This calculates the bytes of the result of @($\\mathtt{HP}$)
        that come after the first byte,
        in the way described by [YP:(186)].")
@@ -95,7 +95,7 @@
   :parents (hex-prefix)
   :short "Check if a byte array is a hex-prefix encoding."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a declarative, non-executable definition,
     which essentially characterizes the image of @(tsee hp-encode).")
   (exists (nibbles flag)

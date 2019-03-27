@@ -20,7 +20,7 @@
   :parents (bitcoin)
   :short "Bytes."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "In Bitcoin, as in most modern contexts,
     the unqualified term `byte' denotes an (unsigned) 8-bit byte."))
 
@@ -59,7 +59,7 @@
   :parents (bytes)
   :short "Byte sequences."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These are finite lists of bytes,
     which model byte arrays in particular."))
 

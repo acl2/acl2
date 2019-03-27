@@ -18,7 +18,7 @@
   :parents (basics)
   :short "Nibbles."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "[YP:C] describes @($\\mathbb{Y}$) as the set of nibbles,
     which consist of 4 bits."))
 
@@ -34,7 +34,7 @@
   :parents (basics)
   :short "Nibble arrays."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "[YP] does not use any specific symbol for nibble arrays
     (unlike for byte arrays),
     but nibble arrays are used in [YP],

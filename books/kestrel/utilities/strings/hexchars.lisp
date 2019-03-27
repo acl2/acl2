@@ -29,7 +29,7 @@
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert an unsigned 8-bit byte to two hexadecimal digit characters."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The most significant digit comes first,
     followed by the least significant one.
     If the byte is below 16, the first digit is zero.
@@ -59,7 +59,7 @@
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert two hexadecimal digit characters to an unsigned 8-bit byte."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The most significant digit comes first,
     followed by the least significant one.")
   (b* ((hi-digit (str::hex-digit-val hi-char))
@@ -103,7 +103,7 @@
   :short "Convert a list of unsigned 8-bit bytes
           to a sequence of hexadecimal digit characters."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Each input natural number is converted to two hexadecimal digits,
     with a leading 0 digit if needed.
     The hexadecimal digits above 9 are uppercase letters.
@@ -160,7 +160,7 @@
   :short "Convert an even-length sequence of hexadecimal digit characters
           to a list of unsigned 8-bit bytes."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Each pair of hexadecimal digit characters is turned into a number.
     Each such two-digit hexadecimal notation is treated as big endian,
     i.e. the most significant digit appears first.")

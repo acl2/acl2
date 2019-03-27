@@ -22,7 +22,7 @@
   :parents (list-utilities nthcdr)
   :short "Some theorems about the built-in function @(tsee nthcdr)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The theorems @('nthcdr-of-append-when-leq-len-first')
     and @('nthcdr-of-append-when-gt-len-first') are disabled by default.
     They are special cases of @('nthcdr-of-append'),

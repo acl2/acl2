@@ -100,7 +100,7 @@
 (defsection base58-character
   :short "Base58 characters."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These are the characters in @(tsee *base58-characters*).")
   (fty::deffixtype base58-character
     :pred base58-characterp
@@ -175,7 +175,7 @@
 (defsection base58-value
   :short "Base58 values."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These are digits in base 58.")
   (fty::deffixtype base58-value
     :pred base58-valuep
@@ -239,7 +239,7 @@
                  :hints (("Goal" :in-theory (enable base58-value-fix))))
   :short "Turn a Base58 value into the corresponding character."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The correspondence is given
     in the table
     in Section `Base58 symbol chart'
@@ -258,7 +258,7 @@
                                                    base58-characterp))))
   :short "Turn a Base58 character into the corresponding value."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is the inverse of @(tsee base58-val=>char).")
   (index-of (base58-character-fix char) *base58-characters*)
   :hooks (:fix))

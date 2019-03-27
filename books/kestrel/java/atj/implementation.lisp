@@ -108,7 +108,7 @@
   :parents (atj-implementation)
   :short "Library extensions for @(tsee atj)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "These will be moved to appropriate libraries eventually.")
   :default-parent t)
 
@@ -116,7 +116,7 @@
   :short "Turn every call @('(mbe :logic a :exec b)') in a term
           into just its @(':logic') part @('a')."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "In translated terms,
     these have the form @('(return-last 'acl2::mbe1-raw b a)').")
 
@@ -159,7 +159,7 @@
   :parents (atj-implementation)
   :short "Input processing performed by @(tsee atj)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This involves validating the inputs.
     When validation fails, <see topic='@(url er)'>soft errors</see> occur.
     Thus, generally the input processing functions return
@@ -256,7 +256,7 @@
   :returns (yes/no booleanp)
   :short "Check if an ACL2 string is a valid Java identifier, all in ASCII."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The string must be non-empty,
     start with a letter or underscore or dollar sign,
     and continue with zero or more
@@ -331,7 +331,7 @@
   :verify-guards nil
   :short "Check if an ACL2 string is a valid Java package name, all in ASCII."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The string must consist of one or more ASCII Java identifiers
     separated by dots.")
   (b* ((identifiers (atj-decompose-at-dots string)))
@@ -636,7 +636,7 @@
   :mode :program
   :short "Ensure that the inputs to the macro are valid."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "We process the inputs in order,
     except that @(':output-dir') is processed after @(':tests')
     because the result of processing the latter
@@ -1209,7 +1209,7 @@
   :returns (java-expression msgp)
   :short "Generate Java code to build an ACL2 integer value."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "If the ACL2 integer is representable as a Java integer,
     we print it as a Java integer literal.
     Otherwise, if it is representable as a Java long integer,
@@ -1241,7 +1241,7 @@
 (defines atj-gen-values
   :short "Generate Java code to build ACL2 values."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Since ACL2 values have a recursive structure,
    these functions are mutually recursive.")
 
@@ -1256,7 +1256,7 @@
     :parents (atj-code-generation atj-gen-values)
     :short "Generate Java code to build an ACL2 @(tsee cons) pair value."
     :long
-    (xdoc::toppstring
+    (xdoc::topstring-p
      "The generated code
       builds the @(tsee car),
       sets a local variable to it,
@@ -1359,7 +1359,7 @@
   :short "Generate Java code to build a new array initialized with
           the given symbols, to be used as formal arguments."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "In building the comma-separated sequence of the array elements,
     we take advantage of Java's concession
     of a comma at the end of the sequence
@@ -1384,7 +1384,7 @@
   :short "Generate Java code to build a new array
           initialized with the given expressions."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "In building the comma-separated sequence of the array elements,
     we take advantage of Java's concession
     of a comma at the end of the sequence
@@ -1406,7 +1406,7 @@
 (defines atj-gen-terms+lambdas
   :short "Generate Java code to build ACL2 terms and lambda expressions."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Since ACL2 terms and lambda expressions have a recursive structure,
     these functions are mutually recursive.")
 
@@ -1427,7 +1427,7 @@
     :short "Generate Java code to build an ACL2 application term."
     :long
     (xdoc::topstring
-     (xdoc::toppstring
+     (xdoc::topstring-p
       "The generated code
        builds the function (a named function or a lambda expression),
        builds the arguments,
@@ -1516,7 +1516,7 @@
     :parents (atj-code-generation atj-gen-terms+lambdas)
     :short "Generate Java code to build an ACL2 lambda expression."
     :long
-    (xdoc::toppstring
+    (xdoc::topstring-p
      "The generated code
       puts the formals into an array,
       builds the body,
@@ -1641,7 +1641,7 @@
   :short "Name of the Java method
           to add an ACL2 package definition to the environment."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "We generate a private static method for each ACL2 package definition
     to add to the Java representation of the ACL2 environment.
     This function generates the name of this method,
@@ -1664,7 +1664,7 @@
   :short "Generate a Java method
           to add an ACL2 package definition to the environment."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a private static method
     that contains a sequence of assignment expression statements
     to incrementally construct
@@ -1737,7 +1737,7 @@
   :short "Generate Java code
           to add the ACL2 package definitions to the environment."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a sequence of calls to the methods
     generated by @(tsee atj-gen-add-package-def-methods).
     These calls are part of the code that
@@ -1758,7 +1758,7 @@
   :mode :program
   :short "Generate Java code to set the name of the ACL2 package witness."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a statement that is part of
     initializing (the Java representation of) the ACL2 environment.")
   (b* (((mv & state) (fmt1! "~s0Acl2Environment.setPackageWitnessName(~x1);~%"
@@ -1772,7 +1772,7 @@
   :short "Name of the Java method
           to add an ACL2 function definition to the environment."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "We generate a private static method for each ACL2 function definition
     to add to the Java representation of the ACL2 environment.
     This function generates the name of this method,
@@ -1890,7 +1890,7 @@
   :short "Generate Java code
           to add the ACL2 function definitions to the environment."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a sequence of calls to the methods
     generated by @(tsee atj-gen-add-function-def-methods).
     These calls are part of the code that
@@ -1992,7 +1992,7 @@
   :mode :program
   :short "Generate the Java field for the initialization flag."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a private static field that is initially cleared,
     indicating that the ACL2 environment has not been initialized yet.
     The flag is set when the ACL2 environment is initialized,
@@ -2013,7 +2013,7 @@
   :mode :program
   :short "Generate the main Java class declaration."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This is a public class that contains all the generated fields and methods.
     [JLS] says that a Java implementation may require
     public classes to be in files with the same names (plus extension).

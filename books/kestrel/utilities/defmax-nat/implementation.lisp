@@ -48,7 +48,7 @@
   :parents (defmax-nat-implementation)
   :short "Input processing performed by @(tsee defmax-nat)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "Currently this validates the inputs lightly.
     It should be improved to do a more thorough validation.")
   :order-subtopics t
@@ -59,7 +59,7 @@
   :returns (mv erp (nothing null) state)
   :short "Process all the inputs."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "We just check that the inputs have the right types.
     We do not check the @('body') and @('guard') inputs,
     since those are untranslated term,
@@ -90,7 +90,7 @@
   :mode :program
   :short "Generate the top-level event."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "The events are generated inside an @(tsee encapsulate).
     Some events are only local, just used to prove the first helper theorem
     @('f.existsp-when-nonempty-and-bounded').

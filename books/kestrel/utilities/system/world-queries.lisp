@@ -1086,7 +1086,7 @@
   :parents (world-queries)
   :short "Logic-friendly variant of @(tsee macro-keyword-args)."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This returns the same result as @(tsee macro-keyword-args),
     but it has a stronger guard,
     is guard-verified,

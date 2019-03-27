@@ -45,7 +45,7 @@
                           (enable byte-listp-rewrite-unsigned-byte-listp))))
   :short "Keccak-256 hash function."
   :long
-  (xdoc::toppstring
+  (xdoc::topstring-p
    "This corresponds to @($\\mathtt{KEC}$) [YP:3].")
   (crypto::keccak-256 bytes)
   :no-function t

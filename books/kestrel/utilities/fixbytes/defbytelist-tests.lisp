@@ -198,4 +198,4 @@
 
 (must-succeed*
  (fty::defbyte byte :size 4)
- (fty::defbytelist bytes :elt-type byte :long (xdoc::toppstring "More doc.")))
+ (fty::defbytelist bytes :elt-type byte :long (xdoc::topstring-p "More doc.")))
