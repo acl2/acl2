@@ -256,7 +256,8 @@
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
  <p>Improved several names by using @('byte') instead of @('ubyte8') and
- @('nibble') instead of @('ubyte4').</p>
+ @('nibble') instead of @('ubyte4').  Introduced and used fixtypes for byte
+ arrays of certain sizes.</p>
 
  <p>Modified the formalizations of RLP encoding and decoding to return an
  explicit error flag.  Added theorems showing that RLP encodings are decodable:
