@@ -34,7 +34,7 @@
      We constrain our function to return a list of 20 bytes unconditionally.")
    (xdoc::p
     "We also constrain our function to fix its argument to a list of bytes.")
-   (xdoc::def "ripemd-160"))
+   (xdoc::@def "ripemd-160"))
 
   (encapsulate
 

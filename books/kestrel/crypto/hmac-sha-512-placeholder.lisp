@@ -56,7 +56,7 @@
      We constrain our function to return a list of 64 bytes unconditionally.")
    (xdoc::p
     "We also constrain our function to fix its inputs to true lists of bytes.")
-   (xdoc::def "hmac-sha-512"))
+   (xdoc::@def "hmac-sha-512"))
 
   (encapsulate
 

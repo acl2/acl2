@@ -217,7 +217,7 @@
 (defsection defset-macro-definition
   :parents (defset-implementation)
   :short "Definition of the @(tsee defset) macro."
-  :long (xdoc::def "defset")
+  :long (xdoc::topstring-@def "defset")
   (defmacro defset (type &key
                          elt-type
                          pred fix equiv

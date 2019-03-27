@@ -127,7 +127,7 @@
 (defsection deffixtype-alias-implementation
   :parents (deffixtype-alias)
   :short "Implementation of @(tsee deffixtype-alias)."
-  :long (xdoc::topstring (xdoc::def "deffixtype-alias"))
+  :long (xdoc::topstring-@def "deffixtype-alias")
 
   (define deffixtype-alias-fn (alias type pred fix equiv (wrld plist-worldp))
     :returns (event "A @(tsee pseudo-event-formp).")

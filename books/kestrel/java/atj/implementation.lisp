@@ -2491,7 +2491,7 @@
    (xdoc::p
     "We suppress the extra output produced by @(tsee make-event)
      via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
-   (xdoc::def "atj"))
+   (xdoc::@def "atj"))
   (defmacro atj (&rest args)
     `(with-output :off :all :on error
        (make-event

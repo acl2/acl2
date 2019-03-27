@@ -162,7 +162,7 @@
     "A table keeps track of all the successful calls to this macro,
      for <see topic='@(url redundant-events)'>redundancy</see> checking.")
 
-   (xdoc::def "def-error-checker"))
+   (xdoc::@def "def-error-checker"))
 
   ;; record successful calls to DEF-ERROR-CHECKER, for redundancy checking:
   (table def-error-checker-calls nil nil

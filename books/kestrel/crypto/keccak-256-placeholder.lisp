@@ -34,7 +34,7 @@
      We constrain our function to return a list of 32 bytes unconditionally.")
    (xdoc::p
     "We also constrain our function to fix its input to a true list of bytes.")
-   (xdoc::def "keccak-256"))
+   (xdoc::@def "keccak-256"))
 
   (encapsulate
 

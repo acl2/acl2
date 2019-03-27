@@ -220,8 +220,8 @@
      if the definition of @(tsee rlp-encode-tree) is enabled
      (since the latter is defined in terems of @(tsee rlp-encode-bytes),
      so we add a theory invariant to that effect.")
-   (xdoc::def "rlp-encode-tree")
-   (xdoc::def "rlp-encode-tree-list"))
+   (xdoc::@def "rlp-encode-tree")
+   (xdoc::@def "rlp-encode-tree-list"))
   :flag-local nil
   :verify-guards nil ; done below
 

@@ -291,8 +291,8 @@
     "Without the extra checks for optimal lengths in the parser,
      the left inverse theorem would still be provable,
      but the right inverse theorem would not.")
-   (xdoc::def "rlp-parse-tree")
-   (xdoc::def "rlp-parse-tree-list"))
+   (xdoc::@def "rlp-parse-tree")
+   (xdoc::@def "rlp-parse-tree-list"))
   :flag-local nil
   :verify-guards nil ; done below
 

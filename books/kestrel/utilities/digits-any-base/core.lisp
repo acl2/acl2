@@ -1505,7 +1505,7 @@
      and understanding failures due to incorrect inputs should be easy.
      Regardless, this macro may be extended
      to more thoroughly validate its inputs in the future.")
-   (xdoc::def "defthm-dab-return-types"))
+   (xdoc::@def "defthm-dab-return-types"))
 
   (defmacro defthm-dab-return-types (eq-thm-name
                                      prefix

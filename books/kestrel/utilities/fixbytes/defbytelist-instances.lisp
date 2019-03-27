@@ -52,7 +52,7 @@
    (xdoc::p
     "This macro also generates
      some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::def "defubytelist"))
+   (xdoc::@def "defubytelist"))
 
   (defmacro defubytelist (size)
     (declare (xargs :guard (posp size)))
@@ -90,7 +90,7 @@
    (xdoc::p
     "This also generates
      some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::def "defsbytelist"))
+   (xdoc::@def "defsbytelist"))
 
   (defmacro defsbytelist (size)
     (declare (xargs :guard (posp size)))
