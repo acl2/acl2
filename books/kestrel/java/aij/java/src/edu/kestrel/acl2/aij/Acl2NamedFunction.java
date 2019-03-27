@@ -21,17 +21,22 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     /**
      * Name of this function.
      * This is never {@code null}.
-     * This is only accessed by the subclasses of this class.
      */
-    final Acl2Symbol name;
+    private final Acl2Symbol name;
 
     /**
      * Constructs an ACL2 named function from its name.
-     * This is only accessed by the subclasses of this class.
      */
     Acl2NamedFunction(Acl2Symbol name) {
         assert name != null;
         this.name = name;
+    }
+
+    /**
+     * Returns the name of this function.
+     */
+    Acl2Symbol getName() {
+        return this.name;
     }
 
     /**

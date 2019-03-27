@@ -38,7 +38,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * These are stored as values of a map
      * that has the symbols that name the functions as keys:
      * each key-value pair is such that
-     * the key is the {@link Acl2NamedFunction#name} field of the value.
+     * the key is the {@link Acl2NamedFunction#getName()} field of the value.
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
      * In other words, all the ACL2 defined functions are interned.
@@ -69,7 +69,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
         assert definiens != null;
         if (this.definiens != null)
             throw new IllegalStateException
-                    ("Definiens of function " + this.name
+                    ("Definiens of function " + this.getName()
                             + "already set to " + this.definiens + ".");
         this.definiens = definiens;
     }
@@ -108,7 +108,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
         for (Acl2Value value : values) assert value != null;
         if (definiens == null)
             throw new Acl2EvaluationException
-                    ("Undefined function: " + this.name + ".");
+                    ("Undefined function: " + this.getName() + ".");
         return definiens.apply(values);
     }
 
