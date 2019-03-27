@@ -2415,7 +2415,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
          return-last synp
          cons
          intcons intcons* endint
-         intcar intcdr))
+         intcar intcdr
+         typespec-check
+         implies))
 
 (acl2::def-ev-pseudo-term-fty-support fgl-ev fgl-ev-list)
 
