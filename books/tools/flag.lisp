@@ -344,6 +344,14 @@ one such form may affect what you might think of as the proof of another.</p>
   (list (cons `(not (acl2::flag-is ',name))
               clause)))
 
+
+(defthm flag-is-cp-wellformed
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((not . 1)
+                               (acl2::flag-is . 1))
+                             w))
+           (logic-term-list-listp (flag-is-cp clause name) w)))
+
 (defthm flag-is-cp-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp al)
@@ -354,7 +362,31 @@ one such form may affect what you might think of as the proof of another.</p>
   :hints (("goal" :expand ((:free (a b) (acl2::disjoin (cons a b))))
            :in-theory (enable acl2::disjoin2 acl2::flag-is)
            :do-not-induct t))
-  :rule-classes :clause-processor)
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee flag-is-cp-wellformed)))
+
+(defun identity-cp (clause)
+  (declare (xargs :guard t))
+  (list clause))
+
+(defthm identity-cp-wellformed
+  (implies (logic-term-listp clause w)
+           (logic-term-list-listp (identity-cp clause) w))
+  :rule-classes nil)
+
+
+(defthm identity-cp-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp al)
+                (flag-is-cp-ev (acl2::conjoin-clauses
+                                (identity-cp clause))
+                               al))
+           (flag-is-cp-ev (acl2::disjoin clause) al))
+  :hints (("goal" :expand ((:free (a b) (acl2::disjoin (cons a b))))
+           :in-theory (enable acl2::disjoin2 acl2::flag-is)
+           :do-not-induct t))
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee identity-cp-wellformed)))
 
 (program)
 
@@ -566,27 +598,45 @@ one such form may affect what you might think of as the proof of another.</p>
          (uneql-hyp-case a b flagname clause))
         (& (find-flag-hyps flagname (cdr clause))))))))
 
-(defun flag-hint-cases-fn (flagname cases clause)
+(defun flag-is-hint (flagname all-names clause)
   (declare (xargs :mode :program))
   (mv-let (equiv inequivs)
     (find-flag-hyps flagname clause)
     (let ((flagval (or equiv
-                       (let* ((possibilities (strip-cars cases))
-                              (not-ruled-out
-                               (set-difference-eq possibilities
+                       (let* ((not-ruled-out
+                               (set-difference-eq all-names
                                                   (acl2::strip-cadrs inequivs))))
                          (and (eql (len not-ruled-out) 1)
-                              (list 'quote (car not-ruled-out))))))
-          (first (extract-keyword-from-args :first cases))
-          (cases (throw-away-keyword-parts cases)))
+                              (list 'quote (car not-ruled-out)))))))
       (and flagval
-           (let ((hints (cdr (assoc (cadr flagval) cases))))
-             `(:computed-hint-replacement
-               (,@first . ,(translate-subgoal-to-computed-hints hints))
-               :clause-processor (flag-is-cp clause ,flagval)))))))
+           `(:clause-processor (flag-is-cp clause ,flagval))))))
 
-(defmacro flag-hint-cases (flagname &rest cases)
-  `(flag-hint-cases-fn ',flagname ',cases clause))
+(defun find-flag-is-hyp (clause)
+  (if (atom clause)
+      nil
+    (let ((lit (car clause)))
+      (case-match lit
+        (('not ('acl2::flag-is ('quote val))) val)
+        (& (find-flag-is-hyp (cdr clause)))))))
+
+
+
+(defun flag-hint-cases-fn (cases clause)
+  (declare (xargs :mode :program))
+  (let ((flagval (find-flag-is-hyp clause)))
+    (and flagval
+         (let* ((first (extract-keyword-from-args :first cases))
+                (cases (throw-away-keyword-parts cases))
+                (hints (cdr (assoc flagval cases))))
+           (and (or first hints)
+                `(:computed-hint-replacement
+                  (,@first . ,(translate-subgoal-to-computed-hints hints))
+                  ;; hack to say "just apply the hints from the computed-hint-replacement immediately"
+                  ;; BOZO maybe there's a better way to do this?
+                  :no-thanks t :clause-processor identity-cp))))))
+
+(defmacro flag-hint-cases (&rest cases)
+  `(flag-hint-cases-fn ',cases clause))
 
 
 
@@ -823,8 +873,8 @@ one such form may affect what you might think of as the proof of another.</p>
                           (t (cons `("Goal" :induct ,flag-fncall)
                                    user-hints)))
                     (list
+                     `(flag-is-hint ',flag-var ',(strip-cdrs alist) clause)
                      `(flag-hint-cases
-                       ,flag-var
                        . ,(pair-up-cases-with-hints alist thmparts skip-ok)))))))
 
     `(with-output :off :all :on (error) :stack :push

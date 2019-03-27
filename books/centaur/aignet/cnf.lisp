@@ -2743,7 +2743,6 @@ correctness criterion we've described.</p>
   ;; hints to be used in flag proofs to expand aignet-lit->cnf/aignet-lit-list->cnf
   (local (defmacro expand-aignet-lit->cnf-flg (&key free)
            `(flag::flag-hint-cases
-             flag
              (lit `(:expand ((:free (use-muxes . ,',free)
                               (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits
                                             aignet cnf)))))
@@ -2831,7 +2830,6 @@ correctness criterion we've described.</p>
     (make-event
      `(defthm aignet-lit-list->cnf-normalize-cnf
         ,(concl-formula 'aignet-lit-list->cnf))))
-
 
   ;; two results: CNF generated satisfies sat-lit-list-listp, and the top-level
   ;; arguments get sat variables.

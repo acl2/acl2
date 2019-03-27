@@ -39,6 +39,16 @@
 (local (include-book "ev-ind"))
 (local (std::add-default-post-define-hook :fix))
 
+(defthm pseudo-termp-car-when-pseudo-term-listp
+  (implies (pseudo-term-listp x)
+           (pseudo-termp (car x)))
+  :hints(("Goal" :in-theory (enable pseudo-term-listp))))
+
+(defthm pseudo-term-listp-cdr-when-pseudo-term-listp
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (cdr x)))
+  :hints(("Goal" :in-theory (enable pseudo-term-listp))))
+
 (defxdoc pseudo-term-fty
   :parents (pseudo-termp)
   :short "Overview of FTY support for pseudo-terms."

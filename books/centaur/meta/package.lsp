@@ -80,4 +80,6 @@
              fty::deftypes
              fty::deftagsum
              fty::defflexsum
-             fty::defenum)))
+             fty::defenum
+
+             disjoin conjoin conjoin-clauses clauses-result)))
