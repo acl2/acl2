@@ -39,10 +39,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keccak-256 ((bytes byte-listp))
-  :returns (hash byte-listp
+  :returns (hash byte-list32p
                  :hints (("Goal"
                           :in-theory
-                          (enable byte-listp-rewrite-unsigned-byte-listp))))
+                          (enable byte-list32p
+                                  byte-listp-rewrite-unsigned-byte-listp))))
   :short "Keccak-256 hash function."
   :long
   (xdoc::topstring-p
