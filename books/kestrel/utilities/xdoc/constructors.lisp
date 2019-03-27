@@ -1174,20 +1174,3 @@
 
   (defmacro xdoc::seeurl (topic text)
     `(xdoc::see_ :topic (xdoc::@url ,topic) ,text)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Obsolete functions and macros; remove when no longer referenced.
-
-(defmacro xdoc::def (&rest args)
-  `(xdoc::topstring (xdoc::@def ,@args)))
-
-(defmacro xdoc::@code (&rest args)
-  `(xdoc::codeblock ,@args))
-
-(defun xdoc::@code-fn (lines)
-  (declare (xargs :guard (string-listp lines)))
-  (xdoc::codeblock-fn lines))
-
-(defmacro xdoc::toppstring (&rest args)
-  `(xdoc::topstring-p ,@args))
