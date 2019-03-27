@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Reference Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,7 +66,7 @@
       "With the body in <see topic='@(url acl2::term)'>translated</see> form,
        and after expanding all lambda expressions (i.e. @(tsee let)s),
        the function must have the form")
-     (xdoc::@code
+     (xdoc::codeblock
       "(defun old (x1 ... xn)"
       "  (if test<x1,...,xn>"
       "      base<x1,...,xn>"
@@ -307,7 +307,7 @@
      "@(':domain-of-base')"
      (xdoc::p
       "The base computation always returns values in the domain:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies test<x1,...,xn>"
       "         (domain base<x1,...,xn>))"))
 
@@ -317,7 +317,7 @@
       "The non-recursive operand of the combination operator
        always returns values in the domain,
        when the exit test of the recursion fails:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (not test<x1,...,xn>)"
       "         (domain nonrec<x1,...,xn>))")
      (xdoc::p
@@ -329,7 +329,7 @@
      "@(':domain-of-combine')"
      (xdoc::p
       "The domain is closed under the combination operator:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and (domain u)"
       "              (domain v))"
       "         (domain combine<u,v>))")
@@ -342,7 +342,7 @@
      "@(':domain-of-combine-uncond')"
      (xdoc::p
       "The combination operator unconditionally returns values in the domain:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(domain combine<u,v>)")
      (xdoc::p
       "This applicability condition is present iff
@@ -352,7 +352,7 @@
      "@(':combine-associativity')"
      (xdoc::p
       "The combination operator is associative over the domain:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and (domain u)"
       "              (domain v)"
       "              (domain w))"
@@ -367,7 +367,7 @@
      "@(':combine-associativity-uncond')"
      (xdoc::p
       "The combination operator is unconditionally associative:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(equal combine<u,combine<v,w>>"
       "      combine<combine<u,v>,w>)")
      (xdoc::p
@@ -379,7 +379,7 @@
      (xdoc::p
       "The base value of the recursion
       is left identity of the combination operator:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and test<x1,...,xn>"
       "             (domain u))"
       "        (equal combine<base<x1...,xn>,u>"
@@ -394,7 +394,7 @@
      (xdoc::p
       "The base value of the recursion
       is right identity of the combination operator:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and test<x1,...,xn>"
       "             (domain u))"
       "        (equal combine<u,base<x1...,xn>>"
@@ -408,7 +408,7 @@
      "@(':domain-guard')"
      (xdoc::p
       "The domain is well-defined (according to its guard) on every value:")
-     (xdoc::@code
+     (xdoc::codeblock
       "domain-guard<z>")
      (xdoc::p
       "where @('domain-guard<z>') is the guard term of @('domain')
@@ -426,7 +426,7 @@
      (xdoc::p
       "The combination operator is well-defined (according to its guard)
        on every value in the domain:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and (domain q)"
       "             (domain r))"
       "        combine-guard<q,r>)")
@@ -446,7 +446,7 @@
        returns values in the domain,
        when the exit test of the recursion fails,
        and under the guard of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies (and old-guard<x1,...,xn>"
       "             (not test<x1,...,xn>))"
       "        (domain nonrec<x1,...,xn>))")
@@ -482,7 +482,7 @@
      "@('new')"
      (xdoc::p
       "Tail-recursive equivalent of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
       "(defun new (x1 ... xn r)"
       "  (if test<x1,...,xn>"
@@ -511,7 +511,7 @@
      "@('wrapper')"
      (xdoc::p
       "Non-recursive wrapper of @('new'):")
-     (xdoc::@code
+     (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
       "(defun wrapper (x1 ... xn)"
       "  (new x1 ... xn base<x1,...,xn>))"
@@ -531,7 +531,7 @@
      "@('old-to-wrapper')"
      (xdoc::p
       "Theorem that relates @('old') to @('wrapper'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(defthm old-to-wrapper"
       "  (equal (old x1 ... xn)"
       "         (wrapper x1 ... xn)))")))

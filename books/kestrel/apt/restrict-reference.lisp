@@ -1,6 +1,6 @@
 ; APT Domain Restriction Transformation -- Reference Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -178,7 +178,7 @@
      (xdoc::p
       "@('(lambda (x1 ... xn) restriction<x1,...,xn>)')
        is preserved across the recursive calls of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies restriction<x1,...,xn>"
       "         (and (implies context1<x1,...,xn>"
       "                       restriction<update1-x1<x1,...,xn>,"
@@ -197,7 +197,7 @@
      (xdoc::p
       "The restricting predicate is well-defined (according to its guard)
        on every value in the guard of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(implies old-guard<x1,...,xn>"
       "         restriction-guard<x1,...,xn>)")
      (xdoc::p
@@ -212,7 +212,7 @@
      "@(':restriction-boolean')"
      (xdoc::p
       "The restricting predicate is boolean-valued:")
-     (xdoc::@code
+     (xdoc::codeblock
       "(booleanp restriction<x1,...,xn>)")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,7 +223,7 @@
      "@('new')"
      (xdoc::p
       "Domain-restricted version of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
       "  (if (mbt restriction<x1,...,xn>)"
@@ -261,7 +261,7 @@
      "@('old-to-new')"
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(defthm old-to-new"
       "  (implies restriction<x1,...,xn>"
       "           (equal (old x1 ... xn)"

@@ -185,7 +185,7 @@
      Otherwise its value should be a keyword-value list (see @(see
      keyword-value-listp))")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(:KWD1 h1 :KWD2 h2 ...)")
 
    (xdoc::p

@@ -21,7 +21,7 @@
   :short "Values of the map represented by an alist."
   :long
   (xdoc::topstring
-   (xdoc::@code
+   (xdoc::codeblock
     "General Forms:"
     "(alist-map-vals alist)"
     "(alist-map-vals alist :test 'eql)   ; same as above (eql as equality test)"

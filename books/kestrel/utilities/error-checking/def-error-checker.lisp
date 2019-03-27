@@ -31,7 +31,7 @@
    (xdoc::p
     "This macro generates an error-checking function
      and an associated macro abbreviation of the following form:")
-   (xdoc::@code
+   (xdoc::codeblock
     "(define <name> (<x1> ... <xn>"
     "                (description msgp)"
     "                (error-erp (not (null error-erp))"
@@ -145,7 +145,7 @@
 
    (xdoc::p
     "The macro is called as follows:")
-   (xdoc::@code
+   (xdoc::codeblock
     "(def-error-checker <name>"
     "  (<x1> ... <xn>)"
     "  <short>"
@@ -181,7 +181,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are the")
-     (xdoc::@code
+     (xdoc::codeblock
       "((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))")
      (xdoc::p
       "bindings,

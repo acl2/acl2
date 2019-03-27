@@ -63,7 +63,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(deffixtype-alias alias"
     "  type"
     "  :pred ..."

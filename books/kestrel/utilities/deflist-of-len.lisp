@@ -53,7 +53,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(deflist-of-len type"
     "                :list-type ..."
     "                :length ..."

@@ -40,7 +40,7 @@
      otherwise the two functions agree.")
    (xdoc::p
     "Example:")
-   (xdoc::@code
+   (xdoc::codeblock
     "ACL2 !>(symbol-package-name-safe 'car)"
     "\"ACL2\""
     "ACL2 !>(symbol-package-name 'car)"

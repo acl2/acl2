@@ -1,6 +1,6 @@
 ; Size of Set Represented As List
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,7 +22,7 @@
   :short "Size of a set represented as a list."
   :long
   (xdoc::topstring
-   (xdoc::@code
+   (xdoc::codeblock
     "General Forms:"
     "(set-size x)"
     "(set-size x :test 'eql)   ; same as above (eql as equality test)"

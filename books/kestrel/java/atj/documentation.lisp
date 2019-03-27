@@ -1,6 +1,6 @@
 ; Java Library -- ATJ -- Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -217,7 +217,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(atj fn1 ... fnp"
     "     &key"
     "     :java-package  ; default nil"
@@ -348,7 +348,7 @@
      a single public class named as specified by the @(':java-class') input,
      in the package specified by the @(':java-package') input.")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "public class <name> {"
     "    // private static field and methods"
     "    public static void initialize() ..."
@@ -395,7 +395,7 @@
      the description of the @(':java-class') input above,
      in the package specified by the @(':java-package') input.")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "public class <name>Test {"
     "    // private static methods"
     "    public static void main(String[] args) ..."

@@ -49,7 +49,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(defset type"
     "        :elt-type ..."
     "        :pred ..."

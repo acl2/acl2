@@ -56,7 +56,7 @@
 
    (xdoc::h3 "General Form")
 
-   (xdoc::@code
+   (xdoc::codeblock
     "(defbytelist type"
     "             :elt-type"
     "             :pred ..."

@@ -1,6 +1,6 @@
 ; APT Partial Evaluation Transformation -- Reference Documentation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -137,7 +137,7 @@
      "@('new')"
      (xdoc::p
       "Specialized version of @('old'):")
-     (xdoc::@code
+     (xdoc::codeblock
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
       "  old-body<x1,...,xn,c1,...,cm>)"
@@ -152,7 +152,7 @@
      "@('old-to-new')"
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
-     (xdoc::@code
+     (xdoc::codeblock
       "(defthm old-to-new"
       "  (implies (and (equal y1 c1)"
       "                ..."

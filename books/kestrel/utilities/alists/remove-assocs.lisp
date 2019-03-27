@@ -19,7 +19,7 @@
   :short "Remove all pairs with given keys from an alist."
   :long
   (xdoc::topstring
-   (xdoc::@code
+   (xdoc::codeblock
     "General Forms:"
     "(remove-assocs keys alist)"
     "(remove-assocs keys alist :test 'eql)   ; same as above (eql as equality test)"
