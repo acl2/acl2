@@ -501,7 +501,8 @@
  <p>Improved the <see topic='@(url xdoc::constructors)'>XDOC constructors</see>
  to use a tree representation that is converted into a flat string only at the
  top level.  This enforces a better type discipline and facilitates future
- optimizations if needed.</p>
+ optimizations if needed.  Introduced additional constructors.  Extended the
+ documentation of the constructors.</p>
 
  <h3>Licensing Changes</h3>
 
