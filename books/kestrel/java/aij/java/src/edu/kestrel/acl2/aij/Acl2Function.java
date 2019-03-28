@@ -16,6 +16,14 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Prevents the creation of subclasses outside this package.
+     * Since this constructor is package-private,
+     * it inhibits the generation of the default public constructor.
+     */
+    Acl2Function() {
+    }
+
+    /**
      * Returns the number of parameters of this function.
      *
      * @throws IllegalStateException if this is a defined function
