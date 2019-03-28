@@ -45,6 +45,25 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
+     * Flag saying whether all the defined functions created so far
+     * have valid definitions.
+     * This is initially true because there are no defined functions initially.
+     * This is reset to false whenever a new defined function is created,
+     * because that one has not been validated yet.
+     * This is set to true by {@link #validateAll()}.
+     */
+    private static boolean validatedAll = true;
+
+    /**
+     * Sets to true the flag that says whether
+     * all the defined functions created so far have valid definitions.
+     * This is called only by the subclass {@link Acl2DefinedFunction}.
+     */
+    static void setValidatedAll(boolean value) {
+        validatedAll = value;
+    }
+
+    /**
      * Validates all the function calls in this named function.
      * Since a named function contains no function calls,
      * this method does nothing.
@@ -123,6 +142,16 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
+     * Validate all the existing function definitions.
+     * This ensures that
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    public static void validateAll() {
+        Acl2DefinedFunction.validateAllDefinitions();
+    }
+
+    /**
      * Defines this ACL2 named function.
      *
      * @throws IllegalArgumentException if parameters or body is null
@@ -140,6 +169,8 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *
      * @throws IllegalArgumentException if values is null,
      *                                  or any value is null
+     * @throws IllegalStateException    if not all the defined functions
+     *                                  have been validated
      * @throws Acl2EvaluationException  if the function is
      *                                  neither defined nor native,
      *                                  or values.length differs from
@@ -147,6 +178,9 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      *                                  or the function call fails
      */
     public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
+        if (!validatedAll)
+            throw new IllegalStateException
+                    ("Not all function definitions have been validated.");
         if (values == null)
             throw new IllegalArgumentException("Null value array.");
         for (int i = 0; i < values.length; ++i)

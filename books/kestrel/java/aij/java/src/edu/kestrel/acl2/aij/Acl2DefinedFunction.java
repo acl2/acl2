@@ -54,6 +54,13 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      */
     private Acl2LambdaExpression definiens = null;
 
+    /**
+     * Flag saying whether this function has a validated definition.
+     * This is set once by {@link #validateDefinition()},
+     * and never changes to {@code false}.
+     */
+    private boolean validated = false;
+
     //////////////////////////////////////// package-private members:
 
     /**
@@ -69,6 +76,34 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
                     ("Attempting to retrieve the arity of function "
                             + this.getName() + ", which is not defined yet.");
         return this.definiens.getArity();
+    }
+
+    /**
+     * Ensure that this function has a valid definition.
+     * This means that all the function calls in the body of the function
+     * are validated, i.e. the arguments match the arities
+     * (see @{@link Acl2Term#validateFunctionCalls()}).
+     * Returns quickly if the function is already validated.
+     *
+     * @throws IllegalStateException if the check fails
+     */
+    void validateDefinition() {
+        if (validated)
+            return;
+        this.definiens.validateFunctionCalls();
+        validated = true;
+    }
+
+    /**
+     * Ensure that all the defined functions created so far
+     * have valid definitions.
+     * We call {@link #validateDefinition()}
+     * on all the functions created so far.
+     */
+    static void validateAllDefinitions() {
+        for (Acl2DefinedFunction function : functions.values())
+            function.validateDefinition();
+        Acl2NamedFunction.setValidatedAll(true);
     }
 
     /**
@@ -119,6 +154,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
             return function;
         function = new Acl2DefinedFunction(name);
         functions.put(name, function);
+        Acl2NamedFunction.setValidatedAll(false);
         return function;
     }
 

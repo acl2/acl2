@@ -1939,6 +1939,9 @@
        (state (atj-gen-add-package-defs pkgs channel state))
        (state (atj-gen-set-pkg-witness pkg-witness channel state))
        (state (atj-gen-add-function-defs fns-to-translate channel state))
+       ((mv & state) (fmt1! "~s0Acl2NamedFunction.validateAll();~%"
+                            (list (cons #\0 *atj-indent-2*))
+                            0 channel state nil))
        ((mv & state) (fmt1! "~s0initialized = true;~%"
                             (list (cons #\0 *atj-indent-2*))
                             0 channel state nil))
