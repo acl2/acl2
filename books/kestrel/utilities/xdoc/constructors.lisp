@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc constructors
-  :parents (xdoc-utilities)
+  :parents (xdoc xdoc-utilities)
   :short "Utilities to costruct
           well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
