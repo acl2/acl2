@@ -12,15 +12,14 @@ import java.util.Map;
 /**
  * Representation of ACL2 native functions in ACL2 terms.
  * These are functions that are natively implemented  in Java,
- * as opposed to the functions that have
- * ACL2 definitions in {@link Acl2Environment}
+ * as opposed to the functions that are defined via ACL2 terms
  * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions include the ACL2 primitive functions,
  * i.e. the ones listed in the {@code primitive} topic of the ACL2 manual.
  * These functions do not have an {@code unnormalized-body} property,
- * and thus they are not part of
- * the defined functions in {@link Acl2Environment}.
+ * and thus they are not part of the defined functions
+ * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions also include the ACL2 "pseudo-function" {@code or},
  * described in {@link Acl2Function#apply(Acl2Value[])}.
@@ -1189,7 +1188,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * because {@code if} is evaluated non-strictly
          * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
-         * {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}
+         * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code if} on some argument values,
          * then we use this method below to return the result.
          *
@@ -1244,7 +1243,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * because {@code or} is evaluated non-strictly
          * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
-         * {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}
+         * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code or} on some argument values,
          * then we use this method below to return the result.
          *
@@ -1311,5 +1310,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
     static Acl2NativeFunction getInstance(Acl2Symbol name) {
         assert name != null;
         return functions.get(name);
+    }
+
+    //////////////////////////////////////// public members:
+
+    /**
+     * Defines this ACL2 native function.
+     * This always throws an exception,
+     * because native functions cannot be defined.
+     *
+     * @throws IllegalArgumentException always
+     */
+    @Override
+    public void define(Acl2Symbol[] parameters, Acl2Term body) {
+        throw new IllegalArgumentException
+                ("Attempting to define the native function "
+                        + this.getName()+ ".");
     }
 }

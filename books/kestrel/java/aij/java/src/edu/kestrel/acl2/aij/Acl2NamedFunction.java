@@ -13,6 +13,9 @@ package edu.kestrel.acl2.aij;
  * This abstract superclass contains their common
  * state (i.e. the name of the function) and
  * behavior (i.e. equality, hashing, comparison, and string representation).
+ * ACL2 named functions are interned:
+ * there is exactly one instance for each function name;
+ * see the subclasses for details.
  */
 public abstract class Acl2NamedFunction extends Acl2Function {
 
@@ -26,6 +29,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Constructs an ACL2 named function from its name.
+     * Accessed only by the subclasses.
      */
     Acl2NamedFunction(Acl2Symbol name) {
         assert name != null;
@@ -34,6 +38,7 @@ public abstract class Acl2NamedFunction extends Acl2Function {
 
     /**
      * Returns the name of this function.
+     * Accessed only by the subclasses.
      */
     Acl2Symbol getName() {
         return this.name;
@@ -106,5 +111,39 @@ public abstract class Acl2NamedFunction extends Acl2Function {
         if (function != null)
             return function;
         return Acl2DefinedFunction.getInstance(name);
+    }
+
+    /**
+     * Defines this ACL2 named function.
+     *
+     * @throws IllegalArgumentException if parameters or body is null
+     *                                  or the function definition is malformed
+     *                                  in a way that
+     *                                  some valid variable index cannot be set
+     * @throws IllegalStateException    if the function is
+     *                                  already defined or native,
+     *                                  or some variable index is already set
+     */
+    public abstract void define(Acl2Symbol[] parameters, Acl2Term body);
+
+    /**
+     * Call this ACL2 named function on the given values.
+     *
+     * @throws IllegalArgumentException if values is null,
+     *                                  or any value is null
+     * @throws Acl2EvaluationException  if the function is
+     *                                  neither defined nor native,
+     *                                  or values.length differs from
+     *                                  the function's arity,
+     *                                  or the function call fails
+     */
+    public Acl2Value call(Acl2Value[] values) throws Acl2EvaluationException {
+        if (values == null)
+            throw new IllegalArgumentException("Null value array.");
+        for (int i = 0; i < values.length; ++i)
+            if (values[i] == null)
+                throw new IllegalArgumentException
+                        ("Null value at index " + i + ".");
+        return this.apply(values);
     }
 }

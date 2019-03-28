@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Representation of ACL2 defined functions in ACL2 terms.
- * These are functions that have ACL2 definitions in {@link Acl2Environment},
+ * These are functions that are defined via ACL2 terms,
  * as opposed to the functions natively implemented in Java
  * (see {@link Acl2NativeFunction}).
  */
@@ -50,29 +50,11 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Definiens of this function.
      * This is set, once, to the lambda expression that defines this function
-     * by {@link #setDefiniens(Acl2LambdaExpression)}.
-     * This definiens is the same as the one stored in {@link Acl2Environment},
-     * but it is cached here for speed during evaluation.
+     * by {@link #define(Acl2Symbol[], Acl2Term)}.
      */
     private Acl2LambdaExpression definiens = null;
 
     //////////////////////////////////////// package-private members:
-
-    /**
-     * Sets the definiens of this function.
-     * This is called by {@link
-     * Acl2Environment#addFunctionDef(Acl2Symbol, Acl2Symbol[], Acl2Term)}
-     * at the same time that
-     * the definition of this function is added to the ACL2 environment.
-     */
-    void setDefiniens(Acl2LambdaExpression definiens) {
-        assert definiens != null;
-        if (this.definiens != null)
-            throw new IllegalStateException
-                    ("Definiens of function " + this.getName()
-                            + "already set to " + this.definiens + ".");
-        this.definiens = definiens;
-    }
 
     /**
      * Checks if this defined function is
@@ -113,7 +95,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     }
 
     /**
-     * Return an ACL2 defined function with the given name.
+     * Returns an ACL2 defined function with the given name.
      */
     static Acl2DefinedFunction getInstance(Acl2Symbol name) {
         assert name != null;
@@ -123,5 +105,35 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
         function = new Acl2DefinedFunction(name);
         functions.put(name, function);
         return function;
+    }
+
+    //////////////////////////////////////// public members:
+
+    /**
+     * Defines this ACL2 defined function.
+     * That is, actually sets the definition of the function.
+     * The indices of the variables in the definiens are set.
+     *
+     * @throws IllegalArgumentException if parameters or body is null
+     *                                  or the function definition is malformed
+     *                                  in a way that
+     *                                  some valid variable index cannot be set
+     * @throws IllegalStateException    if the function is already defined,
+     *                                  or some variable index is already set
+     */
+    @Override
+    public void define(Acl2Symbol[] parameters, Acl2Term body) {
+        if (parameters == null)
+            throw new IllegalArgumentException("Null parameters.");
+        if (body == null)
+            throw new IllegalArgumentException("Null body.");
+        Acl2Symbol name = this.getName();
+        if (this.definiens != null)
+            throw new IllegalStateException
+                    ("Function already defined: \"" + name + "\".");
+        Acl2LambdaExpression definiens =
+                Acl2LambdaExpression.make(parameters, body);
+        definiens.setVariableIndices();
+        this.definiens = definiens;
     }
 }

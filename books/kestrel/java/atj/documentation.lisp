@@ -90,7 +90,7 @@
     "ATJ accepts both logic-mode and program-mode functions.")
 
    (xdoc::p
-    "Some ACL2 functions have side effect when executed,
+    "Some ACL2 functions have side effects when executed,
      e.g. @(tsee hard-error) prints an error message
      and returns control to the top level.
      All the ACL2 functions with side effects have raw Lisp code
@@ -169,7 +169,7 @@
      and stopping at the primitive functions,
      which have no @('unnormalized-body') property.
      If a function is encountered that
-     is not among the implemented primitives
+     is not among the primitives
      and has no @('unnormalized-body') property,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code

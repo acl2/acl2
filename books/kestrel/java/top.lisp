@@ -135,6 +135,10 @@
       look up the function definition in the environment,
       resulting in increased execution speed.")
     (xdoc::li
+     "The Java representation of the ACL2 environment
+      has been simplified to no longer include function definitions,
+      since they are now stored directly with the function themselves.")
+    (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare
       results obtained via evaluation in ACL2
