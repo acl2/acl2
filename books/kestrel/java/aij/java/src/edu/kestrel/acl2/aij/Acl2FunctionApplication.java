@@ -44,6 +44,30 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Validates all the function calls in this function call.
+     * We check that the number of arguments matches the arity.
+     * This implicitly also checks that,
+     * if the function is a defined function,
+     * it has an actual definition.
+     * We also recursively check the function calls in the argument terms
+     * and in the function itself (if the function is a lambda expression).
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    @Override
+    void validateFunctionCalls() {
+        function.validateFunctionCalls();
+        for (int i = 0; i < arguments.length; ++i)
+            arguments[i].validateFunctionCalls();
+        int arity = function.getArity();
+        if (arity != arguments.length)
+            throw new IllegalStateException
+                    ("The function " + function + ", which has arity " + arity
+                            + ", is applied to " + arguments.length
+                            + " arguments.");
+    }
+
+    /**
      * Sets the indices of all the variables in this function application,
      * starting with the supplied map from variable symbols to indices.
      * The supplied map is used for the argument terms.

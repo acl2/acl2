@@ -33,6 +33,16 @@ public final class Acl2QuotedConstant extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Validates all the function calls in this quoted constants.
+     * Since a quoted constant contains no function calls,
+     * this method does nothing.
+     */
+    @Override
+    void validateFunctionCalls() {
+    }
+
+    /**
+     * Sets the indices of all the variables in this quoted constant.
      * Since a quoted constant contains no variables, this method does nothing.
      */
     @Override

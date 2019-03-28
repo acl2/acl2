@@ -45,6 +45,15 @@ public abstract class Acl2NamedFunction extends Acl2Function {
     }
 
     /**
+     * Validates all the function calls in this named function.
+     * Since a named function contains no function calls,
+     * this method does nothing.
+     */
+    @Override
+    void validateFunctionCalls() {
+    }
+
+    /**
      * Sets the indices of all the variables in this function.
      * Since a named function has no variables, this method does nothing.
      */

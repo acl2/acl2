@@ -50,6 +50,17 @@ public final class Acl2LambdaExpression extends Acl2Function {
     }
 
     /**
+     * Validates all the function calls in this lambda expression.
+     * We recursively validate the function calls in the body.
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    @Override
+    void validateFunctionCalls() {
+        body.validateFunctionCalls();
+    }
+
+    /**
      * Sets the indices of all the variables in this lambda expression.
      * The index of each free variable in the body of this lambda expression
      * is set to the zero-based position of the variable symbol

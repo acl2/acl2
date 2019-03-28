@@ -45,6 +45,14 @@ public final class Acl2Variable extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Validates all the function calls in this variable.
+     * Since a variable contains no function calls, this method does nothing.
+     */
+    @Override
+    void validateFunctionCalls() {
+    }
+
+    /**
      * Sets the index of this variable,
      * according to the supplied map from variable symbols to indices.
      *

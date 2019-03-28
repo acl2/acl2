@@ -31,6 +31,13 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
     }
 
     /**
+     * Validates all the function calls in this term.
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    abstract void validateFunctionCalls();
+
+    /**
      * Sets the indices of all the variables in this term,
      * starting with the supplied map from variable symbols to indices.
      * See {@link Acl2Variable} for more information about variable indices.
