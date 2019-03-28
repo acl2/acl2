@@ -36,7 +36,6 @@ public final class Acl2FunctionApplication extends Acl2Term {
      */
     private Acl2FunctionApplication(Acl2Function function,
                                     Acl2Term[] arguments) {
-        assert function != null && arguments != null;
         this.function = function;
         this.arguments = arguments;
     }
@@ -127,7 +126,6 @@ public final class Acl2FunctionApplication extends Acl2Term {
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException {
-        assert binding != null;
         if (function.isIf()) {
             Acl2Value test = arguments[0].eval(binding);
             if (test.equals(Acl2Symbol.NIL))

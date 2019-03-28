@@ -25,7 +25,6 @@ public final class Acl2String extends Acl2Value {
      * is below 256, i.e. it is a valid representation of an ACL2 character.
      */
     private static boolean isValidString(String jstring) {
-        assert jstring != null;
         int len = jstring.length();
         for (int i = 0; i < len; ++i)
             if (jstring.charAt(i) > 255)
@@ -44,7 +43,6 @@ public final class Acl2String extends Acl2Value {
      * Constructs an ACL2 string from its Java string representation.
      */
     private Acl2String(String jstring) {
-        assert jstring != null && isValidString(jstring);
         this.jstring = jstring;
     }
 

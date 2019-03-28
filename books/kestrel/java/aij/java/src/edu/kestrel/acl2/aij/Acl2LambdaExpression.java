@@ -34,7 +34,6 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Constructs an ACL2 lambda expression from its formal parameters and body.
      */
     private Acl2LambdaExpression(Acl2Symbol[] parameters, Acl2Term body) {
-        assert parameters != null && body != null;
         this.parameters = parameters;
         this.body = body;
     }
@@ -91,8 +90,6 @@ public final class Acl2LambdaExpression extends Acl2Function {
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-        assert values != null;
-        for (Acl2Value value : values) assert value != null;
         return this.body.eval(values);
     }
 

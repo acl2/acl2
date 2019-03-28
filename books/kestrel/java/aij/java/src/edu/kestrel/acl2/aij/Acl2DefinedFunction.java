@@ -30,7 +30,6 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      */
     private Acl2DefinedFunction(Acl2Symbol name) {
         super(name);
-        assert !name.equals(Acl2Symbol.IF) && !name.equals(Acl2Symbol.OR);
     }
 
     /**
@@ -131,15 +130,13 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     /**
      * Applies this ACL2 defined function to the given ACL2 values.
      * The defining lambda expression is applied to the values.
+     * This is never called if the definiens is not set or validated.
      *
      * @throws Acl2EvaluationException if a call of {@code pkg-imports}
      *                                 or {@code pkg-witness} fails
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-        assert values != null;
-        for (Acl2Value value : values) assert value != null;
-        assert definiens != null;
         return definiens.apply(values);
     }
 
@@ -147,7 +144,6 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * Returns an ACL2 defined function with the given name.
      */
     static Acl2DefinedFunction getInstance(Acl2Symbol name) {
-        assert name != null;
         Acl2DefinedFunction function = functions.get(name);
         if (function != null)
             return function;

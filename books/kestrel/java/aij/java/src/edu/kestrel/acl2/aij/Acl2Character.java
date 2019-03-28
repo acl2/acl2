@@ -24,7 +24,6 @@ public final class Acl2Character extends Acl2Value {
      * Constructs an ACL2 character with the given Java character as code.
      */
     private Acl2Character(char jchar) {
-        assert jchar < 256;
         this.jchar = jchar;
     }
 

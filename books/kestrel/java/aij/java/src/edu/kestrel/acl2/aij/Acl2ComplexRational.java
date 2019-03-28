@@ -36,8 +36,6 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     private Acl2ComplexRational(Acl2Rational realPart,
                                 Acl2Rational imaginaryPart) {
-        assert realPart != null && imaginaryPart != null &&
-                !imaginaryPart.equals(Acl2Integer.ZERO);
         this.realPart = realPart;
         this.imaginaryPart = imaginaryPart;
     }
@@ -79,7 +77,6 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     @Override
     Acl2Number add(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Number) {
             // (a+bi)+(c+di) is (a+c)+(b+d)i:
             Acl2Rational a = this.realPart;
@@ -102,7 +99,6 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     @Override
     Acl2Number multiply(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Number) {
             // (a+bi)*(c+di) is (ac-bd)+(bc+ad)i:
             Acl2Rational a = this.realPart;
@@ -212,8 +208,6 @@ final class Acl2ComplexRational extends Acl2Number {
      */
     public static Acl2ComplexRational make(Acl2Rational realPart,
                                            Acl2Rational imaginaryPart) {
-        assert realPart != null && imaginaryPart != null &&
-                !imaginaryPart.equals(Acl2Integer.ZERO);
         return new Acl2ComplexRational(realPart, imaginaryPart);
     }
 

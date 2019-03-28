@@ -130,9 +130,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.characterp();
         }
     }
@@ -165,9 +163,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.stringp();
         }
     }
@@ -200,9 +196,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolp();
         }
     }
@@ -235,9 +229,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.integerp();
         }
     }
@@ -270,9 +262,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.rationalp();
         }
     }
@@ -305,9 +295,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.complexRationalp();
         }
     }
@@ -340,9 +328,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.acl2Numberp();
         }
     }
@@ -375,9 +361,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.consp();
         }
     }
@@ -410,9 +394,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.charCode();
         }
     }
@@ -445,9 +427,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.codeChar();
         }
     }
@@ -480,10 +460,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (y.equals(Acl2Symbol.LIST))
                 return x.coerceToList();
             else
@@ -522,10 +500,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value str = values[0];
             Acl2Value sym = values[1];
-            assert str != null && sym != null;
             return str.internInPackageOfSymbol(sym);
         }
     }
@@ -559,9 +535,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolPackageName();
         }
     }
@@ -594,9 +568,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolName();
         }
     }
@@ -637,9 +609,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
             Acl2Value pkg = values[0];
-            assert pkg != null;
             return pkg.pkgImports();
         }
     }
@@ -681,9 +651,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
             Acl2Value pkg = values[0];
-            assert pkg != null;
             return pkg.pkgWitness();
         }
     }
@@ -716,9 +684,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.negate();
         }
     }
@@ -751,9 +717,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.reciprocate();
         }
     }
@@ -786,10 +750,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return x.add(y);
         }
     }
@@ -822,10 +784,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return x.multiply(y);
         }
     }
@@ -858,10 +818,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             int realCmp = x.realpart().compareTo(y.realpart());
             if (realCmp < 0 ||
                     realCmp == 0 && x.imagpart().compareTo(y.imagpart()) < 0)
@@ -899,10 +857,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2Number.make(x.rfix(), y.rfix());
         }
     }
@@ -935,9 +891,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.realpart();
         }
     }
@@ -970,9 +924,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.imagpart();
         }
     }
@@ -1005,9 +957,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.numerator();
         }
     }
@@ -1040,9 +990,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.denominator();
         }
     }
@@ -1075,10 +1023,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2ConsPair.make(x, y);
         }
     }
@@ -1111,9 +1057,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.car();
         }
     }
@@ -1146,9 +1090,7 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
-            assert x != null;
             return x.cdr();
         }
     }
@@ -1181,10 +1123,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (x.equals(y))
                 return Acl2Symbol.T;
             else
@@ -1232,10 +1172,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2Symbol.NIL;
         }
     }
@@ -1275,11 +1213,9 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             Acl2Value z = values[2];
-            assert x != null && y != null && z != null;
             if (x.equals(Acl2Symbol.NIL))
                 return z;
             else
@@ -1332,10 +1268,8 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          */
         @Override
         Acl2Value apply(Acl2Value[] values) {
-            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (x.equals(Acl2Symbol.NIL))
                 return y;
             else
@@ -1384,7 +1318,6 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * see {@link Acl2NamedFunction#make(Acl2Symbol)}.
      */
     static Acl2NativeFunction getInstance(Acl2Symbol name) {
-        assert name != null;
         return functions.get(name);
     }
 

@@ -32,7 +32,6 @@ public abstract class Acl2NamedFunction extends Acl2Function {
      * Accessed only by the subclasses.
      */
     Acl2NamedFunction(Acl2Symbol name) {
-        assert name != null;
         this.name = name;
     }
 

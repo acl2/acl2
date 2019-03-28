@@ -36,9 +36,6 @@ final class Acl2Ratio extends Acl2Rational {
      * Constructs an ACL2 ratio from its numerator and denominator.
      */
     private Acl2Ratio(Acl2Integer numerator, Acl2Integer denominator) {
-        assert numerator != null && denominator != null &&
-                denominator.compareTo(Acl2Integer.ONE) > 0 &&
-                numerator.gcd(denominator).equals(Acl2Integer.ONE);
         this.numerator = numerator;
         this.denominator = denominator;
     }
@@ -77,7 +74,6 @@ final class Acl2Ratio extends Acl2Rational {
      */
     @Override
     Acl2Number add(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Rational) {
             // a/b + c/d is (a*(lcm/b)+c*(lcm/d))/lcm,
             // where lcm is the least common multiple of b and d:
@@ -110,7 +106,6 @@ final class Acl2Ratio extends Acl2Rational {
      */
     @Override
     Acl2Number multiply(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Rational) {
             // (a/b)*(c/d) is (a*c)/(b*d):
             Acl2Integer resultNumerator =
@@ -199,9 +194,6 @@ final class Acl2Ratio extends Acl2Rational {
      */
     public static Acl2Ratio make(Acl2Integer numerator,
                                  Acl2Integer denominator) {
-        assert numerator != null && denominator != null &&
-                denominator.compareTo(Acl2Integer.ONE) > 0 &&
-                numerator.gcd(denominator).equals(Acl2Integer.ONE);
         return new Acl2Ratio(numerator, denominator);
     }
 

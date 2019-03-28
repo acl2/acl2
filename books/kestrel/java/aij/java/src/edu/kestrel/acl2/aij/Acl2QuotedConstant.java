@@ -26,7 +26,6 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * Constructs an ACL2 quoted constant from its value.
      */
     private Acl2QuotedConstant(Acl2Value value) {
-        assert value != null;
         this.value = value;
     }
 
@@ -58,7 +57,6 @@ public final class Acl2QuotedConstant extends Acl2Term {
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) {
-        assert binding != null;
         return this.value;
     }
 
