@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "XDOC")
 
 ; Only the following book should be non-locally included here,
 ; to minimize footprint and dependencies of this XDOC constructor library.
@@ -16,7 +16,7 @@
 
 ; The books locally included here should be minimized, for the above reason.
 ; The flag book is used to prove the return type theorems of
-; XDOC::TREE-TO-STRING and mutually recursive companions.
+; TREE-TO-STRING and mutually recursive companions.
 (local (include-book "tools/flag" :dir :system))
 
 ; Always verify guards, even if no :GUARD ... is provided.
@@ -24,16 +24,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::constructors
+(defxdoc constructors
   :parents (xdoc-utilities)
   :short "Utilities to costruct
           well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
   "<p>
-   XDOC strings use <see topic='@(url xdoc::markup)'>XML tags</see>,
+   XDOC strings use <see topic='@(url markup)'>XML tags</see>,
    which must be properly matched and nested.
    They also use
-   <see topic='@(url xdoc::preprocessor)'>preprocessor directives</see>,
+   <see topic='@(url preprocessor)'>preprocessor directives</see>,
    which can be regarded as ``tag''-like constructs
    that must also be properly matched and nested.
    </p>
@@ -41,10 +41,10 @@
    Starting with @(tsee stringp) values as the basic building blocks,
    the XDOC constructors provided here build trees that correspond to
    the combined structure of XML tags and preprocessor directives;
-   these trees are recognized by the predicate @(tsee xdoc::treep).
+   these trees are recognized by the predicate @(tsee treep).
    These trees also accommodate attributes of XML tags,
    whose values are subtrees, recursively.
-   The function @(tsee xdoc::topstring) turns these trees into strings,
+   The function @(tsee topstring) turns these trees into strings,
    by recursively turning subtrees into strings,
    joining those strings,
    and adding XML tags and preprocessor directives at the roots of the trees.
@@ -80,7 +80,7 @@
    is probably more readable,
    facilitates the modular and hierarchical construction of XDOC strings
    (in particular, see the
-   <see topic='@(url xdoc::composite-constructors)'
+   <see topic='@(url composite-constructors)'
    >composite XDOC constructors</see>),
    and allows the insertion of comments within the XDOC constructor forms
    (e.g. lines of semicolons to visually separate sections).
@@ -101,12 +101,12 @@
    to keep these utilities lightweight and more widely usable.
    </p>")
 
-(xdoc::order-subtopics xdoc::constructors nil t)
+(order-subtopics constructors nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::constructor-preliminaries
-  :parents (xdoc::constructors)
+(defxdoc constructor-preliminaries
+  :parents (constructors)
   :short "Some preliminary utilities used by the XDOC constructors."
   :long
   "<p>
@@ -115,31 +115,31 @@
    to keep the XDOC constructor utilities self-contained.
    </p>")
 
-(xdoc::order-subtopics xdoc::constructor-preliminaries nil t)
+(order-subtopics constructor-preliminaries nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::*newline*
-  :parents (xdoc::constructor-preliminaries)
+(defsection *newline*
+  :parents (constructor-preliminaries)
   :short "The string consisting of exactly the newline character."
-  :long "@(def xdoc::*newline*)"
+  :long "@(def *newline*)"
 
-  (defconst xdoc::*newline*
+  (defconst *newline*
     (coerce (list #\Newline) 'string))
 
-  (assert-event (stringp xdoc::*newline*)))
+  (assert-event (stringp *newline*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::string-downcase$
-  :parents (xdoc::constructor-preliminaries)
-  :short "A variant of @(tsee string-downcase) applicable to any string."
+(defsection string-downcase$
+  :parents (constructor-preliminaries)
+  :short "A variant of @(tsee acl2::string-downcase) applicable to any string."
   :long
   "<p>
-   The built-in @(tsee string-downcase) has a guard requiring
+   The built-in @(tsee acl2::string-downcase) has a guard requiring
    all the characters in the string to be
    <see topic='@(url standard-char-p)'>standard</see>.
-   This function ``totalizes'' @(tsee string-downcase) to all strings
+   This function ``totalizes'' @(tsee acl2::string-downcase) to all strings
    by checking whether all the characters in the string are standard,
    and by throwing a hard error if any of them is not.
    </p>
@@ -150,21 +150,21 @@
    meant to be called to produce XDOC strings during book certification.
    </p>"
 
-  (defund xdoc::string-downcase$ (string)
+  (defund string-downcase$ (string)
     (declare (xargs :guard (stringp string)))
     (if (standard-char-listp (coerce string 'list))
-        (string-downcase string)
-      (prog2$ (er hard? 'xdoc::string-downcase$
+        (acl2::string-downcase string)
+      (prog2$ (er hard? 'string-downcase$
                   "Attempt to downcase non-standard string ~x0." string)
               "")))
 
-  (defthm xdoc::stringp-of-string-downcase$
-    (stringp (xdoc::string-downcase$ string))))
+  (defthm stringp-of-string-downcase$
+    (stringp (string-downcase$ string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::string-escape
-  :parents (xdoc::constructor-preliminaries)
+(defsection string-escape
+  :parents (constructor-preliminaries)
   :short "Escape certain characters in a string, using backslashes."
   :long
   "<p>
@@ -172,39 +172,39 @@
    that occurs in the string.
    </p>
    <p>
-   This is used in @(tsee xdoc::generate-primitive-constructor-for-dir/&&),
+   This is used in @(tsee generate-primitive-constructor-for-dir/&&),
    since some of the macros generated by that macro have names
    that include the characters escaped by this function.
    These characters would cause XDOC errors if not escaped.
    </p>"
 
-  (defund xdoc::chars-escape (chars)
+  (defund chars-escape (chars)
     (declare (xargs :guard (character-listp chars)))
     (cond ((endp chars) nil)
           (t (if (member (car chars) '(#\' #\`))
-                 (list* #\\ #\' (xdoc::chars-escape (cdr chars)))
-               (cons (car chars) (xdoc::chars-escape (cdr chars)))))))
+                 (list* #\\ #\' (chars-escape (cdr chars)))
+               (cons (car chars) (chars-escape (cdr chars)))))))
 
-  (defthm xdoc::character-listp-of-chars-escape
+  (defthm character-listp-of-chars-escape
     (implies (character-listp chars)
-             (character-listp (xdoc::chars-escape chars)))
-    :hints (("Goal" :in-theory (enable xdoc::chars-escape))))
+             (character-listp (chars-escape chars)))
+    :hints (("Goal" :in-theory (enable chars-escape))))
 
-  (defund xdoc::string-escape (string)
+  (defund string-escape (string)
     (declare (xargs :guard (stringp string)))
     (let* ((chars (coerce string 'list))
-           (chars (xdoc::chars-escape chars))
+           (chars (chars-escape chars))
            (string (coerce chars 'string)))
       string))
 
-  (defthm xdoc::stringp-of-string-escape
-    (stringp (xdoc::string-escape string))
-    :hints (("Goal" :in-theory (enable xdoc::string-escape)))))
+  (defthm stringp-of-string-escape
+    (stringp (string-escape string))
+    :hints (("Goal" :in-theory (enable string-escape)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::partition-macro-args
-  :parents (xdoc::constructor-preliminaries)
+(defsection partition-macro-args
+  :parents (constructor-preliminaries)
   :short "Partition the arguments of a macro into a list and an alist."
   :long
   "<p>
@@ -226,36 +226,36 @@
    The output list and alists are in the same order as in the input.
    </p>"
 
-  (defund xdoc::partition-macro-args (args ctx)
+  (defund partition-macro-args (args ctx)
     (declare (xargs :guard (true-listp args)))
     (cond ((endp args) (mv nil nil))
           ((keywordp (car args))
            (if (consp (cdr args))
                (mv-let (rest-list rest-alist)
-                 (xdoc::partition-macro-args (cddr args) ctx)
+                 (partition-macro-args (cddr args) ctx)
                  (mv rest-list (acons (car args) (cadr args) rest-alist)))
              (prog2$ (er hard? ctx "Missing value for keyword ~x0." (car args))
                      (mv nil nil))))
           (t (mv-let (rest-list rest-alist)
-               (xdoc::partition-macro-args (cdr args) ctx)
+               (partition-macro-args (cdr args) ctx)
                (mv (cons (car args) rest-list) rest-alist)))))
 
-  (defthm xdoc::true-listp-of-mv-nth-0-partition-macro-args
-    (true-listp (mv-nth 0 (xdoc::partition-macro-args args ctx)))
-    :hints (("Goal" :in-theory (enable xdoc::partition-macro-args))))
+  (defthm true-listp-of-mv-nth-0-partition-macro-args
+    (true-listp (mv-nth 0 (partition-macro-args args ctx)))
+    :hints (("Goal" :in-theory (enable partition-macro-args))))
 
-  (defthm xdoc::true-listp-of-mv-nth-1-partition-macro-args
-    (alistp (mv-nth 1 (xdoc::partition-macro-args args ctx)))
-    :hints (("Goal" :in-theory (enable xdoc::partition-macro-args)))))
+  (defthm true-listp-of-mv-nth-1-partition-macro-args
+    (alistp (mv-nth 1 (partition-macro-args args ctx)))
+    :hints (("Goal" :in-theory (enable partition-macro-args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::keyword-macro-args-to-terms
-  :parents (xdoc::constructor-preliminaries)
+(defsection keyword-macro-args-to-terms
+  :parents (constructor-preliminaries)
   :short "Turn the keyword arguments of a macro into terms."
   :long
   "<p>
-   This complements @(tsee xdoc::partition-macro-args),
+   This complements @(tsee partition-macro-args),
    which extracts a list of regular arguments
    and an alist of keyword arguments.
    This alist has keys that are keyword
@@ -268,29 +268,29 @@
    each term, when evaluated, returns a @(tsee cons) pair.
    </p>"
 
-  (defund xdoc::keyword-macro-args-to-terms (alist)
+  (defund keyword-macro-args-to-terms (alist)
     (declare (xargs :guard (alistp alist)))
     (cond ((endp alist) nil)
           (t (cons `(cons ,(caar alist)
                           ,(cdar alist))
-                   (xdoc::keyword-macro-args-to-terms (cdr alist))))))
+                   (keyword-macro-args-to-terms (cdr alist))))))
 
-  (defthm xdoc::true-listp-of-keyword-macro-args-to-terms
-    (true-listp (xdoc::keyword-macro-args-to-terms alist))
-    :hints (("Goal" :in-theory (enable xdoc::keyword-macro-args-to-terms)))))
+  (defthm true-listp-of-keyword-macro-args-to-terms
+    (true-listp (keyword-macro-args-to-terms alist))
+    :hints (("Goal" :in-theory (enable keyword-macro-args-to-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::trees
-  :parents (xdoc::constructors)
+(defxdoc trees
+  :parents (constructors)
   :short "XDOC trees.")
 
-(xdoc::order-subtopics xdoc::trees nil t)
+(order-subtopics trees nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::treep
-  :parents (xdoc::trees)
+(defsection treep
+  :parents (trees)
   :short "Recognize XDOC trees."
   :long
   "<p>
@@ -326,87 +326,87 @@
    <p>
    In some sense,
    the semantics of XDOC trees is defined by their conversion to flat strings.
-   See @(tsee xdoc::tree-to-string).
+   See @(tsee tree-to-string).
    </p>"
 
   ;; functions:
 
   (mutual-recursion
 
-   (defund xdoc::treep (x)
+   (defund treep (x)
      (or (stringp x)
          (and (true-listp x)
               (consp x)
               (or (keywordp (car x))
-                  (xdoc::tree-tagp (car x)))
-              (xdoc::tree-listp (cdr x)))))
+                  (tree-tagp (car x)))
+              (tree-listp (cdr x)))))
 
-   (defund xdoc::tree-listp (x)
+   (defund tree-listp (x)
      (cond ((atom x) (eq x nil))
-           (t (and (xdoc::treep (car x))
-                   (xdoc::tree-listp (cdr x))))))
+           (t (and (treep (car x))
+                   (tree-listp (cdr x))))))
 
-   (defund xdoc::tree-tagp (x)
+   (defund tree-tagp (x)
      (and (consp x)
           (keywordp (car x))
-          (xdoc::keyword-tree-alistp (cdr x))))
+          (keyword-tree-alistp (cdr x))))
 
-   (defund xdoc::keyword-tree-alistp (x)
+   (defund keyword-tree-alistp (x)
      (cond ((atom x) (eq x nil))
            (t (and (consp (car x))
                    (keywordp (car (car x)))
-                   (xdoc::treep (cdr (car x)))
-                   (xdoc::keyword-tree-alistp (cdr x)))))))
+                   (treep (cdr (car x)))
+                   (keyword-tree-alistp (cdr x)))))))
 
   ;; theorems:
 
-  (defthm xdoc::treep-when-stringp
+  (defthm treep-when-stringp
     (implies (stringp x)
-             (xdoc::treep x))
-    :hints (("Goal" :in-theory (enable xdoc::treep))))
+             (treep x))
+    :hints (("Goal" :in-theory (enable treep))))
 
-  (defthm xdoc::tree-listp-when-string-listp
+  (defthm tree-listp-when-string-listp
     (implies (string-listp x)
-             (xdoc::tree-listp x))
-    :hints (("Goal" :in-theory (enable xdoc::tree-listp))))
+             (tree-listp x))
+    :hints (("Goal" :in-theory (enable tree-listp))))
 
-  (defthm xdoc::true-listp-when-tree-listp
-    (implies (xdoc::tree-listp x)
+  (defthm true-listp-when-tree-listp
+    (implies (tree-listp x)
              (true-listp x))
     :rule-classes :forward-chaining
-    :hints (("Goal" :in-theory (enable xdoc::tree-listp))))
+    :hints (("Goal" :in-theory (enable tree-listp))))
 
-  (defthm xdoc::treep-of-cons
-    (equal (xdoc::treep (cons x y))
+  (defthm treep-of-cons
+    (equal (treep (cons x y))
            (and (or (keywordp x)
-                    (xdoc::tree-tagp x))
-                (xdoc::tree-listp y)))
-    :hints (("Goal" :in-theory (enable xdoc::treep))))
+                    (tree-tagp x))
+                (tree-listp y)))
+    :hints (("Goal" :in-theory (enable treep))))
 
-  (defthm xdoc::tree-listp-of-cons
-    (equal (xdoc::tree-listp (cons x y))
-           (and (xdoc::treep x)
-                (xdoc::tree-listp y)))
-    :hints (("Goal" :in-theory (enable xdoc::tree-listp))))
+  (defthm tree-listp-of-cons
+    (equal (tree-listp (cons x y))
+           (and (treep x)
+                (tree-listp y)))
+    :hints (("Goal" :in-theory (enable tree-listp))))
 
-  (defthm xdoc::tagp-of-cons
-    (equal (xdoc::tree-tagp (cons x y))
+  (defthm tagp-of-cons
+    (equal (tree-tagp (cons x y))
            (and (keywordp x)
-                (xdoc::keyword-tree-alistp y)))
-    :hints (("Goal" :in-theory (enable xdoc::tree-tagp))))
+                (keyword-tree-alistp y)))
+    :hints (("Goal" :in-theory (enable tree-tagp))))
 
-  (defthm xdoc::keyword-tree-alistp-of-cons
-    (equal (xdoc::keyword-tree-alistp (cons x y))
+  (defthm keyword-tree-alistp-of-cons
+    (equal (keyword-tree-alistp (cons x y))
            (and (consp x)
                 (keywordp (car x))
-                (xdoc::treep (cdr x))
-                (xdoc::keyword-tree-alistp y)))
-    :hints (("Goal" :in-theory (enable xdoc::keyword-tree-alistp)))))
+                (treep (cdr x))
+                (keyword-tree-alistp y)))
+    :hints (("Goal" :in-theory (enable keyword-tree-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::tree-to-string
-  :parents (xdoc::trees)
+(defsection tree-to-string
+  :parents (trees)
   :short "Turn a XDOC tree into the string it represents."
   :long
   "<p>
@@ -438,7 +438,7 @@
    <p>
    Note that the @(tsee symbol-name) of a keyword tag
    consists of uppercase letters.
-   We use @(tsee xdoc::string-downcase$)
+   We use @(tsee string-downcase$)
    to produce lowercase tags and directives.
    We expect that this function will never throw an error
    with the tags and directives supported.
@@ -448,26 +448,26 @@
 
   (mutual-recursion
 
-   (defund xdoc::tree-to-string (tree)
-     (declare (xargs :guard (xdoc::treep tree)
+   (defund tree-to-string (tree)
+     (declare (xargs :guard (treep tree)
                      :verify-guards nil)) ; done below
      (cond ((atom tree) tree)
-           (t (let ((subtrees-string (xdoc::tree-list-to-string (cdr tree))))
+           (t (let ((subtrees-string (tree-list-to-string (cdr tree))))
                 (mv-let (left-string right-string)
-                  (xdoc::keyword-or-tree-tag-to-strings (car tree))
+                  (keyword-or-tree-tag-to-strings (car tree))
                   (concatenate 'string
                                left-string subtrees-string right-string))))))
 
-   (defund xdoc::tree-list-to-string (trees)
-     (declare (xargs :guard (xdoc::tree-listp trees)))
+   (defund tree-list-to-string (trees)
+     (declare (xargs :guard (tree-listp trees)))
      (cond ((endp trees) "")
            (t (concatenate 'string
-                           (xdoc::tree-to-string (car trees))
-                           (xdoc::tree-list-to-string (cdr trees))))))
+                           (tree-to-string (car trees))
+                           (tree-list-to-string (cdr trees))))))
 
-   (defund xdoc::keyword-or-tree-tag-to-strings (keyword/tag)
+   (defund keyword-or-tree-tag-to-strings (keyword/tag)
      (declare (xargs :guard (or (keywordp keyword/tag)
-                                (xdoc::tree-tagp keyword/tag))))
+                                (tree-tagp keyword/tag))))
      (cond ((eq keyword/tag :&&) (mv "" ""))
            ((member-eq keyword/tag '(:@\'\' :@{} :@\`\` :@$$ :@[]))
             (let* ((left-char (char (symbol-name keyword/tag) 1))
@@ -482,23 +482,23 @@
               (if (and (consp keyword-chars)
                        (eql (car keyword-chars) #\@))
                   (let* ((keyword-string (coerce (cdr keyword-chars) 'string))
-                         (keyword-string (xdoc::string-downcase$
+                         (keyword-string (string-downcase$
                                           keyword-string))
                          (left-string (concatenate 'string
                                                    "@(" keyword-string " "))
                          (right-string ")"))
                     (mv left-string right-string))
                 (prog2$ (er hard?
-                            'xdoc::tree-to-string
+                            'tree-to-string
                             "Cannot process XDOC tree with root ~x0."
                             keyword/tag)
                         (mv "" "")))))
            (t (let* ((keyword (car keyword/tag))
                      (keyword-chars (coerce (symbol-name keyword) 'list))
                      (keyword-string (coerce keyword-chars 'string))
-                     (keyword-string (xdoc::string-downcase$ keyword-string))
+                     (keyword-string (string-downcase$ keyword-string))
                      (attributes (cdr keyword/tag))
-                     (attributes-string (xdoc::keyword-tree-alist-to-string
+                     (attributes-string (keyword-tree-alist-to-string
                                          attributes))
                      (left-string (concatenate 'string
                                                "<"
@@ -511,16 +511,16 @@
                                                 ">")))
                 (mv left-string right-string)))))
 
-   (defund xdoc::keyword-tree-alist-to-string (attributes)
-     (declare (xargs :guard (xdoc::keyword-tree-alistp attributes)))
+   (defund keyword-tree-alist-to-string (attributes)
+     (declare (xargs :guard (keyword-tree-alistp attributes)))
      (cond ((endp attributes) "")
            (t (let* ((attribute (car attributes))
                      (keyword (car attribute))
                      (tree (cdr attribute))
                      (keyword-chars (coerce (symbol-name keyword) 'list))
                      (keyword-string (coerce keyword-chars 'string))
-                     (keyword-string (xdoc::string-downcase$ keyword-string))
-                     (tree-string (xdoc::tree-to-string tree))
+                     (keyword-string (string-downcase$ keyword-string))
+                     (tree-string (tree-to-string tree))
                      (attribute-string (concatenate 'string
                                                     " "
                                                     keyword-string
@@ -528,7 +528,7 @@
                                                     tree-string
                                                     "\""))
                      (rest-attributes (cdr attributes))
-                     (rest-attribute-string (xdoc::keyword-tree-alist-to-string
+                     (rest-attribute-string (keyword-tree-alist-to-string
                                              rest-attributes)))
                 (concatenate 'string
                              attribute-string
@@ -536,133 +536,133 @@
 
   ;; theorems:
 
-  (local (make-flag flag-xdoc-tree-to-string xdoc::tree-to-string))
+  (local (acl2::make-flag flag-xdoc-tree-to-string tree-to-string))
 
   (local
    (defthm-flag-xdoc-tree-to-string
-     (defthm xdoc::theorem-for-tree-to-string
-       (implies (xdoc::treep tree)
-                (stringp (xdoc::tree-to-string tree)))
-       :flag xdoc::tree-to-string)
-     (defthm xdoc::theorem-for-tree-list-to-string
-       (implies (xdoc::tree-listp trees)
-                (stringp (xdoc::tree-list-to-string trees)))
-       :flag xdoc::tree-list-to-string)
-     (defthm xdoc::theorem-for-keyword-or-tree-tag-to-strings
+     (defthm theorem-for-tree-to-string
+       (implies (treep tree)
+                (stringp (tree-to-string tree)))
+       :flag tree-to-string)
+     (defthm theorem-for-tree-list-to-string
+       (implies (tree-listp trees)
+                (stringp (tree-list-to-string trees)))
+       :flag tree-list-to-string)
+     (defthm theorem-for-keyword-or-tree-tag-to-strings
        (implies (or (keywordp keyword/tag)
-                    (xdoc::tree-tagp keyword/tag))
-                (and (stringp (mv-nth 0 (xdoc::keyword-or-tree-tag-to-strings
+                    (tree-tagp keyword/tag))
+                (and (stringp (mv-nth 0 (keyword-or-tree-tag-to-strings
                                          keyword/tag)))
-                     (stringp (mv-nth 1 (xdoc::keyword-or-tree-tag-to-strings
+                     (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
                                          keyword/tag)))))
-       :flag xdoc::keyword-or-tree-tag-to-strings)
-     (defthm xdoc::theorem-for-keyword-tree-alist-to-string
-       (implies (xdoc::keyword-tree-alistp attributes)
-                (stringp (xdoc::keyword-tree-alist-to-string attributes)))
-       :flag xdoc::keyword-tree-alist-to-string)
-     :hints (("Goal" :in-theory (enable xdoc::tree-to-string
-                                        xdoc::tree-list-to-string
-                                        xdoc::keyword-or-tree-tag-to-strings
-                                        xdoc::keyword-tree-alist-to-string
-                                        xdoc::treep)))))
+       :flag keyword-or-tree-tag-to-strings)
+     (defthm theorem-for-keyword-tree-alist-to-string
+       (implies (keyword-tree-alistp attributes)
+                (stringp (keyword-tree-alist-to-string attributes)))
+       :flag keyword-tree-alist-to-string)
+     :hints (("Goal" :in-theory (enable tree-to-string
+                                        tree-list-to-string
+                                        keyword-or-tree-tag-to-strings
+                                        keyword-tree-alist-to-string
+                                        treep)))))
 
-  (defthm xdoc::stringp-of-tree-to-string
-    (implies (xdoc::treep tree)
-             (stringp (xdoc::tree-to-string tree))))
+  (defthm stringp-of-tree-to-string
+    (implies (treep tree)
+             (stringp (tree-to-string tree))))
 
-  (defthm xdoc::stringp-of-tree-list-to-string
-    (implies (xdoc::tree-listp trees)
-             (stringp (xdoc::tree-list-to-string trees))))
+  (defthm stringp-of-tree-list-to-string
+    (implies (tree-listp trees)
+             (stringp (tree-list-to-string trees))))
 
-  (defthm xdoc::stringp-of-mv-nth-0-keyword-or-tree-tag-to-strings
+  (defthm stringp-of-mv-nth-0-keyword-or-tree-tag-to-strings
     (implies (or (keywordp keyword/tag)
-                 (xdoc::tree-tagp keyword/tag))
-             (stringp (mv-nth 0 (xdoc::keyword-or-tree-tag-to-strings
+                 (tree-tagp keyword/tag))
+             (stringp (mv-nth 0 (keyword-or-tree-tag-to-strings
                                  keyword/tag))))
     :hints (("Goal" :in-theory (disable mv-nth))))
 
-  (defthm xdoc::stringp-of-mv-nth-1-keyword-or-tree-tag-to-strings
+  (defthm stringp-of-mv-nth-1-keyword-or-tree-tag-to-strings
     (implies (or (keywordp keyword/tag)
-                 (xdoc::tree-tagp keyword/tag))
-             (stringp (mv-nth 1 (xdoc::keyword-or-tree-tag-to-strings
+                 (tree-tagp keyword/tag))
+             (stringp (mv-nth 1 (keyword-or-tree-tag-to-strings
                                  keyword/tag))))
     :hints (("Goal" :in-theory (disable mv-nth))))
 
-  (defthm xdoc::stringp-of-keyword-tree-alist-to-string
-    (implies (xdoc::keyword-tree-alistp attributes)
-             (stringp (xdoc::keyword-tree-alist-to-string attributes))))
+  (defthm stringp-of-keyword-tree-alist-to-string
+    (implies (keyword-tree-alistp attributes)
+             (stringp (keyword-tree-alist-to-string attributes))))
 
   ;; guard verification:
 
   (local
-   (defthm xdoc::tree-to-string-verify-guards-lemma
+   (defthm tree-to-string-verify-guards-lemma
      (implies (character-listp x)
               (character-listp (cdr x)))))
 
-  (verify-guards xdoc::tree-to-string
-    :hints (("Goal" :in-theory (e/d (xdoc::tree-tagp xdoc::keyword-tree-alistp)
+  (verify-guards tree-to-string
+    :hints (("Goal" :in-theory (e/d (tree-tagp keyword-tree-alistp)
                                     (mv-nth))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::make-tree-tag
-  :parents (xdoc::trees)
+(defsection make-tree-tag
+  :parents (trees)
   :short "Construct a non-leaf XDOC tree with an XML tag at the root."
   :long
   "<p>
    This is for internal use of the XDOC constructor library.
    Users of this library should use
-   constructors for specific tags, e.g. @(tsee xdoc::p).
+   constructors for specific tags, e.g. @(tsee p).
    </p>
    <p>
-   See also @(tsee xdoc::make-tree-dir/&&).
+   See also @(tsee make-tree-dir/&&).
    </p>"
 
-  (defund xdoc::make-tree-tag (tag attributes trees)
+  (defund make-tree-tag (tag attributes trees)
     (declare (xargs :guard (and (keywordp tag)
-                                (xdoc::keyword-tree-alistp attributes)
-                                (xdoc::tree-listp trees))))
+                                (keyword-tree-alistp attributes)
+                                (tree-listp trees))))
     (cons (cons tag attributes) trees))
 
-  (defthm xdoc::treep-of-make-tree-tag
-    (equal (xdoc::treep (xdoc::make-tree-tag tag attributes trees))
+  (defthm treep-of-make-tree-tag
+    (equal (treep (make-tree-tag tag attributes trees))
            (and (keywordp tag)
-                (xdoc::keyword-tree-alistp attributes)
-                (xdoc::tree-listp trees)))
-    :hints (("Goal" :in-theory (enable xdoc::make-tree-tag)))))
+                (keyword-tree-alistp attributes)
+                (tree-listp trees)))
+    :hints (("Goal" :in-theory (enable make-tree-tag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::make-tree-dir/&&
-  :parents (xdoc::trees)
+(defsection make-tree-dir/&&
+  :parents (trees)
   :short "Construct a non-leaf XDOC tree
           with a preprocessor directive or a tree concatenation at the root."
   :long
   "<p>
    This is for internal use of the XDOC constructor library.
    Users of this library should use
-   the constructor @(tsee xdoc::&&) for concatenation
-   or constructors for specific directives, e.g. @(tsee xdoc::@def).
+   the constructor @(tsee &&) for concatenation
+   or constructors for specific directives, e.g. @(tsee @def).
    </p>
    <p>
-   See also @(tsee xdoc::make-tree-tag).
+   See also @(tsee make-tree-tag).
    </p>"
 
-  (defund xdoc::make-tree-dir/&& (dir/&& trees)
+  (defund make-tree-dir/&& (dir/&& trees)
     (declare (xargs :guard (and (keywordp dir/&&)
-                                (xdoc::tree-listp trees))))
+                                (tree-listp trees))))
     (cons dir/&& trees))
 
-  (defthm xdoc::treep-of-make-tree-dir/&&
+  (defthm treep-of-make-tree-dir/&&
     (implies (keywordp dir/&&)
-             (equal (xdoc::treep (xdoc::make-tree-dir/&& dir/&& trees))
-                    (xdoc::tree-listp trees)))
-    :hints (("Goal" :in-theory (enable xdoc::make-tree-dir/&&)))))
+             (equal (treep (make-tree-dir/&& dir/&& trees))
+                    (tree-listp trees)))
+    :hints (("Goal" :in-theory (enable make-tree-dir/&&)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::primitive-constructors
-  :parents (xdoc::constructors)
+(defxdoc primitive-constructors
+  :parents (constructors)
   :short "Primitive XDOC constructors."
   :long
   "<p>
@@ -671,7 +671,7 @@
    individual preprocessor directives,
    and tree concatenation.
    In contrast, the
-   <see topic='@(url xdoc::composite-constructors)'
+   <see topic='@(url composite-constructors)'
    >composite XDOC constructors</see>
    correspond to multiple tags, directives, and concatenations.
    </p>
@@ -682,12 +682,12 @@
    and one for preprocessor directives and tree concatenation.
    </p>")
 
-(xdoc::order-subtopics xdoc::primitive-constructors nil t)
+(order-subtopics primitive-constructors nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::generate-primitive-constructor-for-tag
-  :parents (xdoc::primitive-constructors)
+(defsection generate-primitive-constructor-for-tag
+  :parents (primitive-constructors)
   :short "Generate a primitive constructor for an XML tag."
   :long
   "<p>
@@ -706,49 +706,49 @@
    The generated macro accepts regular and keyword arguments in any order:
    the former are subtrees for the content between the XML tags;
    the latter are attributes of the XML tag.
-   The macro uses @(tsee xdoc::partition-macro-args) to divide them.
+   The macro uses @(tsee partition-macro-args) to divide them.
    </p>
    <p>
-   See also @(tsee xdoc::generate-primitive-constructor-for-dir/&&).
+   See also @(tsee generate-primitive-constructor-for-dir/&&).
    </p>
-   @(def xdoc::generate-primitive-constructor-for-tag)"
+   @(def generate-primitive-constructor-for-tag)"
 
-  (defund xdoc::generate-primitive-constructor-for-tag-fn (tag doc)
+  (defund generate-primitive-constructor-for-tag-fn (tag doc)
     (declare (xargs :guard (and (keywordp tag) (stringp doc))))
-    (let* ((macro-name (add-suffix-to-fn 'xdoc::|| (symbol-name tag)))
-           (fn-name (add-suffix-to-fn macro-name "-FN"))
-           (thm-name (packn (list 'xdoc::stringp-of- macro-name))))
+    (let* ((macro-name (acl2::add-suffix-to-fn '|| (symbol-name tag)))
+           (fn-name (acl2::add-suffix-to-fn macro-name "-FN"))
+           (thm-name (acl2::packn (list 'stringp-of- macro-name))))
       `(defsection ,macro-name
-         :parents (xdoc::primitive-constructors)
+         :parents (primitive-constructors)
          :short ,doc
          :long ,(concatenate 'string
-                             "@(def xdoc::"
-                             (xdoc::string-downcase$ (symbol-name macro-name))
+                             "@(def "
+                             (string-downcase$ (symbol-name macro-name))
                              ").")
          (defund ,fn-name (attributes trees)
-           (declare (xargs :guard (and (xdoc::keyword-tree-alistp attributes)
-                                       (xdoc::tree-listp trees))))
-           (xdoc::make-tree-tag ,tag attributes trees))
+           (declare (xargs :guard (and (keyword-tree-alistp attributes)
+                                       (tree-listp trees))))
+           (make-tree-tag ,tag attributes trees))
          (defthm ,thm-name
-           (equal (xdoc::treep (,fn-name attributes trees))
-                  (and (xdoc::keyword-tree-alistp attributes)
-                       (xdoc::tree-listp trees)))
+           (equal (treep (,fn-name attributes trees))
+                  (and (keyword-tree-alistp attributes)
+                       (tree-listp trees)))
            :hints (("Goal" :in-theory (enable ,fn-name))))
          (defmacro ,macro-name (&rest args)
            (mv-let (trees attributes)
-             (xdoc::partition-macro-args args ',macro-name)
-             (let ((attributes (xdoc::keyword-macro-args-to-terms attributes)))
+             (partition-macro-args args ',macro-name)
+             (let ((attributes (keyword-macro-args-to-terms attributes)))
                (list ',fn-name
                      (cons 'list attributes)
                      (cons 'list trees))))))))
 
-  (defmacro xdoc::generate-primitive-constructor-for-tag (tag doc)
-    `(make-event (xdoc::generate-primitive-constructor-for-tag-fn ,tag ,doc))))
+  (defmacro generate-primitive-constructor-for-tag (tag doc)
+    `(make-event (generate-primitive-constructor-for-tag-fn ,tag ,doc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::generate-primitive-constructor-for-dir/&&
-  :parents (xdoc::primitive-constructors)
+(defsection generate-primitive-constructor-for-dir/&&
+  :parents (primitive-constructors)
   :short "Generate a primitive constructor for
           a preprocessor directive or tree concatenation."
   :long
@@ -767,229 +767,229 @@
    We also generate a theorem about the return type of the constructor.
    </p>
    <p>
-   See also @(tsee xdoc::generate-primitive-constructor-for-tag).
+   See also @(tsee generate-primitive-constructor-for-tag).
    </p>
-   @(def xdoc::generate-primitive-constructor-for-dir/&&)"
+   @(def generate-primitive-constructor-for-dir/&&)"
 
-  (defund xdoc::generate-primitive-constructor-for-dir/&&-fn (dir/&& doc)
+  (defund generate-primitive-constructor-for-dir/&&-fn (dir/&& doc)
     (declare (xargs :guard (and (keywordp dir/&&) (stringp doc))))
-    (let* ((macro-name (add-suffix-to-fn 'xdoc::|| (symbol-name dir/&&)))
-           (fn-name (add-suffix-to-fn macro-name "-FN"))
-           (thm-name (packn (list 'xdoc::stringp-of- macro-name))))
+    (let* ((macro-name (acl2::add-suffix-to-fn '|| (symbol-name dir/&&)))
+           (fn-name (acl2::add-suffix-to-fn macro-name "-FN"))
+           (thm-name (acl2::packn (list 'stringp-of- macro-name))))
       `(defsection ,macro-name
-         :parents (xdoc::primitive-constructors)
+         :parents (primitive-constructors)
          :short ,doc
          :long ,(concatenate 'string
-                             "@(def xdoc::"
-                             (xdoc::string-escape
-                              (xdoc::string-downcase$
+                             "@(def "
+                             (string-escape
+                              (string-downcase$
                                (symbol-name macro-name)))
                              ").")
          (defund ,fn-name (trees)
-           (declare (xargs :guard (xdoc::tree-listp trees)))
-           (xdoc::make-tree-dir/&& ,dir/&& trees))
+           (declare (xargs :guard (tree-listp trees)))
+           (make-tree-dir/&& ,dir/&& trees))
          (defthm ,thm-name
-           (equal (xdoc::treep (,fn-name trees))
-                  (xdoc::tree-listp trees))
+           (equal (treep (,fn-name trees))
+                  (tree-listp trees))
            :hints (("Goal" :in-theory (enable ,fn-name))))
          (defmacro ,macro-name (&rest trees)
            (list ',fn-name (cons 'list trees))))))
 
-  (defmacro xdoc::generate-primitive-constructor-for-dir/&& (dir/&& doc)
+  (defmacro generate-primitive-constructor-for-dir/&& (dir/&& doc)
     `(make-event
-      (xdoc::generate-primitive-constructor-for-dir/&&-fn ,dir/&& ,doc))))
+      (generate-primitive-constructor-for-dir/&&-fn ,dir/&& ,doc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; primitive XDOC constructors for XML tags:
 
-(xdoc::generate-primitive-constructor-for-tag :h1
+(generate-primitive-constructor-for-tag :h1
   "Construct an XDOC tree for an HTML level-1 heading @('<h1>...</h1>').")
 
-(xdoc::generate-primitive-constructor-for-tag :h2
+(generate-primitive-constructor-for-tag :h2
   "Construct an XDOC tree for an HTML level-2 heading @('<h2>...</h2>').")
 
-(xdoc::generate-primitive-constructor-for-tag :h3
+(generate-primitive-constructor-for-tag :h3
   "Construct an XDOC tree for an HTML level-3 heading @('<h3>...</h3>').")
 
-(xdoc::generate-primitive-constructor-for-tag :h4
+(generate-primitive-constructor-for-tag :h4
   "Construct an XDOC tree for an HTML level-4 heading @('<h4>...</h4>').")
 
-(xdoc::generate-primitive-constructor-for-tag :h5
+(generate-primitive-constructor-for-tag :h5
   "Construct an XDOC tree for an HTML level-5 heading @('<h5>...</h5>').")
 
-(xdoc::generate-primitive-constructor-for-tag :p
+(generate-primitive-constructor-for-tag :p
   "Construct an XDOC tree for an HTML paragraph @('<p>...</p>').")
 
-(xdoc::generate-primitive-constructor-for-tag :blockquote
+(generate-primitive-constructor-for-tag :blockquote
   "Construct an XDOC tree for
    an HTML quoted block @('<blockquote>...</blockquote>').")
 
-(xdoc::generate-primitive-constructor-for-tag :li
+(generate-primitive-constructor-for-tag :li
   "Construct an XDOC tree for an HTML list item @('<li>...</li>').")
 
-(xdoc::generate-primitive-constructor-for-tag :ul
+(generate-primitive-constructor-for-tag :ul
   "Construct an XDOC tree for an HTML unordered list @('<ul>...</ul>').")
 
-(xdoc::generate-primitive-constructor-for-tag :ol
+(generate-primitive-constructor-for-tag :ol
   "Construct an XDOC tree for an HTML unordered list @('<ol>...</ol>').")
 
-(xdoc::generate-primitive-constructor-for-tag :dt
+(generate-primitive-constructor-for-tag :dt
   "Construct an XDOC tree for an HTML term @('<dt>...</dt>').")
 
-(xdoc::generate-primitive-constructor-for-tag :dd
+(generate-primitive-constructor-for-tag :dd
   "Construct an XDOC tree for an HTML description @('<dd>...</dd>').")
 
-(xdoc::generate-primitive-constructor-for-tag :dl
+(generate-primitive-constructor-for-tag :dl
   "Construct an XDOC tree for an HTML description list @('<dl>...</dl>').")
 
-(xdoc::generate-primitive-constructor-for-tag :th
+(generate-primitive-constructor-for-tag :th
   "Construct an XDOC tree for an HTML table header cell @('<th>...</th>').")
 
-(xdoc::generate-primitive-constructor-for-tag :td
+(generate-primitive-constructor-for-tag :td
   "Construct an XDOC tree for an HTML table cell @('<td>...</td>').")
 
-(xdoc::generate-primitive-constructor-for-tag :tr
+(generate-primitive-constructor-for-tag :tr
   "Construct an XDOC tree for an HTML table row @('<tr>...</tr>').")
 
-(xdoc::generate-primitive-constructor-for-tag :table_
+(generate-primitive-constructor-for-tag :table_
   ;; :TABLE would cause a conflict with the built-in TABLE
   "Construct an XDOC tree for an HTML table @('<table>...</table>').")
 
-(xdoc::generate-primitive-constructor-for-tag :box
+(generate-primitive-constructor-for-tag :box
   "Construct an XDOC tree for an XDOC box @('<box>...</box>').")
 
-(xdoc::generate-primitive-constructor-for-tag :br
+(generate-primitive-constructor-for-tag :br
   "Construct an XDOC tree for an HTML line break @('<br>...</br>').")
 
-(xdoc::generate-primitive-constructor-for-tag :img
+(generate-primitive-constructor-for-tag :img
   "Construct an XDOC tree for an HTML image @('<img>...</img>').")
 
-(xdoc::generate-primitive-constructor-for-tag :b
+(generate-primitive-constructor-for-tag :b
   "Construct an XDOC tree for HTML bold text @('<b>...</b>').")
 
-(xdoc::generate-primitive-constructor-for-tag :i
+(generate-primitive-constructor-for-tag :i
   "Construct an XDOC tree for HTML italic text @('<i>...</i>').")
 
-(xdoc::generate-primitive-constructor-for-tag :u_
+(generate-primitive-constructor-for-tag :u_
   ;; :U would cause a conflict with the built-in U
   "Construct an XDOC tree for HTML underlined text @('<u>...</u>').")
 
-(xdoc::generate-primitive-constructor-for-tag :color
+(generate-primitive-constructor-for-tag :color
   "Construct an XDOC tree for HTML colored text @('<color>...</color>').")
 
-(xdoc::generate-primitive-constructor-for-tag :sf
+(generate-primitive-constructor-for-tag :sf
   "Construct an XDOC tree for HTML sans-serif text @('<sf>...</sf>').")
 
-(xdoc::generate-primitive-constructor-for-tag :tt
+(generate-primitive-constructor-for-tag :tt
   "Construct an XDOC tree for XDOC inline code @('<tt>...</tt>')
    (which is not rendered using the homonymous HTML tags;
-   see @(see xdoc::markup)).")
+   see @(see markup)).")
 
-(xdoc::generate-primitive-constructor-for-tag :code
+(generate-primitive-constructor-for-tag :code
   "Construct an XDOC tree for XDOC code block @('<code>...</code>')
    (which is not rendered using the homonymous HTML tags;
-   see @(see xdoc::markup)).")
+   see @(see markup)).")
 
-(xdoc::generate-primitive-constructor-for-tag :a
+(generate-primitive-constructor-for-tag :a
   "Construct an XDOC tree for an HTML hyperlink @('<a>...</a>').")
 
-(xdoc::generate-primitive-constructor-for-tag :see_
-  ;; :SEE would cause a conflict with XDOC::SEE in [books]/xdoc/names.lisp
+(generate-primitive-constructor-for-tag :see_
+  ;; :SEE would cause a conflict with SEE in [books]/xdoc/names.lisp
   "Construct an XDOC tree for an XDOC hyperlink @('<see>...</see>').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; primitive XDOC constructors for preprocessor directives and for concatenation:
 
-(xdoc::generate-primitive-constructor-for-dir/&& :&&
+(generate-primitive-constructor-for-dir/&& :&&
   "Construct an XDOC tree for a concatenation.")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@\'\'
+(generate-primitive-constructor-for-dir/&& :@\'\'
   "Construct an XDOC tree for a inline code directive @('@(\'...\')').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@{}
+(generate-primitive-constructor-for-dir/&& :@{}
   "Construct an XDOC tree for a code block directive @('@({...})').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@\`\`
+(generate-primitive-constructor-for-dir/&& :@\`\`
   "Construct an XDOC tree for an evaluation directive @('@(\`...\`)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@$$
+(generate-primitive-constructor-for-dir/&& :@$$
   "Construct an XDOC tree for a short KaTeK directive @('@($...$)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@[]
+(generate-primitive-constructor-for-dir/&& :@[]
   "Construct an XDOC tree for a long KaTeK directive @('@([...])').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@def
+(generate-primitive-constructor-for-dir/&& :@def
   "Construct an XDOC tree for a definition directive @('@(def ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@gdef
+(generate-primitive-constructor-for-dir/&& :@gdef
   "Construct an XDOC tree
    for a generated definition directive @('@(gdef ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@formals
+(generate-primitive-constructor-for-dir/&& :@formals
   "Construct an XDOC tree for a formals directive @('@(formals ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@body
+(generate-primitive-constructor-for-dir/&& :@body
   "Construct an XDOC tree for a body directive @('@(body ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@measure
+(generate-primitive-constructor-for-dir/&& :@measure
   "Construct an XDOC tree for a measure directive @('@(measure ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@call
+(generate-primitive-constructor-for-dir/&& :@call
   "Construct an XDOC tree for a call directive @('@(call ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@srclink
+(generate-primitive-constructor-for-dir/&& :@srclink
   "Construct an XDOC tree for a source link directive @('@(srclink ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@see
+(generate-primitive-constructor-for-dir/&& :@see
   "Construct an XDOC tree for a topic link directive @('@(see ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@csee
+(generate-primitive-constructor-for-dir/&& :@csee
   "Construct an XDOC tree
    for a capitalized topic link directive @('@(csee ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@tsee
+(generate-primitive-constructor-for-dir/&& :@tsee
   "Construct an XDOC tree
    for a typewriter topic link directive @('@(csee ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@see?
+(generate-primitive-constructor-for-dir/&& :@see?
   "Construct an XDOC tree
    for a conditional topic link directive @('@(see? ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@url
+(generate-primitive-constructor-for-dir/&& :@url
   "Construct an XDOC tree
    for a mangled topic link directive @('@(url ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@sym
+(generate-primitive-constructor-for-dir/&& :@sym
   "Construct an XDOC tree
    for a printed topic link directive @('@(sym ...)').")
 
-(xdoc::generate-primitive-constructor-for-dir/&& :@csym
+(generate-primitive-constructor-for-dir/&& :@csym
   "Construct an XDOC tree
    for a capitalized printed topic link directive @('@(csym ...)').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::composite-constructors
-  :parents (xdoc::constructors)
+(defxdoc composite-constructors
+  :parents (constructors)
   :short "Composite XDOC constructors."
   :long
   "<p>
    These correspond to multiple
    XML tags, preprocessor directives, and concatenations.
    In contrast,
-   the <see topic='@(url xdoc::primitive-constructors)'>primitive
+   the <see topic='@(url primitive-constructors)'>primitive
    constructors</see> correspond to single
    XML tags, preprocessor directives, and concatenations.
    </p>")
 
-(xdoc::order-subtopics xdoc::composite-constructors nil t)
+(order-subtopics composite-constructors nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc::generic-composite-constructors
-  :parents (xdoc::composite-constructors)
+(defxdoc generic-composite-constructors
+  :parents (composite-constructors)
   :short "Generic composite XDOC constructors."
   :long
   "<p>
@@ -998,12 +998,12 @@
    Other composite XDOC constructors are more specific.
    </p>")
 
-(xdoc::order-subtopics xdoc::generic-composite-constructors nil t)
+(order-subtopics generic-composite-constructors nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::topstring
-  :parents (xdoc::generic-composite-constructors)
+(defsection topstring
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC string from a sequence of XDOC trees."
   :long
   "<p>
@@ -1012,48 +1012,48 @@
    for paragraphs, (un)ordered lists, code blocks, etc.
    This function can be used to wrap them into a top-level ``pseudo-tag''.
    </p>
-   @(def xdoc::topstring)"
+   @(def topstring)"
 
-  (defmacro xdoc::topstring (&rest trees)
-    `(xdoc::tree-to-string (xdoc::&& ,@trees))))
+  (defmacro topstring (&rest trees)
+    `(tree-to-string (&& ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::topstring-p
-  :parents (xdoc::generic-composite-constructors)
+(defsection topstring-p
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC string with a single paragraph."
   :long
   "<p>
    Sometimes a @(':long') documentation string consists of a single paragraph.
    This macro wraps the arguments (often just one string)
-   into a paragraph tree and then calls @(tsee xdoc::topstring).
+   into a paragraph tree and then calls @(tsee topstring).
    </p>
-   @(def xdoc::topstring-p)"
+   @(def topstring-p)"
 
-  (defmacro xdoc::topstring-p (&rest trees)
-    `(xdoc::topstring (xdoc::p ,@trees))))
+  (defmacro topstring-p (&rest trees)
+    `(topstring (p ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::topstring-@def
-  :parents (xdoc::generic-composite-constructors)
+(defsection topstring-@def
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC string with a single definition directive."
   :long
   "<p>
    Sometimes a @(':long') documentation string
    consists of a single definition preprocessor directive.
    This macro wraps the arguments (often just one string)
-   into a definition directive tree and then calls @(tsee xdoc::topstring).
+   into a definition directive tree and then calls @(tsee topstring).
    </p>
-   @(def xdoc::topstring-@def)"
+   @(def topstring-@def)"
 
-  (defmacro xdoc::topstring-@def (&rest trees)
-    `(xdoc::topstring (xdoc::@def ,@trees))))
+  (defmacro topstring-@def (&rest trees)
+    `(topstring (@def ,@trees))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::desc
-  :parents (xdoc::generic-composite-constructors)
+(defsection desc
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC tree for a description."
   :long
   "<p>
@@ -1075,44 +1075,44 @@
    However, the terms in a description list are rendered in bold,
    so it seems preferable to use a paragraph and a quoted block.
    </p>
-   @(def xdoc::desc)"
+   @(def desc)"
 
-  (defund xdoc::desc-things-to-string (things)
+  (defund desc-things-to-string (things)
     (declare (xargs :guard (string-listp things)))
     (cond ((endp things) "")
           ((endp (cdr things)) (car things))
           (t (concatenate 'string
                           (car things)
                           "<br/>"
-                          (xdoc::desc-things-to-string (cdr things))))))
+                          (desc-things-to-string (cdr things))))))
 
-  (defthm xdoc::stringp-of-desc-things-to-string
+  (defthm stringp-of-desc-things-to-string
     (implies (string-listp things)
-             (stringp (xdoc::desc-things-to-string things)))
-    :hints (("Goal" :in-theory (enable xdoc::desc-things-to-string))))
+             (stringp (desc-things-to-string things)))
+    :hints (("Goal" :in-theory (enable desc-things-to-string))))
 
-  (defund xdoc::desc-fn (thing/things description)
+  (defund desc-fn (thing/things description)
     (declare (xargs :guard (and (or (stringp thing/things)
                                     (string-listp thing/things))
-                                (xdoc::tree-listp description))
+                                (tree-listp description))
                     :guard-hints (("Goal" :in-theory (enable
-                                                      xdoc::blockquote-fn
-                                                      xdoc::p-fn)))))
+                                                      blockquote-fn
+                                                      p-fn)))))
     (let* ((things (if (stringp thing/things)
                        (list thing/things)
                      thing/things))
-           (things-string (xdoc::desc-things-to-string things))
-           (things-tree (xdoc::p things-string))
-           (description-tree (xdoc::blockquote-fn nil description)))
-      (xdoc::&& things-tree description-tree)))
+           (things-string (desc-things-to-string things))
+           (things-tree (p things-string))
+           (description-tree (blockquote-fn nil description)))
+      (&& things-tree description-tree)))
 
-  (defmacro xdoc::desc (thing/things &rest description)
-    `(xdoc::desc-fn ,thing/things (list ,@description))))
+  (defmacro desc (thing/things &rest description)
+    `(desc-fn ,thing/things (list ,@description))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::codeblock
-  :parents (xdoc::generic-composite-constructors)
+(defsection codeblock
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC tree for a code block @('@({...})')
           from a sequence of strings."
   :long
@@ -1133,34 +1133,34 @@
    <p>
    This XDOC constructor provides a possibly more convenient way
    to enter the lines that form the code block,
-   compared to the bare @(tsee xdoc::@{}) XDOC constructor.
+   compared to the bare @(tsee @{}) XDOC constructor.
    </p>
-   @(def xdoc::codeblock)"
+   @(def codeblock)"
 
-  (defund xdoc::codeblock-terminate-lines (lines)
+  (defund codeblock-terminate-lines (lines)
     (declare (xargs :guard (string-listp lines)))
     (cond ((endp lines) nil)
           (t (list* (car lines)
-                    xdoc::*newline*
-                    (xdoc::codeblock-terminate-lines (cdr lines))))))
+                    *newline*
+                    (codeblock-terminate-lines (cdr lines))))))
 
-  (defthm xdoc::string-listp-of-codeblock-terminate-lines
+  (defthm string-listp-of-codeblock-terminate-lines
     (implies (string-listp lines)
-             (string-listp (xdoc::codeblock-terminate-lines lines)))
-    :hints (("Goal" :in-theory (enable xdoc::codeblock-terminate-lines))))
+             (string-listp (codeblock-terminate-lines lines)))
+    :hints (("Goal" :in-theory (enable codeblock-terminate-lines))))
 
-  (defund xdoc::codeblock-fn (lines)
+  (defund codeblock-fn (lines)
     (declare (xargs :guard (string-listp lines)))
-    (xdoc::@{}-fn (cons xdoc::*newline*
-                        (xdoc::codeblock-terminate-lines lines))))
+    (@{}-fn (cons *newline*
+                        (codeblock-terminate-lines lines))))
 
-  (defmacro xdoc::codeblock (&rest lines)
-    `(xdoc::codeblock-fn (list ,@lines))))
+  (defmacro codeblock (&rest lines)
+    `(codeblock-fn (list ,@lines))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::seeurl
-  :parents (xdoc::generic-composite-constructors)
+(defsection seeurl
+  :parents (generic-composite-constructors)
   :short "Construct an XDOC tree for a string of the form
           @('<see topic=\"@(url ...)\">...</see>')."
   :long
@@ -1170,7 +1170,7 @@
    This XDOC constructor takes two strings as arguments,
    one for the topic and one for the hyperlinked text.
    </p>
-   @(def xdoc::seeurl)"
+   @(def seeurl)"
 
-  (defmacro xdoc::seeurl (topic text)
-    `(xdoc::see_ :topic (xdoc::@url ,topic) ,text)))
+  (defmacro seeurl (topic text)
+    `(see_ :topic (@url ,topic) ,text)))
