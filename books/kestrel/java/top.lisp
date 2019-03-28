@@ -139,6 +139,14 @@
       has been simplified to no longer include function definitions,
       since they are now stored directly with the function themselves.")
     (xdoc::li
+     "AIJ has been extended with the ability to validate statically that
+      all the function calls have a number of arguments
+      that matches the function arity.
+      AIJ provides a new public API method
+      to validate all the currently defined functions.
+      AIJ can thus avoid these checks at run time,
+      resulting in increased execution speed.")
+    (xdoc::li
      "ATJ has been extended with a facility to generate Java code
       to execute tests that compare
       results obtained via evaluation in ACL2

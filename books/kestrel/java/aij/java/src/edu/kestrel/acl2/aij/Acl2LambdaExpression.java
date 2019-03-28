@@ -87,22 +87,12 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * with respect to a binding of the given values
      * to the formal parameters of the lambda expression.
      *
-     * @throws Acl2EvaluationException if values.length differs from
-     *                                 the arity of the lambda expression,
-     *                                 or the evaluation of the body fails
+     * @throws Acl2EvaluationException if the evaluation of the body fails
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
         assert values != null;
         for (Acl2Value value : values) assert value != null;
-        int len = values.length;
-        if (this.parameters.length != len)
-            throw new Acl2EvaluationException
-                    ("Called "
-                            + this.parameters.length
-                            + "-ary lambda expression on "
-                            + len
-                            + (len == 1 ? " argument." : " arguments."));
         return this.body.eval(values);
     }
 

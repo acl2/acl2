@@ -132,15 +132,14 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * Applies this ACL2 defined function to the given ACL2 values.
      * The defining lambda expression is applied to the values.
      *
-     * @throws Acl2EvaluationException if the call to this function fails
+     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
         assert values != null;
         for (Acl2Value value : values) assert value != null;
-        if (definiens == null)
-            throw new Acl2EvaluationException
-                    ("Undefined function: " + this.getName() + ".");
+        assert definiens != null;
         return definiens.apply(values);
     }
 

@@ -126,17 +126,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code characterp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CHARACTERP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.characterp();
@@ -167,17 +161,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code stringp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called STRINGP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.stringp();
@@ -208,17 +196,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code symbolp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOLP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.symbolp();
@@ -249,17 +231,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code integerp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called INTEGERP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.integerp();
@@ -290,17 +266,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code rationalp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called RATIONALP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.rationalp();
@@ -331,17 +301,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code complex-rationalp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called COMPLEX-RATIONALP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.complexRationalp();
@@ -372,17 +336,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code acl2-numberp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called ACL2-NUMBERP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.acl2Numberp();
@@ -413,17 +371,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code consp} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CONSP on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.consp();
@@ -454,17 +406,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code char-code} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CHAR-CODE on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.charCode();
@@ -495,17 +441,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code code-char} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
+        Acl2Value apply(Acl2Value[] values) {
             assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CODE-CHAR on "
-                                + values.length
-                                + " arguments.");
             Acl2Value x = values[0];
             assert x != null;
             return x.codeChar();
@@ -536,17 +476,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code coerce} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called COERCE on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -584,17 +518,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies
          * the {@code intern-in-package-of-symbol} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called INTERN-IN-PACKAGE-OF-SYMBOL on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value str = values[0];
             Acl2Value sym = values[1];
             assert str != null && sym != null;
@@ -627,17 +555,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code symbol-package-name} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOL-PACKAGE-NAME on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.symbolPackageName();
@@ -668,17 +590,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code symbol-name} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOL-NAME on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.symbolName();
@@ -709,17 +625,19 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code pkg-imports} ACL2 primitive function
          * to the given ACL2 values.
+         * An exception is thrown if the string does not name a known package
+         * (this includes the case in which
+         * the string is not a valid package name).
+         * This is in accordance with
+         * the ACL2 manual page for {@code pkg-imports},
+         * which says that evaluation fails in this case.
          *
-         * @throws Acl2EvaluationException if the application fails
+         * @throws Acl2EvaluationException if the package name is invalid
+         *                                 or the package is not defined
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called PKG-IMPORTS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+            assert values != null;
             Acl2Value pkg = values[0];
             assert pkg != null;
             return pkg.pkgImports();
@@ -757,17 +675,13 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * the ACL2 manual page for {@code pkg-witness},
          * which says that evaluation fails in this case.
          *
-         * @throws Acl2EvaluationException if the application fails
+         * @throws Acl2EvaluationException if the package name is invalid
+         *                                 or the package is not defined
          * @throws IllegalStateException   if the package witness is not set yet
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called PKG-WITNESS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+            assert values != null;
             Acl2Value pkg = values[0];
             assert pkg != null;
             return pkg.pkgWitness();
@@ -798,17 +712,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code unary--} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called UNARY-- on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.negate();
@@ -839,17 +747,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code unary-/} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called UNARY-/ on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.reciprocate();
@@ -880,17 +782,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code binary-+} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BINARY-+ on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -922,17 +818,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code binary-*} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BINARY-* on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -964,17 +854,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code <} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called < on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1011,17 +895,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code complex} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called COMPLEX on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1053,17 +931,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code realpart} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called REALPART on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.realpart();
@@ -1094,17 +966,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code imagpart} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called IMAGPART on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.imagpart();
@@ -1135,17 +1001,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code numerator} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called NUMERATOR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.numerator();
@@ -1176,17 +1036,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code denominator} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called DENOMINATOR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.denominator();
@@ -1217,17 +1071,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code cons} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called CONS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1259,17 +1107,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code car} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CAR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.car();
@@ -1300,17 +1142,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code cdr} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CDR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             assert x != null;
             return x.cdr();
@@ -1341,17 +1177,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         /**
          * Applies the {@code equal} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called EQUAL on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1398,17 +1228,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * (in particular, {@link Acl2Value} and its subclasses
          * cannot be subclassed outside the AIJ package);
          * thus, this native implementation always returns {@code nil}.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BAD-ATOM<= on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1447,17 +1271,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code if} on some argument values,
          * then we use this method below to return the result.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 3)
-                throw new Acl2EvaluationException
-                        ("Called IF on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             Acl2Value z = values[2];
@@ -1510,17 +1328,11 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code or} on some argument values,
          * then we use this method below to return the result.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called OR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
+            assert values != null;
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             assert x != null && y != null;
@@ -1589,6 +1401,6 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
     public void define(Acl2Symbol[] parameters, Acl2Term body) {
         throw new IllegalArgumentException
                 ("Attempting to define the native function "
-                        + this.getName()+ ".");
+                        + this.getName() + ".");
     }
 }

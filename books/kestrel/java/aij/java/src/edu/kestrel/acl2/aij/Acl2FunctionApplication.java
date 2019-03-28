@@ -122,35 +122,26 @@ public final class Acl2FunctionApplication extends Acl2Term {
      * thus, the use of this {@code or} pseudo-function in AIJ
      * can never interfere with other ACL2 functions.
      *
-     * @throws Acl2EvaluationException if the evaluation of an argument fails,
-     *                                 or the application of
-     *                                 the function or lambda expression fails
+     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException {
         assert binding != null;
-        int len = arguments.length;
         if (function.isIf()) {
-            if (len != 3) // this should never happen with well-formed terms
-                throw new Acl2EvaluationException
-                        ("Called IF on " + len +
-                                (len == 1 ? " argument." : " arguments."));
             Acl2Value test = arguments[0].eval(binding);
             if (test.equals(Acl2Symbol.NIL))
                 return arguments[2].eval(binding);
             else
                 return arguments[1].eval(binding);
         } else if (function.isOr()) {
-            if (len != 2) // this should never happen with well-formed terms
-                throw new Acl2EvaluationException
-                        ("Called OR on " + len +
-                                (len == 1 ? " argument." : " arguments."));
             Acl2Value first = arguments[0].eval(binding);
             if (first.equals(Acl2Symbol.NIL))
                 return arguments[1].eval(binding);
             else
                 return first;
         } else {
+            int len = arguments.length;
             Acl2Value[] argumentValues = new Acl2Value[len];
             for (int i = 0; i < len; ++i)
                 argumentValues[i] = this.arguments[i].eval(binding);

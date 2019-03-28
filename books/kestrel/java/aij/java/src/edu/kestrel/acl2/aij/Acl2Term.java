@@ -57,7 +57,8 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * the variable with index {@code i}.
      * See {@link Acl2Variable} for more information about variable indices.
      *
-     * @throws Acl2EvaluationException if evaluation fails
+     * @throws Acl2EvaluationException if a call of {@code pkg-imports}
+     *                                 or {@code pkg-witness} fails
      */
     abstract Acl2Value eval(Acl2Value[] binding) throws Acl2EvaluationException;
 
