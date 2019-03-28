@@ -16,6 +16,14 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Returns the number of parameters of this function.
+     *
+     * @throws IllegalStateException if this is a defined function
+     *                               without an actual definition yet
+     */
+    abstract int getArity();
+
+    /**
      * Sets the indices of all the variables in this function.
      * See {@link Acl2Variable} for more information about variable indices.
      *

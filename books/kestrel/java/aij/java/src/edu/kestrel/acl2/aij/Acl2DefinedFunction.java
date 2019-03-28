@@ -57,6 +57,21 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Returns the number of parameters of this defined function.
+     *
+     * @throws IllegalStateException if this defined function
+     *                               has no actual definition yet
+     */
+    @Override
+    int getArity() {
+        if (this.definiens == null)
+            throw new IllegalStateException
+                    ("Attempting to retrieve the arity of function "
+                            + this.getName() + ", which is not defined yet.");
+        return this.definiens.getArity();
+    }
+
+    /**
      * Checks if this defined function is
      * the {@code if} ACL2 primitive function.
      * This is never the case, because of the invariant discussed in

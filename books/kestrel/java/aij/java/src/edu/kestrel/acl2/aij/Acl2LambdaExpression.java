@@ -42,6 +42,14 @@ public final class Acl2LambdaExpression extends Acl2Function {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Returns the number of parameters of this lambda expression.
+     */
+    @Override
+    int getArity() {
+        return this.parameters.length;
+    }
+
+    /**
      * Sets the indices of all the variables in this lambda expression.
      * The index of each free variable in the body of this lambda expression
      * is set to the zero-based position of the variable symbol
