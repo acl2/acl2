@@ -138,13 +138,14 @@
   (declare (ignorable state))
   ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
   (b* (((when (hons-equal (gl-object-fix x)
-                     (gl-object-fix equiv-term)))
+                          (gl-object-fix equiv-term)))
         (mv t nil t))
        ((unless (gl-object-case equiv-term :g-apply))
         (mv nil nil nil))
        (equiv (g-apply->fn equiv-term))
        ((unless (or (eq equiv 'equal)
-                    (member-eq equiv (equiv-contexts-fix contexts))))
+                    (and equiv
+                         (member-eq equiv (equiv-contexts-fix contexts)))))
         (mv nil nil nil))
        (args (g-apply->args equiv-term))
        ((unless (equal (len args) 2))

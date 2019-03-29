@@ -35,6 +35,8 @@
 (include-book "logicman")
 (include-book "centaur/misc/starlogic" :dir :system)
 
+(local (std::add-default-post-define-hook :fix))
+
 (define equiv-context-p (x)
   (or (pseudo-fnsym-p x)
       (and (consp x)

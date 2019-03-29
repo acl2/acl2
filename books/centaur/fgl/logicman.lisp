@@ -2258,6 +2258,9 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                                         (<gobjlist-eval> x env))))
            :fn <gobjlist-eval>))
 
+       (fty::deffixcong gl-object-equiv equal (<gobj-eval> x env) x)
+       (fty::deffixcong gl-objectlist-equiv equal (<gobjlist-eval> x env) x)
+
        (defthm-<gobj-eval>-flag
          (defthm <gobj-eval>-of-logicman-extension
            (implies (and (bind-logicman-extension new old)

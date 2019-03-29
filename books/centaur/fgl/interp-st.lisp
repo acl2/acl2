@@ -67,7 +67,8 @@
                         (satisfies interp-flags-p))
              :initially ,(make-interp-flags)
              :fix interp-flags-fix :predfn interp-flags-p)
-      (errmsg :type t))))
+      (errmsg :type t)
+      (debug-info :type t))))
 
 
 (local (defun member-eq-tree (x tree)
