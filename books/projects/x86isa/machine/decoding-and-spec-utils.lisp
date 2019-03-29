@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2019, Kestrel Technology, LLC
 
 ; All rights reserved.
 
@@ -1987,6 +1987,12 @@ reference made from privilege level 3.</blockquote>"
 ;; functions.
 (def-ruleset instruction-decoding-and-spec-rules nil)
 
+; Calls of the following function are being replaced with calls of
+; SELECT-OPERAND-SIZE$ (defined below). When the following function is no
+; longer called, it will be removed, and SELECT-OPERAND-SIZE$ will be renamed
+; to SELECT-OPERAND-SIZE. In other words, we are gradually replacing the
+; following function with an improved version, which has a slightly different
+; interface (namely, it has more parameters).
 (define select-operand-size
   ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
    (byte-operand? :type (or t nil))
@@ -2061,6 +2067,118 @@ reference made from privilege level 3.</blockquote>"
 	      2 ;; 16-bit operand-size
 	    4   ;; Default 32-bit operand size (in 64-bit mode)
 	    ))
+      ;; 32-bit mode or Compatibility Mode:
+      (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
+	   (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
+	   (p3? (eql #.*operand-size-override*
+		     (the (unsigned-byte 8) (prefixes->opr prefixes)))))
+	(if (= cs.d 1)
+	    (if p3? 2 4)
+	  (if p3? 4 2))))))
+
+; The following function is an improved replacement for SELECT-OPERAND-SIZE
+; above. See the comment just before that function for details.
+(define select-operand-size$
+  ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
+   (byte-operand? :type (or t nil))
+   (rex-byte      :type (unsigned-byte  8))
+   (imm?          :type (or t nil))
+   (prefixes      :type (unsigned-byte #.*prefixes-width*))
+   (default64?    :type (or t nil))
+   (ignore-rex?   :type (or t nil))
+   (ignore-p3-64? :type (or t nil))
+   (x86 x86p))
+
+  :inline t
+  :no-function t
+  :parents (decoding-and-spec-utils)
+  :guard (prefixes-p prefixes)
+
+  :short "Selecting the operand size for general-purpose instructions"
+
+  :long "<p>@('select-operand-size') selects the operand size of the
+  instruction.  It is cognizant of the instruction prefixes, the
+  @('rex') byte, the operand type (e.g., immediate operand or not),
+  and the default operand size (obtained from the state).</p>
+
+  <p>This function was written by referring to the following:
+  <ol>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-3</li>
+  <li>Intel Manuals, Vol. 1, Section 3.6, Table 3-4</li>
+  <li>Intel Manuals, Vol. 2, Section 2.2.1.2</li>
+  </ol>
+  </p>
+
+  <p><img src='res/images/Vol-1-Table-3-3-small.png' width='8%'
+  height='8%' />
+
+  <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
+  height='8%' />
+
+  The first image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Order Number: 253665-062US, March 2017.</p>
+
+  The second image above has been captured from Volume 1: Basic Architecture,
+  Intel\(R\) 64 and IA-32 Architectures Software Developer's Manual,
+  Combined Volumes: 1, 2A, 2B, 2C, 3A, 3B and 3C, Order Number:
+  325462-054US, April 2015.</p>
+
+  <i>
+  <ul>
+  <li>Setting REX.W can be used to determine the operand size but does
+  not solely determine operand width. Like the 66H size prefix, 64-bit
+  operand size override has no effect on byte-specific operations.</li>
+
+  <li>For non-byte operations: if a 66H prefix is used with prefix
+  \(REX.W = 1\), 66H is ignored.</li>
+
+  <li>If a 66H override is used with REX and REX.W = 0, the operand size
+  is 16 bits.</li>
+  </ul>
+  </i>
+
+  <p>This function also includes three additional boolean parameters that serve
+  to accommodate instructions that do not quite follow the general rules
+  specified by the table above:</p>
+
+  <ul>
+
+  <li>The @('default64?') parameter says whether the default operand size in
+  64-bit mode should be 64 bits instead of 32 bits. Examples are @(tsee
+  x86-near-jmp-op/en-m) and @(tsee x86-push-general-register).</li>
+
+  <li>The @('ignore-rex?') parameter says whether, in 64-bit mode, REX.W should
+  be ignored for the purpose of determining the operand size. Examples are
+  @(tsee x86-two-byte-jcc), @(tsee x86-near-jmp-op/en-m), and @(tsee
+  x86-push-general-register).</li>
+
+  <li>The @('ignore-p3-64?') parameter says whether, in 64-bit mode, P3 should
+  be ignored for the purpose of determining the operand size. Examples are
+  @(tsee x86-two-byte-jcc) and @(tsee x86-near-jmp-op/en-m).</li>
+
+  </ul>"
+
+  :enabled t
+  :returns (size natp :rule-classes :type-prescription)
+
+  (if byte-operand?
+      1
+    (if (equal proc-mode #.*64-bit-mode*)
+	(if (and (logbitp #.*w* rex-byte)
+                 (not ignore-rex?))
+	    (if imm?
+		;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
+		;; immediate.
+		4
+	      8)
+	  (if (and (eql #.*operand-size-override*
+                        (the (unsigned-byte 8) (prefixes->opr prefixes)))
+                   (not ignore-p3-64?))
+	      2
+	    (if default64?
+                8
+              4)))
       ;; 32-bit mode or Compatibility Mode:
       (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	   (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
