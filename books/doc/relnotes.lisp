@@ -475,7 +475,7 @@
  @('defthm-usb') utility to also generate a linear linear saying that the value
  is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
- with @('defthm-natp').  Moved all three utilities under @(see std/util).</p>
+ with @('defthm-natp').  Moved all three utilities to @(see std/util).</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
  of code segment descriptors, when they access for reading (not execution) a
@@ -494,6 +494,11 @@
  part of the DS, ES, FS, and GS segment registers does not contain a null
  segment selector.  A similar check on CS and SS is not needed because a null
  segment selector cannot be loaded into these two segment registers.</p>
+
+ <p>Improved the `PUSH segment register' instruction to handle a 32-bit operand
+ size as in modern processors: instead of zero-extending the 16-bit content of
+ the segment register to 32 bits, now the model writes the low 16 bits, leaving
+ the high 16 bits unchanged.</p>
 
  <p>Improved and extended some documentation.</p>
 
