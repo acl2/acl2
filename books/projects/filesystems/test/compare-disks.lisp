@@ -1,4 +1,4 @@
-(include-book "../file-system-m2")
+(include-book "../lofat")
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "oslib/argv" :dir :system)
 
@@ -6,20 +6,20 @@
     (((mv & val state)
       (getenv$ "REF_INPUT" state))
      ((mv fat32-in-memory &)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory val state))
      ((mv fs-ref &)
-      (fat32-in-memory-to-m1-fs fat32-in-memory))
+      (lofat-to-hifat fat32-in-memory))
      ((mv & val state)
       (getenv$ "INPUT" state))
      ((mv fat32-in-memory &)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory val state))
      ((mv fs &)
-      (fat32-in-memory-to-m1-fs fat32-in-memory)))
+      (lofat-to-hifat fat32-in-memory)))
   (mv
        (good-bye
-        (if (m1-dir-equiv fs-ref fs)
+        (if (hifat-equiv fs-ref fs)
             0
           1))
        fat32-in-memory

@@ -4,7 +4,7 @@
     (((mv & val state)
       (getenv$ "DISK" state))
      ((mv fat32-in-memory &)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory val state))
      ((mv & val state)
       (getenv$ "CP_OUTPUT" state))
@@ -14,7 +14,7 @@
       (getenv$ "CP_INPUT" state))
      (fat32-pathname (pathname-to-fat32-pathname (coerce val 'list)))
      ((mv fs &)
-      (fat32-in-memory-to-m1-fs fat32-in-memory))
+      (lofat-to-hifat fat32-in-memory))
      ((mv val error-code &)
       (m1-lstat fs fat32-pathname))
      ((unless (equal error-code 0))
