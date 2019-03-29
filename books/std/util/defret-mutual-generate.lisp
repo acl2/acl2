@@ -86,14 +86,18 @@ return value satisfying the given criteria, simple to @('has-formal').</li>
 <p>An action may be any of the following:</p>
 
 <ul>
-<li>@('(:add-hyp term)') adds @('term') as a hypothesis.</li>
+<li>@('(:add-hyp term)') adds @('term') as a top-level hypothesis.</li>
+<li>@('(:push-hyp term)') pushes @('term') as a hypothesis for any conclusions
+added subsequently until it is popped off the stack with @('(:pop-hyp)').</li>
+<li>@('(:pop-hyp)') removes the most recently pushed hypothesis so it won't
+affect subsequent conclusions added.</li>
 <li>@('(:add-concl term)') adds @('term') as a conclusion, conjoined with any others.</li>
 <li>@('(:add-bindings . bindings)') adds the given bindings as B* bindings, after
 binding the return values but outside of both the hyps and conclusions.</li>
-<li>@('(:each-formal :type type :var var :action action)'), where each action is
-an @('add-hyp') or @('add-concl') form, adds the given hyp or conclusion for
-each formal with the given type, with @('var') in these actions replaced by the
-name of the formal.</li>
+<li>@('(:each-formal :type type :var var :action action)'), where each action
+is an @(':add-hyp'), @(':push-hyp') or @(':add-concl') form, adds the
+given hyp or conclusion for each formal with the given type, with @('var') in
+these actions replaced by the name of the formal.</li>
 
 <li>@('(:each-return :type type :var var :action action)'), similar to
 @('each-formal') but acts on return values instead of formals.</li>
@@ -276,8 +280,11 @@ function names. For example:</p>
 
 (def-primitive-aggregate dmgen-defret-form
   (thmname
-   hyps
-   concls
+   top-hyps      ;; list of hyps
+   hyps-and-concls
+   ;; list of: (:hyp . hyp) or (:concl . concl) or (:pop-hyp) where each hyp
+   ;; applies to all subsequently pushed concls until it is popped off with
+   ;; :pop-hyp
    bindings
    keywords
    fn))
@@ -287,6 +294,10 @@ function names. For example:</p>
                  (not (cddr action))))
        (msg "Bad add-hyp/concl action: ~x0" action)))
 
+(defun dmgen-check-pop-hyp-action (action)
+  (and (cdr action)
+       (msg "Bad pop-hyp action: ~x0" action)))
+
 (defun dmgen-check-add-bindings-action (action)
   (and (not (true-listp (cadr action)))
        (msg "Bad add-bindings action: ~x0" action)))
@@ -294,9 +305,35 @@ function names. For example:</p>
 (defun dmgen-check-formal/return-action (action)
   (if (atom action)
       (msg "Bad formal action (atom): ~x0" action)
-    (if (member-eq (car action) '(:add-hyp :add-concl))
+    (if (member-eq (car action) '(:add-hyp :push-hyp :add-concl))
         (dmgen-check-add-hyp/concl-action action)
       (msg "Bad formal action: ~x0" action))))
+
+
+(defun dmgen-push-hyp (new-term form)
+  (b* (((dmgen-defret-form form)))
+    (change-dmgen-defret-form
+     form
+     :hyps-and-concls (cons (cons :hyp new-term) form.hyps-and-concls))))
+
+(defun dmgen-pop-hyp ( form)
+  (b* (((dmgen-defret-form form)))
+    (change-dmgen-defret-form
+     form
+     :hyps-and-concls (cons '(:pop-hyp) form.hyps-and-concls))))
+
+
+(defun dmgen-add-concl (new-term form)
+  (b* (((dmgen-defret-form form)))
+    (change-dmgen-defret-form
+     form
+     :hyps-and-concls (cons (cons :concl new-term) form.hyps-and-concls))))
+
+(defun dmgen-add-hyp (new-term form)
+  (b* (((dmgen-defret-form form)))
+    (change-dmgen-defret-form
+     form
+     :top-hyps (cons new-term form.top-hyps))))
 
 ;; (defun dmgen-check-formal/return-actions (actions)
 ;;   (if (atom actions)
@@ -305,18 +342,18 @@ function names. For example:</p>
 ;;         (dmgen-check-formal/return-actions (cdr actions)))))
 
 (defun dmgen-formal/return-action (replace-var formalname action form)
-  (b* (((dmgen-defret-form form)))
+  (b* (((when (eq (car action) :pop-hyp))
+        (dmgen-pop-hyp form))
+       (new-term (if replace-var
+                     (subst formalname replace-var (cadr action))
+                   (cadr action))))
     (case (car action)
-      (:add-hyp (change-dmgen-defret-form
-                 form :hyps (cons (if replace-var
-                                      (subst formalname replace-var (cadr action))
-                                    (cadr action))
-                                  form.hyps)))
-      (:add-concl (change-dmgen-defret-form
-                   form :concls (cons (if replace-var
-                                          (subst formalname replace-var (cadr action))
-                                        (cadr action))
-                                      form.concls))))))
+      (:add-hyp
+       (dmgen-add-hyp new-term form))
+      (:push-hyp
+       (dmgen-push-hyp new-term form))
+      (:add-concl
+       (dmgen-add-concl new-term form)))))
 
 ;; (defun dmgen-formal/return-actions (replace-var formalname actions form)
 ;;   (if (atom actions)
@@ -366,7 +403,8 @@ function names. For example:</p>
   (if (atom action)
       (msg "Bad action (atom): ~x0" action)
     (case (car action)
-      ((:add-hyp :add-concl) (dmgen-check-add-hyp/concl-action action))
+      ((:add-hyp :push-hyp :add-concl) (dmgen-check-add-hyp/concl-action action))
+      (:pop-hyp (dmgen-check-pop-hyp-action action))
       ((:each-formal :each-return) (dmgen-check-each-formal/return-action action))
       (:add-bindings (dmgen-check-add-bindings-action action))
       (:add-keyword (dmgen-check-add-keyword-action action))
@@ -392,8 +430,10 @@ function names. For example:</p>
 (defun dmgen-action (action guts form)
   (b* (((dmgen-defret-form form)))
     (case (car action)
-      (:add-hyp   (change-dmgen-defret-form form :hyps (cons (cadr action) form.hyps)))
-      (:add-concl (change-dmgen-defret-form form :concls (cons (cadr action) form.concls)))
+      (:add-hyp             (dmgen-add-hyp (cadr action) form))
+      (:push-hyp            (dmgen-push-hyp (cadr action) form))
+      (:pop-hyp             (dmgen-pop-hyp form))
+      (:add-concl           (dmgen-add-concl (cadr action) form))
       (:add-bindings (change-dmgen-defret-form form :bindings (append form.bindings (cadr action))))
       (:each-formal (dmgen-each-formal-action
                      (cadr (assoc-keyword :type (cdr action)))
@@ -427,17 +467,61 @@ function names. For example:</p>
                        guts
                        (dmgen-apply-rule (car rules) guts form))))
 
+(defun dmgen-collect-consecutive-hyps (x)
+  (and (consp x)
+       (eq (caar x) :hyp)
+       (cons (cdar x)
+             (dmgen-collect-consecutive-hyps (cdr x)))))
+
+(defun dmgen-skip-past-hyps (x)
+  (if (and (consp x)
+           (eq (caar x) :hyp))
+      (dmgen-skip-past-hyps (cdr x))
+    x))
+
+(defun dmgen-hyps-and-concls-to-expression (hyps concls)
+  (b* ((concl (cond ((atom concls) t)
+                    ((atom (cdr concls)) (car concls))
+                    (t `(and . ,concls))))
+       ((when (atom hyps)) concl)
+       (hyp (cond ((atom (cdr hyps)) (car hyps))
+                  (t `(and . ,hyps)))))
+    `(implies ,hyp ,concl)))
+
+(defun dmgen-process-hyps-and-concls (x)
+  (cond ((atom x) (mv nil nil))
+        ((eq (caar x) :pop-hyp) (mv nil (cdr x))) 
+        ((eq (caar x) :hyp)
+         (b* (((mv concls rest) (dmgen-process-hyps-and-concls (cdr x)))
+              ((mv rest-concls rest-rest)
+               (dmgen-process-hyps-and-concls rest)))
+           (mv (cons (dmgen-hyps-and-concls-to-expression (list (cdar x)) concls)
+                     rest-concls)
+               rest-rest)))
+        ((eq (caar x) :concl)
+         (b* (((mv concls rest) (dmgen-process-hyps-and-concls (cdr x))))
+           (mv (cons (cdar x) concls) rest)))
+        (t (mv (er hard? 'dmgen-process-hyps-and-concls "Illformed hyps-and-concls: ~x0" x) nil))))
+    
+        
+
 
 (defun dmgen-defret-form->defrets (form)
-  (b* (((dmgen-defret-form form)))
-    (if (not form.concls)
-        nil
-      `((defret ,form.thmname
-          (b* ,form.bindings
-            (implies (and . ,form.hyps)
-                     (and . ,form.concls)))
-          ,@form.keywords
-          :fn ,form.fn)))))
+  (b* (((dmgen-defret-form form))
+       (hyps-and-concls (reverse form.hyps-and-concls))
+       ((mv concls remainder) (dmgen-process-hyps-and-concls hyps-and-concls))
+       ((when remainder)
+        (er hard? 'dmgen-defret-form->defrets "Error processing hyps-and-concls: too many pop-hyp forms?~%"))
+       ((unless concls)
+        nil)
+       (form (dmgen-hyps-and-concls-to-expression form.top-hyps concls))
+       (form-with-bindings (if (consp form.bindings)
+                               `(b* ,form.bindings ,form)
+                             form)))
+    `((defret ,form.thmname
+        ,form-with-bindings
+        ,@form.keywords
+        :fn ,form.fn))))
 
 ;; (defun dmgen-defret-forms->defrets (forms)
 ;;   (if (atom forms)
@@ -608,10 +692,10 @@ function names. For example:</p>
                           nil))
        ((when bad)
         (er hard? 'defret-generate "extra arguments in defret-generate"))
-       (rules (append (cdr (assoc :rules kwd-alist))
-                      (dmgen-process-formal-hyps (cdr (assoc :formal-hyps kwd-alist)))
+       (rules (append (dmgen-process-formal-hyps (cdr (assoc :formal-hyps kwd-alist)))
                       (dmgen-process-return-concls (cdr (assoc :return-concls kwd-alist)))
-                      (dmgen-process-function-keys (cdr (assoc :function-keys kwd-alist))))))
+                      (dmgen-process-function-keys (cdr (assoc :function-keys kwd-alist)))
+                      (cdr (assoc :rules kwd-alist)))))
     (dmgen-generate-for-rules thmname rules (defines-guts->gutslist guts))))
 
 (defun dmgen-multi-rulesets (dmgen-forms guts)
