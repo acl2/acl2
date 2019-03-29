@@ -9670,11 +9670,12 @@
               ;; detected in that mode.
               :REX :W
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-9))
+              :GROUP '(:GROUP-9)
+              :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M DQ))
           'NIL
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
-    (INST "CMPXCH8B"
+    (INST "CMPXCHG8B"
           (OP :OP #xFC7
               :REG #x1
               :MOD :MEM
@@ -9682,7 +9683,8 @@
               ;; :NOT-W also includes the case where the rex byte is absent.
               :REX :NOT-W
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-9))
+              :GROUP '(:GROUP-9)
+              :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M Q))
           'NIL
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))

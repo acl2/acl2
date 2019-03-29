@@ -453,7 +453,7 @@
 
 (define mod-p (x)
   (or (not x)
-      (eq x :mem)
+      (eq x :mem) ;; mod != #b11
       (2bits-p x))
   ///
   (define mod-fix ((x mod-p))
@@ -663,7 +663,8 @@
 (defprod opcode
   ((op            24bits-p
                   "Includes escape bytes of two- and three-byte opcodes as
-                  well")
+                  well"
+                  :default '0)
    (mode          op-mode-p
                   :default 'nil)
    (reg           maybe-3bits-p

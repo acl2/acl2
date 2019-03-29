@@ -379,7 +379,7 @@ opcode maps."
            ,@(and opcode.mod
                   (if (equal opcode.mod :mem)
                       `((not (equal (modr/m->mod modr/m) #b11)))
-                    `((equal (modr/m->mod modr/m) #b11))))
+                    `((equal (modr/m->mod modr/m) ,opcode.mod))))
            ,@(and opcode.r/m
                   `((equal (modr/m->r/m modr/m) ,opcode.r/m)))
            ,@(and opcode.pfx
