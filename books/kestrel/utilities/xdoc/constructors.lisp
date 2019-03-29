@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc constructors
-  :parents (xdoc xdoc-utilities)
+  :parents (xdoc acl2::xdoc-utilities)
   :short "Utilities to costruct
           well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
@@ -52,15 +52,13 @@
    <p>
    With these XDOC constructors, one can write
    </p>
-   @({
-     (xdoc::topstring
-       (xdoc::p \"A paragraph.\")
-       (xdoc::ul
-         (xdoc::li \"One.\")
-         (xdoc::li \"Two.\")
-         (xdoc::li \"Three.\"))
-       (xdoc::p \"Another paragraph.\"))
-   })
+   <code>(xdoc::topstring
+           (xdoc::p \"A paragraph.\")
+           (xdoc::ul
+             (xdoc::li \"One.\")
+             (xdoc::li \"Two.\")
+             (xdoc::li \"Three.\"))
+           (xdoc::p \"Another paragraph.\"))</code>
    <p>
    instead of
    </p>
@@ -91,8 +89,14 @@
    For relatively short XML-tagged text or preprocessor directives,
    it may be better to use tags and directives within a string
    rather than the corresponding XDOC constructors,
-   e.g. @('(xdoc::p \"This is in <i>italics</i>.\")')
-   rather than @('(xdoc::p \"This is in \" (xdoc::i \"italics\") \".\")').
+   e.g.
+   </p>
+   <code>(xdoc::p \"This is in \<i\>italics\</i\>.\")</code>
+   <p>
+   rather than
+   </p>
+   <code>(xdoc::p \"This is in \" (xdoc::i \"italics\") \".\")</code>
+   <p>
    In other words, it is not necessary to use XDOC constructors for everything,
    but only where they are convenient.
    </p>
@@ -906,68 +910,81 @@
   "Construct an XDOC tree for a concatenation.")
 
 (generate-primitive-constructor-for-dir/&& :@\'\'
-  "Construct an XDOC tree for a inline code directive @('@(\'...\')').")
+  "Construct an XDOC tree
+   for a inline code directive <tt>@</tt><tt>(\'...\')</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@{}
-  "Construct an XDOC tree for a code block directive @('@({...})').")
+  "Construct an XDOC tree
+   for a code block directive <tt>@</tt><tt>({...})</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@\`\`
-  "Construct an XDOC tree for an evaluation directive @('@(\`...\`)').")
+  "Construct an XDOC tree
+   for an evaluation directive <tt>@</tt><tt>(\`...\`)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@$$
-  "Construct an XDOC tree for a short KaTeK directive @('@($...$)').")
+  "Construct an XDOC tree
+   for a short KaTeK directive <tt>@</tt><tt>($...$)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@[]
-  "Construct an XDOC tree for a long KaTeK directive @('@([...])').")
+  "Construct an XDOC tree
+   for a long KaTeK directive <tt>@</tt><tt>([...])</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@def
-  "Construct an XDOC tree for a definition directive @('@(def ...)').")
+  "Construct an XDOC tree
+   for a definition directive <tt>@</tt><tt>(def ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@gdef
   "Construct an XDOC tree
-   for a generated definition directive @('@(gdef ...)').")
+   for a generated definition directive <tt>@</tt><tt>(gdef ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@formals
-  "Construct an XDOC tree for a formals directive @('@(formals ...)').")
+  "Construct an XDOC tree
+   for a formals directive <tt>@</tt><tt>(formals ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@body
-  "Construct an XDOC tree for a body directive @('@(body ...)').")
+  "Construct an XDOC tree
+   for a body directive <tt>@</tt><tt>(body ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@measure
-  "Construct an XDOC tree for a measure directive @('@(measure ...)').")
+  "Construct an XDOC tree
+   for a measure directive <tt>@</tt><tt>(measure ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@call
-  "Construct an XDOC tree for a call directive @('@(call ...)').")
+  "Construct an XDOC tree
+   for a call directive <tt>@</tt><tt>(call ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@srclink
-  "Construct an XDOC tree for a source link directive @('@(srclink ...)').")
+  "Construct an XDOC tree
+   for a source link directive <tt>@</tt><tt>(srclink ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@see
-  "Construct an XDOC tree for a topic link directive @('@(see ...)').")
+  "Construct an XDOC tree
+   for a topic link directive <tt>@</tt><tt>(see ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@csee
   "Construct an XDOC tree
-   for a capitalized topic link directive @('@(csee ...)').")
+   for a capitalized topic link directive <tt>@</tt><tt>(csee ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@tsee
   "Construct an XDOC tree
-   for a typewriter topic link directive @('@(csee ...)').")
+   for a typewriter topic link directive <tt>@</tt><tt>(csee ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@see?
   "Construct an XDOC tree
-   for a conditional topic link directive @('@(see? ...)').")
+   for a conditional topic link directive <tt>@</tt><tt>(see? ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@url
   "Construct an XDOC tree
-   for a mangled topic link directive @('@(url ...)').")
+   for a mangled topic link directive <tt>@</tt><tt>(url ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@sym
   "Construct an XDOC tree
-   for a printed topic link directive @('@(sym ...)').")
+   for a printed topic link directive <tt>@</tt><tt>(sym ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@csym
   "Construct an XDOC tree
-   for a capitalized printed topic link directive @('@(csym ...)').")
+   for a capitalized printed topic link directive
+   <tt>@</tt><tt>(csym ...)</tt>.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
