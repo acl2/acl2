@@ -2,10 +2,10 @@
 
 ;  m1-syscalls.lisp                                    Mihir Mehta
 
-; Syscalls for mode M1. These syscalls usually return, among other things, a
+; Syscalls for HiFAT. These syscalls usually return, among other things, a
 ; return value (corresponding to the C return value) and an errno.
 
-(include-book "file-system-m1")
+(include-book "hifat")
 
 ;; This implementation of basename+dirname is not exactly compliant with the
 ;; man pages basename(3)/dirname(3) - it assumes all paths provided to it are

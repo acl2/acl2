@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "file-system-m2")
+(include-book "lofat")
 (include-book "m1-syscalls")
 (include-book "centaur/getopt/top" :dir :system)
 
@@ -116,21 +116,21 @@
                   :otf-flg t))
   (b*
     (((mv fat32-in-memory error-code1)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory image-path1 state))
      ((mv fs-ref error-code2)
       (if
           (not (equal error-code1 0))
           (mv nil *EIO*)
-        (fat32-in-memory-to-m1-fs fat32-in-memory)))
+        (lofat-to-hifat fat32-in-memory)))
      ((mv fat32-in-memory error-code3)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory image-path2 state))
      ((mv fs error-code4)
       (if
           (or (not (equal error-code1 0)) (not (equal error-code3 0)))
           (mv nil *EIO*)
-        (fat32-in-memory-to-m1-fs fat32-in-memory)))
+        (lofat-to-hifat fat32-in-memory)))
      ((unless (or (equal error-code1 0) (equal error-code3 0)))
       (mv (good-bye 0) fat32-in-memory))
      ((unless (and (equal error-code1 0) (equal error-code3 0)))
@@ -139,6 +139,6 @@
       (mv (good-bye 0) fat32-in-memory))
      ((unless (and (equal error-code2 0) (equal error-code4 0)))
       (mv (good-bye 1) fat32-in-memory))
-     ((unless (m1-dir-equiv fs-ref fs))
+     ((unless (hifat-equiv fs-ref fs))
       (mv (good-bye 1) fat32-in-memory)))
   (mv (good-bye 0) fat32-in-memory)))

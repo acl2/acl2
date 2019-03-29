@@ -40,7 +40,7 @@
   (implies (and (bounded-nat-listp ac b) (natp val) (< val b))
            (bounded-nat-listp (make-list-ac n val ac) b)))
 
-(defund lower-bounded-integer-listp (l b)
+(defun lower-bounded-integer-listp (l b)
   (declare (xargs :guard (integerp b)))
   (if (atom l)
       (equal l nil)
@@ -54,10 +54,8 @@
            (equal (lower-bounded-integer-listp (binary-append x y)
                                      b)
                   (and (lower-bounded-integer-listp x b)
-                       (lower-bounded-integer-listp y b))))
-  :hints (("Goal" :in-theory (enable lower-bounded-integer-listp))))
+                       (lower-bounded-integer-listp y b)))))
 
 (defthmd lower-bounded-integer-listp-correctness-5
   (implies (and (<= y x) (lower-bounded-integer-listp l x))
-           (lower-bounded-integer-listp l y))
-  :hints (("Goal" :in-theory (enable lower-bounded-integer-listp))))
+           (lower-bounded-integer-listp l y)))
