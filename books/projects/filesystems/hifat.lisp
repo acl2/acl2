@@ -1,8 +1,8 @@
 (in-package "ACL2")
 
-;  file-system-m1.lisp                                 Mihir Mehta
+;  hifat.lisp                                          Mihir Mehta
 
-; M1, a model which abstracts M2.
+; HiFAT, a model which abstracts LoFAT.
 
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/io/read-ints" :dir :system)
@@ -1417,12 +1417,25 @@
  :val-type file-table-element
  :true-listp t)
 
+(defthm file-table-p-correctness-1
+  (implies (file-table-p file-table)
+           (nat-listp (strip-cars file-table))))
+
 ;; This data structure may change later.
 (fty::defalist fd-table
                :key-type nat ;; index into the fd-table
                :val-type nat ;; index into the file-table
                :true-listp t)
 
+(defthm file-table-p-correctness-2
+  (implies (fd-table-p fd-table)
+           (nat-listp (strip-cars fd-table))))
+
+;; This function returns *ENOENT* when the root directory is asked for. There's
+;; a simple reason: we want to return the whole file, including the directory
+;; entry - and nowhere is there a directory entry for the root. Any
+;; directory other than the root will be caught before a recursive call which
+;; makes it the root.
 (defun find-file-by-pathname (fs pathname)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (fat32-filename-list-p pathname))
