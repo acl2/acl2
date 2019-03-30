@@ -1,4 +1,4 @@
-; Java Library -- AIJ
+; Java -- AIJ
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

@@ -1,4 +1,4 @@
-; Java Library -- ATJ -- Documentation
+; Java -- ATJ -- Documentation
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

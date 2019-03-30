@@ -1,4 +1,4 @@
-; Java Library -- ATJ -- Implementation
+; Java -- ATJ -- Implementation
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
