@@ -10,14 +10,15 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/ethereum/crypto" :dir :system)
-(include-book "kestrel/ethereum/hex-prefix" :dir :system)
-(include-book "kestrel/ethereum/rlp/encoding" :dir :system)
 (include-book "kestrel/utilities/defmax-nat/implementation" :dir :system)
 (include-book "kestrel/utilities/lists/take-theorems" :dir :system)
-(include-book "kestrel/utilities/omaps/fty" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/prefixp" :dir :system)
+
+(include-book "crypto")
+(include-book "hex-prefix")
+(include-book "rlp/encoding")
+(include-book "database")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,24 +68,7 @@
      Note that there are no constraints on the lengths of the keys or values,
      because the construction of MMP trees from these finite maps
      (which is described in [YP:D])
-     does not depend on any such length constraints.")
-   (xdoc::p
-    "As explained in [YP:D.1] and [YP:4.1],
-     MMP trees rely on a database that associates byte arrays to hashes,
-     where hashes are byte arrays of length 32.
-     This is called `trie database' in [YP:D.1], and just `DB' in [Wiki:MMP].
-     [YP:4.1] uses the term `state database',
-     but it does so in the context of the world state;
-     indeed,
-     the database also contains data that is not part of the world state,
-     such as transactions and transaction receipts.
-     In the documentation of our Ethereum model, we use the term `database'.
-     The type of finite maps from byte arrays to byte arrays
-     that we introduce here
-     models instances of the database as well;
-     the type does not explicitly capture the database's constraint that
-     the keys of the map have length 32 (since they are hashes),
-     but that constraint is not necessary to describe access to the database."))
+     does not depend on any such length constraints."))
 
   (define bytelist-bytelist-mapp (x)
     :returns (yes/no booleanp)
@@ -1261,7 +1245,7 @@
     :guard (mmp-encode-c-max.elementp map i)
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (root byte-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (mmp-encode-c-max.elementp map i)))
           (mv nil nil nil)) ; irrelevant
@@ -1291,7 +1275,7 @@
                 (not (omap::empty map)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (root byte-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
@@ -1345,7 +1329,7 @@
                 (not (equal (omap::size map) 1)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (trees rlp-tree-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
@@ -1400,7 +1384,7 @@
 (define mmp-encode ((map bytelist-bytelist-mapp))
   :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                (root byte-listp)
-               (database bytelist-bytelist-mapp))
+               (database databasep))
   :parents (mmp-trees)
   :short "Encode a finite map into an MMP tree."
   :long
@@ -1470,7 +1454,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk mmp-encoding-p ((root byte-listp) (database bytelist-bytelist-mapp))
+(define-sk mmp-encoding-p ((root byte-listp) (database databasep))
   :returns (yes/no booleanp)
   :parents (mmp-trees)
   :short "Check if a root and database are an MMP encoding
@@ -1499,13 +1483,12 @@
                (b* (((mv map-error? map-root map-database) (mmp-encode map)))
                  (and (not map-error?)
                       (equal map-root (byte-list-fix root))
-                      (omap::submap map-database
-                                    (bytelist-bytelist-mfix database))))))
+                      (omap::submap map-database (database-fix database))))))
   :skolem-name mmp-encoding-witness
   ///
 
   (fty::deffixequiv mmp-encoding-p
-    :args ((root byte-listp) (database bytelist-bytelist-mapp))
+    :args ((root byte-listp) (database databasep))
     :hints (("Goal"
              :in-theory (disable mmp-encoding-p-suff)
              :use (;; for ROOT:
@@ -1518,14 +1501,14 @@
                    ;; for DATABASE:
                    (:instance mmp-encoding-p-suff
                     (map (mmp-encoding-witness
-                          root (bytelist-bytelist-mfix database))))
+                          root (database-fix database))))
                    (:instance mmp-encoding-p-suff
                     (map (mmp-encoding-witness root database))
-                    (database (bytelist-bytelist-mfix database))))))))
+                    (database (database-fix database))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define mmp-decode ((root byte-listp) (database bytelist-bytelist-mapp))
+(define mmp-decode ((root byte-listp) (database databasep))
   :returns
   (mv (error? booleanp)
       (map bytelist-bytelist-mapp
@@ -1534,7 +1517,7 @@
                     (e/d
                      (mmp-encoding-p)
                      (mmp-encoding-p-of-byte-list-fix-root
-                      mmp-encoding-p-of-bytelist-bytelist-mfix-database))))))
+                      mmp-encoding-p-of-database-fix-database))))))
   :parents (mmp-trees)
   :short "Decode an MMP tree into a finite map."
   :long
@@ -1582,7 +1565,7 @@
      and therefore could be either map.
      Thus, we defer the injectivity and left inverse proofs for now."))
   (b* ((root (byte-list-fix root))
-       (database (bytelist-bytelist-mfix database)))
+       (database (database-fix database)))
     (if (mmp-encoding-p root database)
         (mv nil (mmp-encoding-witness root database))
       (mv t nil)))
@@ -1592,7 +1575,7 @@
 
   (defrule mmp-encode-of-mmp-decode
     (implies (and (byte-listp root)
-                  (bytelist-bytelist-mapp database)
+                  (databasep database)
                   (mmp-encoding-p root database))
              (b* (((mv d-error? d-map) (mmp-decode root database))
                   ((mv e-error? e-root e-database) (mmp-encode d-map)))
@@ -1606,7 +1589,7 @@
 
 (define mmp-read ((key byte-listp)
                   (root byte-listp)
-                  (database bytelist-bytelist-mapp))
+                  (database databasep))
   :guard (mmp-encoding-p root database)
   :returns (mv (presentp booleanp) (value byte-listp))
   :parents (mmp-trees)
@@ -1636,7 +1619,7 @@
 (define mmp-write ((key byte-listp)
                    (value byte-listp)
                    (root byte-listp)
-                   (database bytelist-bytelist-mapp))
+                   (database databasep))
   :guard (mmp-encoding-p root database)
   :returns (mv (error? (member-eq error? '(nil :collision :rlp))
                        :hints (("Goal"
@@ -1652,7 +1635,7 @@
                                                        root
                                                        database))))))))
                (new-root byte-listp)
-               (new-database bytelist-bytelist-mapp))
+               (new-database databasep))
   :parents (mmp-trees)
   :short "Write a value for a key in an MMP tree."
   :long
@@ -1695,10 +1678,10 @@
        ((mv error? new-root new-database-min) (mmp-encode new-map))
        ((when error?) (mv error? nil nil))
        ((unless (omap::compatiblep new-database-min
-                                   (bytelist-bytelist-mfix database)))
+                                   (database-fix database)))
         (mv :collision nil nil))
        (new-database (omap::update* new-database-min
-                                    (bytelist-bytelist-mfix database))))
+                                    (database-fix database))))
     (mv nil new-root new-database))
   :hooks (:fix)
   :no-function t)

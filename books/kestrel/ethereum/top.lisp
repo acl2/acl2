@@ -15,6 +15,7 @@
 (include-book "basics")
 (include-book "crypto")
 (include-book "rlp/top")
+(include-book "database")
 (include-book "hex-prefix")
 (include-book "mmp-trees")
 (include-book "transactions")

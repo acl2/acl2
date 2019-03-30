@@ -276,6 +276,10 @@
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
 
+ <p>Added a formalization of the database that underlies Modified Merkle
+ Patricia trees.  This database is a finite map from Keccak-256
+ hashes (i.e. byte arrays of length 32) to byte arrays.</p>
+
  <p>Added a formalization of the format of transactions and of their RLP
  encoding.</p>
 
