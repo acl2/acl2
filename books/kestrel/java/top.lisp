@@ -36,25 +36,28 @@
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
-     "The <a href=\"https://docs.oracle.com/javase/specs/jls/se10/html\"
-      >Java language specification</a>,
-      referenced as `[JLS]' in the documentation of this library.
+     "The "
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se11/html"
+       "Java language specification")
+     ", referenced as `[JLS]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
       e.g.
       `[JLS:4.2]' references Section 4.2.")
     (xdoc::li
-     "The <a href=\"https://docs.oracle.com/javase/specs/jvms/se10/html\"
-      >Java Virtual Machine specification</a>,
-      referenced as `[JVMS]' in the documentation of this library.
+     "The "
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se11/html"
+       "Java Virtual Machine specification")
+     ", referenced as `[JVMS]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
       e.g.
       `[JVMS:5.5]' references Section 5.5.")
     (xdoc::li
-     "The <a href=\"https://docs.oracle.com/javase/10/docs/api\"
-      >Java API specification</a>,
-      referenced as `[JAPIS]' in the documentation of this library."))
+     "The "
+     (xdoc::a :href "https://docs.oracle.com/en/java/javase/11/docs/api"
+       "Java API specification")
+     ", referenced as `[JAPIS]' in the documentation of this library."))
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
@@ -68,13 +71,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The <a href=\"https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1\"
-     >ACL2-2018 Workshop paper on AIJ and ATJ</a>
-     provides an overview of AIJ and ATJ,
+    "The "
+    (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
+      "ACL2-2018 Workshop paper on AIJ and ATJ")
+    " provides an overview of AIJ and ATJ,
      along with some performance measurements.
-     The presentation of the Workshop talk is available
-     <a href=\"https://www.cs.utexas.edu/users/moore/acl2/workshop-2018/program.html\"
-     >here</a>.")
+     The presentation of the Workshop talk is available "
+    (xdoc::a
+     :href "https://www.cs.utexas.edu/users/moore/acl2/workshop-2018/program.html"
+      "here")
+    ".")
    (xdoc::p
     "As AIJ and ATJ are being extended and improved over time,
      some of the contents of the paper and presentation are becoming outdated.
