@@ -522,6 +522,8 @@
 
  <p>Extended the documentation of the constructors.</p>
 
+ <p>Moved the constructors to @('[books]/xdoc/constructors.lisp').</p>
+
  <h3>Licensing Changes</h3>
 
  <h3>Build System Updates</h3>
