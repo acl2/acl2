@@ -33,6 +33,7 @@
 (include-book "event-macros/top")
 (include-book "fixbytes/defbytelist-instances")
 (include-book "include-book-paths")
+(include-book "integer-arithmetic/top")
 (include-book "integer-range-fixing")
 (include-book "integer-range-lists")
 (include-book "integers-from-to")

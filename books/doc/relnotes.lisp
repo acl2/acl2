@@ -153,6 +153,11 @@
  <p>Formalized an instant run-off voting scheme and proved that it
  meets certain fairness criteria.</p>
 
+ <h4>Integer Arithmetic</h4>
+
+ <p>A library for integer arithmetic has been added at
+ @('[books]/kestrel/utilities/integer-arithmetic').</p>
+
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
  <p>Added a library for Java-related formalizations and tools, including:</p>
