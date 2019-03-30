@@ -12161,18 +12161,18 @@
 ; above.  At one time we considered allowing these shortcuts for lambdas and
 ; loop$ forms, and we could reconsider if we want more efficiency.  But the
 ; current implementation seems to provide sufficient efficiency (until someone
-; complains, at least), and has the following advantage: the set of function
-; computed in *warrant-reqs* is exactly the ones for which warranted
-; replacement is used; but if we allow shortcuts for lambdas and loop$ forms,
-; then we will need to include all user-defined functions occurring in the
-; lambda body or loop$ body even when lying on an IF branch that was not taken
-; during a given evaluation.
+; complains, at least), and has the following advantage: the function symbols
+; stored in *warrant-reqs* are exactly those for which warranted replacement is
+; used; but if we allow shortcuts for lambdas and loop$ forms, then we will
+; need to include all user-defined functions occurring in the lambda body or
+; loop$ body even when lying on an IF branch that was not taken during a given
+; evaluation.
 
 ; We considered handling evaluation in expand-abbreviations as described above
 ; for the rewriter.  However, there is no type-alist readily available in
 ; expand-abbreviations for determining which warrants are known to be true.
-; Moreover, the rules (with names like apply$-fn) justifying warranted
-; replacements are conditional rewrite rules, which we traditionally ignore
+; Moreover, the rules justifying warranted replacements (with names like
+; apply$-fn) are conditional rewrite rules, which we traditionally ignore
 ; during preprocess-clause (and hence during expand-abbreviations) in favor of
 ; considering only "simple" rules.  However, we do use ev-fncall+ in
 ; expand-abbreviations, so that we can avoid wrapping HIDE around the ground
@@ -12187,10 +12187,10 @@
 ; obviously can be important for efficiency!
 
 ; We considered also using ev-fncall+ for eval-ground-subexpressions, but that
-; seemed to introduce more complexity than it's worth -- so far, anyhow, though
-; this could change based on user demand.  Since eval-ground-subexpressions
-; does not introduce HIDE, we don't have the need for ev-fncall+ that is
-; described above for expand-abbreviations.
+; seemed to introduce more complexity than it's worth; this could change based
+; on user demand.  Since eval-ground-subexpressions does not introduce HIDE, we
+; don't have the need for ev-fncall+ that is described above for
+; expand-abbreviations.
 
 ; Note that our scheme works nicely with the executable-counterpart of apply$
 ; disabled.  Specifically, all warranted replacements are justified by warrants

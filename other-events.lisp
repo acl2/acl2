@@ -28753,10 +28753,9 @@
 ; However, we insist (see the check in process-defattach-args1 and the assert$
 ; in attachment-records) that a warrant may only be attached to
 ; true-apply$-warrant, which is a fully-defined function (hence cannot receive
-; an executable attachment) and has no ancestors.  So it is safe to omit
-; true-apply$-warrant from the check whether any attachment has changed in the
-; extended-ancestors of a function.  (It may be included for other reasons, but
-; the argument above shows that we needn't insist on that.)
+; an executable attachment) and has no ancestors.  So we are comfortable with
+; omitting true-apply$-warrant from the check for whether any attachment has
+; changed in the extended-ancestors of a function.
 
 ; Before we consider apply$-userfn and badge-userfn, we say a bit more about
 ; how the variable *defattach-fns* (discussed above) is extended.  When a
