@@ -545,15 +545,8 @@
     "This is used in the definition of @(tsee mmp-encode-c),
      hence the name.")
    (xdoc::p
-    "[YP:(194)] uses @($\\arg\\max$), but it should be @($\\max$) instead:
-     we are not looking for the argument @($x$)
-     that maximizes some function of @($x$),
-     but for the maximum @($x$) itself.
-     We are looking for the maximum length
-     of the common prefixes in the map.
-     The @($\\arg\\max_x\\ldots$) in [YP:(194)] should be
-     @($\\max\\{x\\mid\\ldots\\}$) instead.
-     Clearly, @($x$) is a natural number because it is equated to a length.
+    "The @($x$) in the set being maximized is a natural number,
+     because it is equated to a length.
      Therefore, we use @(tsee defmax-nat) to introduce this maximum.")
    (xdoc::p
     "This maximum always exists if the map is not empty.
