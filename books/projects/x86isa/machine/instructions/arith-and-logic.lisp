@@ -215,7 +215,8 @@
        (byte-operand? (eql 0 (the (unsigned-byte 1)
 			       (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (G (rgfi-size operand-size
 		     (the (unsigned-byte 4)
@@ -338,7 +339,8 @@
        (byte-operand? (eql 0 (the (unsigned-byte 1)
 			       (logand 1 opcode))))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (G (rgfi-size operand-size
 		     (the (unsigned-byte 4)
@@ -457,7 +459,7 @@
 						  gpr-arith/logic-spec-2
 						  gpr-arith/logic-spec-1
 						  rml-size
-						  select-operand-size
+						  select-operand-size$
 						  unsigned-byte-p
 						  signed-byte-p)))))
   :body
@@ -475,14 +477,16 @@
 			    (eql opcode #x82)
 			    (eql opcode #xF6)))
        ((the (integer 1 8) E-size)
-	(select-operand-size proc-mode E-byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode E-byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (imm-byte-operand? (or (eql opcode #x80)
 			      (eql opcode #x82)
 			      (eql opcode #x83)
 			      (eql opcode #xF6)))
        ((the (integer 1 4) imm-size)
-	(select-operand-size proc-mode imm-byte-operand? rex-byte t prefixes x86))
+	(select-operand-size$
+         proc-mode imm-byte-operand? rex-byte t prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -631,7 +635,8 @@
 
        (byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte t prefixes x86))
+	(select-operand-size$
+         proc-mode byte-operand? rex-byte t prefixes nil nil nil x86))
        (rAX-size (if (logbitp #.*w* rex-byte)
 		     8
 		   operand-size))
@@ -721,7 +726,8 @@
        (select-byte-operand (equal 0 (logand 1 opcode)))
 
        ((the (integer 1 8) r/mem-size)
-	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -809,7 +815,8 @@
        ;; point in the code, we know that we are in 32-bit mode.
 
        ((the (integer 2 4) operand-size)
-	(select-operand-size proc-mode nil 0 nil prefixes x86))
+	(select-operand-size$
+         proc-mode nil 0 nil prefixes nil nil nil x86))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -869,7 +876,8 @@
 
        (select-byte-operand (equal 0 (logand 1 opcode)))
        ((the (integer 0 8) r/mem-size)
-	(select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 

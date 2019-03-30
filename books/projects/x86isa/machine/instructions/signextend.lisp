@@ -71,7 +71,8 @@
   (b* ((?ctx 'x86-cbw/cwd/cdqe)
 
        ((the (integer 1 8) register-size)
-	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
 
        ((the (unsigned-byte 32) src)
@@ -119,7 +120,8 @@
   (b* ((?ctx 'x86-cwd/cdq/cqo)
 
        ((the (integer 1 8) src-size)
-	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size$
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (src (rgfi-size src-size *rax* rex-byte x86))
 

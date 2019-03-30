@@ -2096,7 +2096,7 @@ reference made from privilege level 3.</blockquote>"
 
   :short "Selecting the operand size for general-purpose instructions"
 
-  :long "<p>@('select-operand-size') selects the operand size of the
+  :long "<p>@('select-operand-size$') selects the operand size of the
   instruction.  It is cognizant of the instruction prefixes, the
   @('rex') byte, the operand type (e.g., immediate operand or not),
   and the default operand size (obtained from the state).</p>
