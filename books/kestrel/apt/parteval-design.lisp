@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ; (depends-on "design-notes/restrict.pdf")
 ; (depends-on "design-notes/notation.pdf")

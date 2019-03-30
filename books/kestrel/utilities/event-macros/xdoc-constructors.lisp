@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/system/world-queries" :dir :system)
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

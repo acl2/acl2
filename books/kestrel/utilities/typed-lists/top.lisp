@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 (include-book "nat-list-fix-theorems")
 (include-book "string-listp-theorems")

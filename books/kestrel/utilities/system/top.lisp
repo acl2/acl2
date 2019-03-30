@@ -10,8 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-
 (include-book "all-vars-theorems")
 (include-book "arglistp-theorems")
 (include-book "defchoose-queries")
