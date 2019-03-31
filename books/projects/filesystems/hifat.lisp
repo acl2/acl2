@@ -1421,13 +1421,17 @@
   (implies (file-table-p file-table)
            (nat-listp (strip-cars file-table))))
 
+(defthm file-table-p-correctness-2
+  (implies (and (file-table-p file-table) (consp (assoc-equal key file-table)))
+           (file-table-element-p (cdr (assoc-equal key file-table)))))
+
 ;; This data structure may change later.
 (fty::defalist fd-table
                :key-type nat ;; index into the fd-table
                :val-type nat ;; index into the file-table
                :true-listp t)
 
-(defthm file-table-p-correctness-2
+(defthm fd-table-p-correctness-1
   (implies (fd-table-p fd-table)
            (nat-listp (strip-cars fd-table))))
 

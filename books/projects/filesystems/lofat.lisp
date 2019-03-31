@@ -20,18 +20,6 @@
                      revappend-removal str::hex-digit-listp-of-cons
                      loghead logtail)))
 
-;; These are some definitions I've had to disable a lot in this book - and I'm
-;; still taking 847 seconds to certify the whole thing. Disabling them
-;; everywhere should simplify things.
-;; Later note: the certification time went down to 632 seconds after this
-;; change.
-;; Later note: the certification time went down to 517 seconds after some more
-;; changes were made based on accumulated-persistence.
-;; Later note: the certification time has gone back up to 573 seconds.
-;; Later note: back down to 504 seconds after disabling true-listp and
-;; len-when-dir-ent-p.
-;; Later note: back down to 367 seconds after disabling
-;; get-clusterchain-contents and by-slice-you-mean-the-whole-cake-2.
 (local
  (in-theory (disable nth update-nth floor mod
                      true-listp)))
@@ -1009,7 +997,7 @@
      (xargs
       :guard
       (and (natp tmp_init)
-           (time$ (stringp image-path))
+           (stringp image-path)
            (stringp (read-file-into-string image-path))
            (natp len)
            (<= len
@@ -1895,11 +1883,9 @@
                    (>= (length str) tmp_init)))
           (mv fat32-in-memory *EIO*))
          (data-region-string
-          (time$
-           (subseq str tmp_init nil))))
-      (time$
-       (update-data-region fat32-in-memory data-region-string
-                           (data-region-length fat32-in-memory))))))
+          (subseq str tmp_init nil)))
+      (update-data-region fat32-in-memory data-region-string
+                          (data-region-length fat32-in-memory)))))
 
 (defthmd
   string-to-lofat-correctness-1
@@ -3216,9 +3202,8 @@
    :exec
    (b*
        ((initial-bytes-str
-         (time$
-          (read-file-into-string image-path
-                                 :bytes *initialbytcnt*)))
+         (read-file-into-string image-path
+                                :bytes *initialbytcnt*))
         ((unless (and (stringp initial-bytes-str)
                       (>= (length initial-bytes-str)
                           *initialbytcnt*)))
@@ -3241,11 +3226,10 @@
                       (>= tmp_rsvdbytcnt *initialbytcnt*)))
          (mv fat32-in-memory *EIO*))
         (remaining-rsvdbyts-str
-         (time$
-          (read-file-into-string
-           image-path
-           :start *initialbytcnt*
-           :bytes (- tmp_rsvdbytcnt *initialbytcnt*))))
+         (read-file-into-string
+          image-path
+          :start *initialbytcnt*
+          :bytes (- tmp_rsvdbytcnt *initialbytcnt*)))
         ((unless (and (stringp remaining-rsvdbyts-str)
                       (>= (length remaining-rsvdbyts-str)
                           (- tmp_rsvdbytcnt *initialbytcnt*))))
@@ -3303,13 +3287,12 @@
                (- tmp_init
                   (+ tmp_rsvdbytcnt (* fat-read-size 4))))))
          (mv fat32-in-memory *EIO*)))
-     (time$
-      (update-data-region-from-disk-image
-       fat32-in-memory
-       (data-region-length fat32-in-memory)
-       state
-       tmp_init
-       image-path)))))
+     (update-data-region-from-disk-image
+      fat32-in-memory
+      (data-region-length fat32-in-memory)
+      state
+      tmp_init
+      image-path))))
 
 (defund
   get-clusterchain
@@ -9926,7 +9909,7 @@
   (defthmd
     string-to-lofat-ignore-lemma-14
     (implies
-     (not (equal fat32-in-memory (create-fat32-in-memory)))
+     (case-split (not (equal fat32-in-memory (create-fat32-in-memory))))
      (equal (mv-nth 1
                     (string-to-lofat fat32-in-memory str))
             (mv-nth 1
@@ -11285,30 +11268,30 @@ Some (rather awful) testing forms are
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory)))
-  (m1-open (list "INITRD  IMG")
+  (hifat-open (list "INITRD  IMG")
            fs nil nil))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil)))
-  (m1-pread 0 6 49 fs fd-table file-table))
+  (hifat-pread 0 6 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil)))
-  (m1-pwrite 0 "ornery" 49 fs fd-table file-table))
+  (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil))
      ((mv fs & &)
-      (m1-pwrite 0 "ornery" 49 fs fd-table file-table))
+      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
      ((mv fat32-in-memory dir-ent-list)
       (hifat-to-lofat-helper fat32-in-memory fs)))
   (mv fat32-in-memory dir-ent-list))
@@ -11316,10 +11299,10 @@ Some (rather awful) testing forms are
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil))
      ((mv fs & &)
-      (m1-pwrite 0 "ornery" 49 fs fd-table file-table)))
+      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table)))
   (hifat-to-lofat fat32-in-memory fs))
 (time$
  (b*
@@ -11386,9 +11369,88 @@ Some (rather awful) testing forms are
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
      (fs (lofat-to-hifat fat32-in-memory))
      ((mv fs & &)
-      (m1-mkdir fs (list "" "TMP        "))))
+      (hifat-mkdir fs (list "" "TMP        "))))
   (hifat-to-lofat fat32-in-memory fs))
 |#
+
+(defund lofat-file-contents-p (contents)
+  (declare (xargs :guard t))
+  (or (and (stringp contents)
+           (unsigned-byte-p 32 (length contents)))
+      (dir-ent-list-p contents)))
+
+(defund lofat-file-contents-fix (contents)
+  (declare (xargs :guard t))
+  (if (lofat-file-contents-p contents)
+      contents
+    ""))
+
+(defthm
+  lofat-file-contents-fix-of-lofat-file-contents-fix
+  (equal (lofat-file-contents-fix (lofat-file-contents-fix x))
+         (lofat-file-contents-fix x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix))))
+
+(fty::deffixtype lofat-file-contents
+                 :pred lofat-file-contents-p
+                 :fix lofat-file-contents-fix
+                 :equiv lofat-file-contents-equiv
+                 :define t)
+
+(defthm
+  lofat-file-contents-p-of-lofat-file-contents-fix
+  (lofat-file-contents-p (lofat-file-contents-fix x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix
+                                     lofat-file-contents-p))))
+
+(defthm
+  lofat-file-contents-fix-when-lofat-file-contents-p
+  (implies (lofat-file-contents-p x)
+           (equal (lofat-file-contents-fix x) x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix
+                                     lofat-file-contents-p))))
+
+(defthm
+  lofat-file-contents-p-when-stringp
+  (implies (stringp contents)
+           (equal (lofat-file-contents-p contents)
+                  (unsigned-byte-p 32 (length contents))))
+  :hints (("goal" :in-theory (enable lofat-file-contents-p))))
+
+(defthm lofat-file-contents-p-when-dir-ent-listp
+  (implies (dir-ent-list-p contents)
+           (lofat-file-contents-p contents))
+  :hints (("goal" :in-theory (enable lofat-file-contents-p))))
+
+(fty::defprod
+ lofat-file
+ ((dir-ent dir-ent-p :default (dir-ent-fix nil))
+  (contents lofat-file-contents-p :default (lofat-file-contents-fix nil))))
+
+(defund lofat-regular-file-p (file)
+  (declare (xargs :guard t))
+  (and (lofat-file-p file)
+       (stringp (lofat-file->contents file))
+       (unsigned-byte-p 32 (length (lofat-file->contents file)))))
+
+(defund lofat-directory-file-p (file)
+  (declare (xargs :guard t))
+  (and (lofat-file-p file)
+       (dir-ent-list-p (lofat-file->contents file))))
+
+(defthm
+  lofat-regular-file-p-correctness-1
+  (implies
+   (dir-ent-list-p contents)
+   (not (lofat-regular-file-p (lofat-file dir-ent contents))))
+  :hints (("goal" :in-theory (enable lofat-regular-file-p))))
+
+(defthm
+  lofat-directory-file-p-correctness-1
+  (implies
+   (stringp contents)
+   (not (lofat-directory-file-p (lofat-file dir-ent contents))))
+  :hints (("goal" :in-theory (enable lofat-directory-file-p))))
 
 (defun lofat-statfs (fat32-in-memory)
   (declare (xargs :stobjs (fat32-in-memory)
@@ -11447,7 +11509,7 @@ Some (rather awful) testing forms are
    (not (equal (mv-nth 1 (find-dir-ent dir-ent-list filename))
                0))
    (equal (mv-nth 1 (find-dir-ent dir-ent-list filename))
-          2)))
+          *enoent*)))
 
 (defun lofat-find-file-by-pathname (fat32-in-memory dir-ent-list pathname)
   (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
@@ -11456,11 +11518,11 @@ Some (rather awful) testing forms are
                   :measure (acl2-count pathname)
                   :stobjs fat32-in-memory))
   (b* (((unless (consp pathname))
-        (mv nil *enoent*))
+        (mv (make-lofat-file) *enoent*))
        (name (fat32-filename-fix (car pathname)))
        ((mv dir-ent error-code) (find-dir-ent dir-ent-list name))
        ((unless (equal error-code 0))
-        (mv nil error-code))
+        (mv (make-lofat-file) error-code))
        (first-cluster (dir-ent-first-cluster dir-ent))
        (directory-p
         (dir-ent-directory-p dir-ent))
@@ -11481,28 +11543,18 @@ Some (rather awful) testing forms are
                                      length)))
        ((unless directory-p)
         (if (consp (cdr pathname))
-            (mv nil *enotdir*)
-          (mv contents 0)))
+            (mv (make-lofat-file) *enotdir*)
+          (mv (make-lofat-file :dir-ent dir-ent :contents contents) 0)))
        ((when (atom (cdr pathname)))
-        (mv (make-dir-ent-list (string=>nats contents)) 0)))
+        (mv
+         (make-lofat-file :dir-ent dir-ent
+                          :contents (make-dir-ent-list
+                                     (string=>nats contents)))
+         0)))
     (lofat-find-file-by-pathname
      fat32-in-memory
      (make-dir-ent-list (string=>nats contents))
      (cdr pathname))))
-
-(defthmd
-  lofat-find-file-by-pathname-correctness-2
-  (iff
-   (stringp
-    (mv-nth 0
-            (lofat-find-file-by-pathname
-             fat32-in-memory dir-ent-list pathname)))
-   (not
-    (dir-ent-list-p
-     (mv-nth
-      0
-      (lofat-find-file-by-pathname fat32-in-memory
-                                   dir-ent-list pathname))))))
 
 ;; The dir-ent-list-p hypothesis is only there because
 ;; lofat-to-hifat-helper doesn't fix its arguments. Should it?
@@ -11791,18 +11843,19 @@ Some (rather awful) testing forms are
                       fat32-in-memory
                       dir-ent-list entry-limit))
              0)
-      (stringp
+      (lofat-regular-file-p
        (mv-nth
         0
         (lofat-find-file-by-pathname fat32-in-memory
                                      dir-ent-list pathname))))
      (equal (lofat-find-file-by-pathname
              fat32-in-memory dir-ent-list pathname)
-            (mv (m1-file->contents file)
+            (mv (make-lofat-file :contents (m1-file->contents file)
+                                 :dir-ent (m1-file->dir-ent file))
                 error-code)))))
 
 (defthm
-  lofat-find-file-by-pathname-correctness-3
+  lofat-find-file-by-pathname-correctness-2
   (b*
       (((mv file error-code)
         (find-file-by-pathname
@@ -11820,20 +11873,27 @@ Some (rather awful) testing forms are
                       fat32-in-memory
                       dir-ent-list entry-limit))
              0)
-      (dir-ent-list-p
+      (lofat-directory-file-p
        (mv-nth
         0
         (lofat-find-file-by-pathname fat32-in-memory
                                      dir-ent-list pathname))))
      (and
       (equal
+       (lofat-file->dir-ent
+        (mv-nth 0
+                (lofat-find-file-by-pathname
+                 fat32-in-memory dir-ent-list pathname)))
+       (m1-file->dir-ent file))
+      (equal
        (mv-nth
         0
         (lofat-to-hifat-helper
          fat32-in-memory
-         (mv-nth 0
-                 (lofat-find-file-by-pathname
-                  fat32-in-memory dir-ent-list pathname))
+         (lofat-file->contents
+          (mv-nth 0
+                  (lofat-find-file-by-pathname
+                   fat32-in-memory dir-ent-list pathname)))
          entry-limit))
        (m1-file->contents file))
       (equal
@@ -11856,6 +11916,13 @@ Some (rather awful) testing forms are
                  fat32-in-memory dir-ent-list pathname)))
     :expand (lofat-to-hifat-helper
              fat32-in-memory nil entry-limit))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-3
+  (lofat-file-p
+   (mv-nth 0
+           (lofat-find-file-by-pathname
+            fat32-in-memory dir-ent-list pathname))))
 
 ;; This needs some revision... obviously, we don't want to be staring into the
 ;; computation to get the root directory's directory entries here.
@@ -11894,3 +11961,72 @@ Some (rather awful) testing forms are
       (cons file-table-index (make-file-table-element :pos 0 :fid pathname))
       file-table)
      fd-table-index 0)))
+
+;; This needs some revision... obviously, we don't want to be staring into the
+;; computation to get the root directory's directory entries here.
+(defun
+  lofat-pread
+  (fd count offset fat32-in-memory fd-table file-table)
+  (declare (xargs :guard (and (natp fd)
+                              (natp count)
+                              (natp offset)
+                              (fd-table-p fd-table)
+                              (file-table-p file-table)
+                              (lofat-fs-p fat32-in-memory))
+                  :stobjs fat32-in-memory))
+  (b*
+      ((fd-table-entry (assoc-equal fd fd-table))
+       ((unless (consp fd-table-entry))
+        (mv "" -1 *ebadf*))
+       (file-table-entry (assoc-equal (cdr fd-table-entry)
+                                      file-table))
+       ((unless (consp file-table-entry))
+        (mv "" -1 *ebadf*))
+       (pathname (file-table-element->fid (cdr file-table-entry)))
+       ((mv root-contents &)
+        (get-clusterchain-contents
+         fat32-in-memory
+         (fat32-entry-mask (bpb_rootclus fat32-in-memory))
+         2097152))
+       ((mv file-contents error-code)
+        (lofat-find-file-by-pathname
+         fat32-in-memory
+         (make-dir-ent-list
+          (string=>nats
+           root-contents))
+         pathname))
+       ((unless (and (equal error-code 0)
+                     (stringp file-contents)))
+        (mv "" -1 error-code))
+       (new-offset (min (+ offset count)
+                        (length file-contents)))
+       (buf (subseq file-contents
+                    (min offset
+                         (length file-contents))
+                    new-offset)))
+    (mv buf (length buf) 0)))
+
+(defun lofat-lstat (fat32-in-memory pathname)
+  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname))
+                  :stobjs fat32-in-memory))
+  (b*
+      (((mv root-contents &)
+        (get-clusterchain-contents
+         fat32-in-memory
+         (fat32-entry-mask (bpb_rootclus fat32-in-memory))
+         2097152))
+       ((mv file errno)
+        (lofat-find-file-by-pathname
+         fat32-in-memory
+         (make-dir-ent-list
+          (string=>nats
+           root-contents))
+         pathname))
+       ((when (not (equal errno 0)))
+        (mv (make-struct-stat) -1 errno)))
+    (mv
+       (make-struct-stat
+        :st_size (dir-ent-file-size
+                  (lofat-file->dir-ent file)))
+       0 0)))
