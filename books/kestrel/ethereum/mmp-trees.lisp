@@ -70,102 +70,12 @@
      (which is described in [YP:D])
      does not depend on any such length constraints."))
 
-  (define bytelist-bytelist-mapp (x)
-    :returns (yes/no booleanp)
-    :parents (bytelist-bytelist-map)
-    :short "Recognize finite maps from byte arrays to byte arrays."
-    :long
-    (xdoc::topstring-p
-     "This definition is similar to @(tsee omap::mapp),
-      but it also requires keys and values to be true lists of bytes.")
-    (if (atom x)
-        (null x)
-      (and (consp (car x))
-           (byte-listp (caar x))
-           (byte-listp (cdar x))
-           (or (null (cdr x))
-               (and (consp (cdr x))
-                    (consp (cadr x))
-                    (acl2::fast-<< (caar x) (caadr x))
-                    (bytelist-bytelist-mapp (cdr x))))))
-    :no-function t
-    ///
-
-    (defrule mapp-when-bytelist-bytelist-mapp
-      (implies (bytelist-bytelist-mapp x)
-               (omap::mapp x))
-      :rule-classes (:rewrite :forward-chaining)
-      :enable omap::mapp)
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-tail
-      (implies (bytelist-bytelist-mapp map)
-               (bytelist-bytelist-mapp (omap::tail map)))
-      :enable omap::tail)
-
-    (defrule byte-listp-of-bytelist-bytelist-head-key
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (mv-nth 0 (omap::head map))))
-      :enable omap::head)
-
-    (defrule byte-listp-of-bytelist-bytelist-head-value
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (mv-nth 1 (omap::head map))))
-      :enable omap::head)
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-update
-      (implies (and (bytelist-bytelist-mapp map)
-                    (byte-listp key)
-                    (byte-listp val))
-               (bytelist-bytelist-mapp (omap::update key val map)))
-      :enable (omap::update omap::head omap::tail))
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-update*
-      (implies (and (bytelist-bytelist-mapp new)
-                    (bytelist-bytelist-mapp old))
-               (bytelist-bytelist-mapp (omap::update* new old)))
-      :enable omap::update*)
-
-    (defrule byte-listp-of-key-in-bytelist-bytelist-map
-      (implies (and (omap::in key map) ; bind free MAP
-                    (bytelist-bytelist-mapp map))
-               (byte-listp key))
-      :enable omap::in)
-
-    (defrule byte-listp-of-car-of-in-when-bytelist-byteist-mapp
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (car (omap::in key map))))
-      :enable omap::in)
-
-    (defrule byte-listp-of-cdr-of-in-when-bytelist-byteist-mapp
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (cdr (omap::in key map))))
-      :enable omap::in))
-
-  (define bytelist-bytelist-mfix ((x bytelist-bytelist-mapp))
-    :returns (fixed-x bytelist-bytelist-mapp)
-    :parents (bytelist-bytelist-map)
-    :short "Fixing function for finite maps from byte arrays to byte arrays."
-    (mbe :logic (if (bytelist-bytelist-mapp x) x nil)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule bytelist-bytelist-mfix-when-bytelist-bytelist-mapp
-      (implies (bytelist-bytelist-mapp x)
-               (equal (bytelist-bytelist-mfix x) x)))
-
-    (defrule empty-of-bytelist-bytelist-mfix
-      (equal (omap::empty (bytelist-bytelist-mfix map))
-             (or (not (bytelist-bytelist-mapp map))
-                 (omap::empty map)))
-      :enable omap::empty))
-
-  (fty::deffixtype bytelist-bytelist-map
-    :pred bytelist-bytelist-mapp
-    :fix bytelist-bytelist-mfix
-    :equiv bytelist-bytelist-mequiv
-    :define t
-    :forward t))
+  (fty::defomap bytelist-bytelist-map
+                :key-type byte-list
+                :val-type byte-list
+                :pred bytelist-bytelist-mapp
+                :fix bytelist-bytelist-mfix
+                :equiv bytelist-bytelist-mequiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,102 +94,12 @@
      but the keys of the map are nibble arrays instead of byte arrays.
      This is the type of the result of @($y$) [YP:(190), YP:(191)]."))
 
-  (define nibblelist-bytelist-mapp (x)
-    :returns (yes/no booleanp)
-    :parents (nibblelist-bytelist-map)
-    :short "Recognize finite maps from nibble arrays to byte arrays."
-    :long
-    (xdoc::topstring-p
-     "This definition is similar to @(tsee omap::mapp),
-      but it also requires keys and values to be true lists of bytes.")
-    (if (atom x)
-        (null x)
-      (and (consp (car x))
-           (nibble-listp (caar x))
-           (byte-listp (cdar x))
-           (or (null (cdr x))
-               (and (consp (cdr x))
-                    (consp (cadr x))
-                    (acl2::fast-<< (caar x) (caadr x))
-                    (nibblelist-bytelist-mapp (cdr x))))))
-    :no-function t
-    ///
-
-    (defrule mapp-when-nibblelist-bytelist-mapp
-      (implies (nibblelist-bytelist-mapp x)
-               (omap::mapp x))
-      :rule-classes (:rewrite :forward-chaining)
-      :enable omap::mapp)
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-tail
-      (implies (nibblelist-bytelist-mapp map)
-               (nibblelist-bytelist-mapp (omap::tail map)))
-      :enable omap::tail)
-
-    (defrule nibble-listp-of-nibblelist-bytelist-head-key
-      (implies (nibblelist-bytelist-mapp map)
-               (nibble-listp (mv-nth 0 (omap::head map))))
-      :enable omap::head)
-
-    (defrule byte-listp-of-nibblelist-bytelist-head-value
-      (implies (nibblelist-bytelist-mapp map)
-               (byte-listp (mv-nth 1 (omap::head map))))
-      :enable omap::head)
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-update
-      (implies (and (nibblelist-bytelist-mapp map)
-                    (nibble-listp key)
-                    (byte-listp val))
-               (nibblelist-bytelist-mapp (omap::update key val map)))
-      :enable (omap::update omap::head omap::tail))
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-update*
-      (implies (and (nibblelist-bytelist-mapp new)
-                    (nibblelist-bytelist-mapp old))
-               (nibblelist-bytelist-mapp (omap::update* new old)))
-      :enable omap::update*)
-
-    (defrule nibble-listp-of-key-in-nibblelist-bytelist-map
-      (implies (and (omap::in key map) ; bind free MAP
-                    (nibblelist-bytelist-mapp map))
-               (nibble-listp key))
-      :enable omap::in)
-
-    (defrule nibble-listp-of-car-of-in-when-nibblelist-byteist-mapp
-      (implies (nibblelist-bytelist-mapp map)
-               (nibble-listp (car (omap::in key map))))
-      :enable omap::in)
-
-    (defrule byte-listp-of-cdr-of-in-when-nibblelist-byteist-mapp
-      (implies (nibblelist-bytelist-mapp map)
-               (byte-listp (cdr (omap::in key map))))
-      :enable omap::in))
-
-  (define nibblelist-bytelist-mfix ((x nibblelist-bytelist-mapp))
-    :returns (fixed-x nibblelist-bytelist-mapp)
-    :parents (nibblelist-bytelist-map)
-    :short "Fixing function for finite maps from nibble arrays to byte arrays."
-    (mbe :logic (if (nibblelist-bytelist-mapp x) x nil)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule nibblelist-bytelist-mfix-when-nibblelist-bytelist-mapp
-      (implies (nibblelist-bytelist-mapp x)
-               (equal (nibblelist-bytelist-mfix x) x)))
-
-    (defrule empty-of-nibblelist-bytelist-mfix
-      (equal (omap::empty (nibblelist-bytelist-mfix map))
-             (or (not (nibblelist-bytelist-mapp map))
-                 (omap::empty map)))
-      :enable omap::empty))
-
-  (fty::deffixtype nibblelist-bytelist-map
-    :pred nibblelist-bytelist-mapp
-    :fix nibblelist-bytelist-mfix
-    :equiv nibblelist-bytelist-mequiv
-    :define t
-    :forward t))
+  (fty::defomap nibblelist-bytelist-map
+                :key-type nibble-list
+                :val-type byte-list
+                :pred nibblelist-bytelist-mapp
+                :fix nibblelist-bytelist-mfix
+                :equiv nibblelist-bytelist-mequiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -783,7 +603,13 @@
              (:instance nibblelist-bytelist-map-sup-len-key-geq-len-key
               (key (mv-nth 0 (omap::head (omap::tail map))))))
        :enable omap::unfold-equal-size-const
-       :disable nibblelist-bytelist-map-sup-len-key-geq-len-key)))
+       :disable nibblelist-bytelist-map-sup-len-key-geq-len-key)
+
+     (defrule not-empty-tail-when-not-empty-and-size-not-1
+       (implies (and (not (omap::empty map))
+                     (not (equal (omap::size map) 1)))
+                (not (omap::empty (omap::tail map))))
+       :enable (omap::empty omap::size))))
 
   (defruled mmp-encode-c-max-element-leq-len-key
     (implies (and (nibblelist-bytelist-mapp map)

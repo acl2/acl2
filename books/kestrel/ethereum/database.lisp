@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/omaps/fty" :dir :system)
+(include-book "kestrel/utilities/omaps/defomap" :dir :system)
 
 (include-book "bytes")
 
@@ -39,101 +39,7 @@
      to <see topic='@(url byte-list)'>byte arrays</see>,
      based on the fixtype of <see topic='@(url omap::omaps)'>omaps</see>."))
 
-  (define databasep (x)
-    :returns (yes/no booleanp)
-    :parents (database)
-    :short "Recognize databases."
-    :long
-    (xdoc::topstring-p
-     "This definition is similar to @(tsee omap::mapp),
-      but it also requires keys to be true lists of 32 bytes
-      and values to be true lists of bytes.")
-    (if (atom x)
-        (null x)
-      (and (consp (car x))
-           (byte-list32p (caar x))
-           (byte-listp (cdar x))
-           (or (null (cdr x))
-               (and (consp (cdr x))
-                    (consp (cadr x))
-                    (acl2::fast-<< (caar x) (caadr x))
-                    (databasep (cdr x))))))
-    :no-function t
-    ///
-
-    (defrule mapp-when-databasep
-      (implies (databasep x)
-               (omap::mapp x))
-      :rule-classes (:rewrite :forward-chaining)
-      :enable omap::mapp)
-
-    (defrule databasep-of-tail
-      (implies (databasep map)
-               (databasep (omap::tail map)))
-      :enable omap::tail)
-
-    (defrule byte-list32p-of-head-key
-      (implies (and (databasep map)
-                    (not (omap::empty map)))
-               (byte-list32p (mv-nth 0 (omap::head map))))
-      :enable omap::head)
-
-    (defrule byte-listp-of-head-value
-      (implies (databasep map)
-               (byte-listp (mv-nth 1 (omap::head map))))
-      :enable omap::head)
-
-    (defrule databasep-of-bytelist-bytelist-update
-      (implies (and (databasep map)
-                    (byte-list32p key)
-                    (byte-listp val))
-               (databasep (omap::update key val map)))
-      :enable (omap::update omap::head omap::tail))
-
-    (defrule databasep-of-update*
-      (implies (and (databasep new)
-                    (databasep old))
-               (databasep (omap::update* new old)))
-      :enable omap::update*)
-
-    (defrule byte-listp-of-key-in-database
-      (implies (and (omap::in key map) ; bind free MAP
-                    (databasep map))
-               (byte-list32p key))
-      :enable omap::in)
-
-    (defrule byte-list32p-of-car-of-in-when-databasep
-      (implies (databasep map)
-               (byte-listp (car (omap::in key map))))
-      :enable omap::in)
-
-    (defrule byte-listp-of-cdr-of-in-when-databasep
-      (implies (databasep map)
-               (byte-listp (cdr (omap::in key map))))
-      :enable omap::in))
-
-  (define database-fix ((x databasep))
-    :returns (fixed-x databasep)
-    :parents (database)
-    :short "Fixing function for databases."
-    (mbe :logic (if (databasep x) x nil)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule database-fix-when-databasep
-      (implies (databasep x)
-               (equal (database-fix x) x)))
-
-    (defrule empty-of-database-fix
-      (equal (omap::empty (database-fix map))
-             (or (not (databasep map))
-                 (omap::empty map)))
-      :enable omap::empty))
-
-  (fty::deffixtype database
-    :pred databasep
-    :fix database-fix
-    :equiv database-equiv
-    :define t
-    :forward t))
+  (fty::defomap database
+                :key-type byte-list32
+                :val-type byte-list
+                :pred databasep))
