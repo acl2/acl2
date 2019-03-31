@@ -16,7 +16,7 @@
      (oldpathname (pathname-to-fat32-pathname (coerce (nth 0 argv) 'list)))
      (newpathname (pathname-to-fat32-pathname (coerce (nth 1 argv) 'list)))
      ((mv fs exit-status &)
-      (m1-rename fs oldpathname newpathname))
+      (hifat-rename fs oldpathname newpathname))
      ((mv fat32-in-memory &)
       (hifat-to-lofat fat32-in-memory fs))
      ((mv & val state)

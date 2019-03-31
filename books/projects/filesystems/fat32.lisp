@@ -378,43 +378,42 @@
   :hints (("Goal" :in-theory (enable fat32-is-eof)) ))
 
 (defun
-    fat32-build-index-list
-    (fa-table masked-current-cluster length cluster-size)
+  fat32-build-index-list
+  (fa-table masked-current-cluster
+            length cluster-size)
   (declare
    (xargs
     :measure (nfix length)
     :guard (and (fat32-entry-list-p fa-table)
                 (fat32-masked-entry-p masked-current-cluster)
                 (natp length)
-                (>= masked-current-cluster 2)
+                (>= masked-current-cluster
+                    *ms-first-data-cluster*)
                 (< masked-current-cluster (len fa-table))
                 (integerp cluster-size)
                 (> cluster-size 0))))
-  (if
-      (or (zp length) (zp cluster-size))
-      ;; This represents a problem case because masked-current-cluster is a
-      ;; valid non-free cluster, but the length is 0. This loosely corresponds
-      ;; to the infinite loop protection in the function
-      ;; fs/fat/cache.c:fat_get_cluster
-      (mv nil (- *eio*))
-    (let
-        ((masked-next-cluster
-          (fat32-entry-mask (nth masked-current-cluster fa-table))))
-      (if
-          (< masked-next-cluster 2)
-          (mv (list masked-current-cluster)
-              (- *eio*))
-        (if
-            (or (fat32-is-eof masked-next-cluster)
-                (>= masked-next-cluster (len fa-table)))
-            (mv (list masked-current-cluster) 0)
-          (b*
-              (((mv tail-index-list tail-error)
-                (fat32-build-index-list fa-table masked-next-cluster
-                                        (nfix (- length cluster-size))
-                                        cluster-size)))
-            (mv (list* masked-current-cluster tail-index-list)
-                tail-error)))))))
+  (b*
+      (((when (or (zp length) (zp cluster-size)))
+        ;; This represents a problem case because masked-current-cluster is a
+        ;; valid non-free cluster, but the length is 0. This loosely
+        ;; corresponds to the infinite loop protection in the function
+        ;; fs/fat/cache.c:fat_get_cluster.
+        (mv nil (- *eio*)))
+       (masked-next-cluster
+        (fat32-entry-mask (nth masked-current-cluster fa-table)))
+       ((when (< masked-next-cluster
+                 *ms-first-data-cluster*))
+        (mv (list masked-current-cluster)
+            (- *eio*)))
+       ((when (or (fat32-is-eof masked-next-cluster)
+                  (>= masked-next-cluster (len fa-table))))
+        (mv (list masked-current-cluster) 0))
+       ((mv tail-index-list tail-error)
+        (fat32-build-index-list fa-table masked-next-cluster
+                                (nfix (- length cluster-size))
+                                cluster-size)))
+    (mv (list* masked-current-cluster tail-index-list)
+        tail-error)))
 
 (defthm fat32-build-index-list-correctness-1
   (implies (and (equal b (len fa-table))

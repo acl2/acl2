@@ -1,8 +1,5 @@
-# test-mkfs-replicant-3 was always problematic; it's now removed
-# because our model has finally become strict enough to reject it.
-#
-# test-stat-replicant-1 and test-stat-replicant-2 are also removed,
-# for reasons explained in a comment below.
+# test-stat-replicant-1 and test-stat-replicant-2 are left out from
+# this list for reasons explained in a comment below.
 TEST:= test-cp-replicant-1 test-cp-replicant-2 test-cp-replicant-3 \
 test-cp-replicant-4 mtools-test-cp-replicant-2 \
 test-mkfs-replicant-1 test-mkfs-replicant-2 \
@@ -26,22 +23,23 @@ test: $(TEST)
 .PHONY: debug-create-dir-and-file debug-create-dir debug-do-nothing \
 debug-create-dir-copy-file
 
-.PHONY: mtools-read-write-test-70MB mtools-read-write-test-140MB \
-mtools-read-write-test-210MB mtools-read-write-test-280MB \
-mtools-read-write-test-560MB mtools-read-write-test-1120MB
+.PHONY: mtools-read-write-test-128MB \
+mtools-read-write-test-256MB \
+mtools-read-write-test-512MB mtools-read-write-test-1024MB
 
 # FUSEPOINT and BBFS are commented below because they refer to Joseph
 # Pfeiffer's pedagogical Big Brother Filesystem, which I used in some
 # of the tests. For almost every test, they only helped log the
 # syscalls and their return values without affecting the course of the
-# test; however, the stat tests do rely on them because without the
-# interposition of the FUSE layer, the id value in the struct statfs
-# can be completely arbitrary depending on mount time details which
-# our stat implementation has no access to. When FUSE is interposed,
-# however, a 0 value is assigned to id, which is hard-coded for the
-# stat tests to make them work. They can be run by downloading and
-# compiling BBFS and noting the path to the executable in the BBFS
-# variable, below.
+# test; however, the stat tests test-stat-replicant-1 and
+# test-stat-replicant-2 do rely on them. Without the interposition of
+# the FUSE layer, the id value in the struct statfs can be completely
+# arbitrary depending on mount time details which our stat
+# implementation has no access to, but when FUSE is interposed, a 0
+# value is assigned to id. This value is hard-coded in the stat
+# tests; they can be run by downloading and compiling BBFS
+# (https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/) and noting the
+# path to the executable in the BBFS variable, below.
 DISK=disk1.raw
 SIZE=70000
 MOUNTPOINT=mount1
@@ -271,15 +269,6 @@ mkfs.fat-3.0.28-replicant.lisp
 	rm -f $(DISK)
 	(mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)) > mkfs-ref-output-2.txt
 	env DISK=$(DISK) MKFS_OUTPUT="mkfs-output-2.txt" $(ACL2) < \
-	mkfs.fat-3.0.28-replicant.lisp
-
-# this case does not actually produce a valid FAT32 filesystem, since
-# there are fewer than 65525 clusters.
-mkfs-ref-output-3.txt mkfs-output-3.txt: $(MOUNTPOINT) \
-mkfs.fat-3.0.28-replicant.lisp
-	rm -f $(DISK)
-	(mkfs.fat -C -v -F 32 -s 4 $(DISK) $(SIZE)) > mkfs-ref-output-3.txt
-	env DISK=$(DISK) MKFS_OUTPUT="mkfs-output-3.txt" $(ACL2) < \
 	mkfs.fat-3.0.28-replicant.lisp
 
 wc-ref-output-1.txt wc-output-1.txt: $(MOUNTPOINT) wc-replicant.lisp
@@ -690,72 +679,42 @@ debug-create-dir-and-file-mv: $(MOUNTPOINT) cp-replicant.lisp
 	sudo umount $(MOUNTPOINT)
 	true
 
-# The following test creates a 70 MB disk image, copies a file to the
+# The following test creates a 128 MB disk image, copies a file to the
 # root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-70MB: read-disk-image-write-disk-image.lisp
+mtools-read-write-test-128MB: read-disk-image-write-disk-image.lisp
 	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=17920
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 140000 -h 64 -s 32 -S \
+	dd if=/dev/zero of=$(DISK) bs=4096 count=32768
+	env MTOOLSRC=$(MTOOLSRC) mformat -T 256000 -h 64 -s 32 -S \
 	2 -F -c 2 c:
 	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
 	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
 
-# The following test creates a 140 MB disk image, copies a file to the
+# The following test creates a 256 MB disk image, copies a file to the
 # root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-140MB: read-disk-image-write-disk-image.lisp
+mtools-read-write-test-256MB: read-disk-image-write-disk-image.lisp
 	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=35840
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 280000 -h 64 -s 32 -S \
+	dd if=/dev/zero of=$(DISK) bs=4096 count=65536
+	env MTOOLSRC=$(MTOOLSRC) mformat -T 512000 -h 64 -s 32 -S \
 	2 -F -c 2 c:
 	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
 	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
 
-# The following test creates a 210 MB disk image, copies a file to the
+# The following test creates a 512 MB disk image, copies a file to the
 # root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-210MB: read-disk-image-write-disk-image.lisp
+mtools-read-write-test-512MB: read-disk-image-write-disk-image.lisp
 	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=53760
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 420000 -h 64 -s 32 -S \
+	dd if=/dev/zero of=$(DISK) bs=4096 count=131072
+	env MTOOLSRC=$(MTOOLSRC) mformat -T 1024000 -h 64 -s 32 -S \
 	2 -F -c 2 c:
 	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
 	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
 
-# The following test creates a 280 MB disk image, copies a file to the
+# The following test creates a 1024 MB disk image, copies a file to the
 # root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-280MB: read-disk-image-write-disk-image.lisp
+mtools-read-write-test-1024MB: read-disk-image-write-disk-image.lisp
 	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=71680
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 560000 -h 64 -s 32 -S \
-	2 -F -c 2 c:
-	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
-	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
-
-# The following test creates a 560 MB disk image, copies a file to the
-# root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-560MB: read-disk-image-write-disk-image.lisp
-	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=143360
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 1120000 -h 64 -s 32 -S \
-	2 -F -c 2 c:
-	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
-	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
-
-# The following test creates a 1120 MB disk image, copies a file to the
-# root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-1120MB: read-disk-image-write-disk-image.lisp
-	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=286720
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 2240000 -h 64 -s 32 -S \
-	2 -F -c 2 c:
-	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
-	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
-
-# The following test creates a 1680 MB disk image, copies a file to the
-# root directory, reads it in ACL2, then writes it back without change.
-mtools-read-write-test-1680MB: read-disk-image-write-disk-image.lisp
-	rm -f $(DISK)
-	dd if=/dev/zero of=$(DISK) bs=4096 count=430080
-	env MTOOLSRC=$(MTOOLSRC) mformat -T 3360000 -h 64 -s 32 -S \
+	dd if=/dev/zero of=$(DISK) bs=4096 count=262144
+	env MTOOLSRC=$(MTOOLSRC) mformat -T 2048000 -h 64 -s 32 -S \
 	2 -F -c 2 c:
 	env MTOOLSRC=$(MTOOLSRC) mcopy input-1204-bytes.txt c:/vmlinuz
 	env DISK=$(DISK) $(ACL2) -- < read-disk-image-write-disk-image.lisp
