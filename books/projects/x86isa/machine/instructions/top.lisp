@@ -341,7 +341,8 @@ writes the final value of the instruction pointer into RIP.</p>")
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 1 8) operand-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (select-operand-size$
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        ((mv cf rand x86)
         (HW_RND_GEN operand-size x86))
