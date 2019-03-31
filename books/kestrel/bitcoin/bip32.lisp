@@ -528,26 +528,6 @@
      We represent the current tree as a finite set of paths
      that satisfies additional conditions explicated later.")))
 
-(defsection bip32-path-set-ext
-  :extension bip32-path-set
-
-  (defrule bip32-path-setp-of-tail
-    (implies (bip32-path-setp x)
-             (bip32-path-setp (set::tail x)))
-    :enable (bip32-path-setp set::tail))
-
-  (defrule ubyte32-listp-when-in-bip32-path-setp
-    (implies (and (bip32-path-setp x)
-                  (set::in a x))
-             (ubyte32-listp a))
-    :enable (bip32-path-setp set::in set::head))
-
-  (defrule bip32-path-setp-of-insert
-    (implies (and (bip32-path-setp x)
-                  (ubyte32-listp a))
-             (bip32-path-setp (set::insert a x)))
-    :enable (bip32-path-setp insert empty head tail)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk bip32-path-set-closedp ((paths bip32-path-setp))
