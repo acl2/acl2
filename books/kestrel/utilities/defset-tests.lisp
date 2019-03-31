@@ -66,31 +66,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
+(must-succeed
  (fty::defset nat-set
               :elt-type nat
-              :parents (fty::defset std/osets)))
+              :parents (fty::defset set::std/osets)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
+(must-succeed
  (fty::defset nat-set
               :elt-type nat
               :short "short"))
 
-(must-succeed*
+(must-succeed
  (fty::defset nat-set
               :elt-type nat
               :short (concatenate 'string "sh" "ort")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
+(must-succeed
  (fty::defset nat-set
               :elt-type nat
               :long "long"))
 
-(must-succeed*
+(must-succeed
  (fty::defset nat-set
               :elt-type nat
               :long (concatenate 'string "lo" "ng")))
