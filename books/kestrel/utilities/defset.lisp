@@ -171,6 +171,7 @@
        (pkg-witness (pkg-witness pkg))
        ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
+       (a (intern-in-package-of-symbol "A" pkg-witness))
        ;; names of the generated functions:
        (pred (or pred (acl2::add-suffix-to-fn type "-P")))
        (fix (or fix (acl2::add-suffix-to-fn type "-FIX")))
@@ -180,6 +181,14 @@
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix) pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred) pkg-witness))
        (setp-when-pred (acl2::packn-pos (list 'setp-when- pred) pkg-witness))
+       (pred-of-tail (acl2::packn-pos (list pred '-of-tail) pkg-witness))
+       (pred-of-insert (acl2::packn-pos (list pred '-of-insert) pkg-witness))
+       (elt-pred-when-in-pred (acl2::packn-pos (list elt-pred
+                                                     '-when-in-
+                                                     pred
+                                                     '-binds-free-
+                                                     x)
+                                               pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -206,7 +215,21 @@
            (defrule ,setp-when-pred
              (implies (,pred ,x)
                       (set::setp ,x))
-             :enable set::setp)))
+             :enable set::setp)
+           (defrule ,pred-of-tail
+             (implies (,pred ,x)
+                      (,pred (set::tail ,x)))
+             :enable set::tail)
+           (defrule ,pred-of-insert
+             (implies (and (,elt-pred ,a)
+                           (,pred ,x))
+                      (,pred (set::insert ,a ,x)))
+             :enable (set::insert set::empty set::head set::tail))
+           (defrule ,elt-pred-when-in-pred
+             (implies (and (set::in ,a ,x) ; binds free X
+                           (,pred ,x))
+                      (,elt-pred ,a))
+             :enable (set::in set::head))))
        (fix-event
         `(define ,fix ((,x ,pred))
            :parents (,type)
