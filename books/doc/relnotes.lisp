@@ -137,6 +137,13 @@
  of specified lengths, based on existing fixtypes of lists of arbitrary
  lenghts (introduced via @(tsee fty::deflist)).</p>
 
+ <h4>Fixtypes for Omaps</h4>
+
+ <p>Added a macro @(tsee fty::defomap) that generates fixtypes for <see
+ topic='@(url omap::omaps)'>omaps</see> with keys and values of specified
+ fixtypes.  This is analogous to @(tsee fty::deflist) and @(tsee
+ fty::defalist).</p>
+
  <h4>Fixtypes for Osets</h4>
 
  <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
