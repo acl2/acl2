@@ -1,4 +1,4 @@
-; Integer Arithmetic -- Meta Rule
+; Integer Arithmetic -- Meta Rules
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
