@@ -19,7 +19,7 @@
 
 (defxdoc defset
 
-  :parents (typed-osets std/osets)
+  :parents (set::std/osets fty::fty)
 
   :short "Generate a <see topic='@(url fty::fty)'>fixtype</see>
           of <see topic='@(url set::std/osets)'>osets</see>
@@ -36,7 +36,8 @@
    (xdoc::p
     "This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).
      Besides the fixtype itself,
-     this macro also generates theorems about the fixtype.")
+     this macro also generates some theorems about the fixtype.
+     Future versions of this macro may generate more theorems, as needed.")
 
    (xdoc::p
     "Future versions of this macro may be modularized to provide
@@ -82,7 +83,7 @@
     (xdoc::p
      "The name of the recognizer, fixer, and equivalence for the new fixtype.")
     (xdoc::p
-     "The defaults are @('name') followed by
+     "The defaults are @('type') followed by
       @('-p'), @('-fix'), and @('-equiv')."))
 
    (xdoc::desc
