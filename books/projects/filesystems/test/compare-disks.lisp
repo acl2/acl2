@@ -1,26 +1,13 @@
-(include-book "../lofat")
-(include-book "centaur/getopt/top" :dir :system)
+(include-book "../test-stuff")
 (include-book "oslib/argv" :dir :system)
 
+;; See theorem compare-disks-correctness-1 in test-stuff.lisp for a proof of
+;; correctness of this procedure.
 (b*
-    (((mv & val state)
+    (((mv & image-path1 state)
       (getenv$ "REF_INPUT" state))
-     ((mv fat32-in-memory &)
-      (disk-image-to-lofat
-       fat32-in-memory val state))
-     ((mv fs-ref &)
-      (lofat-to-hifat fat32-in-memory))
-     ((mv & val state)
+     ((mv & image-path2 state)
       (getenv$ "INPUT" state))
-     ((mv fat32-in-memory &)
-      (disk-image-to-lofat
-       fat32-in-memory val state))
-     ((mv fs &)
-      (lofat-to-hifat fat32-in-memory)))
-  (mv
-       (good-bye
-        (if (hifat-equiv fs-ref fs)
-            0
-          1))
-       fat32-in-memory
-       state))
+     ((mv equiv fat32-in-memory)
+      (compare-disks image-path1 image-path2 fat32-in-memory state)))
+  (mv (good-bye (if equiv 0 1)) fat32-in-memory state))
