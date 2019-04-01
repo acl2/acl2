@@ -426,7 +426,7 @@
        (p2 (prefixes->seg prefixes))
 
        ((the (integer 1 8) operand-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (p4? (equal #.*addr-size-override*

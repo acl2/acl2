@@ -112,7 +112,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -196,7 +196,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -299,7 +299,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -314,7 +314,7 @@
 
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode byte-imm? rex-byte t prefixes nil nil nil x86))
 
        ((the (integer 1 8) operand-size)
@@ -411,7 +411,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -500,7 +500,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
   :body
@@ -586,7 +586,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
   :body
@@ -813,7 +813,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -947,7 +947,7 @@
   :returns (x86 x86p
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
-						(select-operand-size$
+						(select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -1061,7 +1061,7 @@
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(rgfi-size
-						 select-operand-size$
+						 select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -1072,7 +1072,7 @@
   (b* ((ctx 'x86-pusha)
 
        ((the (integer 2 4) operand-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -1172,7 +1172,7 @@
 		:hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d ()
 						(!rgfi-size
-						 select-operand-size$
+						 select-operand-size
 						 signed-byte-p
 						 unsigned-byte-p)))))
 
@@ -1201,7 +1201,7 @@
   (b* ((ctx 'x86-popa)
 
        ((the (integer 2 4) operand-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 
        (rsp (read-*sp proc-mode x86))

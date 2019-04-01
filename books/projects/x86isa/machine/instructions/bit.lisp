@@ -109,7 +109,7 @@
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ((the (integer 1 8) operand-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (bitOffset (rgfi-size operand-size
@@ -212,7 +212,7 @@
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
 
        ((the (integer 1 8) operand-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (p2 (prefixes->seg prefixes))

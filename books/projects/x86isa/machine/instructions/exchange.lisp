@@ -91,7 +91,7 @@
 
        (select-byte-operand (equal opcode #x86))
        (reg/mem-size
-	(select-operand-size$
+	(select-operand-size
          proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
@@ -203,7 +203,7 @@
 
        (select-byte-operand (equal opcode #xB0))
        ((the (integer 1 8) reg/mem-size)
-	(select-operand-size$
+	(select-operand-size
          proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (rAX (rgfi-size reg/mem-size *rax* rex-byte x86))

@@ -76,7 +76,7 @@
                 :hints (("Goal" :in-theory
                          (e/d ()
                               (trunc
-                               select-operand-size$
+                               select-operand-size
                                mv-nth-0-of-add-to-*ip-when-64-bit-modep
                                mv-nth-1-of-add-to-*ip-when-64-bit-modep
                                signed-byte-p
@@ -153,7 +153,7 @@
                           (equal opcode #xD0)
                           (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (select-operand-size$
+        (select-operand-size
          proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
