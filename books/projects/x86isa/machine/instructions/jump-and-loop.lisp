@@ -98,20 +98,10 @@
 
   (b* ((ctx 'x86-near-jmp-Op/En-D)
 
-       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
-
+       (byte-operand? (eql opcode #xEB)) ; T if jump short
        ((the (integer 0 4) offset-size)
-        (if (eql opcode #xEB) ; jump short
-            1 ; always 8 bits (rel8)
-          ;; opcode = #xE9 -- jump near relative:
-          (if (equal proc-mode #.*64-bit-mode*)
-              4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-            (b* (((the (unsigned-byte 16) cs-attr)
-                  (xr :seg-hidden-attr #.*cs* x86))
-                 (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
-              (if (= cs.d 1)
-                  (if p3? 2 4) ; 16 or 32 bits (rel16 or rel32)
-                (if p3? 4 2))))))
+        (select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil t t x86))
 
        ((mv ?flg (the (signed-byte 32) offset) x86)
         (rime-size proc-mode offset-size temp-rip #.*cs* :x nil x86))
