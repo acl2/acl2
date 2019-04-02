@@ -144,8 +144,7 @@
         (mv nil nil nil))
        (equiv (g-apply->fn equiv-term))
        ((unless (or (eq equiv 'equal)
-                    (and equiv
-                         (member-eq equiv (equiv-contexts-fix contexts)))))
+                    (member-eq equiv (equiv-contexts-fix contexts))))
         (mv nil nil nil))
        (args (g-apply->args equiv-term))
        ((unless (equal (len args) 2))
