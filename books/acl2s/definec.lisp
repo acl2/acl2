@@ -259,8 +259,6 @@ bells and whistles of @('acl2s::defunc').
     (local (acl2s-defaults :set testing-enabled nil))
     (definecd ,name ,@args)))
 
-
-
 (defmacro definedcd (name &rest args)
   (let ((defname (make-symbl `(,name -DEFINITION-RULE))))
     `(progn

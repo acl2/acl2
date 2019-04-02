@@ -213,6 +213,19 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (equal (cdr oc) `((,name ,@formals)))
        (car oc)))
 
+(defun map-force-list (l)
+  (if (endp l)
+      l
+    (cons `(force ,(car l))
+          (map-force-list (cdr l)))))
+
+(defun map-force-ic (ic)
+  (cond ((equal ic 't) 't)
+        ((and (consp ic)
+              (equal (car ic) 'acl2::and))
+         (cons 'and (map-force-list (cdr ic))))
+        (t `(force ,ic))))
+
 (acl2::program)
 (defun add-output-contract-check (body output-contract fun-name fun-args wrld)
   "To body, we insert a runtime check for output-contract."
@@ -268,19 +281,26 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
     (name formals ic oc decls body kwd-alist wrld make-staticp d?)
   "Generate events which simulate a typed ACL2s language."
   (b* ((recursivep (defdata::get1 :recursivep kwd-alist))
+       (force-ic-hyps-in-definitionp 
+        (defdata::get1 :force-ic-hyps-in-definitionp kwd-alist))
+       (skip-admissibilityp 
+        (defdata::get1 :skip-admissibilityp kwd-alist))
+       (ic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
        (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d?))
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (fun-ind-name (make-sym name 'induction-scheme-from-definition))
-       (ind-scheme-name (make-sym name 'induction-scheme)))
+       (ind-scheme-name (make-sym name 'induction-scheme))
+       (defun `(defun ,fun-ind-name ,formals
+                 ,@decls
+                 ,(replace-in-term name fun-ind-name lbody)))
+       (defun (if skip-admissibilityp `(skip-proofs ,defun) defun)))
     (append
 
 ; Submit a function to get an induction scheme?
 ; Would be good to reuse the termination proof we already did here,
 ; but the use of ccg make that hard
      (and recursivep
-          `((defun ,fun-ind-name ,formals
-              ,@decls
-              ,(replace-in-term name fun-ind-name lbody))))
+          `(,defun))
 
      ;; The above defun can take a long time to admit, but
      ;; since its termination argument is exactly the same
@@ -298,6 +318,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                          :scheme ,(cons fun-ind-name formals))))))
 
 ; Definitional Rule
+; Can use skip-proofs here, but this should be fast     
      `((with-output :stack :push :off :all
          (make-event
           (let ((controller-alist (acl2::controller-alist ',name (w state))))
@@ -329,31 +350,21 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                     (:definition ,fun-ind-name))))))
      )))
 
-
 (logic)
 
-(defun map-force-list (l)
-  (if (endp l)
-      l
-    (cons `(force ,(car l))
-          (map-force-list (cdr l)))))
-
-(defun map-force-ic (ic)
-  (cond ((equal ic 't) 't)
-        ((and (consp ic)
-              (equal (car ic) 'acl2::and))
-         (cons 'and (map-force-list (cdr ic))))
-        (t `(force ,ic))))
-
-(defun make-contract-body (name ic oc formals d? w)
+(defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? w)
   (declare (xargs :mode :program))
   (b* ((pred (pred-of-oc name formals oc))
        (undef-name (get-undef-name pred d? w)))
     (if (or (c-is-t ic)
-            (not (equal undef-name 'acl2s::acl2s-undefined))
-            (not (equal undef-name 'acl2s::acl2s-d-undefined)))
+            (and rem-hyps?
+                 (not (member undef-name '(acl2s::acl2s-undefined
+                                           acl2s::acl2s-d-undefined)))))
         (mv oc t)
-      (mv `(implies ,(map-force-ic ic) ,oc) nil))))
+      (mv `(implies ,(if f-c-thm? (map-force-ic ic) ic) ,oc) nil))))
+
+(defun wrap-test-skip (skip? x)
+  (if skip? `(test-then-skip-proofs ,x) x))
 
 (defun make-contract-defthm (name ic oc kwd-alist formals d? w)
   (declare (xargs :mode :program))
@@ -361,24 +372,40 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (otf-flg (defdata::get1 :otf-flg kwd-alist))
        (hints (defdata::get1 :function-contract-hints kwd-alist))
        (rule-classes (defdata::get1 :rule-classes kwd-alist))
-       ((mv body &) (make-contract-body name ic oc formals d? w)))
-    `(DEFTHM ,(make-sym name 'CONTRACT)
-       ,body
-       ,@(and hints `(:HINTS ,hints))
-       ,@(and rule-classes `(:RULE-CLASSES ,rule-classes))
-       ,@(and otf-flg `(:OTF-FLG ,otf-flg))
-       ,@(and instructions `(:INSTRUCTIONS ,instructions)))))
+       (f-c-thm?
+        (defdata::get1 :force-ic-hyps-in-contract-thmp kwd-alist))
+       ((mv body &) (make-contract-body name ic oc formals d? nil f-c-thm? w))
+       (skip-function-contractp
+        (defdata::get1 :skip-function-contractp kwd-alist))
+       (defthm
+         `(defthm ,(make-sym name 'CONTRACT)
+            ,body
+            ,@(and hints `(:HINTS ,hints))
+            ,@(and rule-classes `(:RULE-CLASSES ,rule-classes))
+            ,@(and otf-flg `(:OTF-FLG ,otf-flg))
+            ,@(and instructions `(:INSTRUCTIONS ,instructions)))))
+    (wrap-test-skip skip-function-contractp defthm)))
+
+(defmacro wrap-skip-fun (x)
+  `(wrap-test-skip skip-function-contractp ,x))
 
 (defun make-contract-ev (name formals ic oc kwd-alist make-staticp d? w)
   (declare (xargs :mode :program))
   (b* (((when (c-is-t oc)) nil) ;trivially satisfied
        (function-contract-strictp
         (defdata::get1 :function-contract-strictp kwd-alist))
+       (f-c-thm?
+        (defdata::get1 :force-ic-hyps-in-contract-thmp kwd-alist))
        (instructions (defdata::get1 :instructions kwd-alist))
        (otf-flg (defdata::get1 :otf-flg kwd-alist))
        (hints (defdata::get1 :function-contract-hints kwd-alist))
        (rule-classes (defdata::get1 :rule-classes kwd-alist))
-       ((mv body no-hyps?) (make-contract-body name ic oc formals d? w))
+       (skip-function-contractp
+        (defdata::get1 :skip-function-contractp kwd-alist))
+       ((mv body-rm-hyps no-hyps?-rm-hyps)
+        (make-contract-body name ic oc formals d? t f-c-thm? w))
+       ((mv body-hyps no-hyps?-hyps)
+        (make-contract-body name ic oc formals d? nil f-c-thm? w))
        (contract-name (make-sym name 'CONTRACT))
        (contract-tpname (make-sym name 'CONTRACT-TP))
        (recursivep (defdata::get1 :recursivep kwd-alist))
@@ -389,54 +416,93 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (rhints (if recursivep
                    ihints
                  (and hints `(:hints ,hints))))
-       (rewrite-class (if no-hyps?
-                          '(:rewrite) ;; error if no hyps
-                        '(:rewrite :backchain-limit-lst 3)))
-       (rclass
-        `(,rewrite-class
+       (rewrite-class-rm-hyps (if no-hyps?-rm-hyps
+                                  '(:rewrite) ;; error if no hyps
+                                '(:rewrite :backchain-limit-lst 3)))
+       (rewrite-class-hyps (if no-hyps?-hyps
+                               '(:rewrite) ;; error if no hyps
+                             '(:rewrite :backchain-limit-lst 3)))
+       (rclass-rm-hyps
+        `(,rewrite-class-rm-hyps
           (:forward-chaining :trigger-terms ((,name ,@formals)))))
-       (rclass (or rule-classes rclass)) ; rule-classes overrides rclass
+       (rclass-hyps
+        `(,rewrite-class-hyps
+          (:forward-chaining :trigger-terms ((,name ,@formals)))))
+       (rclass-rm-hyps (or rule-classes rclass-rm-hyps)) ; rule-classes overrides rclass
+       (rclass-hyps (or rule-classes rclass-hyps)) ; rule-classes overrides rclass
        (rewrite-fc ;; in case user wanted to completely override hints
         (if hints
-            `(DEFTHM ,contract-name ,body
+            `(DEFTHM ,contract-name ,body-rm-hyps
                ,@(and hints `(:hints ,hints))
-               ,@(and rclass `(:rule-classes ,rclass))
+               ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
                ,@(and otf-flg `(:otf-flg ,otf-flg))
                ,@(and instructions `(:instructions ,instructions)))
           '(acl2::fail-event :defunc t :fail-contract "No user-provided hints")))
+       (rewrite-fc (wrap-skip-fun rewrite-fc))
        (induct-rewrite-fc
-        `(DEFTHM ,contract-name ,body ,@rhints
-           ,@(and rclass `(:rule-classes ,rclass))
+        `(DEFTHM ,contract-name ,body-rm-hyps ,@rhints
+           ,@(and rclass-rm-hyps `(:rule-classes ,rclass-rm-hyps))
            ,@(and otf-flg `(:otf-flg ,otf-flg))
            ,@(and instructions `(:instructions ,instructions))))
+       (induct-rewrite-fc (wrap-skip-fun induct-rewrite-fc))
        (tp-rule
-        `(DEFTHM ,contract-tpname ,body
+        `(DEFTHM ,contract-tpname ,body-rm-hyps
            :rule-classes ((:type-prescription))
-           :hints (("goal" :by ,contract-name)))))
+           :hints (("goal" :by ,contract-name))))
+       (tp-rule (wrap-skip-fun tp-rule))
+       (rewrite-fc-h ;; in case user wanted to completely override hints
+        (if hints
+            `(DEFTHM ,contract-name ,body-hyps
+               ,@(and hints `(:hints ,hints))
+               ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
+               ,@(and otf-flg `(:otf-flg ,otf-flg))
+               ,@(and instructions `(:instructions ,instructions)))
+          '(acl2::fail-event :defunc t :fail-contract "No user-provided hints")))
+       (rewrite-fc-h (wrap-skip-fun rewrite-fc-h)) 
+       (induct-rewrite-fc-h
+        `(DEFTHM ,contract-name ,body-hyps ,@rhints
+           ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
+           ,@(and otf-flg `(:otf-flg ,otf-flg))
+           ,@(and instructions `(:instructions ,instructions))))
+       (induct-rewrite-fc-h (wrap-skip-fun induct-rewrite-fc-h))
+       (tp-rule-h
+        `(DEFTHM ,contract-tpname ,body-hyps
+           :rule-classes ((:type-prescription))
+           :hints (("goal" :by ,contract-name))))
+       (tp-rule-h (wrap-skip-fun tp-rule-h)))
     (if (or make-staticp function-contract-strictp)
         `(encapsulate
           ()
-          (make-event '(:or ,induct-rewrite-fc ,rewrite-fc))
-          (make-event '(:or ,tp-rule (value-triple :type-prescription-rule-failed))))
+          (make-event '(:or ,induct-rewrite-fc ,rewrite-fc ,induct-rewrite-fc-h ,rewrite-fc-h))
+          (make-event '(:or ,tp-rule ,tp-rule-h
+                            (value-triple :type-prescription-rule-failed))))
       `(encapsulate
         ()
-        (make-event '(:OR ,induct-rewrite-fc
+        (make-event '(:OR ,induct-rewrite-fc ,induct-rewrite-fc-h
                           (value-triple :contract-failed)))
-        (make-event '(:OR ,tp-rule
+        (make-event '(:OR ,tp-rule ,tp-rule-h
                           (value-triple :Type-prescription-rule-failed)))))))
 
 (defun make-verify-guards-ev (name kwd-alist)
-  (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist)) ; (defdata::get1 :guard-hints xargs{})
-       (body-contracts-strictp (defdata::get1 :body-contracts-strictp kwd-alist))
-       (hints (or hints '(("Goal" :do-not-induct t :do-not '(acl2::generalize acl2::fertilize)))))
-       )
-
-    (if body-contracts-strictp
-        `(verify-guards ,name :guard-debug t :hints ,hints)
-      `(make-event
-        '(:OR (verify-guards ,name :guard-debug t :hints ,hints)
-              (value-triple :body-contracts-FAILED))))))
-
+  (b* ((hints (defdata::get1 :body-contracts-hints kwd-alist))
+       ;; (defdata::get1 :guard-hints xargs{})
+       (body-contracts-strictp
+        (defdata::get1 :body-contracts-strictp kwd-alist))
+       (skip-body-contractp
+        (defdata::get1 :skip-body-contractp kwd-alist))
+       (hints
+        (or hints
+            '(("Goal"
+               :do-not-induct t
+               :do-not '(acl2::generalize acl2::fertilize))))))
+    (cond
+     (skip-body-contractp
+      `(skip-proofs (verify-guards ,name :guard-debug t :hints ,hints)))
+     (body-contracts-strictp
+      `(verify-guards ,name :guard-debug t :hints ,hints))
+     (t `(make-event
+          '(:OR (verify-guards ,name :guard-debug t :hints ,hints)
+                (value-triple :body-contracts-FAILED)))))))
 
 ; Sometimes counterexample generation winds up trying to evaluate
 ; a defunc-defined function outside of it's domain. That should
@@ -460,6 +526,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
     :rule-classes :instructions :function-contract-hints :otf-flg ;for contract defthm
     :body-contracts-hints ;for verify-guards event
     :skip-tests
+    :force-ic-hyps-in-definitionp
+    :force-ic-hyps-in-contract-thmp
+    :skip-admissibilityp
+    :skip-function-contractp
+    :skip-body-contractp
     :timeout :termination-strictp :function-contract-strictp :body-contracts-strictp
     ))
 
@@ -886,6 +957,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (:termination-strictp . t)
          (:function-contract-strictp . t)
          (:body-contracts-strictp . t)
+         (:force-ic-hyps-in-contract-thmp t)
+         (:force-ic-hyps-in-definitionp . nil)
+         (:skip-admissibilityp . nil)
+         (:skip-function-contractp . nil)
+         (:skip-body-contractp . nil)
          )
        :clear)
 
@@ -1282,15 +1358,49 @@ To debug a failed defunc form, you can proceed in multiple ways:
 "
   )
 
-(defmacro set-defunc-termination-strictp (b) `(table defunc-defaults-table :termination-strictp ,b :put))
-(defmacro set-defunc-function-contract-strictp (b) `(table defunc-defaults-table :function-contract-strictp ,b :put))
-(defmacro set-defunc-body-contracts-strictp (b) `(table defunc-defaults-table :body-contracts-strictp ,b :put))
-(defmacro set-defunc-timeout (r) `(table defunc-defaults-table :timeout ,r :put))
+(defmacro set-defunc-termination-strictp (b)
+  `(table defunc-defaults-table :termination-strictp ,b :put))
+(defmacro set-defunc-function-contract-strictp (b)
+  `(table defunc-defaults-table :function-contract-strictp ,b :put))
+(defmacro set-defunc-force-ic-hyps-in-definitionp (b)
+  `(table defunc-defaults-table :force-ic-hyps-in-definitionp ,b :put))
+(defmacro set-defunc-force-ic-hyps-in-contract-thmp (b)
+  `(table defunc-defaults-table :force-ic-hyps-in-contract-thmp ,b :put))
+(defmacro set-defunc-body-contracts-strictp (b)
+  `(table defunc-defaults-table :body-contracts-strictp ,b :put))
+(defmacro set-defunc-timeout (r)
+  `(table defunc-defaults-table :timeout ,r :put))
 
-(defmacro get-defunc-timeout () `(table defunc-defaults-table :timeout))
-(defmacro get-defunc-termination-strictp () `(table defunc-defaults-table :termination-strictp))
-(defmacro get-defunc-function-contract-strictp () `(table defunc-defaults-table :function-contract-strictp))
-(defmacro get-defunc-body-contracts-strictp () `(table defunc-defaults-table :body-contracts-strictp))
+
+(defmacro set-defunc-skip-admissibilityp (b)
+  `(table defunc-defaults-table :skip-admissibilityp ,b :put))
+(defmacro set-defunc-skip-function-contractp (b)
+  `(table defunc-defaults-table :skip-function-contractp ,b :put))
+(defmacro set-defunc-skip-body-contractp (b)
+  `(table defunc-defaults-table :skip-body-contractp ,b :put))
+
+
+
+(defmacro get-defunc-termination-strictp ()
+  `(table defunc-defaults-table :termination-strictp))
+(defmacro get-defunc-function-contract-strictp ()
+  `(table defunc-defaults-table :function-contract-strictp))
+(defmacro get-defunc-force-ic-hyps-in-definitionp ()
+  `(table defunc-defaults-table :force-ic-hyps-in-definitionp))
+(defmacro get-defunc-force-ic-hyps-in-contract-thmp ()
+  `(table defunc-defaults-table :force-ic-hyps-in-contract-thmp))
+(defmacro get-defunc-body-contracts-strictp ()
+  `(table defunc-defaults-table :body-contracts-strictp))
+(defmacro get-defunc-timeout ()
+  `(table defunc-defaults-table :timeout))
+
+
+(defmacro get-defunc-skip-admissibilityp ()
+  `(table defunc-defaults-table :skip-admissibilityp))
+(defmacro get-defunc-skip-function-contractp ()
+  `(table defunc-defaults-table :skip-function-contractp))
+(defmacro get-defunc-skip-body-contractp ()
+  `(table defunc-defaults-table :skip-body-contractp))
 
 (defxdoc set-defunc-timeout
   :parents (defunc)
@@ -1314,6 +1424,14 @@ To debug a failed defunc form, you can proceed in multiple ways:
   :parents (defunc)
   :short "Get function-contract-strictp default for defunc")
 
+(defxdoc get-defunc-force-ic-hyps-in-definitionp
+  :parents (defunc)
+  :short "Get force-ic-hyps-in-definitionp default for defunc")
+
+(defxdoc get-defunc-force-ic-hyps-in-contract-thmp
+  :parents (defunc)
+  :short "Get force-ic-hyps-in-contract-thmp default for defunc")
+
 (defxdoc get-defunc-body-contracts-strictp
   :parents (defunc)
   :short "Get body-contracts-strictp default for defunc")
@@ -1333,6 +1451,22 @@ To debug a failed defunc form, you can proceed in multiple ways:
   :short "Set function-contract-strictp for defunc"
   :long
   "<p>Set whether @('defunc') should abort or continue on failure to prove function contract.</p>
+   <p>The default is set to @('t').</p>
+   ")
+
+(defxdoc set-defunc-force-ic-hyps-in-definitionp
+  :parents (defunc)
+  :short "Set force-ic-hyps-in-definitionp for defunc"
+  :long
+  "<p>Set whether @('defunc') should force the hypotheses (input contract) in the definition rules it generates.</p>
+   <p>The default is set to @('nil').</p>
+   ")
+
+(defxdoc set-defunc-force-ic-hyps-in-contract-thmp
+  :parents (defunc)
+  :short "Set force-ic-hyps-in-contract-thmp for defunc"
+  :long
+  "<p>Set whether @('defunc') should force the hypotheses in the contract theorems it generates.</p>
    <p>The default is set to @('t').</p>
    ")
 
