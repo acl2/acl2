@@ -819,4 +819,5 @@ constant). In the latter return a lambda expression"
                   :gag-mode t 
                   :stack :push
        (make-event
-        (sig-events (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))
+        (sig-events
+         (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))
