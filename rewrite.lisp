@@ -20,6 +20,233 @@
 
 (in-package "ACL2")
 
+; We introduce ev-fncall+ early in this file to support its use in the
+; definition of scons-term.
+
+; Essay on Evaluation of Apply$ and Loop$ Calls During Proofs
+
+; (Note: This essay also applies similarly to badge, even though we do not
+; discuss badge in it.)
+
+; A goal from the earliest days of ACL2 has been efficient evaluation, not only
+; for forms submitted at the top-level loop, but also during proofs.  The
+; earliest implementations of apply$, badge, and loop$ limited their evaluation
+; during proofs, essentially disallowing apply$ or badge for user-defined
+; functions.  This is not particularly unreasonable since attachments are
+; disallowed during proofs, which is completely appropriate.
+
+; This situation has been remedied starting in March, 2019, by expanding the
+; use in the rewriter of doppelganger-apply$-userfn and
+; doppelganger-badge-userfn, for calls of apply$-userfn and badge-userfn on
+; concrete arguments, where the first argument has a warrant.  If the warrant
+; is not known to be true in the current context, then it is forced (unless it
+; is known to be false).  See community book
+; books/system/tests/apply-in-proofs.lisp for examples.
+
+; The key idea is that the truth of the warrant for fn justifies replacement of
+; (apply$ 'fn '(arg1 ... argk)) by (fn arg1 ... argk); let's call this a
+; "warranted replacement".  A version of ev-fncall, ev-fncall+, records the
+; warrants that are required to be true in order to make those warranted
+; replacements during evaluation.  Ev-fncall+ is actually a small wrapper for
+; ev-fncall+-w, which in turn has a raw Lisp implementation that relies on a
+; Lisp global, *warrant-reqs*.  The definition of *warrant-reqs* has a comment
+; explaining its legal values, and a search of the sources for *warrant-reqs*
+; should make reasonably clear how this variable is used; but here is a
+; summary.  When *warrant-reqs* has its global value of nil, no special
+; behavior occurs: ev-fncall+[-w] essentially reduces to ev-fncall[-w].
+; Otherwise, *warrant-reqs* can be initialized to t to represent the empty
+; list, and this "list" is extended by maybe-extend-warrant-reqs each time a
+; new function requires a true warrant because of a warranted replacement (as
+; described above).  Upon completion of a ground evaluation using ev-fncall+,
+; this list of functions is returned as the third value of ev-fncall+.  The
+; function push-warrants then processes this list of functions as follows: for
+; the warrant of each function in that list, either the warrant is known to be
+; true or it is forced (except that if it the warrant is known to be false, the
+; evaluation is considered to have failed).
+
+; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
+; for the rewriter as described above, where *aokp* is nil but *warrant-reqs*
+; is non-nil, evaluation involving apply$ or loop$ always reduces to evaluation
+; of apply$-userfn, which is handled with warranted replacements as described
+; above.  At one time we considered allowing these shortcuts for lambdas and
+; loop$ forms, and we could reconsider if we want more efficiency.  But the
+; current implementation seems to provide sufficient efficiency (until someone
+; complains, at least), and has the following advantage: the function symbols
+; stored in *warrant-reqs* are exactly those for which warranted replacement is
+; used; but if we allow shortcuts for lambdas and loop$ forms, then we will
+; need to include all user-defined functions occurring in the lambda body or
+; loop$ body even when lying on an IF branch that was not taken during a given
+; evaluation.
+
+; We considered handling evaluation in expand-abbreviations as described above
+; for the rewriter.  However, there is no type-alist readily available in
+; expand-abbreviations for determining which warrants are known to be true.
+; Moreover, the rules justifying warranted replacements (with names like
+; apply$-fn) are conditional rewrite rules, which we traditionally ignore
+; during preprocess-clause (and hence during expand-abbreviations) in favor of
+; considering only "simple" rules.  However, we do use ev-fncall+ in
+; expand-abbreviations, so that we can avoid wrapping HIDE around the ground
+; function application when the evaluation aborted rather than doing a
+; warranted replacement.  This case is represented by the case that the third
+; value of ev-fncall+[-w] is a function symbol.  Special handling is important
+; for this case, to avoid wrapping the call in HIDE, since that would prevent
+; the rewriter from later performing a successful evaluation using warranted
+; replacements.  Note that we initialize *warrant-reqs* to :nil! in this case
+; instead of t, which causes evaluation to abort immediately the first time
+; that a warranted replacement is called for.  For very long loops this
+; obviously can be important for efficiency!
+
+; We considered also using ev-fncall+ for eval-ground-subexpressions, but that
+; seemed to introduce more complexity than it's worth; this could change based
+; on user demand.  Since eval-ground-subexpressions does not introduce HIDE, we
+; don't have the need for ev-fncall+ that is described above for
+; expand-abbreviations.
+
+; Note that our scheme works nicely with the executable-counterpart of apply$
+; disabled.  Specifically, all warranted replacements are justified by warrants
+; -- actually by rules with names like apply$-fn -- rather than by the
+; execution of apply$ calls.
+
+; Next we develop the logical and raw Lisp definitions of ev-fncall+.
+
+(defun badged-fns-of-world (wrld)
+
+; We return the list of badged functions in wrld, but in a way that can be
+; guard-verified and can be proved to return a list of function symbols.
+
+  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
+  (and (alistp (table-alist 'badge-table wrld))
+       (let ((badge-alist
+              (cdr (assoc-eq :badge-userfn-structure
+                             (table-alist 'badge-table wrld)))))
+         (and (alistp badge-alist)
+              (let ((syms (strip-cars badge-alist)))
+                (and (all-function-symbolps syms wrld)
+                     syms))))))
+
+(partial-encapsulate
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; We think of (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil) as the
+; list of badged functions supplied to apply$-userfn or badge-userfn during
+; evaluation of the call of fn on args in wrld using the given
+; user-stobj-alist, big-n, safe-mode, and gc-off.  But if the last argument,
+; strictp, is non-nil, then we think of the result as the first function symbol
+; encountered during evaluation, if any, for which a true warrant was required
+; to complete that call of fn.
+
+; The constraint below can almost surely be explicitly strengthened, but we see
+; no need at this point.
+
+; Also see ev-fncall+-w.
+
+ (((ev-fncall+-fns * * * * * * *) => *))
+ nil
+ (logic)
+ (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
+          (declare (ignore fn args big-n safe-mode gc-off))
+          (and (not strictp)
+               (badged-fns-of-world wrld))))
+ (defthm all-function-symbolps-ev-fncall+-fns
+   (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
+     (all-function-symbolps fns wrld)))
+ (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
+   (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
+            (badged-fns-of-world wrld)))
+ (defthm function-symbolp-ev-fncall+-fns-strictp
+   (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
+     (and (symbolp fn)
+          (or (null fn)
+              (function-symbolp fn wrld))))))
+
+#+acl2-loop-only
+(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; This function allows apply$-userfn and badge-userfn to execute on warranted
+; functions even when *aokp* is nil.  It returns an error triple whose
+; non-erroneous value is a list of the functions that need warrants in order to
+; trust the result.  However, in the case of an error when strictp is true, the
+; value is a function symbol responsible for the error when a warrant is
+; required so that evaluation is aborted, else nil.  Its implementation is in
+; the #-acl2-loop-only definition of this function; the present logical
+; definition is incomplete in the sense that ev-fncall+-fns is partially
+; constrained.
+
+; This logical definition actually permits a list, computed by constrained
+; function ev-fncall+-fns, that properly includes the intended list as a
+; subset.  But the under-the-hood implementation of ev-fncall+-w produces
+; exactly the set of functions given to apply$-userfn or badge-userfn.
+
+  (let* ((big-n (big-n))
+         (fns (ev-fncall+-fns fn args w big-n safe-mode gc-off strictp)))
+    (mv-let (erp val latches)
+      (ev-fncall-rec-logical fn args w
+                             nil ; user-stobj-alist
+                             big-n safe-mode gc-off
+                             nil ; latches
+                             t   ; hard-error-returns-nilp
+                             nil ; aokp
+                             (and (not strictp) fns))
+      (declare (ignore latches))
+      (mv erp val fns))))
+
+#-acl2-loop-only
+(defvar *warrant-reqs*
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+
+; Legal values of this variable are as follows.
+
+; nil -   Always the global value, and always the value when *aokp* is non-nil
+; t   -   Represents the empty list, enabling accumulation of function symbols
+;         whose (true) warrants support evaluation
+; lst   - A non-empty, duplicate-free list, which represents a set of function
+;         symbols whose (true) warrants support evaluation
+; :nil! - Like nil, but causes evaluation to stop if a warrant is ever required
+; fn  -   A function symbol for which evaluation is aborted because its warrant
+;         is required (because *warrant-reqs* is :nil!)
+
+  nil)
+
+#-acl2-loop-only
+(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
+
+; See comments in the logic definition of this function.
+
+  (let ((*warrant-reqs*
+
+; See comments in the definition of *warrant-reqs* for a discussion of the
+; :nil! and t values of this global.
+
+         (if strictp :nil! t)))
+    (declare (special *warrant-reqs*)) ; just to be safe
+    (mv-let (erp val latches)
+      (ev-fncall-w fn args w
+                   nil ; user-stobj-alist
+                   safe-mode gc-off
+                   t    ; hard-error-returns-nilp
+                   nil) ; aok
+      (declare (ignore latches))
+      (mv erp
+          val
+          (if (member-eq *warrant-reqs* '(t nil :nil!))
+              nil
+            *warrant-reqs*)))))
+
+(defun ev-fncall+ (fn args strictp state)
+
+; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
+; Also see comments in the logic definition of ev-fncall+-w.
+
+  (ev-fncall+-w fn args
+                (w state)
+                (f-get-global 'safe-mode state)
+                (gc-off state)
+                strictp))
+
 ; We start our development of the rewriter by coding one-way-unify and the
 ; substitution fns.
 
@@ -1067,12 +1294,13 @@
 
 (defun scons-term (fn args ens wrld state ttree)
 
-; This function is (cons-term fn args) except that we evaluate any enabled
-; fn on quoted arguments and may do any other replacements that preserve
-; equality (e.g., (equal x x) = t).  In addition, we report the executable
-; counterparts we use by adding them to ttree.  We return (mv hitp term
-; ttree'), hitp is t iff term is something different than (fn . args), term is
-; equal to (fn .  args) and ttree' is an extension of ttree.
+; This function is (cons-term fn args) except that we evaluate any enabled fn
+; on quoted arguments and may do any other replacements that preserve equality
+; (e.g., (equal x x) = t).  In addition, we report the executable counterparts
+; we use by adding them to ttree.  We return (mv hitp term ttree'), where: hitp
+; is t iff term is something different than (cons-term fn args); term is
+; provably equal to (cons-term fn args); and ttree' is an extension of ttree
+; this equality.
 
   (cond
    ((and (all-quoteps args)
@@ -1104,28 +1332,47 @@
                    (cadr args)
                    (caddr args))
                ttree))
-          ((programp fn wrld) ; this test is needed; see the comment in rewrite
-           (mv t (cons-term fn args) ttree))
+          ((programp fn wrld)
+
+; It is March, 2019, and we ask: Is this test needed?  At one time we said "see
+; the comment in rewrite", but there seems to be no such comment in rewrite.
+; Perhaps it is no longer needed, but we keep this programp case just to be
+; safe.  Also, we formerly returned t as the first value in this case, but that
+; seems wrong so we return nil now.
+
+           (mv nil (cons-term fn args) ttree))
           (t
            (mv-let
-            (erp val latches)
+            (erp val bad-fn)
             (pstk
-             (ev-fncall fn (strip-cadrs args) state nil t nil))
-            (declare (ignore latches))
+             (ev-fncall+ fn (strip-cadrs args) t state))
             (cond
              (erp
+              (cond
+               (bad-fn
+
+; Since bad-fn is non-nil, the evaluation failure was caused by aborting when a
+; warrant was needed.  This case is handled in rewrite, so we do not want to
+; hide the term.  See the Essay on Evaluation of Apply$ and Loop$ Calls During
+; Proofs.
+
+                (mv nil (cons-term fn args) ttree))
+               (t
 
 ; There is a guard violation, probably -- or perhaps there's some other kind of
 ; error.  We'll just hide this term so we don't see it again.
 
-              (mv t (fcons-term* 'hide (cons-term fn args)) ttree))
+                (mv t
+                    (fcons-term* 'hide (cons-term fn args))
+                    (push-lemma (fn-rune-nume 'hide nil nil wrld)
+                                ttree)))))
              (t (mv t
                     (kwote val)
                     (push-lemma (fn-rune-nume fn nil t wrld)
                                 ttree))))))))
    ((and (eq fn 'equal)
          (equal (car args) (cadr args)))
-    (mv t *t* ttree))
+    (mv t *t* (puffert ttree)))
    (t (mv nil (cons-term fn args) ttree))))
 
 (mutual-recursion
@@ -12112,226 +12359,6 @@
   `(all-fnnames1 nil ,term ,ans))
 (defmacro all-ffn-symbs-lst (lst ans)
   `(all-fnnames1 t ,lst ,ans))
-
-; Essay on Evaluation of Apply$ and Loop$ Calls During Proofs
-
-; (Note: This essay also applies similarly to badge, even though we do not
-; discuss badge in it.)
-
-; A goal from the earliest days of ACL2 has been efficient evaluation, not only
-; for forms submitted at the top-level loop, but also during proofs.  The
-; earliest implementations of apply$, badge, and loop$ limited their evaluation
-; during proofs, essentially disallowing apply$ or badge for user-defined
-; functions.  This is not particularly unreasonable since attachments are
-; disallowed during proofs, which is completely appropriate.
-
-; This situation has been remedied starting in March, 2019, by expanding the
-; use in the rewriter of doppelganger-apply$-userfn and
-; doppelganger-badge-userfn, for calls of apply$-userfn and badge-userfn on
-; concrete arguments, where the first argument has a warrant.  If the warrant
-; is not known to be true in the current context, then it is forced (unless it
-; is known to be false).  See community book
-; books/system/tests/apply-in-proofs.lisp for examples.
-
-; The key idea is that the truth of the warrant for fn justifies replacement of
-; (apply$ 'fn '(arg1 ... argk)) by (fn arg1 ... argk); let's call this a
-; "warranted replacement".  A version of ev-fncall, ev-fncall+, records the
-; warrants that are required to be true in order to make those warranted
-; replacements during evaluation.  Ev-fncall+ is actually a small wrapper for
-; ev-fncall+-w, which in turn has a raw Lisp implementation that relies on a
-; Lisp global, *warrant-reqs*.  The definition of *warrant-reqs* has a comment
-; explaining its legal values, and a search of the sources for *warrant-reqs*
-; should make reasonably clear how this variable is used; but here is a
-; summary.  When *warrant-reqs* has its global value of nil, no special
-; behavior occurs: ev-fncall+[-w] essentially reduces to ev-fncall[-w].
-; Otherwise, *warrant-reqs* can be initialized to t to represent the empty
-; list, and this "list" is extended by maybe-extend-warrant-reqs each time a
-; new function requires a true warrant because of a warranted replacement (as
-; described above).  Upon completion of a ground evaluation using ev-fncall+,
-; this list of functions is returned as the third value of ev-fncall+.  The
-; function push-warrants then processes this list of functions as follows: for
-; the warrant of each function in that list, either the warrant is known to be
-; true or it is forced (except that if it the warrant is known to be false, the
-; evaluation is considered to have failed).
-
-; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
-; for the rewriter as described above, where *aokp* is nil but *warrant-reqs*
-; is non-nil, evaluation involving apply$ or loop$ always reduces to evaluation
-; of apply$-userfn, which is handled with warranted replacements as described
-; above.  At one time we considered allowing these shortcuts for lambdas and
-; loop$ forms, and we could reconsider if we want more efficiency.  But the
-; current implementation seems to provide sufficient efficiency (until someone
-; complains, at least), and has the following advantage: the set of function
-; computed in *warrant-reqs* is exactly the ones for which warranted
-; replacement is used; but if we allow shortcuts for lambdas and loop$ forms,
-; then we will need to include all user-defined functions occurring in the
-; lambda body or loop$ body even when lying on an IF branch that was not taken
-; during a given evaluation.
-
-; We considered handling evaluation in expand-abbreviations as described above
-; for the rewriter.  However, there is no type-alist readily available in
-; expand-abbreviations for determining which warrants are known to be true.
-; Moreover, the rules (with names like apply$-fn) justifying warranted
-; replacements are conditional rewrite rules, which we traditionally ignore
-; during preprocess-clause (and hence during expand-abbreviations) in favor of
-; considering only "simple" rules.  However, we do use ev-fncall+ in
-; expand-abbreviations, so that we can avoid wrapping HIDE around the ground
-; function application when the evaluation aborted rather than doing a
-; warranted replacement.  This case is represented by the case that the third
-; value of ev-fncall+[-w] is a function symbol.  Special handling is important
-; for this case, to avoid wrapping the call in HIDE, since that would prevent
-; the rewriter from later performing a successful evaluation using warranted
-; replacements.  Note that we initialize *warrant-reqs* to :nil! in this case
-; instead of t, which causes evaluation to abort immediately the first time
-; that a warranted replacement is called for.  For very long loops this
-; obviously can be important for efficiency!
-
-; We considered also using ev-fncall+ for eval-ground-subexpressions, but that
-; seemed to introduce more complexity than it's worth -- so far, anyhow, though
-; this could change based on user demand.  Since eval-ground-subexpressions
-; does not introduce HIDE, we don't have the need for ev-fncall+ that is
-; described above for expand-abbreviations.
-
-; Note that our scheme works nicely with the executable-counterpart of apply$
-; disabled.  Specifically, all warranted replacements are justified by warrants
-; -- actually by rules with names like apply$-fn -- rather than by the
-; execution of apply$ calls.
-
-; Next we develop the logical and raw Lisp definitions of ev-fncall+.
-
-(defun badged-fns-of-world (wrld)
-
-; We return the list of badged functions in wrld, but in a way that can be
-; guard-verified and can be proved to return a list of function symbols.
-
-  (declare (xargs :mode :logic :guard (plist-worldp wrld)))
-  (and (alistp (table-alist 'badge-table wrld))
-       (let ((badge-alist
-              (cdr (assoc-eq :badge-userfn-structure
-                             (table-alist 'badge-table wrld)))))
-         (and (alistp badge-alist)
-              (let ((syms (strip-cars badge-alist)))
-                (and (all-function-symbolps syms wrld)
-                     syms))))))
-
-(partial-encapsulate
-
-; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
-
-; We think of (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil) as the
-; list of badged functions supplied to apply$-userfn or badge-userfn during
-; evaluation of the call of fn on args in wrld using the given
-; user-stobj-alist, big-n, safe-mode, and gc-off.  But if the last argument,
-; strictp, is non-nil, then we think of the result as the first function symbol
-; encountered during evaluation, if any, for which a true warrant was required
-; to complete that call of fn.
-
-; The constraint below can almost surely be explicitly strengthened, but we see
-; no need at this point.
-
-; Also see ev-fncall+-w.
-
- (((ev-fncall+-fns * * * * * * *) => *))
- nil
- (logic)
- (local (defun ev-fncall+-fns (fn args wrld big-n safe-mode gc-off strictp)
-          (declare (ignore fn args big-n safe-mode gc-off))
-          (and (not strictp)
-               (badged-fns-of-world wrld))))
- (defthm all-function-symbolps-ev-fncall+-fns
-   (let ((fns (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)))
-     (implies (not (symbolp fns)) ; hence not a function symbol
-              (all-function-symbolps fns wrld))))
- (defthm ev-fncall+-fns-is-subset-of-badged-fns-of-world
-   (subsetp (ev-fncall+-fns fn args wrld big-n safe-mode gc-off nil)
-            (badged-fns-of-world wrld))))
-
-#+acl2-loop-only
-(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
-
-; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
-
-; This function allows apply$-userfn and badge-userfn to execute on warranted
-; functions even when *aokp* is nil.  It returns an error triple whose
-; non-erroneous value is a list of the functions that need warrants in order to
-; trust the result.  However, in the case of an error when strictp is true, the
-; value is a function symbol responsible for the error when a warrant is
-; required so that evaluation is aborted, else nil.  Its implementation is in
-; the #-acl2-loop-only definition of this function; the present logical
-; definition is incomplete in the sense that ev-fncall+-fns is partially
-; constrained.
-
-; This logical definition actually permits a list, computed by constrained
-; function ev-fncall+-fns, that properly includes the intended list as a
-; subset.  But the under-the-hood implementation of ev-fncall+-w produces
-; exactly the set of functions given to apply$-userfn or badge-userfn.
-
-  (let* ((big-n (big-n))
-         (fns (ev-fncall+-fns fn args w big-n safe-mode gc-off strictp)))
-    (mv-let (erp val latches)
-      (ev-fncall-rec-logical fn args w
-                             nil ; user-stobj-alist
-                             big-n safe-mode gc-off
-                             nil ; latches
-                             t   ; hard-error-returns-nilp
-                             nil ; aokp
-                             (and (not strictp) fns))
-      (declare (ignore latches))
-      (mv erp val fns))))
-
-#-acl2-loop-only
-(defvar *warrant-reqs*
-
-; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
-
-; Legal values of this variable are as follows.
-
-; nil -   Always the global value, and always the value when *aokp* is non-nil
-; t   -   Represents the empty list, enabling accumulation of function symbols
-;         whose (true) warrants support evaluation
-; lst   - A non-empty, duplicate-free list, which represents a set of function
-;         symbols whose (true) warrants support evaluation
-; :nil! - Like nil, but causes evaluation to stop if a warrant is ever required
-; fn  -   A function symbol for which evaluation is aborted because its warrant
-;         is required (because *warrant-reqs* is :nil!)
-
-  nil)
-
-#-acl2-loop-only
-(defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
-
-; See comments in the logic definition of this function.
-
-  (let ((*warrant-reqs*
-
-; See comments in the definition of *warrant-reqs* for a discussion of the
-; :nil! and t values of this global.
-
-         (if strictp :nil! t)))
-    (declare (special *warrant-reqs*)) ; just to be safe
-    (mv-let (erp val latches)
-      (ev-fncall-w fn args w
-                   nil ; user-stobj-alist
-                   safe-mode gc-off
-                   t    ; hard-error-returns-nilp
-                   nil) ; aok
-      (declare (ignore latches))
-      (mv erp
-          val
-          (if (member-eq *warrant-reqs* '(t nil :nil!))
-              nil
-            *warrant-reqs*)))))
-
-(defun ev-fncall+ (fn args strictp state)
-
-; See the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
-; Also see comments in the logic definition of ev-fncall+-w.
-
-  (ev-fncall+-w fn args
-                (w state)
-                (f-get-global 'safe-mode state)
-                (gc-off state)
-                strictp))
 
 (defun warrant-name (fn)
 

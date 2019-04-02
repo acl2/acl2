@@ -16,6 +16,29 @@ public abstract class Acl2Function implements Comparable<Acl2Function> {
     //////////////////////////////////////// package-private members:
 
     /**
+     * Prevents the creation of subclasses outside this package.
+     * Since this constructor is package-private,
+     * it inhibits the generation of the default public constructor.
+     */
+    Acl2Function() {
+    }
+
+    /**
+     * Validates all the function calls in this function.
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    abstract void validateFunctionCalls();
+
+    /**
+     * Returns the number of parameters of this function.
+     *
+     * @throws IllegalStateException if this is a defined function
+     *                               without an actual definition yet
+     */
+    abstract int getArity();
+
+    /**
      * Sets the indices of all the variables in this function.
      * See {@link Acl2Variable} for more information about variable indices.
      *

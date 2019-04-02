@@ -153,7 +153,8 @@
                           (equal opcode #xD0)
                           (equal opcode #xD2)))
        ((the (integer 0 8) ?reg/mem-size)
-        (select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 

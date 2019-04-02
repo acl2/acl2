@@ -114,7 +114,8 @@
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
        ((the (integer 2 8) operand-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        ((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))

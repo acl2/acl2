@@ -814,3 +814,53 @@
          (if (< (nfix key) (nfix n))
              (update-nth key val (take n l))
            (take n l))))
+
+(defthmd
+  remember-that-time-with-update-nth-lemma-1
+  (implies (and (equal (nfix key) (- (len l) 1))
+                (true-listp l))
+           (equal (revappend ac (update-nth key val l))
+                  (append (first-n-ac key l ac)
+                          (list val))))
+  :hints
+  (("goal" :induct (mv (first-n-ac key l ac)
+                       (update-nth key val l))
+    :expand ((len l) (len (cdr l))))
+   ("subgoal *1/1"
+    :in-theory (disable (:rewrite revappend-of-binary-append-1))
+    :use (:instance (:rewrite revappend-of-binary-append-1)
+                    (z (list val))
+                    (y nil)
+                    (x ac)))))
+
+(defthmd
+  remember-that-time-with-update-nth
+  (implies (and (equal (nfix key) (- (len l) 1))
+                (true-listp l))
+           (equal (update-nth key val l)
+                  (append (take key l) (list val))))
+  :hints
+  (("goal"
+    :use (:instance remember-that-time-with-update-nth-lemma-1
+                    (ac nil)))))
+
+(defthm
+  append-of-first-n-ac-and-cons
+  (implies (natp i)
+           (equal (append (first-n-ac i l ac)
+                          (cons (nth i l) y))
+                  (append (first-n-ac (+ i 1) l ac) y)))
+  :hints
+  (("goal" :induct (first-n-ac i l ac)
+    :expand (first-n-ac 1 l ac))
+   ("subgoal *1/1"
+    :in-theory (disable (:rewrite revappend-of-binary-append-1))
+    :use (:instance (:rewrite revappend-of-binary-append-1)
+                    (z (list (car l)))
+                    (y nil)
+                    (x ac)))))
+
+(defthm append-of-take-and-cons
+  (implies (and (natp n) (equal x (nth n l)))
+           (equal (append (take n l) (cons x y))
+                  (append (take (+ n 1) l) y))))

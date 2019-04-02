@@ -28,15 +28,6 @@ public final class Acl2Environment {
     }
 
     /**
-     * Information about the defined ACL2 functions.
-     * This maps the name of each defined functions
-     * to a lambda expression with the parameters and body.
-     * This field is never {@code null}.
-     */
-    private static final Map<Acl2Symbol, Acl2LambdaExpression> functionDefs =
-            new HashMap<>();
-
-    /**
      * Information about the defined ACL2 packages.
      * This maps the name of each defined packages
      * to a Java list of its imported symbols,
@@ -102,52 +93,7 @@ public final class Acl2Environment {
             return packageWitnessName;
     }
 
-    /**
-     * Returns the lambda expression that defines a named function.
-     * The result is {@code null} if the function is not defined.
-     */
-    static Acl2LambdaExpression getFunctionDef(Acl2Symbol functionName) {
-        return functionDefs.get(functionName);
-    }
-
     //////////////////////////////////////// public members:
-
-    /**
-     * Adds an ACL2 function definition consisting of
-     * the given name, parameters, and body.
-     * The indices of the variables in the body of the function are set,
-     * based on their positions in the parameter list of the function.
-     *
-     * @throws IllegalArgumentException if name or parameters or body is null
-     *                                  or the function definition is malformed
-     *                                  in a way that
-     *                                  some valid variable index cannot be set
-     * @throws IllegalStateException    if a function definition
-     *                                  with the given name already exists
-     *                                  or some variable index is already set
-     */
-    public static void addFunctionDef(Acl2Symbol name,
-                                      Acl2Symbol[] parameters,
-                                      Acl2Term body) {
-        if (name == null)
-            throw new IllegalArgumentException("Null name.");
-        if (parameters == null)
-            throw new IllegalArgumentException("Null parameters.");
-        if (body == null)
-            throw new IllegalArgumentException("Null body.");
-        if (functionDefs.containsKey(name))
-            throw new IllegalStateException
-                    ("Function already defined: \"" + name + "\".");
-        Acl2NamedFunction function = Acl2NamedFunction.make(name);
-        if (function instanceof Acl2NativeFunction)
-            throw new IllegalArgumentException
-                    ("Attempting to define the native function " + name + ".");
-        Acl2LambdaExpression definiens =
-                Acl2LambdaExpression.make(parameters, body);
-        definiens.setVariableIndices();
-        functionDefs.put(name, definiens);
-        ((Acl2DefinedFunction) function).setDefiniens(definiens);
-    }
 
     /**
      * Adds an ACL2 package definition,
@@ -204,30 +150,5 @@ public final class Acl2Environment {
                     ("Witness already defined: \""
                             + packageWitnessName
                             + "\".");
-    }
-
-    /**
-     * Calls the named ACL2 function on the given values.
-     *
-     * @throws IllegalArgumentException if functionName or values is null,
-     *                                  or any value is null
-     * @throws Acl2EvaluationException  if the function is
-     *                                  neither defined nor native,
-     *                                  or values.length differs from
-     *                                  the function's arity,
-     *                                  or the function call fails
-     */
-    public static Acl2Value call(Acl2Symbol functionName, Acl2Value[] values)
-            throws Acl2EvaluationException {
-        if (functionName == null)
-            throw new IllegalArgumentException("Null function.");
-        if (values == null)
-            throw new IllegalArgumentException("Null value array.");
-        for (int i = 0; i < values.length; ++i)
-            if (values[i] == null)
-                throw new IllegalArgumentException
-                        ("Null value at index " + i + ".");
-        Acl2NamedFunction function = Acl2NamedFunction.make(functionName);
-        return function.apply(values);
     }
 }

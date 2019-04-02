@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2019, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -314,7 +314,8 @@
 
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
-	(select-operand-size proc-mode byte-imm? rex-byte t prefixes x86))
+	(select-operand-size
+         proc-mode byte-imm? rex-byte t prefixes nil nil nil x86))
 
        ((the (integer 1 8) operand-size)
 	(if (equal proc-mode #.*64-bit-mode*)
@@ -382,7 +383,7 @@
   :short "PUSH Segment Register"
   :long
   "<p>Note that PUSH CS/SS/DS/ES are invalid in 64-bit mode.  Only PUSH FS/GS
-  are valid in 64-bit mode.</p>
+   are valid in 64-bit mode.</p>
 
    <p><tt>0E</tt>:    \[PUSH CS\]</p>
    <p><tt>16</tt>:    \[PUSH SS\]</p>
@@ -392,11 +393,16 @@
    <p><tt>0F A8</tt>: \[PUSH GS\]</p>
 
    <p>If the source operand is a segment register \(16 bits\) and the operand
-   size is 64-bits, a zero- extended value is pushed on the stack; if the
+   size is 64-bits, a zero-extended value is pushed on the stack; if the
    operand size is 32-bits, either a zero-extended value is pushed on the stack
    or the segment selector is written on the stack using a 16-bit move. For the
    last case, all recent Core and Atom processors perform a 16-bit move,
    leaving the upper portion of the stack location unmodified.</p>
+
+   <p>For now, our model handles the last case described above by doing a
+   16-bit move. This should be how all modern processor work. In the future, we
+   might parameterize the model on a flag that says how this case is handled
+   (modern or legacy).</p>
 
    <p>PUSH doesn't have a separate instruction semantic function, unlike other
    opcodes like ADD, SUB, etc. The decoding is coupled with the execution in
@@ -445,13 +451,14 @@
 
        ((mv flg x86)
 	(wme-size-opt proc-mode
-                      operand-size
+                      ;; If the operand size is 32 bits, only write the low 16
+                      ;; bits to the stack, leaving the high 16 bits unchanges;
+                      ;; otherwise, write 64 or 16 bits, and in the case of 64
+                      ;; bits the 16-bit value is zero-extended. See the
+                      ;; documentation of this function, above.
+                      (if (= operand-size 4) 2 operand-size)
                       (the (signed-byte #.*max-linear-address-size*) new-rsp)
                       #.*ss*
-                      ;; If operand size is 64 or 32 bits, val is zero-extended
-                      ;; here automatically.  This may not be quite right when
-                      ;; the operand size is 32 bits: see the paragraph in the
-                      ;; :long above.  TODO: handle this properly
                       val
                       (alignment-checking-enabled-p x86)
                       x86
@@ -1065,7 +1072,8 @@
   (b* ((ctx 'x86-pusha)
 
        ((the (integer 2 4) operand-size)
-	(select-operand-size proc-mode nil 0 nil prefixes x86))
+	(select-operand-size
+         proc-mode nil 0 nil prefixes nil nil nil x86))
 
        (rsp (read-*sp proc-mode x86))
 
@@ -1193,7 +1201,8 @@
   (b* ((ctx 'x86-popa)
 
        ((the (integer 2 4) operand-size)
-	(select-operand-size proc-mode nil 0 nil prefixes x86))
+	(select-operand-size
+         proc-mode nil 0 nil prefixes nil nil nil x86))
 
        (rsp (read-*sp proc-mode x86))
 

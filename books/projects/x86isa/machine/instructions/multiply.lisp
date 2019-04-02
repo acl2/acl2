@@ -89,7 +89,8 @@
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -198,7 +199,8 @@
 
        (select-byte-operand (equal opcode #xF6))
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -286,7 +288,8 @@
                    (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -378,7 +381,8 @@
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        ((the (integer 1 4) imm-size)
         (if (equal opcode #x6B)

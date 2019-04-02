@@ -1571,6 +1571,7 @@
                     (untouchable-fns nil)
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
+                    (attach-nil-lst nil)
                     (attachment-records nil)
                     (attachments-at-ground-zero nil)
                     (proof-supporters-alist nil)
@@ -26757,27 +26758,45 @@
                    (mv (cons (car args) alist)
                        kwd-value-lst)))))
 
+(defun maybe-remove1-eq (x lst)
+
+; This is equivalent to remove1-eq, but might be more efficient to use if x is
+; usually not a member of lst.
+
+  (declare (xargs :guard (if (symbolp x)
+                             (true-listp lst)
+                           (symbol-listp lst))))
+  (if (member-eq x lst)
+      (remove1-eq x lst)
+    lst))
+
 (defun filter-for-attachment (attachment-alist helpers-lst attach-by-default
-                                               aa hl)
+                                               aa hl attach-nil-lst)
 
 ; We remove pairs from attachment-alist for which no attachment will be made,
 ; returning the ones that are left together with the corresponding elements of
-; helpers-lst.
+; helpers-lst and a list of fns for which :attach nil is specified.
 
   (cond ((endp attachment-alist)
-         (mv (reverse aa) (reverse hl)))
+         (mv (reverse aa) (reverse hl) attach-nil-lst))
         (t (let ((pair (assoc-eq :ATTACH (car helpers-lst))))
              (cond ((if pair (cdr pair) attach-by-default)
                     (filter-for-attachment (cdr attachment-alist)
                                            (cdr helpers-lst)
                                            attach-by-default
                                            (cons (car attachment-alist) aa)
-                                           (cons (car helpers-lst) hl)))
+                                           (cons (car helpers-lst) hl)
+                                           (maybe-remove1-eq
+                                            (caar attachment-alist)
+                                            attach-nil-lst)))
                    (t (filter-for-attachment (cdr attachment-alist)
                                              (cdr helpers-lst)
                                              attach-by-default
                                              aa
-                                             hl)))))))
+                                             hl
+                                             (add-to-set-eq
+                                              (caar attachment-alist)
+                                              attach-nil-lst))))))))
 
 (defconst *defattach-keys-extended*
   (append *defattach-keys* '(:skip-checks :system-ok)))
@@ -26910,18 +26929,23 @@
                        (attach-by-default
                         (let ((pair (assoc-eq :ATTACH constraint-helpers)))
                           (if pair (cdr pair) t))))
-                   (mv-let (attachment-alist-exec helper-alist-lst-exec)
+                   (mv-let (attachment-alist-exec
+                            helper-alist-lst-exec
+                            attach-nil-lst)
                            (filter-for-attachment attachment-alist
                                                   helper-alist-lst
                                                   attach-by-default
-                                                  nil nil)
+                                                  nil nil
+                                                  (global-val 'attach-nil-lst
+                                                              wrld))
                            (value (list constraint-helpers
                                         erasures
                                         explicit-erasures
                                         attachment-alist
                                         attachment-alist-exec
                                         helper-alist-lst-exec
-                                        skip-checks)))))))))))))))
+                                        skip-checks
+                                        attach-nil-lst)))))))))))))))
 
 (defun prove-defattach-guards1 (i n attachment-alist-tail attachment-alist
                                   helpers-lst ctx ens wrld state ttree)
@@ -28118,6 +28142,7 @@
              (attachment-alist-exec   (nth 4 tuple))
              (guard-helpers-lst       (nth 5 tuple))
              (skip-checks             (nth 6 tuple))
+             (attach-nil-lst          (nth 7 tuple))
              (skip-checks-t           (eq (nth 6 tuple) t))
              (ens (ens state))
              (ld-skip-proofsp (ld-skip-proofsp state))
@@ -28185,7 +28210,8 @@
                           new-entries
                           (cons-tag-trees ttree1 ttree2)
                           records
-                          skip-checks)))))))))))
+                          skip-checks
+                          attach-nil-lst)))))))))))
 
 (defun attachment-cltl-cmd (erasures alist)
 
@@ -28232,9 +28258,15 @@
              (new-entries           (nth 4 tuple))
              (ttree                 (nth 5 tuple))
              (records               (nth 6 tuple))
-             (skip-checks           (nth 7 tuple)))
+             (skip-checks           (nth 7 tuple))
+             (attach-nil-lst        (nth 8 tuple)))
          (let* ((attachment-fns (strip-cars attachment-alist))
-                (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld))
+                (wrld0 (global-set? 'attach-nil-lst
+                                    attach-nil-lst
+                                    wrld
+                                    (global-val 'attach-nil-lst
+                                                wrld)))
+                (wrld1 (putprop-x-lst1 erasures 'attachment nil wrld0))
                 (wrld2 (cond (attachment-fns
                               (putprop-x-lst1 (cdr attachment-fns)
                                               'attachment
@@ -28753,10 +28785,9 @@
 ; However, we insist (see the check in process-defattach-args1 and the assert$
 ; in attachment-records) that a warrant may only be attached to
 ; true-apply$-warrant, which is a fully-defined function (hence cannot receive
-; an executable attachment) and has no ancestors.  So it is safe to omit
-; true-apply$-warrant from the check whether any attachment has changed in the
-; extended-ancestors of a function.  (It may be included for other reasons, but
-; the argument above shows that we needn't insist on that.)
+; an executable attachment) and has no ancestors.  So we are comfortable with
+; omitting true-apply$-warrant from the check for whether any attachment has
+; changed in the extended-ancestors of a function.
 
 ; Before we consider apply$-userfn and badge-userfn, we say a bit more about
 ; how the variable *defattach-fns* (discussed above) is extended.  When a

@@ -1,4 +1,4 @@
-(include-book "../file-system-m2")
+(include-book "../lofat")
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "oslib/argv" :dir :system)
 
@@ -58,7 +58,7 @@
      ((mv & val state)
       (getenv$ "DISK" state))
      ((mv fat32-in-memory &)
-      (disk-image-to-fat32-in-memory
+      (disk-image-to-lofat
        fat32-in-memory val state))
      ((mv & val state)
       (getenv$ "STAT_OUTPUT" state))
@@ -66,7 +66,7 @@
       (open-output-channel val :character state))
      ((mv & pathname state)
       (getenv$ "STAT_INPUT" state))
-     (statfsbuf (m2-statfs fat32-in-memory))
+     (statfsbuf (lofat-statfs fat32-in-memory))
      (state
       (pprogn
        (princ$ "  File: \"" channel state)

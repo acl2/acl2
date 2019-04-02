@@ -1,6 +1,6 @@
-; Java Library -- ATJ -- Implementation
+; Java -- ATJ -- Implementation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1051,7 +1051,7 @@
 
 (defval *atj-name-local-var*
   :short "Name of the Java local variable used to build
-          the name of a function definition."
+          the name of a function call."
   "name"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-name-local-var*)))
@@ -1072,7 +1072,7 @@
 
 (defval *atj-function-local-var*
   :short "Name of the Java local variable used to build
-          the name of a function call."
+          a named function."
   "function"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-function-local-var*)))
@@ -1837,9 +1837,10 @@
        ((mv body-expr
             & & &
             state) (atj-gen-term body 1 1 1 channel state))
-       ((mv & state) (fmt1! "~s0Acl2Symbol ~s1 = ~@2;~%"
+       ((mv & state) (fmt1! "~s0Acl2NamedFunction ~s1 = ~
+                                Acl2NamedFunction.make(~@2);~%"
                             (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-name-local-var*)
+                                  (cons #\1 *atj-function-local-var*)
                                   (cons #\2 name-expr))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0Acl2Symbol[] ~s1 = ~@2;~%"
@@ -1852,10 +1853,9 @@
                                   (cons #\1 *atj-body-local-var*)
                                   (cons #\2 body-expr))
                             0 channel state nil))
-       ((mv & state) (fmt1! "~s0Acl2Environment.~
-                                addFunctionDef(~s1, ~s2, ~s3);~%"
+       ((mv & state) (fmt1! "~s0~s1.define(~s2, ~s3);~%"
                             (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-name-local-var*)
+                                  (cons #\1 *atj-function-local-var*)
                                   (cons #\2 *atj-formals-local-var*)
                                   (cons #\3 *atj-body-local-var*))
                             0 channel state nil))
@@ -1939,6 +1939,9 @@
        (state (atj-gen-add-package-defs pkgs channel state))
        (state (atj-gen-set-pkg-witness pkg-witness channel state))
        (state (atj-gen-add-function-defs fns-to-translate channel state))
+       ((mv & state) (fmt1! "~s0Acl2NamedFunction.validateAll();~%"
+                            (list (cons #\0 *atj-indent-2*))
+                            0 channel state nil))
        ((mv & state) (fmt1! "~s0initialized = true;~%"
                             (list (cons #\0 *atj-indent-2*))
                             0 channel state nil))
@@ -1978,8 +1981,8 @@
                             (list (cons #\0 *atj-indent-3*)
                                   (cons #\1 exception-message))
                             0 channel state nil))
-       ((mv & state) (fmt1! "~s0return Acl2Environment.call(function, ~
-                                                            arguments);~%"
+       ((mv & state) (fmt1! "~s0return Acl2NamedFunction.make(function).~
+                                       call(arguments);~%"
                             (list (cons #\0 *atj-indent-2*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0}~%"
@@ -2096,7 +2099,7 @@
        (fn-symbol-expr (atj-gen-symbol-value test.function))
        ((mv & state) (fmt1! "~s0Acl2Symbol ~s1 = ~@2;~%"
                             (list (cons #\0 *atj-indent-2*)
-                                  (cons #\1 *atj-function-local-var*)
+                                  (cons #\1 *atj-name-local-var*)
                                   (cons #\2 fn-symbol-expr))
                             0 channel state nil))
        ((mv args-exprs value-next-var state) (atj-gen-test-method-aux
@@ -2118,7 +2121,7 @@
                             (list (cons #\0 *atj-indent-2*)
                                   (cons #\1 *atj-result-java-local-var*)
                                   (cons #\2 java-class$)
-                                  (cons #\3 *atj-function-local-var*)
+                                  (cons #\3 *atj-name-local-var*)
                                   (cons #\4 *atj-arguments-local-var*))
                             0 channel state nil))
        ((mv & state) (fmt1! "~s0if (~s1.equals(~s2))~%"

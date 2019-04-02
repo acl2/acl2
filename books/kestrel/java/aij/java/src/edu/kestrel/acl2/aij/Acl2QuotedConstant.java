@@ -26,13 +26,22 @@ public final class Acl2QuotedConstant extends Acl2Term {
      * Constructs an ACL2 quoted constant from its value.
      */
     private Acl2QuotedConstant(Acl2Value value) {
-        assert value != null;
         this.value = value;
     }
 
     //////////////////////////////////////// package-private members:
 
     /**
+     * Validates all the function calls in this quoted constants.
+     * Since a quoted constant contains no function calls,
+     * this method does nothing.
+     */
+    @Override
+    void validateFunctionCalls() {
+    }
+
+    /**
+     * Sets the indices of all the variables in this quoted constant.
      * Since a quoted constant contains no variables, this method does nothing.
      */
     @Override
@@ -48,7 +57,6 @@ public final class Acl2QuotedConstant extends Acl2Term {
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) {
-        assert binding != null;
         return this.value;
     }
 

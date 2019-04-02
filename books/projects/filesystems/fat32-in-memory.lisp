@@ -906,18 +906,6 @@
   :hints (("goal" :in-theory (enable data-region-length
                                      resize-data-region))))
 
-(defthmd append-of-take-and-cons
-  (implies (and (natp n) (equal x (nth n l)))
-           (equal (append (take n l) (cons x y))
-                  (append (take (+ n 1) l) y)))
-  :hints (("goal" :in-theory (disable take))))
-
-(defthmd remember-that-time-with-update-nth
-  (implies (and (equal (nfix key) (- (len l) 1))
-                (true-listp l))
-           (equal (update-nth key val l)
-                  (append (take key l) (list val)))))
-
 (defmacro
   update-stobj-array
   (name array-length bit-width array-updater array-accessor constant
@@ -1094,8 +1082,7 @@
                   (true-list-fix v))
           ,stobj)))
        :hints
-       (("goal" :in-theory (enable append-of-take-and-cons
-                                   ,array-length
+       (("goal" :in-theory (enable ,array-length
                                    remember-that-time-with-update-nth))))
 
      (defthm ,nth-of-name-1
@@ -1208,11 +1195,11 @@
   fat32-in-memoryp-of-create-fat32-in-memory
   (fat32-in-memoryp (create-fat32-in-memory)))
 
-;; The strategy of just using compliant-fat32-in-memoryp everywhere is not
+;; The strategy of just using lofat-fs-p everywhere is not
 ;; going to work. It's going to be desirable to prove lemmas with the weaker
 ;; hypothesis (fat32-in-memoryp fat32-in-memory) where possible, and we do want
 ;; to be able to use those lemmas in a context where
-;; (compliant-fat32-in-memoryp fat32-in-memory) is known to be true without
+;; (lofat-fs-p fat32-in-memory) is known to be true without
 ;; allowing for the definition of fat32-in-memoryp to be expanded.
 ;;
 ;; We're also disabling create-fat32-in-memory because any time it gets

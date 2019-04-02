@@ -34,12 +34,30 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * Constructs an ACL2 lambda expression from its formal parameters and body.
      */
     private Acl2LambdaExpression(Acl2Symbol[] parameters, Acl2Term body) {
-        assert parameters != null && body != null;
         this.parameters = parameters;
         this.body = body;
     }
 
     //////////////////////////////////////// package-private members:
+
+    /**
+     * Returns the number of parameters of this lambda expression.
+     */
+    @Override
+    int getArity() {
+        return this.parameters.length;
+    }
+
+    /**
+     * Validates all the function calls in this lambda expression.
+     * We recursively validate the function calls in the body.
+     *
+     * @throws IllegalStateException if validation fails
+     */
+    @Override
+    void validateFunctionCalls() {
+        body.validateFunctionCalls();
+    }
 
     /**
      * Sets the indices of all the variables in this lambda expression.
@@ -68,22 +86,10 @@ public final class Acl2LambdaExpression extends Acl2Function {
      * with respect to a binding of the given values
      * to the formal parameters of the lambda expression.
      *
-     * @throws Acl2EvaluationException if values.length differs from
-     *                                 the arity of the lambda expression,
-     *                                 or the evaluation of the body fails
+     * @throws Acl2EvaluationException if the evaluation of the body fails
      */
     @Override
     Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-        assert values != null;
-        for (Acl2Value value : values) assert value != null;
-        int len = values.length;
-        if (this.parameters.length != len)
-            throw new Acl2EvaluationException
-                    ("Called "
-                            + this.parameters.length
-                            + "-ary lambda expression on "
-                            + len
-                            + (len == 1 ? " argument." : " arguments."));
         return this.body.eval(values);
     }
 

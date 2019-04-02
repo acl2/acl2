@@ -137,6 +137,13 @@
  of specified lengths, based on existing fixtypes of lists of arbitrary
  lenghts (introduced via @(tsee fty::deflist)).</p>
 
+ <h4>Fixtypes for Omaps</h4>
+
+ <p>Added a macro @(tsee fty::defomap) that generates fixtypes for <see
+ topic='@(url omap::omaps)'>omaps</see> with keys and values of specified
+ fixtypes.  This is analogous to @(tsee fty::deflist) and @(tsee
+ fty::defalist).</p>
+
  <h4>Fixtypes for Osets</h4>
 
  <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
@@ -152,6 +159,11 @@
 
  <p>Formalized an instant run-off voting scheme and proved that it
  meets certain fairness criteria.</p>
+
+ <h4>Integer Arithmetic</h4>
+
+ <p>A library for integer arithmetic has been added at
+ @('[books]/kestrel/utilities/integer-arithmetic').</p>
 
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
@@ -270,6 +282,10 @@
  inverse of hex-prefix encoding.</p>
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Added a formalization of the database that underlies Modified Merkle
+ Patricia trees.  This database is a finite map from Keccak-256
+ hashes (i.e. byte arrays of length 32) to byte arrays.</p>
 
  <p>Added a formalization of the format of transactions and of their RLP
  encoding.</p>
@@ -475,7 +491,7 @@
  @('defthm-usb') utility to also generate a linear linear saying that the value
  is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
- with @('defthm-natp').  Moved all three utilities under @(see std/util).</p>
+ with @('defthm-natp').  Moved all three utilities to @(see std/util).</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
  of code segment descriptors, when they access for reading (not execution) a
@@ -495,6 +511,11 @@
  segment selector.  A similar check on CS and SS is not needed because a null
  segment selector cannot be loaded into these two segment registers.</p>
 
+ <p>Improved the `PUSH segment register' instruction to handle a 32-bit operand
+ size as in modern processors: instead of zero-extending the 16-bit content of
+ the segment register to 32 bits, now the model writes the low 16 bits, leaving
+ the high 16 bits unchanged.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h4><see topic='@(url xdoc-utilities)'>XDOC Utilities</see></h4>
@@ -502,8 +523,13 @@
  <p>Improved the <see topic='@(url xdoc::constructors)'>XDOC constructors</see>
  to use a tree representation that is converted into a flat string only at the
  top level.  This enforces a better type discipline and facilitates future
- optimizations if needed.  Introduced additional constructors.  Extended the
- documentation of the constructors.</p>
+ optimizations if needed.</p>
+
+ <p>Introduced several additional constructors.</p>
+
+ <p>Extended the documentation of the constructors.</p>
+
+ <p>Moved the constructors to @('[books]/xdoc/constructors.lisp').</p>
 
  <h3>Licensing Changes</h3>
 

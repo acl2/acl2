@@ -394,6 +394,7 @@ book that depends on Glucose being installed.</p>")
 
 
 (include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 
 

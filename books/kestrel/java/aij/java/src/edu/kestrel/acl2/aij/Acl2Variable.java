@@ -27,7 +27,6 @@ public final class Acl2Variable extends Acl2Term {
      * the ACL2 symbol that the variable consists of.
      */
     private Acl2Variable(Acl2Symbol name) {
-        assert name != null;
         this.name = name;
     }
 
@@ -43,6 +42,14 @@ public final class Acl2Variable extends Acl2Term {
     private int index = -1;
 
     //////////////////////////////////////// package-private members:
+
+    /**
+     * Validates all the function calls in this variable.
+     * Since a variable contains no function calls, this method does nothing.
+     */
+    @Override
+    void validateFunctionCalls() {
+    }
 
     /**
      * Sets the index of this variable,
@@ -75,17 +82,10 @@ public final class Acl2Variable extends Acl2Term {
      * Evaluates this ACL2 variable to an ACL2 value,
      * with respect to the given binding of values to variable symbols.
      * The result is the value bound to the symbol of the variable.
-     * Since variable indices are set
-     * when a function definition is added to the environment
-     * and terms are evaluated after that,
-     * the conditions in the assertion below should hold.
      * This evaluation never fails.
      */
     @Override
     Acl2Value eval(Acl2Value[] binding) {
-        assert binding != null &&
-                this.index >= 0 &&
-                this.index < binding.length;
         return binding[this.index];
     }
 

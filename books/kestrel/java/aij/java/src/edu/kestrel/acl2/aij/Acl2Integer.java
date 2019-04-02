@@ -26,7 +26,6 @@ public final class Acl2Integer extends Acl2Rational {
      * Constructs an ACL2 integer from its numeric value.
      */
     private Acl2Integer(BigInteger numericValue) {
-        assert numericValue != null;
         this.numericValue = numericValue;
     }
 
@@ -44,7 +43,6 @@ public final class Acl2Integer extends Acl2Rational {
      * The result is 0 if both integers are 0.
      */
     Acl2Integer gcd(Acl2Integer other) {
-        assert other != null;
         return Acl2Integer.make(this.numericValue.gcd(other.numericValue));
     }
 
@@ -54,7 +52,6 @@ public final class Acl2Integer extends Acl2Rational {
      * The result is 0 if any integer is 0.
      */
     Acl2Integer lcm(Acl2Integer other) {
-        assert other != null;
         // lcm is (|a|*|b|)/gcd, where gcd is the greatest common divisor:
         BigInteger thisBigInt = this.numericValue;
         BigInteger otherBigInt = other.numericValue;
@@ -69,10 +66,9 @@ public final class Acl2Integer extends Acl2Rational {
 
     /**
      * Divides this ACL2 integer by the argument ACL2 integer.
-     * The argument must not be 0.
+     * The argument is never 0.
      */
     Acl2Integer divide(Acl2Integer other) {
-        assert other != null && !other.equals(ZERO);
         return Acl2Integer.make(this.numericValue.divide(other.numericValue));
     }
 
@@ -103,7 +99,6 @@ public final class Acl2Integer extends Acl2Rational {
      */
     @Override
     Acl2Number add(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Integer) {
             Acl2Integer otherInteger = (Acl2Integer) other;
             return Acl2Integer.make
@@ -121,7 +116,6 @@ public final class Acl2Integer extends Acl2Rational {
      */
     @Override
     Acl2Number multiply(Acl2Value other) {
-        assert other != null;
         if (other instanceof Acl2Integer) {
             Acl2Integer otherInteger = (Acl2Integer) other;
             return Acl2Integer.make

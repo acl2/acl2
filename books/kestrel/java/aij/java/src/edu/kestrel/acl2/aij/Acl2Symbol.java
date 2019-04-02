@@ -34,7 +34,6 @@ public final class Acl2Symbol extends Acl2Value {
      * Constructs an ACL2 symbol from its package name and name.
      */
     private Acl2Symbol(Acl2PackageName packageName, Acl2String name) {
-        assert packageName != null && name != null;
         this.packageName = packageName;
         this.name = name;
     }
@@ -105,7 +104,6 @@ public final class Acl2Symbol extends Acl2Value {
      */
     static void addPackageImports(Acl2PackageName packageName,
                                   List<Acl2Symbol> imported) {
-        assert packageName != null && imported != null;
         Map<Acl2String, Acl2Symbol> innerMap = symbols.get(packageName);
         if (innerMap == null)
             innerMap = new HashMap<>();

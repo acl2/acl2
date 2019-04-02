@@ -380,7 +380,8 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 2 8) offset-size)
-        (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 

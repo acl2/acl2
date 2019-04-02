@@ -171,7 +171,8 @@
 
        (select-byte-operand (equal #xA4 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -424,7 +425,8 @@
 
        (select-byte-operand (equal #xA6 opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (counter/addr-size-2/4? (or (eql counter/addr-size 2)
                                    (eql counter/addr-size 4)))
@@ -669,7 +671,8 @@
 
        (select-byte-operand (equal #xAA opcode))
        ((the (integer 1 8) operand-size)
-        (select-operand-size proc-mode select-byte-operand rex-byte nil prefixes x86))
+        (select-operand-size
+         proc-mode select-byte-operand rex-byte nil prefixes nil nil nil x86))
 
        (rAX (rgfi-size operand-size #.*rax* rex-byte x86))
 

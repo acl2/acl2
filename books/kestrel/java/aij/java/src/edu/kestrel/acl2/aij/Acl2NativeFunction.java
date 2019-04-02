@@ -12,15 +12,14 @@ import java.util.Map;
 /**
  * Representation of ACL2 native functions in ACL2 terms.
  * These are functions that are natively implemented  in Java,
- * as opposed to the functions that have
- * ACL2 definitions in {@link Acl2Environment}
+ * as opposed to the functions that are defined via ACL2 terms
  * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions include the ACL2 primitive functions,
  * i.e. the ones listed in the {@code primitive} topic of the ACL2 manual.
  * These functions do not have an {@code unnormalized-body} property,
- * and thus they are not part of
- * the defined functions in {@link Acl2Environment}.
+ * and thus they are not part of the defined functions
+ * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions also include the ACL2 "pseudo-function" {@code or},
  * described in {@link Acl2Function#apply(Acl2Value[])}.
@@ -117,21 +116,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code characterp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CHARACTERP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code characterp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.characterp();
         }
     }
@@ -150,21 +149,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code stringp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called STRINGP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code stringp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.stringp();
         }
     }
@@ -183,21 +182,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code symbolp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOLP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code symbolp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolp();
         }
     }
@@ -216,21 +215,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code integerp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called INTEGERP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code integerp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.integerp();
         }
     }
@@ -249,21 +248,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code rationalp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called RATIONALP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code rationalp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.rationalp();
         }
     }
@@ -282,21 +281,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code complex-rationalp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called COMPLEX-RATIONALP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code complex-rationalp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.complexRationalp();
         }
     }
@@ -315,21 +314,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code acl2-numberp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called ACL2-NUMBERP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code acl2-numberp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.acl2Numberp();
         }
     }
@@ -348,21 +347,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code consp} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CONSP on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code consp} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.consp();
         }
     }
@@ -381,21 +380,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code char-code} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CHAR-CODE on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code char-code} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.charCode();
         }
     }
@@ -414,21 +413,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code code-char} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            assert values != null;
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CODE-CHAR on "
-                                + values.length
-                                + " arguments.");
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code code-char} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.codeChar();
         }
     }
@@ -447,22 +446,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code coerce} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called COERCE on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code coerce} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (y.equals(Acl2Symbol.LIST))
                 return x.coerceToList();
             else
@@ -486,23 +485,23 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 2;
+        }
+
+        /**
          * Applies
          * the {@code intern-in-package-of-symbol} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called INTERN-IN-PACKAGE-OF-SYMBOL on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value str = values[0];
             Acl2Value sym = values[1];
-            assert str != null && sym != null;
             return str.internInPackageOfSymbol(sym);
         }
     }
@@ -522,21 +521,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code symbol-package-name} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOL-PACKAGE-NAME on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code symbol-package-name} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolPackageName();
         }
     }
@@ -555,21 +554,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 1;
+        }
+
+        /**
          * Applies the {@code symbol-name} ACL2 primitive function
          * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called SYMBOL-NAME on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
             Acl2Value x = values[0];
-            assert x != null;
             return x.symbolName();
         }
     }
@@ -588,21 +587,29 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 1;
+        }
+
+        /**
          * Applies the {@code pkg-imports} ACL2 primitive function
          * to the given ACL2 values.
+         * An exception is thrown if the string does not name a known package
+         * (this includes the case in which
+         * the string is not a valid package name).
+         * This is in accordance with
+         * the ACL2 manual page for {@code pkg-imports},
+         * which says that evaluation fails in this case.
          *
-         * @throws Acl2EvaluationException if the application fails
+         * @throws Acl2EvaluationException if the package name is invalid
+         *                                 or the package is not defined
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called PKG-IMPORTS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
             Acl2Value pkg = values[0];
-            assert pkg != null;
             return pkg.pkgImports();
         }
     }
@@ -621,6 +628,14 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 1;
+        }
+
+        /**
          * Applies the {@code pkg-witness} ACL2 primitive function
          * to the given ACL2 values.
          * An exception is thrown if the string does not name a known package
@@ -630,19 +645,13 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * the ACL2 manual page for {@code pkg-witness},
          * which says that evaluation fails in this case.
          *
-         * @throws Acl2EvaluationException if the application fails
+         * @throws Acl2EvaluationException if the package name is invalid
+         *                                 or the package is not defined
          * @throws IllegalStateException   if the package witness is not set yet
          */
         @Override
         Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called PKG-WITNESS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
             Acl2Value pkg = values[0];
-            assert pkg != null;
             return pkg.pkgWitness();
         }
     }
@@ -661,21 +670,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code unary--} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called UNARY-- on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code unary--} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.negate();
         }
     }
@@ -694,21 +703,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code unary-/} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called UNARY-/ on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code unary-/} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.reciprocate();
         }
     }
@@ -727,22 +736,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code binary-+} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BINARY-+ on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code binary-+} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return x.add(y);
         }
     }
@@ -761,22 +770,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code binary-*} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BINARY-* on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code binary-*} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return x.multiply(y);
         }
     }
@@ -795,22 +804,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code <} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called < on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code <} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             int realCmp = x.realpart().compareTo(y.realpart());
             if (realCmp < 0 ||
                     realCmp == 0 && x.imagpart().compareTo(y.imagpart()) < 0)
@@ -834,22 +843,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code complex} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called COMPLEX on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code complex} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2Number.make(x.rfix(), y.rfix());
         }
     }
@@ -868,21 +877,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code realpart} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called REALPART on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code realpart} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.realpart();
         }
     }
@@ -901,21 +910,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code imagpart} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called IMAGPART on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code imagpart} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.imagpart();
         }
     }
@@ -934,21 +943,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code numerator} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called NUMERATOR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code numerator} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.numerator();
         }
     }
@@ -967,21 +976,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code denominator} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called DENOMINATOR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code denominator} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.denominator();
         }
     }
@@ -1000,22 +1009,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code cons} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called CONS on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code cons} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2ConsPair.make(x, y);
         }
     }
@@ -1034,21 +1043,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code car} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CAR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code car} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.car();
         }
     }
@@ -1067,21 +1076,21 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code cdr} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 1)
-                throw new Acl2EvaluationException
-                        ("Called CDR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 1;
+        }
+
+        /**
+         * Applies the {@code cdr} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
-            assert x != null;
             return x.cdr();
         }
     }
@@ -1100,22 +1109,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
-         * Applies the {@code equal} ACL2 primitive function
-         * to the given ACL2 values.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * Returns the number of parameters of this native function.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called EQUAL on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        int getArity() {
+            return 2;
+        }
+
+        /**
+         * Applies the {@code equal} ACL2 primitive function
+         * to the given ACL2 values.
+         * This application never fails.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (x.equals(y))
                 return Acl2Symbol.T;
             else
@@ -1138,6 +1147,14 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 2;
+        }
+
+        /**
          * Applies the {@code bad-atom<=} ACL2 primitive function
          * to the given ACL2 values.
          * The ACL2 manual does not really document this function,
@@ -1151,20 +1168,12 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * (in particular, {@link Acl2Value} and its subclasses
          * cannot be subclassed outside the AIJ package);
          * thus, this native implementation always returns {@code nil}.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called BAD-ATOM<= on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             return Acl2Symbol.NIL;
         }
     }
@@ -1183,30 +1192,30 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 3;
+        }
+
+        /**
          * Applies the {@code if} ACL2 primitive function
          * to the given ACL2 values.
          * This is normally not used during execution,
          * because {@code if} is evaluated non-strictly
          * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
-         * {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}
+         * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code if} on some argument values,
          * then we use this method below to return the result.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 3)
-                throw new Acl2EvaluationException
-                        ("Called IF on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
             Acl2Value z = values[2];
-            assert x != null && y != null && z != null;
             if (x.equals(Acl2Symbol.NIL))
                 return z;
             else
@@ -1238,29 +1247,29 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
 
         /**
+         * Returns the number of parameters of this native function.
+         */
+        @Override
+        int getArity() {
+            return 2;
+        }
+
+        /**
          * Applies the {@code or} ACL2 "pseudo-function"
          * to the given ACL2 values.
          * This is normally not used during execution,
          * because {@code or} is evaluated non-strictly
          * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
-         * {@link Acl2Environment#call(Acl2Symbol, Acl2Value[])}
+         * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code or} on some argument values,
          * then we use this method below to return the result.
-         *
-         * @throws Acl2EvaluationException if the application fails
+         * This application never fails.
          */
         @Override
-        Acl2Value apply(Acl2Value[] values) throws Acl2EvaluationException {
-            if (values.length != 2)
-                throw new Acl2EvaluationException
-                        ("Called OR on "
-                                + values.length
-                                + (values.length == 1 ?
-                                " argument." : " arguments."));
+        Acl2Value apply(Acl2Value[] values) {
             Acl2Value x = values[0];
             Acl2Value y = values[1];
-            assert x != null && y != null;
             if (x.equals(Acl2Symbol.NIL))
                 return y;
             else
@@ -1309,7 +1318,22 @@ abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * see {@link Acl2NamedFunction#make(Acl2Symbol)}.
      */
     static Acl2NativeFunction getInstance(Acl2Symbol name) {
-        assert name != null;
         return functions.get(name);
+    }
+
+    //////////////////////////////////////// public members:
+
+    /**
+     * Defines this ACL2 native function.
+     * This always throws an exception,
+     * because native functions cannot be defined.
+     *
+     * @throws IllegalArgumentException always
+     */
+    @Override
+    public void define(Acl2Symbol[] parameters, Acl2Term body) {
+        throw new IllegalArgumentException
+                ("Attempting to define the native function "
+                        + this.getName() + ".");
     }
 }

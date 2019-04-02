@@ -30,7 +30,6 @@ public final class Acl2ConsPair extends Acl2Value {
      * Constructs an ACL2 {@code cons} pair from its components.
      */
     private Acl2ConsPair(Acl2Value car, Acl2Value cdr) {
-        assert car != null && cdr != null;
         this.car = car;
         this.cdr = cdr;
     }

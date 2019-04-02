@@ -10,8 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-
 (include-book "alist-map-keys")
 (include-book "alist-map-vals")
 (include-book "remove-assoc-theorems")

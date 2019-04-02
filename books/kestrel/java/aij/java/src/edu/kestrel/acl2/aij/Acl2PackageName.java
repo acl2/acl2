@@ -38,7 +38,6 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * and contains only characters that are valid for a package name.
      */
     private static boolean isValidString(String str) {
-        assert str != null;
         if (str.equals(""))
             return false;
         int len = str.length();
@@ -60,7 +59,6 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * Constructs a package name from its Java string representation.
      */
     private Acl2PackageName(String name) {
-        assert name != null && isValidString(name);
         this.name = name;
     }
 
