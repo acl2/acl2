@@ -63,3 +63,30 @@
 
 (defmacro ifdef-undefine (x)
   `(value-triple (setenv$ ,x "")))
+
+(defun process-ifdefs-fn (form state)
+  (declare (xargs :stobjs state :mode :program))
+  (cond ((atom form) (value form))
+        ((and (consp (car form))
+              (or (eq (caar form) 'ifdef)
+                  (eq (caar form) 'ifndef))
+              (consp (cdar form))
+              (stringp (cadar form))
+              (eq (car (last (car form))) :endif))
+         (er-let*
+          ((var (getenv$ (cadar form) state))
+           (rest (process-ifdefs-fn (cdr form) state)))
+          (if (xor (eq (caar form) 'ifndef)
+                   (and var (not (equal var ""))))
+              (er-let* ((first (process-ifdefs-fn (butlast (cddar form) 1) state)))
+                       (value (cons `(progn . ,first) rest)))
+            (value rest))))
+        (t (er-let* ((car (process-ifdefs-fn (car form) state))
+                     (cdr (process-ifdefs-fn (cdr form) state)))
+                    (value (cons car cdr))))))
+
+(defmacro process-ifdefs (form)
+  `(make-event
+    (process-ifdefs-fn ',form state)))
+          
+       
