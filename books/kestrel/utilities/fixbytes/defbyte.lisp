@@ -389,6 +389,18 @@
                               "::"
                               (acl2::string-downcase (symbol-name type))
                               ")"))
+       ;; lower and upper bound terms to use in
+       ;; the :EXEC definition of the generated predicate:
+       ((mv lower-bound upper-bound)
+        (if signed
+            (if size-value
+                (mv (- (expt 2 (1- size-value)))
+                    (expt 2 (1- size-value)))
+              (mv `(- (expt 2 (1- ,size)))
+                  `(expt 2 (1- ,size))))
+          (if size-value
+              (mv 0 (expt 2 size-value))
+            (mv 0 `(expt 2 ,size)))))
        ;; generated events:
        (type-size-is-posp-event?
         (and type-size-is-posp
@@ -399,7 +411,16 @@
         `(define ,pred (,x)
            :parents (,type)
            :short ,(concatenate 'string "Recognizer for " type-ref ".")
-           (,binpred ,size ,x)
+           (mbe :logic (,binpred ,size ,x)
+                :exec (and (integerp ,x)
+                           (<= ,lower-bound ,x)
+                           (< ,x ,upper-bound)))
+           :guard-hints (("Goal"
+                          :in-theory '(,binpred
+                                       integer-range-p
+                                       (:e expt)
+                                       ,@(and type-size-is-posp
+                                              (list type-size-is-posp)))))
            :no-function t
            ///
            (defrule ,booleanp-of-pred
