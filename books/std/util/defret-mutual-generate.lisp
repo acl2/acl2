@@ -480,13 +480,19 @@ function names. For example:</p>
     x))
 
 (defun dmgen-hyps-and-concls-to-expression (hyps concls)
-  (b* ((concl (cond ((atom concls) t)
-                    ((atom (cdr concls)) (car concls))
+  (b* (((when (atom concls)) t)
+       (concl (cond ((atom (cdr concls)) (car concls))
                     (t `(and . ,concls))))
+       ((when (eq concl t)) t)
        ((when (atom hyps)) concl)
        (hyp (cond ((atom (cdr hyps)) (car hyps))
                   (t `(and . ,hyps)))))
     `(implies ,hyp ,concl)))
+
+(defun add-concl (concl rest)
+  (if (eq concl t)
+      rest
+    (cons concl rest)))
 
 (defun dmgen-process-hyps-and-concls (x)
   (cond ((atom x) (mv nil nil))
@@ -495,12 +501,12 @@ function names. For example:</p>
          (b* (((mv concls rest) (dmgen-process-hyps-and-concls (cdr x)))
               ((mv rest-concls rest-rest)
                (dmgen-process-hyps-and-concls rest)))
-           (mv (cons (dmgen-hyps-and-concls-to-expression (list (cdar x)) concls)
-                     rest-concls)
+           (mv (add-concl (dmgen-hyps-and-concls-to-expression (list (cdar x)) concls)
+                          rest-concls)
                rest-rest)))
         ((eq (caar x) :concl)
          (b* (((mv concls rest) (dmgen-process-hyps-and-concls (cdr x))))
-           (mv (cons (cdar x) concls) rest)))
+           (mv (add-concl (cdar x) concls) rest)))
         (t (mv (er hard? 'dmgen-process-hyps-and-concls "Illformed hyps-and-concls: ~x0" x) nil))))
     
         
