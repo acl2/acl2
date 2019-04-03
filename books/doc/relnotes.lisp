@@ -388,6 +388,9 @@
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
  byte-combining libraries</see>.</p>
 
+ <p>Factored out the @(tsee bytep) predicate into a new file under @(see
+ std/basic).</p>
+
  <h4>@(csee std/lists)</h4>
 
  <p>The definition of function @(see list-fix) from
