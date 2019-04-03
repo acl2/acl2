@@ -32,7 +32,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
-(include-book "centaur/misc/rewrite-rule" :dir :system)
+(include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 
 ;; This book defines two main functions, each supporting one type of rewrite
@@ -47,96 +47,6 @@
 ;; constant-time lookups in it; the standard rewriting function computes a list
 ;; for each function symbol one at a time, memoizing the results per-function.
 
-; note: similar named function exists in system/pseudo-good-worldp, but since
-; this is in the GL package there's no name clash.
-(define pseudo-rewrite-rule-p (x)
-  (and (acl2::weak-rewrite-rule-p x)
-       (b* (((acl2::rewrite-rule x)))
-         (and (pseudo-term-listp x.hyps)
-              (pseudo-termp x.lhs)
-              (pseudo-termp x.rhs)
-              (symbolp x.equiv)
-              (not (eq x.equiv 'quote))
-              (not (eq x.subclass 'acl2::meta)))))
-  ///
-  (defthm pseudo-rewrite-rule-p-implies
-    (implies (pseudo-rewrite-rule-p x)
-             (and (acl2::weak-rewrite-rule-p x)
-                  (b* (((acl2::rewrite-rule x)))
-                    (and (pseudo-term-listp x.hyps)
-                         (pseudo-termp x.lhs)
-                         (pseudo-termp x.rhs)
-                         (symbolp x.equiv)
-                         (not (equal x.equiv 'quote))
-                         (not (equal x.subclass 'acl2::meta))))))))
-
-(define mextract-good-rewrite-rulesp (rules)
-  (if (atom rules)
-      t
-    (and (acl2::mextract-ev-theoremp (acl2::rewrite-rule-term (car rules)))
-         (mextract-good-rewrite-rulesp (cdr rules))))
-  ///
-  (defthm mextract-good-rewrite-rulesp-of-cons
-    (equal (mextract-good-rewrite-rulesp (cons a b))
-           (and (acl2::mextract-ev-theoremp (acl2::rewrite-rule-term a))
-                (mextract-good-rewrite-rulesp b))))
-
-  (defthm mextract-good-rewrite-rulesp-of-cdr
-    (implies (mextract-good-rewrite-rulesp x)
-             (mextract-good-rewrite-rulesp (cdr x))))
-
-  (defthm mextract-ev-of-car-when-good-rewrite-rulesp
-    (implies (and (mextract-good-rewrite-rulesp x) (consp x))
-             (acl2::mextract-ev (acl2::rewrite-rule-term (car x)) a))
-    :hints(("Goal" :in-theory (disable acl2::rewrite-rule-term)
-            :expand ((mextract-good-rewrite-rulesp x))
-            :use ((:instance acl2::mextract-ev-falsify
-                   (x (acl2::rewrite-rule-term (car x))) (a a))))))
-
-  (local (defun mextract-good-rewrite-rulesp-badguy (rules)
-           (if (atom rules)
-               nil
-             (if (acl2::mextract-ev-theoremp (acl2::rewrite-rule-term (car rules)))
-                 (mextract-good-rewrite-rulesp-badguy (cdr rules))
-               (car rules)))))
-
-  (local (defthmd mextract-good-rewrite-rulesp-by-badguy
-           (iff (mextract-good-rewrite-rulesp rules)
-                (b* ((badguy (mextract-good-rewrite-rulesp-badguy rules)))
-                  (or (not (member badguy rules))
-                      (acl2::mextract-ev-theoremp (acl2::rewrite-rule-term badguy)))))))
-
-
-  (defthm mextract-good-rewrite-rulesp-of-lemmas
-    (implies (and (acl2::mextract-ev-global-facts)
-                  (equal wrld (w state)))
-             (mextract-good-rewrite-rulesp (fgetprop fn 'acl2::lemmas nil wrld)))
-    :hints(("Goal" :in-theory (e/d (mextract-good-rewrite-rulesp-by-badguy)
-                                   (mextract-good-rewrite-rulesp
-                                    mextract-good-rewrite-rulesp-badguy
-                                    acl2::rewrite-rule-term
-                                    w))
-            :do-not-induct t))))
-
-(define pseudo-rewrite-rule-listp (x)
-  (if (atom x)
-      (eq x nil)
-    (and (pseudo-rewrite-rule-p (car x))
-         (pseudo-rewrite-rule-listp (cdr x))))
-  ///
-  (defthm pseudo-rewrite-rule-listp-of-cons
-    (equal (pseudo-rewrite-rule-listp (cons a b))
-           (and (pseudo-rewrite-rule-p a)
-                (pseudo-rewrite-rule-listp b))))
-
-  (defthm pseudo-rewrite-rule-listp-of-cdr
-    (implies (pseudo-rewrite-rule-listp x)
-             (pseudo-rewrite-rule-listp (cdr x))))
-
-  (defthm pseudo-rewrite-rule-p-of-car
-    (implies (and (pseudo-rewrite-rule-listp x)
-                  (consp x))
-             (pseudo-rewrite-rule-p (car x)))))
 
 (define pseudo-rewrite-table-p (x)
   (if (atom x)

@@ -248,6 +248,10 @@
    '(term-vars termlist-vars
      term-free-vars termlist-free-vars
 
+     pseudo-rewrite-rule-p
+     pseudo-rewrite-rule-listp
+     mextract-good-rewrite-rulesp
+
      pseudo-var-list pseudo-var-list-p pseudo-var-list-fix pseudo-var-list-equiv
      pseudo-term-binding-count
      pseudo-term-list-binding-count

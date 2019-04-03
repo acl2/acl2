@@ -43,7 +43,7 @@
 (include-book "tools/some-events" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
-
+(local (include-book "centaur/meta/urewrite" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
 
@@ -2550,6 +2550,7 @@
                                     world)))
                 `(:computed-hint-replacement
                   ('(:clause-processor (mark-expands-cp clause '(t t ,expand-hints)))
+                   (cmr::call-urewrite-clause-proc)
                    (and (or (not ',wait-til-stablep) stable-under-simplificationp)
                         (expand-marked)))
                   :in-theory (disable . ,fns)
@@ -5846,23 +5847,6 @@
 
 
 
-(local (in-theory (disable acl2::rewrite-rule-term)))                  
-
-(defthmd rewrite-rule-term-alt-def
-  (equal (acl2::rewrite-rule-term x)
-         (if (eq (acl2::rewrite-rule->subclass x) 'acl2::meta)
-             ''t
-           `(implies ,(conjoin (acl2::rewrite-rule->hyps x))
-                     (,(acl2::rewrite-rule->equiv x)
-                      ,(acl2::rewrite-rule->lhs x)
-                      ,(acl2::rewrite-rule->rhs x)))))
-  :hints(("Goal" :in-theory (enable acl2::rewrite-rule-term
-                                    acl2::rewrite-rule->subclass
-                                    acl2::rewrite-rule->hyps
-                                    acl2::rewrite-rule->equiv
-                                    acl2::rewrite-rule->lhs
-                                    acl2::rewrite-rule->rhs))))
-
 
 
 (defsection fgl-ev-of-extension-when-term-vars-bound
@@ -6061,7 +6045,7 @@
                                                       (kwote-lst (fgl-objectlist-eval args env)))
                                                 nil))
                     (fgl-ev-context-fix contexts rhs-obj)))
-  :hints (("Goal" :in-theory (e/d (rewrite-rule-term-alt-def
+  :hints (("Goal" :in-theory (e/d (cmr::rewrite-rule-term-alt-def
                                    fgl-ev-of-fncall-args)
                                   (fgl-ev-list-of-extension-when-term-vars-bound))
            :use ((:instance fgl-ev-falsify
@@ -6126,7 +6110,7 @@
                                                       (kwote-lst (fgl-objectlist-eval args env)))
                                                 nil))
                     (fgl-ev-context-fix contexts rhs-obj)))
-  :hints (("Goal" :in-theory (e/d (rewrite-rule-term-alt-def
+  :hints (("Goal" :in-theory (e/d (cmr::rewrite-rule-term-alt-def
                                    fgl-ev-of-fncall-args)
                                   (fgl-ev-list-of-extension-when-term-vars-bound))
            :use ((:instance fgl-ev-falsify
@@ -7136,6 +7120,11 @@
            t)))
 
 
+(local (in-theory (disable acl2::rewrite-rule-term)))
+
+(defthm if-t-nil
+  (iff (if x t nil) x))
+
 (defsection-unique gl-interp-correct
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
 
@@ -7752,7 +7741,26 @@
                                       (fgl-objectlist-eval thenargs env logicman)
                                       (fgl-objectlist-eval elseargs env logicman)))))))))
 
-
+  ;; (make-event
+  ;;  `(with-output
+  ;;            :off (event)
+  ;;            :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+  ;;            (std::defret-mutual-generate
+  ;;              ,*gl-interp-correct-body*
+  ;;              :hints ((fgl-interp-default-hint 'gl-interp-term id nil world)
+  ;;                      ;; '(:expand (:lambdas))
+  ;;                      (b* ((flag (find-flag-is-hyp clause))
+  ;;                           ((unless flag) (value nil))
+  ;;                           (state (f-put-global 'gl-interp-term-subgoals
+  ;;                                                (cons clause (@ gl-interp-term-subgoals))
+  ;;                                                state)))
+  ;;                        (value '(:by nil))))
+  ;;              ;; (prog2$ (cw "flag: ~x0~%" flag)
+  ;;              ;;         '(:do-not '(generalize) :do-not-induct t))))
+  ;;              ;; (and stable-under-simplificationp
+  ;;              ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
+               
+  ;;              :mutual-recursion gl-interp)))
   (make-event
    ;; (if (and (boundp-global 'gl-interp-term-subgoals state)
    ;;          (@ gl-interp-term-subgoals))
@@ -7982,6 +7990,8 @@
        :rule-classes :clause-processor))))
 
    
+
+
 
 
 (with-output
