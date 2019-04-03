@@ -30,7 +30,7 @@
 
 (in-package "CMR")
 
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "reconstruct")
 (local (include-book "clause-processors/join-thms" :dir :system))
 
 (defxdoc resolve-flag-cp
@@ -388,37 +388,6 @@
                     (simplify-if test then else t)))))
 
 
-(define pseudo-term-fncall-with-hint ((fn pseudo-fnsym-p)
-                                      (args pseudo-term-listp)
-                                      (hint))
-  :returns (x (equal x (pseudo-term-fncall fn args))
-              :hints(("Goal" :in-theory (enable pseudo-term-fncall))))
-  (cons-with-hint (pseudo-fnsym-fix fn)
-                  (pseudo-term-list-fix args)
-                  hint))
-
-(define pseudo-term-lambda-with-hint ((formals symbol-listp)
-                                      (body pseudo-termp)
-                                      (args pseudo-term-listp)
-                                      (hint pseudo-termp))
-  :guard (and (equal (len formals) (len args))
-              (pseudo-term-case hint :lambda))
-  :returns (x (equal x (pseudo-term-lambda formals body args))
-              :hints(("Goal" :in-theory (enable pseudo-term-lambda))))
-  :guard-hints (("goal" :use ((:instance (:guard-theorem pseudo-term-lambda)
-                               (formals formals) (body body) (args args))))
-                (and stable-under-simplificationp
-                     '(:in-theory (e/d (pseudo-term-kind)))))
-  (mbe :logic (cons (pseudo-lambda formals body)
-                    (remove-corresp-non-symbols formals (pseudo-term-list-fix args)))
-       :exec
-       (cons-with-hint (cons-with-hint 'lambda
-                                       (cons-with-hint formals
-                                                       (cons-with-hint body nil (cddar hint))
-                                                       (cdar hint))
-                                       (car hint))
-                       args
-                       hint)))
 
 
 

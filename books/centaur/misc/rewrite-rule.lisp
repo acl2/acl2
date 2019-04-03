@@ -41,6 +41,7 @@
   (fgetprop fn 'lemmas nil world))
 
 (in-theory (disable rewrite-rule->rune
+                    rewrite-rule->nume
                     rewrite-rule->hyps
                     rewrite-rule->lhs
                     rewrite-rule->rhs
@@ -120,5 +121,13 @@
                                 heuristic-info backchain-limit-lst
                                 var-info match-free))
            rune)
-    :hints(("Goal" :in-theory (enable rewrite-rule->rune)))))
+    :hints(("Goal" :in-theory (enable rewrite-rule->rune))))
+
+  (defthm rewrite-rule->nume-of-make-rewrite-rule-fn
+    (equal (rewrite-rule->nume (make-rewrite-rule-fn
+                                rune nume hyps equiv lhs rhs subclass
+                                heuristic-info backchain-limit-lst
+                                var-info match-free))
+           nume)
+    :hints(("Goal" :in-theory (enable rewrite-rule->nume)))))
 
