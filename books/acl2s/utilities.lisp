@@ -230,3 +230,6 @@ functions over natural numbers.
                      (n< x y))
                 (o< (nat-id x) (nat-id y))))
   :rule-classes :well-founded-relation)
+
+(defmacro defthmskip (name &rest args)
+  `(skip-proofs (defthm ,name ,@args)))
