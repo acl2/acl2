@@ -137,6 +137,13 @@
  of specified lengths, based on existing fixtypes of lists of arbitrary
  lenghts (introduced via @(tsee fty::deflist)).</p>
 
+ <h4>Fixtypes for Omaps</h4>
+
+ <p>Added a macro @(tsee fty::defomap) that generates fixtypes for <see
+ topic='@(url omap::omaps)'>omaps</see> with keys and values of specified
+ fixtypes.  This is analogous to @(tsee fty::deflist) and @(tsee
+ fty::defalist).</p>
+
  <h4>Fixtypes for Osets</h4>
 
  <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
@@ -152,6 +159,11 @@
 
  <p>Formalized an instant run-off voting scheme and proved that it
  meets certain fairness criteria.</p>
+
+ <h4>Integer Arithmetic</h4>
+
+ <p>A library for integer arithmetic has been added at
+ @('[books]/kestrel/utilities/integer-arithmetic').</p>
 
  <h4><see topic='@(url java::java)'>Java</see></h4>
 
@@ -270,6 +282,10 @@
  inverse of hex-prefix encoding.</p>
 
  <p>Added a formalization of Modified Merkle Patricia trees.</p>
+
+ <p>Added a formalization of the database that underlies Modified Merkle
+ Patricia trees.  This database is a finite map from Keccak-256
+ hashes (i.e. byte arrays of length 32) to byte arrays.</p>
 
  <p>Added a formalization of the format of transactions and of their RLP
  encoding.</p>
@@ -512,6 +528,8 @@
  <p>Introduced several additional constructors.</p>
 
  <p>Extended the documentation of the constructors.</p>
+
+ <p>Moved the constructors to @('[books]/xdoc/constructors.lisp').</p>
 
  <h3>Licensing Changes</h3>
 

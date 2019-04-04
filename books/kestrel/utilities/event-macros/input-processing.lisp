@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

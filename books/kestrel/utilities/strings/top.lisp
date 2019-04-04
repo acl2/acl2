@@ -10,8 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/xdoc/constructors" :dir :system)
-
 (include-book "char-code-theorems")
 (include-book "char-kinds")
 (include-book "chars-codes")

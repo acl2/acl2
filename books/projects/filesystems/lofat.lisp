@@ -1,36 +1,25 @@
 (in-package "ACL2")
 
-;  file-system-m2.lisp                                  Mihir Mehta
+;  lofat.lisp                                           Mihir Mehta
 
 ; This is a stobj model of the FAT32 filesystem.
 
 (include-book "generate-index-list")
-;; (include-book "file-system-m1")
-;; (include-book "m1-dir-equiv")
+;; (include-book "hifat")
+;; (include-book "hifat-equiv")
 (include-book "m1-entry-count")
 (include-book "fat32-in-memory")
 (include-book "cluster-listp")
 (include-book "flatten-lemmas")
 
-;; These are some rules from other books which are interacting badly with the
-;; theory I've built up so far.
+;; These are some rules from other books which are either interacting badly
+;; with the theory I've built up so far, or else causing a lot of unnecessary
+;; frames and tries.
 (local
  (in-theory (disable take-of-too-many take-of-len-free make-list-ac-removal
-                     revappend-removal
+                     revappend-removal str::hex-digit-listp-of-cons
                      loghead logtail)))
 
-;; These are some definitions I've had to disable a lot in this book - and I'm
-;; still taking 847 seconds to certify the whole thing. Disabling them
-;; everywhere should simplify things.
-;; Later note: the certification time went down to 632 seconds after this
-;; change.
-;; Later note: the certification time went down to 517 seconds after some more
-;; changes were made based on accumulated-persistence.
-;; Later note: the certification time has gone back up to 573 seconds.
-;; Later note: back down to 504 seconds after disabling true-listp and
-;; len-when-dir-ent-p.
-;; Later note: back down to 367 seconds after disabling
-;; get-clusterchain-contents and by-slice-you-mean-the-whole-cake-2.
 (local
  (in-theory (disable nth update-nth floor mod
                      true-listp)))
@@ -235,7 +224,7 @@
 
   (local
    (defthm
-     compliant-fat32-in-memoryp-guard-lemma-2
+     lofat-fs-p-guard-lemma-2
      (implies (and
                (fat32-in-memoryp fat32-in-memory)
                (>= (bpb_bytspersec fat32-in-memory) *ms-min-bytes-per-sector*)
@@ -244,7 +233,7 @@
                           0)))
      :hints (("goal" :in-theory (enable cluster-size)))))
 
-  (defund compliant-fat32-in-memoryp (fat32-in-memory)
+  (defund lofat-fs-p (fat32-in-memory)
     (declare (xargs :stobjs fat32-in-memory :guard t))
     (and (fat32-in-memoryp fat32-in-memory)
          (>= (bpb_bytspersec fat32-in-memory)
@@ -295,7 +284,7 @@
 
   (local
    (defthm
-     compliant-fat32-in-memoryp-guard-lemma-3
+     lofat-fs-p-guard-lemma-3
      (implies (and (fat32-in-memoryp fat32-in-memory)
                    (< 0 (bpb_bytspersec fat32-in-memory)))
               (< (fat-entry-count fat32-in-memory)
@@ -308,8 +297,8 @@
                       bpb_bytspersec bpb_fatsz32)))))
 
   (defthm
-    compliant-fat32-in-memoryp-correctness-1
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+    lofat-fs-p-correctness-1
+    (implies (lofat-fs-p fat32-in-memory)
              (and (fat32-in-memoryp fat32-in-memory)
                   (integerp (cluster-size fat32-in-memory))
                   (>= (cluster-size fat32-in-memory)
@@ -360,14 +349,14 @@
     (("goal"
       :in-theory
       (e/d
-       (compliant-fat32-in-memoryp cluster-size fat-entry-count)
+       (lofat-fs-p cluster-size fat-entry-count)
        (fat32-in-memoryp))
       :use
-      compliant-fat32-in-memoryp-guard-lemma-3))
+      lofat-fs-p-guard-lemma-3))
     :rule-classes
     ((:rewrite
       :corollary
-      (implies (compliant-fat32-in-memoryp fat32-in-memory)
+      (implies (lofat-fs-p fat32-in-memory)
                (and (fat32-in-memoryp fat32-in-memory)
                     (integerp (cluster-size fat32-in-memory))
                     (equal (mod (cluster-size fat32-in-memory)
@@ -382,12 +371,12 @@
                            (fat-entry-count fat32-in-memory)))))
      (:forward-chaining
       :corollary
-      (implies (compliant-fat32-in-memoryp fat32-in-memory)
+      (implies (lofat-fs-p fat32-in-memory)
                (integerp (cluster-size fat32-in-memory))))
      (:linear
       :corollary
       (implies
-       (compliant-fat32-in-memoryp fat32-in-memory)
+       (lofat-fs-p fat32-in-memory)
        (and (>= (cluster-size fat32-in-memory)
                 *ms-min-bytes-per-sector*)
             (>= (count-of-clusters fat32-in-memory)
@@ -417,11 +406,11 @@
                (ash 1 48))))))))
 
 (defthm
-  fati-when-compliant-fat32-in-memoryp
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+  fati-when-lofat-fs-p
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (< (nfix i) (fat-length fat32-in-memory)))
            (fat32-entry-p (fati i fat32-in-memory)))
-  :hints (("goal" :in-theory (enable compliant-fat32-in-memoryp
+  :hints (("goal" :in-theory (enable lofat-fs-p
                                      fat32-in-memoryp fati fat-length))))
 
 (defthm
@@ -439,17 +428,20 @@
   (("goal"
     :in-theory (enable count-of-clusters update-fati bpb_totsec32))))
 
-(defthm
-  compliant-fat32-in-memoryp-of-update-fati
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+;; Before disabling, this function used to cause 11030904 frames and 95410
+;; tries in this book; after disabling those numbers are 4919970 and 33324
+;; respectively.
+(defthmd
+  lofat-fs-p-of-update-fati
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (< i (fat-length fat32-in-memory)))
            (equal
-            (compliant-fat32-in-memoryp
+            (lofat-fs-p
              (update-fati i v fat32-in-memory))
             (fat32-entry-p v)))
   :hints
   (("goal"
-    :in-theory (e/d (compliant-fat32-in-memoryp
+    :in-theory (e/d (lofat-fs-p
                      fat32-in-memoryp
                      update-fati fat-length count-of-clusters
                      data-region-length)
@@ -457,14 +449,14 @@
     :use cluster-size-of-update-fati)))
 
 (defthm
-  data-regioni-when-compliant-fat32-in-memoryp
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+  data-regioni-when-lofat-fs-p
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (< (nfix i)
                    (data-region-length fat32-in-memory)))
            (cluster-p (data-regioni i fat32-in-memory)
                       (cluster-size fat32-in-memory)))
   :hints
-  (("goal" :in-theory (e/d (compliant-fat32-in-memoryp
+  (("goal" :in-theory (e/d (lofat-fs-p
                             fat32-in-memoryp
                             data-regioni data-region-length)
                            (unsigned-byte-p))))
@@ -473,7 +465,7 @@
    (:rewrite
     :corollary
     (implies
-     (and (compliant-fat32-in-memoryp fat32-in-memory)
+     (and (lofat-fs-p fat32-in-memory)
           (< (nfix i)
              (data-region-length fat32-in-memory)))
      (and
@@ -492,16 +484,16 @@
     :in-theory (enable cluster-size update-data-regioni))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-update-data-regioni
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+  lofat-fs-p-of-update-data-regioni
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (< i (data-region-length fat32-in-memory)))
            (equal
-            (compliant-fat32-in-memoryp
+            (lofat-fs-p
              (update-data-regioni i v fat32-in-memory))
             (cluster-p v (cluster-size fat32-in-memory))))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (e/d (compliant-fat32-in-memoryp
+    :in-theory (e/d (lofat-fs-p
                      fat32-in-memoryp
                      update-data-regioni
                      data-region-length count-of-clusters
@@ -638,7 +630,7 @@
 
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
-  (defthm fat32-in-memory-to-string-inversion-lemma-29
+  (defthm lofat-to-string-inversion-lemma-29
     (implies (and (not (zp j)) (integerp i) (> i j))
              (> (floor i j) 0))
     :rule-classes :linear)
@@ -1005,7 +997,7 @@
      (xargs
       :guard
       (and (natp tmp_init)
-           (time$ (stringp image-path))
+           (stringp image-path)
            (stringp (read-file-into-string image-path))
            (natp len)
            (<= len
@@ -1295,7 +1287,6 @@
       :in-theory
       (e/d (data-region-length make-clusters
                                remember-that-time-with-update-nth
-                               append-of-take-and-cons
                                by-slice-you-mean-the-whole-cake-2
                                take-of-nthcdr)
            (append take take-redefinition))
@@ -1830,7 +1821,7 @@
     :hints (("Goal" :in-theory (enable read-reserved-area)) ))
 
   (defund
-    string-to-fat32-in-memory
+    string-to-lofat
     (fat32-in-memory str)
     (declare
      (xargs
@@ -1892,24 +1883,22 @@
                    (>= (length str) tmp_init)))
           (mv fat32-in-memory *EIO*))
          (data-region-string
-          (time$
-           (subseq str tmp_init nil))))
-      (time$
-       (update-data-region fat32-in-memory data-region-string
-                           (data-region-length fat32-in-memory))))))
+          (subseq str tmp_init nil)))
+      (update-data-region fat32-in-memory data-region-string
+                          (data-region-length fat32-in-memory)))))
 
 (defthmd
-  string-to-fat32-in-memory-correctness-1
+  string-to-lofat-correctness-1
   (equal
-   (string-to-fat32-in-memory fat32-in-memory str)
+   (string-to-lofat fat32-in-memory str)
    (mv
     (mv-nth 0
-            (string-to-fat32-in-memory fat32-in-memory str))
+            (string-to-lofat fat32-in-memory str))
     (mv-nth 1
-            (string-to-fat32-in-memory fat32-in-memory str))))
+            (string-to-lofat fat32-in-memory str))))
   :hints
   (("goal"
-    :in-theory (e/d (string-to-fat32-in-memory)
+    :in-theory (e/d (string-to-lofat)
                     (subseq))
     :use
     (:instance
@@ -1980,7 +1969,7 @@
                (read-reserved-area fat32-in-memory str))))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-1
+  disk-image-to-lofat-guard-lemma-1
   (iff
    (< (len (explode (read-file-into-string2
                      image-path 0 *initialbytcnt* state)))
@@ -2008,7 +1997,7 @@
        *initialbytcnt*))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-3
+  disk-image-to-lofat-guard-lemma-3
   (equal
    (read-reserved-area
     (update-bpb_bytspersec
@@ -2025,7 +2014,7 @@
   :hints (("Goal" :in-theory (enable read-reserved-area)) ))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-9
+  disk-image-to-lofat-guard-lemma-9
   (implies
    (< (nfix n) 16)
    (equal
@@ -2039,7 +2028,7 @@
   :hints (("goal" :in-theory (enable nth))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-4
+  disk-image-to-lofat-guard-lemma-4
   (implies
    (equal
     (mv-nth
@@ -2082,7 +2071,7 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    disk-image-to-fat32-in-memory-guard-lemma-5
+    disk-image-to-lofat-guard-lemma-5
     (implies
      (equal (mv-nth 1
                     (read-reserved-area fat32-in-memory str))
@@ -2107,7 +2096,7 @@
             count-of-clusters-of-read-reserved-area))))
 
   (defthm
-    disk-image-to-fat32-in-memory-guard-lemma-15
+    disk-image-to-lofat-guard-lemma-15
     (iff
      (integerp
       (*
@@ -2141,7 +2130,7 @@
           (read-file-into-string2 image-path 0 nil state))))))))
 
   (defthm
-    disk-image-to-fat32-in-memory-guard-lemma-22
+    disk-image-to-lofat-guard-lemma-22
     (implies
      (and
       (integerp
@@ -2184,7 +2173,7 @@
     :hints (("Goal" :in-theory (enable fat-entry-count)) )))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-6
+  disk-image-to-lofat-guard-lemma-6
   (implies
    (<=
     16
@@ -2209,7 +2198,7 @@
      state))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-7
+  disk-image-to-lofat-guard-lemma-7
   (implies
    (and
     (not
@@ -2257,7 +2246,7 @@
   :hints (("goal" :in-theory (enable read-reserved-area))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-8
+  disk-image-to-lofat-guard-lemma-8
   (implies
    (and (stringp str)
         (<= *initialbytcnt* (len (explode str)))
@@ -2282,7 +2271,7 @@
     :in-theory (enable read-reserved-area get-initial-bytes))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-10
+  disk-image-to-lofat-guard-lemma-10
   (implies
    (equal
     (mv-nth
@@ -2330,7 +2319,7 @@
   :hints (("goal" :in-theory (enable read-reserved-area))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-11
+  disk-image-to-lofat-guard-lemma-11
   (implies
    (<
     (len
@@ -2388,8 +2377,8 @@
      *EIO*)))
   :hints (("goal" :in-theory (enable get-initial-bytes read-reserved-area))))
 
-(defthm
-  disk-image-to-fat32-in-memory-guard-lemma-12
+(defthmd
+  disk-image-to-lofat-guard-lemma-12
   (implies
    (and (stringp str)
         (<= *initialbytcnt* (len (explode str)))
@@ -2420,7 +2409,7 @@
     :in-theory (enable read-reserved-area get-initial-bytes))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-13
+  disk-image-to-lofat-guard-lemma-13
   (implies
    (and
     (<= 16
@@ -2474,7 +2463,7 @@
                     (str (read-file-into-string2 image-path 0 nil state))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-14
+  disk-image-to-lofat-guard-lemma-14
   (implies
    (equal
     (mv-nth
@@ -2504,11 +2493,14 @@
   :hints
   (("goal"
     :in-theory (e/d (read-reserved-area)
-                    (disk-image-to-fat32-in-memory-guard-lemma-13))
-    :use disk-image-to-fat32-in-memory-guard-lemma-13)))
+                    (disk-image-to-lofat-guard-lemma-13))
+    :use disk-image-to-lofat-guard-lemma-13)))
 
+;; Accumulated-persistence suggests disabling this rule, but really it only
+;; gets tried in the main lemma, where we have to leave it enabled anyway. So
+;; we might as well skip (or at least shrink) that one in-theory hint.
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-16
+  disk-image-to-lofat-guard-lemma-16
   (implies
    (and (stringp str)
         (<= *initialbytcnt* (len (explode str)))
@@ -2547,7 +2539,7 @@
     :in-theory (enable read-reserved-area get-initial-bytes))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-17
+  disk-image-to-lofat-guard-lemma-17
   (implies
    (equal
     (mv-nth
@@ -2609,7 +2601,7 @@
                  (read-file-into-string2 image-path 0 nil state))))))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-19
+  disk-image-to-lofat-guard-lemma-19
   (implies
    (and
     (equal
@@ -2763,7 +2755,7 @@
           nil 1152921504606846975)))))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-21
+  disk-image-to-lofat-guard-lemma-21
   (equal
    (+
     (-
@@ -2814,7 +2806,7 @@
               (read-reserved-area fat32-in-memory str)))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-25
+  disk-image-to-lofat-guard-lemma-25
   (implies
    (stringp (read-file-into-string2 image-path 0 nil state))
    (iff
@@ -2900,7 +2892,7 @@
       (read-file-into-string2 image-path 0 nil state))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-27
+  disk-image-to-lofat-guard-lemma-27
   (implies
    (and
     (<=
@@ -3050,7 +3042,7 @@
                  (read-file-into-string2 image-path 0 nil state))))))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-28
+  disk-image-to-lofat-guard-lemma-28
   (implies
    (stringp (read-file-into-string2 image-path 0 nil state))
    (iff
@@ -3098,7 +3090,7 @@
        (read-file-into-string2 image-path 0 nil state)))))))
 
 (defthm
-  disk-image-to-fat32-in-memory-guard-lemma-29
+  disk-image-to-lofat-guard-lemma-29
   (implies
    (and
     (stringp (read-file-into-string2 image-path 0 nil state))
@@ -3172,7 +3164,7 @@
   :rule-classes :linear)
 
 (defun
-  disk-image-to-fat32-in-memory
+  disk-image-to-lofat
   (fat32-in-memory image-path state)
   (declare
    (xargs
@@ -3180,9 +3172,9 @@
                 (fat32-in-memoryp fat32-in-memory))
     :guard-hints
     (("goal"
-      :do-not-induct t
       :in-theory
-      (e/d (string-to-fat32-in-memory)
+      (e/d (string-to-lofat
+            disk-image-to-lofat-guard-lemma-12)
            (string-append
             read-file-into-string2
             ;; The following came from accumulated-persistence results.
@@ -3190,7 +3182,6 @@
             (:definition update-fat)
             (:rewrite nth-of-make-character-list)
             (:rewrite fat32-filename-p-correctness-1)))))
-    :guard-debug t
     :stobjs (fat32-in-memory state)))
   ;; The idea behind this MBE is that slurping in the whole string at once is
   ;; causing inefficiencies in terms of memory allocated for all these subseq
@@ -3205,15 +3196,14 @@
                ((unless (and (stringp str)
                              (>= (length str) *initialbytcnt*)))
                 (mv fat32-in-memory *EIO*)))
-            (string-to-fat32-in-memory fat32-in-memory str))
+            (string-to-lofat fat32-in-memory str))
    ;; This b* form pretty closely follows the structure of
-   ;; string-to-fat32-in-memory.
+   ;; string-to-lofat.
    :exec
    (b*
        ((initial-bytes-str
-         (time$
-          (read-file-into-string image-path
-                                 :bytes *initialbytcnt*)))
+         (read-file-into-string image-path
+                                :bytes *initialbytcnt*))
         ((unless (and (stringp initial-bytes-str)
                       (>= (length initial-bytes-str)
                           *initialbytcnt*)))
@@ -3236,11 +3226,10 @@
                       (>= tmp_rsvdbytcnt *initialbytcnt*)))
          (mv fat32-in-memory *EIO*))
         (remaining-rsvdbyts-str
-         (time$
-          (read-file-into-string
-           image-path
-           :start *initialbytcnt*
-           :bytes (- tmp_rsvdbytcnt *initialbytcnt*))))
+         (read-file-into-string
+          image-path
+          :start *initialbytcnt*
+          :bytes (- tmp_rsvdbytcnt *initialbytcnt*)))
         ((unless (and (stringp remaining-rsvdbyts-str)
                       (>= (length remaining-rsvdbyts-str)
                           (- tmp_rsvdbytcnt *initialbytcnt*))))
@@ -3298,13 +3287,12 @@
                (- tmp_init
                   (+ tmp_rsvdbytcnt (* fat-read-size 4))))))
          (mv fat32-in-memory *EIO*)))
-     (time$
-      (update-data-region-from-disk-image
-       fat32-in-memory
-       (data-region-length fat32-in-memory)
-       state
-       tmp_init
-       image-path)))))
+     (update-data-region-from-disk-image
+      fat32-in-memory
+      (data-region-length fat32-in-memory)
+      state
+      tmp_init
+      image-path))))
 
 (defund
   get-clusterchain
@@ -3313,7 +3301,7 @@
    (xargs
     :stobjs fat32-in-memory
     :measure (nfix length)
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (fat32-masked-entry-p masked-current-cluster)
                 (natp length)
                 (>= masked-current-cluster
@@ -3361,7 +3349,7 @@
   effective-fat (fat32-in-memory)
   (declare
    (xargs :stobjs fat32-in-memory
-          :guard (compliant-fat32-in-memoryp fat32-in-memory)
+          :guard (lofat-fs-p fat32-in-memory)
           :guard-hints
           (("goal" :in-theory (enable fat32-in-memoryp)))))
   (take (+ (count-of-clusters fat32-in-memory)
@@ -3387,7 +3375,7 @@
   :rule-classes
   ((:rewrite
     :corollary
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+    (implies (lofat-fs-p fat32-in-memory)
              (fat32-entry-list-p (effective-fat fat32-in-memory))))))
 
 (defthm
@@ -3464,7 +3452,7 @@
       :stobjs (fat32-in-memory)
       :guard
       (and
-       (compliant-fat32-in-memoryp fat32-in-memory)
+       (lofat-fs-p fat32-in-memory)
        (equal (data-region-length fat32-in-memory)
               (count-of-clusters fat32-in-memory))
        (fat32-masked-entry-list-p clusterchain)
@@ -3472,8 +3460,7 @@
        (bounded-nat-listp clusterchain
                           (count-of-clusters fat32-in-memory))
        (lower-bounded-integer-listp
-        clusterchain *ms-first-data-cluster*))
-      :verify-guards nil))
+        clusterchain *ms-first-data-cluster*))))
     (if
         (atom clusterchain)
         ""
@@ -3494,13 +3481,10 @@
 
   (defthm
     stringp-of-get-contents-from-clusterchain
-      (stringp
-       (get-contents-from-clusterchain
-        fat32-in-memory clusterchain file-size)))
-
-  (verify-guards get-contents-from-clusterchain
-      :hints
-      (("goal" :in-theory (e/d (lower-bounded-integer-listp)))))
+    (stringp
+     (get-contents-from-clusterchain
+      fat32-in-memory clusterchain file-size))
+    :rule-classes :type-prescription)
 
   (defund
     get-clusterchain-contents
@@ -3509,7 +3493,7 @@
      (xargs
       :stobjs fat32-in-memory
       :measure (nfix length)
-      :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+      :guard (and (lofat-fs-p fat32-in-memory)
                   (equal (data-region-length fat32-in-memory)
                          (count-of-clusters fat32-in-memory))
                   (fat32-masked-entry-p masked-current-cluster)
@@ -3565,15 +3549,10 @@
      (mv-nth 0
              (get-clusterchain-contents
               fat32-in-memory masked-current-cluster length)))
-    :rule-classes (:rewrite :type-prescription)
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable get-clusterchain-contents)) ))
 
-  (verify-guards
-    get-clusterchain-contents
-    :hints
-      (("goal"
-        :do-not-induct t
-        :in-theory (e/d (fati-when-compliant-fat32-in-memoryp))))))
+  (verify-guards get-clusterchain-contents))
 
 (defthm
   get-clusterchain-contents-correctness-2
@@ -3598,7 +3577,7 @@
   get-contents-from-clusterchain-of-update-data-regioni
   (implies
    (and (integerp file-size)
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (equal (data-region-length fat32-in-memory)
                (count-of-clusters fat32-in-memory))
         (natp i)
@@ -3611,16 +3590,14 @@
      (update-data-regioni i v fat32-in-memory)
      clusterchain file-size)
     (get-contents-from-clusterchain fat32-in-memory
-                                    clusterchain file-size)))
-  :hints
-  (("goal" :in-theory (enable lower-bounded-integer-listp))))
+                                    clusterchain file-size))))
 
 (defthm
   get-clusterchain-contents-correctness-1
   (implies
    (and
     (fat32-masked-entry-p masked-current-cluster)
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (equal
      (mv-nth
       1
@@ -3649,7 +3626,7 @@
       (fat32-masked-entry-p masked-current-cluster)
       (>= masked-current-cluster
           *ms-first-data-cluster*)
-      (compliant-fat32-in-memoryp fat32-in-memory)
+      (lofat-fs-p fat32-in-memory)
       (equal
        (mv-nth 1
                (fat32-build-index-list
@@ -3690,7 +3667,7 @@
 (defthm
   length-of-get-clusterchain-contents
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (natp length))
    (<=
     (len (explode (mv-nth 0
@@ -3803,6 +3780,12 @@
   (("goal"
     :in-theory (enable make-dir-ent-list useful-dir-ent-list-p))))
 
+(defthm
+  useful-dir-ent-list-p-of-cdr
+  (implies (useful-dir-ent-list-p dir-ent-list)
+           (useful-dir-ent-list-p (cdr dir-ent-list)))
+  :hints (("goal" :in-theory (enable useful-dir-ent-list-p))))
+
 ;; Here's the idea behind this recursion: A loop could occur on a badly formed
 ;; FAT32 volume which has a cycle in its directory structure (for instance, if
 ;; / and /tmp/ were to point to the same cluster as their initial cluster.)
@@ -3828,12 +3811,12 @@
 ;; for proof purposes. We're also adding a return value, to signal an error
 ;; when we run out of entries.
 (defund
-  fat32-in-memory-to-m1-fs-helper
+  lofat-to-hifat-helper
   (fat32-in-memory dir-ent-list entry-limit)
   (declare (xargs :measure (nfix entry-limit)
                   :guard (and (natp entry-limit)
                               (useful-dir-ent-list-p dir-ent-list)
-                              (compliant-fat32-in-memoryp fat32-in-memory))
+                              (lofat-fs-p fat32-in-memory))
                   :verify-guards nil
                   :stobjs (fat32-in-memory)))
   (b*
@@ -3905,7 +3888,7 @@
        ;; added at the end.
        ((mv head head-entry-count head-clusterchain-list head-error-code)
         (if directory-p
-            (fat32-in-memory-to-m1-fs-helper
+            (lofat-to-hifat-helper
              fat32-in-memory
              (make-dir-ent-list (string=>nats contents))
              (- entry-limit 1))
@@ -3921,7 +3904,7 @@
        (tail-entry-limit (nfix (- entry-limit
                                   (+ 1 (nfix head-entry-count)))))
        ((mv tail tail-entry-count tail-clusterchain-list tail-error-code)
-        (fat32-in-memory-to-m1-fs-helper
+        (lofat-to-hifat-helper
          fat32-in-memory
          (cdr dir-ent-list)
          tail-entry-limit))
@@ -3936,15 +3919,15 @@
                 tail-clusterchain-list)
         error-code)))
 
-(defthm fat32-in-memory-to-m1-fs-helper-correctness-1-lemma-1
+(defthm lofat-to-hifat-helper-correctness-1-lemma-1
   (equal (rationalp (nth n (dir-ent-fix x)))
          (< (nfix n) *ms-dir-ent-length*)))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-correctness-1
+  lofat-to-hifat-helper-correctness-1
   (b* (((mv m1-file-alist entry-count
             clusterchain-list error-code)
-        (fat32-in-memory-to-m1-fs-helper
+        (lofat-to-hifat-helper
          fat32-in-memory
          dir-ent-list entry-limit)))
     (and (natp entry-count)
@@ -3957,21 +3940,21 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (fat32-filename-p fat32-in-memory-to-m1-fs-helper)
+    (e/d (fat32-filename-p lofat-to-hifat-helper)
          (nth-of-string=>nats
           natp-of-cluster-size take-redefinition))
     :induct
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)))
   :rule-classes
   ((:type-prescription
     :corollary (b* (((mv & & & error-code)
-                     (fat32-in-memory-to-m1-fs-helper
+                     (lofat-to-hifat-helper
                       fat32-in-memory
                       dir-ent-list entry-limit)))
                  (natp error-code)))
    (:linear :corollary (b* (((mv m1-file-alist & & error-code)
-                             (fat32-in-memory-to-m1-fs-helper
+                             (lofat-to-hifat-helper
                               fat32-in-memory
                               dir-ent-list entry-limit)))
                          (and (<= 0 error-code)
@@ -3979,20 +3962,20 @@
                                   (len dir-ent-list)))))
    (:rewrite
     :corollary (b* (((mv & & clusterchain-list error-code)
-                     (fat32-in-memory-to-m1-fs-helper
+                     (lofat-to-hifat-helper
                       fat32-in-memory
                       dir-ent-list entry-limit)))
                  (and (integerp error-code)
                       (true-list-listp clusterchain-list))))
    (:type-prescription
     :corollary (b* (((mv m1-file-alist &)
-                     (fat32-in-memory-to-m1-fs-helper
+                     (lofat-to-hifat-helper
                       fat32-in-memory
                       dir-ent-list entry-limit)))
                  (true-listp m1-file-alist)))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-correctness-2-lemma-1
+  lofat-to-hifat-helper-correctness-2-lemma-1
   (implies (and (dir-ent-p dir-ent)
                 (< (nfix n) *ms-dir-ent-length*))
            (rationalp (nth n dir-ent)))
@@ -4004,10 +3987,10 @@
                         (acl2-numberp (nth n dir-ent))))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-correctness-2
+  lofat-to-hifat-helper-correctness-2
   (implies (useful-dir-ent-list-p dir-ent-list)
            (b* (((mv m1-file-alist & & &)
-                 (fat32-in-memory-to-m1-fs-helper
+                 (lofat-to-hifat-helper
                   fat32-in-memory
                   dir-ent-list entry-limit)))
              (m1-file-alist-p m1-file-alist)))
@@ -4015,29 +3998,29 @@
   (("goal"
     :in-theory
     (e/d (fat32-filename-p useless-dir-ent-p
-                           fat32-in-memory-to-m1-fs-helper
+                           lofat-to-hifat-helper
                            useful-dir-ent-list-p)
          (nth-of-string=>nats natp-of-cluster-size
                               take-redefinition))
-    :induct (fat32-in-memory-to-m1-fs-helper
+    :induct (lofat-to-hifat-helper
              fat32-in-memory
              dir-ent-list entry-limit))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-correctness-3
+  lofat-to-hifat-helper-correctness-3
   (b* (((mv m1-file-alist entry-count & &)
-        (fat32-in-memory-to-m1-fs-helper
+        (lofat-to-hifat-helper
          fat32-in-memory
          dir-ent-list entry-limit)))
     (equal entry-count
            (m1-entry-count m1-file-alist)))
   :hints
-  (("goal" :in-theory (enable fat32-in-memory-to-m1-fs-helper)))
+  (("goal" :in-theory (enable lofat-to-hifat-helper m1-entry-count)))
   :rule-classes
   (:rewrite
    (:linear
     :corollary (b* (((mv m1-file-alist & & &)
-                     (fat32-in-memory-to-m1-fs-helper
+                     (lofat-to-hifat-helper
                       fat32-in-memory
                       dir-ent-list entry-limit)))
                  (<= (m1-entry-count m1-file-alist)
@@ -4045,25 +4028,66 @@
     :hints
     (("goal"
       :in-theory
-      (disable fat32-in-memory-to-m1-fs-helper-correctness-1)
-      :use fat32-in-memory-to-m1-fs-helper-correctness-1)))))
+      (disable lofat-to-hifat-helper-correctness-1)
+      :use lofat-to-hifat-helper-correctness-1)))))
 
-(defthm true-listp-of-fat32-in-memory-to-m1-fs-helper
+(defthmd
+  lofat-to-hifat-helper-correctness-4
+  (implies
+   (and (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit1))
+               0)
+        (>= (nfix entry-limit2)
+            (mv-nth 1
+                    (lofat-to-hifat-helper
+                     fat32-in-memory
+                     dir-ent-list entry-limit1))))
+   (equal
+    (lofat-to-hifat-helper fat32-in-memory
+                                     dir-ent-list entry-limit2)
+    (lofat-to-hifat-helper
+     fat32-in-memory
+     dir-ent-list entry-limit1)))
+  :hints
+  (("goal" :in-theory (enable lofat-to-hifat-helper
+                              m1-entry-count)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (and (equal (mv-nth 3
+                         (lofat-to-hifat-helper
+                          fat32-in-memory
+                          dir-ent-list entry-limit1))
+                 0)
+          (>= (nfix entry-limit2)
+              (mv-nth 1
+                      (lofat-to-hifat-helper
+                       fat32-in-memory
+                       dir-ent-list entry-limit1)))
+          (> entry-limit2 entry-limit1))
+     (equal (lofat-to-hifat-helper
+             fat32-in-memory
+             dir-ent-list entry-limit2)
+            (lofat-to-hifat-helper
+             fat32-in-memory
+             dir-ent-list entry-limit1))))))
+
+(defthm true-listp-of-lofat-to-hifat-helper
   (true-listp (mv-nth 2
-                      (fat32-in-memory-to-m1-fs-helper
+                      (lofat-to-hifat-helper
                        fat32-in-memory
                        dir-contents entry-limit))))
 
 (verify-guards
-  fat32-in-memory-to-m1-fs-helper
-  :guard-debug t
+  lofat-to-hifat-helper
   :hints
   (("goal"
-    :in-theory
-    (e/d (useful-dir-ent-list-p)
-         ((:e dir-ent-directory-p)
-          (:t dir-ent-directory-p)
-          (:definition fat32-build-index-list))))))
+    :in-theory (disable (:e dir-ent-directory-p)
+                        (:t dir-ent-directory-p)
+                        (:definition fat32-build-index-list)))))
 
 (defthm
   data-region-length-of-update-fati
@@ -4074,7 +4098,7 @@
 
 (defund max-entry-count (fat32-in-memory)
   (declare
-   (xargs :guard (compliant-fat32-in-memoryp fat32-in-memory)
+   (xargs :guard (lofat-fs-p fat32-in-memory)
           :stobjs fat32-in-memory))
   (mbe
    :exec
@@ -4094,12 +4118,12 @@
   :hints (("Goal" :in-theory (enable max-entry-count)) ))
 
 (defund
-  fat32-in-memory-to-m1-fs
+  lofat-to-hifat
   (fat32-in-memory)
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (lofat-fs-p fat32-in-memory)
     :guard-hints
     (("goal"
       :in-theory
@@ -4126,25 +4150,25 @@
         (mv nil (- error-code)))
        (entry-limit (max-entry-count fat32-in-memory))
        ((mv m1-file-alist & & error-code)
-        (fat32-in-memory-to-m1-fs-helper
+        (lofat-to-hifat-helper
          fat32-in-memory
          (make-dir-ent-list (string=>nats root-dir-contents))
          entry-limit)))
     (mv m1-file-alist error-code)))
 
 (defthm
-  fat32-in-memory-to-m1-fs-correctness-1
+  lofat-to-hifat-correctness-1
   (and
    (m1-file-alist-p
     (mv-nth 0
-            (fat32-in-memory-to-m1-fs fat32-in-memory)))
+            (lofat-to-hifat fat32-in-memory)))
    (natp (mv-nth 1
-                 (fat32-in-memory-to-m1-fs fat32-in-memory))))
+                 (lofat-to-hifat fat32-in-memory))))
   :hints
   (("goal"
     :in-theory
     (e/d
-     (fat32-in-memory-to-m1-fs)
+     (lofat-to-hifat)
      (m1-file-p
       (:rewrite get-clusterchain-contents-correctness-2)))
     :use
@@ -4160,28 +4184,28 @@
     (and
      (m1-file-alist-p
       (mv-nth 0
-              (fat32-in-memory-to-m1-fs fat32-in-memory)))
+              (lofat-to-hifat fat32-in-memory)))
      (integerp
       (mv-nth 1
-              (fat32-in-memory-to-m1-fs fat32-in-memory)))))
+              (lofat-to-hifat fat32-in-memory)))))
    (:linear
     :corollary
     (<= 0
         (mv-nth 1
-                (fat32-in-memory-to-m1-fs fat32-in-memory))))
+                (lofat-to-hifat fat32-in-memory))))
    (:type-prescription
     :corollary
     (true-listp
      (mv-nth 0
-             (fat32-in-memory-to-m1-fs fat32-in-memory))))
+             (lofat-to-hifat fat32-in-memory))))
    (:type-prescription
     :corollary
     (natp
      (mv-nth 1
-             (fat32-in-memory-to-m1-fs fat32-in-memory))))))
+             (lofat-to-hifat fat32-in-memory))))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-correctness-2
+  lofat-to-hifat-correctness-2
   (implies
    (equal
     (mv-nth
@@ -4191,22 +4215,22 @@
       (fat32-entry-mask (bpb_rootclus fat32-in-memory))
       *ms-max-dir-size*))
     "")
-   (equal (mv-nth 0 (fat32-in-memory-to-m1-fs fat32-in-memory))
+   (equal (mv-nth 0 (lofat-to-hifat fat32-in-memory))
           nil))
   :hints
   (("goal"
     :in-theory
-    (enable fat32-in-memory-to-m1-fs fat32-in-memory-to-m1-fs-helper))))
+    (enable lofat-to-hifat lofat-to-hifat-helper))))
 
 (defthm
-  m1-entry-count-of-fat32-in-memory-to-m1-fs
+  m1-entry-count-of-lofat-to-hifat
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (<= (m1-entry-count
         (mv-nth 0
-                (fat32-in-memory-to-m1-fs fat32-in-memory)))
+                (lofat-to-hifat fat32-in-memory)))
        (max-entry-count fat32-in-memory)))
-  :hints (("goal" :in-theory (enable fat32-in-memory-to-m1-fs)))
+  :hints (("goal" :in-theory (enable lofat-to-hifat)))
   :rule-classes :linear)
 
 (defund
@@ -4214,7 +4238,7 @@
   (fat32-in-memory n start)
   (declare
    (xargs
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (natp n)
                 (natp start))
     :stobjs fat32-in-memory
@@ -4257,7 +4281,7 @@
   stobj-find-n-free-clusters-helper-correctness-1
   (implies
    (and (natp start)
-        (compliant-fat32-in-memoryp fat32-in-memory))
+        (lofat-fs-p fat32-in-memory))
    (equal
     (stobj-find-n-free-clusters-helper fat32-in-memory n start)
     (find-n-free-clusters-helper
@@ -4273,7 +4297,7 @@
   stobj-find-n-free-clusters
   (fat32-in-memory n)
   (declare
-   (xargs :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (xargs :guard (and (lofat-fs-p fat32-in-memory)
                       (natp n))
           :stobjs fat32-in-memory))
   (stobj-find-n-free-clusters-helper
@@ -4293,7 +4317,7 @@
 (defthm
   stobj-find-n-free-clusters-correctness-1
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (equal (stobj-find-n-free-clusters fat32-in-memory n)
           (find-n-free-clusters (effective-fat fat32-in-memory)
                                 n)))
@@ -4328,13 +4352,14 @@
    (xargs
     :measure (acl2-count index-list)
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (nat-listp index-list)
                 (fat32-masked-entry-list-p value-list)
                 (equal (len index-list)
                        (len value-list)))
     :guard-hints
-    (("goal" :in-theory (disable unsigned-byte-p)))))
+    (("goal" :in-theory (e/d (lofat-fs-p-of-update-fati)
+                             (unsigned-byte-p))))))
   (b*
       (((when (atom index-list))
         fat32-in-memory)
@@ -4390,17 +4415,18 @@
    (and (fat32-masked-entry-list-p value-list)
         (equal (len index-list)
                (len value-list))
-        (compliant-fat32-in-memoryp fat32-in-memory))
-   (equal (effective-fat
-               (stobj-set-indices-in-fa-table
-                fat32-in-memory index-list value-list))
-          (set-indices-in-fa-table (effective-fat fat32-in-memory)
-                                   index-list value-list)))
+        (lofat-fs-p fat32-in-memory))
+   (equal
+    (effective-fat (stobj-set-indices-in-fa-table
+                    fat32-in-memory index-list value-list))
+    (set-indices-in-fa-table (effective-fat fat32-in-memory)
+                             index-list value-list)))
   :hints
   (("goal"
     :in-theory
-    (e/d (set-indices-in-fa-table stobj-set-indices-in-fa-table))
-    :induct t)))
+    (e/d (set-indices-in-fa-table
+          stobj-set-indices-in-fa-table
+          lofat-fs-p-of-update-fati)))))
 
 (defthm
   fati-of-stobj-set-indices-in-fa-table
@@ -4408,7 +4434,7 @@
    (and (fat32-masked-entry-list-p value-list)
         (equal (len index-list)
                (len value-list))
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (natp n)
         (nat-listp index-list)
         (not (member-equal n index-list)))
@@ -4426,7 +4452,7 @@
      (and (fat32-masked-entry-list-p value-list)
           (equal (len index-list)
                  (len value-list))
-          (compliant-fat32-in-memoryp fat32-in-memory)
+          (lofat-fs-p fat32-in-memory)
           (natp n)
           (nat-listp index-list)
           (not (member-equal n index-list))
@@ -4444,20 +4470,18 @@
       (disable stobj-set-indices-in-fa-table-correctness-1))))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-stobj-set-indices-in-fa-table
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+  lofat-fs-p-of-stobj-set-indices-in-fa-table
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (fat32-masked-entry-list-p value-list)
                 (equal (len index-list)
                        (len value-list)))
-           (compliant-fat32-in-memoryp
+           (lofat-fs-p
             (stobj-set-indices-in-fa-table
              fat32-in-memory index-list value-list)))
   :hints
-  (("goal"
-    :in-theory (enable stobj-set-indices-in-fa-table)
-    :induct
-    (stobj-set-indices-in-fa-table fat32-in-memory
-                                   index-list value-list))))
+  (("goal" :in-theory
+    (enable stobj-set-indices-in-fa-table
+            lofat-fs-p-of-update-fati))))
 
 (defthm
   cluster-size-of-stobj-set-indices-in-fa-table
@@ -4518,13 +4542,12 @@
    (xargs
     :stobjs fat32-in-memory
     :guard
-    (and (compliant-fat32-in-memoryp fat32-in-memory)
+    (and (lofat-fs-p fat32-in-memory)
          (lower-bounded-integer-listp
           index-list *ms-first-data-cluster*)
          (cluster-listp cluster-list (cluster-size fat32-in-memory))
          (equal (len index-list)
-                (len cluster-list)))
-    :verify-guards nil))
+                (len cluster-list)))))
   (b*
       (((unless (consp cluster-list))
         fat32-in-memory)
@@ -4568,9 +4591,9 @@
    (data-region-length fat32-in-memory)))
 
 (defthm
-  compliant-fat32-in-memoryp-of-stobj-set-clusters
+  lofat-fs-p-of-stobj-set-clusters
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (lower-bounded-integer-listp
          index-list *ms-first-data-cluster*)
         (cluster-listp cluster-list (cluster-size fat32-in-memory))
@@ -4578,14 +4601,13 @@
                (len index-list))
         (equal (data-region-length fat32-in-memory)
                (count-of-clusters fat32-in-memory)))
-   (compliant-fat32-in-memoryp
+   (lofat-fs-p
     (stobj-set-clusters cluster-list
                         index-list fat32-in-memory)))
   :hints
   (("goal"
     :induct
-    (stobj-set-clusters cluster-list index-list fat32-in-memory)
-    :in-theory (enable lower-bounded-integer-listp))))
+    (stobj-set-clusters cluster-list index-list fat32-in-memory))))
 
 (defthm
   fati-of-stobj-set-clusters
@@ -4593,14 +4615,6 @@
                (stobj-set-clusters cluster-list
                                    index-list fat32-in-memory))
          (fati i fat32-in-memory)))
-
-(verify-guards
-  stobj-set-clusters
-  :hints
-  (("goal"
-    :in-theory (e/d (lower-bounded-integer-listp))
-    :induct (stobj-set-clusters cluster-list
-                                index-list fat32-in-memory))))
 
 (defthm
   fat-length-of-stobj-set-clusters
@@ -4625,7 +4639,7 @@
 ;; (basically, marking it used) inside the body of this function. This would
 ;; have made some proofs more modular... but it doesn't work, because when
 ;; we're placing the contents of a directory (inside
-;; m1-fs-to-fat32-in-memory-helper), we need to make a recursive call to get
+;; hifat-to-lofat-helper), we need to make a recursive call to get
 ;; the contents of that directory in the first place... and first-cluster must
 ;; be marked used before that call is made to ensure that cluster doesn't get
 ;; used.
@@ -4636,7 +4650,7 @@
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (dir-ent-p dir-ent)
                 (unsigned-byte-p 32 file-length)
                 (stringp contents)
@@ -4647,14 +4661,12 @@
                       (count-of-clusters fat32-in-memory))))
     :guard-hints
     (("goal"
-      :do-not-induct t
       :in-theory
-      (e/d
-       (lower-bounded-integer-listp)
-       ((:rewrite
-         fat32-masked-entry-list-p-of-find-n-free-clusters
-         . 1)
-        unsigned-byte-p))
+      (disable
+       (:rewrite
+        fat32-masked-entry-list-p-of-find-n-free-clusters
+        . 1)
+       unsigned-byte-p)
       :use
       (:instance
        (:rewrite
@@ -4713,9 +4725,9 @@
          0 indices)))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-place-contents
+  lofat-fs-p-of-place-contents
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (stringp contents)
         (natp file-length)
         (integerp first-cluster)
@@ -4723,28 +4735,15 @@
         (< first-cluster
            (+ *ms-first-data-cluster*
               (count-of-clusters fat32-in-memory))))
-   (compliant-fat32-in-memoryp
+   (lofat-fs-p
     (mv-nth
      0
      (place-contents fat32-in-memory dir-ent
                      contents file-length first-cluster))))
   :hints
-  (("goal"
-    :in-theory
-    (e/d (place-contents lower-bounded-integer-listp)
-         ((:rewrite
-           fat32-masked-entry-list-p-of-find-n-free-clusters
-           . 1)))
-    :use
-    (:instance
-     (:rewrite fat32-masked-entry-list-p-of-find-n-free-clusters
-               . 1)
-     (n
-      (binary-+
-       '-1
-       (len (make-clusters contents
-                           (cluster-size fat32-in-memory)))))
-     (fa-table (effective-fat fat32-in-memory))))))
+  (("goal" :in-theory
+    (enable place-contents
+            lofat-fs-p-of-update-fati))))
 
 (defthm
   cluster-size-of-place-contents
@@ -4896,7 +4895,7 @@
 (defthm
   fat32-masked-entry-list-p-of-place-contents
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (fat32-masked-entry-p first-cluster))
    (fat32-masked-entry-list-p
     (mv-nth
@@ -4952,12 +4951,12 @@
 ;; argument, namely, the list of indices we used. That will be (mv-nth 3 ...)
 ;; of the thing.
 (defun
-    m1-fs-to-fat32-in-memory-helper
+    hifat-to-lofat-helper
     (fat32-in-memory fs current-dir-first-cluster)
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (m1-file-alist-p fs)
                 (fat32-masked-entry-p current-dir-first-cluster))
     :hints (("goal" :in-theory (enable m1-file->contents
@@ -4971,7 +4970,7 @@
        ;; The induction case begins here. First, recursively take care of all
        ;; the directory entries after this one in the same directory.
        ((mv fat32-in-memory tail-list errno tail-index-list)
-        (m1-fs-to-fat32-in-memory-helper fat32-in-memory (cdr fs)
+        (hifat-to-lofat-helper fat32-in-memory (cdr fs)
                                          current-dir-first-cluster))
        ;; If there was an error in the recursive call, terminate.
        ((unless (zp errno)) (mv fat32-in-memory tail-list errno tail-index-list))
@@ -5024,7 +5023,7 @@
       (b* ((contents (m1-file->contents (cdr head)))
            (file-length 0)
            ((mv fat32-in-memory unflattened-contents errno head-index-list1)
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory contents first-cluster))
            ((unless (zp errno)) (mv fat32-in-memory tail-list errno tail-index-list))
            (contents
@@ -5061,26 +5060,26 @@
             (append head-index-list1 head-index-list2 tail-index-list))))))
 
 (defthm
-  cluster-size-of-m1-fs-to-fat32-in-memory-helper
+  cluster-size-of-hifat-to-lofat-helper
   (equal
    (cluster-size (mv-nth 0
-                         (m1-fs-to-fat32-in-memory-helper
+                         (hifat-to-lofat-helper
                           fat32-in-memory
                           fs current-dir-first-cluster)))
    (cluster-size fat32-in-memory)))
 
 (defthm
-  count-of-clusters-of-m1-fs-to-fat32-in-memory-helper
+  count-of-clusters-of-hifat-to-lofat-helper
   (equal
    (count-of-clusters
     (mv-nth 0
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory fs current-dir-first-cluster)))
    (count-of-clusters fat32-in-memory)))
 
-(defthm natp-of-m1-fs-to-fat32-in-memory-helper
+(defthm natp-of-hifat-to-lofat-helper
   (natp (mv-nth 2
-                (m1-fs-to-fat32-in-memory-helper
+                (hifat-to-lofat-helper
                  fat32-in-memory
                  fs current-dir-first-cluster)))
   :rule-classes
@@ -5088,48 +5087,48 @@
    (:rewrite
     :corollary
     (integerp (mv-nth 2
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory
                        fs current-dir-first-cluster))))
    (:linear
     :corollary
     (<= 0
         (mv-nth 2
-                (m1-fs-to-fat32-in-memory-helper
+                (hifat-to-lofat-helper
                  fat32-in-memory
                  fs current-dir-first-cluster))))))
 
 (defthm
-  data-region-length-of-m1-fs-to-fat32-in-memory-helper
+  data-region-length-of-hifat-to-lofat-helper
   (equal
    (data-region-length
     (mv-nth 0
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory fs current-dir-first-cluster)))
    (data-region-length fat32-in-memory)))
 
 (defthm
-  bpb_rootclus-of-m1-fs-to-fat32-in-memory-helper
+  bpb_rootclus-of-hifat-to-lofat-helper
   (equal
    (bpb_rootclus
     (mv-nth 0
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory fs current-dir-first-cluster)))
    (bpb_rootclus fat32-in-memory)))
 
 (defthm
-  fat-length-of-m1-fs-to-fat32-in-memory-helper
+  fat-length-of-hifat-to-lofat-helper
   (equal
    (fat-length (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory fs first-cluster)))
    (fat-length fat32-in-memory))
   :hints (("goal" :in-theory (enable nth))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-m1-fs-to-fat32-in-memory-helper-lemma-1
+  lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (and
     (not (< (binary-+ '2
                       (count-of-clusters fat32-in-memory))
@@ -5143,40 +5142,37 @@
         '2)))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-m1-fs-to-fat32-in-memory-helper
+  lofat-fs-p-of-hifat-to-lofat-helper
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
-   (compliant-fat32-in-memoryp
+   (lofat-fs-p fat32-in-memory)
+   (lofat-fs-p
     (mv-nth 0
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory fs first-cluster))))
   :hints
   (("goal"
-    :in-theory
-    (e/d
-     (lower-bounded-integer-listp)
-     (stobj-set-indices-in-fa-table)))))
+    :in-theory (e/d (lofat-fs-p-of-update-fati)
+                    (stobj-set-indices-in-fa-table)))))
 
 (defthm
-  dir-ent-list-p-of-m1-fs-to-fat32-in-memory-helper
+  dir-ent-list-p-of-hifat-to-lofat-helper
   (dir-ent-list-p
    (mv-nth 1
-           (m1-fs-to-fat32-in-memory-helper
-            fat32-in-memory fs first-cluster)))
-  :hints (("goal" :in-theory (enable lower-bounded-integer-listp))))
+           (hifat-to-lofat-helper
+            fat32-in-memory fs first-cluster))))
 
 (defthm
-  useful-dir-ent-list-p-of-m1-fs-to-fat32-in-memory-helper
+  useful-dir-ent-list-p-of-hifat-to-lofat-helper
   (implies
    (m1-file-alist-p fs)
    (useful-dir-ent-list-p
     (mv-nth 1
-            (m1-fs-to-fat32-in-memory-helper
+            (hifat-to-lofat-helper
              fat32-in-memory fs first-cluster))))
   :hints
   (("goal"
     :in-theory
-    (enable useful-dir-ent-list-p lower-bounded-integer-listp))))
+    (enable useful-dir-ent-list-p))))
 
 (defthm
   unsigned-byte-listp-of-flatten-when-dir-ent-list-p
@@ -5193,14 +5189,14 @@
   :hints (("goal" :in-theory (enable flatten len-when-dir-ent-p))))
 
 (defthmd
-  m1-fs-to-fat32-in-memory-helper-correctness-4
+  hifat-to-lofat-helper-correctness-4
   (implies
    (and (m1-file-alist-p fs)
         (zp (mv-nth 2
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory fs first-cluster))))
    (equal (len (mv-nth 1
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory fs first-cluster)))
           (len fs)))
   :rule-classes
@@ -5210,17 +5206,17 @@
     (implies
      (and (m1-file-alist-p fs)
           (zp (mv-nth 2
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory fs first-cluster))))
      (equal (consp (mv-nth 1
-                         (m1-fs-to-fat32-in-memory-helper
+                         (hifat-to-lofat-helper
                           fat32-in-memory fs first-cluster)))
             (consp fs))))))
 
 (defthm
-  true-listp-of-m1-fs-to-fat32-in-memory-helper
+  true-listp-of-hifat-to-lofat-helper
   (true-listp (mv-nth 3
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory
                        fs current-dir-first-cluster))))
 
@@ -5229,7 +5225,7 @@
 
   (local
    (defthm
-     m1-fs-to-fat32-in-memory-helper-guard-lemma-1
+     hifat-to-lofat-helper-guard-lemma-1
      (implies (not (m1-regular-file-p file))
               (equal (m1-directory-file-p file)
                      (m1-file-p file)))
@@ -5241,21 +5237,21 @@
 
   (local
    (defthm
-     m1-fs-to-fat32-in-memory-helper-guard-lemma-2
+     hifat-to-lofat-helper-guard-lemma-2
      (implies (unsigned-byte-listp 8 x)
               (true-listp x))))
 
   (defthm
-    m1-fs-to-fat32-in-memory-helper-guard-lemma-3
+    hifat-to-lofat-helper-guard-lemma-3
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (not
       (<
        (nth
         '0
         (find-n-free-clusters
          (effective-fat (mv-nth '0
-                                (m1-fs-to-fat32-in-memory-helper
+                                (hifat-to-lofat-helper
                                  fat32-in-memory (cdr fs)
                                  current-dir-first-cluster)))
          '1))
@@ -5263,28 +5259,28 @@
     :hints (("Goal" :in-theory (enable nth))))
 
   (verify-guards
-    m1-fs-to-fat32-in-memory-helper
+    hifat-to-lofat-helper
     :hints
     (("goal"
       :in-theory
       (e/d
-       (painful-debugging-lemma-9)
+       (painful-debugging-lemma-9 lofat-fs-p-of-update-fati)
        (stobj-set-indices-in-fa-table))))))
 
 (defthm
-  max-entry-count-of-m1-fs-to-fat32-in-memory-helper
+  max-entry-count-of-hifat-to-lofat-helper
   (equal
    (max-entry-count
     (mv-nth
      0
-     (m1-fs-to-fat32-in-memory-helper fat32-in-memory
+     (hifat-to-lofat-helper fat32-in-memory
                                       fs current-dir-first-cluster)))
    (max-entry-count fat32-in-memory)))
 
 (defthmd
-  m1-fs-to-fat32-in-memory-guard-lemma-1
+  hifat-to-lofat-guard-lemma-1
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (iff
     (< (binary-+
         '1
@@ -5300,20 +5296,20 @@
                     2))))))
   :hints
   (("goal" :in-theory
-    (disable compliant-fat32-in-memoryp-correctness-1)
-    :use compliant-fat32-in-memoryp-correctness-1)))
+    (disable lofat-fs-p-correctness-1)
+    :use lofat-fs-p-correctness-1)))
 
 (defund
-  m1-fs-to-fat32-in-memory
+  hifat-to-lofat
   (fat32-in-memory fs)
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (m1-file-alist-p fs))
     :guard-hints
-    (("goal" :in-theory (e/d (lower-bounded-integer-listp
-                              m1-fs-to-fat32-in-memory-guard-lemma-1)
+    (("goal" :in-theory (e/d (hifat-to-lofat-guard-lemma-1
+                              lofat-fs-p-of-update-fati)
                              (unsigned-byte-p))
       ;; This is the second time we've had to add a :cases hint, really. The
       ;; reason is the same: brr tells us that a case split which should be
@@ -5344,7 +5340,7 @@
                                      fat32-in-memory))
        ((mv fat32-in-memory
             root-dir-ent-list errno &)
-        (m1-fs-to-fat32-in-memory-helper
+        (hifat-to-lofat-helper
          fat32-in-memory
          fs (fat32-entry-mask rootclus)))
        ((unless (zp errno))
@@ -5366,9 +5362,9 @@
                         0 (fat32-entry-mask rootclus))))
     (mv fat32-in-memory error-code)))
 
-(defthm natp-of-m1-fs-to-fat32-in-memory
+(defthm natp-of-hifat-to-lofat
   (natp (mv-nth 1
-                (m1-fs-to-fat32-in-memory
+                (hifat-to-lofat
                  fat32-in-memory
                  fs)))
   :rule-classes
@@ -5376,30 +5372,31 @@
    (:rewrite
     :corollary
     (integerp (mv-nth 1
-                      (m1-fs-to-fat32-in-memory
+                      (hifat-to-lofat
                        fat32-in-memory
                        fs))))
    (:linear
     :corollary
     (<= 0
         (mv-nth 1
-                (m1-fs-to-fat32-in-memory
+                (hifat-to-lofat
                  fat32-in-memory
                  fs)))))
-  :hints (("Goal" :in-theory (enable m1-fs-to-fat32-in-memory)) ))
+  :hints (("Goal" :in-theory (enable hifat-to-lofat)) ))
 
 (defthm
-  compliant-fat32-in-memoryp-of-m1-fs-to-fat32-in-memory
+  lofat-fs-p-of-hifat-to-lofat
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (m1-file-alist-p fs))
-   (compliant-fat32-in-memoryp
+   (lofat-fs-p
     (mv-nth 0
-            (m1-fs-to-fat32-in-memory fat32-in-memory fs))))
+            (hifat-to-lofat fat32-in-memory fs))))
   :hints
   (("goal"
-    :in-theory (enable m1-fs-to-fat32-in-memory
-                       m1-fs-to-fat32-in-memory-guard-lemma-1)
+    :in-theory (enable hifat-to-lofat
+                       hifat-to-lofat-guard-lemma-1
+                       lofat-fs-p-of-update-fati)
     :do-not-induct t
     :cases
     ((not
@@ -5412,14 +5409,13 @@
        (binary-+ '2
                  (count-of-clusters fat32-in-memory))))))))
 
-
 (defun
     stobj-fa-table-to-string-helper
     (fat32-in-memory length ac)
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (natp length)
                 (<= length (fat-length fat32-in-memory)))
     :guard-hints
@@ -5427,8 +5423,8 @@
       :in-theory
       (e/d
        (fat32-entry-p)
-       (unsigned-byte-p fati-when-compliant-fat32-in-memoryp))
-      :use (:instance fati-when-compliant-fat32-in-memoryp
+       (unsigned-byte-p fati-when-lofat-fs-p))
+      :use (:instance fati-when-lofat-fs-p
                       (i (+ -1 length)))))))
   (if
       (zp length)
@@ -5464,7 +5460,7 @@
     (declare
      (xargs
       :stobjs fat32-in-memory
-      :guard (compliant-fat32-in-memoryp fat32-in-memory)))
+      :guard (lofat-fs-p fat32-in-memory)))
     (coerce
      (stobj-fa-table-to-string-helper
       fat32-in-memory (fat-length fat32-in-memory) nil)
@@ -5477,33 +5473,33 @@
 
   (defthm
     reserved-area-string-guard-lemma-1
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+    (implies (lofat-fs-p fat32-in-memory)
              (natp (- (* (bpb_bytspersec fat32-in-memory)
                          (bpb_rsvdseccnt fat32-in-memory))
                       90)))
     :rule-classes
     ((:linear
       :corollary
-      (implies (compliant-fat32-in-memoryp fat32-in-memory)
+      (implies (lofat-fs-p fat32-in-memory)
                (<= 90
                    (* (bpb_bytspersec fat32-in-memory)
                       (bpb_rsvdseccnt fat32-in-memory)))))
      (:rewrite
       :corollary
-      (implies (compliant-fat32-in-memoryp fat32-in-memory)
+      (implies (lofat-fs-p fat32-in-memory)
                (integerp (* (bpb_bytspersec fat32-in-memory)
                             (bpb_rsvdseccnt fat32-in-memory)))))
      (:rewrite
       :corollary
-      (implies (compliant-fat32-in-memoryp fat32-in-memory)
+      (implies (lofat-fs-p fat32-in-memory)
                (integerp (- (* (bpb_bytspersec fat32-in-memory)
                                (bpb_rsvdseccnt fat32-in-memory)))))))
-    :hints (("goal" :in-theory (e/d (compliant-fat32-in-memoryp)
+    :hints (("goal" :in-theory (e/d (lofat-fs-p)
                                     (fat32-in-memoryp))))))
 
 (defthm
   reserved-area-string-guard-lemma-2
-  (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+  (implies (and (lofat-fs-p fat32-in-memory)
                 (natp i)
                 (< i (fat-length fat32-in-memory)))
            (and (integerp (fati i fat32-in-memory))
@@ -5511,12 +5507,12 @@
                 (< (fati i fat32-in-memory) 4294967296)))
   :rule-classes
   ((:rewrite
-    :corollary (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :corollary (implies (and (lofat-fs-p fat32-in-memory)
                              (natp i)
                              (< i (fat-length fat32-in-memory)))
                         (integerp (fati i fat32-in-memory))))
    (:linear
-    :corollary (implies (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :corollary (implies (and (lofat-fs-p fat32-in-memory)
                              (natp i)
                              (< i (fat-length fat32-in-memory)))
                         (and (<= 0 (fati i fat32-in-memory))
@@ -5525,9 +5521,9 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (compliant-fat32-in-memoryp fat32-entry-p)
-         (fati fati-when-compliant-fat32-in-memoryp))
-    :use fati-when-compliant-fat32-in-memoryp)))
+    (e/d (lofat-fs-p fat32-entry-p)
+         (fati fati-when-lofat-fs-p))
+    :use fati-when-lofat-fs-p)))
 
 (encapsulate
   ()
@@ -5558,7 +5554,7 @@
 
   (defund reserved-area-chars (fat32-in-memory)
     (declare (xargs :stobjs fat32-in-memory
-                    :guard (compliant-fat32-in-memoryp fat32-in-memory)
+                    :guard (lofat-fs-p fat32-in-memory)
                     :guard-hints (("Goal"
                                    :do-not-induct t
                                    :in-theory (disable bs_vollabi
@@ -5673,7 +5669,7 @@
 (defthm
   len-of-reserved-area-chars
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (equal (len (reserved-area-chars fat32-in-memory))
           (* (bpb_rsvdseccnt fat32-in-memory)
              (bpb_bytspersec fat32-in-memory))))
@@ -5683,13 +5679,13 @@
   reserved-area-string (fat32-in-memory)
   (declare
    (xargs :stobjs fat32-in-memory
-          :guard (compliant-fat32-in-memoryp fat32-in-memory)))
+          :guard (lofat-fs-p fat32-in-memory)))
   (implode (reserved-area-chars fat32-in-memory)))
 
 (defthm
   length-of-reserved-area-string
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (equal (len (explode (reserved-area-string fat32-in-memory)))
           (* (bpb_rsvdseccnt fat32-in-memory)
              (bpb_bytspersec fat32-in-memory))))
@@ -5819,7 +5815,7 @@
 
 ;; A bit of explanation is in order here - this function recurs on n, which is
 ;; instantiated with (bpb_numfats fat32-in-memory) in
-;; fat32-in-memory-to-string. stobj-fa-table-to-string, in contrast, generates
+;; lofat-to-string. stobj-fa-table-to-string, in contrast, generates
 ;; one copy of the FAT string from the fat32-in-memory instance, and does all
 ;; the part-select heavy lifting.
 (defund
@@ -5828,7 +5824,7 @@
   (declare
    (xargs
     :stobjs fat32-in-memory
-    :guard (and (compliant-fat32-in-memoryp fat32-in-memory)
+    :guard (and (lofat-fs-p fat32-in-memory)
                 (natp n)
                 (stringp ac))))
   (b* (((when (zp n)) ac)
@@ -5864,7 +5860,7 @@
    (xargs
     :stobjs (fat32-in-memory)
     :guard (and (natp len)
-                (compliant-fat32-in-memoryp fat32-in-memory)
+                (lofat-fs-p fat32-in-memory)
                 (<= len
                     (data-region-length fat32-in-memory))
                 (character-listp ac))
@@ -5913,7 +5909,7 @@
 ;; (thm
 ;;  (implies
 ;;   (and (natp len)
-;;        (compliant-fat32-in-memoryp fat32-in-memory)
+;;        (lofat-fs-p fat32-in-memory)
 ;;        (<= len
 ;;            (data-region-length fat32-in-memory))
 ;;        (character-listp ac))
@@ -5957,7 +5953,7 @@
    (xargs
     :stobjs (fat32-in-memory state)
     :guard (and (natp len)
-                (compliant-fat32-in-memoryp fat32-in-memory)
+                (lofat-fs-p fat32-in-memory)
                 (<= len
                     (data-region-length fat32-in-memory))
                 (symbolp channel)
@@ -5981,7 +5977,7 @@
         (symbolp channel)
         (<= len
             (data-region-length fat32-in-memory))
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (natp len)
         (state-p1 state))
    (and (open-output-channel-p1
@@ -6001,7 +5997,7 @@
   data-region-string-helper-of-binary-append
   (implies
    (and (natp len)
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (<= len
             (data-region-length fat32-in-memory))
         (character-listp ac1)
@@ -6017,7 +6013,7 @@
   princ$-data-region-string-helper-correctness-1
   (implies
    (and (natp len)
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (<= len
             (data-region-length fat32-in-memory))
         (character-listp ac))
@@ -6033,11 +6029,11 @@
   :hints (("Goal" :in-theory (enable by-slice-you-mean-the-whole-cake-2))))
 
 (defund
-  fat32-in-memory-to-string
+  lofat-to-string
   (fat32-in-memory)
   (declare
    (xargs :stobjs fat32-in-memory
-          :guard (compliant-fat32-in-memoryp fat32-in-memory)))
+          :guard (lofat-fs-p fat32-in-memory)))
   (b* ((reserved-area-string
         (reserved-area-string fat32-in-memory))
        (fat-string
@@ -6054,24 +6050,24 @@
                  fat-string data-region-string)))
 
 (defthm
-  length-of-fat32-in-memory-to-string-lemma-1
-  (implies (compliant-fat32-in-memoryp fat32-in-memory)
+  length-of-lofat-to-string-lemma-1
+  (implies (lofat-fs-p fat32-in-memory)
            (and
            (equal (nfix (bpb_numfats fat32-in-memory))
                   (bpb_numfats fat32-in-memory))
            (equal (nfix (count-of-clusters fat32-in-memory))
                   (count-of-clusters fat32-in-memory))))
-  :hints (("goal" :in-theory (enable compliant-fat32-in-memoryp
+  :hints (("goal" :in-theory (enable lofat-fs-p
                                      fat32-in-memoryp
                                      bpb_numfats))))
 
 (defthm
-  length-of-fat32-in-memory-to-string
+  length-of-lofat-to-string
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (equal
     (len
-     (explode (fat32-in-memory-to-string fat32-in-memory)))
+     (explode (lofat-to-string fat32-in-memory)))
     (+ (* (bpb_rsvdseccnt fat32-in-memory)
           (bpb_bytspersec fat32-in-memory))
        (* (bpb_numfats fat32-in-memory)
@@ -6080,22 +6076,22 @@
        (* (cluster-size fat32-in-memory)
           (data-region-length fat32-in-memory)))))
   :hints
-  (("goal" :in-theory (e/d (fat32-in-memory-to-string) (nfix)))))
+  (("goal" :in-theory (e/d (lofat-to-string) (nfix)))))
 
 (defun
-  fat32-in-memory-to-disk-image
+  lofat-to-disk-image
   (fat32-in-memory image-path state)
   (declare
    (xargs
     :stobjs (fat32-in-memory state)
     :guard (and (state-p state)
                 (stringp image-path)
-                (compliant-fat32-in-memoryp fat32-in-memory))
+                (lofat-fs-p fat32-in-memory))
     :guard-hints
     (("goal"
       :do-not-induct t
       :in-theory
-      (e/d (fat32-in-memory-to-string)
+      (e/d (lofat-to-string)
            (princ$-of-princ$
             princ$-data-region-string-helper-correctness-1))
       :use
@@ -6161,7 +6157,7 @@
        ((when (null channel)) state)
        (state
         (mbe
-         :logic (princ$ (fat32-in-memory-to-string fat32-in-memory)
+         :logic (princ$ (lofat-to-string fat32-in-memory)
                         channel state)
          :exec
          (b*
@@ -6189,14 +6185,13 @@
    (equal (data-regioni i
                         (stobj-set-clusters cluster-list
                                             index-list fat32-in-memory))
-          (data-regioni i fat32-in-memory)))
-  :hints (("goal" :in-theory (enable lower-bounded-integer-listp))))
+          (data-regioni i fat32-in-memory))))
 
 (defthm
   get-clusterchain-contents-of-place-contents-disjoint
   (implies
    (and
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (stringp contents)
     (integerp first-cluster)
     (<= 2 first-cluster)
@@ -6225,8 +6220,7 @@
                                masked-current-cluster length)))
   :hints
   (("goal"
-    :in-theory (e/d (place-contents lower-bounded-integer-listp
-                                    intersectp-equal
+    :in-theory (e/d (place-contents intersectp-equal
                                     get-clusterchain-contents)
                     (intersectp-is-commutative)))))
 
@@ -6238,10 +6232,10 @@
          (effective-fat fat32-in-memory)))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-of-place-contents-lemma-1
+  lofat-to-hifat-helper-of-place-contents-lemma-1
   (implies
    (and
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (<= 2 masked-current-cluster)
     (fat32-masked-entry-p masked-current-cluster)
     (integerp first-cluster)
@@ -6272,7 +6266,7 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (place-contents lower-bounded-integer-listp)
+    (e/d (place-contents)
          ((:rewrite fat32-masked-entry-list-p-of-find-n-free-clusters
                     . 1)
           (:rewrite intersectp-is-commutative)))
@@ -6311,43 +6305,43 @@
                                      length cluster-size))))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-of-place-contents
+  lofat-to-hifat-helper-of-place-contents
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (stringp contents)
         (integerp first-cluster)
         (>= first-cluster *ms-first-data-cluster*)
         (equal (mv-nth 3
-                       (fat32-in-memory-to-m1-fs-helper
+                       (lofat-to-hifat-helper
                         fat32-in-memory
                         dir-ent-list entry-limit))
                0)
         (not-intersectp-list
          (list first-cluster)
          (mv-nth 2
-                 (fat32-in-memory-to-m1-fs-helper
+                 (lofat-to-hifat-helper
                   fat32-in-memory
                   dir-ent-list entry-limit)))
         (dir-ent-list-p dir-ent-list))
    (equal
-    (fat32-in-memory-to-m1-fs-helper
+    (lofat-to-hifat-helper
      (mv-nth
       0
       (place-contents fat32-in-memory dir-ent
                       contents file-length first-cluster))
      dir-ent-list entry-limit)
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)))
   :hints
   (("goal"
     :in-theory
-    (e/d (fat32-in-memory-to-m1-fs-helper)
+    (e/d (lofat-to-hifat-helper)
          (dir-ent-fix))
     :induct
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)
     :expand
-    ((fat32-in-memory-to-m1-fs-helper
+    ((lofat-to-hifat-helper
       (mv-nth
        0
        (place-contents fat32-in-memory dir-ent
@@ -6382,9 +6376,9 @@
                                         masked-current-cluster length)))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-of-update-fati
+  lofat-to-hifat-helper-of-update-fati
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (dir-ent-list-p dir-ent-list)
         (< (nfix i)
            (+ *ms-first-data-cluster*
@@ -6392,26 +6386,26 @@
         (not-intersectp-list
          (list i)
          (mv-nth 2
-                 (fat32-in-memory-to-m1-fs-helper
+                 (lofat-to-hifat-helper
                   fat32-in-memory
                   dir-ent-list entry-limit)))
         (equal (mv-nth 3
-                       (fat32-in-memory-to-m1-fs-helper
+                       (lofat-to-hifat-helper
                         fat32-in-memory
                         dir-ent-list entry-limit))
                0))
    (equal
-    (fat32-in-memory-to-m1-fs-helper
+    (lofat-to-hifat-helper
      (update-fati i v fat32-in-memory)
      dir-ent-list entry-limit)
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)))
   :hints
   (("goal"
     :induct
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)
-    :expand ((fat32-in-memory-to-m1-fs-helper
+    :expand ((lofat-to-hifat-helper
               (update-fati i v fat32-in-memory)
               dir-ent-list entry-limit)
              (:free (x y)
@@ -6419,7 +6413,7 @@
              (:free (y) (intersectp-equal nil y)))
     :in-theory
     (e/d
-     (fat32-in-memory-to-m1-fs-helper)
+     (lofat-to-hifat-helper)
      ((:rewrite natp-of-cluster-size . 1)
       (:definition fat32-build-index-list))))
    ;; This case split, below, is needed because :brr shows ACL2 hesitating
@@ -6452,7 +6446,6 @@
 
   (local
    (in-theory (enable make-clusters
-                      lower-bounded-integer-listp
                       nthcdr-when->=-n-len-l)))
 
   (defthm
@@ -6470,7 +6463,7 @@
       (bounded-nat-listp
        index-list
        (+ 2 (data-region-length fat32-in-memory)))
-      (compliant-fat32-in-memoryp fat32-in-memory)
+      (lofat-fs-p fat32-in-memory)
       (no-duplicatesp-equal index-list))
      (equal
       (get-contents-from-clusterchain
@@ -6565,7 +6558,7 @@
     (stringp contents)
     (integerp length)
     (<= (length contents) length)
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (not
      (equal
       (fat32-entry-mask (fati first-cluster fat32-in-memory))
@@ -6596,8 +6589,7 @@
         :initial-element (code-char 0))))
      0)))
   :hints
-  (("goal" :in-theory (e/d (lower-bounded-integer-listp
-                            place-contents)
+  (("goal" :in-theory (e/d (place-contents)
                            ((:rewrite
                              fat32-build-index-list-of-set-indices-in-fa-table)
                             (:rewrite get-clusterchain-contents-correctness-3)
@@ -6732,7 +6724,7 @@
               (count-of-clusters fat32-in-memory)))
         (integerp first-cluster)
         (>= first-cluster *ms-first-data-cluster*)
-        (compliant-fat32-in-memoryp fat32-in-memory)
+        (lofat-fs-p fat32-in-memory)
         (stringp contents)
         (not (equal (fat32-entry-mask (fati x fat32-in-memory))
                     0)))
@@ -6745,11 +6737,10 @@
                       contents file-length first-cluster)))
     (fati x fat32-in-memory)))
   :hints
-  (("goal" :in-theory (enable place-contents
-                              lower-bounded-integer-listp))))
+  (("goal" :in-theory (enable place-contents))))
 
 (defthm
-  fati-of-m1-fs-to-fat32-in-memory-helper-disjoint-lemma-1
+  fati-of-hifat-to-lofat-helper-disjoint-lemma-1
   (implies
    (and
     (equal
@@ -6757,7 +6748,7 @@
       (find-n-free-clusters
        (effective-fat
         (mv-nth 0
-                (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                (hifat-to-lofat-helper fat32-in-memory fs
                                                  current-dir-first-cluster)))
        1))
      1)
@@ -6768,11 +6759,11 @@
        (find-n-free-clusters
         (effective-fat
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                 (hifat-to-lofat-helper fat32-in-memory fs
                                                   current-dir-first-cluster)))
         1))
       (mv-nth 0
-              (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+              (hifat-to-lofat-helper fat32-in-memory fs
                                                current-dir-first-cluster)))
      (fati
       (nth
@@ -6780,11 +6771,11 @@
        (find-n-free-clusters
         (effective-fat
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                 (hifat-to-lofat-helper fat32-in-memory fs
                                                   current-dir-first-cluster)))
         1))
       fat32-in-memory))
-    (compliant-fat32-in-memoryp fat32-in-memory))
+    (lofat-fs-p fat32-in-memory))
    (equal
     (fat32-entry-mask
      (fati
@@ -6793,7 +6784,7 @@
        (find-n-free-clusters
         (effective-fat
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                 (hifat-to-lofat-helper fat32-in-memory fs
                                                   current-dir-first-cluster)))
         1))
       fat32-in-memory))
@@ -6809,7 +6800,7 @@
      (fa-table
       (effective-fat
        (mv-nth 0
-               (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+               (hifat-to-lofat-helper fat32-in-memory fs
                                                 current-dir-first-cluster))))
      (x
       (nth
@@ -6817,12 +6808,12 @@
        (find-n-free-clusters
         (effective-fat
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                 (hifat-to-lofat-helper fat32-in-memory fs
                                                   current-dir-first-cluster)))
         1)))))))
 
 (defthm
-  fati-of-m1-fs-to-fat32-in-memory-helper-disjoint-lemma-2
+  fati-of-hifat-to-lofat-helper-disjoint-lemma-2
   (implies
    (and
     (equal
@@ -6830,7 +6821,7 @@
       (find-n-free-clusters
        (effective-fat
         (mv-nth 0
-                (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                (hifat-to-lofat-helper fat32-in-memory fs
                                                  current-dir-first-cluster)))
        1))
      1)
@@ -6838,10 +6829,10 @@
      (fati
       x
       (mv-nth 0
-              (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+              (hifat-to-lofat-helper fat32-in-memory fs
                                                current-dir-first-cluster)))
      (fati x fat32-in-memory))
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (not (equal (fat32-entry-mask (fati x fat32-in-memory))
                 0)))
    (not
@@ -6852,7 +6843,7 @@
       (find-n-free-clusters
        (effective-fat
         (mv-nth '0
-                (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs
+                (hifat-to-lofat-helper fat32-in-memory fs
                                                  current-dir-first-cluster)))
        '1)))))
   :hints
@@ -6860,9 +6851,9 @@
     :in-theory (disable (:rewrite make-clusters-correctness-1 . 1)))))
 
 (defthm
-  fati-of-m1-fs-to-fat32-in-memory-helper-disjoint
+  fati-of-hifat-to-lofat-helper-disjoint
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (integerp x)
         (>= x *ms-first-data-cluster*)
         (< x
@@ -6871,20 +6862,20 @@
         (not (equal (fat32-entry-mask (fati x fat32-in-memory))
                     0))
         (equal (mv-nth 2
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory
                         fs current-dir-first-cluster))
                0))
    (equal (fati x
                 (mv-nth 0
-                        (m1-fs-to-fat32-in-memory-helper
+                        (hifat-to-lofat-helper
                          fat32-in-memory
                          fs current-dir-first-cluster)))
           (fati x fat32-in-memory)))
   :hints
   (("goal"
-    :in-theory
-    (disable (:rewrite make-clusters-correctness-1 . 1)))))
+    :in-theory (e/d (lofat-fs-p-of-update-fati)
+                    ((:rewrite make-clusters-correctness-1 . 1))))))
 
 (defthm
   fat32-build-index-list-of-place-contents-coincident
@@ -6901,7 +6892,7 @@
     (stringp contents)
     (integerp length)
     (<= (length contents) length)
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (not
      (equal
       (fat32-entry-mask (fati first-cluster fat32-in-memory))
@@ -6933,7 +6924,7 @@
   (("goal"
     :in-theory
     (e/d
-     (lower-bounded-integer-listp place-contents)
+     (place-contents)
      ((:rewrite
        fat32-build-index-list-of-set-indices-in-fa-table)))
     :do-not-induct t
@@ -6957,7 +6948,7 @@
 
 (defthm place-contents-expansion-1
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp (cluster-size fat32-in-memory)))
         (dir-ent-p dir-ent)
         (fat32-masked-entry-p first-cluster)
@@ -6988,7 +6979,7 @@
 
 (defthm place-contents-expansion-2
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp (cluster-size fat32-in-memory)))
         (dir-ent-p dir-ent)
         (fat32-masked-entry-p first-cluster)
@@ -7019,7 +7010,7 @@
 
 (defthm place-contents-expansion-3
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp (cluster-size fat32-in-memory)))
         (dir-ent-p dir-ent)
         (fat32-masked-entry-p first-cluster)
@@ -7144,7 +7135,7 @@
   unmodifiable-listp-correctness-3
   (implies
    (and
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (unmodifiable-listp x (effective-fat fat32-in-memory))
     (not (member-equal first-cluster x))
     (integerp first-cluster)
@@ -7168,7 +7159,7 @@
   unmodifiable-listp-correctness-4-lemma-1
   (implies
    (and
-    (compliant-fat32-in-memoryp fat32-in-memory)
+    (lofat-fs-p fat32-in-memory)
     (natp n1)
     (<
      (nfix n2)
@@ -7199,9 +7190,9 @@
 (defthm
   unmodifiable-listp-correctness-4
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (equal (mv-nth 2
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory
                         fs current-dir-first-cluster))
                0)
@@ -7210,9 +7201,10 @@
     x
     (effective-fat
      (mv-nth 0
-             (m1-fs-to-fat32-in-memory-helper
+             (hifat-to-lofat-helper
               fat32-in-memory
-              fs current-dir-first-cluster))))))
+              fs current-dir-first-cluster)))))
+  :hints (("Goal" :in-theory (enable lofat-fs-p-of-update-fati)) ))
 
 (defthm
   unmodifiable-listp-correctness-5
@@ -7251,12 +7243,12 @@
     fa-table)))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-of-m1-fs-to-fat32-in-memory-helper-disjoint-lemma-1
+  lofat-to-hifat-helper-of-hifat-to-lofat-helper-disjoint-lemma-1
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (natp n)
         (equal (mv-nth 3
-                       (fat32-in-memory-to-m1-fs-helper
+                       (lofat-to-hifat-helper
                         fat32-in-memory
                         dir-ent-list entry-limit))
                0))
@@ -7264,13 +7256,13 @@
     (find-n-free-clusters (effective-fat fat32-in-memory)
                           n)
     (mv-nth 2
-            (fat32-in-memory-to-m1-fs-helper
+            (lofat-to-hifat-helper
              fat32-in-memory
              dir-ent-list entry-limit))))
   :hints
   (("goal"
     :in-theory
-    (e/d (intersectp-equal fat32-in-memory-to-m1-fs-helper)
+    (e/d (intersectp-equal lofat-to-hifat-helper)
          ((:definition fat32-build-index-list)))))
   :rule-classes
   (:rewrite
@@ -7278,7 +7270,7 @@
     :corollary
     (implies
      (and
-      (compliant-fat32-in-memoryp fat32-in-memory)
+      (lofat-fs-p fat32-in-memory)
       (equal n 1)
       (equal
        (len
@@ -7286,7 +7278,7 @@
                               n))
        1)
       (equal (mv-nth 3
-                     (fat32-in-memory-to-m1-fs-helper
+                     (lofat-to-hifat-helper
                       fat32-in-memory
                       dir-ent-list entry-limit))
              0))
@@ -7298,7 +7290,7 @@
                               n))
        nil)
       (mv-nth 2
-              (fat32-in-memory-to-m1-fs-helper
+              (lofat-to-hifat-helper
                fat32-in-memory
                dir-ent-list entry-limit))))
     :hints
@@ -7322,27 +7314,28 @@
                               1))))))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-helper-of-m1-fs-to-fat32-in-memory-helper-disjoint
+  lofat-to-hifat-helper-of-hifat-to-lofat-helper-disjoint
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (equal (mv-nth 3
-                       (fat32-in-memory-to-m1-fs-helper
+                       (lofat-to-hifat-helper
                         fat32-in-memory
                         dir-ent-list entry-limit))
                0)
         (dir-ent-list-p dir-ent-list))
    (equal
-    (fat32-in-memory-to-m1-fs-helper
+    (lofat-to-hifat-helper
      (mv-nth 0
-             (m1-fs-to-fat32-in-memory-helper
+             (hifat-to-lofat-helper
               fat32-in-memory
               fs current-dir-first-cluster))
      dir-ent-list entry-limit)
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
-                                     dir-ent-list entry-limit))))
+    (lofat-to-hifat-helper fat32-in-memory
+                                     dir-ent-list entry-limit)))
+  :hints (("Goal" :in-theory (enable lofat-fs-p-of-update-fati)) ))
 
 (defthm
-  m1-fs-to-fat32-in-memory-inversion-lemma-1
+  hifat-to-lofat-inversion-lemma-1
   (implies
    (and (equal (len (find-n-free-clusters fa-table 1))
                1)
@@ -7362,8 +7355,11 @@
             (append (find-n-free-clusters fa-table 1)
                     y))))))
 
+;; At least once, accumulated-persistence has reported this rule as :useless,
+;; but in fact it is needed to discharge a subgoal. There's no trivial way
+;; around it.
 (defthm
-  m1-fs-to-fat32-in-memory-inversion-lemma-2
+  hifat-to-lofat-inversion-lemma-2
   (implies (and (stringp (m1-file->contents file))
                 (equal (len (explode (m1-file->contents file)))
                        0))
@@ -7372,7 +7368,7 @@
   (("goal" :expand (len (explode (m1-file->contents file))))))
 
 (defthm
-  m1-fs-to-fat32-in-memory-inversion-lemma-3
+  hifat-to-lofat-inversion-lemma-3
   (implies
    (not-intersectp-list
     (cons
@@ -7380,24 +7376,24 @@
       0
       (find-n-free-clusters
        (effective-fat (mv-nth 0
-                              (m1-fs-to-fat32-in-memory-helper
+                              (hifat-to-lofat-helper
                                fat32-in-memory (cdr fs)
                                current-dir-first-cluster)))
        1))
      x)
     (mv-nth
      2
-     (fat32-in-memory-to-m1-fs-helper
+     (lofat-to-hifat-helper
       (mv-nth
        0
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7408,17 +7404,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7426,20 +7422,20 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
       (mv-nth
        1
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7450,17 +7446,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7468,7 +7464,7 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
@@ -7480,23 +7476,23 @@
       0
       (find-n-free-clusters
        (effective-fat (mv-nth 0
-                              (m1-fs-to-fat32-in-memory-helper
+                              (hifat-to-lofat-helper
                                fat32-in-memory (cdr fs)
                                current-dir-first-cluster)))
        1)))
     (mv-nth
      2
-     (fat32-in-memory-to-m1-fs-helper
+     (lofat-to-hifat-helper
       (mv-nth
        0
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7507,17 +7503,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7525,20 +7521,20 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
       (mv-nth
        1
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7549,17 +7545,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7567,7 +7563,7 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
@@ -7576,17 +7572,17 @@
     x
     (mv-nth
      2
-     (fat32-in-memory-to-m1-fs-helper
+     (lofat-to-hifat-helper
       (mv-nth
        0
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7597,17 +7593,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7615,20 +7611,20 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
       (mv-nth
        1
-       (m1-fs-to-fat32-in-memory-helper
+       (hifat-to-lofat-helper
         (update-fati
          (nth
           0
           (find-n-free-clusters
            (effective-fat
             (mv-nth 0
-                    (m1-fs-to-fat32-in-memory-helper
+                    (hifat-to-lofat-helper
                      fat32-in-memory (cdr fs)
                      current-dir-first-cluster)))
            1))
@@ -7639,17 +7635,17 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           268435455)
          (mv-nth 0
-                 (m1-fs-to-fat32-in-memory-helper
+                 (hifat-to-lofat-helper
                   fat32-in-memory (cdr fs)
                   current-dir-first-cluster)))
         (m1-file->contents (cdr (car fs)))
@@ -7657,7 +7653,7 @@
              (find-n-free-clusters
               (effective-fat
                (mv-nth 0
-                       (m1-fs-to-fat32-in-memory-helper
+                       (hifat-to-lofat-helper
                         fat32-in-memory (cdr fs)
                         current-dir-first-cluster)))
               1))))
@@ -7672,17 +7668,17 @@
      (l
       (mv-nth
        2
-       (fat32-in-memory-to-m1-fs-helper
+       (lofat-to-hifat-helper
         (mv-nth
          0
-         (m1-fs-to-fat32-in-memory-helper
+         (hifat-to-lofat-helper
           (update-fati
            (nth
             0
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
@@ -7693,17 +7689,17 @@
               (find-n-free-clusters
                (effective-fat
                 (mv-nth 0
-                        (m1-fs-to-fat32-in-memory-helper
+                        (hifat-to-lofat-helper
                          fat32-in-memory (cdr fs)
                          current-dir-first-cluster)))
                1))
              (mv-nth 0
-                     (m1-fs-to-fat32-in-memory-helper
+                     (hifat-to-lofat-helper
                       fat32-in-memory (cdr fs)
                       current-dir-first-cluster)))
             268435455)
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           (m1-file->contents (cdr (car fs)))
@@ -7712,20 +7708,20 @@
            (find-n-free-clusters
             (effective-fat
              (mv-nth 0
-                     (m1-fs-to-fat32-in-memory-helper
+                     (hifat-to-lofat-helper
                       fat32-in-memory (cdr fs)
                       current-dir-first-cluster)))
             1))))
         (mv-nth
          1
-         (m1-fs-to-fat32-in-memory-helper
+         (hifat-to-lofat-helper
           (update-fati
            (nth
             0
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))
@@ -7736,17 +7732,17 @@
               (find-n-free-clusters
                (effective-fat
                 (mv-nth 0
-                        (m1-fs-to-fat32-in-memory-helper
+                        (hifat-to-lofat-helper
                          fat32-in-memory (cdr fs)
                          current-dir-first-cluster)))
                1))
              (mv-nth 0
-                     (m1-fs-to-fat32-in-memory-helper
+                     (hifat-to-lofat-helper
                       fat32-in-memory (cdr fs)
                       current-dir-first-cluster)))
             268435455)
            (mv-nth 0
-                   (m1-fs-to-fat32-in-memory-helper
+                   (hifat-to-lofat-helper
                     fat32-in-memory (cdr fs)
                     current-dir-first-cluster)))
           (m1-file->contents (cdr (car fs)))
@@ -7755,7 +7751,7 @@
            (find-n-free-clusters
             (effective-fat
              (mv-nth 0
-                     (m1-fs-to-fat32-in-memory-helper
+                     (hifat-to-lofat-helper
                       fat32-in-memory (cdr fs)
                       current-dir-first-cluster)))
             1))))
@@ -7767,7 +7763,7 @@
             (find-n-free-clusters
              (effective-fat
               (mv-nth 0
-                      (m1-fs-to-fat32-in-memory-helper
+                      (hifat-to-lofat-helper
                        fat32-in-memory (cdr fs)
                        current-dir-first-cluster)))
              1))))))))
@@ -7784,7 +7780,7 @@
       (xargs
        :stobjs fat32-in-memory
        :guard
-       (and (compliant-fat32-in-memoryp fat32-in-memory)
+       (and (lofat-fs-p fat32-in-memory)
             (m1-file-alist-p fs)
             (fat32-masked-entry-p current-dir-first-cluster))
        :hints (("goal" :in-theory (enable m1-file->contents
@@ -7892,7 +7888,7 @@
      (equal
       (induction-scheme fat32-in-memory fs
                         current-dir-first-cluster entry-limit x)
-      (m1-fs-to-fat32-in-memory-helper
+      (hifat-to-lofat-helper
        fat32-in-memory
        fs current-dir-first-cluster))))
 
@@ -7905,9 +7901,9 @@
   ;; seems very much better than the status quo. Therefore, this will remain
   ;; the slowest proof because the case splitting is necessary.
   (defthm
-    m1-fs-to-fat32-in-memory-inversion-big-induction
+    hifat-to-lofat-inversion-big-induction
     (implies
-     (and (compliant-fat32-in-memoryp fat32-in-memory)
+     (and (lofat-fs-p fat32-in-memory)
           (m1-file-alist-p fs)
           (m1-bounded-file-alist-p fs)
           (m1-file-no-dups-p fs)
@@ -7922,24 +7918,24 @@
           (unmodifiable-listp x (effective-fat fat32-in-memory)))
      (b*
          (((mv fat32-in-memory dir-ent-list error-code)
-           (m1-fs-to-fat32-in-memory-helper
+           (hifat-to-lofat-helper
             fat32-in-memory
             fs current-dir-first-cluster)))
        (implies
         (zp error-code)
         (and (equal (mv-nth 3
-                            (fat32-in-memory-to-m1-fs-helper
+                            (lofat-to-hifat-helper
                              fat32-in-memory
                              dir-ent-list entry-limit))
                     0)
              (not-intersectp-list
               x
               (mv-nth 2
-                      (fat32-in-memory-to-m1-fs-helper
+                      (lofat-to-hifat-helper
                        fat32-in-memory
                        dir-ent-list entry-limit)))
-             (m1-dir-equiv (mv-nth 0
-                                   (fat32-in-memory-to-m1-fs-helper
+             (hifat-equiv (mv-nth 0
+                                   (lofat-to-hifat-helper
                                     fat32-in-memory
                                     dir-ent-list entry-limit))
                            fs)))))
@@ -7950,22 +7946,24 @@
                         current-dir-first-cluster entry-limit x)
       :in-theory
       (e/d
-       (fat32-in-memory-to-m1-fs-helper
-        m1-fs-to-fat32-in-memory-helper-correctness-4)
+       (lofat-to-hifat-helper
+        hifat-to-lofat-helper-correctness-4
+        lofat-fs-p-of-update-fati
+        m1-entry-count
+        (:definition m1-file-no-dups-p))
        ((:rewrite make-clusters-correctness-1 . 1)
         (:rewrite nth-of-nats=>chars)
         (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
         (:rewrite
-         fati-of-m1-fs-to-fat32-in-memory-helper-disjoint-lemma-2)
-        (:definition induction-scheme)
-        (:definition m1-file-no-dups-p)))
+         fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
+        (:definition induction-scheme)))
       :expand
       ((:free (y) (intersectp-equal nil y))
        (:free (x1 x2 y)
               (intersectp-equal (list x1)
                                 (cons x2 y)))
        (:free (fat32-in-memory dir-ent dir-ent-list entry-limit)
-              (fat32-in-memory-to-m1-fs-helper
+              (lofat-to-hifat-helper
                fat32-in-memory
                (cons dir-ent dir-ent-list)
                entry-limit)))))
@@ -7973,7 +7971,7 @@
     ((:rewrite
       :corollary
       (implies
-       (and (compliant-fat32-in-memoryp fat32-in-memory)
+       (and (lofat-fs-p fat32-in-memory)
             (m1-file-alist-p fs)
             (m1-bounded-file-alist-p fs)
             (m1-file-no-dups-p fs)
@@ -7988,7 +7986,7 @@
             (unmodifiable-listp x (effective-fat fat32-in-memory)))
        (b*
            (((mv fat32-in-memory dir-ent-list error-code)
-             (m1-fs-to-fat32-in-memory-helper
+             (hifat-to-lofat-helper
               fat32-in-memory
               fs current-dir-first-cluster)))
          (implies
@@ -7996,14 +7994,14 @@
           (not-intersectp-list
            x
            (mv-nth 2
-                   (fat32-in-memory-to-m1-fs-helper
+                   (lofat-to-hifat-helper
                     fat32-in-memory
                     dir-ent-list entry-limit))))))))))
 
 (defthm
-  m1-fs-to-fat32-in-memory-inversion-big-induction-corollaries
+  hifat-to-lofat-inversion-big-induction-corollaries
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (m1-file-alist-p fs)
         (m1-bounded-file-alist-p fs)
         (m1-file-no-dups-p fs)
@@ -8017,41 +8015,41 @@
         (>= entry-limit (m1-entry-count fs)))
    (b*
        (((mv fat32-in-memory dir-ent-list error-code)
-         (m1-fs-to-fat32-in-memory-helper
+         (hifat-to-lofat-helper
           fat32-in-memory
           fs current-dir-first-cluster)))
      (implies
       (zp error-code)
       (and (equal (mv-nth 3
-                          (fat32-in-memory-to-m1-fs-helper
+                          (lofat-to-hifat-helper
                            fat32-in-memory
                            dir-ent-list entry-limit))
                   0)
-           (m1-dir-equiv (mv-nth 0
-                                 (fat32-in-memory-to-m1-fs-helper
+           (hifat-equiv (mv-nth 0
+                                 (lofat-to-hifat-helper
                                   fat32-in-memory
                                   dir-ent-list entry-limit))
                          fs)))))
   :hints
   (("goal"
-    :in-theory (disable m1-fs-to-fat32-in-memory-inversion-big-induction)
+    :in-theory (disable hifat-to-lofat-inversion-big-induction)
     :use
-    (:instance m1-fs-to-fat32-in-memory-inversion-big-induction
+    (:instance hifat-to-lofat-inversion-big-induction
                (x nil)))))
 
-(defthmd m1-fs-to-fat32-in-memory-inversion-lemma-10
+(defthmd hifat-to-lofat-inversion-lemma-10
   (implies
    (atom dir-ent-list)
    (equal
-    (fat32-in-memory-to-m1-fs-helper fat32-in-memory
+    (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)
     (mv nil 0 nil 0)))
-  :hints (("goal" :in-theory (enable fat32-in-memory-to-m1-fs-helper)) ))
+  :hints (("goal" :in-theory (enable lofat-to-hifat-helper)) ))
 
 (defthmd
-  m1-fs-to-fat32-in-memory-inversion-lemma-11
+  hifat-to-lofat-inversion-lemma-11
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (and
     (< (fat32-entry-mask (bpb_rootclus fat32-in-memory))
        (binary-+ '2
@@ -8070,20 +8068,20 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    m1-fs-to-fat32-in-memory-inversion-lemma-12
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+    hifat-to-lofat-inversion-lemma-12
+    (implies (lofat-fs-p fat32-in-memory)
              (>= *ms-max-dir-size*
                  (cluster-size fat32-in-memory)))
     :rule-classes :linear
     :hints
     (("goal" :in-theory
-      (disable compliant-fat32-in-memoryp-correctness-1)
-      :use compliant-fat32-in-memoryp-correctness-1)))
+      (disable lofat-fs-p-correctness-1)
+      :use lofat-fs-p-correctness-1)))
 
   (defthmd
-    m1-fs-to-fat32-in-memory-inversion-lemma-13
+    hifat-to-lofat-inversion-lemma-13
     (implies
-     (and (compliant-fat32-in-memoryp fat32-in-memory)
+     (and (lofat-fs-p fat32-in-memory)
           (stringp text)
           (equal (length text)
                  (cluster-size fat32-in-memory)))
@@ -8093,17 +8091,17 @@
     :hints
     (("goal"
       :in-theory
-      (disable compliant-fat32-in-memoryp-correctness-1)
+      (disable lofat-fs-p-correctness-1)
       :use
-      (compliant-fat32-in-memoryp-correctness-1
+      (lofat-fs-p-correctness-1
        (:instance
         len-of-make-clusters
         (cluster-size (cluster-size fat32-in-memory))))))))
 
 (defthm
-  m1-fs-to-fat32-in-memory-inversion
+  hifat-to-lofat-inversion
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (m1-file-alist-p fs)
         (m1-bounded-file-alist-p fs)
         (m1-file-no-dups-p fs)
@@ -8112,58 +8110,59 @@
          (max-entry-count fat32-in-memory)))
    (b*
        (((mv fat32-in-memory error-code)
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           fat32-in-memory fs)))
      (implies
       (zp error-code)
       (and
        (equal
         (mv-nth 1
-                (fat32-in-memory-to-m1-fs
+                (lofat-to-hifat
                  fat32-in-memory))
         0)
-       (m1-dir-equiv
+       (hifat-equiv
         (mv-nth 0
-                (fat32-in-memory-to-m1-fs
+                (lofat-to-hifat
                  fat32-in-memory))
         fs)))))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (enable fat32-in-memory-to-m1-fs
-                       m1-fs-to-fat32-in-memory
-                       m1-fs-to-fat32-in-memory-helper-correctness-4
-                       m1-fs-to-fat32-in-memory-inversion-lemma-10
-                       m1-fs-to-fat32-in-memory-inversion-lemma-11
-                       m1-fs-to-fat32-in-memory-inversion-lemma-13
+    :in-theory (enable lofat-to-hifat
+                       hifat-to-lofat
+                       hifat-to-lofat-helper-correctness-4
+                       hifat-to-lofat-inversion-lemma-10
+                       hifat-to-lofat-inversion-lemma-11
+                       hifat-to-lofat-inversion-lemma-13
                        painful-debugging-lemma-10
-                       painful-debugging-lemma-11))))
+                       painful-debugging-lemma-11
+                       lofat-fs-p-of-update-fati))))
 
 (defund-nx
-  fat32-in-memory-equiv
+  lofat-equiv
   (fat32-in-memory1 fat32-in-memory2)
   (b* (((mv fs1 error-code1)
-        (fat32-in-memory-to-m1-fs fat32-in-memory1))
-       (good1 (and (compliant-fat32-in-memoryp fat32-in-memory1)
+        (lofat-to-hifat fat32-in-memory1))
+       (good1 (and (lofat-fs-p fat32-in-memory1)
                    (equal error-code1 0)))
        ((mv fs2 error-code2)
-        (fat32-in-memory-to-m1-fs fat32-in-memory2))
-       (good2 (and (compliant-fat32-in-memoryp fat32-in-memory2)
+        (lofat-to-hifat fat32-in-memory2))
+       (good2 (and (lofat-fs-p fat32-in-memory2)
                    (equal error-code2 0)))
        ((unless (and good1 good2))
         (and (not good1) (not good2))))
-    (m1-dir-equiv fs1 fs2)))
+    (hifat-equiv fs1 fs2)))
 
 (defequiv
-  fat32-in-memory-equiv
-  :hints (("goal" :in-theory (enable fat32-in-memory-equiv))))
+  lofat-equiv
+  :hints (("goal" :in-theory (enable lofat-equiv))))
 
 (defthm
-  fat32-in-memory-to-m1-fs-inversion
+  lofat-to-hifat-inversion
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (b*
        (((mv fs error-code)
-         (fat32-in-memory-to-m1-fs fat32-in-memory))
+         (lofat-to-hifat fat32-in-memory))
         )
      (implies
       (and
@@ -8172,7 +8171,7 @@
        (m1-file-no-dups-p fs)
        ;; This clause should always be true, but that's not yet proven. The
        ;; argument is: The only time we get an error out of
-       ;; m1-fs-to-fat32-in-memory-helper (and the wrapper) is when we run out
+       ;; hifat-to-lofat-helper (and the wrapper) is when we run out
        ;; of space. We shouldn't be able to run out of space when we just
        ;; extracted an m1 instance from fat32-in-memory, and we didn't change
        ;; the size of fat32-in-memory at all. However, that's going to involve
@@ -8181,26 +8180,26 @@
        (equal
         (mv-nth
          1
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           fat32-in-memory
           fs))
         0))
-      (fat32-in-memory-equiv
+      (lofat-equiv
        (mv-nth
         0
-        (m1-fs-to-fat32-in-memory
+        (hifat-to-lofat
          fat32-in-memory
          fs))
        fat32-in-memory))))
-  :hints (("Goal" :in-theory (enable fat32-in-memory-equiv)) ))
+  :hints (("Goal" :in-theory (enable lofat-equiv)) ))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-1
+  lofat-to-string-inversion-lemma-1
   (implies
    (and (< (nfix n)
            (* (bpb_rsvdseccnt fat32-in-memory)
               (bpb_bytspersec fat32-in-memory)))
-        (compliant-fat32-in-memoryp fat32-in-memory))
+        (lofat-fs-p fat32-in-memory))
    (equal
     (nth
      n
@@ -8221,7 +8220,7 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-2
+    lofat-to-string-inversion-lemma-2
     (implies (fat32-in-memoryp fat32-in-memory)
              (>= (+ (data-region-length fat32-in-memory)
                     (* (bpb_bytspersec fat32-in-memory)
@@ -8235,7 +8234,7 @@
     :rule-classes :linear)
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-3
+    lofat-to-string-inversion-lemma-3
     (implies (equal (* (bpb_fatsz32 fat32-in-memory)
                        1/4 (bpb_bytspersec fat32-in-memory))
                     (fat-length fat32-in-memory))
@@ -8249,381 +8248,381 @@
   ()
 
   (local
-   (in-theory (e/d (fat32-in-memory-to-string get-initial-bytes get-remaining-rsvdbyts)
+   (in-theory (e/d (lofat-to-string get-initial-bytes get-remaining-rsvdbyts)
                    (;; the splitter-note suggests these could usefully be
                     ;; disabled
                     nth-of-append nthcdr-of-append take-of-append))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-4
+    lofat-to-string-inversion-lemma-4
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth 11
             (get-initial-bytes
-             (fat32-in-memory-to-string fat32-in-memory)))
+             (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_bytspersec fat32-in-memory)))
       (equal
        (nth 12
             (get-initial-bytes
-             (fat32-in-memory-to-string fat32-in-memory)))
+             (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_bytspersec fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-5
+    lofat-to-string-inversion-lemma-5
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth 13
            (get-initial-bytes
-            (fat32-in-memory-to-string fat32-in-memory)))
+            (lofat-to-string fat32-in-memory)))
       (bpb_secperclus fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-6
+    lofat-to-string-inversion-lemma-6
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth 14
             (get-initial-bytes
-             (fat32-in-memory-to-string fat32-in-memory)))
+             (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_rsvdseccnt fat32-in-memory)))
       (equal
        (nth 15
             (get-initial-bytes
-             (fat32-in-memory-to-string fat32-in-memory)))
+             (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_rsvdseccnt fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-7
+    lofat-to-string-inversion-lemma-7
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth 0
            (get-remaining-rsvdbyts
-            (fat32-in-memory-to-string fat32-in-memory)))
+            (lofat-to-string fat32-in-memory)))
       (bpb_numfats fat32-in-memory)))
     :hints
     (("goal" :in-theory (e/d (string=>nats) (nth)))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-8
+    lofat-to-string-inversion-lemma-8
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         1
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_rootentcnt fat32-in-memory)))
       (equal
        (nth
         2
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_rootentcnt fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-9
+    lofat-to-string-inversion-lemma-9
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         3
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_totsec16 fat32-in-memory)))
       (equal
        (nth
         4
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_totsec16 fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-10
+    lofat-to-string-inversion-lemma-10
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        5
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bpb_media fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-11
+    lofat-to-string-inversion-lemma-11
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         6
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_fatsz16 fat32-in-memory)))
       (equal
        (nth
         7
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_fatsz16 fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-12
+    lofat-to-string-inversion-lemma-12
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         8
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_secpertrk fat32-in-memory)))
       (equal
        (nth
         9
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_secpertrk fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-13
+    lofat-to-string-inversion-lemma-13
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         10
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_numheads fat32-in-memory)))
       (equal
        (nth
         11
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_numheads fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-14
+    lofat-to-string-inversion-lemma-14
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         12
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_hiddsec fat32-in-memory)))
       (equal
        (nth
         13
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail  8 (bpb_hiddsec fat32-in-memory))))
       (equal
        (nth
         14
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 16 (bpb_hiddsec fat32-in-memory))))
       (equal
        (nth
         15
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 24 (bpb_hiddsec fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-15
+    lofat-to-string-inversion-lemma-15
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         16
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_totsec32 fat32-in-memory)))
       (equal
        (nth
         17
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail  8 (bpb_totsec32 fat32-in-memory))))
       (equal
        (nth
         18
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 16 (bpb_totsec32 fat32-in-memory))))
       (equal
        (nth
         19
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 24 (bpb_totsec32 fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-16
+    lofat-to-string-inversion-lemma-16
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         20
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_fatsz32 fat32-in-memory)))
       (equal
        (nth
         21
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 8 (bpb_fatsz32 fat32-in-memory))))
       (equal
        (nth
         22
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 16 (bpb_fatsz32 fat32-in-memory))))
       (equal
        (nth
         23
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 24 (bpb_fatsz32 fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-17
+    lofat-to-string-inversion-lemma-17
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         24
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_extflags fat32-in-memory)))
       (equal
        (nth
         25
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_extflags fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-18
+    lofat-to-string-inversion-lemma-18
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        26
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bpb_fsver_minor fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-19
+    lofat-to-string-inversion-lemma-19
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        27
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bpb_fsver_major fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-20
+    lofat-to-string-inversion-lemma-20
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         28
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_rootclus fat32-in-memory)))
       (equal
        (nth
         29
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail  8 (bpb_rootclus fat32-in-memory))))
       (equal
        (nth
         30
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 16 (bpb_rootclus fat32-in-memory))))
       (equal
        (nth
         31
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 24 (bpb_rootclus fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-21
+    lofat-to-string-inversion-lemma-21
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         32
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_fsinfo fat32-in-memory)))
       (equal
        (nth
         33
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_fsinfo fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-22
+    lofat-to-string-inversion-lemma-22
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         34
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bpb_bkbootsec fat32-in-memory)))
       (equal
        (nth
         35
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 8 (bpb_bkbootsec fat32-in-memory))))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-23
+    lofat-to-string-inversion-lemma-23
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        48
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bs_drvnum fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-24
+    lofat-to-string-inversion-lemma-24
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        49
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bs_reserved1 fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-25
+    lofat-to-string-inversion-lemma-25
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (nth
        50
-       (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+       (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
       (bs_bootsig fat32-in-memory))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-26
+    lofat-to-string-inversion-lemma-26
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (and
       (equal
        (nth
         51
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (bs_volid fat32-in-memory)))
       (equal
        (nth
         52
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail  8 (bs_volid fat32-in-memory))))
       (equal
        (nth
         53
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (loghead 8 (logtail 16 (bs_volid fat32-in-memory))))
       (equal
        (nth
         54
-        (get-remaining-rsvdbyts (fat32-in-memory-to-string fat32-in-memory)))
+        (get-remaining-rsvdbyts (lofat-to-string fat32-in-memory)))
        (logtail 24 (bs_volid fat32-in-memory)))))))
 
 (encapsulate
@@ -8632,9 +8631,9 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-27
+    lofat-to-string-inversion-lemma-27
     (implies
-     (and (compliant-fat32-in-memoryp fat32-in-memory)
+     (and (lofat-fs-p fat32-in-memory)
           (natp index)
           (< index
              (data-region-length fat32-in-memory)))
@@ -8654,7 +8653,7 @@
     :hints (("Goal" :in-theory (enable by-slice-you-mean-the-whole-cake-2))))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-30
+    lofat-to-string-inversion-lemma-30
     (implies (and (fat32-in-memoryp fat32-in-memory)
                   (<= 512 (bpb_bytspersec fat32-in-memory))
                   (<= 1 (bpb_secperclus fat32-in-memory))
@@ -8679,7 +8678,7 @@
               (:rewrite product-greater-than-zero-2)
               (:change-goal nil t)
               :bash :s-prop
-              (:use (:instance fat32-in-memory-to-string-inversion-lemma-29
+              (:use (:instance lofat-to-string-inversion-lemma-29
                                (i (+ (- (bpb_rsvdseccnt fat32-in-memory))
                                      (bpb_totsec32 fat32-in-memory)
                                      (- (* (bpb_fatsz32 fat32-in-memory)
@@ -8690,15 +8689,15 @@
               (:= t)
               :top :bash))
 
-  (defthm fat32-in-memory-to-string-inversion-lemma-31
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+  (defthm lofat-to-string-inversion-lemma-31
+    (implies (lofat-fs-p fat32-in-memory)
              (<=
               (* 4 (fat-length fat32-in-memory))
               (* (bpb_numfats fat32-in-memory)
                  4 (fat-length fat32-in-memory))))
     :rule-classes :linear)
 
-  (defthm fat32-in-memory-to-string-inversion-lemma-32
+  (defthm lofat-to-string-inversion-lemma-32
     (implies (and (not (zp len))
                   (< (* (cluster-size fat32-in-memory)
                         (count-of-clusters fat32-in-memory))
@@ -8707,15 +8706,15 @@
                            (count-of-clusters fat32-in-memory))
                         (* (cluster-size fat32-in-memory)
                            (- len))))
-                  (compliant-fat32-in-memoryp fat32-in-memory))
+                  (lofat-fs-p fat32-in-memory))
              (< (count-of-clusters fat32-in-memory)
                 len))
     :rule-classes :linear))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-28
+  lofat-to-string-inversion-lemma-28
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (natp len)
         (<= len
             (data-region-length fat32-in-memory)))
@@ -8740,16 +8739,16 @@
      len))
    ("subgoal *1/2"
     :in-theory
-    (disable fat32-in-memory-to-string-inversion-lemma-27)
+    (disable lofat-to-string-inversion-lemma-27)
     :use
-    (:instance fat32-in-memory-to-string-inversion-lemma-27
+    (:instance lofat-to-string-inversion-lemma-27
                (index (- (count-of-clusters fat32-in-memory)
                          len))
                (len (count-of-clusters fat32-in-memory))
                (ac nil)))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-35
+  lofat-to-string-inversion-lemma-35
   (implies
    (and (natp n2)
         (< n2 (* 4 (fat-length fat32-in-memory)))
@@ -8763,7 +8762,7 @@
   :hints (("Goal" :in-theory (enable make-fat-string-ac))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-36
+  lofat-to-string-inversion-lemma-36
   (implies
    (and (fat32-entry-p current)
         (< (nfix n) 4))
@@ -8806,7 +8805,7 @@
                           (logtail 24 current))))))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-37
+  lofat-to-string-inversion-lemma-37
   (implies (and (integerp pos)
                 (integerp length)
                 (<= pos length))
@@ -8825,9 +8824,9 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-38
+    lofat-to-string-inversion-lemma-38
     (implies
-     (and (compliant-fat32-in-memoryp fat32-in-memory)
+     (and (lofat-fs-p fat32-in-memory)
           (not (zp pos))
           (natp length))
      (and
@@ -8870,9 +8869,9 @@
               :expand (:free (n x y) (nth n (cons x y)))))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-39
+  lofat-to-string-inversion-lemma-39
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp pos))
         (<= pos (fat-length fat32-in-memory)))
    (and
@@ -8907,9 +8906,9 @@
   :hints (("goal" :in-theory (enable stobj-fa-table-to-string))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-41
+  lofat-to-string-inversion-lemma-41
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp pos))
         (<= pos (fat-length fat32-in-memory)))
    (equal (update-fat
@@ -8928,20 +8927,20 @@
      pos))
    ("subgoal *1/3"
     :in-theory
-    (disable fat32-in-memory-to-string-inversion-lemma-39)
-    :use (:instance fat32-in-memory-to-string-inversion-lemma-39
+    (disable lofat-to-string-inversion-lemma-39)
+    :use (:instance lofat-to-string-inversion-lemma-39
                     (pos 1)))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-50
-  (implies (compliant-fat32-in-memoryp fat32-in-memory)
+  lofat-to-string-inversion-lemma-50
+  (implies (lofat-fs-p fat32-in-memory)
            (> (* (bpb_numfats fat32-in-memory)
                  4 (fat-entry-count fat32-in-memory))
               0))
   :hints
   (("goal" :in-theory
-    (disable compliant-fat32-in-memoryp-correctness-1)
-    :use compliant-fat32-in-memoryp-correctness-1))
+    (disable lofat-fs-p-correctness-1)
+    :use lofat-fs-p-correctness-1))
   :rule-classes :linear)
 
 (encapsulate
@@ -8952,9 +8951,9 @@
                              bs_filsystypei)))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-42
+    lofat-to-string-inversion-lemma-42
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (chars=>nats (explode (reserved-area-string fat32-in-memory)))
       (append
@@ -9058,24 +9057,24 @@
                                     (unsigned-byte-p)))))
 
   (local (in-theory (enable chars=>nats-of-take get-initial-bytes
-                            fat32-in-memory-to-string)))
+                            lofat-to-string)))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-43
+    lofat-to-string-inversion-lemma-43
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (update-bs_jmpboot
        (take 3
              (get-initial-bytes
-              (fat32-in-memory-to-string fat32-in-memory)))
+              (lofat-to-string fat32-in-memory)))
        fat32-in-memory)
       fat32-in-memory)))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-44
+    lofat-to-string-inversion-lemma-44
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (update-bs_oemname
        (take
@@ -9083,16 +9082,16 @@
         (nthcdr
          3
          (get-initial-bytes
-          (fat32-in-memory-to-string fat32-in-memory))))
+          (lofat-to-string fat32-in-memory))))
        fat32-in-memory)
       fat32-in-memory)))
 
   (local (in-theory (enable chars=>nats-of-nthcdr get-remaining-rsvdbyts)))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-45
+    lofat-to-string-inversion-lemma-45
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (update-bs_vollab
        (take
@@ -9100,14 +9099,14 @@
         (nthcdr
          55
          (get-remaining-rsvdbyts
-          (fat32-in-memory-to-string fat32-in-memory))))
+          (lofat-to-string fat32-in-memory))))
        fat32-in-memory)
       fat32-in-memory)))
 
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-46
+    lofat-to-string-inversion-lemma-46
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (update-bs_filsystype
        (take
@@ -9115,27 +9114,27 @@
         (nthcdr
          66
          (get-remaining-rsvdbyts
-          (fat32-in-memory-to-string fat32-in-memory))))
+          (lofat-to-string fat32-in-memory))))
        fat32-in-memory)
       fat32-in-memory)))
 
   ;; Kinda wish we could have made use of update_bpb_reserved-alt for this
   ;; theorem, and then done the same kind of thing elsewhere.
   (defthm
-    fat32-in-memory-to-string-inversion-lemma-40
+    lofat-to-string-inversion-lemma-40
     (implies
-     (compliant-fat32-in-memoryp fat32-in-memory)
+     (lofat-fs-p fat32-in-memory)
      (equal
       (update-bpb_reserved
        (take 12
              (nthcdr 36
                      (get-remaining-rsvdbyts
-                      (fat32-in-memory-to-string fat32-in-memory))))
+                      (lofat-to-string fat32-in-memory))))
        fat32-in-memory)
       fat32-in-memory))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-47
+  lofat-to-string-inversion-lemma-47
   (implies
    (and (natp n2)
         (zp (+ n2
@@ -9152,9 +9151,9 @@
                               by-slice-you-mean-the-whole-cake-2))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-48
+  lofat-to-string-inversion-lemma-48
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (not (zp pos))
         (<= pos (fat-length fat32-in-memory)))
    (equal (update-fat
@@ -9171,11 +9170,11 @@
      pos))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-49
+  lofat-to-string-inversion-lemma-49
   (equal
    (nthcdr
     n
-    (explode (fat32-in-memory-to-string fat32-in-memory)))
+    (explode (lofat-to-string fat32-in-memory)))
    (if
     (<= (nfix n)
         (len (explode (reserved-area-string fat32-in-memory))))
@@ -9200,7 +9199,7 @@
        nil)))))
   :hints
   (("goal" :in-theory
-    (e/d (fat32-in-memory-to-string)
+    (e/d (lofat-to-string)
          (fat32-in-memoryp
           length-of-reserved-area-string
           nth-of-explode-of-reserved-area-string)))))
@@ -9211,19 +9210,19 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthmd
-    fat32-in-memory-to-string-inversion-lemma-51
-    (implies (compliant-fat32-in-memoryp fat32-in-memory)
+    lofat-to-string-inversion-lemma-51
+    (implies (lofat-fs-p fat32-in-memory)
              (equal (* (bpb_fatsz32 fat32-in-memory)
                        1/4 (bpb_bytspersec fat32-in-memory))
                     (fat-entry-count fat32-in-memory)))
     :hints
-    (("goal" :in-theory (enable compliant-fat32-in-memoryp)
+    (("goal" :in-theory (enable lofat-fs-p)
       :use fat-entry-count))))
 
 (defthm
-  fat32-in-memory-to-string-inversion-lemma-52
+  lofat-to-string-inversion-lemma-52
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
+   (lofat-fs-p fat32-in-memory)
    (equal (take (+ (* 4 (fat-entry-count fat32-in-memory))
                    (- (* (bpb_numfats fat32-in-memory)
                          4 (fat-entry-count fat32-in-memory))))
@@ -9234,50 +9233,50 @@
           nil))
   :hints
   (("goal" :in-theory
-    (disable compliant-fat32-in-memoryp-correctness-1)
-    :use compliant-fat32-in-memoryp-correctness-1)))
+    (disable lofat-fs-p-correctness-1)
+    :use lofat-fs-p-correctness-1)))
 
 (defthm
-  fat32-in-memory-to-string-inversion
+  lofat-to-string-inversion
   (implies
-   (compliant-fat32-in-memoryp fat32-in-memory)
-   (equal (string-to-fat32-in-memory
+   (lofat-fs-p fat32-in-memory)
+   (equal (string-to-lofat
            fat32-in-memory
-           (fat32-in-memory-to-string fat32-in-memory))
+           (lofat-to-string fat32-in-memory))
           (mv fat32-in-memory 0)))
   :hints
   (("goal"
     :in-theory
-    (e/d (string-to-fat32-in-memory
+    (e/d (string-to-lofat
           painful-debugging-lemma-4
           painful-debugging-lemma-5
           by-slice-you-mean-the-whole-cake-2
-          fat32-in-memory-to-string-inversion-lemma-51
+          lofat-to-string-inversion-lemma-51
           cluster-size read-reserved-area
           update-data-region-alt)
-         (compliant-fat32-in-memoryp-correctness-1))
-    :use compliant-fat32-in-memoryp-correctness-1)))
+         (lofat-fs-p-correctness-1))
+    :use lofat-fs-p-correctness-1)))
 
 (defund-nx
-  disk-image-string-equiv (str1 str2)
+  eqfat (str1 str2)
   (b*
       (((mv fat32-in-memory1 error-code1)
-        (string-to-fat32-in-memory (create-fat32-in-memory)
+        (string-to-lofat (create-fat32-in-memory)
                                    str1))
        (good1 (and (stringp str1)
                    (equal error-code1 0)))
        ((mv fat32-in-memory2 error-code2)
-        (string-to-fat32-in-memory (create-fat32-in-memory)
+        (string-to-lofat (create-fat32-in-memory)
                                    str2))
        (good2 (and (stringp str2)
                    (equal error-code2 0)))
        ((unless (and good1 good2))
         (and (not good1) (not good2))))
-    (fat32-in-memory-equiv fat32-in-memory1 fat32-in-memory2)))
+    (lofat-equiv fat32-in-memory1 fat32-in-memory2)))
 
 (defequiv
-  disk-image-string-equiv
-  :hints (("goal" :in-theory (enable disk-image-string-equiv))))
+  eqfat
+  :hints (("goal" :in-theory (enable eqfat))))
 
 (encapsulate
   ()
@@ -9285,7 +9284,7 @@
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-1
+    lofat-fs-p-of-string-to-lofat-lemma-1
     (implies
      (and
       (<= 512
@@ -9325,7 +9324,7 @@
          0))))
 
   (defthm
-    compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-2
+    lofat-fs-p-of-string-to-lofat-lemma-2
     (implies
      (and (<= 512
               (combine16u (nth 12 (get-initial-bytes str))
@@ -9402,7 +9401,7 @@
                 (get-initial-bytes str))))))))))
 
   (defthm
-    compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-3
+    lofat-fs-p-of-string-to-lofat-lemma-3
     (implies
      (integerp (* 1/4
                   (combine16u (nth 12 (get-initial-bytes str))
@@ -9427,7 +9426,7 @@
                            (nth 20 (get-remaining-rsvdbyts str)))))))
 
   (defthm
-    compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-4
+    lofat-fs-p-of-string-to-lofat-lemma-4
     (implies
      (<= 1 (nth 0 (get-remaining-rsvdbyts str)))
      (not
@@ -9449,7 +9448,7 @@
        0))))
 
   (defthm
-    compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-6
+    lofat-fs-p-of-string-to-lofat-lemma-6
     (implies
      (and (<= 512
               (combine16u (nth 12 (get-initial-bytes str))
@@ -9462,15 +9461,15 @@
     :hints
     (("goal"
       :do-not-induct t
-      :in-theory (enable string-to-fat32-in-memory count-of-clusters
+      :in-theory (enable string-to-lofat count-of-clusters
                          cluster-size fat-entry-count
-                         compliant-fat32-in-memoryp
+                         lofat-fs-p
                          painful-debugging-lemma-1
                          painful-debugging-lemma-2
                          painful-debugging-lemma-3)))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-string-to-fat32-in-memory-lemma-5
+  lofat-fs-p-of-string-to-lofat-lemma-5
   (implies (and (<= (nfix i)
                     (data-region-length fat32-in-memory))
                 (cluster-listp (nth *data-regioni* fat32-in-memory)
@@ -9482,23 +9481,23 @@
                                      resize-data-region))))
 
 (defthm
-  compliant-fat32-in-memoryp-of-string-to-fat32-in-memory
+  lofat-fs-p-of-string-to-lofat
   (implies
    (and
     (stringp str)
     (equal
      (mv-nth 1
-             (string-to-fat32-in-memory fat32-in-memory str))
+             (string-to-lofat fat32-in-memory str))
      0)
     (fat32-in-memoryp fat32-in-memory))
-   (compliant-fat32-in-memoryp
+   (lofat-fs-p
     (mv-nth 0
-            (string-to-fat32-in-memory fat32-in-memory str))))
+            (string-to-lofat fat32-in-memory str))))
   :hints
-  (("goal" :in-theory (enable string-to-fat32-in-memory
+  (("goal" :in-theory (enable string-to-lofat
                               count-of-clusters cluster-size
                               fat-entry-count read-reserved-area
-                              compliant-fat32-in-memoryp
+                              lofat-fs-p
                               painful-debugging-lemma-1
                               painful-debugging-lemma-2
                               painful-debugging-lemma-3))))
@@ -9574,45 +9573,51 @@
     (equal (take pos (update-fat-aux fa-table1 str pos))
            (take pos (update-fat-aux fa-table2 str pos)))
     :hints
-    (("goal" :induct (induction-scheme fa-table1 fa-table2 pos str)
+    (("goal"
+      :induct (induction-scheme fa-table1 fa-table2 pos str)
       :in-theory (e/d (update-fat-aux)
-                      (equal-of-append-repeat))
+                      (equal-of-append-repeat
+                       (:rewrite append-of-take-and-cons)))
       :expand (update-fat-aux fa-table2 str pos))
      ("subgoal *1/2"
       :use
       ((:instance
         (:rewrite append-of-take-and-cons)
         (y nil)
-        (x (combine32u (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
+        (x (combine32u
+            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
         (l
          (update-fat-aux
           (update-nth
            (+ -1 pos)
-           (combine32u (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -4 (* 4 pos)) (explode str))))
+           (combine32u
+            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -4 (* 4 pos)) (explode str))))
            fa-table1)
           str (+ -1 pos)))
         (n (+ -1 pos)))
        (:instance
         (:rewrite append-of-take-and-cons)
         (y nil)
-        (x (combine32u (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
+        (x (combine32u
+            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -4 (* 4 pos)) (explode str)))))
         (l
          (update-fat-aux
           (update-nth
            (+ -1 pos)
-           (combine32u (char-code (nth (+ -1 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -2 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -3 (* 4 pos)) (explode str)))
-                       (char-code (nth (+ -4 (* 4 pos)) (explode str))))
+           (combine32u
+            (char-code (nth (+ -1 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -2 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -3 (* 4 pos)) (explode str)))
+            (char-code (nth (+ -4 (* 4 pos)) (explode str))))
            fa-table2)
           str (+ -1 pos)))
         (n (+ -1 pos))))))))
@@ -9649,36 +9654,36 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-1
+     string-to-lofat-ignore-lemma-1
      (implies
       (and
        (stringp str)
        (equal
         (mv-nth 1
-                (string-to-fat32-in-memory fat32-in-memory str))
+                (string-to-lofat fat32-in-memory str))
         0)
        (fat32-in-memoryp fat32-in-memory))
       (and
        (true-listp
         (mv-nth 0
-                (string-to-fat32-in-memory fat32-in-memory str)))
+                (string-to-lofat fat32-in-memory str)))
        (equal
         (len
          (mv-nth 0
-                 (string-to-fat32-in-memory fat32-in-memory str)))
+                 (string-to-lofat fat32-in-memory str)))
         30)))
      :hints
      (("goal"
        :in-theory
        (e/d
-        (compliant-fat32-in-memoryp fat32-in-memoryp)
-        (compliant-fat32-in-memoryp-of-string-to-fat32-in-memory))
+        (lofat-fs-p fat32-in-memoryp)
+        (lofat-fs-p-of-string-to-lofat))
        :use
-       compliant-fat32-in-memoryp-of-string-to-fat32-in-memory))))
+       lofat-fs-p-of-string-to-lofat))))
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-2
+     string-to-lofat-ignore-lemma-2
      (implies
       (and (stringp str)
            (natp len)
@@ -9723,7 +9728,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-3
+     string-to-lofat-ignore-lemma-3
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9740,7 +9745,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-4
+     string-to-lofat-ignore-lemma-4
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9759,7 +9764,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-5
+     string-to-lofat-ignore-lemma-5
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9778,7 +9783,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-6
+     string-to-lofat-ignore-lemma-6
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9797,7 +9802,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-7
+     string-to-lofat-ignore-lemma-7
      (implies
       (and
        (not
@@ -9821,7 +9826,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-8
+     string-to-lofat-ignore-lemma-8
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9840,7 +9845,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-9
+     string-to-lofat-ignore-lemma-9
      (implies
       (not
        (equal fat32-in-memory (create-fat32-in-memory)))
@@ -9857,7 +9862,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-10
+     string-to-lofat-ignore-lemma-10
      (< '0
         (binary-*
          (bpb_bytspersec (mv-nth 0
@@ -9869,7 +9874,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-11
+     string-to-lofat-ignore-lemma-11
      (implies
       (not (equal n *data-regioni*))
       (equal
@@ -9880,7 +9885,7 @@
      :hints (("goal" :in-theory (enable update-data-regioni)))))
 
   (local
-   (defthm string-to-fat32-in-memory-ignore-lemma-12
+   (defthm string-to-lofat-ignore-lemma-12
      (equal (nth *fati*
                  (mv-nth 0
                          (read-reserved-area fat32-in-memory str)))
@@ -9888,7 +9893,7 @@
      :hints (("Goal" :in-theory (enable read-reserved-area)) )))
 
   (defthmd
-    string-to-fat32-in-memory-ignore-lemma-13
+    string-to-lofat-ignore-lemma-13
     (implies (and (equal (data-region-length fat32-in-memory1)
                          (data-region-length fat32-in-memory2))
                   (equal (cluster-size fat32-in-memory1)
@@ -9902,23 +9907,23 @@
                          (update-data-region fat32-in-memory2 str len)))))
 
   (defthmd
-    string-to-fat32-in-memory-ignore-lemma-14
+    string-to-lofat-ignore-lemma-14
     (implies
-     (not (equal fat32-in-memory (create-fat32-in-memory)))
+     (case-split (not (equal fat32-in-memory (create-fat32-in-memory))))
      (equal (mv-nth 1
-                    (string-to-fat32-in-memory fat32-in-memory str))
+                    (string-to-lofat fat32-in-memory str))
             (mv-nth 1
-                    (string-to-fat32-in-memory (create-fat32-in-memory)
+                    (string-to-lofat (create-fat32-in-memory)
                                                str))))
     :hints
     (("goal"
       :in-theory
-      (enable string-to-fat32-in-memory read-reserved-area
+      (enable string-to-lofat read-reserved-area
               update-data-region-alt cluster-size
               count-of-clusters fat-entry-count)
       :use
       (:instance
-       (:rewrite string-to-fat32-in-memory-ignore-lemma-13)
+       (:rewrite string-to-lofat-ignore-lemma-13)
        (len
         (floor (+ (- (combine16u (nth 15 (get-initial-bytes str))
                                  (nth 14 (get-initial-bytes str))))
@@ -10246,7 +10251,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-16
+     string-to-lofat-ignore-lemma-16
      (equal
       (nth *fati*
            (update-fat fat32-in-memory str pos))
@@ -10259,7 +10264,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-17
+     string-to-lofat-ignore-lemma-17
      (implies
       (and
        (not (equal fat32-in-memory (create-fat32-in-memory)))
@@ -10458,7 +10463,7 @@
 
   (local
    (defthm
-     string-to-fat32-in-memory-ignore-lemma-15
+     string-to-lofat-ignore-lemma-15
      (implies
       (and
        (<= 512
@@ -10695,16 +10700,16 @@
                                     (get-remaining-rsvdbyts str))))))))))))
 
   (defthm
-    string-to-fat32-in-memory-ignore-lemma-18
+    string-to-lofat-ignore-lemma-18
     (implies
      (and (not (equal fat32-in-memory
                       (create-fat32-in-memory)))
           (fat32-in-memoryp fat32-in-memory)
           (equal (mv-nth 1
-                         (string-to-fat32-in-memory fat32-in-memory str))
+                         (string-to-lofat fat32-in-memory str))
                  0)
           (equal (mv-nth 1
-                         (string-to-fat32-in-memory (create-fat32-in-memory)
+                         (string-to-lofat (create-fat32-in-memory)
                                                     str))
                  0)
           (integerp n)
@@ -10712,10 +10717,10 @@
           (< n 30))
      (equal (nth n
                  (mv-nth 0
-                         (string-to-fat32-in-memory fat32-in-memory str)))
+                         (string-to-lofat fat32-in-memory str)))
             (nth n
                  (mv-nth 0
-                         (string-to-fat32-in-memory (create-fat32-in-memory)
+                         (string-to-lofat (create-fat32-in-memory)
                                                     str)))))
     :hints
     (("goal" :cases ((equal n *bs_jmpbooti*)
@@ -10748,7 +10753,7 @@
                      (equal n *bs_filsystypei*)
                      (equal n *fati*)
                      (equal n *data-regioni*))
-      :in-theory (e/d (string-to-fat32-in-memory read-reserved-area)
+      :in-theory (e/d (string-to-lofat read-reserved-area)
                       (;; accumulated-persistence suggests disabling a bunch of
                        ;; rules.
                        (:REWRITE NTH-WHEN-ATOM)
@@ -10763,7 +10768,7 @@
                        (:DEFINITION UPDATE-FAT))))))
 
   (defthm
-    string-to-fat32-in-memory-ignore
+    string-to-lofat-ignore
     (implies
      (and
       (stringp str)
@@ -10772,26 +10777,26 @@
       (fat32-in-memoryp fat32-in-memory)
       (equal
        (mv-nth 1
-               (string-to-fat32-in-memory (create-fat32-in-memory)
+               (string-to-lofat (create-fat32-in-memory)
                                           str))
        0))
-     (equal (string-to-fat32-in-memory fat32-in-memory str)
-            (string-to-fat32-in-memory (create-fat32-in-memory)
+     (equal (string-to-lofat fat32-in-memory str)
+            (string-to-lofat (create-fat32-in-memory)
                                        str)))
     :hints
     (("goal"
       :use
-      (string-to-fat32-in-memory-correctness-1
-       (:instance string-to-fat32-in-memory-correctness-1
+      (string-to-lofat-correctness-1
+       (:instance string-to-lofat-correctness-1
                   (fat32-in-memory (create-fat32-in-memory)))
-       string-to-fat32-in-memory-ignore-lemma-14)
+       string-to-lofat-ignore-lemma-14)
       :cases
       ((equal
         (mv-nth 0
-                (string-to-fat32-in-memory fat32-in-memory str))
+                (string-to-lofat fat32-in-memory str))
         (mv-nth
          0
-         (string-to-fat32-in-memory (create-fat32-in-memory)
+         (string-to-lofat (create-fat32-in-memory)
                                     str)))))
      ("subgoal 2''"
       :use
@@ -10808,12 +10813,12 @@
            (equal
             (mv-nth
              1
-             (string-to-fat32-in-memory fat32-in-memory str))
+             (string-to-lofat fat32-in-memory str))
             0)
            (equal
             (mv-nth
              1
-             (string-to-fat32-in-memory (create-fat32-in-memory)
+             (string-to-lofat (create-fat32-in-memory)
                                         str))
             0))))
         (equal-by-nths-lhs
@@ -10821,13 +10826,13 @@
           nil
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str))))
+           (string-to-lofat fat32-in-memory str))))
         (equal-by-nths-rhs
          (lambda
           nil
           (mv-nth
            0
-           (string-to-fat32-in-memory (create-fat32-in-memory)
+           (string-to-lofat (create-fat32-in-memory)
                                       str))))))))))
 
 (encapsulate
@@ -10835,91 +10840,91 @@
 
   (local
    (defthmd
-     string-to-fat32-in-memory-inversion-lemma-1
+     string-to-lofat-inversion-lemma-1
      (implies
       (and
        (stringp str)
        (fat32-in-memoryp fat32-in-memory)
        (equal
         (mv-nth 1
-                (string-to-fat32-in-memory (create-fat32-in-memory)
+                (string-to-lofat (create-fat32-in-memory)
                                            str))
         0))
-      (disk-image-string-equiv
-       (fat32-in-memory-to-string
+      (eqfat
+       (lofat-to-string
         (mv-nth 0
-                (string-to-fat32-in-memory fat32-in-memory str)))
+                (string-to-lofat fat32-in-memory str)))
        str))
      :hints
      (("goal"
        :in-theory
-       (e/d (disk-image-string-equiv)
+       (e/d (eqfat)
             (create-fat32-in-memory
-             (:rewrite string-to-fat32-in-memory-ignore)
-             (:rewrite fat32-in-memory-to-string-inversion)))
+             (:rewrite string-to-lofat-ignore)
+             (:rewrite lofat-to-string-inversion)))
        :cases ((equal fat32-in-memory
                       (create-fat32-in-memory)))
        :use
-       ((:rewrite string-to-fat32-in-memory-ignore)
+       ((:rewrite string-to-lofat-ignore)
         (:instance
-         (:rewrite fat32-in-memory-to-string-inversion)
+         (:rewrite lofat-to-string-inversion)
          (fat32-in-memory
           (mv-nth
            0
-           (string-to-fat32-in-memory (create-fat32-in-memory)
+           (string-to-lofat (create-fat32-in-memory)
                                       str))))
         (:instance
-         (:rewrite string-to-fat32-in-memory-ignore)
+         (:rewrite string-to-lofat-ignore)
          (str
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (string-to-fat32-in-memory (create-fat32-in-memory)
+            (string-to-lofat (create-fat32-in-memory)
                                        str))))
          (fat32-in-memory
           (mv-nth
            0
-           (string-to-fat32-in-memory (create-fat32-in-memory)
+           (string-to-lofat (create-fat32-in-memory)
                                       str))))
         (:instance
-         (:rewrite string-to-fat32-in-memory-ignore-lemma-14)
+         (:rewrite string-to-lofat-ignore-lemma-14)
          (str
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (string-to-fat32-in-memory (create-fat32-in-memory)
+            (string-to-lofat (create-fat32-in-memory)
                                        str))))
          (fat32-in-memory
           (mv-nth
            0
-           (string-to-fat32-in-memory (create-fat32-in-memory)
+           (string-to-lofat (create-fat32-in-memory)
                                       str)))))))))
 
   (defthm
-    string-to-fat32-in-memory-inversion
+    string-to-lofat-inversion
     (implies
      (and
       (stringp str)
       (fat32-in-memoryp fat32-in-memory)
       (equal
        (mv-nth 1
-               (string-to-fat32-in-memory fat32-in-memory str))
+               (string-to-lofat fat32-in-memory str))
        0))
-     (disk-image-string-equiv
-      (fat32-in-memory-to-string
+     (eqfat
+      (lofat-to-string
        (mv-nth 0
-               (string-to-fat32-in-memory fat32-in-memory str)))
+               (string-to-lofat fat32-in-memory str)))
       str))
     :hints
     (("goal" :in-theory (e/d nil (create-fat32-in-memory))
       :use
-      (string-to-fat32-in-memory-ignore-lemma-14
-       string-to-fat32-in-memory-inversion-lemma-1)))))
+      (string-to-lofat-ignore-lemma-14
+       string-to-lofat-inversion-lemma-1)))))
 
 (defthm
   m1-fs-to-string-inversion
   (implies
-   (and (compliant-fat32-in-memoryp fat32-in-memory)
+   (and (lofat-fs-p fat32-in-memory)
         (m1-file-alist-p fs)
         (m1-bounded-file-alist-p fs)
         (m1-file-no-dups-p fs)
@@ -10927,18 +10932,18 @@
             (max-entry-count fat32-in-memory)))
    (b*
        (((mv fat32-in-memory error-code)
-         (m1-fs-to-fat32-in-memory fat32-in-memory fs)))
+         (hifat-to-lofat fat32-in-memory fs)))
      (implies
       (zp error-code)
-      (m1-dir-equiv
+      (hifat-equiv
        (mv-nth
         0
-        (fat32-in-memory-to-m1-fs
+        (lofat-to-hifat
          (mv-nth
           0
-          (string-to-fat32-in-memory
+          (string-to-lofat
            fat32-in-memory
-           (fat32-in-memory-to-string fat32-in-memory)))))
+           (lofat-to-string fat32-in-memory)))))
        fs)))))
 
 (encapsulate
@@ -10954,133 +10959,133 @@
        (equal
         (mv-nth
          1
-         (string-to-fat32-in-memory
+         (string-to-lofat
           (create-fat32-in-memory)
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (m1-fs-to-fat32-in-memory
+            (hifat-to-lofat
              (mv-nth
               0
-              (string-to-fat32-in-memory fat32-in-memory str))
+              (string-to-lofat fat32-in-memory str))
              (mv-nth 0
-                     (fat32-in-memory-to-m1-fs
+                     (lofat-to-hifat
                       (mv-nth 0
-                              (string-to-fat32-in-memory
+                              (string-to-lofat
                                fat32-in-memory str)))))))))
         0)
        (equal
         (mv-nth 1
-                (string-to-fat32-in-memory (create-fat32-in-memory)
+                (string-to-lofat (create-fat32-in-memory)
                                            str))
         0)
        (equal
         (mv-nth
          1
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str))))
+           (string-to-lofat fat32-in-memory str))))
         0)
        (m1-bounded-file-alist-p
         (mv-nth
          0
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str)))))
+           (string-to-lofat fat32-in-memory str)))))
        (m1-file-no-dups-p
         (mv-nth
          0
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str)))))
+           (string-to-lofat fat32-in-memory str)))))
        (equal
         (mv-nth
          1
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           (mv-nth 0
-                  (string-to-fat32-in-memory fat32-in-memory str))
+                  (string-to-lofat fat32-in-memory str))
           (mv-nth
            0
-           (fat32-in-memory-to-m1-fs
+           (lofat-to-hifat
             (mv-nth
              0
-             (string-to-fat32-in-memory fat32-in-memory str))))))
+             (string-to-lofat fat32-in-memory str))))))
         0))
-      (disk-image-string-equiv
-       (fat32-in-memory-to-string
+      (eqfat
+       (lofat-to-string
         (mv-nth
          0
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           (mv-nth 0
-                  (string-to-fat32-in-memory fat32-in-memory str))
+                  (string-to-lofat fat32-in-memory str))
           (mv-nth
            0
-           (fat32-in-memory-to-m1-fs
+           (lofat-to-hifat
             (mv-nth
              0
-             (string-to-fat32-in-memory fat32-in-memory str)))))))
+             (string-to-lofat fat32-in-memory str)))))))
        str))
      :hints
      (("goal"
        :in-theory
-       (e/d (disk-image-string-equiv)
-            ((:rewrite fat32-in-memory-to-string-inversion)
-             (:rewrite string-to-fat32-in-memory-ignore)))
+       (e/d (eqfat)
+            ((:rewrite lofat-to-string-inversion)
+             (:rewrite string-to-lofat-ignore)))
        :use
        ((:instance
-         (:rewrite fat32-in-memory-to-string-inversion)
+         (:rewrite lofat-to-string-inversion)
          (fat32-in-memory
           (mv-nth
            0
-           (m1-fs-to-fat32-in-memory
+           (hifat-to-lofat
             (mv-nth
              0
-             (string-to-fat32-in-memory (create-fat32-in-memory)
+             (string-to-lofat (create-fat32-in-memory)
                                         str))
             (mv-nth
              0
-             (fat32-in-memory-to-m1-fs
+             (lofat-to-hifat
               (mv-nth
                0
-               (string-to-fat32-in-memory (create-fat32-in-memory)
+               (string-to-lofat (create-fat32-in-memory)
                                           str))))))))
         (:instance
-         (:rewrite string-to-fat32-in-memory-ignore)
+         (:rewrite string-to-lofat-ignore)
          (str
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (m1-fs-to-fat32-in-memory
+            (hifat-to-lofat
              (mv-nth
               0
-              (string-to-fat32-in-memory (create-fat32-in-memory)
+              (string-to-lofat (create-fat32-in-memory)
                                          str))
              (mv-nth
               0
-              (fat32-in-memory-to-m1-fs
+              (lofat-to-hifat
                (mv-nth
                 0
-                (string-to-fat32-in-memory (create-fat32-in-memory)
+                (string-to-lofat (create-fat32-in-memory)
                                            str))))))))
          (fat32-in-memory
           (mv-nth
            0
-           (m1-fs-to-fat32-in-memory
+           (hifat-to-lofat
             (mv-nth
              0
-             (string-to-fat32-in-memory (create-fat32-in-memory)
+             (string-to-lofat (create-fat32-in-memory)
                                         str))
             (mv-nth
              0
-             (fat32-in-memory-to-m1-fs
+             (lofat-to-hifat
               (mv-nth
                0
-               (string-to-fat32-in-memory (create-fat32-in-memory)
+               (string-to-lofat (create-fat32-in-memory)
                                           str))))))))
-        (:rewrite string-to-fat32-in-memory-ignore))
+        (:rewrite string-to-lofat-ignore))
        :cases ((equal fat32-in-memory
                       (create-fat32-in-memory)))))))
 
@@ -11094,116 +11099,116 @@
        (equal
         (mv-nth
          1
-         (string-to-fat32-in-memory
+         (string-to-lofat
           (mv-nth
            0
-           (m1-fs-to-fat32-in-memory
+           (hifat-to-lofat
             (mv-nth
              0
-             (string-to-fat32-in-memory fat32-in-memory str))
+             (string-to-lofat fat32-in-memory str))
             (mv-nth 0
-                    (fat32-in-memory-to-m1-fs
+                    (lofat-to-hifat
                      (mv-nth 0
-                             (string-to-fat32-in-memory
+                             (string-to-lofat
                               fat32-in-memory str))))))
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (m1-fs-to-fat32-in-memory
+            (hifat-to-lofat
              (mv-nth
               0
-              (string-to-fat32-in-memory fat32-in-memory str))
+              (string-to-lofat fat32-in-memory str))
              (mv-nth 0
-                     (fat32-in-memory-to-m1-fs
+                     (lofat-to-hifat
                       (mv-nth 0
-                              (string-to-fat32-in-memory
+                              (string-to-lofat
                                fat32-in-memory str)))))))))
         0)
        (equal
         (mv-nth 1
-                (string-to-fat32-in-memory fat32-in-memory
+                (string-to-lofat fat32-in-memory
                                            str))
         0)
        (equal
         (mv-nth
          1
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str))))
+           (string-to-lofat fat32-in-memory str))))
         0)
        (m1-bounded-file-alist-p
         (mv-nth
          0
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str)))))
+           (string-to-lofat fat32-in-memory str)))))
        (m1-file-no-dups-p
         (mv-nth
          0
-         (fat32-in-memory-to-m1-fs
+         (lofat-to-hifat
           (mv-nth
            0
-           (string-to-fat32-in-memory fat32-in-memory str)))))
+           (string-to-lofat fat32-in-memory str)))))
        (equal
         (mv-nth
          1
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           (mv-nth 0
-                  (string-to-fat32-in-memory fat32-in-memory str))
+                  (string-to-lofat fat32-in-memory str))
           (mv-nth
            0
-           (fat32-in-memory-to-m1-fs
+           (lofat-to-hifat
             (mv-nth
              0
-             (string-to-fat32-in-memory fat32-in-memory str))))))
+             (string-to-lofat fat32-in-memory str))))))
         0))
-      (disk-image-string-equiv
-       (fat32-in-memory-to-string
+      (eqfat
+       (lofat-to-string
         (mv-nth
          0
-         (m1-fs-to-fat32-in-memory
+         (hifat-to-lofat
           (mv-nth 0
-                  (string-to-fat32-in-memory fat32-in-memory str))
+                  (string-to-lofat fat32-in-memory str))
           (mv-nth
            0
-           (fat32-in-memory-to-m1-fs
+           (lofat-to-hifat
             (mv-nth
              0
-             (string-to-fat32-in-memory fat32-in-memory str)))))))
+             (string-to-lofat fat32-in-memory str)))))))
        str))
      :hints
      (("goal"
        :use
        (string-to-m1-fs-inversion-lemma-1
-        string-to-fat32-in-memory-ignore-lemma-14
+        string-to-lofat-ignore-lemma-14
         (:instance
-         (:rewrite string-to-fat32-in-memory-ignore-lemma-14)
+         (:rewrite string-to-lofat-ignore-lemma-14)
          (str
-          (fat32-in-memory-to-string
+          (lofat-to-string
            (mv-nth
             0
-            (m1-fs-to-fat32-in-memory
+            (hifat-to-lofat
              (mv-nth 0
-                     (string-to-fat32-in-memory fat32-in-memory str))
+                     (string-to-lofat fat32-in-memory str))
              (mv-nth 0
-                     (fat32-in-memory-to-m1-fs
+                     (lofat-to-hifat
                       (mv-nth 0
-                              (string-to-fat32-in-memory
+                              (string-to-lofat
                                fat32-in-memory str))))))))
          (fat32-in-memory
           (mv-nth
            0
-           (m1-fs-to-fat32-in-memory
+           (hifat-to-lofat
             (mv-nth 0
-                    (string-to-fat32-in-memory fat32-in-memory str))
+                    (string-to-lofat fat32-in-memory str))
             (mv-nth
              0
-             (fat32-in-memory-to-m1-fs
+             (lofat-to-hifat
               (mv-nth
                0
-               (string-to-fat32-in-memory fat32-in-memory str)))))))))))))
+               (string-to-lofat fat32-in-memory str)))))))))))))
 
   (defthm
     string-to-m1-fs-inversion
@@ -11212,9 +11217,9 @@
           (fat32-in-memoryp fat32-in-memory))
      (b*
          (((mv fat32-in-memory error-code1)
-           (string-to-fat32-in-memory fat32-in-memory str))
+           (string-to-lofat fat32-in-memory str))
           ((mv fs error-code2)
-           (fat32-in-memory-to-m1-fs fat32-in-memory)))
+           (lofat-to-hifat fat32-in-memory)))
        (implies
         (and
          (equal error-code1 0)
@@ -11223,33 +11228,33 @@
          (m1-file-no-dups-p fs)
          (equal
           (mv-nth 1
-                  (m1-fs-to-fat32-in-memory fat32-in-memory fs))
+                  (hifat-to-lofat fat32-in-memory fs))
           0))
-        (disk-image-string-equiv
-         (fat32-in-memory-to-string
+        (eqfat
+         (lofat-to-string
           (mv-nth 0
-                  (m1-fs-to-fat32-in-memory fat32-in-memory fs)))
+                  (hifat-to-lofat fat32-in-memory fs)))
          str))))
     :hints
     (("goal"
       :in-theory
-      (disable (:rewrite fat32-in-memory-to-string-inversion))
+      (disable (:rewrite lofat-to-string-inversion))
       :use
       (string-to-m1-fs-inversion-lemma-2
        (:instance
-        (:rewrite fat32-in-memory-to-string-inversion)
+        (:rewrite lofat-to-string-inversion)
         (fat32-in-memory
          (mv-nth
           0
-          (m1-fs-to-fat32-in-memory
+          (hifat-to-lofat
            (mv-nth
             0
-            (string-to-fat32-in-memory fat32-in-memory str))
+            (string-to-lofat fat32-in-memory str))
            (mv-nth
             0
-            (fat32-in-memory-to-m1-fs
+            (lofat-to-hifat
              (mv-nth 0
-                     (string-to-fat32-in-memory
+                     (string-to-lofat
                       fat32-in-memory str)))))))))))))
 
 #|
@@ -11259,49 +11264,49 @@ Some (rather awful) testing forms are
   (get-dir-filenames fat32-in-memory contents *ms-max-dir-size*))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*)))
-  (fat32-in-memory-to-m1-fs fat32-in-memory))
+  (lofat-to-hifat fat32-in-memory))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory)))
-  (m1-open (list "INITRD  IMG")
+     (fs (lofat-to-hifat fat32-in-memory)))
+  (hifat-open (list "INITRD  IMG")
            fs nil nil))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil)))
-  (m1-pread 0 6 49 fs fd-table file-table))
+  (hifat-pread 0 6 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil)))
-  (m1-pwrite 0 "ornery" 49 fs fd-table file-table))
+  (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil))
      ((mv fs & &)
-      (m1-pwrite 0 "ornery" 49 fs fd-table file-table))
+      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
      ((mv fat32-in-memory dir-ent-list)
-      (m1-fs-to-fat32-in-memory-helper fat32-in-memory fs)))
+      (hifat-to-lofat-helper fat32-in-memory fs)))
   (mv fat32-in-memory dir-ent-list))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     (fs (lofat-to-hifat fat32-in-memory))
      ((mv fd-table file-table & &)
-      (m1-open (list "INITRD  IMG")
+      (hifat-open (list "INITRD  IMG")
                fs nil nil))
      ((mv fs & &)
-      (m1-pwrite 0 "ornery" 49 fs fd-table file-table)))
-  (m1-fs-to-fat32-in-memory fat32-in-memory fs))
+      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table)))
+  (hifat-to-lofat fat32-in-memory fs))
 (time$
  (b*
-     ((str (fat32-in-memory-to-string
+     ((str (lofat-to-string
             fat32-in-memory))
       ((unless (and (stringp str)
                     (>= (length str) *initialbytcnt*)))
@@ -11355,20 +11360,99 @@ Some (rather awful) testing forms are
        (open-output-channel "test/disk2.raw" :character state))
       (state
          (princ$
-          (fat32-in-memory-to-string fat32-in-memory)
+          (lofat-to-string fat32-in-memory)
           channel state))
       (state
        (close-output-channel channel state)))
    (mv fat32-in-memory state)))
 (b* (((mv dir-contents &)
       (get-clusterchain-contents fat32-in-memory 2 *ms-max-dir-size*))
-     (fs (fat32-in-memory-to-m1-fs fat32-in-memory))
+     (fs (lofat-to-hifat fat32-in-memory))
      ((mv fs & &)
-      (m1-mkdir fs (list "" "TMP        "))))
-  (m1-fs-to-fat32-in-memory fat32-in-memory fs))
+      (hifat-mkdir fs (list "" "TMP        "))))
+  (hifat-to-lofat fat32-in-memory fs))
 |#
 
-(defun m2-statfs (fat32-in-memory)
+(defund lofat-file-contents-p (contents)
+  (declare (xargs :guard t))
+  (or (and (stringp contents)
+           (unsigned-byte-p 32 (length contents)))
+      (dir-ent-list-p contents)))
+
+(defund lofat-file-contents-fix (contents)
+  (declare (xargs :guard t))
+  (if (lofat-file-contents-p contents)
+      contents
+    ""))
+
+(defthm
+  lofat-file-contents-fix-of-lofat-file-contents-fix
+  (equal (lofat-file-contents-fix (lofat-file-contents-fix x))
+         (lofat-file-contents-fix x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix))))
+
+(fty::deffixtype lofat-file-contents
+                 :pred lofat-file-contents-p
+                 :fix lofat-file-contents-fix
+                 :equiv lofat-file-contents-equiv
+                 :define t)
+
+(defthm
+  lofat-file-contents-p-of-lofat-file-contents-fix
+  (lofat-file-contents-p (lofat-file-contents-fix x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix
+                                     lofat-file-contents-p))))
+
+(defthm
+  lofat-file-contents-fix-when-lofat-file-contents-p
+  (implies (lofat-file-contents-p x)
+           (equal (lofat-file-contents-fix x) x))
+  :hints (("goal" :in-theory (enable lofat-file-contents-fix
+                                     lofat-file-contents-p))))
+
+(defthm
+  lofat-file-contents-p-when-stringp
+  (implies (stringp contents)
+           (equal (lofat-file-contents-p contents)
+                  (unsigned-byte-p 32 (length contents))))
+  :hints (("goal" :in-theory (enable lofat-file-contents-p))))
+
+(defthm lofat-file-contents-p-when-dir-ent-listp
+  (implies (dir-ent-list-p contents)
+           (lofat-file-contents-p contents))
+  :hints (("goal" :in-theory (enable lofat-file-contents-p))))
+
+(fty::defprod
+ lofat-file
+ ((dir-ent dir-ent-p :default (dir-ent-fix nil))
+  (contents lofat-file-contents-p :default (lofat-file-contents-fix nil))))
+
+(defund lofat-regular-file-p (file)
+  (declare (xargs :guard t))
+  (and (lofat-file-p file)
+       (stringp (lofat-file->contents file))
+       (unsigned-byte-p 32 (length (lofat-file->contents file)))))
+
+(defund lofat-directory-file-p (file)
+  (declare (xargs :guard t))
+  (and (lofat-file-p file)
+       (dir-ent-list-p (lofat-file->contents file))))
+
+(defthm
+  lofat-regular-file-p-correctness-1
+  (implies
+   (dir-ent-list-p contents)
+   (not (lofat-regular-file-p (lofat-file dir-ent contents))))
+  :hints (("goal" :in-theory (enable lofat-regular-file-p))))
+
+(defthm
+  lofat-directory-file-p-correctness-1
+  (implies
+   (stringp contents)
+   (not (lofat-directory-file-p (lofat-file dir-ent contents))))
+  :hints (("goal" :in-theory (enable lofat-directory-file-p))))
+
+(defun lofat-statfs (fat32-in-memory)
   (declare (xargs :stobjs (fat32-in-memory)
                   :verify-guards nil))
   (b*
@@ -11387,3 +11471,562 @@ Some (rather awful) testing forms are
      :f_ffree 0
      :f_fsid 0
      :f_namelen 72)))
+
+(defun
+  find-dir-ent (dir-ent-list filename)
+  (declare (xargs :guard (and (fat32-filename-p filename)
+                              (dir-ent-list-p dir-ent-list))))
+  (b* (((when (atom dir-ent-list))
+        (mv (dir-ent-fix nil) *enoent*))
+       (dir-ent (mbe :exec (car dir-ent-list)
+                     :logic (dir-ent-fix (car dir-ent-list))))
+       ((when (equal (dir-ent-filename dir-ent)
+                     filename))
+        (mv dir-ent 0)))
+    (find-dir-ent (cdr dir-ent-list)
+                  filename)))
+
+(defthm
+  find-dir-ent-correctness-1
+  (and
+   (dir-ent-p (mv-nth 0 (find-dir-ent dir-ent-list filename)))
+   (natp (mv-nth 1
+                 (find-dir-ent dir-ent-list filename))))
+  :hints (("goal" :induct (find-dir-ent dir-ent-list filename)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (dir-ent-p (mv-nth 0
+                       (find-dir-ent dir-ent-list filename))))
+   (:type-prescription
+    :corollary
+    (natp (mv-nth 1
+                  (find-dir-ent dir-ent-list filename))))))
+
+(defthm
+  find-dir-ent-correctness-2
+  (implies
+   (not (equal (mv-nth 1 (find-dir-ent dir-ent-list filename))
+               0))
+   (equal (mv-nth 1 (find-dir-ent dir-ent-list filename))
+          *enoent*)))
+
+(defun lofat-find-file-by-pathname (fat32-in-memory dir-ent-list pathname)
+  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname)
+                              (useful-dir-ent-list-p dir-ent-list))
+                  :measure (acl2-count pathname)
+                  :stobjs fat32-in-memory))
+  (b* (((unless (consp pathname))
+        (mv (make-lofat-file) *enoent*))
+       (name (fat32-filename-fix (car pathname)))
+       ((mv dir-ent error-code) (find-dir-ent dir-ent-list name))
+       ((unless (equal error-code 0))
+        (mv (make-lofat-file) error-code))
+       (first-cluster (dir-ent-first-cluster dir-ent))
+       (directory-p
+        (dir-ent-directory-p dir-ent))
+       (length (if directory-p
+                   *ms-max-dir-size*
+                 (dir-ent-file-size dir-ent)))
+       ((mv contents &)
+        (if
+            (or (< first-cluster
+                   *ms-first-data-cluster*)
+                (>=
+                 first-cluster
+                 (+ (count-of-clusters fat32-in-memory)
+                    *ms-first-data-cluster*)))
+            (mv "" 0)
+          (get-clusterchain-contents fat32-in-memory
+                                     first-cluster
+                                     length)))
+       ((unless directory-p)
+        (if (consp (cdr pathname))
+            (mv (make-lofat-file) *enotdir*)
+          (mv (make-lofat-file :dir-ent dir-ent :contents contents) 0)))
+       ((when (atom (cdr pathname)))
+        (mv
+         (make-lofat-file :dir-ent dir-ent
+                          :contents (make-dir-ent-list
+                                     (string=>nats contents)))
+         0)))
+    (lofat-find-file-by-pathname
+     fat32-in-memory
+     (make-dir-ent-list (string=>nats contents))
+     (cdr pathname))))
+
+;; The dir-ent-list-p hypothesis is only there because
+;; lofat-to-hifat-helper doesn't fix its arguments. Should it?
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-1
+  (implies
+   (and (dir-ent-list-p dir-ent-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit))
+               0))
+   (iff
+    (consp
+     (assoc-equal name
+                  (mv-nth 0
+                          (lofat-to-hifat-helper
+                           fat32-in-memory
+                           dir-ent-list entry-limit))))
+    (equal (mv-nth 1 (find-dir-ent dir-ent-list name))
+           0)))
+  :hints
+  (("goal"
+    :in-theory (enable lofat-to-hifat-helper))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-2
+  (implies
+   (and
+    (useful-dir-ent-list-p dir-ent-list)
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper fat32-in-memory
+                                                    dir-ent-list entry-limit))
+           0))
+   (equal
+    (m1-file->dir-ent
+     (cdr
+      (assoc-equal
+       name
+       (mv-nth 0
+               (lofat-to-hifat-helper fat32-in-memory
+                                                dir-ent-list entry-limit)))))
+    (mv-nth 0 (find-dir-ent dir-ent-list name))))
+  :hints (("goal" :in-theory (enable lofat-to-hifat-helper))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-3
+  (implies
+   (and
+    (equal (mv-nth 1 (find-dir-ent dir-ent-list name))
+           0)
+    (useful-dir-ent-list-p dir-ent-list)
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper
+                    fat32-in-memory
+                    dir-ent-list entry-limit))
+           0)
+    (not (dir-ent-directory-p
+          (mv-nth 0 (find-dir-ent dir-ent-list name))))
+    (or (< (dir-ent-first-cluster
+            (mv-nth 0 (find-dir-ent dir-ent-list name)))
+           2)
+        (<= (+ 2 (count-of-clusters fat32-in-memory))
+            (dir-ent-first-cluster
+             (mv-nth 0 (find-dir-ent dir-ent-list name))))))
+   (equal
+    (cdr (assoc-equal name
+                      (mv-nth 0
+                              (lofat-to-hifat-helper
+                               fat32-in-memory
+                               dir-ent-list entry-limit))))
+    (make-m1-file
+     :contents ""
+     :dir-ent (mv-nth 0 (find-dir-ent dir-ent-list name)))))
+  :hints
+  (("goal"
+    :in-theory (enable lofat-to-hifat-helper))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-4
+  (implies
+   (and (lofat-fs-p fat32-in-memory)
+        (useful-dir-ent-list-p dir-ent-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit))
+               0)
+        (not (dir-ent-directory-p
+              (mv-nth 0 (find-dir-ent dir-ent-list name))))
+        (<= 2
+            (dir-ent-first-cluster
+             (mv-nth 0 (find-dir-ent dir-ent-list name))))
+        (< (dir-ent-first-cluster
+            (mv-nth 0 (find-dir-ent dir-ent-list name)))
+           (+ 2 (count-of-clusters fat32-in-memory))))
+   (equal
+    (cdr (assoc-equal name
+                      (mv-nth 0
+                              (lofat-to-hifat-helper
+                               fat32-in-memory
+                               dir-ent-list entry-limit))))
+    (make-m1-file
+     :contents
+     (mv-nth
+      0
+      (get-clusterchain-contents
+       fat32-in-memory
+       (dir-ent-first-cluster
+        (mv-nth 0 (find-dir-ent dir-ent-list name)))
+       (dir-ent-file-size
+        (mv-nth 0 (find-dir-ent dir-ent-list name)))))
+     :dir-ent (mv-nth 0 (find-dir-ent dir-ent-list name)))))
+  :hints
+  (("goal"
+    :in-theory (enable lofat-to-hifat-helper))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-5
+  (implies
+   (and (useful-dir-ent-list-p dir-ent-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit))
+               0))
+   (iff
+    (m1-directory-file-p
+     (cdr
+      (assoc-equal name
+                   (mv-nth 0
+                           (lofat-to-hifat-helper
+                            fat32-in-memory
+                            dir-ent-list entry-limit)))))
+    (dir-ent-directory-p
+     (mv-nth 0
+             (find-dir-ent dir-ent-list name)))))
+  :hints
+  (("goal" :in-theory (enable lofat-to-hifat-helper
+                              m1-directory-file-p))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-6
+  (implies
+   (and (dir-ent-directory-p
+         (mv-nth 0 (find-dir-ent dir-ent-list name)))
+        (<= 2
+            (dir-ent-first-cluster
+             (mv-nth 0 (find-dir-ent dir-ent-list name))))
+        (< (dir-ent-first-cluster
+            (mv-nth 0 (find-dir-ent dir-ent-list name)))
+           (+ 2 (count-of-clusters fat32-in-memory)))
+        (useful-dir-ent-list-p dir-ent-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit))
+               0))
+   (equal
+    (mv-nth
+     3
+     (lofat-to-hifat-helper
+      fat32-in-memory
+      (make-dir-ent-list
+       (string=>nats
+        (mv-nth
+         0
+         (get-clusterchain-contents
+          fat32-in-memory
+          (dir-ent-first-cluster
+           (mv-nth 0 (find-dir-ent dir-ent-list name)))
+          2097152))))
+      entry-limit))
+    0))
+  :hints
+  (("goal" :in-theory
+    (enable lofat-to-hifat-helper-correctness-4
+            lofat-to-hifat-helper))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-7
+  (implies
+   (and (dir-ent-directory-p
+         (mv-nth 0 (find-dir-ent dir-ent-list name)))
+        (<= 2
+            (dir-ent-first-cluster
+             (mv-nth 0 (find-dir-ent dir-ent-list name))))
+        (< (dir-ent-first-cluster
+            (mv-nth 0 (find-dir-ent dir-ent-list name)))
+           (+ 2 (count-of-clusters fat32-in-memory)))
+        (useful-dir-ent-list-p dir-ent-list)
+        (equal (mv-nth 3
+                       (lofat-to-hifat-helper
+                        fat32-in-memory
+                        dir-ent-list entry-limit))
+               0))
+   (equal
+    (cdr (assoc-equal name
+                      (mv-nth 0
+                              (lofat-to-hifat-helper
+                               fat32-in-memory
+                               dir-ent-list entry-limit))))
+    (make-m1-file
+     :dir-ent (mv-nth 0 (find-dir-ent dir-ent-list name))
+     :contents
+     (mv-nth
+      0
+      (lofat-to-hifat-helper
+       fat32-in-memory
+       (make-dir-ent-list
+        (string=>nats
+         (mv-nth
+          0
+          (get-clusterchain-contents
+           fat32-in-memory
+           (dir-ent-first-cluster
+            (mv-nth 0 (find-dir-ent dir-ent-list name)))
+           2097152))))
+       entry-limit)))))
+  :hints
+  (("goal"
+    :in-theory
+    (enable lofat-to-hifat-helper-correctness-4)
+    :induct (find-dir-ent dir-ent-list name)
+    :expand (lofat-to-hifat-helper
+             fat32-in-memory
+             dir-ent-list entry-limit))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1-lemma-8
+  (implies
+   (and
+    (dir-ent-directory-p
+     (mv-nth 0 (find-dir-ent dir-ent-list name)))
+    (not
+     (and (<= 2
+              (dir-ent-first-cluster
+               (mv-nth 0 (find-dir-ent dir-ent-list name))))
+          (< (dir-ent-first-cluster
+              (mv-nth 0 (find-dir-ent dir-ent-list name)))
+             (+ 2
+                (count-of-clusters fat32-in-memory)))))
+    (useful-dir-ent-list-p dir-ent-list)
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper
+                    fat32-in-memory
+                    dir-ent-list entry-limit))
+           0))
+   (equal
+    (cdr (assoc-equal name
+                      (mv-nth 0
+                              (lofat-to-hifat-helper
+                               fat32-in-memory
+                               dir-ent-list entry-limit))))
+    (make-m1-file
+     :dir-ent (mv-nth 0 (find-dir-ent dir-ent-list name))
+     :contents nil)))
+  :hints
+  (("goal"
+    :in-theory
+    (enable lofat-to-hifat-helper-correctness-4)
+    :induct (find-dir-ent dir-ent-list name)
+    :expand
+    ((lofat-to-hifat-helper fat32-in-memory
+                                      dir-ent-list entry-limit)
+     (lofat-to-hifat-helper
+      fat32-in-memory
+      nil (+ -1 entry-limit))))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-1
+  (b*
+      (((mv file error-code)
+        (find-file-by-pathname
+         (mv-nth 0
+                 (lofat-to-hifat-helper
+                  fat32-in-memory
+                  dir-ent-list entry-limit))
+         pathname)))
+    (implies
+     (and
+      (lofat-fs-p fat32-in-memory)
+      (useful-dir-ent-list-p dir-ent-list)
+      (equal (mv-nth 3
+                     (lofat-to-hifat-helper
+                      fat32-in-memory
+                      dir-ent-list entry-limit))
+             0)
+      (lofat-regular-file-p
+       (mv-nth
+        0
+        (lofat-find-file-by-pathname fat32-in-memory
+                                     dir-ent-list pathname))))
+     (equal (lofat-find-file-by-pathname
+             fat32-in-memory dir-ent-list pathname)
+            (mv (make-lofat-file :contents (m1-file->contents file)
+                                 :dir-ent (m1-file->dir-ent file))
+                error-code)))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-2
+  (b*
+      (((mv file error-code)
+        (find-file-by-pathname
+         (mv-nth 0
+                 (lofat-to-hifat-helper
+                  fat32-in-memory
+                  dir-ent-list entry-limit))
+         pathname)))
+    (implies
+     (and
+      (lofat-fs-p fat32-in-memory)
+      (useful-dir-ent-list-p dir-ent-list)
+      (equal (mv-nth 3
+                     (lofat-to-hifat-helper
+                      fat32-in-memory
+                      dir-ent-list entry-limit))
+             0)
+      (lofat-directory-file-p
+       (mv-nth
+        0
+        (lofat-find-file-by-pathname fat32-in-memory
+                                     dir-ent-list pathname))))
+     (and
+      (equal
+       (lofat-file->dir-ent
+        (mv-nth 0
+                (lofat-find-file-by-pathname
+                 fat32-in-memory dir-ent-list pathname)))
+       (m1-file->dir-ent file))
+      (equal
+       (mv-nth
+        0
+        (lofat-to-hifat-helper
+         fat32-in-memory
+         (lofat-file->contents
+          (mv-nth 0
+                  (lofat-find-file-by-pathname
+                   fat32-in-memory dir-ent-list pathname)))
+         entry-limit))
+       (m1-file->contents file))
+      (equal
+       (mv-nth 1
+               (lofat-find-file-by-pathname
+                fat32-in-memory dir-ent-list pathname))
+       error-code))))
+  :hints
+  (("goal"
+    :induct
+    (mv (mv-nth 0
+                (find-file-by-pathname
+                 (mv-nth 0
+                         (lofat-to-hifat-helper
+                          fat32-in-memory
+                          dir-ent-list entry-limit))
+                 pathname))
+        (mv-nth 0
+                (lofat-find-file-by-pathname
+                 fat32-in-memory dir-ent-list pathname)))
+    :expand (lofat-to-hifat-helper
+             fat32-in-memory nil entry-limit))))
+
+(defthm
+  lofat-find-file-by-pathname-correctness-3
+  (lofat-file-p
+   (mv-nth 0
+           (lofat-find-file-by-pathname
+            fat32-in-memory dir-ent-list pathname))))
+
+;; This needs some revision... obviously, we don't want to be staring into the
+;; computation to get the root directory's directory entries here.
+(defun lofat-open (pathname fat32-in-memory fd-table file-table)
+  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname)
+                              (fd-table-p fd-table)
+                              (file-table-p file-table))
+                  :stobjs fat32-in-memory))
+  (b*
+      ((fd-table (fd-table-fix fd-table))
+       (file-table (file-table-fix file-table))
+       ((mv root-contents &)
+        (get-clusterchain-contents
+         fat32-in-memory
+         (fat32-entry-mask (bpb_rootclus fat32-in-memory))
+         2097152))
+       ((mv & errno)
+        (lofat-find-file-by-pathname
+         fat32-in-memory
+         (make-dir-ent-list
+          (string=>nats
+           root-contents))
+         pathname))
+       ((unless (equal errno 0))
+        (mv fd-table file-table -1 errno))
+       (file-table-index
+        (find-new-index (strip-cars file-table)))
+       (fd-table-index
+        (find-new-index (strip-cars fd-table))))
+    (mv
+     (cons
+      (cons fd-table-index file-table-index)
+      fd-table)
+     (cons
+      (cons file-table-index (make-file-table-element :pos 0 :fid pathname))
+      file-table)
+     fd-table-index 0)))
+
+;; This needs some revision... obviously, we don't want to be staring into the
+;; computation to get the root directory's directory entries here.
+(defun
+  lofat-pread
+  (fd count offset fat32-in-memory fd-table file-table)
+  (declare (xargs :guard (and (natp fd)
+                              (natp count)
+                              (natp offset)
+                              (fd-table-p fd-table)
+                              (file-table-p file-table)
+                              (lofat-fs-p fat32-in-memory))
+                  :stobjs fat32-in-memory))
+  (b*
+      ((fd-table-entry (assoc-equal fd fd-table))
+       ((unless (consp fd-table-entry))
+        (mv "" -1 *ebadf*))
+       (file-table-entry (assoc-equal (cdr fd-table-entry)
+                                      file-table))
+       ((unless (consp file-table-entry))
+        (mv "" -1 *ebadf*))
+       (pathname (file-table-element->fid (cdr file-table-entry)))
+       ((mv root-contents &)
+        (get-clusterchain-contents
+         fat32-in-memory
+         (fat32-entry-mask (bpb_rootclus fat32-in-memory))
+         2097152))
+       ((mv file-contents error-code)
+        (lofat-find-file-by-pathname
+         fat32-in-memory
+         (make-dir-ent-list
+          (string=>nats
+           root-contents))
+         pathname))
+       ((unless (and (equal error-code 0)
+                     (stringp file-contents)))
+        (mv "" -1 error-code))
+       (new-offset (min (+ offset count)
+                        (length file-contents)))
+       (buf (subseq file-contents
+                    (min offset
+                         (length file-contents))
+                    new-offset)))
+    (mv buf (length buf) 0)))
+
+(defun lofat-lstat (fat32-in-memory pathname)
+  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+                              (fat32-filename-list-p pathname))
+                  :stobjs fat32-in-memory))
+  (b*
+      (((mv root-contents &)
+        (get-clusterchain-contents
+         fat32-in-memory
+         (fat32-entry-mask (bpb_rootclus fat32-in-memory))
+         2097152))
+       ((mv file errno)
+        (lofat-find-file-by-pathname
+         fat32-in-memory
+         (make-dir-ent-list
+          (string=>nats
+           root-contents))
+         pathname))
+       ((when (not (equal errno 0)))
+        (mv (make-struct-stat) -1 errno)))
+    (mv
+       (make-struct-stat
+        :st_size (dir-ent-file-size
+                  (lofat-file->dir-ent file)))
+       0 0)))

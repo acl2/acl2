@@ -102,16 +102,18 @@
   (b* ((ctx 'x86-call-E8-Op/En-M)
 
        ((the (integer 0 4) offset-size)
-        (if (equal proc-mode #.*64-bit-mode*)
-            4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
-          (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
-               (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
-               (p3? (equal #.*operand-size-override*
-                           (prefixes->opr prefixes))))
-            ;; 16 or 32 bits (rel16 or rel32):
-            (if (= cs.d 1)
-                (if p3? 2 4)
-              (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes nil t t x86))
+
+        ;; (if (equal proc-mode #.*64-bit-mode*)
+        ;;     4 ; always 32 bits (rel32) -- 16 bits (rel16) not supported
+        ;;   (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
+        ;;        (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
+        ;;        (p3? (equal #.*operand-size-override*
+        ;;                    (prefixes->opr prefixes))))
+        ;;     ;; 16 or 32 bits (rel16 or rel32):
+        ;;     (if (= cs.d 1)
+        ;;         (if p3? 2 4)
+        ;;       (if p3? 4 2)))))
 
        ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
        ;; instruction stream still qualifies as a code fetch.

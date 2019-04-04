@@ -80,7 +80,8 @@
 
        (byte-operand? (equal opcode #x88))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (register (rgfi-size operand-size (reg-index reg rex-byte #.*r*)
 			    rex-byte x86))
@@ -152,7 +153,8 @@
 
        (byte-operand? (equal opcode #x8A))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -238,7 +240,8 @@
 
        (byte-operand? (eql opcode #xA0))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        ((the (integer 1 8) offset-size)
 	(select-address-size proc-mode p4? x86))
@@ -292,7 +295,8 @@
        (byte-operand? (and (<= #xB0 opcode) ;; B0+rb
 			   (<= opcode #xB7)))
        ((the (integer 1 8) operand-size)
-	(select-operand-size proc-mode byte-operand? rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
 
        ;; We don't do any alignment check below when fetching the
        ;; immediate operand; reading the immediate operand is done
@@ -349,7 +353,8 @@
 
        (byte-operand? (eql opcode #xC6))
        ((the (integer 1 8) imm-size)
-	(select-operand-size proc-mode byte-operand? rex-byte t prefixes x86))
+	(select-operand-size
+         proc-mode byte-operand? rex-byte t prefixes nil nil nil x86))
 
        ((the (integer 1 8) reg/mem-size)
 	(if (and (equal opcode #xC7)
@@ -448,7 +453,8 @@
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
        ((the (integer 2 8) register-size)
-	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        ((mv ?flg0
 	    (the (signed-byte 64) M)
@@ -509,7 +515,8 @@
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)
-	(select-operand-size proc-mode nil rex-byte t prefixes x86))
+	(select-operand-size
+         proc-mode nil rex-byte t prefixes nil nil nil x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
@@ -631,7 +638,8 @@
        ((when badlength?)
 	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       (register-size (select-operand-size proc-mode nil rex-byte nil prefixes x86))
+       (register-size (select-operand-size
+                       proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        (reg/mem (case reg/mem-size
 		  (1
@@ -727,7 +735,8 @@
 	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((the (integer 1 8) register-size)
-	(select-operand-size proc-mode nil rex-byte nil prefixes x86))
+	(select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
        ;; Update the x86 state:
        (x86 (!rgfi-size register-size (reg-index reg rex-byte #.*r*) reg/mem

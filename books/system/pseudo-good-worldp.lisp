@@ -406,7 +406,8 @@
 ; -----------------------------------------------------------------
 ; BUILT-IN-CLAUSES [GLOBAL-VALUE]
 
-; Built-in-clauses is an alist associating function symbols with lists of built-in-clause records.
+; Built-in-clauses is an alist associating function symbols with lists of
+; built-in-clause records.
 
 ; (defrec built-in-clause ((nume . all-fnnames) clause . rune) t)
 
@@ -432,6 +433,14 @@
            (pseudo-function-symbolp (car (car x)) nil)
            (pseudo-built-in-clause-record-listp (cdr (car x)))
            (pseudo-built-in-clausesp (cdr x)))))
+
+; -----------------------------------------------------------------
+; ATTACH-NIL-LST [GLOBAL-VALUE]
+
+; Attach-nil-lst is a list of function symbols.
+
+(defun pseudo-attach-nil-lst (lst)
+  (pseudo-function-symbol-listp lst nil))
 
 ; -----------------------------------------------------------------
 ; ATTACHMENT-RECORDS [GLOBAL-VALUE]
@@ -1771,6 +1780,7 @@
     (WELL-FOUNDED-RELATION-ALIST (pseudo-well-founded-relation-alistp val))
     (RECOGNIZER-ALIST (pseudo-recognizer-alistp val))
     (BUILT-IN-CLAUSES (pseudo-built-in-clausesp val))
+    (ATTACH-NIL-LST (pseudo-attach-nil-lst val))
     (ATTACHMENT-RECORDS (pseudo-attachment-recordsp val))
     (ATTACHMENTS-AT-GROUND-ZERO (pseudo-attachments-at-ground-zerop val))
     (HALF-LENGTH-BUILT-IN-CLAUSES (pseudo-half-length-built-in-clausesp val))

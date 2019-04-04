@@ -117,18 +117,20 @@ testing. The macro supports testing for @(see thm),
   (declare (xargs :guard (true-listp thm)))
   (cond
    ((equal (car thm) 'defthm)
-    `(progn!
+    `(encapsulate ()
       (acl2s::test? ,(third thm))
       (skip-proofs ,thm)))
    ((equal (car thm) 'thm)
-    `(progn!
+    `(encapsulate ()
       (acl2s::test? ,(second thm))
       (skip-proofs ,thm)))
    ((member (car thm) '(acl2::defcong acl2::defequiv acl2::defrefinement))
     `(make-event
       (er-let* ((defthm (acl2::macroexpand1* ',thm 'ctx (w state) state)))
-               (value `(progn! (acl2s::test? ,(second (third defthm)))
-                               (skip-proofs ,',thm))))))
+               (value `(encapsulate
+                        ()
+                        (acl2s::test? ,(second (third defthm)))
+                        (skip-proofs ,',thm))))))
    (t `(skip-proofs ,thm))))
 
 (defxdoc thm-no-test
@@ -228,3 +230,6 @@ functions over natural numbers.
                      (n< x y))
                 (o< (nat-id x) (nat-id y))))
   :rule-classes :well-founded-relation)
+
+(defmacro defthmskip (name &rest args)
+  `(skip-proofs (defthm ,name ,@args)))

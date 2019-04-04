@@ -6,11 +6,14 @@
 ; FAT32 disk image into a tree in a bounded amount of time. Some lemmas for
 ; reasoning about it are placed here.
 
-(include-book "m1-dir-equiv")
+(include-book "hifat-equiv")
 
 ;; We're not counting this very directory, because the root does not have a
 ;; directory entry for itself.
-(defun m1-entry-count (fs)
+;;
+;; Before disabling, this rule used to cause 436909 frames and 8297 tries in
+;; the main book; now those numbers are 4997 and 63 respectively.
+(defund m1-entry-count (fs)
   (declare (xargs :guard (m1-file-alist-p fs)))
   (if
       (atom fs)
@@ -22,23 +25,21 @@
       (+ 1
          (m1-entry-count (cdr fs))))))
 
+;; This function is kinda weirdly named now that the when-m1-file-no-dups-p
+;; part has been shorn by remove-hyps...
 (defthmd
   m1-entry-count-when-m1-file-no-dups-p
   (implies
-   (and (m1-file-alist-p m1-file-alist)
-        (m1-file-no-dups-p m1-file-alist)
-        (consp (assoc-equal x m1-file-alist)))
+   (consp (assoc-equal x m1-file-alist))
    (equal
     (m1-entry-count m1-file-alist)
-    (+
-     (m1-entry-count (remove1-assoc x m1-file-alist))
-     (if
-      (m1-directory-file-p (cdr (assoc-equal x m1-file-alist)))
-      (+ 1
-         (m1-entry-count
-          (m1-file->contents
-           (cdr (assoc-equal x m1-file-alist)))))
-      1)))))
+    (+ (m1-entry-count (remove1-assoc x m1-file-alist))
+       (if (m1-directory-file-p (cdr (assoc-equal x m1-file-alist)))
+           (+ 1
+              (m1-entry-count
+               (m1-file->contents (cdr (assoc-equal x m1-file-alist)))))
+         1))))
+  :hints (("goal" :in-theory (enable m1-entry-count))))
 
 (encapsulate
   ()
@@ -84,55 +85,47 @@
                                 (m1-file->contents file2)))))))
 
   (local
-   (defthm induction-scheme-correctness
-     (implies
-      (and (m1-file-no-dups-p m1-file-alist1)
-           (m1-file-no-dups-p m1-file-alist2)
-           (m1-file-alist-p m1-file-alist1)
-           (m1-file-alist-p m1-file-alist2))
-      (iff
-       (induction-scheme
-        m1-file-alist1 m1-file-alist2)
-       (m1-dir-subsetp m1-file-alist1 m1-file-alist2)))
-     :hints (("Goal" :induct (induction-scheme
-                              m1-file-alist1 m1-file-alist2)) )))
+   (defthm
+     induction-scheme-correctness
+     (implies (and (m1-file-no-dups-p m1-file-alist1)
+                   (m1-file-alist-p m1-file-alist1))
+              (iff (induction-scheme m1-file-alist1 m1-file-alist2)
+                   (hifat-subsetp m1-file-alist1 m1-file-alist2)))
+     :hints (("goal" :induct (induction-scheme m1-file-alist1 m1-file-alist2)
+              :in-theory (enable m1-file-no-dups-p)))))
 
   (defthm
-    m1-entry-count-when-m1-dir-subsetp
+    m1-entry-count-when-hifat-subsetp
     (implies (and (m1-file-no-dups-p m1-file-alist1)
-                  (m1-file-no-dups-p m1-file-alist2)
                   (m1-file-alist-p m1-file-alist1)
-                  (m1-file-alist-p m1-file-alist2)
-                  (m1-dir-subsetp m1-file-alist1 m1-file-alist2))
+                  (hifat-subsetp m1-file-alist1 m1-file-alist2))
              (<= (m1-entry-count m1-file-alist1)
                  (m1-entry-count m1-file-alist2)))
     :rule-classes :linear
     :hints
-    (("goal"
-      :induct (induction-scheme m1-file-alist1 m1-file-alist2))
+    (("goal" :induct (induction-scheme m1-file-alist1 m1-file-alist2)
+      :in-theory (enable m1-file-no-dups-p m1-entry-count))
      ("subgoal *1/7"
-      :use
-      (:instance (:rewrite m1-entry-count-when-m1-file-no-dups-p)
-                 (m1-file-alist m1-file-alist2)
-                 (x (car (car m1-file-alist1)))))
+      :use (:instance (:rewrite m1-entry-count-when-m1-file-no-dups-p)
+                      (m1-file-alist m1-file-alist2)
+                      (x (car (car m1-file-alist1)))))
      ("subgoal *1/4"
-      :use
-      (:instance (:rewrite m1-entry-count-when-m1-file-no-dups-p)
-                 (m1-file-alist m1-file-alist2)
-                 (x (car (car m1-file-alist1))))))))
+      :use (:instance (:rewrite m1-entry-count-when-m1-file-no-dups-p)
+                      (m1-file-alist m1-file-alist2)
+                      (x (car (car m1-file-alist1))))))))
 
 (defthm
-  m1-entry-count-when-m1-dir-equiv
-  (implies (and (m1-dir-equiv m1-file-alist1 m1-file-alist2)
+  m1-entry-count-when-hifat-equiv
+  (implies (and (hifat-equiv m1-file-alist1 m1-file-alist2)
                 (m1-file-alist-p m1-file-alist2)
                 (m1-file-no-dups-p m1-file-alist2))
            (equal (m1-entry-count m1-file-alist1)
                   (m1-entry-count m1-file-alist2)))
   :hints
-  (("goal" :in-theory (e/d (m1-dir-equiv)
-                           (m1-entry-count-when-m1-dir-subsetp))
+  (("goal" :in-theory (e/d (hifat-equiv)
+                           (m1-entry-count-when-hifat-subsetp))
     :do-not-induct t
-    :use ((:instance m1-entry-count-when-m1-dir-subsetp
+    :use ((:instance m1-entry-count-when-hifat-subsetp
                      (m1-file-alist1 m1-file-alist2)
                      (m1-file-alist2 m1-file-alist1))
-          m1-entry-count-when-m1-dir-subsetp))))
+          m1-entry-count-when-hifat-subsetp))))

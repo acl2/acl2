@@ -15,6 +15,7 @@
 (include-book "basics")
 (include-book "crypto")
 (include-book "rlp/top")
+(include-book "database")
 (include-book "hex-prefix")
 (include-book "mmp-trees")
 (include-book "transactions")
@@ -38,7 +39,7 @@
      "The <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>,
       referenced as `[Wiki]' in the documentation of this library.")
     (xdoc::li
-     "The BYZANTIUM VERSION 69351d5 of
+     "The BYZANTIUM VERSION dbc2f9b of
       the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
       Yellow Paper</a>,
       referenced as `[YP]' in the documentation of this library.

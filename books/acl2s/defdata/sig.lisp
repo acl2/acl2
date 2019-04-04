@@ -275,16 +275,17 @@ get as much automated polymorphic support as possible.
 
 ;(include-book "coi/util/pseudo-translate" :dir :system)
 
-(defconst *sig-keywords* '(:hints :rule-classes :verbose :satisfies))
+(defconst *sig-keywords*
+  '(:hints :rule-classes :verbose :satisfies :suffix))
 
 ;check -- also take care of monomorphic sig, but make sure only tnames are allowed!
 (defun parse-sig (args curr-pkg ctx wrld)
   (declare (ignorable wrld))
   (b* (((mv sig kwd-val-list) (separate-kwd-args args '()))
        ((mv kwd-alist rest) (extract-keywords ctx *sig-keywords* kwd-val-list '()))
-      
       ((unless (null rest)) (er hard? ctx "~| Extra args: ~x0~%" rest))
       (dep-hyp (get1 :satisfies kwd-alist))
+      (suffix (get1 :suffix kwd-alist))
       (x123vars (numbered-vars 'ACL2S::X (len *allowed-type-vars*)))
       (dep-vars (and dep-hyp (all-vars dep-hyp))) ;BEWARE all-vars works only for terms; it might return nil and t as variables. Use pseudo-translate here.
       ((unless (subsetp dep-vars x123vars))
@@ -317,7 +318,7 @@ get as much automated polymorphic support as possible.
           ((unless (subsetp arg-type-vars *allowed-type-vars*))
            (er hard? ctx "~| Sorry for the inconvenience, but could you please try again choosing type variables from ~x0.~%" *allowed-type-vars*)))
        
-       (list name arg-type-list return-type kwd-alist)))
+       (list name suffix arg-type-list return-type kwd-alist)))
         
     (& (er hard? ctx "~| General form: (sig name arg-type-list => return-type).~%" )))))
 
@@ -525,11 +526,10 @@ Please send this example to the implementors for considering removal of this res
 ;get typenames for certain type expressions e.g (listof nat) has the type name nat-list
 
 (defloop find-type-names1 (texps M)
-  (for ((texp in texps)) (collect (if (and (proper-symbolp texp) (assoc-eq texp M)) 
-                                      texp
-                                    (find-type-name texp M)))))
-
-
+  (for ((texp in texps))
+       (collect (if (and (proper-symbolp texp) (assoc-eq texp M)) 
+                    texp
+                  (find-type-name texp M)))))
 
 (defun remove-exprs-with-fns (psigs fns)
   (if (endp psigs)
@@ -758,7 +758,7 @@ constant). In the latter return a lambda expression"
     psig-defthm-body))
        
 
-(defun sig-events1 (name arg-types ret-type kwd-alist ctx wrld)
+(defun sig-events1 (name suffix arg-types ret-type kwd-alist ctx wrld)
   (b* ((arg-type-list1 (acl2::sublis-var-lst *tvar-typename-alist* arg-types)) 
        (return-type1 (acl2::sublis-var *tvar-typename-alist* ret-type)) ;instead of *allowed-type-var->named-type-binding*
        (arity (len arg-types))
@@ -769,9 +769,10 @@ constant). In the latter return a lambda expression"
        (p-arg-types (untrans-top-texps stars n-arg-types))
        (p-ret-type (untrans-top-texp '* n-ret-type '()))
 
-       (psig-name (s+ name "-POLYMORPHIC-SIG"))
+       (name-pre (if suffix (s+ name '- suffix) name))
+       (psig-name (s+ name-pre "-POLYMORPHIC-SIG"))
        (psig-defthm-body (make-sig-defthm-body name p-arg-types p-ret-type kwd-alist wrld))
-       (poly-inst-template   `((DEFTHM ,(s+ name "-_PRED_-SIG")
+       (poly-inst-template   `((DEFTHM ,(s+ name-pre "-_PRED_-SIG")
                                 ,psig-defthm-body
                                 :hints (("Goal" :in-theory (e/d (_ENABLED-RUNES_) (,name _DISABLED-RUNES_))
                                          :use ((:functional-instance ,psig-name
@@ -796,19 +797,19 @@ constant). In the latter return a lambda expression"
       )))
      
 (defun sig-events (parsed wrld)
-  (b* (((list name arg-types ret-type kwd-alist) parsed)
+  (b* (((list name suffix arg-types ret-type kwd-alist) parsed)
        (cgenp (acl2::logical-namep 'acl2s::acl2s-defaults wrld))
        ;; dont even call acl2s-defaults if cgen/top is not included. This
        ;; allows defdata/sig to be used independently of cgen
-       (local-testing-downgraded-form (and cgenp 
-                                           '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
-    
+       (local-testing-downgraded-form
+        (and cgenp 
+             '((LOCAL (ACL2S::ACL2S-DEFAULTS :SET ACL2S::TESTING-ENABLED nil))))))
     `(WITH-OUTPUT :on (acl2::summary acl2::error) 
                   :SUMMARY (ACL2::FORM) 
                   (ENCAPSULATE NIL
                    (logic)            
                    ,@local-testing-downgraded-form
-                   ,@(sig-events1 name arg-types ret-type kwd-alist 'sig wrld)))))
+                   ,@(sig-events1 name suffix arg-types ret-type kwd-alist 'sig wrld)))))
 
 
 
@@ -819,4 +820,5 @@ constant). In the latter return a lambda expression"
                   :gag-mode t 
                   :stack :push
        (make-event
-        (sig-events (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))
+        (sig-events
+         (parse-sig ',args (current-package state) 'sig (w state)) (w state))))))

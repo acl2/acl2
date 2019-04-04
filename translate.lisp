@@ -3472,9 +3472,13 @@
            (let ((alist (pairlis$ (formals fn w) args))
                  (body (body fn nil w))
                  (attachment (and aok
+                                  (not (member-eq fn
+                                                  (global-val 'attach-nil-lst
+                                                              w)))
 
-; We do not use (all-attachments w) below, because attachments from defwarrant
-; are not reflected in that structure.
+; We do not use (all-attachments w) below, because attachments are omitted from
+; that structure when they are made to warrants or made with defattach
+; specifying non-nil :skip-checks.
 
                                   (cdr (attachment-pair fn w)))))
              (mv-let

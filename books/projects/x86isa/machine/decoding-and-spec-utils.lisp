@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2019, Kestrel Technology, LLC
 
 ; All rights reserved.
 
@@ -1993,6 +1993,9 @@ reference made from privilege level 3.</blockquote>"
    (rex-byte      :type (unsigned-byte  8))
    (imm?          :type (or t nil))
    (prefixes      :type (unsigned-byte #.*prefixes-width*))
+   (default64?    :type (or t nil))
+   (ignore-rex?   :type (or t nil))
+   (ignore-p3-64? :type (or t nil))
    (x86 x86p))
 
   :inline t
@@ -2042,7 +2045,28 @@ reference made from privilege level 3.</blockquote>"
   <li>If a 66H override is used with REX and REX.W = 0, the operand size
   is 16 bits.</li>
   </ul>
-  </i>"
+  </i>
+
+  <p>This function also includes three additional boolean parameters that serve
+  to accommodate instructions that do not quite follow the general rules
+  specified by the table above:</p>
+
+  <ul>
+
+  <li>The @('default64?') parameter says whether the default operand size in
+  64-bit mode should be 64 bits instead of 32 bits. Examples are @(tsee
+  x86-near-jmp-op/en-m) and @(tsee x86-push-general-register).</li>
+
+  <li>The @('ignore-rex?') parameter says whether, in 64-bit mode, REX.W should
+  be ignored for the purpose of determining the operand size. Examples are
+  @(tsee x86-two-byte-jcc), @(tsee x86-near-jmp-op/en-m), and @(tsee
+  x86-push-general-register).</li>
+
+  <li>The @('ignore-p3-64?') parameter says whether, in 64-bit mode, P3 should
+  be ignored for the purpose of determining the operand size. Examples are
+  @(tsee x86-two-byte-jcc) and @(tsee x86-near-jmp-op/en-m).</li>
+
+  </ul>"
 
   :enabled t
   :returns (size natp :rule-classes :type-prescription)
@@ -2050,17 +2074,20 @@ reference made from privilege level 3.</blockquote>"
   (if byte-operand?
       1
     (if (equal proc-mode #.*64-bit-mode*)
-	(if (logbitp #.*w* rex-byte)
+	(if (and (logbitp #.*w* rex-byte)
+                 (not ignore-rex?))
 	    (if imm?
 		;; Fetch 4 bytes (sign-extended to 64 bits) if operand is
 		;; immediate.
 		4
 	      8)
-	  (if (eql #.*operand-size-override*
-		   (the (unsigned-byte 8) (prefixes->opr prefixes)))
-	      2 ;; 16-bit operand-size
-	    4   ;; Default 32-bit operand size (in 64-bit mode)
-	    ))
+	  (if (and (eql #.*operand-size-override*
+                        (the (unsigned-byte 8) (prefixes->opr prefixes)))
+                   (not ignore-p3-64?))
+	      2
+	    (if default64?
+                8
+              4)))
       ;; 32-bit mode or Compatibility Mode:
       (b* (((the (unsigned-byte 16) cs-attr) (xr :seg-hidden-attr #.*cs* x86))
 	   (cs.d (code-segment-descriptor-attributesBits->d cs-attr))

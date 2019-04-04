@@ -10,14 +10,15 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/ethereum/crypto" :dir :system)
-(include-book "kestrel/ethereum/hex-prefix" :dir :system)
-(include-book "kestrel/ethereum/rlp/encoding" :dir :system)
 (include-book "kestrel/utilities/defmax-nat/implementation" :dir :system)
 (include-book "kestrel/utilities/lists/take-theorems" :dir :system)
-(include-book "kestrel/utilities/omaps/fty" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/prefixp" :dir :system)
+
+(include-book "crypto")
+(include-book "hex-prefix")
+(include-book "rlp/encoding")
+(include-book "database")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,121 +68,14 @@
      Note that there are no constraints on the lengths of the keys or values,
      because the construction of MMP trees from these finite maps
      (which is described in [YP:D])
-     does not depend on any such length constraints.")
-   (xdoc::p
-    "As explained in [YP:D.1] and [YP:4.1],
-     MMP trees rely on a database that associates byte arrays to hashes,
-     where hashes are byte arrays of length 32.
-     This is called `trie database' in [YP:D.1], and just `DB' in [Wiki:MMP].
-     [YP:4.1] uses the term `state database',
-     but it does so in the context of the world state;
-     indeed,
-     the database also contains data that is not part of the world state,
-     such as transactions and transaction receipts.
-     In the documentation of our Ethereum model, we use the term `database'.
-     The type of finite maps from byte arrays to byte arrays
-     that we introduce here
-     models instances of the database as well;
-     the type does not explicitly capture the database's constraint that
-     the keys of the map have length 32 (since they are hashes),
-     but that constraint is not necessary to describe access to the database."))
+     does not depend on any such length constraints."))
 
-  (define bytelist-bytelist-mapp (x)
-    :returns (yes/no booleanp)
-    :parents (bytelist-bytelist-map)
-    :short "Recognize finite maps from byte arrays to byte arrays."
-    :long
-    (xdoc::topstring-p
-     "This definition is similar to @(tsee omap::mapp),
-      but it also requires keys and values to be true lists of bytes.")
-    (if (atom x)
-        (null x)
-      (and (consp (car x))
-           (byte-listp (caar x))
-           (byte-listp (cdar x))
-           (or (null (cdr x))
-               (and (consp (cdr x))
-                    (consp (cadr x))
-                    (acl2::fast-<< (caar x) (caadr x))
-                    (bytelist-bytelist-mapp (cdr x))))))
-    :no-function t
-    ///
-
-    (defrule mapp-when-bytelist-bytelist-mapp
-      (implies (bytelist-bytelist-mapp x)
-               (omap::mapp x))
-      :rule-classes (:rewrite :forward-chaining)
-      :enable omap::mapp)
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-tail
-      (implies (bytelist-bytelist-mapp map)
-               (bytelist-bytelist-mapp (omap::tail map)))
-      :enable omap::tail)
-
-    (defrule byte-listp-of-bytelist-bytelist-head-key
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (mv-nth 0 (omap::head map))))
-      :enable omap::head)
-
-    (defrule byte-listp-of-bytelist-bytelist-head-value
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (mv-nth 1 (omap::head map))))
-      :enable omap::head)
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-update
-      (implies (and (bytelist-bytelist-mapp map)
-                    (byte-listp key)
-                    (byte-listp val))
-               (bytelist-bytelist-mapp (omap::update key val map)))
-      :enable (omap::update omap::head omap::tail))
-
-    (defrule bytelist-bytelist-mapp-of-bytelist-bytelist-update*
-      (implies (and (bytelist-bytelist-mapp new)
-                    (bytelist-bytelist-mapp old))
-               (bytelist-bytelist-mapp (omap::update* new old)))
-      :enable omap::update*)
-
-    (defrule byte-listp-of-key-in-bytelist-bytelist-map
-      (implies (and (omap::in key map) ; bind free MAP
-                    (bytelist-bytelist-mapp map))
-               (byte-listp key))
-      :enable omap::in)
-
-    (defrule byte-listp-of-car-of-in-when-bytelist-byteist-mapp
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (car (omap::in key map))))
-      :enable omap::in)
-
-    (defrule byte-listp-of-cdr-of-in-when-bytelist-byteist-mapp
-      (implies (bytelist-bytelist-mapp map)
-               (byte-listp (cdr (omap::in key map))))
-      :enable omap::in))
-
-  (define bytelist-bytelist-mfix ((x bytelist-bytelist-mapp))
-    :returns (fixed-x bytelist-bytelist-mapp)
-    :parents (bytelist-bytelist-map)
-    :short "Fixing function for finite maps from byte arrays to byte arrays."
-    (mbe :logic (if (bytelist-bytelist-mapp x) x nil)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule bytelist-bytelist-mfix-when-bytelist-bytelist-mapp
-      (implies (bytelist-bytelist-mapp x)
-               (equal (bytelist-bytelist-mfix x) x)))
-
-    (defrule empty-of-bytelist-bytelist-mfix
-      (equal (omap::empty (bytelist-bytelist-mfix map))
-             (or (not (bytelist-bytelist-mapp map))
-                 (omap::empty map)))
-      :enable omap::empty))
-
-  (fty::deffixtype bytelist-bytelist-map
-    :pred bytelist-bytelist-mapp
-    :fix bytelist-bytelist-mfix
-    :equiv bytelist-bytelist-mequiv
-    :define t
-    :forward t))
+  (fty::defomap bytelist-bytelist-map
+                :key-type byte-list
+                :val-type byte-list
+                :pred bytelist-bytelist-mapp
+                :fix bytelist-bytelist-mfix
+                :equiv bytelist-bytelist-mequiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,102 +94,12 @@
      but the keys of the map are nibble arrays instead of byte arrays.
      This is the type of the result of @($y$) [YP:(190), YP:(191)]."))
 
-  (define nibblelist-bytelist-mapp (x)
-    :returns (yes/no booleanp)
-    :parents (nibblelist-bytelist-map)
-    :short "Recognize finite maps from nibble arrays to byte arrays."
-    :long
-    (xdoc::topstring-p
-     "This definition is similar to @(tsee omap::mapp),
-      but it also requires keys and values to be true lists of bytes.")
-    (if (atom x)
-        (null x)
-      (and (consp (car x))
-           (nibble-listp (caar x))
-           (byte-listp (cdar x))
-           (or (null (cdr x))
-               (and (consp (cdr x))
-                    (consp (cadr x))
-                    (acl2::fast-<< (caar x) (caadr x))
-                    (nibblelist-bytelist-mapp (cdr x))))))
-    :no-function t
-    ///
-
-    (defrule mapp-when-nibblelist-bytelist-mapp
-      (implies (nibblelist-bytelist-mapp x)
-               (omap::mapp x))
-      :rule-classes (:rewrite :forward-chaining)
-      :enable omap::mapp)
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-tail
-      (implies (nibblelist-bytelist-mapp map)
-               (nibblelist-bytelist-mapp (omap::tail map)))
-      :enable omap::tail)
-
-    (defrule nibble-listp-of-nibblelist-bytelist-head-key
-      (implies (nibblelist-bytelist-mapp map)
-               (nibble-listp (mv-nth 0 (omap::head map))))
-      :enable omap::head)
-
-    (defrule byte-listp-of-nibblelist-bytelist-head-value
-      (implies (nibblelist-bytelist-mapp map)
-               (byte-listp (mv-nth 1 (omap::head map))))
-      :enable omap::head)
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-update
-      (implies (and (nibblelist-bytelist-mapp map)
-                    (nibble-listp key)
-                    (byte-listp val))
-               (nibblelist-bytelist-mapp (omap::update key val map)))
-      :enable (omap::update omap::head omap::tail))
-
-    (defrule nibblelist-bytelist-mapp-of-nibblelist-bytelist-update*
-      (implies (and (nibblelist-bytelist-mapp new)
-                    (nibblelist-bytelist-mapp old))
-               (nibblelist-bytelist-mapp (omap::update* new old)))
-      :enable omap::update*)
-
-    (defrule nibble-listp-of-key-in-nibblelist-bytelist-map
-      (implies (and (omap::in key map) ; bind free MAP
-                    (nibblelist-bytelist-mapp map))
-               (nibble-listp key))
-      :enable omap::in)
-
-    (defrule nibble-listp-of-car-of-in-when-nibblelist-byteist-mapp
-      (implies (nibblelist-bytelist-mapp map)
-               (nibble-listp (car (omap::in key map))))
-      :enable omap::in)
-
-    (defrule byte-listp-of-cdr-of-in-when-nibblelist-byteist-mapp
-      (implies (nibblelist-bytelist-mapp map)
-               (byte-listp (cdr (omap::in key map))))
-      :enable omap::in))
-
-  (define nibblelist-bytelist-mfix ((x nibblelist-bytelist-mapp))
-    :returns (fixed-x nibblelist-bytelist-mapp)
-    :parents (nibblelist-bytelist-map)
-    :short "Fixing function for finite maps from nibble arrays to byte arrays."
-    (mbe :logic (if (nibblelist-bytelist-mapp x) x nil)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule nibblelist-bytelist-mfix-when-nibblelist-bytelist-mapp
-      (implies (nibblelist-bytelist-mapp x)
-               (equal (nibblelist-bytelist-mfix x) x)))
-
-    (defrule empty-of-nibblelist-bytelist-mfix
-      (equal (omap::empty (nibblelist-bytelist-mfix map))
-             (or (not (nibblelist-bytelist-mapp map))
-                 (omap::empty map)))
-      :enable omap::empty))
-
-  (fty::deffixtype nibblelist-bytelist-map
-    :pred nibblelist-bytelist-mapp
-    :fix nibblelist-bytelist-mfix
-    :equiv nibblelist-bytelist-mequiv
-    :define t
-    :forward t))
+  (fty::defomap nibblelist-bytelist-map
+                :key-type nibble-list
+                :val-type byte-list
+                :pred nibblelist-bytelist-mapp
+                :fix nibblelist-bytelist-mfix
+                :equiv nibblelist-bytelist-mequiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -545,15 +349,8 @@
     "This is used in the definition of @(tsee mmp-encode-c),
      hence the name.")
    (xdoc::p
-    "[YP:(194)] uses @($\\arg\\max$), but it should be @($\\max$) instead:
-     we are not looking for the argument @($x$)
-     that maximizes some function of @($x$),
-     but for the maximum @($x$) itself.
-     We are looking for the maximum length
-     of the common prefixes in the map.
-     The @($\\arg\\max_x\\ldots$) in [YP:(194)] should be
-     @($\\max\\{x\\mid\\ldots\\}$) instead.
-     Clearly, @($x$) is a natural number because it is equated to a length.
+    "The @($x$) in the set being maximized is a natural number,
+     because it is equated to a length.
      Therefore, we use @(tsee defmax-nat) to introduce this maximum.")
    (xdoc::p
     "This maximum always exists if the map is not empty.
@@ -806,7 +603,13 @@
              (:instance nibblelist-bytelist-map-sup-len-key-geq-len-key
               (key (mv-nth 0 (omap::head (omap::tail map))))))
        :enable omap::unfold-equal-size-const
-       :disable nibblelist-bytelist-map-sup-len-key-geq-len-key)))
+       :disable nibblelist-bytelist-map-sup-len-key-geq-len-key)
+
+     (defrule not-empty-tail-when-not-empty-and-size-not-1
+       (implies (and (not (omap::empty map))
+                     (not (equal (omap::size map) 1)))
+                (not (omap::empty (omap::tail map))))
+       :enable (omap::empty omap::size))))
 
   (defruled mmp-encode-c-max-element-leq-len-key
     (implies (and (nibblelist-bytelist-mapp map)
@@ -1268,7 +1071,7 @@
     :guard (mmp-encode-c-max.elementp map i)
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (root byte-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (mmp-encode-c-max.elementp map i)))
           (mv nil nil nil)) ; irrelevant
@@ -1298,7 +1101,7 @@
                 (not (omap::empty map)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (root byte-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
@@ -1352,7 +1155,7 @@
                 (not (equal (omap::size map) 1)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (trees rlp-tree-listp)
-                 (database bytelist-bytelist-mapp))
+                 (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
@@ -1407,7 +1210,7 @@
 (define mmp-encode ((map bytelist-bytelist-mapp))
   :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                (root byte-listp)
-               (database bytelist-bytelist-mapp))
+               (database databasep))
   :parents (mmp-trees)
   :short "Encode a finite map into an MMP tree."
   :long
@@ -1477,7 +1280,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk mmp-encoding-p ((root byte-listp) (database bytelist-bytelist-mapp))
+(define-sk mmp-encoding-p ((root byte-listp) (database databasep))
   :returns (yes/no booleanp)
   :parents (mmp-trees)
   :short "Check if a root and database are an MMP encoding
@@ -1506,13 +1309,12 @@
                (b* (((mv map-error? map-root map-database) (mmp-encode map)))
                  (and (not map-error?)
                       (equal map-root (byte-list-fix root))
-                      (omap::submap map-database
-                                    (bytelist-bytelist-mfix database))))))
+                      (omap::submap map-database (database-fix database))))))
   :skolem-name mmp-encoding-witness
   ///
 
   (fty::deffixequiv mmp-encoding-p
-    :args ((root byte-listp) (database bytelist-bytelist-mapp))
+    :args ((root byte-listp) (database databasep))
     :hints (("Goal"
              :in-theory (disable mmp-encoding-p-suff)
              :use (;; for ROOT:
@@ -1525,14 +1327,14 @@
                    ;; for DATABASE:
                    (:instance mmp-encoding-p-suff
                     (map (mmp-encoding-witness
-                          root (bytelist-bytelist-mfix database))))
+                          root (database-fix database))))
                    (:instance mmp-encoding-p-suff
                     (map (mmp-encoding-witness root database))
-                    (database (bytelist-bytelist-mfix database))))))))
+                    (database (database-fix database))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define mmp-decode ((root byte-listp) (database bytelist-bytelist-mapp))
+(define mmp-decode ((root byte-listp) (database databasep))
   :returns
   (mv (error? booleanp)
       (map bytelist-bytelist-mapp
@@ -1541,7 +1343,7 @@
                     (e/d
                      (mmp-encoding-p)
                      (mmp-encoding-p-of-byte-list-fix-root
-                      mmp-encoding-p-of-bytelist-bytelist-mfix-database))))))
+                      mmp-encoding-p-of-database-fix-database))))))
   :parents (mmp-trees)
   :short "Decode an MMP tree into a finite map."
   :long
@@ -1589,7 +1391,7 @@
      and therefore could be either map.
      Thus, we defer the injectivity and left inverse proofs for now."))
   (b* ((root (byte-list-fix root))
-       (database (bytelist-bytelist-mfix database)))
+       (database (database-fix database)))
     (if (mmp-encoding-p root database)
         (mv nil (mmp-encoding-witness root database))
       (mv t nil)))
@@ -1599,7 +1401,7 @@
 
   (defrule mmp-encode-of-mmp-decode
     (implies (and (byte-listp root)
-                  (bytelist-bytelist-mapp database)
+                  (databasep database)
                   (mmp-encoding-p root database))
              (b* (((mv d-error? d-map) (mmp-decode root database))
                   ((mv e-error? e-root e-database) (mmp-encode d-map)))
@@ -1613,7 +1415,7 @@
 
 (define mmp-read ((key byte-listp)
                   (root byte-listp)
-                  (database bytelist-bytelist-mapp))
+                  (database databasep))
   :guard (mmp-encoding-p root database)
   :returns (mv (presentp booleanp) (value byte-listp))
   :parents (mmp-trees)
@@ -1643,7 +1445,7 @@
 (define mmp-write ((key byte-listp)
                    (value byte-listp)
                    (root byte-listp)
-                   (database bytelist-bytelist-mapp))
+                   (database databasep))
   :guard (mmp-encoding-p root database)
   :returns (mv (error? (member-eq error? '(nil :collision :rlp))
                        :hints (("Goal"
@@ -1659,7 +1461,7 @@
                                                        root
                                                        database))))))))
                (new-root byte-listp)
-               (new-database bytelist-bytelist-mapp))
+               (new-database databasep))
   :parents (mmp-trees)
   :short "Write a value for a key in an MMP tree."
   :long
@@ -1702,10 +1504,10 @@
        ((mv error? new-root new-database-min) (mmp-encode new-map))
        ((when error?) (mv error? nil nil))
        ((unless (omap::compatiblep new-database-min
-                                   (bytelist-bytelist-mfix database)))
+                                   (database-fix database)))
         (mv :collision nil nil))
        (new-database (omap::update* new-database-min
-                                    (bytelist-bytelist-mfix database))))
+                                    (database-fix database))))
     (mv nil new-root new-database))
   :hooks (:fix)
   :no-function t)
