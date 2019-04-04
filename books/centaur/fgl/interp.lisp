@@ -44,6 +44,7 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
 (local (include-book "centaur/meta/urewrite" :dir :system))
+(local (include-book "centaur/meta/let-abs" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
 
