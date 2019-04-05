@@ -649,12 +649,25 @@
       the former are subtrees for the content between the XML tags;
       the latter are attributes of the XML tag.
       The macro uses @(tsee partition-macro-args) to divide them.</p>
+   <p>The name of the macro includes an added underscore at the end
+      if the tag is @(':table'), @(':u'), or @(':see').
+      That is, the generated macro names for these tags are
+      @('table_'), @('u_'), and @('see_').
+      The reason is that
+      @('table') would conflict with the built-in @(tsee table),
+      @('u') would conflict with the built-in @(tsee u),
+      and @('see') would conflict with an existing function called @('see')
+      in @('[books]/xdoc/names.lisp').</p>
    <p>See also @(tsee generate-primitive-constructor-for-dir/&&).</p>
    @(def generate-primitive-constructor-for-tag)"
 
   (defund generate-primitive-constructor-for-tag-fn (tag doc)
     (declare (xargs :guard (and (keywordp tag) (stringp doc))))
-    (let* ((macro-name (acl2::add-suffix-to-fn '|| (symbol-name tag)))
+    (let* ((macro-name (case tag
+                         (:table 'table_)
+                         (:u 'u_)
+                         (:see 'see_)
+                         (t (intern$ (symbol-name tag) "XDOC"))))
            (fn-name (acl2::add-suffix-to-fn macro-name "-FN"))
            (thm-name (acl2::packn (list 'stringp-of- macro-name))))
       `(defsection ,macro-name
@@ -785,8 +798,8 @@
 (generate-primitive-constructor-for-tag :tr
   "Construct an XDOC tree for an HTML table row @('<tr>...</tr>').")
 
-(generate-primitive-constructor-for-tag :table_
-  ;; :TABLE would cause a conflict with the built-in TABLE
+(generate-primitive-constructor-for-tag :table
+  ;; generates TABLE_ macro (see GENERATE-PRIMITIVE-CONSTRUCTOR-FOR-TAG)
   "Construct an XDOC tree for an HTML table @('<table>...</table>').")
 
 (generate-primitive-constructor-for-tag :box
@@ -804,8 +817,8 @@
 (generate-primitive-constructor-for-tag :i
   "Construct an XDOC tree for HTML italic text @('<i>...</i>').")
 
-(generate-primitive-constructor-for-tag :u_
-  ;; :U would cause a conflict with the built-in U
+(generate-primitive-constructor-for-tag :u
+  ;; generates U_ macro (see GENERATE-PRIMITIVE-CONSTRUCTOR-FOR-TAG)
   "Construct an XDOC tree for HTML underlined text @('<u>...</u>').")
 
 (generate-primitive-constructor-for-tag :color
@@ -827,8 +840,8 @@
 (generate-primitive-constructor-for-tag :a
   "Construct an XDOC tree for an HTML hyperlink @('<a>...</a>').")
 
-(generate-primitive-constructor-for-tag :see_
-  ;; :SEE would cause a conflict with SEE in [books]/xdoc/names.lisp
+(generate-primitive-constructor-for-tag :see
+  ;; generates SEE_ macro (see GENERATE-PRIMITIVE-CONSTRUCTOR-FOR-TAG)
   "Construct an XDOC tree for an XDOC hyperlink @('<see>...</see>').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
