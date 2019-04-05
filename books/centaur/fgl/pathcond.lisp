@@ -584,7 +584,203 @@
     :hints(("Goal" :in-theory (enable pathcond-rewind-stack-len)))))
 
 
+
+
+
+
                                   
 
+(define maybe-cons (do-it val lst)
+  :verify-guards nil
+  (if do-it (cons val lst) lst)
+  ///
+  (defcong iff equal (maybe-cons do-it val lst) 1))
 
-    
+(define maybe-cdr (do-it lst)
+  :verify-guards nil
+  (if do-it (cdr lst) lst)
+  ///
+  (defcong iff equal (maybe-cdr do-it lst) 1)
+  (defthm maybe-cdr-of-maybe-cons
+    (equal (maybe-cdr do-it (maybe-cons do-it val lst))
+           lst)
+    :hints(("Goal" :in-theory (enable maybe-cons)))))
+
+(define maybe-incr (do-it x)
+  :verify-guards nil
+  (if do-it (+ 1 (nfix x)) (nfix x))
+  ///
+  (defthm maybe-incr-equal-0
+    (implies do-it
+             (not (equal (maybe-incr do-it x) 0))))
+  (defcong iff equal (maybe-incr do-it x) 1))
+
+(define maybe-decr (do-it x)
+  :verify-guards nil
+  (if do-it (nfix (+ -1 (nfix x))) (nfix x))
+  ///
+  (defcong iff equal (maybe-decr do-it x) 1)
+
+  (defthm maybe-decr-of-maybe-incr
+    (equal (maybe-decr do-it (maybe-incr do-it x))
+           (nfix x))
+    :hints(("Goal" :in-theory (enable maybe-incr)))))
+
+
+
+(defthm pathcond-rewind-stack-len-of-pathcond-rewind
+  (equal (pathcond-rewind-stack-len mode (pathcond-rewind mode pathcond))
+         (maybe-decr (nth *pathcond-enabledp* pathcond)
+                     (pathcond-rewind-stack-len mode pathcond)))
+  :hints(("Goal" :in-theory (enable maybe-decr pos-fix nfix))
+         (and stable-under-simplificationp
+              '(:in-theory (enable pathcond-rewind)))))
+
+(defret pathcond-rewind-stack-len-of-logicman-pathcond-assume-maybe
+  (implies (and (equal mode (logicman->mode logicman))
+                (not contradictionp))
+           (equal (pathcond-rewind-stack-len mode new-pathcond)
+                  (maybe-incr (nth *pathcond-enabledp* pathcond)
+                              (pathcond-rewind-stack-len mode pathcond))))
+  :hints(("Goal" :in-theory (enable maybe-incr pos-fix nfix))
+         (and stable-under-simplificationp
+              '(:in-theory (enable logicman-pathcond-assume))))
+  :fn logicman-pathcond-assume)
+
+
+(defthm pathcond-enabledp-of-pathcond-rewind
+  (iff (nth *pathcond-enabledp* (pathcond-rewind mode pathcond))
+       (nth *pathcond-enabledp* pathcond))
+  :hints(("Goal" :in-theory (e/d (pathcond-rewind) (nth-add1 nth update-nth)))))
+
+(define logicman-pathcond-eval-checkpoints (env pathcond logicman)
+  :non-executable t
+  :no-function t
+  :verify-guards nil
+  :measure (pathcond-rewind-stack-len (lbfr-mode) pathcond)
+  :hints(("goal" :in-theory (enable maybe-decr)))
+  (if (or (zp (pathcond-rewind-stack-len (lbfr-mode) pathcond))
+          (not (pathcond-enabledp pathcond)))
+      nil
+    (b* ((pathcond (pathcond-rewind (lbfr-mode) pathcond))
+         (eval (logicman-pathcond-eval env pathcond logicman)))
+      (cons eval (logicman-pathcond-eval-checkpoints env pathcond logicman))))
+  ///
+  (deffixequiv logicman-pathcond-eval-checkpoints)
+
+  (defthm logicman-pathcond-eval-checkpoints-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (logicman-pathcond-p pathcond old))
+             (equal (logicman-pathcond-eval-checkpoints env pathcond new)
+                    (logicman-pathcond-eval-checkpoints env pathcond old))))
+
+
+  (defret logicman-pathcond-eval-checkpoints-of-logicman-pathcond-assume
+    (implies (and (not contradictionp)
+                  (equal (logicman->mode logicman) (logicman->mode logicman1)))
+             (equal (logicman-pathcond-eval-checkpoints env new-pathcond logicman1)
+                    (maybe-cons (nth *pathcond-enabledp* pathcond)
+                                (logicman-pathcond-eval env pathcond logicman1)
+                                (logicman-pathcond-eval-checkpoints env pathcond logicman1))))
+    :hints(("Goal" :in-theory (enable maybe-cons)))
+    :fn logicman-pathcond-assume)
+
+  (defret logicman-pathcond-eval-checkpoints-of-pathcond-rewind
+    (implies (equal bfr-mode (lbfr-mode))
+             (equal (logicman-pathcond-eval-checkpoints env new-pathcond logicman)
+                    (maybe-cdr (nth *pathcond-enabledp* pathcond)
+                               (logicman-pathcond-eval-checkpoints env pathcond logicman))))
+    :hints(("Goal" :in-theory (enable maybe-cdr maybe-incr maybe-decr)
+            :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman)
+                     (logicman-pathcond-eval-checkpoints env (pathcond-rewind (lbfr-mode) pathcond) logicman))))
+    :fn pathcond-rewind)
+
+  (defthm len-of-logicman-pathcond-eval-checkpoints
+    (implies (nth *pathcond-enabledp* pathcond)
+             (equal (len (logicman-pathcond-eval-checkpoints env pathcond logicman))
+                    (pathcond-rewind-stack-len (lbfr-mode) pathcond)))
+    :hints(("Goal" :in-theory (enable maybe-cdr maybe-decr)))))
+
+
+(define logicman-pathcond-eval-checkpoints! (env pathcond logicman)
+  :non-executable t
+  :no-function t
+  :verify-guards nil
+  (b* ((pathcond (update-nth *pathcond-enabledp* t pathcond)))
+    (cons (logicman-pathcond-eval env pathcond logicman)
+          (logicman-pathcond-eval-checkpoints env pathcond logicman)))
+  ///
+  (deffixequiv logicman-pathcond-eval-checkpoints)
+
+  (defthm update-pathcond-enabledp-under-pathcond-equiv
+    (implies (iff* enabledp (pathcond-enabledp pathcond))
+             (pathcond-equiv (update-nth *pathcond-enabledp* enabledp pathcond)
+                             pathcond))
+    :hints(("Goal" :in-theory (enable pathcond-fix))))
+
+  (fty::deffixcong pathcond-equiv pathcond-equiv (update-nth n v x) x
+    :hints(("Goal" :in-theory (enable pathcond-fix))))
+
+  ;; (local (defthm logicman-pathcond-eval-checkpoints-of-update-pathcond-enabledp
+  ;;          (implies (nth *pathcond-enabledp* pathcond)
+  ;;                   (equal (logicman-pathcond-eval-checkpoints
+  ;;                           env (update-nth *pathcond-enabledp* t pathcond) logicman)
+  ;;                          (logicman-pathcond-eval-checkpoints
+  ;;                           env pathcond logicman)))
+  ;;          :hints(("Goal" :in-theory (e/d (logicman-pathcond-eval-checkpoints)
+  ;;                                         (LOGICMAN-PATHCOND-EVAL-CHECKPOINTS-OF-PATHCOND-REWIND)))
+  ;;                 (and (equal id (acl2::parse-clause-id "Subgoal *1/3'10'"))
+  ;;                      '(:error t)))))
+
+  (defthm logicman-pathcond-eval-checkpoints!-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (logicman-pathcond-p pathcond old))
+             (equal (logicman-pathcond-eval-checkpoints! env pathcond new)
+                    (logicman-pathcond-eval-checkpoints! env pathcond old))))
+
+  (defret logicman-pathcond-eval-checkpoints!-of-logicman-pathcond-assume
+    (implies (and (not contradictionp)
+                  (equal (logicman->mode logicman) (logicman->mode logicman1)))
+             (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman1)
+                    (maybe-cons (nth *pathcond-enabledp* pathcond)
+                                (logicman-pathcond-eval env new-pathcond logicman1)
+                                (logicman-pathcond-eval-checkpoints! env pathcond logicman1))))
+    :hints(("Goal" :in-theory (enable maybe-cons))
+           (and stable-under-simplificationp
+                '(:in-theory (enable logicman-pathcond-assume))))
+    :fn logicman-pathcond-assume)
+
+  (defret logicman-pathcond-eval-checkpoints!-of-pathcond-rewind
+    (implies (and (equal bfr-mode (lbfr-mode))
+                  (pathcond-rewind-ok bfr-mode pathcond))
+             (equal (logicman-pathcond-eval-checkpoints! env new-pathcond logicman)
+                    (maybe-cdr (nth *pathcond-enabledp* pathcond)
+                               (logicman-pathcond-eval-checkpoints! env pathcond logicman))))
+    :hints(("Goal" :in-theory (enable maybe-cdr)
+            :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman)))
+           (and stable-under-simplificationp
+                '(:in-theory (enable pathcond-rewind pathcond-rewind-ok)))
+           )
+    :fn pathcond-rewind)
+
+  (local (defthm update-nth-of-update-nth
+           (equal (update-nth n a (update-nth n b x))
+                  (update-nth n a x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (defthm logicman-pathcond-eval-checkpoints!-of-update-pathcond-enabledp
+    (equal (logicman-pathcond-eval-checkpoints! env (update-nth *pathcond-enabledp* v pathcond) logicman)
+           (logicman-pathcond-eval-checkpoints! env pathcond logicman)))
+
+  (defthm pathcond-rewind-stack-len-of-update-pathcond-enabledp
+    (equal (pathcond-rewind-stack-len mode (update-nth *pathcond-enabledp* v pathcond))
+           (pathcond-rewind-stack-len mode pathcond))
+    :hints(("Goal" :in-theory (enable pathcond-rewind-stack-len))))
+
+  (defthm len-of-logicman-pathcond-eval-checkpoints!
+    (equal (len (logicman-pathcond-eval-checkpoints! env pathcond logicman))
+           (+ 1 (pathcond-rewind-stack-len (lbfr-mode) pathcond)))))
+
+
+
+

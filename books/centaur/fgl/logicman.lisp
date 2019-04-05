@@ -2416,7 +2416,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (equal not if iff
          int bool concrete
          return-last synp
-         cons
+         cons car cdr 
          intcons intcons* endint
          intcar intcdr
          typespec-check
