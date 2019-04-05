@@ -50,7 +50,7 @@
 
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 
-(local (fty::deflist gl-objectlist :elt-type gl-object :true-listp t))
+(local (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t))
 
 (local (in-theory (disable nth acl2::nth-when-zp update-nth (tau-system))))
 

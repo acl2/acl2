@@ -5487,23 +5487,22 @@
            (fgl-ev-list x a))
     :flag cmr::termlist-vars))
 
-(local
- (progn
+(progn
 
-   (fty::deffixtype alistp :pred alistp :fix acl2::alist-fix :equiv alistp-equiv :define t :forward t)
+  (fty::deffixtype alistp :pred alistp :fix acl2::alist-fix :equiv alistp-equiv :define t :forward t)
 
-   (fty::deffixcong alistp-equiv equal (fgl-ev x a) a)
-   (fty::deffixcong alistp-equiv equal (fgl-ev-list x a) a)
+  (fty::deffixcong alistp-equiv equal (fgl-ev x a) a)
+  (fty::deffixcong alistp-equiv equal (fgl-ev-list x a) a)
 
-   (local (defthm alist-fix-of-append
-            (equal (acl2::alist-fix (append a b))
-                   (append (acl2::alist-fix a) (acl2::alist-fix b)))
-            :hints(("Goal" :in-theory (enable append)))))
+  (local (defthm alist-fix-of-append
+           (equal (acl2::alist-fix (append a b))
+                  (append (acl2::alist-fix a) (acl2::alist-fix b)))
+           :hints(("Goal" :in-theory (enable append)))))
 
-   (fty::deffixcong alistp-equiv alistp-equiv (append a b) a)
-   (fty::deffixcong alistp-equiv alistp-equiv (append a b) b)
+  (fty::deffixcong alistp-equiv alistp-equiv (append a b) a)
+  (fty::deffixcong alistp-equiv alistp-equiv (append a b) b)
 
-   (fty::deffixcong alistp-equiv equal (hons-assoc-equal x a) a)))
+  (fty::deffixcong alistp-equiv equal (hons-assoc-equal x a) a))
 
 
 (define fgl-ev-bindinglist ((x cmr::bindinglist-p)

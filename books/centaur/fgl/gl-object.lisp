@@ -112,7 +112,7 @@
                        (gl-object-p (cons x y)))
               :hints (("goal" :expand ((gl-object-p x)
                                        (gl-object-p (cons x y)))))))))
-  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t))
+  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t))
      
 
 (defsection g-int
