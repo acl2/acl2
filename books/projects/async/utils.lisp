@@ -7,7 +7,7 @@
 ;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2019
+;; March 2019
 
 (in-package "ADE")
 
@@ -584,11 +584,15 @@
 (defun interleave (l1 l2)
   (declare (xargs :guard t
                   :measure (acl2-count (list l1 l2))))
-  (cond ((and (atom l1) (atom l2)) nil)
+  (cond ((and (atom l1) (atom l2)) '(nil))
         ((atom l1) (list l2))
         ((atom l2) (list l1))
         (t (append (cons-rec (car l1) (interleave (cdr l1) l2))
                    (cons-rec (car l2) (interleave l1 (cdr l2)))))))
+
+(defthm consp-interleave
+  (consp (interleave l1 l2))
+  :rule-classes :type-prescription)
 
 (defthm true-list-listp-interleave
   (implies (and (true-listp l1)
@@ -610,10 +614,11 @@
 
 (defthm member-append-interleave-1
   (implies (and (member x (interleave y z))
+                (equal y++x1 (append y x1))
                 (true-listp x1)
                 (true-listp z))
            (member (append x x1)
-                   (interleave (append y x1) z)))
+                   (interleave y++x1 z)))
   :hints (("Goal"
            :in-theory (disable subsetp-prepend-rec-interleave-1)
            :use (:instance subsetp-prepend-rec-interleave-1
@@ -623,10 +628,11 @@
 
 (defthm member-append-interleave-2
   (implies (and (member x (interleave y z))
+                (equal z++x1 (append z x1))
                 (true-listp x1)
                 (true-listp y))
            (member (append x x1)
-                   (interleave y (append z x1))))
+                   (interleave y z++x1)))
   :hints (("Goal"
            :in-theory (disable subsetp-prepend-rec-interleave-2)
            :use (:instance subsetp-prepend-rec-interleave-2

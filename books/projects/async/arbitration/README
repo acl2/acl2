@@ -16,25 +16,36 @@ See Makefile file for the detail.
 Book Organization
 ----------------------------------------------------------------------
 
-arb-merge-1.lisp: a simple arbitrated merge joint arb-merge-1.
+arb-merge1.lisp: a simple, combinational arbitrated merge joint
+arb-merge1.
 
-arb-merge.lisp: a more complex arbitrated merge joint arb-merge.
+arb-merge2.lisp: a more complex, sequential arbitrated merge joint
+arb-merge2 that supports fairness.
 
-interl.lisp: a circuit family, interl, that connects two instances of
-Q20' to the two input ports of arb-merge-1.
+interl1.lisp: a circuit family, interl1, that connects two instances
+of Q20' to the two input ports of arb-merge1.
+
+interl2.lisp: a circuit family, interl2, that connects two instances
+of Q20' to the two input ports of arb-merge2.
 
 interl-ll.lisp: a circuit family, interl-ll, that connects Q9' and
-Q11' to the two input ports of arb-merge.  It is designed as a left
+Q11' to the two input ports of arb-merge2.  It is designed as a left
 half-complex link.
 
-igcd.lisp: a circuit family, igcd, that concatenates interl and gcd.
+igcd1.lisp: a circuit family, igcd1, that concatenates interl1 and gcd.
 
-comp-interl.lisp: a circuit family, comp-interl, that connects the
-outputs from two instances of interl to the inputs of a third instance
-of interl.
+igcd2.lisp: a circuit family, igcd2, that concatenates interl2 and gcd.
+
+comp-interl1.lisp: a circuit family, comp-interl1, that connects the
+outputs from two instances of interl1 to the inputs of a third
+instance of interl1.
 
 comp-interl2.lisp: a circuit family, comp-interl2, that connects the
-outputs from two instances of interl to the inputs of an instance of
+outputs from two instances of interl2 to the inputs of a third
+instance of interl2.
+
+comp-interl.lisp: a circuit family, comp-interl, that connects the
+outputs from two instances of interl2 to the inputs of an instance of
 interl-ll.
 
 

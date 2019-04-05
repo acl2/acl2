@@ -87,11 +87,11 @@
   (implies (and (fast-zero& netlist n)
                 (equal (len v) n)
                 (>= n 3))
-           (equal (se (si 'fast-zero n) v sts netlist)
+           (equal (se (si 'fast-zero n) v st netlist)
                   (list (f$fast-zero v))))
   :hints (("Goal"
            :expand (:free (v n)
-                          (se (si 'fast-zero n) v sts netlist))
+                          (se (si 'fast-zero n) v st netlist))
            :in-theory (e/d (de-rules
                             fast-zero&
                             fast-zero*$destructure

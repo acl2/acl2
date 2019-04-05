@@ -1,14 +1,14 @@
-;; Copyright (C) 2019, Regents of the University of Texas
+;; Copyright (C) 2018, Regents of the University of Texas
 ;; Written by Cuong Chau
 ;; License: A 3-clause BSD license.  See the LICENSE file distributed with
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; February 2019
 
 (in-package "ADE")
 
-(include-book "interl2")
+(include-book "interl1")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
