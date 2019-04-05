@@ -136,8 +136,8 @@
               ((and (atom (car rest-args))
                     (member-eq (car rest-args) case-kinds))
                ;; It's a case-kind and not a prod-kind.  That means it has a list of subkinds in its entry.
-               `(eq (,kind-fn ,var-or-expr) ',(cadr (assoc (car rest-args) case-specs))))
-              ((and (eq (car rest-args) 'quote)
+               `(member-eq (,kind-fn ,var-or-expr) ',(cadr (assoc (car rest-args) case-specs))))
+              ((and (eq (caar rest-args) 'quote)
                     (true-listp (cadr rest-args))
                     (subsetp (cadr rest-args) prod-kinds))
                ;; Special case: (foo-case expr '(:kind1 :kind2))
