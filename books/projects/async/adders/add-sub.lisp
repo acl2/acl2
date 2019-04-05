@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;;  January 2019
 
 (in-package "ADE")
 
@@ -91,7 +91,7 @@
         (net-arity-okp (ripple-add/sub$netlist 64))
         (ripple-add/sub& (ripple-add/sub$netlist 64) 64))))
 
-(defun ripple-add/sub-body-induct (m n wire-alist sts-alist netlist)
+(defun ripple-add/sub-body-induct (m n wire-alist st-alist netlist)
   (if (zp n)
       wire-alist
     (ripple-add/sub-body-induct
@@ -100,9 +100,9 @@
      (se-occ-bindings 3
                       (ripple-add/sub-body m n)
                       wire-alist
-                      sts-alist
+                      st-alist
                       netlist)
-     sts-alist
+     st-alist
      netlist)))
 
 (local
@@ -127,7 +127,7 @@
                                             (list (si 'carry m+n)))
                                     (se-occ (ripple-add/sub-body m n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry m) wire-alist)
@@ -135,7 +135,7 @@
                     (assoc-eq-values (sis 'b-in m n) wire-alist))))
    :hints (("Goal"
             :induct (ripple-add/sub-body-induct m n
-                                                wire-alist sts-alist
+                                                wire-alist st-alist
                                                 netlist)
             :in-theory (e/d* (de-rules
                               fv-adder
@@ -155,7 +155,7 @@
                                             (list (si 'carry m+n)))
                                     (se-occ (ripple-add/sub-body m n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry m) wire-alist)
@@ -164,7 +164,7 @@
                      (assoc-eq-values (sis 'b-in m n) wire-alist)))))
    :hints (("Goal"
             :induct (ripple-add/sub-body-induct m n
-                                                wire-alist sts-alist
+                                                wire-alist st-alist
                                                 netlist)
             :in-theory (e/d* (de-rules
                               fv-adder
@@ -182,7 +182,7 @@
                                             (list (si 'carry n)))
                                     (se-occ (ripple-add/sub-body 0 n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry 0) wire-alist)
@@ -199,7 +199,7 @@
                                             (list (si 'carry n)))
                                     (se-occ (ripple-add/sub-body 0 n)
                                             wire-alist
-                                            sts-alist
+                                            st-alist
                                             netlist))
                    (fv-adder
                     (assoc-eq-value (si 'carry 0) wire-alist)
@@ -217,12 +217,12 @@
                 (equal n (len b)))
            (equal (se (si 'ripple-add/sub n)
                       (cons c (append a b))
-                      sts
+                      st
                       netlist)
                   (fv-adder nil a b)))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'ripple-add/sub n) inputs sts netlist))
+                          (se (si 'ripple-add/sub n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              ripple-add/sub&
                              ripple-add/sub*$destructure)
@@ -238,12 +238,12 @@
                 (equal n (len b)))
            (equal (se (si 'ripple-add/sub n)
                       (cons c (append a b))
-                      sts
+                      st
                       netlist)
                   (fv-adder t a (fv-not b))))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'ripple-add/sub n) inputs sts netlist))
+                          (se (si 'ripple-add/sub n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              ripple-add/sub&
                              ripple-add/sub*$destructure)
@@ -339,11 +339,11 @@
                   (equal n (len a))
                   (<= (v-to-nat b) (v-to-nat a))
                   (bv2p a b))
-             (equal (v-to-nat (take n
-                                    (v-adder t a (v-not b))))
+             (equal (v-to-nat (v-adder-output t a (v-not b)))
                     (- (v-to-nat a)
                        (v-to-nat b))))
     :hints (("Goal"
+             :in-theory (enable v-adder-output)
              :use (:instance nthcdr-v-adder-sub-2
                              (c t)))))
 
@@ -369,7 +369,7 @@
            (equal (v-to-nat
                    (se (si 'ripple-add/sub n)
                        (cons c (append a b))
-                       sts
+                       st
                        netlist))
                   (+ (v-to-nat a) (v-to-nat b)))))
 
@@ -383,7 +383,7 @@
                           (v-to-nat
                            (se (si 'ripple-add/sub n)
                                (cons c (append a b))
-                               sts
+                               st
                                netlist)))
                   (logext n (- (v-to-nat a) (v-to-nat b)))))
   :hints (("Goal" :in-theory (disable logext

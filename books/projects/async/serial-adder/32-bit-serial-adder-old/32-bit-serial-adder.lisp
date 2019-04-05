@@ -253,21 +253,21 @@
  (list* 'cntl-act 'bit-in 'result-act
         (sis 'go 0 *serial-adder$go-num*))
  (list* 'ready-in- 'ready-out
-        (append (sis 'reg2-out 0 *data-width*) (list 'c-out)))
+        (append (sis 'reg2-out 0 *data-size*) (list 'c-out)))
  '(lreg0 reg0 lreg1 reg1 lreg2 reg2 bit-add)
  (list
   ;; LINKS
   ;; REG0
   '(lreg0 (reg0-status) link-cntl (cntl-act a-act))
   (list 'reg0
-        (sis 'reg0-out 0 *data-width*)
+        (sis 'reg0-out 0 *data-size*)
         'shift-reg32
         '(cntl-act bit-in))
 
   ;; REG1
   '(lreg1 (reg1-status) link-cntl (cntl-act b-act))
   (list 'reg1
-        (sis 'reg1-out 0 *data-width*)
+        (sis 'reg1-out 0 *data-size*)
         'shift-reg32
         '(cntl-act bit-in))
 
@@ -275,7 +275,7 @@
   '(g (dr-lreg2) b-or (cntl-act result-act))
   '(lreg2 (reg2-status) link-cntl (s-act dr-lreg2))
   (list 'reg2
-        (sis 'reg2-out 0 *data-width*)
+        (sis 'reg2-out 0 *data-size*)
         'shift-reg32
         '(s-act s-out))
 
@@ -366,7 +366,7 @@
        (ci      (nth *1-bit-adder$ci* bit-add)))
     (implies (and (serial-adder& netlist)
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) *data-width*))
+                  (equal (len (car reg2)) *data-size*))
              (equal (se 'serial-adder inputs st netlist)
                     (list* (serial-adder$ready-in- st)
                            (serial-adder$ready-out st)
@@ -444,8 +444,8 @@
                   (true-listp go-signals)
                   (equal (len go-signals) *serial-adder$go-num*)
 
-                  (equal (len (car reg0)) *data-width*)
-                  (equal (len (car reg1)) *data-width*))
+                  (equal (len (car reg0)) *data-size*)
+                  (equal (len (car reg1)) *data-size*))
              (equal (de 'serial-adder inputs st netlist)
                     (serial-adder$step inputs st))))
   :hints (("Goal"
@@ -476,7 +476,7 @@
  async-adder* ()
  'async-adder
  (list* 'dr-lresult (sis 'go 0 *async-adder$go-num*))
- (list* 'ready-in- 'ready-out (sis 'result-out 0 (1+ *data-width*)))
+ (list* 'ready-in- 'ready-out (sis 'result-out 0 (1+ *data-size*)))
  '(lcntl cntl lnext-cntl next-cntl ldone- done- lresult result
          serial-add)
 
@@ -503,14 +503,14 @@
   ;; RESULT
   '(lresult (result-status) link-cntl (result-act dr-lresult))
   (list 'result
-        (sis 'result-out 0 (1+ *data-width*))
-        (si 'latch-n (1+ *data-width*))
-        (list* 'result-act (append (sis 'sum 0 *data-width*) (list 'carry))))
+        (sis 'result-out 0 (1+ *data-size*))
+        (si 'latch-n (1+ *data-size*))
+        (list* 'result-act (append (sis 'sum 0 *data-size*) (list 'carry))))
 
   ;; SERIAL-ADD
   (list 'serial-add
         (list* 'serial-add-ready-in- 'serial-add-ready-out
-               (append (sis 'sum 0 *data-width*) (list 'carry)))
+               (append (sis 'sum 0 *data-size*) (list 'carry)))
         'serial-adder
         (list* 'cntl-act 'low 'result-act (sis 'go
                                                *async-adder$prim-go-num*
@@ -574,7 +574,7 @@
   (declare (xargs :guard t))
   (cons (async-adder*)
         (union$ (latch-n$netlist *async-adder$cntl-st-len*)
-                (latch-n$netlist (1+ *data-width*))
+                (latch-n$netlist (1+ *data-size*))
                 (v-buf$netlist *async-adder$cntl-st-len*)
                 (serial-adder$netlist)
                 (next-cntl-state$netlist)
@@ -587,7 +587,7 @@
                 (async-adder*))
          (joint-cntl& subnetlist)
          (latch-n& subnetlist *async-adder$cntl-st-len*)
-         (latch-n& subnetlist (1+ *data-width*))
+         (latch-n& subnetlist (1+ *data-size*))
          (v-buf& subnetlist *async-adder$cntl-st-len*)
          (serial-adder& subnetlist)
          (next-cntl-state& subnetlist))))
@@ -616,9 +616,9 @@
        (reg2       (nth *serial-adder$reg2* serial-add)))
     (implies (and (async-adder& netlist)
                   (true-listp result)
-                  (equal (len result) (1+ *data-width*))
+                  (equal (len result) (1+ *data-size*))
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) *data-width*))
+                  (equal (len (car reg2)) *data-size*))
              (equal (se 'async-adder inputs st netlist)
                     (list* (async-adder$ready-in- st)
                            (async-adder$ready-out st)
@@ -732,11 +732,11 @@
                   (len-1-true-listp next-cntl)
                   (equal (len next-cntl) *async-adder$cntl-st-len*)
                   (true-listp result)
-                  (equal (len result) (1+ *data-width*))
-                  (equal (len (car reg0)) *data-width*)
-                  (equal (len (car reg1)) *data-width*)
+                  (equal (len result) (1+ *data-size*))
+                  (equal (len (car reg0)) *data-size*)
+                  (equal (len (car reg1)) *data-size*)
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) *data-width*))
+                  (equal (len (car reg2)) *data-size*))
              (equal (de 'async-adder inputs st netlist)
                     (async-adder$step inputs st))))
   :hints (("Goal"
@@ -853,11 +853,11 @@
           (len-1-true-listp next-cntl)
           (equal (len next-cntl) *async-adder$cntl-st-len*)
           (true-listp result)
-          (equal (len result) (1+ *data-width*))
-          (equal (len (car reg0)) *data-width*)
-          (equal (len (car reg1)) *data-width*)
+          (equal (len result) (1+ *data-size*))
+          (equal (len (car reg0)) *data-size*)
+          (equal (len (car reg1)) *data-size*)
           (true-listp (car reg2))
-          (equal (len (car reg2)) *data-width*))
+          (equal (len (car reg2)) *data-size*))
      (equal (de 'async-adder inputs st netlist)
             (async-adder$step inputs st))))
   :hints (("Goal"
@@ -887,11 +887,11 @@
                   (len-1-true-listp next-cntl)
                   (equal (len next-cntl) *async-adder$cntl-st-len*)
                   (true-listp result)
-                  (equal (len result) (1+ *data-width*))
-                  (equal (len (car reg0)) *data-width*)
-                  (equal (len (car reg1)) *data-width*)
+                  (equal (len result) (1+ *data-size*))
+                  (equal (len (car reg0)) *data-size*)
+                  (equal (len (car reg1)) *data-size*)
                   (true-listp (car reg2))
-                  (equal (len (car reg2)) *data-width*))
+                  (equal (len (car reg2)) *data-size*))
              (equal (de-n 'async-adder inputs-seq st netlist n)
                     (async-adder$run inputs-seq st n))))
   :hints (("Goal"
@@ -951,15 +951,15 @@
 
          (emptyp lresult)
          (true-listp result)
-         (equal (len result) (1+ *data-width*))
+         (equal (len result) (1+ *data-size*))
 
          (fullp lreg0)
-         (equal (len (car reg0)) *data-width*)
+         (equal (len (car reg0)) *data-size*)
          (fullp lreg1)
-         (equal (len (car reg1)) *data-width*)
+         (equal (len (car reg1)) *data-size*)
          (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) *data-width*)
+         (equal (len (car reg2)) *data-size*)
 
          (emptyp la)
          (emptyp lb)
@@ -1326,15 +1326,15 @@
 
          (emptyp lresult)
          (true-listp result)
-         (equal (len result) (1+ *data-width*))
+         (equal (len result) (1+ *data-size*))
 
          (fullp lreg0)
-         (equal (len (car reg0)) *data-width*)
+         (equal (len (car reg0)) *data-size*)
          (fullp lreg1)
-         (equal (len (car reg1)) *data-width*)
+         (equal (len (car reg1)) *data-size*)
          (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) *data-width*)
+         (equal (len (car reg2)) *data-size*)
 
          (emptyp la)
          (emptyp lb)
@@ -1663,10 +1663,10 @@
            (equal (len next-cntl) *async-adder$cntl-st-len*)
            (bvp (strip-cars next-cntl))
 
-           (equal (len (car reg0)) *data-width*)
-           (equal (len (car reg1)) *data-width*)
+           (equal (len (car reg0)) *data-size*)
+           (equal (len (car reg1)) *data-size*)
            (true-listp (car reg2))
-           (equal (len (car reg2)) *data-width*))
+           (equal (len (car reg2)) *data-size*))
       (equal (async-adder$step inputs st)
              st)))
    :hints (("Goal" :in-theory (e/d* (async-adder$input-format
@@ -1737,10 +1737,10 @@
           (equal (len next-cntl) *async-adder$cntl-st-len*)
           (bvp (strip-cars next-cntl))
 
-          (equal (len (car reg0)) *data-width*)
-          (equal (len (car reg1)) *data-width*)
+          (equal (len (car reg0)) *data-size*)
+          (equal (len (car reg1)) *data-size*)
           (true-listp (car reg2))
-          (equal (len (car reg2)) *data-width*))
+          (equal (len (car reg2)) *data-size*))
      (equal (async-adder$run inputs-seq st n)
             st)))
   :hints (("Goal"
@@ -2035,7 +2035,7 @@
        (and (posp count)
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
-               *data-width*)
+               *data-size*)
             (async-adder$st-trans-n inputs-seq count)
             (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
             (async-adder$input-format-n inputs-seq n)
@@ -2107,7 +2107,7 @@
        (and (posp count)
             (< (+ (v-to-nat (strip-cars next-cntl))
                   count)
-               *data-width*)
+               *data-size*)
             (async-adder$st-trans-n inputs-seq count)
             (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
             (async-adder$input-format-n inputs-seq n)
@@ -2258,15 +2258,15 @@
 
          (emptyp lresult)
          (true-listp result)
-         (equal (len result) (1+ *data-width*))
+         (equal (len result) (1+ *data-size*))
 
          (fullp lreg0)
-         (equal (len (car reg0)) *data-width*)
+         (equal (len (car reg0)) *data-size*)
          (fullp lreg1)
-         (equal (len (car reg1)) *data-width*)
+         (equal (len (car reg1)) *data-size*)
          (emptyp lreg2)
          (true-listp (car reg2))
-         (equal (len (car reg2)) *data-width*)
+         (equal (len (car reg2)) *data-size*)
 
          (emptyp la)
          (emptyp lb)
@@ -2283,7 +2283,7 @@
 
 (defthmd simulate-async-adder-loop-invalid-result-instance
   (implies
-   (and (equal count (1- *data-width*))
+   (and (equal count (1- *data-size*))
         (async-adder$st-trans-n inputs-seq count)
         (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
         (async-adder$input-format-n inputs-seq n)
@@ -2335,7 +2335,7 @@
        (?lco (nth *1-bit-adder$lco* bit-add))
        (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
-     (and (equal count (1- *data-width*))
+     (and (equal count (1- *data-size*))
           (async-adder$st-trans-n inputs-seq count)
           (equal n (async-adder$st-trans-n->numsteps inputs-seq count))
           (async-adder$input-format-n inputs-seq n)
@@ -2487,7 +2487,7 @@
 
 (defthmd simulate-async-adder-invalid-result
   (implies
-   (and (equal operand-size *data-width*)
+   (and (equal operand-size *data-size*)
         (async-adder-interleavings inputs-seq operand-size)
         (equal n (async-adder-numsteps inputs-seq operand-size))
         (async-adder$input-format-n inputs-seq n)
@@ -2544,7 +2544,7 @@
        (?lco (nth *1-bit-adder$lco* bit-add))
        (?co  (nth *1-bit-adder$co* bit-add)))
     (implies
-     (and (equal operand-size *data-width*)
+     (and (equal operand-size *data-size*)
           (async-adder-interleavings inputs-seq operand-size)
           (natp n)
           (>= n (async-adder-numsteps inputs-seq operand-size))
@@ -2729,7 +2729,7 @@
 (defthmd async-adder$empty-result
   (implies
    (and (async-adder& netlist)
-        (equal operand-size *data-width*)
+        (equal operand-size *data-size*)
         (async-adder-interleavings inputs-seq operand-size)
         (natp m)
         (< m n)
@@ -2766,7 +2766,7 @@
        (ci (nth *1-bit-adder$ci* bit-add)))
     (implies
      (and (async-adder& netlist)
-          (equal operand-size *data-width*)
+          (equal operand-size *data-size*)
           (async-adder-interleavings inputs-seq operand-size)
           (natp n)
           (>= n (async-adder-numsteps inputs-seq operand-size))
@@ -2822,7 +2822,7 @@
          (ci (nth *1-bit-adder$ci* bit-add)))
       (implies
        (and (async-adder& netlist)
-            (equal operand-size *data-width*)
+            (equal operand-size *data-size*)
             (async-adder-interleavings inputs-seq operand-size)
             (natp m)
             (equal n (async-adder-numsteps inputs-seq operand-size))

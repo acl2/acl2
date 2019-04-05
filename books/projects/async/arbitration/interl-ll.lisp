@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; April 2019
 
 (in-package "ADE")
 
-(include-book "arb-merge")
+(include-book "arb-merge2")
 (include-book "../fifo/queue9-l")
 (include-book "../fifo/queue11-l")
 
@@ -44,38 +44,38 @@
                               *arb-merge$go-num*))
 (defconst *interl-ll$st-len* 3)
 
-(defun interl-ll$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 3 (* 2 (mbe :logic (nfix data-width)
-                 :exec  data-width))))
+(defun interl-ll$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 3 (* 2 (mbe :logic (nfix data-size)
+                 :exec  data-size))))
 
-(defun interl-ll$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (interl-ll$data-ins-len data-width)
+(defun interl-ll$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (interl-ll$data-ins-len data-size)
      *interl-ll$select-num*
      *interl-ll$go-num*))
 
 ;; DE module generator of INTERL-LL
 
 (module-generator
- interl-ll* (data-width)
- (si 'interl-ll data-width)
+ interl-ll* (data-size)
+ (si 'interl-ll data-size)
  (list* 'in0-act 'in1-act 'empty-out-
-        (append (sis 'data0-in 0 data-width)
-                (sis 'data1-in 0 data-width)
+        (append (sis 'data0-in 0 data-size)
+                (sis 'data1-in 0 data-size)
                 (cons 'select (sis 'go 0 *interl-ll$go-num*))))
  (list* 'ready-in0- 'ready-in1- 'out-act
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(q9-l q11-l arb-merge)
  (list
   ;; LINKS
   ;; 9-link queue Q9-L
   (list 'q9-l
         (list* 'ready-in0- 'q9-l-ready-out
-               (sis 'q9-l-data-out 0 data-width))
-        (si 'queue9-l data-width)
+               (sis 'q9-l-data-out 0 data-size))
+        (si 'queue9-l data-size)
         (list* 'in0-act 'out-act0
-               (append (sis 'data0-in 0 data-width)
+               (append (sis 'data0-in 0 data-size)
                        (sis 'go
                             *interl-ll$prim-go-num*
                             *queue9-l$go-num*))))
@@ -83,10 +83,10 @@
   ;; 11-link queue Q11-L
   (list 'q11-l
         (list* 'ready-in1- 'q11-l-ready-out
-               (sis 'q11-l-data-out 0 data-width))
-        (si 'queue11-l data-width)
+               (sis 'q11-l-data-out 0 data-size))
+        (si 'queue11-l data-size)
         (list* 'in1-act 'out-act1
-               (append (sis 'data1-in 0 data-width)
+               (append (sis 'data1-in 0 data-size)
                        (sis 'go
                             (+ *interl-ll$prim-go-num*
                                *queue9-l$go-num*)
@@ -96,11 +96,11 @@
   ;; Arb-merge
   (list 'arb-merge
         (list* 'out-act 'out-act0 'out-act1
-               (sis 'data-out 0 data-width))
-        (si 'arb-merge data-width)
+               (sis 'data-out 0 data-size))
+        (si 'arb-merge data-size)
         (list* 'q9-l-ready-out 'q11-l-ready-out 'empty-out-
-               (append (sis 'q9-l-data-out 0 data-width)
-                       (sis 'q11-l-data-out 0 data-width)
+               (append (sis 'q9-l-data-out 0 data-size)
+                       (sis 'q11-l-data-out 0 data-size)
                        (cons 'select
                              (sis 'go
                                   (+ *interl-ll$prim-go-num*
@@ -108,7 +108,7 @@
                                      *queue11-l$go-num*)
                                   *arb-merge$go-num*))))))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -119,26 +119,26 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; INTERL-LL.
 
-(defund interl-ll$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (interl-ll* data-width)
-        (union$ (queue9-l$netlist data-width)
-                (queue11-l$netlist data-width)
-                (arb-merge$netlist data-width)
+(defund interl-ll$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (interl-ll* data-size)
+        (union$ (queue9-l$netlist data-size)
+                (queue11-l$netlist data-size)
+                (arb-merge$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for INTERL-LL
 
-(defund interl-ll& (netlist data-width)
+(defund interl-ll& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'interl-ll data-width) netlist)))
-    (and (equal (assoc (si 'interl-ll data-width) netlist)
-                (interl-ll* data-width))
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'interl-ll data-size) netlist)))
+    (and (equal (assoc (si 'interl-ll data-size) netlist)
+                (interl-ll* data-size))
          (joint-cntl& subnetlist)
-         (queue9-l& subnetlist data-width)
-         (queue11-l& subnetlist data-width)
-         (arb-merge& subnetlist data-width))))
+         (queue9-l& subnetlist data-size)
+         (queue11-l& subnetlist data-size)
+         (arb-merge& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -150,40 +150,40 @@
 
 ;; Constraints on the state of INTERL-LL
 
-(defund interl-ll$st-format (st data-width)
+(defund interl-ll$st-format (st data-size)
   (b* ((q9-l (get-field *interl-ll$q9-l* st))
        (q11-l (get-field *interl-ll$q11-l* st))
        (arb-merge (get-field *interl-ll$arb-merge* st)))
-    (and (< 0 data-width)
-         (queue9-l$st-format q9-l data-width)
-         (queue11-l$st-format q11-l data-width)
+    (and (< 0 data-size)
+         (queue9-l$st-format q9-l data-size)
+         (queue11-l$st-format q11-l data-size)
          (arb-merge$st-format arb-merge))))
 
 (defthm interl-ll$st-format=>constraint
-  (implies (interl-ll$st-format st data-width)
-           (posp data-width))
+  (implies (interl-ll$st-format st data-size)
+           (posp data-size))
   :hints (("Goal" :in-theory (enable interl-ll$st-format)))
   :rule-classes :forward-chaining)
 
-(defund interl-ll$valid-st (st data-width)
+(defund interl-ll$valid-st (st data-size)
   (b* ((q9-l (get-field *interl-ll$q9-l* st))
        (q11-l (get-field *interl-ll$q11-l* st))
        (arb-merge (get-field *interl-ll$arb-merge* st)))
-    (and (< 0 data-width)
-         (queue9-l$valid-st q9-l data-width)
-         (queue11-l$valid-st q11-l data-width)
+    (and (< 0 data-size)
+         (queue9-l$valid-st q9-l data-size)
+         (queue11-l$valid-st q11-l data-size)
          (arb-merge$valid-st arb-merge))))
 
 (defthmd interl-ll$valid-st=>constraint
-  (implies (interl-ll$valid-st st data-width)
-           (posp data-width))
+  (implies (interl-ll$valid-st st data-size)
+           (posp data-size))
   :hints (("Goal" :in-theory (enable queue9-l$valid-st=>constraint
                                      interl-ll$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd interl-ll$valid-st=>st-format
-  (implies (interl-ll$valid-st st data-width)
-           (interl-ll$st-format st data-width))
+  (implies (interl-ll$valid-st st data-size)
+           (interl-ll$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (queue9-l$valid-st=>st-format
                                    queue11-l$valid-st=>st-format
                                    arb-merge$valid-st=>st-format
@@ -206,32 +206,32 @@
 
   ;; Extract the 1st input data item
 
-  (defun interl-ll$data0-in (inputs data-width)
+  (defun interl-ll$data0-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 3 inputs)))
 
   (defthm len-interl-ll$data0-in
-    (equal (len (interl-ll$data0-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (interl-ll$data0-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable interl-ll$data0-in))
 
   ;; Extract the 2nd input data item
 
-  (defun interl-ll$data1-in (inputs data-width)
+  (defun interl-ll$data1-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (b* ((width (mbe :logic (nfix data-width)
-                     :exec  data-width)))
-      (take width
-            (nthcdr (+ 3 width) inputs))))
+                                (natp data-size))))
+    (b* ((size (mbe :logic (nfix data-size)
+                     :exec  data-size)))
+      (take size
+            (nthcdr (+ 3 size) inputs))))
 
   (defthm len-interl-ll$data1-in
-    (equal (len (interl-ll$data1-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (interl-ll$data1-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable interl-ll$data1-in))
 
@@ -242,7 +242,7 @@
       (queue9-l$ready-in- q9-l)))
 
   (defthm booleanp-interl-ll$ready-in0-
-    (implies (interl-ll$valid-st st data-width)
+    (implies (interl-ll$valid-st st data-size)
              (booleanp (interl-ll$ready-in0- st)))
     :hints (("Goal" :in-theory (enable interl-ll$valid-st
                                        interl-ll$ready-in0-)))
@@ -255,7 +255,7 @@
       (queue11-l$ready-in- q11-l)))
 
   (defthm booleanp-interl-ll$ready-in1-
-    (implies (interl-ll$valid-st st data-width)
+    (implies (interl-ll$valid-st st data-size)
              (booleanp (interl-ll$ready-in1- st)))
     :hints (("Goal" :in-theory (enable interl-ll$valid-st
                                        interl-ll$ready-in1-)))
@@ -263,10 +263,10 @@
 
   ;; Extract the inputs for joint ARB-MERGE
 
-  (defund interl-ll$arb-merge-inputs (inputs st data-width)
+  (defund interl-ll$arb-merge-inputs (inputs st data-size)
     (b* ((empty-out- (nth 2 inputs))
-         (select     (nth (interl-ll$data-ins-len data-width) inputs))
-         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-width)
+         (select     (nth (interl-ll$data-ins-len data-size) inputs))
+         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-size)
                                 *interl-ll$select-num*)
                              inputs))
 
@@ -289,34 +289,34 @@
 
   ;; Extract the "out-act0" signal
 
-  (defund interl-ll$out-act0 (inputs st data-width)
-    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width))
+  (defund interl-ll$out-act0 (inputs st data-size)
+    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
          (arb-merge (get-field *interl-ll$arb-merge* st)))
-      (arb-merge$act0 arb-merge-inputs arb-merge data-width)))
+      (arb-merge$act0 arb-merge-inputs arb-merge data-size)))
 
   (defthm interl-ll$out-act0-inactive
     (implies (equal (nth 2 inputs) t)
-             (not (interl-ll$out-act0 inputs st data-width)))
+             (not (interl-ll$out-act0 inputs st data-size)))
     :hints (("Goal" :in-theory (enable interl-ll$arb-merge-inputs
                                        interl-ll$out-act0))))
 
   ;; Extract the "out-act1" signal
 
-  (defund interl-ll$out-act1 (inputs st data-width)
-    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width))
+  (defund interl-ll$out-act1 (inputs st data-size)
+    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
          (arb-merge (get-field *interl-ll$arb-merge* st)))
-      (arb-merge$act1 arb-merge-inputs arb-merge data-width)))
+      (arb-merge$act1 arb-merge-inputs arb-merge data-size)))
 
   (defthm interl-ll$out-act1-inactive
     (implies (equal (nth 2 inputs) t)
-             (not (interl-ll$out-act1 inputs st data-width)))
+             (not (interl-ll$out-act1 inputs st data-size)))
     :hints (("Goal" :in-theory (enable interl-ll$arb-merge-inputs
                                        interl-ll$out-act1))))
 
   (defthm interl-ll$out-act-mutually-exclusive
-    (implies (and (interl-ll$valid-st st data-width)
-                  (interl-ll$out-act0 inputs st data-width))
-             (not (interl-ll$out-act1 inputs st data-width)))
+    (implies (and (interl-ll$valid-st st data-size)
+                  (interl-ll$out-act0 inputs st data-size))
+             (not (interl-ll$out-act1 inputs st data-size)))
     :hints (("Goal" :in-theory (enable interl-ll$valid-st
                                        interl-ll$arb-merge-inputs
                                        interl-ll$out-act0
@@ -324,21 +324,21 @@
 
   ;; Extract the "out-act" signal
 
-  (defund interl-ll$out-act (inputs st data-width)
-    (f-or (interl-ll$out-act0 inputs st data-width)
-          (interl-ll$out-act1 inputs st data-width)))
+  (defund interl-ll$out-act (inputs st data-size)
+    (f-or (interl-ll$out-act0 inputs st data-size)
+          (interl-ll$out-act1 inputs st data-size)))
 
   (defthm interl-ll$out-act-inactive
     (implies (equal (nth 2 inputs) t)
-             (not (interl-ll$out-act inputs st data-width)))
+             (not (interl-ll$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable interl-ll$out-act))))
 
   ;; Extract the inputs for link Q9-L
 
-  (defund interl-ll$q9-l-inputs (inputs st data-width)
+  (defund interl-ll$q9-l-inputs (inputs st data-size)
     (b* ((in0-act (interl-ll$in0-act inputs))
-         (data0-in (interl-ll$data0-in inputs data-width))
-         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-width)
+         (data0-in (interl-ll$data0-in inputs data-size))
+         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-size)
                                 *interl-ll$select-num*)
                              inputs))
 
@@ -348,18 +348,18 @@
 
          (arb-merge (get-field *interl-ll$arb-merge* st))
 
-         (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width))
-         (out-act0 (arb-merge$act0 arb-merge-inputs arb-merge data-width)))
+         (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
+         (out-act0 (arb-merge$act0 arb-merge-inputs arb-merge data-size)))
 
       (list* in0-act out-act0
              (append data0-in q9-l-go-signals))))
 
   ;; Extract the inputs for link Q11-L
 
-  (defund interl-ll$q11-l-inputs (inputs st data-width)
+  (defund interl-ll$q11-l-inputs (inputs st data-size)
     (b* ((in1-act (interl-ll$in1-act inputs))
-         (data1-in (interl-ll$data1-in inputs data-width))
-         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-width)
+         (data1-in (interl-ll$data1-in inputs data-size))
+         (go-signals (nthcdr (+ (interl-ll$data-ins-len data-size)
                                 *interl-ll$select-num*)
                              inputs))
 
@@ -370,39 +370,39 @@
 
          (arb-merge (get-field *interl-ll$arb-merge* st))
 
-         (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width))
-         (out-act1 (arb-merge$act1 arb-merge-inputs arb-merge data-width)))
+         (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
+         (out-act1 (arb-merge$act1 arb-merge-inputs arb-merge data-size)))
 
       (list* in1-act out-act1
              (append data1-in q11-l-go-signals))))
 
   ;; Extract the output data
 
-  (defund interl-ll$data-out (inputs st data-width)
-    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width))
+  (defund interl-ll$data-out (inputs st data-size)
+    (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
          (arb-merge (get-field *interl-ll$arb-merge* st)))
-      (arb-merge$data-out arb-merge-inputs arb-merge data-width)))
+      (arb-merge$data-out arb-merge-inputs arb-merge data-size)))
 
   (defthm len-interl-ll$data-out-1
-    (implies (interl-ll$st-format st data-width)
-             (equal (len (interl-ll$data-out inputs st data-width))
-                    data-width))
+    (implies (interl-ll$st-format st data-size)
+             (equal (len (interl-ll$data-out inputs st data-size))
+                    data-size))
     :hints (("Goal" :in-theory (enable interl-ll$st-format
                                        interl-ll$data-out))))
 
   (defthm len-interl-ll$data-out-2
-    (implies (interl-ll$valid-st st data-width)
-             (equal (len (interl-ll$data-out inputs st data-width))
-                    data-width))
+    (implies (interl-ll$valid-st st data-size)
+             (equal (len (interl-ll$data-out inputs st data-size))
+                    data-size))
     :hints (("Goal" :in-theory (enable queue9-l$valid-st=>constraint
                                        interl-ll$valid-st
                                        interl-ll$data-out))))
 
-  (defun interl-ll$outputs (inputs st data-width)
+  (defun interl-ll$outputs (inputs st data-size)
     (list* (interl-ll$ready-in0- st)
            (interl-ll$ready-in1- st)
-           (interl-ll$out-act inputs st data-width)
-           (interl-ll$data-out inputs st data-width)))
+           (interl-ll$out-act inputs st data-size)
+           (interl-ll$data-out inputs st data-size)))
   )
 
 ;; The value lemma for INTERL-LL
@@ -411,20 +411,20 @@
   (b* ((inputs (list* in0-act in1-act empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
-    (implies (and (interl-ll& netlist data-width)
+    (implies (and (interl-ll& netlist data-size)
                   (true-listp data0-in)
-                  (equal (len data0-in) data-width)
+                  (equal (len data0-in) data-size)
                   (true-listp data1-in)
-                  (equal (len data1-in) data-width)
+                  (equal (len data1-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *interl-ll$go-num*)
-                  (interl-ll$st-format st data-width))
-             (equal (se (si 'interl-ll data-width) inputs st netlist)
-                    (interl-ll$outputs inputs st data-width))))
+                  (interl-ll$st-format st data-size))
+             (equal (se (si 'interl-ll data-size) inputs st netlist)
+                    (interl-ll$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'interl-ll data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'interl-ll data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             interl-ll&
                             interl-ll*$destructure
@@ -443,24 +443,24 @@
 
 ;; This function specifies the next state of INTERL-LL.
 
-(defun interl-ll$step (inputs st data-width)
+(defun interl-ll$step (inputs st data-size)
   (b* ((q9-l        (get-field *interl-ll$q9-l* st))
        (q11-l       (get-field *interl-ll$q11-l* st))
        (arb-merge (get-field *interl-ll$arb-merge* st))
 
-       (q9-l-inputs (interl-ll$q9-l-inputs inputs st data-width))
-       (q11-l-inputs (interl-ll$q11-l-inputs inputs st data-width))
-       (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-width)))
+       (q9-l-inputs (interl-ll$q9-l-inputs inputs st data-size))
+       (q11-l-inputs (interl-ll$q11-l-inputs inputs st data-size))
+       (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size)))
     (list
       ;; Q9-L
-     (queue9-l$step q9-l-inputs q9-l data-width)
+     (queue9-l$step q9-l-inputs q9-l data-size)
      ;; Q11-L
-     (queue11-l$step q11-l-inputs q11-l data-width)
+     (queue11-l$step q11-l-inputs q11-l data-size)
      ;; Joint arb-merge
-     (arb-merge$step arb-merge-inputs arb-merge data-width))))
+     (arb-merge$step arb-merge-inputs arb-merge data-size))))
 
 (defthm len-of-interl-ll$step
-  (equal (len (interl-ll$step inputs st data-width))
+  (equal (len (interl-ll$step inputs st data-size))
          *interl-ll$st-len*))
 
 ;; The state lemma for INTERL-LL
@@ -469,20 +469,20 @@
   (b* ((inputs (list* in0-act in1-act empty-out-
                       (append data0-in data1-in
                               (cons select go-signals)))))
-    (implies (and (interl-ll& netlist data-width)
+    (implies (and (interl-ll& netlist data-size)
                   (true-listp data0-in)
-                  (equal (len data0-in) data-width)
+                  (equal (len data0-in) data-size)
                   (true-listp data1-in)
-                  (equal (len data1-in) data-width)
+                  (equal (len data1-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *interl-ll$go-num*)
-                  (interl-ll$st-format st data-width))
-             (equal (de (si 'interl-ll data-width) inputs st netlist)
-                    (interl-ll$step inputs st data-width))))
+                  (interl-ll$st-format st data-size))
+             (equal (de (si 'interl-ll data-size) inputs st netlist)
+                    (interl-ll$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'interl-ll data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'interl-ll data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             interl-ll&
                             interl-ll*$destructure
@@ -504,14 +504,14 @@
 
 ;; Conditions on the inputs
 
-(defund interl-ll$input-format (inputs st data-width)
+(defund interl-ll$input-format (inputs st data-size)
   (b* ((in0-act    (interl-ll$in0-act inputs))
        (in1-act    (interl-ll$in1-act inputs))
        (empty-out- (nth 2 inputs))
-       (data0-in   (interl-ll$data0-in inputs data-width))
-       (data1-in   (interl-ll$data1-in inputs data-width))
-       (select     (nth (interl-ll$data-ins-len data-width) inputs))
-       (go-signals (nthcdr (+ (interl-ll$data-ins-len data-width)
+       (data0-in   (interl-ll$data0-in inputs data-size))
+       (data1-in   (interl-ll$data1-in inputs data-size))
+       (select     (nth (interl-ll$data-ins-len data-size) inputs))
+       (go-signals (nthcdr (+ (interl-ll$data-ins-len data-size)
                               *interl-ll$select-num*)
                            inputs))
 
@@ -543,13 +543,20 @@
    :rule-classes (:rewrite :type-prescription)))
 
 (local
+ (defthm booleanp-caddr-of-bv
+   (implies (bvp x)
+            (booleanp (caddr x)))
+   :hints (("Goal" :in-theory (enable bvp)))
+   :rule-classes (:rewrite :type-prescription)))
+
+(local
  (defthm interl-ll$input-format=>q9-l$input-format
-   (implies (and (interl-ll$input-format inputs st data-width)
-                 (interl-ll$valid-st st data-width))
+   (implies (and (interl-ll$input-format inputs st data-size)
+                 (interl-ll$valid-st st data-size))
             (queue9-l$input-format
-             (interl-ll$q9-l-inputs inputs st data-width)
+             (interl-ll$q9-l-inputs inputs st data-size)
              (nth *interl-ll$q9-l* st)
-             data-width))
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (get-field
                              f-and4
@@ -571,12 +578,12 @@
 
 (local
  (defthm interl-ll$input-format=>q11-l$input-format
-   (implies (and (interl-ll$input-format inputs st data-width)
-                 (interl-ll$valid-st st data-width))
+   (implies (and (interl-ll$input-format inputs st data-size)
+                 (interl-ll$valid-st st data-size))
             (queue11-l$input-format
-             (interl-ll$q11-l-inputs inputs st data-width)
+             (interl-ll$q11-l-inputs inputs st data-size)
              (nth *interl-ll$q11-l* st)
-             data-width))
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (f-and4
                              f-and5
@@ -598,11 +605,11 @@
 
 (local
  (defthm interl-ll$input-format=>arb-merge$input-format
-   (implies (and (interl-ll$input-format inputs st data-width)
-                 (interl-ll$valid-st st data-width))
+   (implies (and (interl-ll$input-format inputs st data-size)
+                 (interl-ll$valid-st st data-size))
             (arb-merge$input-format
-             (interl-ll$arb-merge-inputs inputs st data-width)
-             data-width))
+             (interl-ll$arb-merge-inputs inputs st data-size)
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (open-nth
                              queue9-l$valid-st=>constraint
@@ -615,23 +622,23 @@
                             ())))))
 
 (defthm booleanp-interl-ll$in0-act
-  (implies (interl-ll$input-format inputs st data-width)
+  (implies (interl-ll$input-format inputs st data-size)
            (booleanp (interl-ll$in0-act inputs)))
   :hints (("Goal" :in-theory (enable interl-ll$input-format
                                      interl-ll$in0-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-ll$in1-act
-  (implies (interl-ll$input-format inputs st data-width)
+  (implies (interl-ll$input-format inputs st data-size)
            (booleanp (interl-ll$in1-act inputs)))
   :hints (("Goal" :in-theory (enable interl-ll$input-format
                                      interl-ll$in1-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-ll$out0-act
-  (implies (and (interl-ll$input-format inputs st data-width)
-                (interl-ll$valid-st st data-width))
-           (booleanp (interl-ll$out-act0 inputs st data-width)))
+  (implies (and (interl-ll$input-format inputs st data-size)
+                (interl-ll$valid-st st data-size))
+           (booleanp (interl-ll$out-act0 inputs st data-size)))
   :hints (("Goal" :in-theory (enable f-and4
                                      f-and5
                                      arb-merge$valid-st
@@ -644,9 +651,9 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-ll$out1-act
-  (implies (and (interl-ll$input-format inputs st data-width)
-                (interl-ll$valid-st st data-width))
-           (booleanp (interl-ll$out-act1 inputs st data-width)))
+  (implies (and (interl-ll$input-format inputs st data-size)
+                (interl-ll$valid-st st data-size))
+           (booleanp (interl-ll$out-act1 inputs st data-size)))
   :hints (("Goal" :in-theory (enable f-and4
                                      f-and5
                                      arb-merge$valid-st
@@ -659,17 +666,17 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-interl-ll$out-act
-  (implies (and (interl-ll$input-format inputs st data-width)
-                (interl-ll$valid-st st data-width))
-           (booleanp (interl-ll$out-act inputs st data-width)))
+  (implies (and (interl-ll$input-format inputs st data-size)
+                (interl-ll$valid-st st data-size))
+           (booleanp (interl-ll$out-act inputs st data-size)))
   :hints (("Goal" :in-theory (enable interl-ll$out-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm bvp-interl-ll$data-out
-  (implies (and (interl-ll$input-format inputs st data-width)
-                (interl-ll$valid-st st data-width)
-                (interl-ll$out-act inputs st data-width))
-           (bvp (interl-ll$data-out inputs st data-width)))
+  (implies (and (interl-ll$input-format inputs st data-size)
+                (interl-ll$valid-st st data-size)
+                (interl-ll$out-act inputs st data-size))
+           (bvp (interl-ll$data-out inputs st data-size)))
   :hints (("Goal"
            :in-theory (enable f-and4
                               f-and5
@@ -704,8 +711,8 @@
     (queue11-l$extract q11-l)))
 
 (defthm interl-ll$extract0-not-empty
-  (implies (and (interl-ll$out-act0 inputs st data-width)
-                (interl-ll$valid-st st data-width))
+  (implies (and (interl-ll$out-act0 inputs st data-size)
+                (interl-ll$valid-st st data-size))
            (< 0 (len (interl-ll$extract0 st))))
   :hints (("Goal"
            :in-theory (e/d (f-and
@@ -722,8 +729,8 @@
   :rule-classes :linear)
 
 (defthm interl-ll$extract1-not-empty
-  (implies (and (interl-ll$out-act1 inputs st data-width)
-                (interl-ll$valid-st st data-width))
+  (implies (and (interl-ll$out-act1 inputs st data-size)
+                (interl-ll$valid-st st data-size))
            (< 0 (len (interl-ll$extract1 st))))
   :hints (("Goal"
            :in-theory (e/d (f-and
@@ -742,12 +749,12 @@
 ;; The extracted next-state functions for INTERL-LL.  Note that these functions
 ;; avoid exploring the internal computation of INTERL-LL.
 
-(defund interl-ll$extracted0-step (inputs st data-width)
-  (b* ((data (interl-ll$data0-in inputs data-width))
+(defund interl-ll$extracted0-step (inputs st data-size)
+  (b* ((data (interl-ll$data0-in inputs data-size))
        (extracted-st (interl-ll$extract0 st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (interl-ll$out-act0 inputs st data-width) t)
+     ((equal (interl-ll$out-act0 inputs st data-size) t)
       (cond
        ((equal (interl-ll$in0-act inputs) t)
         (cons data (take n extracted-st)))
@@ -757,12 +764,12 @@
           (cons data extracted-st))
          (t extracted-st))))))
 
-(defund interl-ll$extracted1-step (inputs st data-width)
-  (b* ((data (interl-ll$data1-in inputs data-width))
+(defund interl-ll$extracted1-step (inputs st data-size)
+  (b* ((data (interl-ll$data1-in inputs data-size))
        (extracted-st (interl-ll$extract1 st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (interl-ll$out-act1 inputs st data-width) t)
+     ((equal (interl-ll$out-act1 inputs st data-size) t)
       (cond
        ((equal (interl-ll$in1-act inputs) t)
         (cons data (take n extracted-st)))
@@ -780,9 +787,9 @@
   (local
    (defthm interl-ll$q9-l-data-in-rewrite
      (equal (queue9-l$data-in
-             (interl-ll$q9-l-inputs inputs st data-width)
-             data-width)
-            (interl-ll$data0-in inputs data-width))
+             (interl-ll$q9-l-inputs inputs st data-size)
+             data-size)
+            (interl-ll$data0-in inputs data-size))
      :hints (("Goal"
               :in-theory (enable queue9-l$data-in
                                  interl-ll$data0-in
@@ -791,9 +798,9 @@
   (local
    (defthm interl-ll$q11-l-data-in-rewrite
      (equal (queue11-l$data-in
-             (interl-ll$q11-l-inputs inputs st data-width)
-             data-width)
-            (interl-ll$data1-in inputs data-width))
+             (interl-ll$q11-l-inputs inputs st data-size)
+             data-size)
+            (interl-ll$data1-in inputs data-size))
      :hints (("Goal"
               :in-theory (enable queue11-l$data-in
                                  interl-ll$data1-in
@@ -801,7 +808,7 @@
 
   (local
    (defthm interl-ll$q9-l-in-act-rewrite
-     (equal (queue9-l$in-act (interl-ll$q9-l-inputs inputs st data-width))
+     (equal (queue9-l$in-act (interl-ll$q9-l-inputs inputs st data-size))
             (interl-ll$in0-act inputs))
      :hints (("Goal" :in-theory (enable queue9-l$in-act
                                         interl-ll$in0-act
@@ -809,15 +816,15 @@
 
   (local
    (defthm interl-ll$q9-l-out-act-rewrite
-     (equal (queue9-l$out-act (interl-ll$q9-l-inputs inputs st data-width))
-            (interl-ll$out-act0 inputs st data-width))
+     (equal (queue9-l$out-act (interl-ll$q9-l-inputs inputs st data-size))
+            (interl-ll$out-act0 inputs st data-size))
      :hints (("Goal" :in-theory (enable queue9-l$out-act
                                         interl-ll$out-act0
                                         interl-ll$q9-l-inputs)))))
 
   (local
    (defthm interl-ll$q11-l-in-act-rewrite
-     (equal (queue11-l$in-act (interl-ll$q11-l-inputs inputs st data-width))
+     (equal (queue11-l$in-act (interl-ll$q11-l-inputs inputs st data-size))
             (interl-ll$in1-act inputs))
      :hints (("Goal" :in-theory (enable queue11-l$in-act
                                         interl-ll$in1-act
@@ -825,20 +832,20 @@
 
   (local
    (defthm interl-ll$q11-l-out-act-rewrite
-     (equal (queue11-l$out-act (interl-ll$q11-l-inputs inputs st data-width))
-            (interl-ll$out-act1 inputs st data-width))
+     (equal (queue11-l$out-act (interl-ll$q11-l-inputs inputs st data-size))
+            (interl-ll$out-act1 inputs st data-size))
      :hints (("Goal" :in-theory (enable queue11-l$out-act
                                         interl-ll$out-act1
                                         interl-ll$q11-l-inputs)))))
 
   (defthm interl-ll$extracted-step-correct
-    (b* ((next-st (interl-ll$step inputs st data-width)))
-      (implies (and (interl-ll$input-format inputs st data-width)
-                    (interl-ll$valid-st st data-width))
+    (b* ((next-st (interl-ll$step inputs st data-size)))
+      (implies (and (interl-ll$input-format inputs st data-size)
+                    (interl-ll$valid-st st data-size))
                (and (equal (interl-ll$extract0 next-st)
-                           (interl-ll$extracted0-step inputs st data-width))
+                           (interl-ll$extracted0-step inputs st data-size))
                     (equal (interl-ll$extract1 next-st)
-                           (interl-ll$extracted1-step inputs st data-width)))))
+                           (interl-ll$extracted1-step inputs st data-size)))))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               queue9-l$extracted-step
@@ -859,10 +866,10 @@
 ;; Prove that interl-ll$valid-st is an invariant.
 
 (defthm interl-ll$valid-st-preserved
-  (implies (and (interl-ll$input-format inputs st data-width)
-                (interl-ll$valid-st st data-width))
-           (interl-ll$valid-st (interl-ll$step inputs st data-width)
-                               data-width))
+  (implies (and (interl-ll$input-format inputs st data-size)
+                (interl-ll$valid-st st data-size))
+           (interl-ll$valid-st (interl-ll$step inputs st data-size)
+                               data-size))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             interl-ll$valid-st
@@ -874,9 +881,9 @@
 
   (local
    (defthm interl-ll$data-out-rewrite-1
-     (implies (and (interl-ll$valid-st st data-width)
-                   (interl-ll$out-act0 inputs st data-width))
-              (equal (interl-ll$data-out inputs st data-width)
+     (implies (and (interl-ll$valid-st st data-size)
+                   (interl-ll$out-act0 inputs st data-size))
+              (equal (interl-ll$data-out inputs st data-size)
                      (queue9-l$data-out (nth *interl-ll$q9-l* st))))
      :hints (("Goal"
               :in-theory (enable get-field
@@ -895,10 +902,10 @@
 
   (local
    (defthm interl-ll$data-out-rewrite-2
-     (implies (and (interl-ll$input-format inputs st data-width)
-                   (interl-ll$valid-st st data-width)
-                   (interl-ll$out-act1 inputs st data-width))
-              (equal (interl-ll$data-out inputs st data-width)
+     (implies (and (interl-ll$input-format inputs st data-size)
+                   (interl-ll$valid-st st data-size)
+                   (interl-ll$out-act1 inputs st data-size))
+              (equal (interl-ll$data-out inputs st data-size)
                      (queue11-l$data-out (nth *interl-ll$q11-l* st))))
      :hints (("Goal"
               :in-theory (enable get-field
@@ -918,25 +925,25 @@
 
   (local
    (defthm interl-ll$out-act0-rewrite
-     (equal (interl-ll$out-act0 inputs st data-width)
-            (queue9-l$out-act (interl-ll$q9-l-inputs inputs st data-width)))
+     (equal (interl-ll$out-act0 inputs st data-size)
+            (queue9-l$out-act (interl-ll$q9-l-inputs inputs st data-size)))
      :hints (("Goal" :in-theory (enable queue9-l$out-act
                                         interl-ll$out-act0
                                         interl-ll$q9-l-inputs)))))
 
   (local
    (defthm interl-ll$out-act1-rewrite
-     (equal (interl-ll$out-act1 inputs st data-width)
-            (queue11-l$out-act (interl-ll$q11-l-inputs inputs st data-width)))
+     (equal (interl-ll$out-act1 inputs st data-size)
+            (queue11-l$out-act (interl-ll$q11-l-inputs inputs st data-size)))
      :hints (("Goal" :in-theory (enable queue11-l$out-act
                                         interl-ll$out-act1
                                         interl-ll$q11-l-inputs)))))
 
   (defthm interl-ll$extract0-lemma
-    (implies (and (interl-ll$input-format inputs st data-width)
-                  (interl-ll$valid-st st data-width)
-                  (interl-ll$out-act0 inputs st data-width))
-             (equal (list (interl-ll$data-out inputs st data-width))
+    (implies (and (interl-ll$input-format inputs st data-size)
+                  (interl-ll$valid-st st data-size)
+                  (interl-ll$out-act0 inputs st data-size))
+             (equal (list (interl-ll$data-out inputs st data-size))
                     (nthcdr (1- (len (interl-ll$extract0 st)))
                             (interl-ll$extract0 st))))
     :hints (("Goal"
@@ -947,10 +954,10 @@
                              (interl-ll$input-format=>q9-l$input-format)))))
 
   (defthm interl-ll$extract1-lemma
-    (implies (and (interl-ll$input-format inputs st data-width)
-                  (interl-ll$valid-st st data-width)
-                  (interl-ll$out-act1 inputs st data-width))
-             (equal (list (interl-ll$data-out inputs st data-width))
+    (implies (and (interl-ll$input-format inputs st data-size)
+                  (interl-ll$valid-st st data-size)
+                  (interl-ll$out-act1 inputs st data-size))
+             (equal (list (interl-ll$data-out inputs st data-size))
                     (nthcdr (1- (len (interl-ll$extract1 st)))
                             (interl-ll$extract1 st))))
     :hints (("Goal"
@@ -964,17 +971,17 @@
 ;; Extract the accepted input sequences
 
 (seq-gen interl-ll in0 in0-act -1
-         (interl-ll$data0-in inputs data-width)
+         (interl-ll$data0-in inputs data-size)
          :clink t)
 
 (seq-gen interl-ll in1 in1-act -1
-         (interl-ll$data1-in inputs data-width)
+         (interl-ll$data1-in inputs data-size)
          :clink t)
 
 ;; Extract the valid output sequence
 
 (seq-gen interl-ll out out-act 2
-         (interl-ll$data-out inputs st data-width)
+         (interl-ll$data-out inputs st data-size)
          :netlist-data (nthcdr 3 outputs)
          :partial-clink t)
 
@@ -1017,18 +1024,18 @@
   (defthmd interl-ll$dataflow-correct
     (b* ((extracted0-st (interl-ll$extract0 st))
          (extracted1-st (interl-ll$extract1 st))
-         (final-st (interl-ll$run inputs-seq st data-width n))
+         (final-st (interl-ll$run inputs-seq st data-size n))
          (final-extracted0-st (interl-ll$extract0 final-st))
          (final-extracted1-st (interl-ll$extract1 final-st)))
       (implies
-       (and (interl-ll$input-format-n inputs-seq st data-width n)
-            (interl-ll$valid-st st data-width)
+       (and (interl-ll$input-format-n inputs-seq st data-size n)
+            (interl-ll$valid-st st data-size)
             (member x (interleave final-extracted0-st final-extracted1-st)))
        (member
-        (append x (interl-ll$out-seq inputs-seq st data-width n))
-        (interleave (append (interl-ll$in0-seq inputs-seq st data-width n)
+        (append x (interl-ll$out-seq inputs-seq st data-size n))
+        (interleave (append (interl-ll$in0-seq inputs-seq st data-size n)
                             extracted0-st)
-                    (append (interl-ll$in1-seq inputs-seq st data-width n)
+                    (append (interl-ll$in1-seq inputs-seq st data-size n)
                             extracted1-st)))))
     :hints (("Goal" :in-theory (enable member-of-true-list-list-is-true-list
                                        interl-ll$out-act
@@ -1038,26 +1045,112 @@
   (defthmd interl-ll$functionally-correct
     (b* ((extracted0-st (interl-ll$extract0 st))
          (extracted1-st (interl-ll$extract1 st))
-         (final-st (de-n (si 'interl-ll data-width) inputs-seq st netlist n))
+         (final-st (de-n (si 'interl-ll data-size) inputs-seq st netlist n))
          (final-extracted0-st (interl-ll$extract0 final-st))
          (final-extracted1-st (interl-ll$extract1 final-st)))
       (implies
-       (and (interl-ll& netlist data-width)
-            (interl-ll$input-format-n inputs-seq st data-width n)
-            (interl-ll$valid-st st data-width)
+       (and (interl-ll& netlist data-size)
+            (interl-ll$input-format-n inputs-seq st data-size n)
+            (interl-ll$valid-st st data-size)
             (member x (interleave final-extracted0-st final-extracted1-st)))
        (member
-        (append x (interl-ll$netlist-out-seq
-                   inputs-seq st netlist data-width n))
-        (interleave (append (interl-ll$netlist-in0-seq
-                             inputs-seq st netlist data-width n)
+        (append x (interl-ll$out-seq-netlist
+                   inputs-seq st netlist data-size n))
+        (interleave (append (interl-ll$in0-seq-netlist
+                             inputs-seq st netlist data-size n)
                             extracted0-st)
-                    (append (interl-ll$netlist-in1-seq
-                             inputs-seq st netlist data-width n)
+                    (append (interl-ll$in1-seq-netlist
+                             inputs-seq st netlist data-size n)
                             extracted1-st)))))
     :hints (("Goal"
              :use interl-ll$dataflow-correct
              :in-theory (enable interl-ll$valid-st=>st-format
                                 interl-ll$de-n))))
   )
+
+;; Simulators for INTERL-LL
+
+;; (progn
+;;   (defun interl-ll$map-to-links (st)
+;;     (b* ((q9-l (get-field *interl-ll$q9-l* st))
+;;          (q11-l (get-field *interl-ll$q11-l* st))
+;;          (arb-merge (get-field *interl-ll$arb-merge* st)))
+;;       (append (list (cons 'q9-l (queue9-l$map-to-links q9-l)))
+;;               (list (cons 'q11-l (queue11-l$map-to-links q11-l)))
+;;               (list (cons 'arb-merge (arb-merge$map-to-links arb-merge))))))
+
+;;   (defun interl-ll$map-to-links-list (x)
+;;     (if (atom x)
+;;         nil
+;;       (cons (interl-ll$map-to-links (car x))
+;;             (interl-ll$map-to-links-list (cdr x)))))
+
+;;   (defund interl-ll$st-gen (data-size)
+;;     (declare (xargs :guard (natp data-size)))
+;;     (b* ((full '(t))
+;;          (empty '(nil))
+;;          (q9-l (queue9-l$st-gen data-size))
+;;          (q11-l (queue11-l$st-gen data-size))
+;;          (arb-merge (list (list full '((nil) (nil)))
+;;                           (list empty '((x) (x))))))
+;;       (list q9-l q11-l arb-merge)))
+
+;;   (defund interl-ll$ins-and-st-test (data-size n state)
+;;     (declare (xargs :guard (and (natp data-size)
+;;                                 (natp n))
+;;                     :verify-guards nil
+;;                     :stobjs state))
+;;     (b* ((num-signals (interl-ll$ins-len data-size))
+;;          ((mv inputs-seq state)
+;;           (signal-vals-gen num-signals n state nil))
+;;          (st (interl-ll$st-gen data-size)))
+;;       (mv (and (interl-ll$input-format-n inputs-seq st data-size n)
+;;                (interl-ll$valid-st st data-size))
+;;           state)))
+
+;;   (local
+;;    (defthm interl-ll$ins-and-st-test-ok
+;;      (interl-ll$ins-and-st-test 4 10 state)))
+
+;;   (defund interl-ll$sim (data-size n state)
+;;     (declare (xargs :guard (and (natp data-size)
+;;                                 (natp n))
+;;                     :verify-guards nil
+;;                     :stobjs state))
+;;     (b* ((num-signals (interl-ll$ins-len data-size))
+;;          ((mv inputs-seq state)
+;;           (signal-vals-gen num-signals n state nil))
+;;          (st (interl-ll$st-gen data-size)))
+;;       (mv (pretty-list
+;;            (remove-dup-neighbors
+;;             (interl-ll$map-to-links-list
+;;              (de-sim-trace (si 'interl-ll data-size)
+;;                            inputs-seq
+;;                            st
+;;                            (interl-ll$netlist data-size))))
+;;            0)
+;;           state)))
+
+;;   (defund interl-ll$in-out-sim (data-size n state)
+;;     (declare (xargs :guard (and (natp data-size)
+;;                                 (natp n))
+;;                     :verify-guards nil
+;;                     :stobjs state))
+;;     (b* ((num-signals (interl-ll$ins-len data-size))
+;;          ((mv inputs-seq state)
+;;           (signal-vals-gen num-signals n state nil))
+;;          (st (interl-ll$st-gen data-size)))
+;;       (mv
+;;        (append
+;;         (list (cons 'in0-seq
+;;                     (v-to-nat-lst
+;;                      (interl-ll$in0-seq inputs-seq st data-size n))))
+;;         (list (cons 'in1-seq
+;;                     (v-to-nat-lst
+;;                      (interl-ll$in1-seq inputs-seq st data-size n))))
+;;         (list (cons 'out-seq
+;;                     (v-to-nat-lst
+;;                      (interl-ll$out-seq inputs-seq st data-size n)))))
+;;        state)))
+;;   )
 

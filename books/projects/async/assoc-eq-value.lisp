@@ -72,18 +72,18 @@
 
 (defthm assoc-eq-value-update-alist-1
   (implies (and (equal occ-name1 occ-name2)
-                (consp (assoc-eq occ-name2 sts-alist)))
+                (consp (assoc-eq occ-name2 st-alist)))
            (equal (assoc-eq-value occ-name1
-                                  (update-alist occ-name2 sts sts-alist))
-                  sts))
+                                  (update-alist occ-name2 st st-alist))
+                  st))
   :hints (("Goal" :in-theory (enable update-alist))))
 
 (defthm assoc-eq-value-update-alist-2
   (implies (not (equal occ-name1 occ-name2))
            (equal (assoc-eq-value occ-name1
-                                  (update-alist occ-name2 sts sts-alist))
+                                  (update-alist occ-name2 st st-alist))
                   (assoc-eq-value occ-name1
-                                  sts-alist)))
+                                  st-alist)))
   :hints (("Goal" :in-theory (enable update-alist))))
 
 (defthmd assoc-eq-value-nth-pairlis$

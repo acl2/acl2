@@ -4,11 +4,11 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; April 2019
 
 (in-package "ADE")
 
-(include-book "interl")
+(include-book "interl1")
 (include-book "../gcd/gcd")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -39,60 +39,60 @@
                            *gcd$go-num*))
 (defconst *igcd$st-len* 3)
 
-(defun igcd$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 3 (* 4 (mbe :logic (nfix data-width)
-                 :exec  data-width))))
+(defun igcd$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 3 (* 4 (mbe :logic (nfix data-size)
+                 :exec  data-size))))
 
-(defun igcd$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (igcd$data-ins-len data-width)
+(defun igcd$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (igcd$data-ins-len data-size)
      *igcd$select-num*
      *igcd$go-num*))
 
 ;; DE module generator of IGCD
 
 (module-generator
- igcd* (data-width)
- (si 'igcd data-width)
+ igcd* (data-size)
+ (si 'igcd data-size)
  (list* 'full-in0 'full-in1 'empty-out-
-        (append (sis 'data0-in 0 (* 2 data-width))
-                (sis 'data1-in 0 (* 2 data-width))
+        (append (sis 'data0-in 0 (* 2 data-size))
+                (sis 'data1-in 0 (* 2 data-size))
                 (cons 'select (sis 'go 0 *igcd$go-num*))))
  (list* 'in0-act 'in1-act 'out-act
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(l interl gcd)
  (list
   ;; LINK
   ;; L
   (list 'l
-        (list* 'l-status (sis 'd-out 0 (* 2 data-width)))
-        (si 'link (* 2 data-width))
-        (list* 'interl-out-act 'gcd-in-act (sis 'd-in 0 (* 2 data-width))))
+        (list* 'l-status (sis 'd-out 0 (* 2 data-size)))
+        (si 'link (* 2 data-size))
+        (list* 'interl-out-act 'gcd-in-act (sis 'd-in 0 (* 2 data-size))))
 
   ;; JOINTS
   ;; INTERL
   (list 'interl
         (list* 'in0-act 'in1-act 'interl-out-act
-               (sis 'd-in 0 (* 2 data-width)))
-        (si 'interl (* 2 data-width))
+               (sis 'd-in 0 (* 2 data-size)))
+        (si 'interl (* 2 data-size))
         (list* 'full-in0 'full-in1 'l-status
-               (append (sis 'data0-in 0 (* 2 data-width))
-                       (sis 'data1-in 0 (* 2 data-width))
+               (append (sis 'data0-in 0 (* 2 data-size))
+                       (sis 'data1-in 0 (* 2 data-size))
                        (cons 'select (sis 'go 0 *interl$go-num*)))))
 
   ;; GCD
   (list 'gcd
         (list* 'gcd-in-act 'out-act
-               (sis 'data-out 0 data-width))
-        (si 'gcd data-width)
+               (sis 'data-out 0 data-size))
+        (si 'gcd data-size)
         (list* 'l-status 'empty-out-
-               (append (sis 'd-out 0 (* 2 data-width))
+               (append (sis 'd-out 0 (* 2 data-size))
                        (sis 'go
                             *interl$go-num*
                             *gcd$go-num*)))))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -101,26 +101,26 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; IGCD.
 
-(defund igcd$netlist (data-width)
-  (declare (xargs :guard (and (natp data-width)
-                              (<= 2 data-width))))
-  (cons (igcd* data-width)
-        (union$ (interl$netlist (* 2 data-width))
-                (gcd$netlist data-width)
+(defund igcd$netlist (data-size)
+  (declare (xargs :guard (and (natp data-size)
+                              (<= 2 data-size))))
+  (cons (igcd* data-size)
+        (union$ (interl$netlist (* 2 data-size))
+                (gcd$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for IGCD
 
-(defund igcd& (netlist data-width)
+(defund igcd& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width)
-                              (<= 2 data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'igcd data-width) netlist)))
-    (and (equal (assoc (si 'igcd data-width) netlist)
-                (igcd* data-width))
-         (link& subnetlist (* 2 data-width))
-         (interl& subnetlist (* 2 data-width))
-         (gcd& subnetlist data-width))))
+                              (natp data-size)
+                              (<= 2 data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'igcd data-size) netlist)))
+    (and (equal (assoc (si 'igcd data-size) netlist)
+                (igcd* data-size))
+         (link& subnetlist (* 2 data-size))
+         (interl& subnetlist (* 2 data-size))
+         (gcd& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -132,40 +132,40 @@
 
 ;; Constraints on the state of IGCD
 
-(defund igcd$st-format (st data-width)
+(defund igcd$st-format (st data-size)
   (b* ((l (get-field *igcd$l* st))
        (interl (get-field *igcd$interl* st))
        (gcd (get-field *igcd$gcd* st)))
-    (and (link$st-format l (* 2 data-width))
-         (interl$st-format interl (* 2 data-width))
-         (gcd$st-format gcd data-width))))
+    (and (link$st-format l (* 2 data-size))
+         (interl$st-format interl (* 2 data-size))
+         (gcd$st-format gcd data-size))))
 
 (defthm igcd$st-format=>constraint
-  (implies (igcd$st-format st data-width)
-           (and (natp data-width)
-                (<= 3 data-width)))
+  (implies (igcd$st-format st data-size)
+           (and (natp data-size)
+                (<= 3 data-size)))
   :hints (("Goal" :in-theory (enable igcd$st-format)))
   :rule-classes :forward-chaining)
 
-(defund igcd$valid-st (st data-width)
+(defund igcd$valid-st (st data-size)
   (b* ((l (get-field *igcd$l* st))
        (interl (get-field *igcd$interl* st))
        (gcd (get-field *igcd$gcd* st)))
-    (and (link$valid-st l (* 2 data-width))
-         (interl$valid-st interl (* 2 data-width))
-         (gcd$valid-st gcd data-width))))
+    (and (link$valid-st l (* 2 data-size))
+         (interl$valid-st interl (* 2 data-size))
+         (gcd$valid-st gcd data-size))))
 
 (defthmd igcd$valid-st=>constraint
-  (implies (igcd$valid-st st data-width)
-           (and (natp data-width)
-                (<= 3 data-width)))
+  (implies (igcd$valid-st st data-size)
+           (and (natp data-size)
+                (<= 3 data-size)))
   :hints (("Goal" :in-theory (enable gcd$valid-st=>constraint
                                      igcd$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd igcd$valid-st=>st-format
-  (implies (igcd$valid-st st data-width)
-           (igcd$st-format st data-width))
+  (implies (igcd$valid-st st data-size)
+           (igcd$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (interl$valid-st=>st-format
                                    gcd$valid-st=>st-format
                                    igcd$st-format
@@ -177,44 +177,44 @@
 (progn
   ;; Extract the 1st input data item
 
-  (defun igcd$data0-in (inputs data-width)
+  (defun igcd$data0-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (* 2 (mbe :logic (nfix data-width)
-                    :exec  data-width))
+                                (natp data-size))))
+    (take (* 2 (mbe :logic (nfix data-size)
+                    :exec  data-size))
           (nthcdr 3 inputs)))
 
   (defthm len-igcd$data0-in
-    (equal (len (igcd$data0-in inputs data-width))
-           (* 2 (nfix data-width))))
+    (equal (len (igcd$data0-in inputs data-size))
+           (* 2 (nfix data-size))))
 
   (in-theory (disable igcd$data0-in))
 
   ;; Extract the 2nd input data item
 
-  (defun igcd$data1-in (inputs data-width)
+  (defun igcd$data1-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (b* ((width (* 2 (mbe :logic (nfix data-width)
-                          :exec  data-width))))
-      (take width
-            (nthcdr (+ 3 width) inputs))))
+                                (natp data-size))))
+    (b* ((size (* 2 (mbe :logic (nfix data-size)
+                          :exec  data-size))))
+      (take size
+            (nthcdr (+ 3 size) inputs))))
 
   (defthm len-igcd$data1-in
-    (equal (len (igcd$data1-in inputs data-width))
-           (* 2 (nfix data-width))))
+    (equal (len (igcd$data1-in inputs data-size))
+           (* 2 (nfix data-size))))
 
   (in-theory (disable igcd$data1-in))
 
   ;; Extract the inputs for joint INTERL
 
-  (defund igcd$interl-inputs (inputs st data-width)
+  (defund igcd$interl-inputs (inputs st data-size)
     (b* ((full-in0 (nth 0 inputs))
          (full-in1 (nth 1 inputs))
-         (data0-in (igcd$data0-in inputs data-width))
-         (data1-in (igcd$data1-in inputs data-width))
-         (select   (nth (igcd$data-ins-len data-width) inputs))
-         (go-signals (nthcdr (+ (igcd$data-ins-len data-width)
+         (data0-in (igcd$data0-in inputs data-size))
+         (data1-in (igcd$data1-in inputs data-size))
+         (select   (nth (igcd$data-ins-len data-size) inputs))
+         (go-signals (nthcdr (+ (igcd$data-ins-len data-size)
                                 *igcd$select-num*)
                              inputs))
 
@@ -228,44 +228,44 @@
 
   ;; Extract the "out-act0" signal for joint INTERL
 
-  (defund igcd$interl-out-act0 (inputs st data-width)
-    (b* ((interl-inputs (igcd$interl-inputs inputs st data-width))
+  (defund igcd$interl-out-act0 (inputs st data-size)
+    (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
          (interl (get-field *igcd$interl* st)))
-      (interl$out-act0 interl-inputs interl (* 2 data-width))))
+      (interl$out-act0 interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "out-act1" signal for joint INTERL
 
-  (defund igcd$interl-out-act1 (inputs st data-width)
-    (b* ((interl-inputs (igcd$interl-inputs inputs st data-width))
+  (defund igcd$interl-out-act1 (inputs st data-size)
+    (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
          (interl (get-field *igcd$interl* st)))
-      (interl$out-act1 interl-inputs interl (* 2 data-width))))
+      (interl$out-act1 interl-inputs interl (* 2 data-size))))
 
   (defthm igcd$interl-out-act-mutually-exclusive
-    (implies (and (igcd$valid-st st data-width)
-                  (igcd$interl-out-act0 inputs st data-width))
-             (not (igcd$interl-out-act1 inputs st data-width)))
+    (implies (and (igcd$valid-st st data-size)
+                  (igcd$interl-out-act0 inputs st data-size))
+             (not (igcd$interl-out-act1 inputs st data-size)))
     :hints (("Goal" :in-theory (enable igcd$valid-st
                                        igcd$interl-out-act0
                                        igcd$interl-out-act1))))
 
   ;; Extract the "out-act" signal for joint INTERL
 
-  (defund igcd$interl-out-act (inputs st data-width)
-    (f-or (igcd$interl-out-act0 inputs st data-width)
-          (igcd$interl-out-act1 inputs st data-width)))
+  (defund igcd$interl-out-act (inputs st data-size)
+    (f-or (igcd$interl-out-act0 inputs st data-size)
+          (igcd$interl-out-act1 inputs st data-size)))
 
   ;; Extract the output data from joint INTERL
 
-  (defund igcd$interl-data-out (inputs st data-width)
-    (b* ((interl-inputs (igcd$interl-inputs inputs st data-width))
+  (defund igcd$interl-data-out (inputs st data-size)
+    (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
          (interl (get-field *igcd$interl* st)))
-      (interl$data-out interl-inputs interl (* 2 data-width))))
+      (interl$data-out interl-inputs interl (* 2 data-size))))
 
   ;; Extract the inputs for joint GCD
 
-  (defund igcd$gcd-inputs (inputs st data-width)
+  (defund igcd$gcd-inputs (inputs st data-size)
     (b* ((empty-out- (nth 2 inputs))
-         (go-signals (nthcdr (+ (igcd$data-ins-len data-width)
+         (go-signals (nthcdr (+ (igcd$data-ins-len data-size)
                                 *igcd$select-num*)
                              inputs))
 
@@ -282,59 +282,59 @@
 
   ;; Extract the "in0-act" signal
 
-  (defund igcd$in0-act (inputs st data-width)
-    (b* ((interl-inputs (igcd$interl-inputs inputs st data-width))
+  (defund igcd$in0-act (inputs st data-size)
+    (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
          (interl (get-field *igcd$interl* st)))
-      (interl$in0-act interl-inputs interl (* 2 data-width))))
+      (interl$in0-act interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "in1-act" signal
 
-  (defund igcd$in1-act (inputs st data-width)
-    (b* ((interl-inputs (igcd$interl-inputs inputs st data-width))
+  (defund igcd$in1-act (inputs st data-size)
+    (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
          (interl (get-field *igcd$interl* st)))
-      (interl$in1-act interl-inputs interl (* 2 data-width))))
+      (interl$in1-act interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "out-act" signal
 
-  (defund igcd$out-act (inputs st data-width)
-    (gcd$out-act (igcd$gcd-inputs inputs st data-width)
+  (defund igcd$out-act (inputs st data-size)
+    (gcd$out-act (igcd$gcd-inputs inputs st data-size)
                  (get-field *igcd$gcd* st)
-                 data-width))
+                 data-size))
 
   ;; Extract the output data
 
-  (defund igcd$data-out (inputs st data-width)
-    (gcd$data-out (igcd$gcd-inputs inputs st data-width)
+  (defund igcd$data-out (inputs st data-size)
+    (gcd$data-out (igcd$gcd-inputs inputs st data-size)
                   (get-field *igcd$gcd* st)
-                  data-width))
+                  data-size))
 
   (defthm len-igcd$data-out-1
-    (implies (igcd$st-format st data-width)
-             (equal (len (igcd$data-out inputs st data-width))
-                    data-width))
+    (implies (igcd$st-format st data-size)
+             (equal (len (igcd$data-out inputs st data-size))
+                    data-size))
     :hints (("Goal" :in-theory (enable igcd$st-format
                                        igcd$data-out))))
 
   (defthm len-igcd$data-out-2
-    (implies (igcd$valid-st st data-width)
-             (equal (len (igcd$data-out inputs st data-width))
-                    data-width))
+    (implies (igcd$valid-st st data-size)
+             (equal (len (igcd$data-out inputs st data-size))
+                    data-size))
     :hints (("Goal" :in-theory (enable igcd$valid-st
                                        igcd$data-out))))
 
   (defthm bvp-igcd$data-out
-    (implies (and (igcd$valid-st st data-width)
-                  (igcd$out-act inputs st data-width))
-             (bvp (igcd$data-out inputs st data-width)))
+    (implies (and (igcd$valid-st st data-size)
+                  (igcd$out-act inputs st data-size))
+             (bvp (igcd$data-out inputs st data-size)))
     :hints (("Goal" :in-theory (enable igcd$valid-st
                                        igcd$out-act
                                        igcd$data-out))))
 
-  (defun igcd$outputs (inputs st data-width)
-    (list* (igcd$in0-act inputs st data-width)
-           (igcd$in1-act inputs st data-width)
-           (igcd$out-act inputs st data-width)
-           (igcd$data-out inputs st data-width)))
+  (defun igcd$outputs (inputs st data-size)
+    (list* (igcd$in0-act inputs st data-size)
+           (igcd$in1-act inputs st data-size)
+           (igcd$out-act inputs st data-size)
+           (igcd$data-out inputs st data-size)))
   )
 
 ;; The value lemma for IGCD
@@ -351,20 +351,20 @@
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
-      (implies (and (igcd& netlist data-width)
+      (implies (and (igcd& netlist data-size)
                     (true-listp data0-in)
-                    (equal (len data0-in) (* 2 data-width))
+                    (equal (len data0-in) (* 2 data-size))
                     (true-listp data1-in)
-                    (equal (len data1-in) (* 2 data-width))
+                    (equal (len data1-in) (* 2 data-size))
                     (true-listp go-signals)
                     (equal (len go-signals) *igcd$go-num*)
-                    (igcd$st-format st data-width))
-               (equal (se (si 'igcd data-width) inputs st netlist)
-                      (igcd$outputs inputs st data-width))))
+                    (igcd$st-format st data-size))
+               (equal (se (si 'igcd data-size) inputs st netlist)
+                      (igcd$outputs inputs st data-size))))
     :hints (("Goal"
              :do-not-induct t
-             :expand (:free (inputs data-width)
-                            (se (si 'igcd data-width) inputs st netlist))
+             :expand (:free (inputs data-size)
+                            (se (si 'igcd data-size) inputs st netlist))
              :in-theory (e/d (de-rules
                               igcd&
                               igcd*$destructure
@@ -381,30 +381,30 @@
 
   ;; This function specifies the next state of IGCD.
 
-  (defun igcd$step (inputs st data-width)
+  (defun igcd$step (inputs st data-size)
     (b* ((l (get-field *igcd$l* st))
          (interl (get-field *igcd$interl* st))
          (gcd (get-field *igcd$gcd* st))
 
-         (interl-inputs (igcd$interl-inputs inputs st data-width))
-         (gcd-inputs (igcd$gcd-inputs inputs st data-width))
+         (interl-inputs (igcd$interl-inputs inputs st data-size))
+         (gcd-inputs (igcd$gcd-inputs inputs st data-size))
 
-         (interl-out-act (interl$out-act interl-inputs interl (* 2 data-width)))
-         (gcd-in-act (gcd$in-act gcd-inputs gcd data-width))
+         (interl-out-act (interl$out-act interl-inputs interl (* 2 data-size)))
+         (gcd-in-act (gcd$in-act gcd-inputs gcd data-size))
 
-         (d-in (interl$data-out interl-inputs interl (* 2 data-width)))
+         (d-in (interl$data-out interl-inputs interl (* 2 data-size)))
 
          (l-inputs (list* interl-out-act gcd-in-act d-in)))
       (list
        ;; L
-       (link$step l-inputs l (* 2 data-width))
+       (link$step l-inputs l (* 2 data-size))
        ;; Joint INTERL
-       (interl$step interl-inputs interl (* 2 data-width))
+       (interl$step interl-inputs interl (* 2 data-size))
        ;; Joint GCD
-       (gcd$step gcd-inputs gcd data-width))))
+       (gcd$step gcd-inputs gcd data-size))))
 
   (defthm len-of-igcd$step
-    (equal (len (igcd$step inputs st data-width))
+    (equal (len (igcd$step inputs st data-size))
            *igcd$st-len*))
 
   ;; The state lemma for IGCD
@@ -413,20 +413,20 @@
     (b* ((inputs (list* full-in0 full-in1 empty-out-
                         (append data0-in data1-in
                                 (cons select go-signals)))))
-      (implies (and (igcd& netlist data-width)
+      (implies (and (igcd& netlist data-size)
                     (true-listp data0-in)
-                    (equal (len data0-in) (* 2 data-width))
+                    (equal (len data0-in) (* 2 data-size))
                     (true-listp data1-in)
-                    (equal (len data1-in) (* 2 data-width))
+                    (equal (len data1-in) (* 2 data-size))
                     (true-listp go-signals)
                     (equal (len go-signals) *igcd$go-num*)
-                    (igcd$st-format st data-width))
-               (equal (de (si 'igcd data-width) inputs st netlist)
-                      (igcd$step inputs st data-width))))
+                    (igcd$st-format st data-size))
+               (equal (de (si 'igcd data-size) inputs st netlist)
+                      (igcd$step inputs st data-size))))
     :hints (("Goal"
              :do-not-induct t
-             :expand (:free (inputs data-width)
-                            (de (si 'igcd data-width) inputs st netlist))
+             :expand (:free (inputs data-size)
+                            (de (si 'igcd data-size) inputs st netlist))
              :in-theory (e/d (de-rules
                               igcd&
                               igcd*$destructure
@@ -449,16 +449,16 @@
 
 ;; Conditions on the inputs
 
-(defund igcd$input-format (inputs data-width)
+(defund igcd$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in0   (nth 0 inputs))
        (full-in1   (nth 1 inputs))
        (empty-out- (nth 2 inputs))
-       (data0-in   (igcd$data0-in inputs data-width))
-       (data1-in   (igcd$data1-in inputs data-width))
-       (select     (nth (igcd$data-ins-len data-width) inputs))
-       (go-signals (nthcdr (+ (igcd$data-ins-len data-width)
+       (data0-in   (igcd$data0-in inputs data-size))
+       (data1-in   (igcd$data1-in inputs data-size))
+       (select     (nth (igcd$data-ins-len data-size) inputs))
+       (go-signals (nthcdr (+ (igcd$data-ins-len data-size)
                               *igcd$select-num*)
                            inputs)))
     (and
@@ -475,11 +475,11 @@
 
 (local
  (defthm igcd$input-format=>interl$input-format
-   (implies (and (igcd$input-format inputs data-width)
-                 (igcd$valid-st st data-width))
+   (implies (and (igcd$input-format inputs data-size)
+                 (igcd$valid-st st data-size))
             (interl$input-format
-             (igcd$interl-inputs inputs st data-width)
-             (* 2 data-width)))
+             (igcd$interl-inputs inputs st data-size)
+             (* 2 data-size)))
    :hints (("Goal"
             :in-theory (e/d (open-nth
                              gcd$valid-st=>constraint
@@ -493,11 +493,11 @@
 
 (local
  (defthm igcd$input-format=>gcd$input-format
-   (implies (and (igcd$input-format inputs data-width)
-                 (igcd$valid-st st data-width))
+   (implies (and (igcd$input-format inputs data-size)
+                 (igcd$valid-st st data-size))
             (gcd$input-format
-             (igcd$gcd-inputs inputs st data-width)
-             data-width))
+             (igcd$gcd-inputs inputs st data-size)
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (gcd$valid-st=>constraint
                              gcd$input-format
@@ -508,27 +508,27 @@
                             ())))))
 
 (defthm booleanp-igcd$in0-act
-  (implies (and (igcd$input-format inputs data-width)
-                (igcd$valid-st st data-width))
-           (booleanp (igcd$in0-act inputs st data-width)))
+  (implies (and (igcd$input-format inputs data-size)
+                (igcd$valid-st st data-size))
+           (booleanp (igcd$in0-act inputs st data-size)))
   :hints (("Goal"
            :in-theory (enable igcd$valid-st
                               igcd$in0-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-igcd$in1-act
-  (implies (and (igcd$input-format inputs data-width)
-                (igcd$valid-st st data-width))
-           (booleanp (igcd$in1-act inputs st data-width)))
+  (implies (and (igcd$input-format inputs data-size)
+                (igcd$valid-st st data-size))
+           (booleanp (igcd$in1-act inputs st data-size)))
   :hints (("Goal"
            :in-theory (enable igcd$valid-st
                               igcd$in1-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-igcd$out-act
-  (implies (and (igcd$input-format inputs data-width)
-                (igcd$valid-st st data-width))
-           (booleanp (igcd$out-act inputs st data-width)))
+  (implies (and (igcd$input-format inputs data-size)
+                (igcd$valid-st st data-size))
+           (booleanp (igcd$out-act inputs st data-size)))
   :hints (("Goal"
            :in-theory (enable igcd$valid-st
                               igcd$out-act)))
@@ -562,8 +562,8 @@
             (gcd$extract gcd))))
 
 (defthm igcd$extract0-not-empty
-  (implies (and (igcd$interl-out-act0 inputs st data-width)
-                (igcd$valid-st st data-width))
+  (implies (and (igcd$interl-out-act0 inputs st data-size)
+                (igcd$valid-st st data-size))
            (< 0 (len (igcd$extract0 st))))
   :hints (("Goal"
            :in-theory (e/d (igcd$interl-out-act0
@@ -573,8 +573,8 @@
   :rule-classes :linear)
 
 (defthm igcd$extract1-not-empty
-  (implies (and (igcd$interl-out-act1 inputs st data-width)
-                (igcd$valid-st st data-width))
+  (implies (and (igcd$interl-out-act1 inputs st data-size)
+                (igcd$valid-st st data-size))
            (< 0 (len (igcd$extract1 st))))
   :hints (("Goal"
            :in-theory (e/d (igcd$interl-out-act1
@@ -584,8 +584,8 @@
   :rule-classes :linear)
 
 (defthm igcd$extract2-not-empty
-  (implies (and (igcd$out-act inputs st data-width)
-                (igcd$valid-st st data-width))
+  (implies (and (igcd$out-act inputs st data-size)
+                (igcd$valid-st st data-size))
            (< 0 (len (igcd$extract2 st))))
   :hints (("Goal"
            :in-theory (e/d (igcd$out-act
@@ -602,10 +602,10 @@
       (gcd$inv gcd)))
 
   (defthm igcd$inv-preserved
-    (implies (and (igcd$input-format inputs data-width)
-                  (igcd$valid-st st data-width)
+    (implies (and (igcd$input-format inputs data-size)
+                  (igcd$valid-st st data-size)
                   (igcd$inv st))
-             (igcd$inv (igcd$step inputs st data-width)))
+             (igcd$inv (igcd$step inputs st data-size)))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               igcd$valid-st
@@ -617,48 +617,48 @@
 ;; The extracted next-state functions for IGCD.  Note that these functions
 ;; avoid exploring the internal computation of IGCD.
 
-(defund igcd$extracted0-step (inputs st data-width)
-  (b* ((data (gcd$op (igcd$data0-in inputs data-width)))
+(defund igcd$extracted0-step (inputs st data-size)
+  (b* ((data (gcd$op (igcd$data0-in inputs data-size)))
        (extracted-st (igcd$extract0 st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (igcd$interl-out-act0 inputs st data-width) t)
+     ((equal (igcd$interl-out-act0 inputs st data-size) t)
       (cond
-       ((equal (igcd$in0-act inputs st data-width) t)
+       ((equal (igcd$in0-act inputs st data-size) t)
         (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (igcd$in0-act inputs st data-width) t)
+         ((equal (igcd$in0-act inputs st data-size) t)
           (cons data extracted-st))
          (t extracted-st))))))
 
-(defund igcd$extracted1-step (inputs st data-width)
-  (b* ((data (gcd$op (igcd$data1-in inputs data-width)))
+(defund igcd$extracted1-step (inputs st data-size)
+  (b* ((data (gcd$op (igcd$data1-in inputs data-size)))
        (extracted-st (igcd$extract1 st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (igcd$interl-out-act1 inputs st data-width) t)
+     ((equal (igcd$interl-out-act1 inputs st data-size) t)
       (cond
-       ((equal (igcd$in1-act inputs st data-width) t)
+       ((equal (igcd$in1-act inputs st data-size) t)
         (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (igcd$in1-act inputs st data-width) t)
+         ((equal (igcd$in1-act inputs st data-size) t)
           (cons data extracted-st))
          (t extracted-st))))))
 
-(defund igcd$extracted2-step (inputs st data-width)
-  (b* ((data (gcd$op (igcd$interl-data-out inputs st data-width)))
+(defund igcd$extracted2-step (inputs st data-size)
+  (b* ((data (gcd$op (igcd$interl-data-out inputs st data-size)))
        (extracted-st (igcd$extract2 st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (igcd$out-act inputs st data-width) t)
+     ((equal (igcd$out-act inputs st data-size) t)
       (cond
-       ((equal (igcd$interl-out-act inputs st data-width) t)
+       ((equal (igcd$interl-out-act inputs st data-size) t)
         (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (igcd$interl-out-act inputs st data-width) t)
+         ((equal (igcd$interl-out-act inputs st data-size) t)
           (cons data extracted-st))
          (t extracted-st))))))
 
@@ -673,10 +673,10 @@
 
   (local
    (defthm igcd-aux-1
-     (b* ((interl-inputs (igcd$interl-inputs inputs st data-width)))
-       (implies (natp data-width)
-                (equal (interl$data0-in interl-inputs (* 2 data-width))
-                       (take (* 2 data-width)
+     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size)))
+       (implies (natp data-size)
+                (equal (interl$data0-in interl-inputs (* 2 data-size))
+                       (take (* 2 data-size)
                              (nthcdr 3 inputs)))))
      :hints (("Goal" :in-theory (enable igcd$interl-inputs
                                         igcd$data0-in
@@ -684,23 +684,23 @@
 
   (local
    (defthm igcd-aux-2
-     (b* ((interl-inputs (igcd$interl-inputs inputs st data-width)))
-       (implies (natp data-width)
-                (equal (interl$data1-in interl-inputs (* 2 data-width))
-                       (take (* 2 data-width)
-                             (nthcdr (+ 3 (* 2 data-width)) inputs)))))
+     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size)))
+       (implies (natp data-size)
+                (equal (interl$data1-in interl-inputs (* 2 data-size))
+                       (take (* 2 data-size)
+                             (nthcdr (+ 3 (* 2 data-size)) inputs)))))
      :hints (("Goal" :in-theory (enable igcd$interl-inputs
                                         igcd$data1-in
                                         interl$data1-in)))))
 
   (defthm igcd$extracted0+1-step-correct
-    (b* ((next-st (igcd$step inputs st data-width)))
-      (implies (and (igcd$input-format inputs data-width)
-                    (igcd$valid-st st data-width))
+    (b* ((next-st (igcd$step inputs st data-size)))
+      (implies (and (igcd$input-format inputs data-size)
+                    (igcd$valid-st st data-size))
                (and (equal (igcd$extract0 next-st)
-                           (igcd$extracted0-step inputs st data-width))
+                           (igcd$extracted0-step inputs st data-size))
                     (equal (igcd$extract1 next-st)
-                           (igcd$extracted1-step inputs st data-width)))))
+                           (igcd$extracted1-step inputs st data-size)))))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               f-sr
@@ -729,13 +729,13 @@
                           (nth *igcd$l* st))
                      '(t))
               (and (not (interl$out-act0
-                         (igcd$interl-inputs inputs st data-width)
+                         (igcd$interl-inputs inputs st data-size)
                          (nth *igcd$interl* st)
-                         (* 2 data-width)))
+                         (* 2 data-size)))
                    (not (interl$out-act1
-                         (igcd$interl-inputs inputs st data-width)
+                         (igcd$interl-inputs inputs st data-size)
                          (nth *igcd$interl* st)
-                         (* 2 data-width)))))
+                         (* 2 data-size)))))
      :hints (("Goal"
               :in-theory (e/d (get-field
                                igcd$interl-inputs)
@@ -746,9 +746,9 @@
      (implies (equal (nth *link$s*
                           (nth *igcd$l* st))
                      '(nil))
-              (not (gcd$in-act (igcd$gcd-inputs inputs st data-width)
+              (not (gcd$in-act (igcd$gcd-inputs inputs st data-size)
                                (nth *igcd$gcd* st)
-                               data-width)))
+                               data-size)))
      :hints (("Goal"
               :in-theory (e/d (get-field
                                igcd$gcd-inputs)
@@ -756,25 +756,25 @@
 
   (local
    (defthm igcd-aux-3
-     (b* ((gcd-inputs (igcd$gcd-inputs inputs st data-width))
+     (b* ((gcd-inputs (igcd$gcd-inputs inputs st data-size))
           (l (nth *igcd$l* st))
           (l.d (nth *link$d* l)))
-       (implies (and (natp data-width)
-                     (equal (len l.d) (* 2 data-width))
+       (implies (and (natp data-size)
+                     (equal (len l.d) (* 2 data-size))
                      (bvp (strip-cars l.d)))
-                (equal (gcd$data-in gcd-inputs data-width)
+                (equal (gcd$data-in gcd-inputs data-size)
                        (strip-cars l.d))))
      :hints (("Goal" :in-theory (enable get-field
                                         igcd$gcd-inputs
                                         gcd$data-in)))))
 
   (defthm igcd$extracted2-step-correct
-    (b* ((next-st (igcd$step inputs st data-width)))
-      (implies (and (igcd$input-format inputs data-width)
-                    (igcd$valid-st st data-width)
+    (b* ((next-st (igcd$step inputs st data-size)))
+      (implies (and (igcd$input-format inputs data-size)
+                    (igcd$valid-st st data-size)
                     (igcd$inv st))
                (equal (igcd$extract2 next-st)
-                      (igcd$extracted2-step inputs st data-width))))
+                      (igcd$extracted2-step inputs st data-size))))
     :hints (("Goal"
              :use igcd$input-format=>gcd$input-format
              :in-theory (e/d (get-field
@@ -810,22 +810,22 @@
    (defthm igcd$valid-st-preserved-aux-1
      (implies (and (equal (nth 2 inputs2) (nth 0 inputs1))
                    (booleanp (nth 2 inputs2)))
-              (not (and (interl$out-act inputs2 st2 data-width2)
-                        (gcd$in-act inputs1 st1 data-width1))))
+              (not (and (interl$out-act inputs2 st2 data-size2)
+                        (gcd$in-act inputs1 st1 data-size1))))
      :hints (("Goal" :cases ((nth 2 inputs2))))))
 
   (local
    (defthm igcd$valid-st-preserved-aux-2
-     (implies (link$valid-st st data-width)
+     (implies (link$valid-st st data-size)
               (booleanp (car (nth *link$s* st))))
      :hints (("Goal" :in-theory (enable get-field)))
      :rule-classes (:rewrite :type-prescription)))
 
   (defthm igcd$valid-st-preserved
-    (implies (and (igcd$input-format inputs data-width)
-                  (igcd$valid-st st data-width))
-             (igcd$valid-st (igcd$step inputs st data-width)
-                            data-width))
+    (implies (and (igcd$input-format inputs data-size)
+                  (igcd$valid-st st data-size))
+             (igcd$valid-st (igcd$step inputs st data-size)
+                            data-size))
     :hints (("Goal"
              :use (igcd$input-format=>interl$input-format
                    igcd$input-format=>gcd$input-format)
@@ -851,19 +851,19 @@
 
   (local
    (defthm interl$extract0-lemma-alt
-     (implies (and (interl$input-format inputs data-width)
-                   (interl$valid-st st data-width)
+     (implies (and (interl$input-format inputs data-size)
+                   (interl$valid-st st data-size)
                    (equal n (1- (len (interl$extract0 st))))
-                   (interl$out-act0 inputs st data-width))
+                   (interl$out-act0 inputs st data-size))
               (equal (nthcdr n (interl$extract0 st))
-                     (list (interl$data-out inputs st data-width))))))
+                     (list (interl$data-out inputs st data-size))))))
 
   (defthm igcd$extract0-lemma
     (implies
-     (and (igcd$input-format inputs data-width)
-          (igcd$valid-st st data-width)
-          (igcd$interl-out-act0 inputs st data-width))
-     (equal (list (gcd$op (igcd$interl-data-out inputs st data-width)))
+     (and (igcd$input-format inputs data-size)
+          (igcd$valid-st st data-size)
+          (igcd$interl-out-act0 inputs st data-size))
+     (equal (list (gcd$op (igcd$interl-data-out inputs st data-size)))
             (nthcdr (1- (len (igcd$extract0 st)))
                     (igcd$extract0 st))))
     :hints (("Goal"
@@ -878,19 +878,19 @@
 
   (local
    (defthm interl$extract1-lemma-alt
-     (implies (and (interl$input-format inputs data-width)
-                   (interl$valid-st st data-width)
+     (implies (and (interl$input-format inputs data-size)
+                   (interl$valid-st st data-size)
                    (equal n (1- (len (interl$extract1 st))))
-                   (interl$out-act1 inputs st data-width))
+                   (interl$out-act1 inputs st data-size))
               (equal (nthcdr n (interl$extract1 st))
-                     (list (interl$data-out inputs st data-width))))))
+                     (list (interl$data-out inputs st data-size))))))
 
   (defthm igcd$extract1-lemma
     (implies
-     (and (igcd$input-format inputs data-width)
-          (igcd$valid-st st data-width)
-          (igcd$interl-out-act1 inputs st data-width))
-     (equal (list (gcd$op (igcd$interl-data-out inputs st data-width)))
+     (and (igcd$input-format inputs data-size)
+          (igcd$valid-st st data-size)
+          (igcd$interl-out-act1 inputs st data-size))
+     (equal (list (gcd$op (igcd$interl-data-out inputs st data-size)))
             (nthcdr (1- (len (igcd$extract1 st)))
                     (igcd$extract1 st))))
     :hints (("Goal"
@@ -905,10 +905,10 @@
   )
 
 (defthm igcd$extract2-lemma
-  (implies (and (igcd$input-format inputs data-width)
-                (igcd$valid-st st data-width)
-                (igcd$out-act inputs st data-width))
-           (equal (list (igcd$data-out inputs st data-width))
+  (implies (and (igcd$input-format inputs data-size)
+                (igcd$valid-st st data-size)
+                (igcd$out-act inputs st data-size))
+           (equal (list (igcd$data-out inputs st data-size))
                   (nthcdr (1- (len (igcd$extract2 st)))
                           (igcd$extract2 st))))
   :hints (("Goal"
@@ -920,15 +920,15 @@
 ;; Extract the accepted input sequences
 
 (seq-gen igcd in0 in0-act 0
-         (igcd$data0-in inputs data-width))
+         (igcd$data0-in inputs data-size))
 
 (seq-gen igcd in1 in1-act 1
-         (igcd$data1-in inputs data-width))
+         (igcd$data1-in inputs data-size))
 
 ;; Extract the valid output sequence
 
 (seq-gen igcd out out-act 2
-         (igcd$data-out inputs st data-width)
+         (igcd$data-out inputs st data-size)
          :netlist-data (nthcdr 3 outputs))
 
 ;; The multi-step input-output relationship
@@ -983,25 +983,25 @@
     (b* ((extracted0-st (igcd$extract0 st))
          (extracted1-st (igcd$extract1 st))
          (extracted2-st (igcd$extract2 st))
-         (final-st (igcd$run inputs-seq st data-width n))
+         (final-st (igcd$run inputs-seq st data-size n))
          (final-extracted0-st (igcd$extract0 final-st))
          (final-extracted1-st (igcd$extract1 final-st))
          (final-extracted2-st (igcd$extract2 final-st)))
       (implies
-       (and (igcd$input-format-n inputs-seq data-width n)
-            (igcd$valid-st st data-width)
+       (and (igcd$input-format-n inputs-seq data-size n)
+            (igcd$valid-st st data-size)
             (igcd$inv st)
             (member x (interleave final-extracted0-st final-extracted1-st)))
        (member
         (append x
                 final-extracted2-st
-                (igcd$out-seq inputs-seq st data-width n))
+                (igcd$out-seq inputs-seq st data-size n))
         (prepend-rec
          (interleave (append (igcd$op-map
-                              (igcd$in0-seq inputs-seq st data-width n))
+                              (igcd$in0-seq inputs-seq st data-size n))
                              extracted0-st)
                      (append (igcd$op-map
-                              (igcd$in1-seq inputs-seq st data-width n))
+                              (igcd$in1-seq inputs-seq st data-size n))
                              extracted1-st))
          extracted2-st))))
     :hints (("Goal" :in-theory (enable f-or
@@ -1015,29 +1015,29 @@
     (b* ((extracted0-st (igcd$extract0 st))
          (extracted1-st (igcd$extract1 st))
          (extracted2-st (igcd$extract2 st))
-         (final-st (de-n (si 'igcd data-width) inputs-seq st netlist n))
+         (final-st (de-n (si 'igcd data-size) inputs-seq st netlist n))
          (final-extracted0-st (igcd$extract0 final-st))
          (final-extracted1-st (igcd$extract1 final-st))
          (final-extracted2-st (igcd$extract2 final-st)))
       (implies
-       (and (igcd& netlist data-width)
-            (igcd$input-format-n inputs-seq data-width n)
-            (igcd$valid-st st data-width)
+       (and (igcd& netlist data-size)
+            (igcd$input-format-n inputs-seq data-size n)
+            (igcd$valid-st st data-size)
             (igcd$inv st)
             (member x (interleave final-extracted0-st final-extracted1-st)))
        (member
         (append x
                 final-extracted2-st
-                (igcd$netlist-out-seq
-                 inputs-seq st netlist data-width n))
+                (igcd$out-seq-netlist
+                 inputs-seq st netlist data-size n))
         (prepend-rec
          (interleave (append (igcd$op-map
-                              (igcd$netlist-in0-seq
-                               inputs-seq st netlist data-width n))
+                              (igcd$in0-seq-netlist
+                               inputs-seq st netlist data-size n))
                              extracted0-st)
                      (append (igcd$op-map
-                              (igcd$netlist-in1-seq
-                               inputs-seq st netlist data-width n))
+                              (igcd$in1-seq-netlist
+                               inputs-seq st netlist data-size n))
                              extracted1-st))
          extracted2-st))))
     :hints (("Goal"

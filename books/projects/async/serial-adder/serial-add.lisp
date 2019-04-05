@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; February 2019
 
 (in-package "ADE")
 
@@ -58,27 +58,27 @@
                                  *sipo-sreg$go-num*))
 (defconst *serial-add$st-len* 8)
 
-(defun serial-add$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 2 (* 2 (mbe :logic (nfix data-width)
-                 :exec  data-width))))
+(defun serial-add$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 2 (* 2 (mbe :logic (nfix data-size)
+                 :exec  data-size))))
 
-(defun serial-add$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (serial-add$data-ins-len data-width)
+(defun serial-add$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (serial-add$data-ins-len data-size)
      *serial-add$go-num*))
 
 ;; DE module generator of SERIAL-ADD
 
 (module-generator
- serial-add* (data-width)
- (si 'serial-add data-width)
+ serial-add* (data-size)
+ (si 'serial-add data-size)
  (list* 'full-in 'empty-out-
-        (append (sis 'data0-in 0 data-width)
-                (sis 'data1-in 0 data-width)
+        (append (sis 'data0-in 0 data-size)
+                (sis 'data1-in 0 data-size)
                 (sis 'go 0 *serial-add$go-num*)))
  (list* 'in-act 'out-act
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(a b ci s co done piso2 sipo)
  (list
   ;; LINKS
@@ -117,10 +117,10 @@
   (list 'piso2
         '(in-act piso2-out0-act piso2-out1-act
                  piso2-bit0-out piso2-bit1-out)
-        (si 'piso2-sreg data-width)
+        (si 'piso2-sreg data-size)
         (list* 'full-in 'a-status 'b-status
-               (append (sis 'data0-in 0 data-width)
-                       (sis 'data1-in 0 data-width)
+               (append (sis 'data0-in 0 data-size)
+                       (sis 'data1-in 0 data-size)
                        (sis 'go
                             *serial-add$prim-go-num*
                             *piso2-sreg$go-num*))))
@@ -129,8 +129,8 @@
   '(g0 (done-status~) b-not (done-status))
   '(g1 (sipo-full-in) b-and (s-status done-status~))
   (list 'sipo
-        (list* 'sipo-in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-width))
-        (si 'sipo-sreg data-width)
+        (list* 'sipo-in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-size))
+        (si 'sipo-sreg data-size)
         (list* 'sipo-full-in 'empty-out- 's-out
                (sis 'go
                     (+ *serial-add$prim-go-num*
@@ -155,7 +155,7 @@
         (list 'c-buf-full-in 'ci-status (si 'go 1)))
   '(c-buf-op (ci-in) b-if (done-out low co-out)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -166,31 +166,31 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SERIAL-ADD.
 
-(defund serial-add$netlist (data-width cnt-width)
-  (declare (xargs :guard (and (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
-  (cons (serial-add* data-width)
+(defund serial-add$netlist (data-size cnt-size)
+  (declare (xargs :guard (and (posp data-size)
+                              (natp cnt-size)
+                              (<= 3 cnt-size))))
+  (cons (serial-add* data-size)
         (union$ (link1$netlist)
-                (piso2-sreg$netlist data-width cnt-width)
-                (sipo-sreg$netlist data-width cnt-width)
+                (piso2-sreg$netlist data-size cnt-size)
+                (sipo-sreg$netlist data-size cnt-size)
                 :test 'equal)))
 
 ;; Recognizer for SERIAL-ADD
 
-(defund serial-add& (netlist data-width cnt-width)
+(defund serial-add& (netlist data-size cnt-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
-  (b* ((subnetlist (delete-to-eq (si 'serial-add data-width) netlist)))
-    (and (equal (assoc (si 'serial-add data-width) netlist)
-                (serial-add* data-width))
+                              (posp data-size)
+                              (natp cnt-size)
+                              (<= 3 cnt-size))))
+  (b* ((subnetlist (delete-to-eq (si 'serial-add data-size) netlist)))
+    (and (equal (assoc (si 'serial-add data-size) netlist)
+                (serial-add* data-size))
          (link1& subnetlist)
          (joint-cntl& subnetlist)
          (full-adder& subnetlist)
-         (piso2-sreg& subnetlist data-width cnt-width)
-         (sipo-sreg& subnetlist data-width cnt-width))))
+         (piso2-sreg& subnetlist data-size cnt-size)
+         (sipo-sreg& subnetlist data-size cnt-size))))
 
 ;; Sanity check
 
@@ -202,21 +202,21 @@
 
 ;; Constraints on the state of SERIAL-ADD
 
-(defund serial-add$st-format (st data-width cnt-width)
+(defund serial-add$st-format (st data-size cnt-size)
   (b* ((piso2 (get-field *serial-add$piso2* st))
        (sipo (get-field *serial-add$sipo* st)))
-    (and (piso2-sreg$st-format piso2 data-width cnt-width)
-         (sipo-sreg$st-format sipo data-width cnt-width))))
+    (and (piso2-sreg$st-format piso2 data-size cnt-size)
+         (sipo-sreg$st-format sipo data-size cnt-size))))
 
 (defthm serial-add$st-format=>constraint
-  (implies (serial-add$st-format st data-width cnt-width)
-           (and (posp data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
+  (implies (serial-add$st-format st data-size cnt-size)
+           (and (posp data-size)
+                (natp cnt-size)
+                (<= 4 cnt-size)))
   :hints (("Goal" :in-theory (enable serial-add$st-format)))
   :rule-classes :forward-chaining)
 
-(defund serial-add$valid-st (st data-width cnt-width)
+(defund serial-add$valid-st (st data-size cnt-size)
   (b* ((a (get-field *serial-add$a* st))
        (b (get-field *serial-add$b* st))
        (ci (get-field *serial-add$ci* st))
@@ -231,23 +231,23 @@
          (link1$valid-st s)
          (link1$valid-st co)
          (link1$valid-st done)
-         (piso2-sreg$valid-st piso2 data-width cnt-width)
-         (sipo-sreg$valid-st sipo data-width cnt-width))))
+         (piso2-sreg$valid-st piso2 data-size cnt-size)
+         (sipo-sreg$valid-st sipo data-size cnt-size))))
 
 (defthmd serial-add$valid-st=>constraint
-  (implies (serial-add$valid-st st data-width cnt-width)
-           (and (natp data-width)
-                (<= 8 data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
+  (implies (serial-add$valid-st st data-size cnt-size)
+           (and (natp data-size)
+                (<= 8 data-size)
+                (natp cnt-size)
+                (<= 4 cnt-size)))
   :hints (("Goal"
            :in-theory (enable sipo-sreg$valid-st=>constraint
                               serial-add$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd serial-add$valid-st=>st-format
-  (implies (serial-add$valid-st st data-width cnt-width)
-           (serial-add$st-format st data-width cnt-width))
+  (implies (serial-add$valid-st st data-size cnt-size)
+           (serial-add$st-format st data-size cnt-size))
   :hints (("Goal" :in-theory (enable piso2-sreg$valid-st=>st-format
                                      sipo-sreg$valid-st=>st-format
                                      serial-add$st-format
@@ -258,42 +258,42 @@
 (progn
   ;; Extract the 1st input operand
 
-  (defun serial-add$data0-in (inputs data-width)
+  (defun serial-add$data0-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 2 inputs)))
 
   (defthm len-serial-add$data0-in
-    (equal (len (serial-add$data0-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (serial-add$data0-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable serial-add$data0-in))
 
   ;; Extract the 2nd input operand
 
-  (defun serial-add$data1-in (inputs data-width)
+  (defun serial-add$data1-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (b* ((width (mbe :logic (nfix data-width)
-                     :exec  data-width)))
-      (take width
-            (nthcdr (+ 2 width) inputs))))
+                                (natp data-size))))
+    (b* ((size (mbe :logic (nfix data-size)
+                     :exec  data-size)))
+      (take size
+            (nthcdr (+ 2 size) inputs))))
 
   (defthm len-serial-add$data1-in
-    (equal (len (serial-add$data1-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (serial-add$data1-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable serial-add$data1-in))
 
   ;; Extract the inputs for joint PISO2
 
-  (defund serial-add$piso2-inputs (inputs st data-width)
+  (defund serial-add$piso2-inputs (inputs st data-size)
     (b* ((full-in0 (nth 0 inputs))
-         (data0-in (serial-add$data0-in inputs data-width))
-         (data1-in (serial-add$data1-in inputs data-width))
-         (go-signals (nthcdr (serial-add$data-ins-len data-width) inputs))
+         (data0-in (serial-add$data0-in inputs data-size))
+         (data1-in (serial-add$data1-in inputs data-size))
+         (go-signals (nthcdr (serial-add$data-ins-len data-size) inputs))
 
          (piso2-go-signals (take *piso2-sreg$go-num*
                                   (nthcdr *serial-add$prim-go-num*
@@ -309,9 +309,9 @@
 
   ;; Extract the inputs for joint SIPO
 
-  (defund serial-add$sipo-inputs (inputs st data-width)
+  (defund serial-add$sipo-inputs (inputs st data-size)
     (b* ((empty-out- (nth 1 inputs))
-         (go-signals (nthcdr (serial-add$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (serial-add$data-ins-len data-size) inputs))
 
          (sipo-go-signals (take *sipo-sreg$go-num*
                                 (nthcdr (+ *serial-add$prim-go-num*
@@ -331,27 +331,27 @@
 
   ;; Extract the "in-act" signal
 
-  (defund serial-add$in-act (inputs st data-width)
-    (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-width))
+  (defund serial-add$in-act (inputs st data-size)
+    (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-size))
          (piso2 (get-field *serial-add$piso2* st)))
-      (piso2-sreg$in-act piso2-inputs piso2 data-width)))
+      (piso2-sreg$in-act piso2-inputs piso2 data-size)))
 
   (defthm serial-add$in-act-inactive
     (implies (not (nth 0 inputs))
-             (not (serial-add$in-act inputs st data-width)))
+             (not (serial-add$in-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable serial-add$piso2-inputs
                                        serial-add$in-act))))
 
   ;; Extract the "out-act" signal
 
-  (defund serial-add$out-act (inputs st data-width)
-    (b* ((sipo-inputs (serial-add$sipo-inputs inputs st data-width))
+  (defund serial-add$out-act (inputs st data-size)
+    (b* ((sipo-inputs (serial-add$sipo-inputs inputs st data-size))
          (sipo (get-field *serial-add$sipo* st)))
       (sipo-sreg$out-act sipo-inputs sipo)))
 
   (defthm serial-add$out-act-inactive
     (implies (equal (nth 1 inputs) t)
-             (not (serial-add$out-act inputs st data-width)))
+             (not (serial-add$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable serial-add$sipo-inputs
                                        serial-add$out-act))))
 
@@ -362,31 +362,31 @@
       (sipo-sreg$data-out sipo)))
 
   (defthm len-serial-add$data-out-1
-    (implies (serial-add$st-format st data-width cnt-width)
+    (implies (serial-add$st-format st data-size cnt-size)
              (equal (len (serial-add$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable serial-add$st-format
                                        serial-add$data-out))))
 
   (defthm len-serial-add$data-out-2
-    (implies (serial-add$valid-st st data-width cnt-width)
+    (implies (serial-add$valid-st st data-size cnt-size)
              (equal (len (serial-add$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable serial-add$valid-st
                                        serial-add$data-out))))
 
   (defthm bvp-serial-add$data-out
-    (implies (and (serial-add$valid-st st data-width cnt-width)
-                  (serial-add$out-act inputs st data-width))
+    (implies (and (serial-add$valid-st st data-size cnt-size)
+                  (serial-add$out-act inputs st data-size))
              (bvp (serial-add$data-out st)))
     :hints (("Goal" :in-theory (e/d (serial-add$valid-st
                                      serial-add$out-act
                                      serial-add$data-out)
                                     (sipo-sreg$extract-lemma)))))
 
-  (defun serial-add$outputs (inputs st data-width)
-    (list* (serial-add$in-act inputs st data-width)
-           (serial-add$out-act inputs st data-width)
+  (defun serial-add$outputs (inputs st data-size)
+    (list* (serial-add$in-act inputs st data-size)
+           (serial-add$out-act inputs st data-size)
            (serial-add$data-out st)))
   )
 
@@ -395,20 +395,20 @@
 (defthm serial-add$value
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
-    (implies (and (serial-add& netlist data-width cnt-width)
+    (implies (and (serial-add& netlist data-size cnt-size)
                   (true-listp data0-in)
-                  (equal (len data0-in) data-width)
+                  (equal (len data0-in) data-size)
                   (true-listp data1-in)
-                  (equal (len data1-in) data-width)
+                  (equal (len data1-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *serial-add$go-num*)
-                  (serial-add$st-format st data-width cnt-width))
-             (equal (se (si 'serial-add data-width) inputs st netlist)
-                    (serial-add$outputs inputs st data-width))))
+                  (serial-add$st-format st data-size cnt-size))
+             (equal (se (si 'serial-add data-size) inputs st netlist)
+                    (serial-add$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'serial-add data-width)
+           :expand (:free (inputs data-size)
+                          (se (si 'serial-add data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             serial-add&
@@ -425,8 +425,8 @@
 
 ;; This function specifies the next state of SERIAL-ADD.
 
-(defun serial-add$step (inputs st data-width cnt-width)
-  (b* ((go-signals (nthcdr (serial-add$data-ins-len data-width)
+(defun serial-add$step (inputs st data-size cnt-size)
+  (b* ((go-signals (nthcdr (serial-add$data-ins-len data-size)
                            inputs))
        (go-add (nth 0 go-signals))
        (go-c-buf (nth 1 go-signals))
@@ -440,8 +440,8 @@
        (piso2 (get-field *serial-add$piso2* st))
        (sipo (get-field *serial-add$sipo* st))
 
-       (piso2-inputs (serial-add$piso2-inputs inputs st data-width))
-       (sipo-inputs (serial-add$sipo-inputs inputs st data-width))
+       (piso2-inputs (serial-add$piso2-inputs inputs st data-size))
+       (sipo-inputs (serial-add$sipo-inputs inputs st data-size))
 
        (a.s (get-field *link1$s* a))
        (a.d (get-field *link1$d* a))
@@ -456,9 +456,9 @@
        (done.d (get-field *link1$d* done))
 
        (piso2-out0-act
-        (piso2-sreg$out0-act piso2-inputs piso2 data-width))
+        (piso2-sreg$out0-act piso2-inputs piso2 data-size))
        (piso2-out1-act
-        (piso2-sreg$out1-act piso2-inputs piso2 data-width))
+        (piso2-sreg$out1-act piso2-inputs piso2 data-size))
        (piso2-bit0-out (piso2-sreg$bit0-out piso2))
        (piso2-bit1-out (piso2-sreg$bit1-out piso2))
        (sipo-in-act
@@ -495,12 +495,12 @@
      ;; DONE
      (link1$step done-inputs done)
      ;; Joint PISO2
-     (piso2-sreg$step piso2-inputs piso2 data-width cnt-width)
+     (piso2-sreg$step piso2-inputs piso2 data-size cnt-size)
      ;; Joint SIPO
-     (sipo-sreg$step sipo-inputs sipo data-width cnt-width))))
+     (sipo-sreg$step sipo-inputs sipo data-size cnt-size))))
 
 (defthm len-of-serial-add$step
-  (equal (len (serial-add$step inputs st data-width cnt-width))
+  (equal (len (serial-add$step inputs st data-size cnt-size))
          *serial-add$st-len*))
 
 ;; The state lemma for SERIAL-ADD
@@ -509,20 +509,20 @@
   (b* ((inputs (list* full-in empty-out-
                       (append data0-in data1-in go-signals))))
     (implies
-     (and (serial-add& netlist data-width cnt-width)
+     (and (serial-add& netlist data-size cnt-size)
           (true-listp data0-in)
-          (equal (len data0-in) data-width)
+          (equal (len data0-in) data-size)
           (true-listp data1-in)
-          (equal (len data1-in) data-width)
+          (equal (len data1-in) data-size)
           (true-listp go-signals)
           (equal (len go-signals) *serial-add$go-num*)
-          (serial-add$st-format st data-width cnt-width))
-     (equal (de (si 'serial-add data-width) inputs st netlist)
-            (serial-add$step inputs st data-width cnt-width))))
+          (serial-add$st-format st data-size cnt-size))
+     (equal (de (si 'serial-add data-size) inputs st netlist)
+            (serial-add$step inputs st data-size cnt-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'serial-add data-width)
+           :expand (:free (inputs data-size)
+                          (de (si 'serial-add data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             serial-add&
@@ -542,14 +542,14 @@
 
 ;; Conditions on the inputs
 
-(defund serial-add$input-format (inputs data-width)
+(defund serial-add$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in    (nth 0 inputs))
        (empty-out- (nth 1 inputs))
-       (data0-in   (serial-add$data0-in inputs data-width))
-       (data1-in   (serial-add$data1-in inputs data-width))
-       (go-signals (nthcdr (serial-add$data-ins-len data-width) inputs)))
+       (data0-in   (serial-add$data0-in inputs data-size))
+       (data1-in   (serial-add$data1-in inputs data-size))
+       (go-signals (nthcdr (serial-add$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out-)
@@ -563,11 +563,11 @@
 
 (local
  (defthm serial-add$input-format=>piso2$input-format
-   (implies (and (serial-add$input-format inputs data-width)
-                 (serial-add$valid-st st data-width cnt-width))
+   (implies (and (serial-add$input-format inputs data-size)
+                 (serial-add$valid-st st data-size cnt-size))
             (piso2-sreg$input-format
-             (serial-add$piso2-inputs inputs st data-width)
-             data-width))
+             (serial-add$piso2-inputs inputs st data-size)
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (piso2-sreg$input-format
                              piso2-sreg$data0-in
@@ -580,10 +580,10 @@
 
 (local
  (defthm serial-add$input-format=>sipo$input-format
-   (implies (and (serial-add$input-format inputs data-width)
-                 (serial-add$valid-st st data-width cnt-width))
+   (implies (and (serial-add$input-format inputs data-size)
+                 (serial-add$valid-st st data-size cnt-size))
             (sipo-sreg$input-format
-             (serial-add$sipo-inputs inputs st data-width)))
+             (serial-add$sipo-inputs inputs st data-size)))
    :hints (("Goal"
             :in-theory (e/d (bvp
                              sipo-sreg$input-format
@@ -594,9 +594,9 @@
                             (nfix))))))
 
 (defthm booleanp-serial-add$in-act
-  (implies (and (serial-add$input-format inputs data-width)
-                (serial-add$valid-st st data-width cnt-width))
-           (booleanp (serial-add$in-act inputs st data-width)))
+  (implies (and (serial-add$input-format inputs data-size)
+                (serial-add$valid-st st data-size cnt-size))
+           (booleanp (serial-add$in-act inputs st data-size)))
   :hints (("Goal"
            :use serial-add$input-format=>piso2$input-format
            :in-theory (e/d (serial-add$valid-st
@@ -606,9 +606,9 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-serial-add$out-act
-  (implies (and (serial-add$input-format inputs data-width)
-                (serial-add$valid-st st data-width cnt-width))
-           (booleanp (serial-add$out-act inputs st data-width)))
+  (implies (and (serial-add$input-format inputs data-size)
+                (serial-add$valid-st st data-size cnt-size))
+           (booleanp (serial-add$out-act inputs st data-size)))
   :hints (("Goal"
            :use serial-add$input-format=>sipo$input-format
            :in-theory (e/d (serial-add$valid-st
@@ -617,7 +617,7 @@
                             link1$valid-st))))
   :rule-classes (:rewrite :type-prescription))
 
-(simulate-lemma serial-add :sizes (data-width cnt-width))
+(simulate-lemma serial-add :sizes (data-size cnt-size))
 
 ;; ======================================================================
 
@@ -639,7 +639,7 @@
 ;; The extraction function for SERIAL-ADD that extracts the future output
 ;; sequence from the current state.
 
-(defund serial-add$extract (st data-width)
+(defund serial-add$extract (st data-size)
   (b* ((a (get-field *serial-add$a* st))
        (b (get-field *serial-add$b* st))
        (ci (get-field *serial-add$ci* st))
@@ -664,60 +664,40 @@
        (s.valid-d (if (fullp s.s) s.d nil))
        (piso0.valid-d (piso2-sreg$extract0 piso2))
        (piso1.valid-d (piso2-sreg$extract1 piso2))
-       (sipo.valid-d (sipo-sreg$extract sipo)))
+       (sipo.valid-d (sipo-sreg$extract sipo))
+       (in0 (append a.valid-d piso0.valid-d))
+       (in1 (append b.valid-d piso1.valid-d))
+       (out (append sipo.valid-d s.valid-d)))
     (cond
-     ((equal (+ (len (append a.valid-d piso0.valid-d))
-                (len (append sipo.valid-d s.valid-d)))
-             (* 2 data-width))
+     ((equal (+ (len in0) (len out))
+             (* 2 data-size))
       (cond
-       ((< (len (append sipo.valid-d s.valid-d))
-           data-width)
-        (list
-         (v-adder-output nil
-                         piso0.valid-d
-                         piso1.valid-d)
-         (append
-          sipo.valid-d
-          s.valid-d
-          (list (b-xor3 c (car a.valid-d) (car b.valid-d))))))
-       ((equal (len (append sipo.valid-d s.valid-d))
-               data-width)
-        (list
-         (v-adder-output nil
-                         (append a.valid-d piso0.valid-d)
-                         (append b.valid-d piso1.valid-d))
-         (append sipo.valid-d s.valid-d)))
-       (t (list
-           (append s.valid-d
-                   (v-adder-output c
-                                   (append a.valid-d piso0.valid-d)
-                                   (append b.valid-d piso1.valid-d)))
-           sipo.valid-d))))
-     ((equal (+ (len (append a.valid-d piso0.valid-d))
-                (len (append sipo.valid-d s.valid-d)))
-             data-width)
+       ((< (len out) data-size)
+        (list (v-adder-output nil piso0.valid-d piso1.valid-d)
+              (append
+               out
+               (list (b-xor3 c (car a.valid-d) (car b.valid-d))))))
+       ((equal (len out) data-size)
+        (list (v-adder-output nil in0 in1)
+              out))
+       (t (list (append s.valid-d
+                        (v-adder-output c in0 in1))
+                sipo.valid-d))))
+     ((equal (+ (len in0) (len out))
+             data-size)
       (cond
-       ((equal (len (append sipo.valid-d s.valid-d))
-               0)
-        (list (v-adder-output nil
-                              (append a.valid-d piso0.valid-d)
-                              (append b.valid-d piso1.valid-d))))
-       ((< (len (append sipo.valid-d s.valid-d))
-           data-width)
-        (list
-         (append
-          sipo.valid-d
-          s.valid-d
-          (v-adder-output c
-                          (append a.valid-d piso0.valid-d)
-                          (append b.valid-d piso1.valid-d)))))
-       (t (list (append sipo.valid-d s.valid-d)))))
+       ((equal (len out) 0)
+        (list (v-adder-output nil in0 in1)))
+       ((< (len out) data-size)
+        (list (append out
+                      (v-adder-output c in0 in1))))
+       (t (list out))))
      (t nil))))
 
 ;; Specify and prove a state invariant
 
 (progn
-  (defund serial-add$inv (st data-width)
+  (defund serial-add$inv (st data-size)
     (b* ((a (get-field *serial-add$a* st))
          (b (get-field *serial-add$b* st))
          (ci (get-field *serial-add$ci* st))
@@ -744,44 +724,39 @@
          (s.valid-d (if (fullp s.s) s.d nil))
          (piso0.valid-d (piso2-sreg$extract0 piso2))
          (piso1.valid-d (piso2-sreg$extract1 piso2))
-         (sipo.valid-d (sipo-sreg$extract sipo)))
+         (sipo.valid-d (sipo-sreg$extract sipo))
+         (in0 (append a.valid-d piso0.valid-d))
+         (in1 (append b.valid-d piso1.valid-d))
+         (out (append sipo.valid-d s.valid-d)))
       (and (not (equal ci.s co.s))
            (or (emptyp ci.s) (emptyp done.s))
            (or (emptyp co.s)
                (not (equal s.s done.s)))
-           (or (emptyp s.s) (fullp co.s))
-           (not (and (fullp s.s) (fullp done.s)))
+           (or (emptyp s.s)
+               (and (fullp co.s) (emptyp done.s)))
            (or (emptyp ci.s)
-               (and (not (equal (len (append a.valid-d piso0.valid-d))
-                                0))
-                    (not (equal (len (append a.valid-d piso0.valid-d))
-                                data-width)))
+               (and (not (equal (len in0) 0))
+                    (not (equal (len in0) data-size)))
                (not (car ci.d)))
            (or (emptyp done.s)
                (equal (car done.d)
-                      (or (equal (len sipo.valid-d)
-                                 0)
-                          (equal (len sipo.valid-d)
-                                 data-width))))
-           (equal (len (append a.valid-d piso0.valid-d))
-                  (len (append b.valid-d piso1.valid-d)))
-           (or (equal (+ (len (append a.valid-d piso0.valid-d))
-                         (len (append sipo.valid-d s.valid-d)))
+                      (or (equal (len sipo.valid-d) 0)
+                          (equal (len sipo.valid-d) data-size))))
+           (equal (len in0) (len in1))
+           (or (equal (+ (len in0) (len out))
                       0)
-               (equal (+ (len (append a.valid-d piso0.valid-d))
-                         (len (append sipo.valid-d s.valid-d)))
-                      data-width)
-               (equal (+ (len (append a.valid-d piso0.valid-d))
-                         (len (append sipo.valid-d s.valid-d)))
-                      (* 2 data-width)))
+               (equal (+ (len in0) (len out))
+                      data-size)
+               (equal (+ (len in0) (len out))
+                      (* 2 data-size)))
            (piso2-sreg$inv piso2)
            (sipo-sreg$inv sipo))))
 
   (defthm serial-add$extract-not-empty
-    (implies (and (serial-add$out-act inputs st data-width)
-                  (serial-add$valid-st st data-width cnt-width)
-                  (serial-add$inv st data-width))
-             (< 0 (len (serial-add$extract st data-width))))
+    (implies (and (serial-add$out-act inputs st data-size)
+                  (serial-add$valid-st st data-size cnt-size)
+                  (serial-add$inv st data-size))
+             (< 0 (len (serial-add$extract st data-size))))
     :hints (("Goal"
              :in-theory (e/d (serial-add$valid-st
                               serial-add$inv
@@ -795,12 +770,12 @@
    (defthm serial-add$piso2-out0-act-inactive
      (b* ((a (nth *serial-add$a* st))
           (a.s (nth *link1$s* a))
-          (piso2-inputs (serial-add$piso2-inputs inputs st data-width))
+          (piso2-inputs (serial-add$piso2-inputs inputs st data-size))
           (piso2 (nth *serial-add$piso2* st)))
        (implies (fullp a.s)
                 (not (piso2-sreg$out0-act piso2-inputs
                                           piso2
-                                          data-width))))
+                                          data-size))))
      :hints (("Goal" :in-theory (enable get-field
                                         serial-add$piso2-inputs)))))
 
@@ -808,12 +783,12 @@
    (defthm serial-add$piso2-out1-act-inactive
      (b* ((b (nth *serial-add$b* st))
           (b.s (nth *link1$s* b))
-          (piso2-inputs (serial-add$piso2-inputs inputs st data-width))
+          (piso2-inputs (serial-add$piso2-inputs inputs st data-size))
           (piso2 (nth *serial-add$piso2* st)))
        (implies (fullp b.s)
                 (not (piso2-sreg$out1-act piso2-inputs
                                           piso2
-                                          data-width))))
+                                          data-size))))
      :hints (("Goal" :in-theory (enable get-field
                                         serial-add$piso2-inputs)))))
 
@@ -823,7 +798,7 @@
           (s.s (nth *link1$s* s))
           (done (nth *serial-add$done* st))
           (done.s (nth *link1$s* done))
-          (sipo-inputs (serial-add$sipo-inputs inputs st data-width))
+          (sipo-inputs (serial-add$sipo-inputs inputs st data-size))
           (sipo (nth *serial-add$sipo* st)))
        (implies (or (emptyp s.s)
                     (fullp done.s))
@@ -849,11 +824,11 @@
     (local
      (defthm sipo-sreg$cnt-out=1-rewrite
        (implies (and (sipo-sreg$in-act inputs st)
-                     (sipo-sreg$valid-st st data-width cnt-width)
+                     (sipo-sreg$valid-st st data-size cnt-size)
                      (sipo-sreg$inv st))
                 (equal (sipo-sreg$cnt-out=1 st)
                        (equal (len (sipo-sreg$extract st))
-                              (1- data-width))))
+                              (1- data-size))))
        :hints (("Goal" :in-theory (enable bvp
                                           v-to-nat
                                           sipo-sreg$in-act
@@ -863,12 +838,12 @@
                                           sipo-sreg$extract)))))
 
     (defthm serial-add$inv-preserved
-      (implies (and (serial-add$input-format inputs data-width)
-                    (serial-add$valid-st st data-width cnt-width)
-                    (serial-add$inv st data-width))
+      (implies (and (serial-add$input-format inputs data-size)
+                    (serial-add$valid-st st data-size cnt-size)
+                    (serial-add$inv st data-size))
                (serial-add$inv
-                (serial-add$step inputs st data-width cnt-width)
-                data-width))
+                (serial-add$step inputs st data-size cnt-size)
+                data-size))
       :hints (("Goal"
                :use (serial-add$input-format=>piso2$input-format
                      serial-add$input-format=>sipo$input-format)
@@ -892,20 +867,20 @@
 ;; The extracted next-state function for SERIAL-ADD.  Note that this function
 ;; avoids exploring the internal computation of SERIAL-ADD.
 
-(defund serial-add$extracted-step (inputs st data-width)
-  (b* ((data0 (serial-add$data0-in inputs data-width))
-       (data1 (serial-add$data1-in inputs data-width))
-       (extracted-st (serial-add$extract st data-width))
+(defund serial-add$extracted-step (inputs st data-size)
+  (b* ((data0 (serial-add$data0-in inputs data-size))
+       (data1 (serial-add$data1-in inputs data-size))
+       (extracted-st (serial-add$extract st data-size))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (serial-add$out-act inputs st data-width) t)
+     ((equal (serial-add$out-act inputs st data-size) t)
       (cond
-       ((equal (serial-add$in-act inputs st data-width) t)
+       ((equal (serial-add$in-act inputs st data-size) t)
         (cons (v-adder-output nil data0 data1)
               (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (serial-add$in-act inputs st data-width) t)
+         ((equal (serial-add$in-act inputs st data-size) t)
           (cons (v-adder-output nil data0 data1)
                 extracted-st))
          (t extracted-st))))))
@@ -917,18 +892,18 @@
 
   (local
    (defthm serial-add-aux-1
-     (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-width)))
-       (equal (piso2-sreg$data0-in piso2-inputs data-width)
-              (serial-add$data0-in inputs data-width)))
+     (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-size)))
+       (equal (piso2-sreg$data0-in piso2-inputs data-size)
+              (serial-add$data0-in inputs data-size)))
      :hints (("Goal" :in-theory (enable piso2-sreg$data0-in
                                         serial-add$piso2-inputs
                                         serial-add$data0-in)))))
 
   (local
    (defthm serial-add-aux-2
-     (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-width)))
-       (equal (piso2-sreg$data1-in piso2-inputs data-width)
-              (serial-add$data1-in inputs data-width)))
+     (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-size)))
+       (equal (piso2-sreg$data1-in piso2-inputs data-size)
+              (serial-add$data1-in inputs data-size)))
      :hints (("Goal" :in-theory (enable piso2-sreg$data1-in
                                         serial-add$piso2-inputs
                                         serial-add$data1-in)))))
@@ -937,7 +912,7 @@
    (defthm serial-add-aux-3
      (b* ((s (get-field *serial-add$s* st))
           (s.d (get-field *link1$d* s))
-          (sipo-inputs (serial-add$sipo-inputs inputs st data-width)))
+          (sipo-inputs (serial-add$sipo-inputs inputs st data-size)))
        (equal (sipo-sreg$bit-in sipo-inputs)
               (f-buf (car s.d))))
      :hints (("Goal" :in-theory (enable sipo-sreg$bit-in
@@ -966,12 +941,12 @@
      :hints (("Goal" :in-theory (enable nth)))))
 
   (defthm serial-add$extracted-step-correct
-    (b* ((next-st (serial-add$step inputs st data-width cnt-width)))
-      (implies (and (serial-add$input-format inputs data-width)
-                    (serial-add$valid-st st data-width cnt-width)
-                    (serial-add$inv st data-width))
-               (equal (serial-add$extract next-st data-width)
-                      (serial-add$extracted-step inputs st data-width))))
+    (b* ((next-st (serial-add$step inputs st data-size cnt-size)))
+      (implies (and (serial-add$input-format inputs data-size)
+                    (serial-add$valid-st st data-size cnt-size)
+                    (serial-add$inv st data-size))
+               (equal (serial-add$extract next-st data-size)
+                      (serial-add$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use (serial-add$input-format=>piso2$input-format
                    serial-add$input-format=>sipo$input-format)
@@ -980,6 +955,7 @@
                               list-rewrite-1
                               consp-is-pos-len
                               v-adder
+                              v-adder-output
                               sipo-sreg$valid-st=>constraint
                               piso2-sreg$extracted0-step
                               piso2-sreg$extracted1-step
@@ -990,8 +966,7 @@
                               serial-add$step
                               serial-add$in-act
                               serial-add$out-act
-                              serial-add$extract
-                              v-adder-output)
+                              serial-add$extract)
                              (serial-add$input-format=>piso2$input-format
                               serial-add$input-format=>sipo$input-format
                               sipo-sreg$out-act-inactive
@@ -1006,12 +981,12 @@
 ;; Prove that serial-add$valid-st is an invariant.
 
 (defthm serial-add$valid-st-preserved
-  (implies (and (serial-add$input-format inputs data-width)
-                (serial-add$valid-st st data-width cnt-width))
+  (implies (and (serial-add$input-format inputs data-size)
+                (serial-add$valid-st st data-size cnt-size))
            (serial-add$valid-st
-            (serial-add$step inputs st data-width cnt-width)
-            data-width
-            cnt-width))
+            (serial-add$step inputs st data-size cnt-size)
+            data-size
+            cnt-size))
   :hints (("Goal"
            :use (serial-add$input-format=>piso2$input-format
                  serial-add$input-format=>sipo$input-format)
@@ -1026,12 +1001,12 @@
                             serial-add$disabled-rules)))))
 
 (defthm serial-add$extract-lemma
-  (implies (and (serial-add$valid-st st data-width cnt-width)
-                (serial-add$inv st data-width)
-                (serial-add$out-act inputs st data-width))
+  (implies (and (serial-add$valid-st st data-size cnt-size)
+                (serial-add$inv st data-size)
+                (serial-add$out-act inputs st data-size))
            (equal (list (serial-add$data-out st))
-                  (nthcdr (1- (len (serial-add$extract st data-width)))
-                          (serial-add$extract st data-width))))
+                  (nthcdr (1- (len (serial-add$extract st data-size)))
+                          (serial-add$extract st data-size))))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (get-field
@@ -1045,16 +1020,16 @@
 ;; Extract the accepted input sequence
 
 (seq-gen serial-add in in-act 0
-         (cons (serial-add$data0-in inputs data-width)
-               (serial-add$data1-in inputs data-width))
-         :sizes (data-width cnt-width))
+         (cons (serial-add$data0-in inputs data-size)
+               (serial-add$data1-in inputs data-size))
+         :sizes (data-size cnt-size))
 
 ;; Extract the valid output sequence
 
 (seq-gen serial-add out out-act 1
          (serial-add$data-out st)
          :netlist-data (nthcdr 2 outputs)
-         :sizes (data-width cnt-width))
+         :sizes (data-size cnt-size))
 
 ;; The multi-step input-output relationship
 
@@ -1072,40 +1047,40 @@
                                      (associativity-of-append))))))
 
   (defthmd serial-add$dataflow-correct
-    (b* ((extracted-st (serial-add$extract st data-width))
+    (b* ((extracted-st (serial-add$extract st data-size))
          (final-st (serial-add$run
-                    inputs-seq st data-width cnt-width n))
-         (final-extracted-st (serial-add$extract final-st data-width)))
+                    inputs-seq st data-size cnt-size n))
+         (final-extracted-st (serial-add$extract final-st data-size)))
       (implies
-       (and (serial-add$input-format-n inputs-seq data-width n)
-            (serial-add$valid-st st data-width cnt-width)
-            (serial-add$inv st data-width))
+       (and (serial-add$input-format-n inputs-seq data-size n)
+            (serial-add$valid-st st data-size cnt-size)
+            (serial-add$inv st data-size))
        (equal (append final-extracted-st
                       (serial-add$out-seq
-                       inputs-seq st data-width cnt-width n))
+                       inputs-seq st data-size cnt-size n))
               (append (serial-add$op-map
                        (serial-add$in-seq
-                        inputs-seq st data-width cnt-width n))
+                        inputs-seq st data-size cnt-size n))
                       extracted-st))))
     :hints (("Goal"
              :in-theory (enable serial-add$extracted-step))))
 
   (defthmd serial-add$functionally-correct
-    (b* ((extracted-st (serial-add$extract st data-width))
-         (final-st (de-n (si 'serial-add data-width)
+    (b* ((extracted-st (serial-add$extract st data-size))
+         (final-st (de-n (si 'serial-add data-size)
                          inputs-seq st netlist n))
-         (final-extracted-st (serial-add$extract final-st data-width)))
+         (final-extracted-st (serial-add$extract final-st data-size)))
       (implies
-       (and (serial-add& netlist data-width cnt-width)
-            (serial-add$input-format-n inputs-seq data-width n)
-            (serial-add$valid-st st data-width cnt-width)
-            (serial-add$inv st data-width))
+       (and (serial-add& netlist data-size cnt-size)
+            (serial-add$input-format-n inputs-seq data-size n)
+            (serial-add$valid-st st data-size cnt-size)
+            (serial-add$inv st data-size))
        (equal (append final-extracted-st
-                      (serial-add$netlist-out-seq
-                       inputs-seq st netlist data-width n))
+                      (serial-add$out-seq-netlist
+                       inputs-seq st netlist data-size n))
               (append (serial-add$op-map
-                       (serial-add$netlist-in-seq
-                        inputs-seq st netlist data-width n))
+                       (serial-add$in-seq-netlist
+                        inputs-seq st netlist data-size n))
                       extracted-st))))
     :hints (("Goal"
              :use serial-add$dataflow-correct

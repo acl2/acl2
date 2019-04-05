@@ -37,35 +37,35 @@
                                (* 2 *queue4-l$go-num*)))
 (defconst *queue8-l$st-len* 2)
 
-(defun queue8-l$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 2 (mbe :logic (nfix data-width)
-            :exec  data-width)))
+(defun queue8-l$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 2 (mbe :logic (nfix data-size)
+            :exec  data-size)))
 
-(defun queue8-l$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (queue8-l$data-ins-len data-width)
+(defun queue8-l$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (queue8-l$data-ins-len data-size)
      *queue8-l$go-num*))
 
 ;; DE module generator of QUEUE8-L
 
 (module-generator
- queue8-l* (data-width)
- (si 'queue8-l data-width)
- (list* 'in-act 'out-act (append (sis 'data-in 0 data-width)
+ queue8-l* (data-size)
+ (si 'queue8-l data-size)
+ (list* 'in-act 'out-act (append (sis 'data-in 0 data-size)
                                  (sis 'go 0 *queue8-l$go-num*)))
  (list* 'ready-in- 'ready-out
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(q4-l0 q4-l1)
  (list
   ;; LINKS
   ;; 4-link queue Q4-L0
   (list 'q4-l0
         (list* 'ready-in- 'q4-l0-ready-out
-               (sis 'q4-l0-data-out 0 data-width))
-        (si 'queue4-l data-width)
+               (sis 'q4-l0-data-out 0 data-size))
+        (si 'queue4-l data-size)
         (list* 'in-act 'trans-act
-               (append (sis 'data-in 0 data-width)
+               (append (sis 'data-in 0 data-size)
                        (sis 'go
                             *queue8-l$prim-go-num*
                             *queue4-l$go-num*))))
@@ -73,10 +73,10 @@
   ;; 4-link queue Q4-L1
   (list 'q4-l1
         (list* 'q4-l1-ready-in- 'ready-out
-               (sis 'data-out 0 data-width))
-        (si 'queue4-l data-width)
+               (sis 'data-out 0 data-size))
+        (si 'queue4-l data-size)
         (list* 'trans-act 'out-act
-               (append (sis 'q4-l1-data-in 0 data-width)
+               (append (sis 'q4-l1-data-in 0 data-size)
                        (sis 'go
                             (+ *queue8-l$prim-go-num*
                                *queue4-l$go-num*)
@@ -89,11 +89,11 @@
         'joint-cntl
         (list 'q4-l0-ready-out 'q4-l1-ready-in- (si 'go 0)))
   (list 'trans-op
-        (sis 'q4-l1-data-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'q4-l0-data-out 0 data-width)))
+        (sis 'q4-l1-data-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'q4-l0-data-out 0 data-size)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -102,23 +102,23 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; QUEUE8-L.
 
-(defund queue8-l$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (queue8-l* data-width)
-        (union$ (queue4-l$netlist data-width)
+(defund queue8-l$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (queue8-l* data-size)
+        (union$ (queue4-l$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for QUEUE8-L
 
-(defund queue8-l& (netlist data-width)
+(defund queue8-l& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'queue8-l data-width) netlist)))
-    (and (equal (assoc (si 'queue8-l data-width) netlist)
-                (queue8-l* data-width))
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'queue8-l data-size) netlist)))
+    (and (equal (assoc (si 'queue8-l data-size) netlist)
+                (queue8-l* data-size))
          (joint-cntl& subnetlist)
-         (v-buf& subnetlist data-width)
-         (queue4-l& subnetlist data-width))))
+         (v-buf& subnetlist data-size)
+         (queue4-l& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -130,34 +130,34 @@
 
 ;; Constraints on the state of QUEUE8-L
 
-(defund queue8-l$st-format (st data-width)
+(defund queue8-l$st-format (st data-size)
   (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
        (q4-l1 (get-field *queue8-l$q4-l1* st)))
-    (and (queue4-l$st-format q4-l0 data-width)
-         (queue4-l$st-format q4-l1 data-width))))
+    (and (queue4-l$st-format q4-l0 data-size)
+         (queue4-l$st-format q4-l1 data-size))))
 
 (defthm queue8-l$st-format=>constraint
-  (implies (queue8-l$st-format st data-width)
-           (natp data-width))
+  (implies (queue8-l$st-format st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable queue8-l$st-format)))
   :rule-classes :forward-chaining)
 
-(defund queue8-l$valid-st (st data-width)
+(defund queue8-l$valid-st (st data-size)
   (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
        (q4-l1 (get-field *queue8-l$q4-l1* st)))
-    (and (queue4-l$valid-st q4-l0 data-width)
-         (queue4-l$valid-st q4-l1 data-width))))
+    (and (queue4-l$valid-st q4-l0 data-size)
+         (queue4-l$valid-st q4-l1 data-size))))
 
 (defthmd queue8-l$valid-st=>constraint
-  (implies (queue8-l$valid-st st data-width)
-           (natp data-width))
+  (implies (queue8-l$valid-st st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable queue4-l$valid-st=>constraint
                                      queue8-l$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd queue8-l$valid-st=>st-format
-  (implies (queue8-l$valid-st st data-width)
-           (queue8-l$st-format st data-width))
+  (implies (queue8-l$valid-st st data-size)
+           (queue8-l$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (queue4-l$valid-st=>st-format
                                    queue8-l$st-format
                                    queue8-l$valid-st)
@@ -178,25 +178,25 @@
 
   ;; Extract the input data
 
-  (defun queue8-l$data-in (inputs data-width)
+  (defun queue8-l$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 2 inputs)))
 
   (defthm len-queue8-l$data-in
-    (equal (len (queue8-l$data-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (queue8-l$data-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable queue8-l$data-in))
 
   ;; Extract the inputs for the Q4-L0 link
 
-  (defund queue8-l$q4-l0-inputs (inputs st data-width)
+  (defund queue8-l$q4-l0-inputs (inputs st data-size)
     (b* ((in-act (queue8-l$in-act inputs))
-         (data-in (queue8-l$data-in inputs data-width))
-         (go-signals (nthcdr (queue8-l$data-ins-len data-width) inputs))
+         (data-in (queue8-l$data-in inputs data-size))
+         (go-signals (nthcdr (queue8-l$data-ins-len data-size) inputs))
 
          (go-trans (nth 0 go-signals))
          (q4-l0-go-signals (take *queue4-l$go-num*
@@ -215,9 +215,9 @@
 
   ;; Extract the inputs for the Q4-L1 link
 
-  (defund queue8-l$q4-l1-inputs (inputs st data-width)
+  (defund queue8-l$q4-l1-inputs (inputs st data-size)
     (b* ((out-act (queue8-l$out-act inputs))
-         (go-signals (nthcdr (queue8-l$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (queue8-l$data-ins-len data-size) inputs))
 
          (go-trans (nth 0 go-signals))
          (q4-l1-go-signals (take *queue4-l$go-num*
@@ -243,7 +243,7 @@
       (queue4-l$ready-in- q4-l0)))
 
   (defthm booleanp-queue8-l$ready-in-
-    (implies (queue8-l$valid-st st data-width)
+    (implies (queue8-l$valid-st st data-size)
              (booleanp (queue8-l$ready-in- st)))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$ready-in-)))
@@ -256,7 +256,7 @@
       (queue4-l$ready-out q4-l1)))
 
   (defthm booleanp-queue8-l$ready-out
-    (implies (queue8-l$valid-st st data-width)
+    (implies (queue8-l$valid-st st data-size)
              (booleanp (queue8-l$ready-out st)))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$ready-out)))
@@ -269,29 +269,29 @@
       (queue4-l$data-out q4-l1)))
 
   (defthm len-queue8-l$data-out-1
-    (implies (queue8-l$st-format st data-width)
+    (implies (queue8-l$st-format st data-size)
              (equal (len (queue8-l$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable queue8-l$st-format
                                        queue8-l$data-out))))
 
   (defthm len-queue8-l$data-out-2
-    (implies (queue8-l$valid-st st data-width)
+    (implies (queue8-l$valid-st st data-size)
              (equal (len (queue8-l$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$data-out))))
 
   (defthm bvp-queue8-l$data-out
-    (implies (and (queue8-l$valid-st st data-width)
+    (implies (and (queue8-l$valid-st st data-size)
                   (queue8-l$ready-out st))
              (bvp (queue8-l$data-out st)))
     :hints (("Goal" :in-theory (enable queue8-l$valid-st
                                        queue8-l$ready-out
                                        queue8-l$data-out))))
 
-  (defun queue8-l$outputs (inputs st data-width)
-    (declare (ignore inputs data-width))
+  (defun queue8-l$outputs (inputs st data-size)
+    (declare (ignore inputs data-size))
     (list* (queue8-l$ready-in- st)
            (queue8-l$ready-out st)
            (queue8-l$data-out st)))
@@ -301,14 +301,14 @@
 
 (defthm queue8-l$value
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
-    (implies (and (queue8-l& netlist data-width)
-                  (queue8-l$st-format st data-width))
-             (equal (se (si 'queue8-l data-width) inputs st netlist)
-                    (queue8-l$outputs inputs st data-width))))
+    (implies (and (queue8-l& netlist data-size)
+                  (queue8-l$st-format st data-size))
+             (equal (se (si 'queue8-l data-size) inputs st netlist)
+                    (queue8-l$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'queue8-l data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'queue8-l data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             queue8-l&
                             queue8-l*$destructure
@@ -320,34 +320,34 @@
 
 ;; This function specifies the next state of QUEUE8-L.
 
-(defun queue8-l$step (inputs st data-width)
+(defun queue8-l$step (inputs st data-size)
   (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
        (q4-l1 (get-field *queue8-l$q4-l1* st))
 
-       (q4-l0-inputs (queue8-l$q4-l0-inputs inputs st data-width))
-       (q4-l1-inputs (queue8-l$q4-l1-inputs inputs st data-width)))
+       (q4-l0-inputs (queue8-l$q4-l0-inputs inputs st data-size))
+       (q4-l1-inputs (queue8-l$q4-l1-inputs inputs st data-size)))
     (list
      ;; Q4-L0
-     (queue4-l$step q4-l0-inputs q4-l0 data-width)
+     (queue4-l$step q4-l0-inputs q4-l0 data-size)
      ;; Q4-L1
-     (queue4-l$step q4-l1-inputs q4-l1 data-width))))
+     (queue4-l$step q4-l1-inputs q4-l1 data-size))))
 
 (defthm len-of-queue8-l$step
-  (equal (len (queue8-l$step inputs st data-width))
+  (equal (len (queue8-l$step inputs st data-size))
          *queue8-l$st-len*))
 
 (defthm queue8-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
-        (equal (len data-in) data-width))
+        (equal (len data-in) data-size))
    (equal (queue8-l$step (list* in-act out-act
                                 (append (v-threefix data-in) go-signals))
                          st
-                         data-width)
+                         data-size)
           (queue8-l$step (list* in-act out-act
                                 (append data-in go-signals))
                          st
-                         data-width)))
+                         data-size)))
   :hints (("Goal" :in-theory (enable queue8-l$step
                                      queue8-l$data-in
                                      queue8-l$q4-l0-inputs
@@ -359,18 +359,18 @@
 
 (defthm queue8-l$state
   (b* ((inputs (list* in-act out-act (append data-in go-signals))))
-    (implies (and (queue8-l& netlist data-width)
+    (implies (and (queue8-l& netlist data-size)
                   (true-listp data-in)
-                  (equal (len data-in) data-width)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue8-l$go-num*)
-                  (queue8-l$st-format st data-width))
-             (equal (de (si 'queue8-l data-width) inputs st netlist)
-                    (queue8-l$step inputs st data-width))))
+                  (queue8-l$st-format st data-size))
+             (equal (de (si 'queue8-l data-size) inputs st netlist)
+                    (queue8-l$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'queue8-l data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'queue8-l data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             queue8-l&
                             queue8-l*$destructure
@@ -390,11 +390,11 @@
 
 ;; Conditions on the inputs
 
-(defund queue8-l$input-format (inputs st data-width)
+(defund queue8-l$input-format (inputs st data-size)
   (b* ((in-act     (queue8-l$in-act inputs))
        (out-act    (queue8-l$out-act inputs))
-       (data-in    (queue8-l$data-in inputs data-width))
-       (go-signals (nthcdr (queue8-l$data-ins-len data-width) inputs))
+       (data-in    (queue8-l$data-in inputs data-size))
+       (go-signals (nthcdr (queue8-l$data-ins-len data-size) inputs))
 
        (ready-in- (queue8-l$ready-in- st))
        (ready-out (queue8-l$ready-out st)))
@@ -413,12 +413,12 @@
 
 (local
  (defthm queue8-l$input-format=>q4-l0$input-format
-   (implies (and (queue8-l$input-format inputs st data-width)
-                 (queue8-l$valid-st st data-width))
+   (implies (and (queue8-l$input-format inputs st data-size)
+                 (queue8-l$valid-st st data-size))
             (queue4-l$input-format
-             (queue8-l$q4-l0-inputs inputs st data-width)
+             (queue8-l$q4-l0-inputs inputs st data-size)
              (nth *queue8-l$q4-l0* st)
-             data-width))
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (get-field
                              queue4-l$valid-st=>constraint
@@ -434,12 +434,12 @@
 
 (local
  (defthm queue8-l$input-format=>q4-l1$input-format
-   (implies (and (queue8-l$input-format inputs st data-width)
-                 (queue8-l$valid-st st data-width))
+   (implies (and (queue8-l$input-format inputs st data-size)
+                 (queue8-l$valid-st st data-size))
             (queue4-l$input-format
-             (queue8-l$q4-l1-inputs inputs st data-width)
+             (queue8-l$q4-l1-inputs inputs st data-size)
              (nth *queue8-l$q4-l1* st)
-             data-width))
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (get-field
                              joint-act
@@ -485,7 +485,7 @@
 
 (defthm queue8-l$extract-not-empty
   (implies (and (queue8-l$ready-out st)
-                (queue8-l$valid-st st data-width))
+                (queue8-l$valid-st st data-size))
            (< 0 (len (queue8-l$extract st))))
   :hints (("Goal" :in-theory (e/d (queue8-l$valid-st
                                    queue8-l$extract
@@ -496,8 +496,8 @@
 ;; The extracted next-state function for QUEUE8-L.  Note that this function
 ;; avoids exploring the internal computation of QUEUE8-L.
 
-(defund queue8-l$extracted-step (inputs st data-width)
-  (b* ((data (queue8-l$data-in inputs data-width))
+(defund queue8-l$extracted-step (inputs st data-size)
+  (b* ((data (queue8-l$data-in inputs data-size))
        (extracted-st (queue8-l$extract st))
        (n (1- (len extracted-st))))
     (cond
@@ -513,7 +513,7 @@
 
 (local
  (defthm queue4-l$ready-out-lemma
-   (implies (and (queue4-l$valid-st st data-width)
+   (implies (and (queue4-l$valid-st st data-size)
                  (equal (len (queue4-l$extract st)) 0))
             (not (queue4-l$ready-out st)))
    :hints (("Goal" :in-theory (enable queue4-l$valid-st
@@ -528,9 +528,9 @@
   (local
    (defthm queue8-l$q4-l0-data-in-rewrite
      (equal (queue4-l$data-in
-             (queue8-l$q4-l0-inputs inputs st data-width)
-             data-width)
-            (queue8-l$data-in inputs data-width))
+             (queue8-l$q4-l0-inputs inputs st data-size)
+             data-size)
+            (queue8-l$data-in inputs data-size))
      :hints (("Goal"
               :in-theory (enable queue4-l$data-in
                                  queue8-l$data-in
@@ -539,10 +539,10 @@
   (local
    (defthm queue8-l$q4-l1-data-in-rewrite
      (b* ((q4-l0 (nth *queue8-l$q4-l0* st)))
-       (implies (queue4-l$valid-st q4-l0 data-width)
+       (implies (queue4-l$valid-st q4-l0 data-size)
                 (equal (queue4-l$data-in
-                        (queue8-l$q4-l1-inputs inputs st data-width)
-                        data-width)
+                        (queue8-l$q4-l1-inputs inputs st data-size)
+                        data-size)
                        (queue4-l$data-out q4-l0))))
      :hints (("Goal"
               :in-theory (enable get-field
@@ -553,8 +553,8 @@
 
   (local
    (defthm queue8-l$q4-l1-in-act-=-q4-l0-out-act
-     (equal (queue4-l$in-act (queue8-l$q4-l1-inputs inputs st data-width))
-            (queue4-l$out-act (queue8-l$q4-l0-inputs inputs st data-width)))
+     (equal (queue4-l$in-act (queue8-l$q4-l1-inputs inputs st data-size))
+            (queue4-l$out-act (queue8-l$q4-l0-inputs inputs st data-size)))
      :hints (("Goal" :in-theory (enable queue4-l$in-act
                                         queue4-l$out-act
                                         queue8-l$q4-l0-inputs
@@ -562,7 +562,7 @@
 
   (local
    (defthm queue8-l$q4-l0-in-act-rewrite
-     (equal (queue4-l$in-act (queue8-l$q4-l0-inputs inputs st data-width))
+     (equal (queue4-l$in-act (queue8-l$q4-l0-inputs inputs st data-size))
             (queue8-l$in-act inputs))
      :hints (("Goal" :in-theory (enable queue4-l$in-act
                                         queue8-l$in-act
@@ -570,7 +570,7 @@
 
   (local
    (defthm queue8-l$q4-l1-out-act-rewrite
-     (equal (queue4-l$out-act (queue8-l$q4-l1-inputs inputs st data-width))
+     (equal (queue4-l$out-act (queue8-l$q4-l1-inputs inputs st data-size))
             (queue8-l$out-act inputs))
      :hints (("Goal" :in-theory (enable queue4-l$out-act
                                         queue8-l$out-act
@@ -589,11 +589,11 @@
                     (take n (queue4-l$extract st))))))
 
   (defthm queue8-l$extracted-step-correct
-    (b* ((next-st (queue8-l$step inputs st data-width)))
-      (implies (and (queue8-l$input-format inputs st data-width)
-                    (queue8-l$valid-st st data-width))
+    (b* ((next-st (queue8-l$step inputs st data-size)))
+      (implies (and (queue8-l$input-format inputs st data-size)
+                    (queue8-l$valid-st st data-size))
                (equal (queue8-l$extract next-st)
-                      (queue8-l$extracted-step inputs st data-width))))
+                      (queue8-l$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use queue8-l$input-format=>q4-l0$input-format
              :in-theory (e/d (get-field
@@ -618,10 +618,10 @@
 ;; Prove that queue8-l$valid-st is an invariant.
 
 (defthm queue8-l$valid-st-preserved
-  (implies (and (queue8-l$input-format inputs st data-width)
-                (queue8-l$valid-st st data-width))
-           (queue8-l$valid-st (queue8-l$step inputs st data-width)
-                            data-width))
+  (implies (and (queue8-l$input-format inputs st data-size)
+                (queue8-l$valid-st st data-size))
+           (queue8-l$valid-st (queue8-l$step inputs st data-size)
+                            data-size))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             queue8-l$valid-st
@@ -634,14 +634,14 @@
   (local
    (defthm queue8-l$q4-l1-out-act-fire
      (implies (nth 1 inputs)
-              (queue4-l$out-act (queue8-l$q4-l1-inputs inputs st data-width)))
+              (queue4-l$out-act (queue8-l$q4-l1-inputs inputs st data-size)))
      :hints (("Goal" :in-theory (enable queue4-l$out-act
                                         queue8-l$out-act
                                         queue8-l$q4-l1-inputs)))))
 
   (defthm queue8-l$extract-lemma-1
-    (implies (and (queue8-l$input-format inputs st data-width)
-                  (queue8-l$valid-st st data-width)
+    (implies (and (queue8-l$input-format inputs st data-size)
+                  (queue8-l$valid-st st data-size)
                   (queue8-l$out-act inputs))
              (equal (list (queue8-l$data-out st))
                     (nthcdr (1- (len (queue8-l$extract st)))
@@ -660,7 +660,7 @@
                              (queue8-l$input-format=>q4-l1$input-format)))))
 
   (defthmd queue8-l$extract-lemma-2
-    (implies (and (queue8-l$valid-st st data-width)
+    (implies (and (queue8-l$valid-st st data-size)
                   (queue8-l$ready-out st))
              (equal (list (queue8-l$data-out st))
                     (nthcdr (1- (len (queue8-l$extract st)))
@@ -676,7 +676,7 @@
 ;; Extract the accepted input sequence
 
 (seq-gen queue8-l in in-act -1
-         (queue8-l$data-in inputs data-width)
+         (queue8-l$data-in inputs data-size)
          :clink t)
 
 ;; Extract the valid output sequence

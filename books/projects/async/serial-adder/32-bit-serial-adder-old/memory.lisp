@@ -169,45 +169,45 @@
 (deftheory mem-theory
   '(romp rom-guts ram ramp ram-guts stubp stub-guts))
 
-;; MEMORY-PROPERP -- All memory cells are proper lists of length WIDTH.
+;; MEMORY-PROPERP -- All memory cells are proper lists of length SIZE.
 
-(defun memory-properp (n width mem)
+(defun memory-properp (n size mem)
   (declare (xargs :guard (natp n)))
   (if (stubp mem)
       (and (true-listp (stub-guts mem))
-           (equal (len (stub-guts mem)) width))
+           (equal (len (stub-guts mem)) size))
     (if (zp n)
         (cond
          ((ramp mem) (and ;;(true-listp (ram-guts mem))
-                          (equal (len (ram-guts mem)) width)))
+                          (equal (len (ram-guts mem)) size)))
          ((romp mem) (and ;;(true-listp (rom-guts mem))
-                          (equal (len (rom-guts mem)) width)))
+                          (equal (len (rom-guts mem)) size)))
          (t nil))
       (and (not (romp mem))
            (not (ramp mem))
            (consp mem)
-           (memory-properp (1- n) width (car mem))
-           (memory-properp (1- n) width (cdr mem))))))
+           (memory-properp (1- n) size (car mem))
+           (memory-properp (1- n) size (cdr mem))))))
 
-;; MEMORY-OKP -- All memory cells are BVP lists with length WIDTH.
+;; MEMORY-OKP -- All memory cells are BVP lists with length SIZE.
 
-(defun memory-okp (n width mem)
+(defun memory-okp (n size mem)
   (declare (xargs :guard (natp n)))
   (if (stubp mem)
       (and (bvp (stub-guts mem))
-           (equal (len (stub-guts mem)) width))
+           (equal (len (stub-guts mem)) size))
     (if (zp n)
         (cond
          ((ramp mem) (and (bvp (ram-guts mem))
-                          (equal (len (ram-guts mem)) width)))
+                          (equal (len (ram-guts mem)) size)))
          ((romp mem) (and (bvp (rom-guts mem))
-                          (equal (len (rom-guts mem)) width)))
+                          (equal (len (rom-guts mem)) size)))
          (t nil))
       (and (not (romp mem))
            (not (ramp mem))
            (consp mem)
-           (memory-okp (1- n) width (car mem))
-           (memory-okp (1- n) width (cdr mem))))))
+           (memory-okp (1- n) size (car mem))
+           (memory-okp (1- n) size (cdr mem))))))
 
 ;; READ-MEM
 
@@ -469,52 +469,52 @@
 ;; LEMMAS
 
 (defthm memory-properp-if
-  (implies (and (memory-properp n width a)
-                (memory-properp n width b))
-           (memory-properp n width (if c a b))))
+  (implies (and (memory-properp n size a)
+                (memory-properp n size b))
+           (memory-properp n size (if c a b))))
 
 (defthm memory-okp-if
-  (implies (and (memory-okp n width a)
-                (memory-okp n width b))
-           (memory-okp n width (if c a b))))
+  (implies (and (memory-okp n size a)
+                (memory-okp n size b))
+           (memory-okp n size (if c a b))))
 
 (defthm memory-properp-constant-ram
-  (implies (and (memory-properp n width mem)
+  (implies (and (memory-properp n size mem)
                 (true-listp value)
-                (equal width (len value)))
-           (memory-properp n width (constant-ram mem value))))
+                (equal size (len value)))
+           (memory-properp n size (constant-ram mem value))))
 
 (defthm memory-properp-after-write-mem1
-  (implies (and (memory-properp n width mem)
+  (implies (and (memory-properp n size mem)
                 (true-listp value)
-                (equal width (len value))
+                (equal size (len value))
                 (equal n (len v-addr)))
-           (memory-properp n width (write-mem1 v-addr mem value))))
+           (memory-properp n size (write-mem1 v-addr mem value))))
 
 (defthm memory-properp-after-write-mem
-  (implies (and (memory-properp n width mem)
+  (implies (and (memory-properp n size mem)
                 (true-listp value)
-                (equal width (len value))
+                (equal size (len value))
                 (equal n (len v-addr)))
-           (memory-properp n width (write-mem v-addr mem value)))
+           (memory-properp n size (write-mem v-addr mem value)))
   :hints (("Goal"
            :use (:instance memory-properp-after-write-mem1
                            (v-addr (reverse v-addr))))))
 
 (defthm memory-okp-after-write-mem1
-  (implies (and (memory-okp n width mem)
+  (implies (and (memory-okp n size mem)
                 (bvp value)
-                (equal width (len value))
+                (equal size (len value))
                 (equal n (len v-addr)))
-           (memory-okp n width (write-mem1 v-addr mem value)))
+           (memory-okp n size (write-mem1 v-addr mem value)))
   :hints (("Goal" :in-theory (enable bvp))))
 
 (defthm memory-okp-after-write-mem
-  (implies (and (memory-okp n width mem)
+  (implies (and (memory-okp n size mem)
                 (bvp value)
-                (equal width (len value))
+                (equal size (len value))
                 (equal n (len v-addr)))
-           (memory-okp n width (write-mem v-addr mem value)))
+           (memory-okp n size (write-mem v-addr mem value)))
   :hints (("Goal"
            :use (:instance memory-okp-after-write-mem1
                            (v-addr (reverse v-addr))))))

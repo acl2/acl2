@@ -95,11 +95,11 @@
            (t-or-nor& delete-result (car tree) (not parity))
            (t-or-nor& delete-result (cdr tree) (not parity))))))
 
-(defun t-or-nor-induction (tree parity call-name a sts netlist)
+(defun t-or-nor-induction (tree parity call-name a st netlist)
   (if (or (atom tree)
           (and (atom (car tree))
                (atom (cdr tree))))
-      (list call-name a sts netlist)
+      (list call-name a st netlist)
     (and (t-or-nor-induction (car tree)
                              (not parity)
                              (if (not parity) 't-nor 't-or)
@@ -156,10 +156,10 @@
                 (true-listp a)
                 (equal (len a) (tree-size tree)))
            (equal (se (si call-name (tree-number tree))
-                      a sts netlist)
+                      a st netlist)
                   (list (tr-or-nor a parity tree))))
   :hints (("Goal"
-           :induct (t-or-nor-induction tree parity call-name a sts netlist)
+           :induct (t-or-nor-induction tree parity call-name a st netlist)
            :in-theory (e/d (de-rules
                             open-se
                             t-or-nor&
@@ -265,13 +265,13 @@
   (implies (and (tv-zp& netlist tree)
                 (equal (len a) (tree-size tree))
                 (true-listp a))
-           (equal (se (si 'tv-zp (tree-number tree)) a sts netlist)
+           (equal (se (si 'tv-zp (tree-number tree)) a st netlist)
                   (list (f$tv-zp a tree))))
   :hints (("Goal"
            :expand (:free (n)
                           (se (si 'tv-zp n)
                               a
-                              sts
+                              st
                               netlist))
            :in-theory (e/d (de-rules
                             tv-zp&

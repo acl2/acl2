@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; February 2019
 
 (in-package "ADE")
 
@@ -36,23 +36,23 @@
 (defconst *piso-sreg$go-num* 2)
 (defconst *piso-sreg$st-len* 4)
 
-(defun piso-sreg$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 2 (mbe :logic (nfix data-width)
-            :exec  data-width)))
+(defun piso-sreg$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 2 (mbe :logic (nfix data-size)
+            :exec  data-size)))
 
-(defun piso-sreg$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (piso-sreg$data-ins-len data-width)
+(defun piso-sreg$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (piso-sreg$data-ins-len data-size)
      *piso-sreg$go-num*))
 
 ;; DE module generator of PISO-SREG
 
 (module-generator
- piso-sreg* (data-width cnt-width)
- (si 'piso-sreg data-width)
+ piso-sreg* (data-size cnt-size)
+ (si 'piso-sreg data-size)
  (list* 'full-in 'empty-out-
-        (append (sis 'data-in 0 data-width)
+        (append (sis 'data-in 0 data-size)
                 (sis 'go 0 *piso-sreg$go-num*)))
  '(in-act out-act bit-out)
  '(r-data r-cnt w-data w-cnt)
@@ -60,27 +60,27 @@
   ;; LINKS
   ;; R-DATA
   (list 'r-data
-        (list* 'r-data-status (sis 'r-data-out 0 data-width))
-        (si 'link data-width)
-        (list* 'buf-act 'shift-act (sis 'r-data-in 0 data-width)))
+        (list* 'r-data-status (sis 'r-data-out 0 data-size))
+        (si 'link data-size)
+        (list* 'buf-act 'shift-act (sis 'r-data-in 0 data-size)))
 
   ;; R-CNT
   (list 'r-cnt
-        (list* 'r-cnt-status (sis 'r-cnt-out 0 cnt-width))
-        (si 'link cnt-width)
-        (list* 'buf-act 'shift-act (sis 'r-cnt-in 0 cnt-width)))
+        (list* 'r-cnt-status (sis 'r-cnt-out 0 cnt-size))
+        (si 'link cnt-size)
+        (list* 'buf-act 'shift-act (sis 'r-cnt-in 0 cnt-size)))
 
   ;; W-DATA
   (list 'w-data
-        (list* 'w-data-status (sis 'w-data-out 0 data-width))
-        (si 'link data-width)
-        (list* 'shift-act 'buf-act (sis 'w-data-in 0 data-width)))
+        (list* 'w-data-status (sis 'w-data-out 0 data-size))
+        (si 'link data-size)
+        (list* 'shift-act 'buf-act (sis 'w-data-in 0 data-size)))
 
   ;; W-CNT
   (list 'w-cnt
-        (list* 'w-cnt-status (sis 'w-cnt-out 0 cnt-width))
-        (si 'link cnt-width)
-        (list* 'shift-act 'buf-act (sis 'w-cnt-in 0 cnt-width)))
+        (list* 'w-cnt-status (sis 'w-cnt-out 0 cnt-size))
+        (si 'link cnt-size)
+        (list* 'shift-act 'buf-act (sis 'w-cnt-in 0 cnt-size)))
 
   '(g0 (low) vss ())
   '(g1 (high) vdd ())
@@ -89,8 +89,8 @@
   ;; Shift
   (list 'r-cnt=0?
         '(r-cnt=0)
-        (si 'fast-zero cnt-width)
-        (sis 'r-cnt-out 0 cnt-width))
+        (si 'fast-zero cnt-size)
+        (sis 'r-cnt-out 0 cnt-size))
   '(s0 (r-cnt=0~) b-not (r-cnt=0))
   '(s1 (shift-full-in) b-and4 (r-data-status r-cnt-status r-cnt=0 full-in))
   '(s2 (r-full) b-and3 (r-data-status r-cnt-status r-cnt=0~))
@@ -102,13 +102,13 @@
         'joint-cntl
         (list 'shift-full-in 'w-empty- (si 'go 0)))
   (list 'shift-reg-op0
-        (sis 'w-data-in0 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'data-in 0 data-width))
+        (sis 'w-data-in0 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'data-in 0 data-size))
   (list 'shift-cnt-op0
-        (sis 'w-cnt-in0 0 cnt-width)
-        (si 'v-buf cnt-width)
-        (append (make-list (1- cnt-width) :initial-element 'low)
+        (sis 'w-cnt-in0 0 cnt-size)
+        (si 'v-buf cnt-size)
+        (append (make-list (1- cnt-size) :initial-element 'low)
                 '(high)))
 
   (list 'out-cntl
@@ -116,28 +116,28 @@
         'joint-cntl
         (list 'r-full 'shift-empty-out- (si 'go 0)))
   (list 'shift-reg-op1
-        (sis 'w-data-in1 0 data-width)
-        (si 'v-buf data-width)
-        (append (sis 'r-data-out 1 (1- data-width))
+        (sis 'w-data-in1 0 data-size)
+        (si 'v-buf data-size)
+        (append (sis 'r-data-out 1 (1- data-size))
                 '(low)))
   (list 'shift-cnt-op1
-        (sis 'w-cnt-in1 0 cnt-width)
-        (si 'counter cnt-width)
-        (sis 'r-cnt-out 0 cnt-width))
+        (sis 'w-cnt-in1 0 cnt-size)
+        (si 'counter cnt-size)
+        (sis 'r-cnt-out 0 cnt-size))
 
   '(shift-cntl (shift-act) b-or (in-act out-act))
   (list 'shift-reg-op
-        (sis 'w-data-in 0 data-width)
-        (si 'tv-if (tree-number (make-tree data-width)))
+        (sis 'w-data-in 0 data-size)
+        (si 'tv-if (tree-number (make-tree data-size)))
         (cons 'r-cnt=0
-              (append (sis 'w-data-in0 0 data-width)
-                      (sis 'w-data-in1 0 data-width))))
+              (append (sis 'w-data-in0 0 data-size)
+                      (sis 'w-data-in1 0 data-size))))
   (list 'shift-cnt-op
-        (sis 'w-cnt-in 0 cnt-width)
-        (si 'tv-if (tree-number (make-tree cnt-width)))
+        (sis 'w-cnt-in 0 cnt-size)
+        (si 'tv-if (tree-number (make-tree cnt-size)))
         (cons 'r-cnt=0
-              (append (sis 'w-cnt-in0 0 cnt-width)
-                      (sis 'w-cnt-in1 0 cnt-width))))
+              (append (sis 'w-cnt-in0 0 cnt-size)
+                      (sis 'w-cnt-in1 0 cnt-size))))
 
   ;; Buffer
   '(b0 (buf-full-in) b-and (w-data-status w-cnt-status))
@@ -147,18 +147,18 @@
         'joint-cntl
         (list 'buf-full-in 'buf-empty-out- (si 'go 1)))
   (list 'buf-reg-op
-        (sis 'r-data-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'w-data-out 0 data-width))
+        (sis 'r-data-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'w-data-out 0 data-size))
   (list 'buf-cnt-op
-        (sis 'r-cnt-in 0 cnt-width)
-        (si 'v-buf cnt-width)
-        (sis 'w-cnt-out 0 cnt-width))
+        (sis 'r-cnt-in 0 cnt-size)
+        (si 'v-buf cnt-size)
+        (sis 'w-cnt-out 0 cnt-size))
 
   ;; OUTPUTS
   (list 'out '(bit-out) 'wire (sis 'r-data-out 0 1)))
 
- (declare (xargs :guard (and (posp data-width) (posp cnt-width)))))
+ (declare (xargs :guard (and (posp data-size) (posp cnt-size)))))
 
 (make-event
  `(progn
@@ -169,42 +169,42 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; PISO-SREG.
 
-(defund piso-sreg$netlist (data-width cnt-width)
-  (declare (xargs :guard (and (posp data-width)
-                              (natp cnt-width)
-                              (<= 2 cnt-width))))
-  (cons (piso-sreg* data-width cnt-width)
-        (union$ (link$netlist data-width)
-                (link$netlist cnt-width)
+(defund piso-sreg$netlist (data-size cnt-size)
+  (declare (xargs :guard (and (posp data-size)
+                              (natp cnt-size)
+                              (<= 2 cnt-size))))
+  (cons (piso-sreg* data-size cnt-size)
+        (union$ (link$netlist data-size)
+                (link$netlist cnt-size)
                 *joint-cntl*
-                (fast-zero$netlist cnt-width)
-                (counter$netlist cnt-width)
-                (v-buf$netlist data-width)
-                (v-buf$netlist cnt-width)
-                (tv-if$netlist (make-tree data-width))
-                (tv-if$netlist (make-tree cnt-width))
+                (fast-zero$netlist cnt-size)
+                (counter$netlist cnt-size)
+                (v-buf$netlist data-size)
+                (v-buf$netlist cnt-size)
+                (tv-if$netlist (make-tree data-size))
+                (tv-if$netlist (make-tree cnt-size))
                 :test 'equal)))
 
 ;; Recognizer for PISO-SREG
 
-(defund piso-sreg& (netlist data-width cnt-width)
+(defund piso-sreg& (netlist data-size cnt-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (posp data-width)
-                              (natp cnt-width)
-                              (<= 2 cnt-width))))
-  (b* ((subnetlist (delete-to-eq (si 'piso-sreg data-width)
+                              (posp data-size)
+                              (natp cnt-size)
+                              (<= 2 cnt-size))))
+  (b* ((subnetlist (delete-to-eq (si 'piso-sreg data-size)
                                  netlist)))
-    (and (equal (assoc (si 'piso-sreg data-width) netlist)
-                (piso-sreg* data-width cnt-width))
-         (link& subnetlist data-width)
-         (link& subnetlist cnt-width)
+    (and (equal (assoc (si 'piso-sreg data-size) netlist)
+                (piso-sreg* data-size cnt-size))
+         (link& subnetlist data-size)
+         (link& subnetlist cnt-size)
          (joint-cntl& subnetlist)
-         (fast-zero& subnetlist cnt-width)
-         (counter& subnetlist cnt-width)
-         (v-buf& subnetlist data-width)
-         (v-buf& subnetlist cnt-width)
-         (tv-if& subnetlist (make-tree data-width))
-         (tv-if& subnetlist (make-tree cnt-width)))))
+         (fast-zero& subnetlist cnt-size)
+         (counter& subnetlist cnt-size)
+         (v-buf& subnetlist data-size)
+         (v-buf& subnetlist cnt-size)
+         (tv-if& subnetlist (make-tree data-size))
+         (tv-if& subnetlist (make-tree cnt-size)))))
 
 ;; Sanity check
 
@@ -216,38 +216,38 @@
 
 ;; Constraints on the state of PISO-SREG
 
-(defund piso-sreg$st-format (st data-width cnt-width)
+(defund piso-sreg$st-format (st data-size cnt-size)
   (b* ((r-data (get-field *piso-sreg$r-data* st))
        (r-cnt (get-field *piso-sreg$r-cnt* st))
        (w-data (get-field *piso-sreg$w-data* st))
        (w-cnt (get-field *piso-sreg$w-cnt* st)))
-    (and (posp data-width)
-         (natp cnt-width)
-         (<= 3 cnt-width)
-         (link$st-format r-data data-width)
-         (link$st-format r-cnt cnt-width)
-         (link$st-format w-data data-width)
-         (link$st-format w-cnt cnt-width))))
+    (and (posp data-size)
+         (natp cnt-size)
+         (<= 3 cnt-size)
+         (link$st-format r-data data-size)
+         (link$st-format r-cnt cnt-size)
+         (link$st-format w-data data-size)
+         (link$st-format w-cnt cnt-size))))
 
 (defthm piso-sreg$st-format=>constraint
-  (implies (piso-sreg$st-format st data-width cnt-width)
-           (and (posp data-width)
-                (natp cnt-width)
-                (<= 3 cnt-width)))
+  (implies (piso-sreg$st-format st data-size cnt-size)
+           (and (posp data-size)
+                (natp cnt-size)
+                (<= 3 cnt-size)))
   :hints (("Goal" :in-theory (enable piso-sreg$st-format)))
   :rule-classes :forward-chaining)
 
-(defund piso-sreg$valid-st (st data-width cnt-width)
+(defund piso-sreg$valid-st (st data-size cnt-size)
   (b* ((r-data (get-field *piso-sreg$r-data* st))
        (r-cnt (get-field *piso-sreg$r-cnt* st))
        (w-data (get-field *piso-sreg$w-data* st))
        (w-cnt (get-field *piso-sreg$w-cnt* st)))
-    (and (piso-sreg$st-format st data-width cnt-width)
-         (equal data-width (expt 2 (1- cnt-width)))
-         (link$valid-st r-data data-width)
-         (link$valid-st r-cnt cnt-width)
-         (link$valid-st w-data data-width)
-         (link$valid-st w-cnt cnt-width))))
+    (and (piso-sreg$st-format st data-size cnt-size)
+         (equal data-size (expt 2 (1- cnt-size)))
+         (link$valid-st r-data data-size)
+         (link$valid-st r-cnt cnt-size)
+         (link$valid-st w-data data-size)
+         (link$valid-st w-cnt cnt-size))))
 
 (local
  (defthm expt-linear-lower-<=-instance
@@ -257,17 +257,17 @@
    :rule-classes :linear))
 
 (defthmd piso-sreg$valid-st=>constraint
-  (implies (piso-sreg$valid-st st data-width cnt-width)
-           (and (natp data-width)
-                (<= 4 data-width)
-                (natp cnt-width)
-                (<= 3 cnt-width)))
+  (implies (piso-sreg$valid-st st data-size cnt-size)
+           (and (natp data-size)
+                (<= 4 data-size)
+                (natp cnt-size)
+                (<= 3 cnt-size)))
   :hints (("Goal" :in-theory (enable piso-sreg$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd piso-sreg$valid-st=>st-format
-  (implies (piso-sreg$valid-st st data-width cnt-width)
-           (piso-sreg$st-format st data-width cnt-width))
+  (implies (piso-sreg$valid-st st data-size cnt-size)
+           (piso-sreg$st-format st data-size cnt-size))
   :hints (("Goal" :in-theory (enable piso-sreg$valid-st))))
 
 ;; Extract the input and output signals for PISO-SREG
@@ -275,24 +275,24 @@
 (progn
   ;; Extract the input data
 
-  (defun piso-sreg$data-in (inputs data-width)
+  (defun piso-sreg$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 2 inputs)))
 
   (defthm len-piso-sreg$data-in
-    (equal (len (piso-sreg$data-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (piso-sreg$data-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable piso-sreg$data-in))
 
   ;; Extract the "in-act" signal
 
-  (defund piso-sreg$in-act (inputs st data-width)
+  (defund piso-sreg$in-act (inputs st data-size)
     (b* ((full-in (nth 0 inputs))
-         (go-signals (nthcdr (piso-sreg$data-ins-len data-width)
+         (go-signals (nthcdr (piso-sreg$data-ins-len data-size)
                              inputs))
          (go-shift (nth 0 go-signals))
 
@@ -314,15 +314,15 @@
 
   (defthm piso-sreg$in-act-inactive
     (implies (not (nth 0 inputs))
-             (not (piso-sreg$in-act inputs st data-width)))
+             (not (piso-sreg$in-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-and4
                                        piso-sreg$in-act))))
 
   ;; Extract the "out-act" signal
 
-  (defund piso-sreg$out-act (inputs st data-width)
+  (defund piso-sreg$out-act (inputs st data-size)
     (b* ((empty-out- (nth 1 inputs))
-         (go-signals (nthcdr (piso-sreg$data-ins-len data-width)
+         (go-signals (nthcdr (piso-sreg$data-ins-len data-size)
                              inputs))
          (go-shift (nth 0 go-signals))
 
@@ -343,14 +343,14 @@
 
   (defthm piso-sreg$out-act-inactive
     (implies (equal (nth 1 inputs) t)
-             (not (piso-sreg$out-act inputs st data-width)))
+             (not (piso-sreg$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-or3
                                        piso-sreg$out-act))))
 
   (defthm piso-sreg$in-out-acts-mutually-exclusive
-    (implies (and (piso-sreg$valid-st st data-width cnt-width)
-                  (piso-sreg$in-act inputs st data-width))
-             (not (piso-sreg$out-act inputs st data-width)))
+    (implies (and (piso-sreg$valid-st st data-size cnt-size)
+                  (piso-sreg$in-act inputs st data-size))
+             (not (piso-sreg$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-and4
                                        piso-sreg$valid-st
                                        piso-sreg$in-act
@@ -364,8 +364,8 @@
       (f-buf (car (strip-cars r-data.d)))))
 
   (defthm booleanp-piso-sreg$bit-out
-    (implies (and (piso-sreg$valid-st st data-width cnt-width)
-                  (piso-sreg$out-act inputs st data-width))
+    (implies (and (piso-sreg$valid-st st data-size cnt-size)
+                  (piso-sreg$out-act inputs st data-size))
              (booleanp (piso-sreg$bit-out st)))
     :hints (("Goal" :in-theory (enable f-and3
                                        f-buf
@@ -374,9 +374,9 @@
                                        piso-sreg$bit-out)))
     :rule-classes (:rewrite :type-prescription))
 
-  (defun piso-sreg$outputs (inputs st data-width)
-    (list (piso-sreg$in-act inputs st data-width)
-          (piso-sreg$out-act inputs st data-width)
+  (defun piso-sreg$outputs (inputs st data-size)
+    (list (piso-sreg$in-act inputs st data-size)
+          (piso-sreg$out-act inputs st data-size)
           (piso-sreg$bit-out st)))
   )
 
@@ -384,18 +384,18 @@
 
 (defthm piso-sreg$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (piso-sreg& netlist data-width cnt-width)
+    (implies (and (piso-sreg& netlist data-size cnt-size)
                   (true-listp data-in)
-                  (equal (len data-in) data-width)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *piso-sreg$go-num*)
-                  (piso-sreg$st-format st data-width cnt-width))
-             (equal (se (si 'piso-sreg data-width) inputs st netlist)
-                    (piso-sreg$outputs inputs st data-width))))
+                  (piso-sreg$st-format st data-size cnt-size))
+             (equal (se (si 'piso-sreg data-size) inputs st netlist)
+                    (piso-sreg$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'piso-sreg data-width)
+           :expand (:free (inputs data-size)
+                          (se (si 'piso-sreg data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             piso-sreg&
@@ -410,9 +410,9 @@
 
 ;; This function specifies the next state of PISO-SREG.
 
-(defun piso-sreg$step (inputs st data-width cnt-width)
-  (b* ((data-in    (piso-sreg$data-in inputs data-width))
-       (go-signals (nthcdr (piso-sreg$data-ins-len data-width)
+(defun piso-sreg$step (inputs st data-size cnt-size)
+  (b* ((data-in    (piso-sreg$data-in inputs data-size))
+       (go-signals (nthcdr (piso-sreg$data-ins-len data-size)
                            inputs))
        (go-buf   (nth 1 go-signals))
 
@@ -430,8 +430,8 @@
        (w-cnt.d (get-field *link$d* w-cnt))
 
        (r-cnt=0 (f$fast-zero (strip-cars r-cnt.d)))
-       (in-act (piso-sreg$in-act inputs st data-width))
-       (out-act (piso-sreg$out-act inputs st data-width))
+       (in-act (piso-sreg$in-act inputs st data-size))
+       (out-act (piso-sreg$out-act inputs st data-size))
        (shift-act (f-or in-act out-act))
 
        (buf-full-in (f-and (car w-data.s) (car w-cnt.s)))
@@ -449,26 +449,25 @@
        (w-cnt-inputs
         (list* shift-act buf-act
                (fv-if r-cnt=0
-                      (append (make-list (1- cnt-width))
+                      (append (make-list (1- cnt-size))
                               '(t))
-                      (take cnt-width
-                            (fv-adder
-                             t
-                             (strip-cars r-cnt.d)
-                             (fv-not
-                              (cons t (make-list (1- cnt-width))))))))))
+                      (fv-adder-output
+                       t
+                       (strip-cars r-cnt.d)
+                       (fv-not
+                        (cons t (make-list (1- cnt-size)))))))))
     (list
      ;; R-DATA
-     (link$step r-data-inputs r-data data-width)
+     (link$step r-data-inputs r-data data-size)
      ;; R-CNT
-     (link$step r-cnt-inputs r-cnt cnt-width)
+     (link$step r-cnt-inputs r-cnt cnt-size)
      ;; W-DATA
-     (link$step w-data-inputs w-data data-width)
+     (link$step w-data-inputs w-data data-size)
      ;; W-CNT
-     (link$step w-cnt-inputs w-cnt cnt-width))))
+     (link$step w-cnt-inputs w-cnt cnt-size))))
 
 (defthm len-of-piso-sreg$step
-  (equal (len (piso-sreg$step inputs st data-width cnt-width))
+  (equal (len (piso-sreg$step inputs st data-size cnt-size))
          *piso-sreg$st-len*))
 
 (local
@@ -482,18 +481,18 @@
 (defthm piso-sreg$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
     (implies
-     (and (piso-sreg& netlist data-width cnt-width)
+     (and (piso-sreg& netlist data-size cnt-size)
           (true-listp data-in)
-          (equal (len data-in) data-width)
+          (equal (len data-in) data-size)
           (true-listp go-signals)
           (equal (len go-signals) *piso-sreg$go-num*)
-          (piso-sreg$st-format st data-width cnt-width))
-     (equal (de (si 'piso-sreg data-width) inputs st netlist)
-            (piso-sreg$step inputs st data-width cnt-width))))
+          (piso-sreg$st-format st data-size cnt-size))
+     (equal (de (si 'piso-sreg data-size) inputs st netlist)
+            (piso-sreg$step inputs st data-size cnt-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'piso-sreg data-width)
+           :expand (:free (inputs data-size)
+                          (de (si 'piso-sreg data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             piso-sreg&
@@ -514,13 +513,13 @@
 
 ;; Conditions on the inputs
 
-(defund piso-sreg$input-format (inputs data-width)
+(defund piso-sreg$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in    (nth 0 inputs))
        (empty-out- (nth 1 inputs))
-       (data-in    (piso-sreg$data-in inputs data-width))
-       (go-signals (nthcdr (piso-sreg$data-ins-len data-width) inputs)))
+       (data-in    (piso-sreg$data-in inputs data-size))
+       (go-signals (nthcdr (piso-sreg$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out-)
@@ -531,9 +530,9 @@
             (list* full-in empty-out- (append data-in go-signals))))))
 
 (defthm booleanp-piso-sreg$in-act
-  (implies (and (piso-sreg$input-format inputs data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
-           (booleanp (piso-sreg$in-act inputs st data-width)))
+  (implies (and (piso-sreg$input-format inputs data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
+           (booleanp (piso-sreg$in-act inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (f-and4
                             piso-sreg$input-format
@@ -543,9 +542,9 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-piso-sreg$out-act
-  (implies (and (piso-sreg$input-format inputs data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
-           (booleanp (piso-sreg$out-act inputs st data-width)))
+  (implies (and (piso-sreg$input-format inputs data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
+           (booleanp (piso-sreg$out-act inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (f-and3
                             piso-sreg$input-format
@@ -554,7 +553,7 @@
                            ())))
   :rule-classes (:rewrite :type-prescription))
 
-(simulate-lemma piso-sreg :sizes (data-width cnt-width))
+(simulate-lemma piso-sreg :sizes (data-size cnt-size))
 
 ;; ======================================================================
 
@@ -609,8 +608,8 @@
    :hints (("Goal" :in-theory (enable v-zp v-nzp v-to-nat)))))
 
 (defthm piso-sreg$extract-not-empty
-  (implies (and (piso-sreg$out-act inputs st data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
+  (implies (and (piso-sreg$out-act inputs st data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
            (< 0 (len (piso-sreg$extract st))))
   :hints (("Goal"
            :in-theory (e/d (f-and3
@@ -622,8 +621,8 @@
   :rule-classes :linear)
 
 (defthmd len-of-piso-sreg$extract-lemma
-  (implies (and (piso-sreg$in-act inputs st data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
+  (implies (and (piso-sreg$in-act inputs st data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
            (equal (len (piso-sreg$extract st))
                   0))
   :hints (("Goal" :in-theory (e/d (f-and4
@@ -633,9 +632,9 @@
                                   ()))))
 
 (defthm len-of-piso-sreg$extract-contrapositive-lemma-1
-  (implies (and (piso-sreg$in-act inputs st data-width)
+  (implies (and (piso-sreg$in-act inputs st data-size)
                 (< 0 (len (piso-sreg$extract st))))
-                (not (piso-sreg$valid-st st data-width cnt-width)))
+                (not (piso-sreg$valid-st st data-size cnt-size)))
   :hints (("Goal" :in-theory (e/d (f-and4
                                    piso-sreg$valid-st
                                    piso-sreg$in-act
@@ -643,9 +642,9 @@
                                   ()))))
 
 (defthm len-of-piso-sreg$extract-contrapositive-lemma-2
-  (implies (and (piso-sreg$valid-st st data-width cnt-width)
+  (implies (and (piso-sreg$valid-st st data-size cnt-size)
                 (< 0 (len (piso-sreg$extract st))))
-                (not (piso-sreg$in-act inputs st data-width)))
+                (not (piso-sreg$in-act inputs st data-size)))
   :hints (("Goal" :in-theory (e/d (f-and4
                                    piso-sreg$valid-st
                                    piso-sreg$in-act
@@ -681,30 +680,30 @@
 
   (local
    (defthm piso-sreg$input-format-lemma-1
-     (implies (piso-sreg$input-format inputs data-width)
+     (implies (piso-sreg$input-format inputs data-size)
               (booleanp (nth 0 inputs)))
      :hints (("Goal" :in-theory (enable piso-sreg$input-format)))
      :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm piso-sreg$input-format-lemma-2
-     (implies (piso-sreg$input-format inputs data-width)
+     (implies (piso-sreg$input-format inputs data-size)
               (booleanp (nth 1 inputs)))
      :hints (("Goal" :in-theory (enable piso-sreg$input-format)))
      :rule-classes (:rewrite :type-prescription)))
 
   (local
    (defthm piso-sreg$input-format-lemma-3
-     (implies (and (piso-sreg$input-format inputs data-width)
+     (implies (and (piso-sreg$input-format inputs data-size)
                    (nth 0 inputs))
-              (bvp (piso-sreg$data-in inputs data-width)))
+              (bvp (piso-sreg$data-in inputs data-size)))
      :hints (("Goal" :in-theory (enable piso-sreg$input-format)))))
 
   (defthm len-of-piso-sreg$extract-upper-bound
-    (implies (and (piso-sreg$valid-st st data-width cnt-width)
+    (implies (and (piso-sreg$valid-st st data-size cnt-size)
                   (piso-sreg$inv st))
              (<= (len (piso-sreg$extract st))
-                 data-width))
+                 data-size))
     :hints (("Goal" :in-theory (e/d (piso-sreg$valid-st
                                      piso-sreg$inv
                                      piso-sreg$extract)
@@ -718,15 +717,16 @@
      :hints (("Goal" :in-theory (enable v-to-nat repeat)))))
 
   (defthm piso-sreg$inv-preserved
-    (implies (and (piso-sreg$input-format inputs data-width)
-                  (piso-sreg$valid-st st data-width cnt-width)
+    (implies (and (piso-sreg$input-format inputs data-size)
+                  (piso-sreg$valid-st st data-size cnt-size)
                   (piso-sreg$inv st))
              (piso-sreg$inv
-              (piso-sreg$step inputs st data-width cnt-width)))
+              (piso-sreg$step inputs st data-size cnt-size)))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               f-sr
                               bvp
+                              pos-len=>cons
                               piso-sreg$valid-st
                               piso-sreg$inv
                               piso-sreg$step
@@ -738,25 +738,25 @@
 ;; The extracted next-state function for PISO-SREG.  Note that this
 ;; function avoids exploring the internal computation of PISO-SREG.
 
-(defund piso-sreg$extracted-step (inputs st data-width)
-  (b* ((data (piso-sreg$data-in inputs data-width))
+(defund piso-sreg$extracted-step (inputs st data-size)
+  (b* ((data (piso-sreg$data-in inputs data-size))
        (extracted-st (piso-sreg$extract st)))
     (cond
-     ((equal (piso-sreg$out-act inputs st data-width) t)
+     ((equal (piso-sreg$out-act inputs st data-size) t)
       (cdr extracted-st))
-     ((equal (piso-sreg$in-act inputs st data-width) t)
+     ((equal (piso-sreg$in-act inputs st data-size) t)
       data)
      (t extracted-st))))
 
 ;; The single-step-update property
 
 (defthm piso-sreg$extracted-step-correct
-  (b* ((next-st (piso-sreg$step inputs st data-width cnt-width)))
-    (implies (and (piso-sreg$input-format inputs data-width)
-                  (piso-sreg$valid-st st data-width cnt-width)
+  (b* ((next-st (piso-sreg$step inputs st data-size cnt-size)))
+    (implies (and (piso-sreg$input-format inputs data-size)
+                  (piso-sreg$valid-st st data-size cnt-size)
                   (piso-sreg$inv st))
              (equal (piso-sreg$extract next-st)
-                    (piso-sreg$extracted-step inputs st data-width))))
+                    (piso-sreg$extracted-step inputs st data-size))))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr
@@ -779,12 +779,12 @@
 ;; Prove that piso-sreg$valid-st is an invariant.
 
 (defthm piso-sreg$valid-st-preserved
-  (implies (and (piso-sreg$input-format inputs data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
+  (implies (and (piso-sreg$input-format inputs data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
            (piso-sreg$valid-st
-            (piso-sreg$step inputs st data-width cnt-width)
-            data-width
-            cnt-width))
+            (piso-sreg$step inputs st data-size cnt-size)
+            data-size
+            cnt-size))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr
@@ -802,8 +802,8 @@
                             v-threefix)))))
 
 (defthm piso-sreg$extract-lemma
-  (implies (and (piso-sreg$out-act inputs st data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
+  (implies (and (piso-sreg$out-act inputs st data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
            (equal (piso-sreg$bit-out st)
                   (car (piso-sreg$extract st))))
   :hints (("Goal" :in-theory (e/d (f-and3
@@ -815,8 +815,8 @@
                                   ()))))
 
 (defthm booleanp-car-of-piso-sreg$extract
-  (implies (and (piso-sreg$out-act inputs st data-width)
-                (piso-sreg$valid-st st data-width cnt-width))
+  (implies (and (piso-sreg$out-act inputs st data-size)
+                (piso-sreg$valid-st st data-size cnt-size))
            (booleanp (car (piso-sreg$extract st))))
   :hints (("Goal"
            :use piso-sreg$extract-lemma
@@ -827,15 +827,15 @@
 ;; Extract the accepted input sequence
 
 (seq-gen piso-sreg in in-act 0
-         (piso-sreg$data-in inputs data-width)
-         :sizes (data-width cnt-width))
+         (piso-sreg$data-in inputs data-size)
+         :sizes (data-size cnt-size))
 
 ;; Extract the valid output sequence
 
 (seq-gen piso-sreg out out-act 1
          (piso-sreg$bit-out st)
          :netlist-data (nth 2 outputs)
-         :sizes (data-width cnt-width))
+         :sizes (data-size cnt-size))
 
 ;; The multi-step input-output relationship
 
@@ -861,18 +861,18 @@
   (defthmd piso-sreg$dataflow-correct
     (b* ((extracted-st (piso-sreg$extract st))
          (final-st (piso-sreg$run
-                    inputs-seq st data-width cnt-width n))
+                    inputs-seq st data-size cnt-size n))
          (final-extracted-st (piso-sreg$extract final-st)))
       (implies
-       (and (piso-sreg$input-format-n inputs-seq data-width n)
-            (piso-sreg$valid-st st data-width cnt-width)
+       (and (piso-sreg$input-format-n inputs-seq data-size n)
+            (piso-sreg$valid-st st data-size cnt-size)
             (piso-sreg$inv st))
        (equal (append (piso-sreg$op final-extracted-st)
                       (piso-sreg$out-seq
-                       inputs-seq st data-width cnt-width n))
+                       inputs-seq st data-size cnt-size n))
               (append (piso-sreg$op-map
                        (piso-sreg$in-seq
-                        inputs-seq st data-width cnt-width n))
+                        inputs-seq st data-size cnt-size n))
                       (piso-sreg$op extracted-st)))))
     :hints (("Goal"
              :in-theory (enable pos-len=>cons
@@ -881,20 +881,20 @@
 
   (defthmd piso-sreg$functionally-correct
     (b* ((extracted-st (piso-sreg$extract st))
-         (final-st (de-n (si 'piso-sreg data-width)
+         (final-st (de-n (si 'piso-sreg data-size)
                          inputs-seq st netlist n))
          (final-extracted-st (piso-sreg$extract final-st)))
       (implies
-       (and (piso-sreg& netlist data-width cnt-width)
-            (piso-sreg$input-format-n inputs-seq data-width n)
-            (piso-sreg$valid-st st data-width cnt-width)
+       (and (piso-sreg& netlist data-size cnt-size)
+            (piso-sreg$input-format-n inputs-seq data-size n)
+            (piso-sreg$valid-st st data-size cnt-size)
             (piso-sreg$inv st))
        (equal (append (piso-sreg$op final-extracted-st)
-                      (piso-sreg$netlist-out-seq
-                       inputs-seq st netlist data-width n))
+                      (piso-sreg$out-seq-netlist
+                       inputs-seq st netlist data-size n))
               (append (piso-sreg$op-map
-                       (piso-sreg$netlist-in-seq
-                        inputs-seq st netlist data-width n))
+                       (piso-sreg$in-seq-netlist
+                        inputs-seq st netlist data-size n))
                       (piso-sreg$op extracted-st)))))
     :hints (("Goal"
              :use piso-sreg$dataflow-correct

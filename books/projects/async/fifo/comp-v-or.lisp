@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; February 2019
 
 (in-package "ADE")
 
@@ -38,53 +38,53 @@
                                 *queue3$go-num*))
 (defconst *comp-v-or$st-len* 6)
 
-(defun comp-v-or$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 2 (* 2 (mbe :logic (nfix data-width)
-                 :exec  data-width))))
+(defun comp-v-or$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 2 (* 2 (mbe :logic (nfix data-size)
+                 :exec  data-size))))
 
-(defun comp-v-or$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (comp-v-or$data-ins-len data-width)
+(defun comp-v-or$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (comp-v-or$data-ins-len data-size)
      *comp-v-or$go-num*))
 
 ;; DE module generator of COMP-V-OR
 
 (module-generator
- comp-v-or* (data-width)
- (si 'comp-v-or data-width)
+ comp-v-or* (data-size)
+ (si 'comp-v-or data-size)
  (list* 'full-in 'empty-out-
-        (append (sis 'a 0 data-width)
-                (sis 'b 0 data-width)
+        (append (sis 'a 0 data-size)
+                (sis 'b 0 data-size)
                 (sis 'go 0 *comp-v-or$go-num*)))
  (list* 'in-act 'out-act
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(a0 b0 a1 b1 q2 q3)
  (list
   ;; LINKS
   ;; A0
   (list 'a0
-        (list* 'a0-status (sis 'a0-out 0 data-width))
-        (si 'link data-width)
-        (list* 'in-act 'q2-in-act (sis 'a0-in 0 data-width)))
+        (list* 'a0-status (sis 'a0-out 0 data-size))
+        (si 'link data-size)
+        (list* 'in-act 'q2-in-act (sis 'a0-in 0 data-size)))
 
   ;; B0
   (list 'b0
-        (list* 'b0-status (sis 'b0-out 0 data-width))
-        (si 'link data-width)
-        (list* 'in-act 'q3-in-act (sis 'b0-in 0 data-width)))
+        (list* 'b0-status (sis 'b0-out 0 data-size))
+        (si 'link data-size)
+        (list* 'in-act 'q3-in-act (sis 'b0-in 0 data-size)))
 
   ;; A1
   (list 'a1
-        (list* 'a1-status (sis 'a1-out 0 data-width))
-        (si 'link data-width)
-        (list* 'q2-out-act 'out-act (sis 'q2-data-out 0 data-width)))
+        (list* 'a1-status (sis 'a1-out 0 data-size))
+        (si 'link data-size)
+        (list* 'q2-out-act 'out-act (sis 'q2-data-out 0 data-size)))
 
   ;; B1
   (list 'b1
-        (list* 'b1-status (sis 'b1-out 0 data-width))
-        (si 'link data-width)
-        (list* 'q3-out-act 'out-act (sis 'q3-data-out 0 data-width)))
+        (list* 'b1-status (sis 'b1-out 0 data-size))
+        (si 'link data-size)
+        (list* 'q3-out-act 'out-act (sis 'q3-data-out 0 data-size)))
 
   ;; STATUS
   '(in-status (ready-in-) b-or (a0-status b0-status))
@@ -94,10 +94,10 @@
   ;; 2-link queue Q2
   (list 'q2
         (list* 'q2-in-act 'q2-out-act
-               (sis 'q2-data-out 0 data-width))
-        (si 'queue2 data-width)
+               (sis 'q2-data-out 0 data-size))
+        (si 'queue2 data-size)
         (list* 'a0-status 'a1-status
-               (append (sis 'a0-out 0 data-width)
+               (append (sis 'a0-out 0 data-size)
                        (sis 'go
                             *comp-v-or$prim-go-num*
                             *queue2$go-num*))))
@@ -105,10 +105,10 @@
   ;; 3-link queue Q3
   (list 'q3
         (list* 'q3-in-act 'q3-out-act
-               (sis 'q3-data-out 0 data-width))
-        (si 'queue3 data-width)
+               (sis 'q3-data-out 0 data-size))
+        (si 'queue3 data-size)
         (list* 'b0-status 'b1-status
-               (append (sis 'b0-out 0 data-width)
+               (append (sis 'b0-out 0 data-size)
                        (sis 'go
                             (+ *comp-v-or$prim-go-num*
                                *queue2$go-num*)
@@ -120,13 +120,13 @@
         'joint-cntl
         (list 'full-in 'ready-in- (si 'go 0)))
   (list 'in-op0
-        (sis 'a0-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'a 0 data-width))
+        (sis 'a0-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'a 0 data-size))
   (list 'in-op1
-        (sis 'b0-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'b 0 data-width))
+        (sis 'b0-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'b 0 data-size))
 
   ;; Out
   (list 'out-cntl
@@ -134,12 +134,12 @@
         'joint-cntl
         (list 'ready-out 'empty-out- (si 'go 1)))
   (list 'out-op
-        (sis 'data-out 0 data-width)
-        (si 'v-or data-width)
-        (append (sis 'a1-out 0 data-width)
-                (sis 'b1-out 0 data-width))))
+        (sis 'data-out 0 data-size)
+        (si 'v-or data-size)
+        (append (sis 'a1-out 0 data-size)
+                (sis 'b1-out 0 data-size))))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -148,28 +148,28 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COMP-V-OR.
 
-(defund comp-v-or$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (comp-v-or* data-width)
-        (union$ (queue2$netlist data-width)
-                (queue3$netlist data-width)
-                (v-or$netlist data-width)
+(defund comp-v-or$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (comp-v-or* data-size)
+        (union$ (queue2$netlist data-size)
+                (queue3$netlist data-size)
+                (v-or$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for COMP-V-OR
 
-(defund comp-v-or& (netlist data-width)
+(defund comp-v-or& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'comp-v-or data-width) netlist)))
-    (and (equal (assoc (si 'comp-v-or data-width) netlist)
-                (comp-v-or* data-width))
-         (link& subnetlist data-width)
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'comp-v-or data-size) netlist)))
+    (and (equal (assoc (si 'comp-v-or data-size) netlist)
+                (comp-v-or* data-size))
+         (link& subnetlist data-size)
          (joint-cntl& subnetlist)
-         (v-buf& subnetlist data-width)
-         (v-or& subnetlist data-width)
-         (queue2& subnetlist data-width)
-         (queue3& subnetlist data-width))))
+         (v-buf& subnetlist data-size)
+         (v-or& subnetlist data-size)
+         (queue2& subnetlist data-size)
+         (queue3& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -181,51 +181,51 @@
 
 ;; Constraints on the state of COMP-V-OR
 
-(defund comp-v-or$st-format (st data-width)
+(defund comp-v-or$st-format (st data-size)
   (b* ((a0 (get-field *comp-v-or$a0* st))
        (b0 (get-field *comp-v-or$b0* st))
        (a1 (get-field *comp-v-or$a1* st))
        (b1 (get-field *comp-v-or$b1* st))
        (q2 (get-field *comp-v-or$q2* st))
        (q3 (get-field *comp-v-or$q3* st)))
-    (and (link$st-format a0 data-width)
-         (link$st-format b0 data-width)
-         (link$st-format a1 data-width)
-         (link$st-format b1 data-width)
+    (and (link$st-format a0 data-size)
+         (link$st-format b0 data-size)
+         (link$st-format a1 data-size)
+         (link$st-format b1 data-size)
 
-         (queue2$st-format q2 data-width)
-         (queue3$st-format q3 data-width))))
+         (queue2$st-format q2 data-size)
+         (queue3$st-format q3 data-size))))
 
 (defthm comp-v-or$st-format=>constraint
-  (implies (comp-v-or$st-format st data-width)
-           (natp data-width))
+  (implies (comp-v-or$st-format st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable comp-v-or$st-format)))
   :rule-classes :forward-chaining)
 
-(defund comp-v-or$valid-st (st data-width)
+(defund comp-v-or$valid-st (st data-size)
   (b* ((a0 (get-field *comp-v-or$a0* st))
        (b0 (get-field *comp-v-or$b0* st))
        (a1 (get-field *comp-v-or$a1* st))
        (b1 (get-field *comp-v-or$b1* st))
        (q2 (get-field *comp-v-or$q2* st))
        (q3 (get-field *comp-v-or$q3* st)))
-    (and (link$valid-st a0 data-width)
-         (link$valid-st b0 data-width)
-         (link$valid-st a1 data-width)
-         (link$valid-st b1 data-width)
+    (and (link$valid-st a0 data-size)
+         (link$valid-st b0 data-size)
+         (link$valid-st a1 data-size)
+         (link$valid-st b1 data-size)
 
-         (queue2$valid-st q2 data-width)
-         (queue3$valid-st q3 data-width))))
+         (queue2$valid-st q2 data-size)
+         (queue3$valid-st q3 data-size))))
 
 (defthmd comp-v-or$valid-st=>constraint
-  (implies (comp-v-or$valid-st st data-width)
-           (natp data-width))
+  (implies (comp-v-or$valid-st st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable comp-v-or$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd comp-v-or$valid-st=>st-format
-  (implies (comp-v-or$valid-st st data-width)
-           (comp-v-or$st-format st data-width))
+  (implies (comp-v-or$valid-st st data-size)
+           (comp-v-or$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (queue2$valid-st=>st-format
                                    queue3$valid-st=>st-format
                                    comp-v-or$st-format
@@ -237,39 +237,39 @@
 (progn
   ;; Extract the input operand A
 
-  (defun comp-v-or$a (inputs data-width)
+  (defun comp-v-or$a (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 2 inputs)))
 
   (defthm len-comp-v-or$a
-    (equal (len (comp-v-or$a inputs data-width))
-           (nfix data-width)))
+    (equal (len (comp-v-or$a inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable comp-v-or$a))
 
   ;; Extract the input operand B
 
-  (defun comp-v-or$b (inputs data-width)
+  (defun comp-v-or$b (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (b* ((width (mbe :logic (nfix data-width)
-                     :exec  data-width)))
-      (take width
-            (nthcdr (+ 2 width) inputs))))
+                                (natp data-size))))
+    (b* ((size (mbe :logic (nfix data-size)
+                     :exec  data-size)))
+      (take size
+            (nthcdr (+ 2 size) inputs))))
 
   (defthm len-comp-v-or$b
-    (equal (len (comp-v-or$b inputs data-width))
-           (nfix data-width)))
+    (equal (len (comp-v-or$b inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable comp-v-or$b))
 
   ;; Extract the inputs for joint Q2
 
-  (defund comp-v-or$q2-inputs (inputs st data-width)
-    (b* ((go-signals (nthcdr (comp-v-or$data-ins-len data-width) inputs))
+  (defund comp-v-or$q2-inputs (inputs st data-size)
+    (b* ((go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
 
          (q2-go-signals (take *queue2$go-num*
                               (nthcdr *comp-v-or$prim-go-num*
@@ -287,8 +287,8 @@
 
   ;; Extract the inputs for joint Q3
 
-  (defund comp-v-or$q3-inputs (inputs st data-width)
-    (b* ((go-signals (nthcdr (comp-v-or$data-ins-len data-width) inputs))
+  (defund comp-v-or$q3-inputs (inputs st data-size)
+    (b* ((go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
 
          (q3-go-signals (take *queue3$go-num*
                               (nthcdr (+ *comp-v-or$prim-go-num*
@@ -307,9 +307,9 @@
 
   ;; Extract the "in-act" signal
 
-  (defund comp-v-or$in-act (inputs st data-width)
+  (defund comp-v-or$in-act (inputs st data-size)
     (b* ((full-in (nth 0 inputs))
-         (go-signals (nthcdr (comp-v-or$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
          (a0 (get-field *comp-v-or$a0* st))
          (a0.s (get-field *link$s* a0))
@@ -321,14 +321,14 @@
 
   (defthm comp-v-or$in-act-inactive
     (implies (not (nth 0 inputs))
-             (not (comp-v-or$in-act inputs st data-width)))
+             (not (comp-v-or$in-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable comp-v-or$in-act))))
 
   ;; Extract the "out-act" signal
 
-  (defund comp-v-or$out-act (inputs st data-width)
+  (defund comp-v-or$out-act (inputs st data-size)
     (b* ((empty-out- (nth 1 inputs))
-         (go-signals (nthcdr (comp-v-or$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
          (go-out (nth 1 go-signals))
 
          (a1 (get-field *comp-v-or$a1* st))
@@ -341,7 +341,7 @@
 
   (defthm comp-v-or$out-act-inactive
     (implies (equal (nth 1 inputs) t)
-             (not (comp-v-or$out-act inputs st data-width)))
+             (not (comp-v-or$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable comp-v-or$out-act))))
 
   ;; Extract the output data
@@ -353,31 +353,31 @@
                                   (get-field *comp-v-or$b1* st)))))
 
   (defthm len-comp-v-or$data-out-1
-    (implies (comp-v-or$st-format st data-width)
+    (implies (comp-v-or$st-format st data-size)
              (equal (len (comp-v-or$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable comp-v-or$st-format
                                        comp-v-or$data-out))))
 
   (defthm len-comp-v-or$data-out-2
-    (implies (comp-v-or$valid-st st data-width)
+    (implies (comp-v-or$valid-st st data-size)
              (equal (len (comp-v-or$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable comp-v-or$valid-st
                                        comp-v-or$data-out))))
 
   (defthm bvp-comp-v-or$data-out
-    (implies (and (comp-v-or$valid-st st data-width)
-                  (comp-v-or$out-act inputs st data-width))
+    (implies (and (comp-v-or$valid-st st data-size)
+                  (comp-v-or$out-act inputs st data-size))
              (bvp (comp-v-or$data-out st)))
     :hints (("Goal" :in-theory (enable comp-v-or$valid-st
                                        comp-v-or$st-format
                                        comp-v-or$out-act
                                        comp-v-or$data-out))))
 
-  (defun comp-v-or$outputs (inputs st data-width)
-    (list* (comp-v-or$in-act inputs st data-width)
-           (comp-v-or$out-act inputs st data-width)
+  (defun comp-v-or$outputs (inputs st data-size)
+    (list* (comp-v-or$in-act inputs st data-size)
+           (comp-v-or$out-act inputs st data-size)
            (comp-v-or$data-out st)))
   )
 
@@ -385,18 +385,18 @@
 
 (defthm comp-v-or$value
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
-    (implies (and (comp-v-or& netlist data-width)
-                  (equal (len a) data-width)
-                  (equal (len b) data-width)
+    (implies (and (comp-v-or& netlist data-size)
+                  (equal (len a) data-size)
+                  (equal (len b) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-v-or$go-num*)
-                  (comp-v-or$st-format st data-width))
-             (equal (se (si 'comp-v-or data-width) inputs st netlist)
-                    (comp-v-or$outputs inputs st data-width))))
+                  (comp-v-or$st-format st data-size))
+             (equal (se (si 'comp-v-or data-size) inputs st netlist)
+                    (comp-v-or$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'comp-v-or data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'comp-v-or data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             comp-v-or&
                             comp-v-or*$destructure
@@ -410,9 +410,9 @@
 
 ;; This function specifies the next state of COMP-V-OR.
 
-(defun comp-v-or$step (inputs st data-width)
-  (b* ((a (comp-v-or$a inputs data-width))
-       (b (comp-v-or$b inputs data-width))
+(defun comp-v-or$step (inputs st data-size)
+  (b* ((a (comp-v-or$a inputs data-size))
+       (b (comp-v-or$b inputs data-size))
 
        (a0 (get-field *comp-v-or$a0* st))
        (b0 (get-field *comp-v-or$b0* st))
@@ -421,18 +421,18 @@
        (q2 (get-field *comp-v-or$q2* st))
        (q3 (get-field *comp-v-or$q3* st))
 
-       (q2-inputs (comp-v-or$q2-inputs inputs st data-width))
-       (q2-in-act (queue2$in-act q2-inputs q2 data-width))
-       (q2-out-act (queue2$out-act q2-inputs q2 data-width))
+       (q2-inputs (comp-v-or$q2-inputs inputs st data-size))
+       (q2-in-act (queue2$in-act q2-inputs q2 data-size))
+       (q2-out-act (queue2$out-act q2-inputs q2 data-size))
        (q2-data-out (queue2$data-out q2))
 
-       (q3-inputs (comp-v-or$q3-inputs inputs st data-width))
-       (q3-in-act (queue3$in-act q3-inputs q3 data-width))
-       (q3-out-act (queue3$out-act q3-inputs q3 data-width))
+       (q3-inputs (comp-v-or$q3-inputs inputs st data-size))
+       (q3-in-act (queue3$in-act q3-inputs q3 data-size))
+       (q3-out-act (queue3$out-act q3-inputs q3 data-size))
        (q3-data-out (queue3$data-out q3))
 
-       (in-act (comp-v-or$in-act inputs st data-width))
-       (out-act (comp-v-or$out-act inputs st data-width))
+       (in-act (comp-v-or$in-act inputs st data-size))
+       (out-act (comp-v-or$out-act inputs st data-size))
 
        (a0-inputs (list* in-act q2-in-act a))
        (b0-inputs (list* in-act q3-in-act b))
@@ -441,41 +441,41 @@
 
     (list
      ;; A0
-     (link$step a0-inputs a0 data-width)
+     (link$step a0-inputs a0 data-size)
      ;; B0
-     (link$step b0-inputs b0 data-width)
+     (link$step b0-inputs b0 data-size)
      ;; A1
-     (link$step a1-inputs a1 data-width)
+     (link$step a1-inputs a1 data-size)
      ;; B1
-     (link$step b1-inputs b1 data-width)
+     (link$step b1-inputs b1 data-size)
 
      ;; Joint Q2
-     (queue2$step q2-inputs q2 data-width)
+     (queue2$step q2-inputs q2 data-size)
      ;; Joint Q3
-     (queue3$step q3-inputs q3 data-width))))
+     (queue3$step q3-inputs q3 data-size))))
 
 (defthm len-of-comp-v-or$step
-  (equal (len (comp-v-or$step inputs st data-width))
+  (equal (len (comp-v-or$step inputs st data-size))
          *comp-v-or$st-len*))
 
 ;; The state lemma for COMP-V-OR
 
 (defthm comp-v-or$state
   (b* ((inputs (list* full-in empty-out- (append a b go-signals))))
-    (implies (and (comp-v-or& netlist data-width)
+    (implies (and (comp-v-or& netlist data-size)
                   (true-listp a)
-                  (equal (len a) data-width)
+                  (equal (len a) data-size)
                   (true-listp b)
-                  (equal (len b) data-width)
+                  (equal (len b) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *comp-v-or$go-num*)
-                  (comp-v-or$st-format st data-width))
-             (equal (de (si 'comp-v-or data-width) inputs st netlist)
-                    (comp-v-or$step inputs st data-width))))
+                  (comp-v-or$st-format st data-size))
+             (equal (de (si 'comp-v-or data-size) inputs st netlist)
+                    (comp-v-or$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'comp-v-or data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'comp-v-or data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             comp-v-or&
                             comp-v-or*$destructure
@@ -497,14 +497,14 @@
 
 ;; Conditions on the inputs
 
-(defund comp-v-or$input-format (inputs data-width)
+(defund comp-v-or$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in    (nth 0 inputs))
        (empty-out- (nth 1 inputs))
-       (a (comp-v-or$a inputs data-width))
-       (b (comp-v-or$b inputs data-width))
-       (go-signals (nthcdr (comp-v-or$data-ins-len data-width) inputs)))
+       (a (comp-v-or$a inputs data-size))
+       (b (comp-v-or$b inputs data-size))
+       (go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out-)
@@ -517,11 +517,11 @@
 
 (local
  (defthm comp-v-or$input-format=>q2$input-format
-   (implies (and (comp-v-or$input-format inputs data-width)
-                 (comp-v-or$valid-st st data-width))
+   (implies (and (comp-v-or$input-format inputs data-size)
+                 (comp-v-or$valid-st st data-size))
             (queue2$input-format
-             (comp-v-or$q2-inputs inputs st data-width)
-             data-width))
+             (comp-v-or$q2-inputs inputs st data-size)
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (comp-v-or$input-format
                              queue2$input-format
@@ -533,11 +533,11 @@
 
 (local
  (defthm comp-v-or$input-format=>q3$input-format
-   (implies (and (comp-v-or$input-format inputs data-width)
-                 (comp-v-or$valid-st st data-width))
+   (implies (and (comp-v-or$input-format inputs data-size)
+                 (comp-v-or$valid-st st data-size))
             (queue3$input-format
-             (comp-v-or$q3-inputs inputs st data-width)
-             data-width))
+             (comp-v-or$q3-inputs inputs st data-size)
+             data-size))
    :hints (("Goal"
             :in-theory (e/d (comp-v-or$input-format
                              queue3$input-format
@@ -548,18 +548,18 @@
                              take-of-too-many))))))
 
 (defthm booleanp-comp-v-or$in-act
-  (implies (and (comp-v-or$input-format inputs data-width)
-                (comp-v-or$valid-st st data-width))
-           (booleanp (comp-v-or$in-act inputs st data-width)))
+  (implies (and (comp-v-or$input-format inputs data-size)
+                (comp-v-or$valid-st st data-size))
+           (booleanp (comp-v-or$in-act inputs st data-size)))
   :hints (("Goal" :in-theory (enable comp-v-or$input-format
                                      comp-v-or$valid-st
                                      comp-v-or$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-comp-v-or$out-act
-  (implies (and (comp-v-or$input-format inputs data-width)
-                (comp-v-or$valid-st st data-width))
-           (booleanp (comp-v-or$out-act inputs st data-width)))
+  (implies (and (comp-v-or$input-format inputs data-size)
+                (comp-v-or$valid-st st data-size))
+           (booleanp (comp-v-or$out-act inputs st data-size)))
   :hints (("Goal" :in-theory (enable comp-v-or$input-format
                                      comp-v-or$valid-st
                                      comp-v-or$out-act)))
@@ -607,8 +607,8 @@
     (comp-v-or$op-map (pairlis$ a-seq b-seq))))
 
 (defthm comp-v-or$extract-not-empty
-  (implies (and (comp-v-or$out-act inputs st data-width)
-                (comp-v-or$valid-st st data-width))
+  (implies (and (comp-v-or$out-act inputs st data-size)
+                (comp-v-or$valid-st st data-size))
            (< 0 (len (comp-v-or$extract st))))
   :hints (("Goal"
            :in-theory (e/d (comp-v-or$valid-st
@@ -628,12 +628,10 @@
          (q2 (get-field *comp-v-or$q2* st))
          (q3 (get-field *comp-v-or$q3* st))
 
-         (a-seq (append (extract-valid-data (list a0))
-                        (queue2$extract q2)
-                        (extract-valid-data (list a1))))
-         (b-seq (append (extract-valid-data (list b0))
-                        (queue3$extract q3)
-                        (extract-valid-data (list b1)))))
+         (a-seq (append (extract-valid-data (list a0 a1))
+                        (queue2$extract q2)))
+         (b-seq (append (extract-valid-data (list b0 b1))
+                        (queue3$extract q3))))
       (equal (len a-seq) (len b-seq))))
 
   (local
@@ -641,9 +639,9 @@
      (implies (equal (nth *link$s*
                           (nth *comp-v-or$a0* st))
                      '(nil))
-              (not (queue2$in-act (comp-v-or$q2-inputs inputs st data-width)
+              (not (queue2$in-act (comp-v-or$q2-inputs inputs st data-size)
                                   (nth *comp-v-or$q2* st)
-                                  data-width)))
+                                  data-size)))
      :hints (("Goal"
               :in-theory (enable get-field
                                  comp-v-or$q2-inputs)))))
@@ -653,9 +651,9 @@
      (implies (equal (nth *link$s*
                           (nth *comp-v-or$b0* st))
                      '(nil))
-              (not (queue3$in-act (comp-v-or$q3-inputs inputs st data-width)
+              (not (queue3$in-act (comp-v-or$q3-inputs inputs st data-size)
                                   (nth *comp-v-or$q3* st)
-                                  data-width)))
+                                  data-size)))
      :hints (("Goal"
               :in-theory (enable get-field
                                  comp-v-or$q3-inputs)))))
@@ -665,9 +663,9 @@
      (implies (equal (nth *link$s*
                           (nth *comp-v-or$a1* st))
                      '(t))
-              (not (queue2$out-act (comp-v-or$q2-inputs inputs st data-width)
+              (not (queue2$out-act (comp-v-or$q2-inputs inputs st data-size)
                                    (nth *comp-v-or$q2* st)
-                                   data-width)))
+                                   data-size)))
      :hints (("Goal"
               :in-theory (enable get-field
                                  comp-v-or$q2-inputs)))))
@@ -677,18 +675,18 @@
      (implies (equal (nth *link$s*
                           (nth *comp-v-or$b1* st))
                      '(t))
-              (not (queue3$out-act (comp-v-or$q3-inputs inputs st data-width)
+              (not (queue3$out-act (comp-v-or$q3-inputs inputs st data-size)
                                    (nth *comp-v-or$q3* st)
-                                   data-width)))
+                                   data-size)))
      :hints (("Goal"
               :in-theory (enable get-field
                                  comp-v-or$q3-inputs)))))
 
   (defthm comp-v-or$inv-preserved
-    (implies (and (comp-v-or$input-format inputs data-width)
-                  (comp-v-or$valid-st st data-width)
+    (implies (and (comp-v-or$input-format inputs data-size)
+                  (comp-v-or$valid-st st data-size)
                   (comp-v-or$inv st))
-             (comp-v-or$inv (comp-v-or$step inputs st data-width)))
+             (comp-v-or$inv (comp-v-or$step inputs st data-size)))
     :hints (("Goal"
              :use (comp-v-or$input-format=>q2$input-format
                    comp-v-or$input-format=>q3$input-format)
@@ -708,20 +706,20 @@
 ;; The extracted next-state function for COMP-V-OR.  Note that this function
 ;; avoids exploring the internal computation of COMP-V-OR.
 
-(defund comp-v-or$extracted-step (inputs st data-width)
-  (b* ((a (comp-v-or$a inputs data-width))
-       (b (comp-v-or$b inputs data-width))
+(defund comp-v-or$extracted-step (inputs st data-size)
+  (b* ((a (comp-v-or$a inputs data-size))
+       (b (comp-v-or$b inputs data-size))
        (data (v-or a b))
        (extracted-st (comp-v-or$extract st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (comp-v-or$out-act inputs st data-width) t)
+     ((equal (comp-v-or$out-act inputs st data-size) t)
       (cond
-       ((equal (comp-v-or$in-act inputs st data-width) t)
+       ((equal (comp-v-or$in-act inputs st data-size) t)
         (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (comp-v-or$in-act inputs st data-width) t)
+         ((equal (comp-v-or$in-act inputs st data-size) t)
           (cons data extracted-st))
          (t extracted-st))))))
 
@@ -729,24 +727,24 @@
 
 (local
  (defthm comp-v-or$input-format-lemma-1
-   (implies (comp-v-or$input-format inputs data-width)
+   (implies (comp-v-or$input-format inputs data-size)
             (booleanp (nth 0 inputs)))
    :hints (("Goal" :in-theory (enable comp-v-or$input-format)))
    :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-v-or$input-format-lemma-2
-   (implies (comp-v-or$input-format inputs data-width)
+   (implies (comp-v-or$input-format inputs data-size)
             (booleanp (nth 1 inputs)))
    :hints (("Goal" :in-theory (enable comp-v-or$input-format)))
    :rule-classes (:rewrite :type-prescription)))
 
 (local
  (defthm comp-v-or$input-format-lemma-3
-   (implies (and (comp-v-or$input-format inputs data-width)
+   (implies (and (comp-v-or$input-format inputs data-size)
                  (nth 0 inputs))
-            (and (bvp (comp-v-or$a inputs data-width))
-                 (bvp (comp-v-or$b inputs data-width))))
+            (and (bvp (comp-v-or$a inputs data-size))
+                 (bvp (comp-v-or$b inputs data-size))))
    :hints (("Goal" :in-theory (enable comp-v-or$input-format)))))
 
 (encapsulate
@@ -757,10 +755,10 @@
      (b* ((a0 (get-field *comp-v-or$a0* st))
           (a0.d (get-field *link$d* a0)))
        (implies (and (bvp (strip-cars a0.d))
-                     (equal (len a0.d) data-width))
+                     (equal (len a0.d) data-size))
                 (equal (queue2$data-in
-                        (comp-v-or$q2-inputs inputs st data-width)
-                        data-width)
+                        (comp-v-or$q2-inputs inputs st data-size)
+                        data-size)
                        (strip-cars a0.d))))
      :hints (("Goal"
               :in-theory (enable queue2$data-in
@@ -771,10 +769,10 @@
      (b* ((b0 (get-field *comp-v-or$b0* st))
           (b0.d (get-field *link$d* b0)))
        (implies (and (bvp (strip-cars b0.d))
-                     (equal (len b0.d) data-width))
+                     (equal (len b0.d) data-size))
                 (equal (queue3$data-in
-                        (comp-v-or$q3-inputs inputs st data-width)
-                        data-width)
+                        (comp-v-or$q3-inputs inputs st data-size)
+                        data-size)
                        (strip-cars b0.d))))
      :hints (("Goal"
               :in-theory (enable queue3$data-in
@@ -792,12 +790,12 @@
                          x)))))
 
   (defthm comp-v-or$extracted-step-correct
-    (b* ((next-st (comp-v-or$step inputs st data-width)))
-      (implies (and (comp-v-or$input-format inputs data-width)
-                    (comp-v-or$valid-st st data-width)
+    (b* ((next-st (comp-v-or$step inputs st data-size)))
+      (implies (and (comp-v-or$input-format inputs data-size)
+                    (comp-v-or$valid-st st data-size)
                     (comp-v-or$inv st))
                (equal (comp-v-or$extract next-st)
-                      (comp-v-or$extracted-step inputs st data-width))))
+                      (comp-v-or$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use (comp-v-or$input-format=>q2$input-format
                    comp-v-or$input-format=>q3$input-format)
@@ -825,10 +823,10 @@
 ;; Prove that comp-v-or$valid-st is an invariant.
 
 (defthm comp-v-or$valid-st-preserved
-  (implies (and (comp-v-or$input-format inputs data-width)
-                (comp-v-or$valid-st st data-width))
-           (comp-v-or$valid-st (comp-v-or$step inputs st data-width)
-                               data-width))
+  (implies (and (comp-v-or$input-format inputs data-size)
+                (comp-v-or$valid-st st data-size))
+           (comp-v-or$valid-st (comp-v-or$step inputs st data-size)
+                               data-size))
   :hints (("Goal"
            :use (comp-v-or$input-format=>q2$input-format
                  comp-v-or$input-format=>q3$input-format)
@@ -843,9 +841,9 @@
                             comp-v-or$input-format=>q3$input-format)))))
 
 (defthm comp-v-or$extract-lemma
-  (implies (and (comp-v-or$valid-st st data-width)
+  (implies (and (comp-v-or$valid-st st data-size)
                 (comp-v-or$inv st)
-                (comp-v-or$out-act inputs st data-width))
+                (comp-v-or$out-act inputs st data-size))
            (equal (list (comp-v-or$data-out st))
                   (nthcdr (1- (len (comp-v-or$extract st)))
                           (comp-v-or$extract st))))
@@ -863,8 +861,8 @@
 ;; Extract the accepted input sequence
 
 (seq-gen comp-v-or in in-act 0
-         (cons (comp-v-or$a inputs data-width)
-               (comp-v-or$b inputs data-width)))
+         (cons (comp-v-or$a inputs data-size)
+               (comp-v-or$b inputs data-size)))
 
 ;; Extract the valid output sequence
 

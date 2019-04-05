@@ -43,32 +43,32 @@
       (cons (piso-sreg$map-to-links (car x))
             (piso-sreg$map-to-links-list (cdr x)))))
 
-  (defund piso-sreg$st-gen (data-width cnt-width)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width))))
+  (defund piso-sreg$st-gen (data-size cnt-size)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size))))
     (b* ((full '(t))
          (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (zero-data (make-list data-width :initial-element '(nil)))
-         (invalid-cnt (make-list cnt-width :initial-element '(x)))
-         (zero-cnt (make-list cnt-width :initial-element '(nil))))
+         (invalid-data (make-list data-size :initial-element '(x)))
+         (zero-data (make-list data-size :initial-element '(nil)))
+         (invalid-cnt (make-list cnt-size :initial-element '(x)))
+         (zero-cnt (make-list cnt-size :initial-element '(nil))))
       (list (list full zero-data)
             (list full zero-cnt)
             (list empty invalid-data)
             (list empty invalid-cnt))))
 
-  (defund piso-sreg$ins-and-st-test (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso-sreg$ins-and-st-test (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso-sreg$ins-len data-width))
+    (b* ((num-signals (piso-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso-sreg$st-gen data-width cnt-width)))
-      (mv (and (piso-sreg$input-format-n inputs-seq data-width n)
-               (piso-sreg$valid-st st data-width cnt-width)
+         (st (piso-sreg$st-gen data-size cnt-size)))
+      (mv (and (piso-sreg$input-format-n inputs-seq data-size n)
+               (piso-sreg$valid-st st data-size cnt-size)
                (piso-sreg$inv st))
           state)))
 
@@ -76,47 +76,47 @@
    (defthm piso-sreg$ins-and-st-test-ok
      (piso-sreg$ins-and-st-test 4 3 10 state)))
 
-  (defund piso-sreg$sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso-sreg$sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso-sreg$ins-len data-width))
+    (b* ((num-signals (piso-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso-sreg$st-gen data-width cnt-width)))
+         (st (piso-sreg$st-gen data-size cnt-size)))
       (mv (pretty-list
            (remove-dup-neighbors
             (piso-sreg$map-to-links-list
-             (de-sim-trace (si 'piso-sreg data-width)
+             (de-sim-trace (si 'piso-sreg data-size)
                            inputs-seq
                            st
-                           (piso-sreg$netlist data-width cnt-width))))
+                           (piso-sreg$netlist data-size cnt-size))))
            0)
           state)))
 
-  (defund piso-sreg$in-out-sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso-sreg$in-out-sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso-sreg$ins-len data-width))
+    (b* ((num-signals (piso-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso-sreg$st-gen data-width cnt-width)))
+         (st (piso-sreg$st-gen data-size cnt-size)))
       (mv
        (append
         (list (cons 'in-seq
                     (v-to-nat-lst
                      (piso-sreg$in-seq
-                      inputs-seq st data-width cnt-width n))))
+                      inputs-seq st data-size cnt-size n))))
         (list (cons 'out-seq
                     (v-to-nat-lst
                      (pairlis$
                       (piso-sreg$out-seq
-                       inputs-seq st data-width cnt-width n)
+                       inputs-seq st data-size cnt-size n)
                       nil)))))
        state)))
   )
@@ -148,15 +148,15 @@
       (cons (piso2-sreg$map-to-links (car x))
             (piso2-sreg$map-to-links-list (cdr x)))))
 
-  (defund piso2-sreg$st-gen (data-width cnt-width)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width))))
+  (defund piso2-sreg$st-gen (data-size cnt-size)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size))))
     (b* ((full '(t))
          (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (zero-data (make-list data-width :initial-element '(nil)))
-         (invalid-cnt (make-list cnt-width :initial-element '(x)))
-         (zero-cnt (make-list cnt-width :initial-element '(nil))))
+         (invalid-data (make-list data-size :initial-element '(x)))
+         (zero-data (make-list data-size :initial-element '(nil)))
+         (invalid-cnt (make-list cnt-size :initial-element '(x)))
+         (zero-cnt (make-list cnt-size :initial-element '(nil))))
       (list (list full zero-data)
             (list full zero-cnt)
             (list empty invalid-data)
@@ -166,18 +166,18 @@
             (list empty invalid-data)
             (list empty invalid-cnt))))
 
-  (defund piso2-sreg$ins-and-st-test (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso2-sreg$ins-and-st-test (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso2-sreg$ins-len data-width))
+    (b* ((num-signals (piso2-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso2-sreg$st-gen data-width cnt-width)))
-      (mv (and (piso2-sreg$input-format-n inputs-seq data-width n)
-               (piso2-sreg$valid-st st data-width cnt-width)
+         (st (piso2-sreg$st-gen data-size cnt-size)))
+      (mv (and (piso2-sreg$input-format-n inputs-seq data-size n)
+               (piso2-sreg$valid-st st data-size cnt-size)
                (piso2-sreg$inv st))
           state)))
 
@@ -185,53 +185,53 @@
    (defthm piso2-sreg$ins-and-st-test-ok
      (piso2-sreg$ins-and-st-test 4 3 10 state)))
 
-  (defund piso2-sreg$sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso2-sreg$sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso2-sreg$ins-len data-width))
+    (b* ((num-signals (piso2-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso2-sreg$st-gen data-width cnt-width)))
+         (st (piso2-sreg$st-gen data-size cnt-size)))
       (mv (pretty-list
            (remove-dup-neighbors
             (piso2-sreg$map-to-links-list
-             (de-sim-trace (si 'piso2-sreg data-width)
+             (de-sim-trace (si 'piso2-sreg data-size)
                            inputs-seq
                            st
-                           (piso2-sreg$netlist data-width cnt-width))))
+                           (piso2-sreg$netlist data-size cnt-size))))
            0)
           state)))
 
-  (defund piso2-sreg$in-out-sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (natp cnt-width)
+  (defund piso2-sreg$in-out-sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (piso2-sreg$ins-len data-width))
+    (b* ((num-signals (piso2-sreg$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (piso2-sreg$st-gen data-width cnt-width)))
+         (st (piso2-sreg$st-gen data-size cnt-size)))
       (mv
        (append
         (list (cons 'in-seq
                     (v-to-nat2-lst
                      (piso2-sreg$in-seq
-                      inputs-seq st data-width cnt-width n))))
+                      inputs-seq st data-size cnt-size n))))
         (list (cons 'out0-seq
                     (v-to-nat-lst
                      (pairlis$
                       (piso2-sreg$out0-seq
-                       inputs-seq st data-width cnt-width n)
+                       inputs-seq st data-size cnt-size n)
                       nil))))
         (list (cons 'out1-seq
                     (v-to-nat-lst
                      (pairlis$
                       (piso2-sreg$out1-seq
-                       inputs-seq st data-width cnt-width n)
+                       inputs-seq st data-size cnt-size n)
                       nil)))))
        state)))
   )
@@ -255,33 +255,33 @@
       (cons (sipo-sreg$map-to-links (car x))
             (sipo-sreg$map-to-links-list (cdr x)))))
 
-  (defund sipo-sreg$st-gen (data-width cnt-width)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width))))
+  (defund sipo-sreg$st-gen (data-size cnt-size)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size))))
     (b* ((full '(t))
          (empty '(nil))
-         (invalid-data (make-list data-width :initial-element '(x)))
-         (zero-data (make-list data-width :initial-element '(nil)))
-         (invalid-cnt (make-list cnt-width :initial-element '(x)))
-         (full-cnt (append (make-list (1- cnt-width) :initial-element '(nil))
+         (invalid-data (make-list data-size :initial-element '(x)))
+         (zero-data (make-list data-size :initial-element '(nil)))
+         (invalid-cnt (make-list cnt-size :initial-element '(x)))
+         (full-cnt (append (make-list (1- cnt-size) :initial-element '(nil))
                            '((t)))))
       (list (list full zero-data)
             (list full full-cnt)
             (list empty invalid-data)
             (list empty invalid-cnt))))
 
-  (defund sipo-sreg$ins-and-st-test (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund sipo-sreg$ins-and-st-test (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
     (b* ((num-signals *sipo-sreg$ins-len*)
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (sipo-sreg$st-gen data-width cnt-width)))
+         (st (sipo-sreg$st-gen data-size cnt-size)))
       (mv (and (sipo-sreg$input-format-n inputs-seq n)
-               (sipo-sreg$valid-st st data-width cnt-width)
+               (sipo-sreg$valid-st st data-size cnt-size)
                (sipo-sreg$inv st))
           state)))
 
@@ -289,48 +289,48 @@
    (defthm sipo-sreg$ins-and-st-test-ok
      (sipo-sreg$ins-and-st-test 4 3 10 state)))
 
-  (defund sipo-sreg$sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund sipo-sreg$sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
     (b* ((num-signals *sipo-sreg$ins-len*)
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (sipo-sreg$st-gen data-width cnt-width)))
+         (st (sipo-sreg$st-gen data-size cnt-size)))
       (mv (pretty-list
            (remove-dup-neighbors
             (sipo-sreg$map-to-links-list
-             (de-sim-trace (si 'sipo-sreg data-width)
+             (de-sim-trace (si 'sipo-sreg data-size)
                            inputs-seq
                            st
-                           (sipo-sreg$netlist data-width cnt-width))))
+                           (sipo-sreg$netlist data-size cnt-size))))
            0)
           state)))
 
-  (defund sipo-sreg$in-out-sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund sipo-sreg$in-out-sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
     (b* ((num-signals *sipo-sreg$ins-len*)
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (sipo-sreg$st-gen data-width cnt-width)))
+         (st (sipo-sreg$st-gen data-size cnt-size)))
       (mv
        (append
         (list (cons 'in-seq
                     (v-to-nat-lst
                      (pairlis$
                       (sipo-sreg$in-seq
-                       inputs-seq st data-width cnt-width n)
+                       inputs-seq st data-size cnt-size n)
                       nil))))
         (list (cons 'out-seq
                     (v-to-nat-lst
                      (sipo-sreg$out-seq
-                      inputs-seq st data-width cnt-width n)))))
+                      inputs-seq st data-size cnt-size n)))))
        state)))
   )
 
@@ -362,9 +362,9 @@
       (cons (serial-add$map-to-links (car x))
             (serial-add$map-to-links-list (cdr x)))))
 
-  (defund serial-add$st-gen (data-width cnt-width)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width))))
+  (defund serial-add$st-gen (data-size cnt-size)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size))))
     (b* ((full '(t))
          (empty '(nil))
          (a (list empty '(nil)))
@@ -373,69 +373,69 @@
          (s (list empty '(nil)))
          (co (list empty '(nil)))
          (done (list empty '(nil)))
-         (piso2 (piso2-sreg$st-gen data-width cnt-width))
-         (sipo (sipo-sreg$st-gen data-width cnt-width)))
+         (piso2 (piso2-sreg$st-gen data-size cnt-size))
+         (sipo (sipo-sreg$st-gen data-size cnt-size)))
       (list a b ci s co done piso2 sipo)))
 
-  (defund serial-add$ins-and-st-test (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-add$ins-and-st-test (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-add$ins-len data-width))
+    (b* ((num-signals (serial-add$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-add$st-gen data-width cnt-width)))
-      (mv (and (serial-add$input-format-n inputs-seq data-width n)
-               (serial-add$valid-st st data-width cnt-width)
-               (serial-add$inv st data-width))
+         (st (serial-add$st-gen data-size cnt-size)))
+      (mv (and (serial-add$input-format-n inputs-seq data-size n)
+               (serial-add$valid-st st data-size cnt-size)
+               (serial-add$inv st data-size))
           state)))
 
   (local
    (defthm serial-add$ins-and-st-test-ok
      (serial-add$ins-and-st-test 4 3 10 state)))
 
-  (defund serial-add$sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-add$sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-add$ins-len data-width))
+    (b* ((num-signals (serial-add$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-add$st-gen data-width cnt-width)))
+         (st (serial-add$st-gen data-size cnt-size)))
       (mv (pretty-list
            (remove-dup-neighbors
             (serial-add$map-to-links-list
-             (de-sim-trace (si 'serial-add data-width)
+             (de-sim-trace (si 'serial-add data-size)
                            inputs-seq
                            st
-                           (serial-add$netlist data-width cnt-width))))
+                           (serial-add$netlist data-size cnt-size))))
            0)
           state)))
 
-  (defund serial-add$in-out-sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-add$in-out-sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-add$ins-len data-width))
+    (b* ((num-signals (serial-add$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-add$st-gen data-width cnt-width)))
+         (st (serial-add$st-gen data-size cnt-size)))
       (mv
        (append
         (list (cons 'in-seq
                     (v-to-nat2-lst
                      (serial-add$in-seq
-                      inputs-seq st data-width cnt-width n))))
+                      inputs-seq st data-size cnt-size n))))
         (list (cons 'out-seq
                     (v-to-nat-lst
                      (serial-add$out-seq
-                      inputs-seq st data-width cnt-width n)))))
+                      inputs-seq st data-size cnt-size n)))))
        state)))
   )
 
@@ -467,9 +467,9 @@
       (cons (serial-sub$map-to-links (car x))
             (serial-sub$map-to-links-list (cdr x)))))
 
-  (defund serial-sub$st-gen (data-width cnt-width)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width))))
+  (defund serial-sub$st-gen (data-size cnt-size)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size))))
     (b* ((full '(t))
          (empty '(nil))
          (a (list empty '(nil)))
@@ -478,69 +478,69 @@
          (s (list empty '(nil)))
          (co (list empty '(nil)))
          (done (list empty '(nil)))
-         (piso2 (piso2-sreg$st-gen data-width cnt-width))
-         (sipo (sipo-sreg$st-gen data-width cnt-width)))
+         (piso2 (piso2-sreg$st-gen data-size cnt-size))
+         (sipo (sipo-sreg$st-gen data-size cnt-size)))
       (list a b ci s co done piso2 sipo)))
 
-  (defund serial-sub$ins-and-st-test (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-sub$ins-and-st-test (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-sub$ins-len data-width))
+    (b* ((num-signals (serial-sub$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-sub$st-gen data-width cnt-width)))
-      (mv (and (serial-sub$input-format-n inputs-seq data-width n)
-               (serial-sub$valid-st st data-width cnt-width)
-               (serial-sub$inv st data-width))
+         (st (serial-sub$st-gen data-size cnt-size)))
+      (mv (and (serial-sub$input-format-n inputs-seq data-size n)
+               (serial-sub$valid-st st data-size cnt-size)
+               (serial-sub$inv st data-size))
           state)))
 
   (local
    (defthm serial-sub$ins-and-st-test-ok
      (serial-sub$ins-and-st-test 4 3 10 state)))
 
-  (defund serial-sub$sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-sub$sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-sub$ins-len data-width))
+    (b* ((num-signals (serial-sub$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-sub$st-gen data-width cnt-width)))
+         (st (serial-sub$st-gen data-size cnt-size)))
       (mv (pretty-list
            (remove-dup-neighbors
             (serial-sub$map-to-links-list
-             (de-sim-trace (si 'serial-sub data-width)
+             (de-sim-trace (si 'serial-sub data-size)
                            inputs-seq
                            st
-                           (serial-sub$netlist data-width cnt-width))))
+                           (serial-sub$netlist data-size cnt-size))))
            0)
           state)))
 
-  (defund serial-sub$in-out-sim (data-width cnt-width n state)
-    (declare (xargs :guard (and (natp data-width)
-                                (posp cnt-width)
+  (defund serial-sub$in-out-sim (data-size cnt-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (posp cnt-size)
                                 (natp n))
                     :verify-guards nil
                     :stobjs state))
-    (b* ((num-signals (serial-sub$ins-len data-width))
+    (b* ((num-signals (serial-sub$ins-len data-size))
          ((mv inputs-seq state)
           (signal-vals-gen num-signals n state nil))
-         (st (serial-sub$st-gen data-width cnt-width)))
+         (st (serial-sub$st-gen data-size cnt-size)))
       (mv
        (append
         (list (cons 'in-seq
                     (v-to-nat2-lst
                      (serial-sub$in-seq
-                      inputs-seq st data-width cnt-width n))))
+                      inputs-seq st data-size cnt-size n))))
         (list (cons 'out-seq
                     (v-to-nat-lst
                      (serial-sub$out-seq
-                      inputs-seq st data-width cnt-width n)))))
+                      inputs-seq st data-size cnt-size n)))))
        state)))
   )
 

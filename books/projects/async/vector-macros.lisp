@@ -200,12 +200,12 @@
                         (map-value-lemma-hyp inputs 'N)))
                  (EQUAL
                   (SE ,module-name ,(mapAPPEND inputs)
-                      STS NETLIST)
+                      ST NETLIST)
                   ,(mapAPPEND
                     (map-value-lemma-concl specs))))
         :hints (("Goal"
                  :expand (:free (inputs N)
                                 (SE ,module-name ,(mapAPPEND inputs)
-                                    STS NETLIST))
+                                    ST NETLIST))
                  :in-theory (ENABLE de-rules ,predicate ,destructor))))
       )))

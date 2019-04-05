@@ -17,6 +17,15 @@
 
 ;; ======================================================================
 
+(defmacro netlist-hyps (netlist &rest modules)
+  (if (atom modules)
+      nil
+    (if (atom (cdr modules))
+        `(equal (assoc ',(car modules) ,netlist)
+                (car ,(var-to-const (car modules))))
+      `(netlist-hyps (delete-to-eq ',(car modules) ,netlist)
+                     ,@(cdr modules)))))
+
 (defun b-to-f (body)
   (cond ((atom body) nil)
         ((consp (car body))
@@ -173,12 +182,12 @@
 
        (defthm ,value-lemma
          (implies (,netlist-properp netlist)
-                  (equal (se ',name (list ,@ins) sts netlist)
+                  (equal (se ',name (list ,@ins) st netlist)
                          ,(if (atom outs)
                               `(list (,f$name ,@ins))
                             `(,f$name ,@ins))))
          :hints (("Goal"
-                  :expand (se ',name (list ,@ins) sts netlist)
+                  :expand (se ',name (list ,@ins) st netlist)
                   :in-theory (enable de-rules ,netlist-properp))))
 
        (defthm ,boolp-value-lemma
@@ -409,23 +418,23 @@
 ;; The NEXT-STATE module, which takes the current decoded state
 ;; and creates a decoded version of the next state.
 
-(defun bind-values (sts i l)
+(defun bind-values (st i l)
   (declare (xargs :guard (natp i)))
-  (if (atom sts)
+  (if (atom st)
       nil
-    (cons `(,(car sts) (nth ,i ,l))
-          (bind-values (cdr sts) (1+ i) l))))
+    (cons `(,(car st) (nth ,i ,l))
+          (bind-values (cdr st) (1+ i) l))))
 
-(defun wire-occs (sts s i)
+(defun wire-occs (st s i)
   (declare (xargs :guard (and (symbolp s)
                               (natp i))))
-  (if (atom sts)
+  (if (atom st)
       nil
     (cons `(list ',(strings-to-symbol "R" (str::natstr i))
-                 ',(list (car sts))
+                 ',(list (car st))
                  'wire
                  (list (si ',s ,i)))
-          (wire-occs (cdr sts) s (1+ i)))))
+          (wire-occs (cdr st) s (1+ i)))))
 
 (defun b-and-expr (expr)
   (declare (xargs :guard (and (consp expr)
@@ -449,14 +458,14 @@
           "Error when unwinding ~x0."
           tree))))
 
-(defun unwind-next-sts (state-table)
+(defun unwind-next-st (state-table)
   (if (atom state-table)
       nil
     (b* ((state-trans (car state-table))
          (st (car state-trans))
          (next-st (cadr state-trans)))
       (append (unwind next-st (list st))
-              (unwind-next-sts (cdr state-table))))))
+              (unwind-next-st (cdr state-table))))))
 
 (defun collect-from-alist (x alist)
   (cond ((atom alist) nil)
@@ -465,33 +474,33 @@
                  (collect-from-alist x (cdr alist))))
         (t (collect-from-alist x (cdr alist)))))
 
-(defun compute-next-sts (sts alist)
-  (if (atom sts)
+(defun compute-next-st (st alist)
+  (if (atom st)
       nil
-    (b* ((st (car sts))
-         (collection (collect-from-alist st alist))
-         (next-st (add-prefix-to-name "NEXT-" st)))
+    (b* ((sub-st (car st))
+         (collection (collect-from-alist sub-st alist))
+         (next-sub-st (add-prefix-to-name "NEXT-" sub-st)))
       (cons
        (case (len collection)
-         (0 (cons next-st '(nil)))
-         (1 (cons next-st collection))
-         (2 (list next-st (cons 'B-OR collection)))
-         (3 (list next-st (cons 'B-OR3 collection)))
-         (4 (list next-st (cons 'B-OR4 collection)))
-         (5 (list next-st (list 'B-NOT (cons 'B-NOR5 collection))))
-         (6 (list next-st (list 'B-NOT (cons 'B-NOR6 collection))))
-         (7 (list next-st (list 'B-NAND
-                                (cons 'B-NOR4 (take 4 collection))
-                                (cons 'B-NOR3 (nthcdr 4 collection)))))
-         (otherwise (er hard 'compute-next-sts
-                        "COMPUTE-NEXT-STS error")))
-       (compute-next-sts (cdr sts) alist)))))
+         (0 (cons next-sub-st '(nil)))
+         (1 (cons next-sub-st collection))
+         (2 (list next-sub-st (cons 'B-OR collection)))
+         (3 (list next-sub-st (cons 'B-OR3 collection)))
+         (4 (list next-sub-st (cons 'B-OR4 collection)))
+         (5 (list next-sub-st (list 'B-NOT (cons 'B-NOR5 collection))))
+         (6 (list next-sub-st (list 'B-NOT (cons 'B-NOR6 collection))))
+         (7 (list next-sub-st (list 'B-NAND
+                                    (cons 'B-NOR4 (take 4 collection))
+                                    (cons 'B-NOR3 (nthcdr 4 collection)))))
+         (otherwise (er hard 'compute-next-st
+                        "COMPUTE-NEXT-ST error")))
+       (compute-next-st (cdr st) alist)))))
 
 (defun define-next-state (state-table)
   (b* ((state-names (strip-cars state-table))
-       (next-sts (add-prefix-to-names "NEXT-" state-names))
-       (unwinded-next-sts (unwind-next-sts state-table))
-       (spec (compute-next-sts state-names unwinded-next-sts)))
+       (next-st (add-prefix-to-names "NEXT-" state-names))
+       (unwinded-next-st (unwind-next-st state-table))
+       (spec (compute-next-st state-names unwinded-next-st)))
     `((defun next-state (decoded-state
                          store set-some-flags
                          unary direct-a direct-b
@@ -501,7 +510,7 @@
         (declare (xargs :guard (true-listp decoded-state)))
         (b* ,(append (bind-values state-names 0 'decoded-state)
                      spec)
-          (list ,@next-sts)))
+          (list ,@next-st)))
 
       (defun f$next-state (decoded-state
                            store set-some-flags
@@ -512,7 +521,7 @@
         (declare (xargs :guard (true-listp decoded-state)))
         (b* ,(append (bind-values state-names 0 'decoded-state)
                      (b-to-f spec))
-          (list ,@next-sts)))
+          (list ,@next-st)))
 
       (defthm f$next-state=next-state
         (implies (and (bvp decoded-state)
@@ -548,7 +557,7 @@
                          side-effect-a side-effect-b
                          all-t-regs-address
                          dtack- hold-))
-         ',next-sts
+         ',next-st
          ()
          (append (list ,@(wire-occs state-names 's 0))
                  ',(fn-to-module-body 0 (flatten-binding 'x 0 spec t)))))
@@ -570,16 +579,16 @@
 
 ;; ======================================================================
 
-(defun wire-occs-from-decoded-state (sts i)
-  (declare (xargs :guard (and (symbol-listp sts)
+(defun wire-occs-from-decoded-state (st i)
+  (declare (xargs :guard (and (symbol-listp st)
                               (natp i))))
-  (if (atom sts)
+  (if (atom st)
       nil
-    (cons `(list ',(strings-to-symbol "G-" (symbol-name (car sts)))
-                 ',(list (car sts))
+    (cons `(list ',(strings-to-symbol "G-" (symbol-name (car st)))
+                 ',(list (car st))
                  'wire
                  (list (si 'DECODED-STATE ,i)))
-          (wire-occs-from-decoded-state (cdr sts) (1+ i)))))
+          (wire-occs-from-decoded-state (cdr st) (1+ i)))))
 
 (defun translate-b-fns (form)
   (if (symbolp form)
@@ -881,18 +890,19 @@
                  (nthcdr (,st-trans->numsteps ,inputs-seq) ,inputs-seq)
                  (1- n)))))
 
-       (defthm ,open-st-trans-n-zp
-         (implies (zp n)
-                  (equal (,st-trans-n ,inputs-seq n) t)))
+       (defopener ,open-st-trans-n-zp
+         (,st-trans-n ,inputs-seq n)
+         :hyp (zp n)
+         :hints (("Goal"
+                  :in-theory (theory 'minimal-theory)
+                  :expand (,st-trans-n ,inputs-seq n))))
 
-       (defthm ,open-st-trans-n
-         (implies (not (zp n))
-                  (equal (,st-trans-n ,inputs-seq n)
-                         (and (,st-trans ,inputs-seq)
-                              (,st-trans-n
-                               (nthcdr (,st-trans->numsteps ,inputs-seq)
-                                       ,inputs-seq)
-                               (1- n))))))
+       (defopener ,open-st-trans-n
+         (,st-trans-n ,inputs-seq n)
+         :hyp (not (zp n))
+         :hints (("Goal"
+                  :in-theory (theory 'minimal-theory)
+                  :expand (,st-trans-n ,inputs-seq n))))
 
        (defun ,st-trans-n->numsteps (,inputs-seq n)
          (declare (xargs :guard (and (true-list-listp ,inputs-seq)
@@ -904,18 +914,19 @@
                 (,st-trans-n->numsteps (nthcdr numsteps ,inputs-seq)
                                        (1- n))))))
 
-       (defthm ,open-st-trans-n->numsteps-zp
-         (implies (zp n)
-                  (equal (,st-trans-n->numsteps ,inputs-seq n) 0)))
+       (defopener ,open-st-trans-n->numsteps-zp
+         (,st-trans-n->numsteps ,inputs-seq n)
+         :hyp (zp n)
+         :hints (("Goal"
+                  :in-theory (theory 'minimal-theory)
+                  :expand (,st-trans-n->numsteps ,inputs-seq n))))
 
-       (defthm ,open-st-trans-n->numsteps
-         (implies (not (zp n))
-                  (equal (,st-trans-n->numsteps ,inputs-seq n)
-                         (b* ((numsteps (,st-trans->numsteps ,inputs-seq)))
-                           (+ numsteps
-                              (,st-trans-n->numsteps
-                               (nthcdr numsteps ,inputs-seq)
-                               (1- n)))))))
+       (defopener ,open-st-trans-n->numsteps
+         (,st-trans-n->numsteps ,inputs-seq n)
+         :hyp (not (zp n))
+         :hints (("Goal"
+                  :in-theory (theory 'minimal-theory)
+                  :expand (,st-trans-n->numsteps ,inputs-seq n))))
 
        (defthm ,st-trans-m+n
          (implies (and (natp m)

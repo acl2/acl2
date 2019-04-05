@@ -67,10 +67,10 @@
 
 (defthm unary-op-code-p$value
   (implies (unary-op-code-p& netlist)
-           (equal (se 'unary-op-code-p op-code sts netlist)
+           (equal (se 'unary-op-code-p op-code st netlist)
                   (list (f$unary-op-code-p op-code))))
   :hints (("Goal"
-           :expand (se 'unary-op-code-p op-code sts netlist)
+           :expand (se 'unary-op-code-p op-code st netlist)
            :in-theory (enable de-rules
                               unary-op-code-p&))))
 
@@ -107,10 +107,10 @@
 
 (defthm decode-reg-mode$value
   (implies (decode-reg-mode& netlist)
-           (equal (se 'decode-reg-mode mode sts netlist)
+           (equal (se 'decode-reg-mode mode st netlist)
                   (f$decode-reg-mode mode)))
   :hints (("Goal"
-           :expand (se 'decode-reg-mode mode sts netlist)
+           :expand (se 'decode-reg-mode mode st netlist)
            :in-theory (enable de-rules
                               decode-reg-mode&))))
 
@@ -181,10 +181,10 @@
 
 (defthm select-op-code$value
   (implies (select-op-code& netlist)
-           (equal (se 'select-op-code (list* select dec op) sts netlist)
+           (equal (se 'select-op-code (list* select dec op) st netlist)
                   (f$select-op-code select dec op)))
   :hints (("Goal"
-           :expand (se 'select-op-code (list* select dec op) sts netlist)
+           :expand (se 'select-op-code (list* select dec op) st netlist)
            :in-theory (enable de-rules
                               select-op-code&))))
 
@@ -220,10 +220,10 @@
          4))
 
 (defthm v-if-f-4$value
-  (equal (se 'v-if-f-4 (list* c a) sts *v-if-f-4*)
+  (equal (se 'v-if-f-4 (list* c a) st *v-if-f-4*)
          (f$v-if-f-4 c a))
   :hints (("Goal"
-           :expand (se 'v-if-f-4 (list* c a) sts *v-if-f-4*)
+           :expand (se 'v-if-f-4 (list* c a) st *v-if-f-4*)
            :in-theory (enable de-rules))))
 
 (defthm f$v-if-f-4=fv-if
@@ -239,10 +239,10 @@
 
 (defthm v-if-f-4$reset-value
   (implies (v-if-f-4& netlist)
-           (equal (se 'v-if-f-4 (list* t a) sts netlist)
+           (equal (se 'v-if-f-4 (list* t a) st netlist)
                   (make-list 4)))
   :hints (("Goal"
-           :expand (se 'v-if-f-4 (list* t a) sts netlist)
+           :expand (se 'v-if-f-4 (list* t a) st netlist)
            :in-theory (enable de-rules
                               v-if-f-4&))))
 
@@ -274,10 +274,10 @@
 
 (defthm fanout-4$value
   (implies (fanout-4& netlist)
-           (equal (se 'fanout-4 (list a) sts netlist)
+           (equal (se 'fanout-4 (list a) st netlist)
                   (make-list 4 :initial-element (3v-fix a))))
   :hints (("Goal"
-           :expand (se 'fanout-4 (list a) sts netlist)
+           :expand (se 'fanout-4 (list a) st netlist)
            :in-theory (enable de-rules fanout-4& 3vp))))
 
 (defconst *fanout-5*
@@ -301,10 +301,10 @@
 
 (defthm fanout-5$value
   (implies (fanout-5& netlist)
-           (equal (se 'fanout-5 (list a) sts netlist)
+           (equal (se 'fanout-5 (list a) st netlist)
                   (make-list 5 :initial-element (3v-fix a))))
   :hints (("Goal"
-           :expand (se 'fanout-5 (list a) sts netlist)
+           :expand (se 'fanout-5 (list a) st netlist)
            :in-theory (enable de-rules fanout-5& 3vp))))
 
 ;; (defconst *fanout-32*
@@ -362,10 +362,10 @@
 
 ;; (defthm fanout-32$value
 ;;   (implies (fanout-32& netlist)
-;;            (equal (se 'fanout-32 (list a) sts netlist)
+;;            (equal (se 'fanout-32 (list a) st netlist)
 ;;                   (make-list 32 :initial-element (3v-fix a))))
 ;;   :hints (("Goal"
-;;            :expand (se 'fanout-32 (list a) sts netlist)
+;;            :expand (se 'fanout-32 (list a) st netlist)
 ;;            :in-theory (enable de-rules
 ;;                               fanout-32&
 ;;                               3vp))))
@@ -586,10 +586,10 @@
 
 (defthm decode-5$value
   (implies (decode-5& netlist)
-           (equal (se 'decode-5 s sts netlist)
+           (equal (se 'decode-5 s st netlist)
                   (f$decode-5 s)))
   :hints (("Goal"
-           :expand (se 'decode-5 s sts netlist)
+           :expand (se 'decode-5 s st netlist)
            :in-theory (enable de-rules decode-5&))))
 
 (defthm f$decode-5=decode-5
@@ -673,7 +673,7 @@
 (defthmd se-on-collected-nth-32
   (implies (and (equal (len ins) 32)
                 (true-listp ins))
-           (equal (se name ins sts netlist)
+           (equal (se name ins st netlist)
                   (se name
                       (list (nth 0 ins)
                             (nth 1 ins)
@@ -707,7 +707,7 @@
                             (nth 29 ins)
                             (nth 30 ins)
                             (nth 31 ins))
-                      sts
+                      st
                       netlist)))
   :hints (("Goal"
            :in-theory (disable nth)
@@ -719,7 +719,7 @@
   (implies (and (encode-32& netlist)
                 (true-listp ins)
                 (equal (len ins) 32))
-           (equal (se 'encode-32 ins sts netlist)
+           (equal (se 'encode-32 ins st netlist)
                   (f$encode-32 (nth 0 ins)
                                (nth 1 ins)
                                (nth 2 ins)

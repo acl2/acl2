@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; January 2019
 
 (in-package "ADE")
 
@@ -177,11 +177,11 @@
                   (equal n (len a))
                   (<= (v-to-nat b) (v-to-nat a))
                   (bv2p a b))
-             (equal (v-to-nat (take n
-                                    (v-adder t a (v-not b))))
+             (equal (v-to-nat (v-adder-output t a (v-not b)))
                     (- (v-to-nat a)
                        (v-to-nat b))))
     :hints (("Goal"
+             :in-theory (enable v-adder-output)
              :use (:instance nthcdr-v-adder-sub-2
                              (c t)))))
 

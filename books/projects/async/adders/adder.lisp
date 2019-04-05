@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; January 2019
 
 (in-package "ADE")
 
@@ -24,7 +24,8 @@
 
 (defund half-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (netlist-hyps netlist half-adder))
+  (equal (assoc 'half-adder netlist)
+         (car *half-adder*)))
 
 (local
  (defthmd check-half-adder
@@ -32,13 +33,19 @@
         (net-arity-okp *half-adder*)
         (half-adder& *half-adder*))))
 
+(defun half-adder$outputs (inputs st)
+  (declare (ignorable st))
+  (let ((a (car inputs))
+        (b (cadr inputs)))
+    (list (f-xor a b)
+          (f-and a b))))
+
 (defthm half-adder$value
   (implies (half-adder& netlist)
-           (equal (se 'half-adder (list a b) st netlist)
-                  (list (f-xor a b)
-                        (f-and a b))))
+           (equal (se 'half-adder inputs st netlist)
+                  (half-adder$outputs inputs st)))
   :hints (("Goal"
-           :expand (se 'half-adder (list a b) st netlist)
+           :expand (se 'half-adder inputs st netlist)
            :in-theory (enable de-rules half-adder&))))
 
 ;; ======================================================================
@@ -59,7 +66,8 @@
 
 (defund full-adder& (netlist)
   (declare (xargs :guard (alistp netlist)))
-  (and (netlist-hyps netlist full-adder)
+  (and (equal (assoc 'full-adder netlist)
+              (car *full-adder*))
        (half-adder& (delete-to-eq 'full-adder netlist))))
 
 (local
@@ -68,14 +76,21 @@
         (net-arity-okp *full-adder*)
         (full-adder& *full-adder*))))
 
+(defun full-adder$outputs (inputs st)
+  (declare (ignorable st))
+  (let ((c (car inputs))
+        (a (cadr inputs))
+        (b (caddr inputs)))
+    (list (f-xor3 c a b)
+          (f-or (f-and a b)
+                (f-and (f-xor a b) c)))))
+
 (defthm full-adder$value
   (implies (full-adder& netlist)
-           (equal (se 'full-adder (list c a b) st netlist)
-                  (list (f-xor3 c a b)
-                        (f-or (f-and a b)
-                              (f-and (f-xor a b) c)))))
+           (equal (se 'full-adder inputs st netlist)
+                  (full-adder$outputs inputs st)))
   :hints (("Goal"
-           :expand (se 'full-adder (list c a b) st netlist)
+           :expand (se 'full-adder inputs st netlist)
            :in-theory (enable de-rules
                               full-adder&
                               3vp

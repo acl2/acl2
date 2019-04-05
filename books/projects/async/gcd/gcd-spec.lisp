@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; March 2019
 
 (in-package "ADE")
 
@@ -21,18 +21,18 @@
 
 (local
  (defthm v-<-correct-instance
-   (implies (and (natp data-width)
-                 (equal (len x) (* 2 data-width))
+   (implies (and (natp data-size)
+                 (equal (len x) (* 2 data-size))
                  (bvp x)
                  (v-< nil t
-                      (rev (take data-width x))
-                      (rev (nthcdr data-width x))))
-            (< (v-to-nat (take data-width x))
-               (v-to-nat (nthcdr data-width x))))
+                      (rev (take data-size x))
+                      (rev (nthcdr data-size x))))
+            (< (v-to-nat (take data-size x))
+               (v-to-nat (nthcdr data-size x))))
    :hints (("Goal"
             :use (:instance v-<-correct-1
-                            (a (take data-width x))
-                            (b (nthcdr data-width x)))
+                            (a (take data-size x))
+                            (b (nthcdr data-size x)))
             :in-theory (disable v-<-correct-1)))
    :rule-classes :linear))
 
@@ -54,17 +54,15 @@
                                             (v-not-take
                                              v-not-nthcdr))))
                    :measure (my-count x)))
-   (b* ((data-width (/ (len x) 2))
-        (a (take data-width x))
-        (b (nthcdr data-width x))
-        (a-b (take data-width
-                   (v-adder t a (v-not b))))
-        (b-a (take data-width
-                   (v-adder t b (v-not a))))
+   (b* ((data-size (/ (len x) 2))
+        (a (take data-size x))
+        (b (nthcdr data-size x))
+        (a-b (v-adder-output t a (v-not b)))
+        (b-a (v-adder-output t b (v-not a)))
         (a<b (v-< nil t (rev a) (rev b))))
      (cond
       ((or (atom x)
-           (zp data-width)
+           (zp data-size)
            (not (bvp x)))
        x)
       ((v-zp a) b)
@@ -72,22 +70,20 @@
       ((equal a b) a)
       (t (gcd$op
           (v-if a<b
-                (append a b-a)
+                (append b-a a)
                 (append a-b b))))))))
 
 (defun gcd$op (x)
   (declare (xargs :measure (:? x)))
-  (b* ((data-width (/ (len x) 2))
-       (a (take data-width x))
-       (b (nthcdr data-width x))
-       (a-b (take data-width
-                  (v-adder t a (v-not b))))
-       (b-a (take data-width
-                  (v-adder t b (v-not a))))
+  (b* ((data-size (/ (len x) 2))
+       (a (take data-size x))
+       (b (nthcdr data-size x))
+       (a-b (v-adder-output t a (v-not b)))
+       (b-a (v-adder-output t b (v-not a)))
        (a<b (v-< nil t (rev a) (rev b))))
     (cond
      ((or (atom x)
-          (zp data-width)
+          (zp data-size)
           (not (bvp x)))
       x)
      ((v-zp a) b)
@@ -95,7 +91,7 @@
      ((equal a b) a)
      (t (gcd$op
          (v-if a<b
-               (append a b-a)
+               (append b-a a)
                (append a-b b)))))))
 
 (defthm bvp-gcd$op
@@ -119,19 +115,23 @@
                          v-<-correct-2)))
    :rule-classes nil))
 
+(local
+ (defthm v-adder-output-lemma
+   (implies (atom a)
+            (not (v-adder-output c a b)))
+   :hints (("Goal" :in-theory (enable v-adder-output)))))
+
 (defthm gcd$op-lemma
-  (b* ((a (take data-width x))
-       (b (nthcdr data-width x))
-       (a-b (take data-width
-                  (v-adder t a (v-not b))))
-       (b-a (take data-width
-                  (v-adder t b (v-not a))))
+  (b* ((a (take data-size x))
+       (b (nthcdr data-size x))
+       (a-b (v-adder-output t a (v-not b)))
+       (b-a (v-adder-output t b (v-not a)))
        (a<b (v-< nil t (rev a) (rev b))))
-    (implies (and (natp data-width)
-                  (equal data-width (/ (len x) 2))
+    (implies (and (natp data-size)
+                  (equal data-size (/ (len x) 2))
                   (bvp x))
              (equal (gcd$op (v-if a<b
-                                  (append a b-a)
+                                  (append b-a a)
                                   (append a-b b)))
                     (gcd$op x))))
   :hints (("Goal"
@@ -143,31 +143,31 @@
           ("Subgoal *1/3"
            :use (:instance
                  v-to-nat-equality
-                 (a (take data-width
-                          (v-adder t (take data-width x)
-                                   (v-not (nthcdr data-width x)))))
-                 (b (take data-width x))))
+                 (a (v-adder-output t
+                                    (take data-size x)
+                                    (v-not (nthcdr data-size x))))
+                 (b (take data-size x))))
           ("Subgoal *1/2"
            :use ((:instance
                   v-to-nat-equality
-                  (a (take data-width
-                           (v-adder t (nthcdr data-width x)
-                                    (v-not (take data-width x)))))
-                  (b (nthcdr data-width x)))
+                  (a (v-adder-output t
+                                     (nthcdr data-size x)
+                                     (v-not (take data-size x))))
+                  (b (nthcdr data-size x)))
                  (:instance
                   gcd$op-lemma-aux
-                  (a (take data-width x))
-                  (b (nthcdr data-width x)))))))
+                  (a (take data-size x))
+                  (b (nthcdr data-size x)))))))
 
 ;; Prove that gcd$op correctly computes the greatest common divisor
 
 (local
  (defthm v-to-nat-of-GCD$OP-is-GCD-ALG
-   (implies (and (equal data-width (/ (len x) 2))
+   (implies (and (equal data-size (/ (len x) 2))
                  (bvp x))
             (equal (v-to-nat (gcd$op x))
-                   (gcd-alg (v-to-nat (take data-width x))
-                            (v-to-nat (nthcdr data-width x)))))
+                   (gcd-alg (v-to-nat (take data-size x))
+                            (v-to-nat (nthcdr data-size x)))))
    :hints (("Goal" :in-theory (e/d ()
                                    (v-not-take
                                     v-not-nthcdr))))))

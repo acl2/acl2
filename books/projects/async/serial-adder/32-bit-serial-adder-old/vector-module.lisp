@@ -112,11 +112,11 @@
   (implies (and (v-wire& netlist n)
                 (true-listp a)
                 (equal (len a) n))
-           (equal (se (si 'v-wire n) a sts netlist)
+           (equal (se (si 'v-wire n) a st netlist)
                   a))
   :hints (("Goal"
            :expand (:free (n)
-                          (se (si 'v-wire n) a sts netlist))
+                          (se (si 'v-wire n) a st netlist))
            :in-theory (enable de-rules v-wire& v-wire*$destructure))))
 
 ;; V-IF
@@ -176,9 +176,9 @@
   (implies (and (v-if& netlist n)
                 (true-listp a) (equal (len a) n)
                 (true-listp b) (equal (len b) n))
-           (equal (se (si 'v-if n) (cons c (append a b)) sts netlist)
+           (equal (se (si 'v-if n) (cons c (append a b)) st netlist)
                   (fv-if c a b)))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'v-if n) inputs sts netlist))
+                          (se (si 'v-if n) inputs st netlist))
            :in-theory (enable de-rules v-if& v-if*$destructure))))
