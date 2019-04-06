@@ -190,16 +190,7 @@
   (b* ((ctx ' x86-call-FF/2-Op/En-M)
 
        ((the (integer 2 8) operand-size)
-        (if (equal proc-mode #.*64-bit-mode*)
-            8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
-          (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-               (cs.d (code-segment-descriptor-attributesBits->d cs-attr))
-               (p3? (equal #.*operand-size-override*
-                           (prefixes->opr prefixes))))
-            (if (= cs.d 1)
-                (if p3? 2 4)
-              (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
@@ -304,11 +295,19 @@
 ;; branches. Such addresses are 64 bits by default; but they can be
 ;; overridden to 32 bits by an address size prefix.
 
+;; End of quoted text from the Intel manual.
+
 ;; In 32-bit mode, the operand size should be the size of the code address,
-;; i.e. 32 bits if CS.D = 1 and 16 bits if CS.D = 0. Note that also in 64-bit
-;; mode (see above) the operand size (64 bits) is equal to the size of the code
-;; address (64 bits, even though in our model we only model the low 48 bits due
-;; to the invariant of instruction pointers being canonical).
+;; i.e. 32 bits if CS.D = 1 and 16 bits if CS.D = 0: in other words, the
+;; operand size override prefix P3 should have no effect here. Thus, we pass 0
+;; as the PREFIXES argument to SELECT-OPERAND-SIZE; note that this function
+;; only accesses the P3 prefix out of all the prefixes, so passing 0 as the
+;; prefixes has no adverse effect.
+
+;; Note that also in 64-bit mode (see above) the operand size (64 bits) is
+;; equal to the size of the code address (64 bits, even though in our model we
+;; only model the low 48 bits due to the invariant of instruction pointers
+;; being canonical).
 
 (def-inst x86-ret
 
@@ -327,12 +326,7 @@
        (rsp (read-*sp proc-mode x86))
 
        ((the (integer 2 8) operand-size)
-        (if (equal proc-mode #.*64-bit-mode*)
-            8
-          (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
-               (cs.d
-                (code-segment-descriptor-attributesBits->d cs-attr)))
-            (if (= cs.d 1) 4 2))))
+        (select-operand-size proc-mode nil rex-byte nil 0 t t t x86))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) new-rsp) x86)
         (if (equal opcode #xC3)
