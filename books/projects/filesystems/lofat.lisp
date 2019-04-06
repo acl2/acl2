@@ -10922,7 +10922,7 @@
        string-to-lofat-inversion-lemma-1)))))
 
 (defthm
-  m1-fs-to-string-inversion
+  hifat-to-string-inversion
   (implies
    (and (lofat-fs-p fat32-in-memory)
         (m1-file-alist-p fs)
@@ -10951,7 +10951,7 @@
 
   (local
    (defthmd
-     string-to-m1-fs-inversion-lemma-1
+     string-to-hifat-inversion-lemma-1
      (implies
       (and
        (stringp str)
@@ -11091,7 +11091,7 @@
 
   (local
    (defthmd
-     string-to-m1-fs-inversion-lemma-2
+     string-to-hifat-inversion-lemma-2
      (implies
       (and
        (stringp str)
@@ -11181,7 +11181,7 @@
      :hints
      (("goal"
        :use
-       (string-to-m1-fs-inversion-lemma-1
+       (string-to-hifat-inversion-lemma-1
         string-to-lofat-ignore-lemma-14
         (:instance
          (:rewrite string-to-lofat-ignore-lemma-14)
@@ -11211,7 +11211,7 @@
                (string-to-lofat fat32-in-memory str)))))))))))))
 
   (defthm
-    string-to-m1-fs-inversion
+    string-to-hifat-inversion
     (implies
      (and (stringp str)
           (fat32-in-memoryp fat32-in-memory))
@@ -11240,7 +11240,7 @@
       :in-theory
       (disable (:rewrite lofat-to-string-inversion))
       :use
-      (string-to-m1-fs-inversion-lemma-2
+      (string-to-hifat-inversion-lemma-2
        (:instance
         (:rewrite lofat-to-string-inversion)
         (fat32-in-memory

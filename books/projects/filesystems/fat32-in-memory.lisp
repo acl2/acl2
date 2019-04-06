@@ -751,7 +751,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_fatsz32
-        (delete-assoc 'update-bpb_fatsz32 *the-list*)
+        (remove1-assoc 'update-bpb_fatsz32 *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -765,7 +765,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_secperclus
-        (delete-assoc 'update-bpb_secperclus *the-list*)
+        (remove1-assoc 'update-bpb_secperclus *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -780,7 +780,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_rsvdseccnt
-        (delete-assoc 'update-bpb_rsvdseccnt *the-list*)
+        (remove1-assoc 'update-bpb_rsvdseccnt *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -795,7 +795,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_numfats
-        (delete-assoc 'update-bpb_numfats *the-list*)
+        (remove1-assoc 'update-bpb_numfats *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -810,7 +810,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_bytspersec
-        (delete-assoc 'update-bpb_bytspersec *the-list*)
+        (remove1-assoc 'update-bpb_bytspersec *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -825,7 +825,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_totsec32
-        (delete-assoc 'update-bpb_totsec32 *the-list*)
+        (remove1-assoc 'update-bpb_totsec32 *the-list*)
         'fat32-in-memory)))
 
   (make-event
@@ -840,7 +840,7 @@
       :rule-classes
       ,(make-corollaries
         'bpb_rootclus
-        (delete-assoc 'update-bpb_rootclus *the-list*)
+        (remove1-assoc 'update-bpb_rootclus *the-list*)
         'fat32-in-memory))))
 
 (defthm bpb_rootclus-of-update-fati
