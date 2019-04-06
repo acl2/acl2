@@ -131,25 +131,6 @@
  <p>This library also includes functions to process inputs common to multiple
  event macros.</p>
 
- <h4>Fixtypes for Fixed-Length Lists</h4>
-
- <p>Added a macro @(tsee fty::deflist-of-len) that generates fixtypes for lists
- of specified lengths, based on existing fixtypes of lists of arbitrary
- lenghts (introduced via @(tsee fty::deflist)).</p>
-
- <h4>Fixtypes for Omaps</h4>
-
- <p>Added a macro @(tsee fty::defomap) that generates fixtypes for <see
- topic='@(url omap::omaps)'>omaps</see> with keys and values of specified
- fixtypes.  This is analogous to @(tsee fty::deflist) and @(tsee
- fty::defalist).</p>
-
- <h4>Fixtypes for Osets</h4>
-
- <p>Added a macro @(tsee fty::defset) that generates fixtypes for <see
- topic='@(url set::std/osets)'>osets</see> of elements of specified fixtypes.
- This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).</p>
-
  <h4>Graphviz</h4>
 
  <p>Added a book @('[books]/centaur/misc/graphviz.lisp') defining a syntax tree
@@ -184,8 +165,8 @@
 
  <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
 
- <p>Added a library for omaps (ordered maps), analogous to @(see
- set::std/osets).</p>
+ <p>Added a library for omaps (ordered maps), analogous to @(csee
+ std/osets).</p>
 
  <h3>Changes to Existing Libraries</h3>
 
@@ -307,11 +288,6 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
- <h4>FTY Type Aliases</h4>
-
- <p>Added a macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
- existing fixtype, as well as of its recognizer, fixer, and equivalence.</p>
-
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -324,13 +300,43 @@
  for treating pseudo-terms as an FTY sum-of-products type; see @(see
  pseudo-term-fty).</p>
 
- <h4>FTY Types for Bytes</h4>
+ <p>Collected several <see topic='@(url fty::fty-extensions)'>FTY
+ extensions</see> under the <see topic='@(url acl2::kestrel-books)'>Kestrel
+ Books</see>:</p>
 
- <p>The @('acl2::defbyte') macro, which generated fixtypes and additional
+ <ul>
+
+ <li>A new macro @(tsee fty::deflist-of-len) that generates fixtypes for lists
+ of specified lengths, based on existing fixtypes of lists of arbitrary
+ lenghts (introduced via @(tsee fty::deflist)).</li>
+
+ <li>A new macro @(tsee fty::defset) that generates fixtypes for @(csee
+ std/osets) with elements of specified fixtypes.  This is analogous to @(tsee
+ fty::deflist) and @(tsee fty::defalist).</li>
+
+ <li>A new macro @(tsee fty::defomap) that generates fixtypes for <see
+ topic='@(url omap::omaps)'>omaps</see> with keys and values of specified
+ fixtypes.  This is analogous to @(tsee fty::deflist) and @(tsee
+ fty::defalist).</li>
+
+ <li>The @('acl2::defbyte') macro, which generated fixtypes and additional
  theorems for both bytes and lists of bytes, has been split into two macros
  @(tsee fty::defbyte), which generates a fixtype and some additional theorems
  for bytes, and @(tsee fty::defbytelist), which generates a fixtype and some
- additional theorems for lists of byte.  See the documentation for details.</p>
+ additional theorems for lists of byte.</li>
+
+ <li>A new macro @(tsee fty::deffixtype-alias) to introduce an ``alias'' of an
+ existing fixtype, as well as of its recognizer, fixer, and equivalence.</li>
+
+ <li>An existing fixtype @(tsee omap::map) for <see topic='@(url
+ omap::omaps)'>omaps</see> with keys and values of any types.</li>
+
+ <li>An existing fixtype @(tsee set::set) for @(csee std/osets) with elements
+ of any types.</li>
+
+ <li>An existing fixtype @(tsee nati) for natural numbers and infinity.</li>
+
+ </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
 
@@ -383,12 +389,17 @@
  explicit list of function parameters.  The function is implicitly
  parameterized over the function variables that it depends on.</p>
 
+ <h4>@(csee std/basic)</h4>
+
+ <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
+ bytes, moved from @(csee std/io).</p>
+
  <h4>@(csee std/io)</h4>
 
- <p>Added new lemmas to the <see topic='@(url combine-functions)'>std/io
+ <p>Added new lemmas to the <see topic='@(url combine-functions)'>Std/io
  byte-combining libraries</see>.</p>
 
- <p>Factored out the @(tsee bytep) predicate into a new file under @(see
+ <p>Factored out the @(tsee bytep) predicate into a new file under @(csee
  std/basic).</p>
 
  <h4>@(csee std/lists)</h4>
@@ -494,7 +505,7 @@
  @('defthm-usb') utility to also generate a linear linear saying that the value
  is greater than or equal to 0.  Renamed @('defthm-usb') and @('defthm-sb') to
  @('defthm-unsigned-byte-p') and @('defthm-signed-byte-p'), for consistency
- with @('defthm-natp').  Moved all three utilities to @(see std/util).</p>
+ with @('defthm-natp').  Moved all three utilities to @(csee std/util).</p>
 
  <p>Extended top-level memory reading functions to take into account the R bit
  of code segment descriptors, when they access for reading (not execution) a
