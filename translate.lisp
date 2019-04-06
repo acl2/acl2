@@ -13065,6 +13065,32 @@
 ; We return the translated version of x (in the trans-value format) or cause a
 ; translate error (in trans-er format).
 
+; We hons-copy the resulting lambda object.  Before we did this, it was
+; possible that when looking up a lambda object in the cl-cache, the result
+; succeeded with an object EQUAL to it that was not EQ.  Here is an example.
+
+;   (defun sum-doubles (lst)
+;     (declare (xargs :guard (integer-listp lst)
+;   		   :verify-guards nil))
+;     (loop$ for x of-type integer in lst sum (+ x x)))
+;   (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
+;   ; The following reports:
+;   ; 0.92 seconds realtime, 0.93 seconds runtime
+;   (time$ (sum-doubles *m*))
+;   (verify-guards sum-doubles
+;     :hints (("Goal"
+;              :in-theory (enable apply$ badge)
+;              :expand ((ev$ '(binary-+ x x)
+;                            (list (cons 'x (car lst))))))))
+;   (u)
+;   ; The following reports about double the previous time.
+;   (time$ (sum-doubles *m*))
+;   ; 2.02 seconds realtime, 2.02 seconds runtime
+
+; Our solution is to apply hons-copy (called just above) so that the translated
+; lambda object is unique.  Thus, we now call EQ where we formerly called EQUAL
+; in fetch-cl-cache-line.
+
   (cond
    ((and (eq stobjs-out t)
          (eq (car x) 'LAMBDA))
@@ -13074,7 +13100,7 @@
 
     (translate11-var-or-quote-exit
      x
-     `(QUOTE ,x)
+     (hons-copy `(QUOTE ,x))
      stobjs-out bindings known-stobjs flet-alist
      cform ctx wrld state-vars))
    ((and (or (eq (car x) 'LAMBDA)
@@ -13360,8 +13386,9 @@
                             *gratuitous-lambda-object-restriction-msg*))
                           (t (translate11-var-or-quote-exit
                               x
-                              (if lambda-casep
-                                  `(QUOTE ,x)
+                              (hons-copy
+                               (if lambda-casep
+                                   `(QUOTE ,x)
 
 ; We need to normalize the edcls.  If the tguard is *T* then we can simply
 ; remove the XARGS and leave any IGNORE and IGNORABLE declarations.  (We know
@@ -13370,25 +13397,25 @@
 ; declarations so we have to put tguard into the xargs and, in any case, we
 ; need to set :SPLIT-TYPES to T.
 
-                                  (let ((edcls1
-                                         (if (equal tguard *T*)
-                                             (remove-equal xargs edcls)
-                                           (put-assoc-eq
-                                            'XARGS
-                                            `(:GUARD ,tguard :SPLIT-TYPES T)
-                                            edcls)))
-                                        (vars1
-                                         (if allow-free-varsp
-                                             (append
-                                              vars
-                                              (revappend free-vars-guard nil)
-                                              (set-difference-eq
-                                               (revappend free-vars-body nil)
-                                               free-vars-guard))
-                                             vars)))
+                                 (let ((edcls1
+                                        (if (equal tguard *T*)
+                                            (remove-equal xargs edcls)
+                                          (put-assoc-eq
+                                           'XARGS
+                                           `(:GUARD ,tguard :SPLIT-TYPES T)
+                                           edcls)))
+                                       (vars1
+                                        (if allow-free-varsp
+                                            (append
+                                             vars
+                                             (revappend free-vars-guard nil)
+                                             (set-difference-eq
+                                              (revappend free-vars-body nil)
+                                              free-vars-guard))
+                                          vars)))
 
-                                    (let ((new-tbody
-                                           (if (eq stobjs-out t)
+                                   (let ((new-tbody
+                                          (if (eq stobjs-out t)
 
 ; Normally we tag the translated lambda body.  But we don't want to do that
 ; when proving theorems.  Without this special case for stobjs-out = t, the
@@ -13399,18 +13426,18 @@
 ; (thm (equal (loop$ for x in lst collect (car (cons x (cons x nil))))
 ;             (loop$ for x in lst collect (car (list x x)))))
 
-                                               tbody
-                                             (tag-translated-lambda$-body
-                                              x tbody))))
-                                      (cond
-                                       ((null edcls1)
-                                        `(QUOTE (LAMBDA ,vars1 ,new-tbody)))
-                                       (t
-                                        `(QUOTE
-                                          (LAMBDA
-                                           ,vars1
-                                           (DECLARE ,@edcls1)
-                                           ,new-tbody)))))))
+                                              tbody
+                                            (tag-translated-lambda$-body
+                                             x tbody))))
+                                     (cond
+                                      ((null edcls1)
+                                       `(QUOTE (LAMBDA ,vars1 ,new-tbody)))
+                                      (t
+                                       `(QUOTE
+                                         (LAMBDA
+                                          ,vars1
+                                          (DECLARE ,@edcls1)
+                                          ,new-tbody))))))))
                               stobjs-out bindings known-stobjs flet-alist
                               cform ctx wrld state-vars))))))))))))))))))
    (t (trans-er+? cform x ctx
