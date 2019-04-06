@@ -40,6 +40,7 @@
        :exec (and (integerp x)
                   (<= 0 x)
                   (< x 256)))
+  :no-function t
   ///
 
   (defthm bytep-compound-recognizer
