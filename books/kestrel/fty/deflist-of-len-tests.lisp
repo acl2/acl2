@@ -1,4 +1,4 @@
-; Fixtypes of Lists of Specified Lenghts -- Tests
+; FTY -- Fixed-Length List Fixtype Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

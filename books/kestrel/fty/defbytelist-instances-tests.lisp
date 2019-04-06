@@ -1,4 +1,4 @@
-; Fixtypes of True Lists of Unsigned and Signed Bytes -- Instances -- Tests
+; FTY -- Byte List Fixtype Instances -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

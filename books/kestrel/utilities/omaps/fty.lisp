@@ -11,24 +11,7 @@
 (in-package "OMAP")
 
 (include-book "centaur/fty/top" :dir :system)
-
-(include-book "core")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection map
-  :parents (omaps)
-  :short "A <see topic='@(url acl2::fty)'>fixtype</see> of omaps."
-  :long
-  (xdoc::topstring-p
-   "This is similar to
-    the fixtype <see topic='@(url set::set)'>@('set')</see> of osets.")
-  (fty::deffixtype map
-    :pred mapp
-    :fix mfix
-    :equiv mequiv
-    :define t
-    :forward t))
+(include-book "kestrel/fty/map" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

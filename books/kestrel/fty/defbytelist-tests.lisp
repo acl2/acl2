@@ -1,4 +1,4 @@
-; Fixtypes of True Lists of Unsigned and Signed Bytes -- Tests
+; FTY -- Byte List Fixtype Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

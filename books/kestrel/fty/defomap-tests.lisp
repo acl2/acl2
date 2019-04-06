@@ -1,4 +1,4 @@
-; Typed Omaps -- Fixtype Generator
+; FTY -- Omap Fixtype Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

@@ -1,4 +1,4 @@
-; FTY -- Fixtype Aliases -- Tests
+; FTY -- Alias Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

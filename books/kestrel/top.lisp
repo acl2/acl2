@@ -18,6 +18,7 @@
 (include-book "built-in-theorems-doc")
 (include-book "crypto/top")
 (include-book "ethereum/top")
+(include-book "fty/top")
 (include-book "java/top")
 (include-book "soft/top")
 (include-book "utilities/top")

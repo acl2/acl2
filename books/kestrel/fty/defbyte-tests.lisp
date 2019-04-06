@@ -1,4 +1,4 @@
-; Fixtypes of Unsigned and Signed Bytes -- Tests
+; FTY -- Byte Fixtype Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

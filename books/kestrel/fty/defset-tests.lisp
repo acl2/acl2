@@ -1,4 +1,4 @@
-; Typed Osets -- Fixtype Generator -- Tests
+; FTY -- Oset Fixtype Generator -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
