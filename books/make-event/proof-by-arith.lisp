@@ -23,9 +23,9 @@
   :parents (arithmetic)
   :short "Attempt to prove a theorem using various arithmetic libraries"
   :long "<p>This book shows how one can use make-event to try different proof
- strategies for a given theorem until one works.  Specifically, the strategies
- employed in this example are the use of different built-in arithmetic
- books.</p>
+  strategies for a given theorem, or more generally a given event, until one
+  works.  Specifically, the strategies employed in this example are the use of
+  different built-in arithmetic books.</p>
 
  <p>@('(proof-by-arith event)') expands into:</p>
 
