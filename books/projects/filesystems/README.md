@@ -52,7 +52,8 @@ lofat.lisp.
 * The equivalence proofs hifat-to-lofat-inversion,
 lofat-to-hifat-inversion, lofat-to-string-inversion,
 string-to-lofat-inversion and string-to-m1-fs-inversion are in
-lofat.lisp.
+lofat.lisp. Note, string-to-m1-fs-inversion has been renamed to
+string-to-hifat-inversion for consistency with the other functions.
 * The LoFAT implementations of the various system calls are in
 lofat.lisp; the HiFAT implementations are in hifat-syscalls.lisp.
 * An ACL2 program for checking disk equivalence is mentioned in the
