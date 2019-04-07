@@ -11210,6 +11210,7 @@
                0
                (string-to-lofat fat32-in-memory str)))))))))))))
 
+  ;; This was earlier named string-to-m1-fs-inversion.
   (defthm
     string-to-hifat-inversion
     (implies
