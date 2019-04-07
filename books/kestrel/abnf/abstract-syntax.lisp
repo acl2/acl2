@@ -11,10 +11,10 @@
 (in-package "ABNF")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/nati" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "kestrel/utilities/nati" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/system/event-form-lists" :dir :system)

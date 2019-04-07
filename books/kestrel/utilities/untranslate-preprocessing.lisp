@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "event-forms")
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

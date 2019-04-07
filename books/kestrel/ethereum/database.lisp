@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/omaps/defomap" :dir :system)
+(include-book "kestrel/fty/defomap" :dir :system)
 
 (include-book "bytes")
 

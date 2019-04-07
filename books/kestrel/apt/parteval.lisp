@@ -11,9 +11,9 @@
 (in-package "APT")
 
 (include-book "kestrel/utilities/doublets" :dir :system)
-(include-book "kestrel/utilities/error-checking" :dir :system)
+(include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
-(include-book "kestrel/utilities/paired-names" :dir :system)
+(include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "utilities/transformation-table")

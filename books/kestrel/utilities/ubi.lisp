@@ -73,9 +73,9 @@
 
  @({
  (include-book \"kestrel/utilities/ubi\" :dir :system)
- (local (include-book \"kestrel/utilities/world-queries\" :dir :system))
+ (local (include-book \"kestrel/utilities/system/world-queries\" :dir :system))
  (defpkg \"FOO\" nil)
- (include-book \"kestrel/utilities/defun-sk-queries\" :dir :system))
+ (include-book \"kestrel/utilities/system/defun-sk-queries\" :dir :system))
  (defun f (x) x)
  (include-book \"arithmetic/top\" :dir :system)
  (defun g (x) x)
@@ -88,10 +88,10 @@
             0  (EXIT-BOOT-STRAP-MODE)
     d       1  (INCLUDE-BOOK \"kestrel/utilities/ubi\"
                              :DIR ...)
-    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/world-queries\"
+    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4  (INCLUDE-BOOK \"kestrel/utilities/defun-sk-queries\"
+    d       4  (INCLUDE-BOOK \"kestrel/utilities/system/defun-sk-queries\"
                              :DIR ...)
   L         5  (DEFUN F (X) ...)
     d       6  (INCLUDE-BOOK \"arithmetic/top\" :DIR ...)
@@ -111,16 +111,16 @@
 
  @({
  ACL2 !>:ubi
-    d       4:x(INCLUDE-BOOK \"kestrel/utilities/defun-sk-queries\"
+    d       4:x(INCLUDE-BOOK \"kestrel/utilities/system/defun-sk-queries\"
                              :DIR ...)
  ACL2 !>:pbt 0
             0  (EXIT-BOOT-STRAP-MODE)
     d       1  (INCLUDE-BOOK \"kestrel/utilities/ubi\"
                              :DIR ...)
-    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/world-queries\"
+    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4:x(INCLUDE-BOOK \"kestrel/utilities/defun-sk-queries\"
+    d       4:x(INCLUDE-BOOK \"kestrel/utilities/system/defun-sk-queries\"
                              :DIR ...)
  ACL2 !>
  })
@@ -177,10 +177,10 @@
             0  (EXIT-BOOT-STRAP-MODE)
     d       1  (INCLUDE-BOOK \"kestrel/utilities/ubi\"
                              :DIR ...)
-    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/world-queries\"
+    d       2  (LOCAL (INCLUDE-BOOK \"kestrel/utilities/system/world-queries\"
                                     :DIR ...))
             3  (DEFPKG \"FOO\" NIL)
-    d       4  (INCLUDE-BOOK \"kestrel/utilities/defun-sk-queries\"
+    d       4  (INCLUDE-BOOK \"kestrel/utilities/system/defun-sk-queries\"
                              :DIR ...)
   L         5  (DEFUN F (X) ...)
     d       6  (INCLUDE-BOOK \"arithmetic/top\" :DIR ...)
