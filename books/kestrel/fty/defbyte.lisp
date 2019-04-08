@@ -377,8 +377,10 @@
                               nil
                             (acl2::packn-pos (list type '-is-posp)
                                              pkg-witness)))
-       ;; variable to use in the generated functions and theorems:
+       ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
+       (yes/no (intern-in-package-of-symbol "YES/NO" pkg-witness))
+       (fixed-x (intern-in-package-of-symbol "FIXED-X" pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -406,6 +408,13 @@
                  :rule-classes (:rewrite :type-prescription)))))
        (pred-event
         `(define ,pred (,x)
+           :returns (,yes/no booleanp
+                             :name ,booleanp-of-pred
+                             :hints (("Goal"
+                                      :in-theory
+                                      '(,pred
+                                        (:t ,binpred)
+                                        acl2::booleanp-compound-recognizer))))
            :parents (,type)
            :short ,(concatenate 'string "Recognizer for " type-ref ".")
            (mbe :logic (,binpred ,size ,x)
@@ -420,11 +429,6 @@
                                               (list type-size-is-posp)))))
            :no-function t
            ///
-           (defrule ,booleanp-of-pred
-             (booleanp (,pred ,x))
-             :in-theory '(,pred
-                          (:t ,binpred)
-                          acl2::booleanp-compound-recognizer))
            (defrule ,pred-forward-binpred
              (implies (,pred ,x)
                       (,binpred ,size ,x))
@@ -439,19 +443,30 @@
                           (:definition ,pred)))))
        (fix-event
         `(define ,fix ((,x ,pred))
+           :returns (,fixed-x ,pred
+                              :name ,pred-of-fix
+                              :hints (("Goal"
+                                       :in-theory '(,pred
+                                                    ,fix
+                                                    ,binpred
+                                                    posp
+                                                    integer-range-p
+                                                    expt
+                                                    (:e expt)
+                                                    fix
+                                                    zip)
+                                       ,@(and type-size-is-posp
+                                              `(:use
+                                                (,type-size-is-posp
+                                                 (:instance
+                                                  defbyte-fix-support-lemma
+                                                  (z ,size))))))))
            :parents (,type)
            :short ,(concatenate 'string "Fixer for " type-ref ".")
            (mbe :logic (if (,pred ,x) ,x 0)
                 :exec ,x)
            :no-function t
            ///
-           (defrule ,pred-of-fix
-             (,pred (,fix ,x))
-             :in-theory '(,pred ,fix ,binpred
-                                posp integer-range-p expt (:e expt) fix zip)
-             ,@(and type-size-is-posp
-                    `(:use (,type-size-is-posp
-                            (:instance defbyte-fix-support-lemma (z ,size))))))
            (defrule ,fix-when-pred
              (implies (,pred ,x)
                       (equal (,fix ,x) ,x))
