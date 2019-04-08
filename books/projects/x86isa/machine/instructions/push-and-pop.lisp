@@ -120,19 +120,8 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       (p3? (eql #.*operand-size-override*
-		 (prefixes->opr prefixes)))
-
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-		(xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
@@ -205,8 +194,6 @@
   (b* ((ctx 'x86-push-Ev)
 
        (p2 (prefixes->seg prefixes))
-       (p3? (eql #.*operand-size-override*
-		 (prefixes->opr prefixes)))
        (p4? (eql #.*addr-size-override*
 		 (prefixes->adr prefixes)))
 
@@ -214,15 +201,7 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-		(xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
 
@@ -309,24 +288,13 @@
 
   (b* ((ctx 'x86-push-I)
 
-       (p3? (eql #.*operand-size-override*
-		 (prefixes->opr prefixes)))
-
        (byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
 	(select-operand-size
          proc-mode byte-imm? rex-byte t prefixes nil nil nil x86))
 
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
@@ -419,19 +387,8 @@
 
   (b* ((ctx 'x86-push-general-register)
 
-       (p3? (eql #.*operand-size-override*
-		 (prefixes->opr prefixes)))
-
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
@@ -507,19 +464,8 @@
 
   (b* ((ctx 'x86-pop-general-register)
 
-       (p3? (eql #.*operand-size-override*
-		 (prefixes->opr prefixes)))
-
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
 
@@ -594,8 +540,6 @@
   (b* ((ctx 'x86-pop-Ev)
 
        (p2 (prefixes->seg prefixes))
-       (p3? (equal #.*operand-size-override*
-		   (prefixes->opr prefixes)))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -603,15 +547,7 @@
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
 
@@ -821,19 +757,8 @@
 
   (b* ((ctx 'x86-pushf)
 
-       (p3? (equal #.*operand-size-override*
-		   (prefixes->opr prefixes)))
-
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
@@ -955,19 +880,8 @@
 
   (b* ((ctx 'x86-popf)
 
-       (p3? (equal #.*operand-size-override*
-		   (prefixes->opr prefixes)))
-
        ((the (integer 1 8) operand-size)
-	(if (equal proc-mode #.*64-bit-mode*)
-	    (if p3? 2 8)
-	  (b* (((the (unsigned-byte 16) cs-attr)
-                (xr :seg-hidden-attr #.*cs* x86))
-	       (cs.d
-		(code-segment-descriptor-attributesBits->d cs-attr)))
-	    (if (= cs.d 1)
-		(if p3? 2 4)
-	      (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
 

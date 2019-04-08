@@ -530,6 +530,12 @@
  the segment register to 32 bits, now the model writes the low 16 bits, leaving
  the high 16 bits unchanged.</p>
 
+ <p>Extended @(tsee x86isa::select-operand-size) to accommodate instructions
+ that do not follow the ``normal'' rules.  The extended function has additional
+ parameters, whose different values trigger the use of the non-``normal''
+ rules.  Now many more instructions use this function, avoiding repeated blocks
+ of identical codes in their semantic functions.</p>
+
  <p>Improved and extended some documentation.</p>
 
  <h4><see topic='@(url xdoc-utilities)'>XDOC Utilities</see></h4>
