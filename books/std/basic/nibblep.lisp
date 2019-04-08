@@ -1,6 +1,5 @@
 ; Std/basic - Recognizer of Unsigned 4-bit Bytes
 ;
-; Copyright (C) 2014, Oracle and/or its affiliates. All rights reserved.
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
