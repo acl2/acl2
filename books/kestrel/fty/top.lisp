@@ -10,6 +10,11 @@
 
 (in-package "FTY")
 
+(include-book "byte")
+(include-book "byte-list")
+(include-book "byte-list20")
+(include-book "byte-list32")
+(include-book "byte-list64")
 (include-book "defbyte")
 (include-book "defbyte-instances")
 (include-book "defbytelist")
