@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection map
-  :parents (fty::fty-extensions fty::fty omaps)
+  :parents (fty::fty-extensions fty::specific-types omaps)
   :short
   (xdoc::topstring
    "A "

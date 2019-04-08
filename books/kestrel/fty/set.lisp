@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection set
-  :parents (fty::fty-extensions fty::fty std/osets)
+  :parents (fty::fty-extensions fty::specific-types std/osets)
   :short
   (xdoc::topstring "A "
                    (xdoc::seeurl "fty::fty" "fixtype")

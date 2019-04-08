@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum nati
-  :parents (fty::fty-extensions fty::fty)
+  :parents (fty::fty-extensions fty::specific-types natp)
   :short "A <see topic='@(url fty)'>fixtype</see> of
           natural numbers and infinity."
   (:finite ((get nat)))
