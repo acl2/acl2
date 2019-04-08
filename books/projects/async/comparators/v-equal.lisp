@@ -67,11 +67,11 @@
                 (true-listp a) (true-listp b)
                 (equal (len a) n)
                 (equal (len b) n))
-           (equal (se (si 'v-equal n) (append a b) sts netlist)
+           (equal (se (si 'v-equal n) (append a b) st netlist)
                   (list (f$v-equal a b))))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'v-equal n) inputs sts netlist))
+                          (se (si 'v-equal n) inputs st netlist))
            :in-theory (e/d (de-rules
                             v-equal&
                             v-equal*$destructure

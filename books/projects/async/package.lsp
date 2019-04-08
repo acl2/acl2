@@ -23,6 +23,7 @@
        def-ruleset
        define
        definline
+       defopener
        disable*
 
        e/d*

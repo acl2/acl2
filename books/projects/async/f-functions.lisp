@@ -216,10 +216,7 @@
 
 (defun f-sr (s r st)
   (declare (xargs :guard t))
-  (cond ((or (equal s *x*) (equal s *z*)
-             (equal r *x*) (equal r *z*))
-         *x*)
-        ((and (equal s nil) (equal r nil))
+  (cond ((and (equal s nil) (equal r nil))
          (3v-fix st))
         ((and (equal s nil) (equal r t)) ;; Reset
          nil)
@@ -1262,4 +1259,37 @@
                   (v-adder c a b)))
   :hints (("Goal" :in-theory (enable bvp v-adder))))
 
-(in-theory (disable fv-adder f-gates))
+(defun fv-adder-output (c a b)
+  (declare (xargs :guard (true-listp b)))
+  (take (len a) (fv-adder c a b)))
+
+(defthm len-fv-adder-output
+  (equal (len (fv-adder-output c a b))
+         (len a)))
+
+(defthm v-threefix-fv-adder-output
+  (equal (v-threefix (fv-adder-output c a b))
+         (fv-adder-output c a b)))
+
+(defthm fv-adder-output-of-f-buf-canceled
+  (equal (fv-adder-output (f-buf c) a b)
+         (fv-adder-output c a b)))
+
+(defthm fv-adder-output-of-v-threefix-canceled-1
+  (equal (fv-adder-output c (v-threefix a) b)
+         (fv-adder-output c a b)))
+
+(defthm fv-adder-output-of-v-threefix-canceled-2
+  (equal (fv-adder-output c a (v-threefix b))
+         (fv-adder-output c a b))
+  :hints (("Goal" :in-theory (enable v-threefix 3vp))))
+
+(defthm fv-adder-output=v-adder-output
+  (implies (and (booleanp c)
+                (bvp a)
+                (bvp b))
+           (equal (fv-adder-output c a b)
+                  (v-adder-output c a b)))
+  :hints (("Goal" :in-theory (enable v-adder-output))))
+
+(in-theory (disable fv-adder fv-adder-output f-gates))

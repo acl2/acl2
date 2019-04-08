@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; February 2019
 
 (in-package "ADE")
 
@@ -47,37 +47,37 @@
 ;; DE module generator of SIPO-SREG
 
 (module-generator
- sipo-sreg* (data-width cnt-width)
- (si 'sipo-sreg data-width)
+ sipo-sreg* (data-size cnt-size)
+ (si 'sipo-sreg data-size)
  (list* 'full-in 'empty-out- 'bit-in
         (sis 'go 0 *sipo-sreg$go-num*))
- (list* 'in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-width))
+ (list* 'in-act 'out-act 'cnt-out=1 (sis 'data-out 0 data-size))
  '(r-data r-cnt w-data w-cnt)
  (list
   ;; LINKS
   ;; R-DATA
   (list 'r-data
-        (list* 'r-data-status (sis 'r-data-out 0 data-width))
-        (si 'link data-width)
-        (list* 'buf-act 'shift-act (sis 'r-data-in 0 data-width)))
+        (list* 'r-data-status (sis 'r-data-out 0 data-size))
+        (si 'link data-size)
+        (list* 'buf-act 'shift-act (sis 'r-data-in 0 data-size)))
 
   ;; R-CNT
   (list 'r-cnt
-        (list* 'r-cnt-status (sis 'r-cnt-out 0 cnt-width))
-        (si 'link cnt-width)
-        (list* 'buf-act 'shift-act (sis 'r-cnt-in 0 cnt-width)))
+        (list* 'r-cnt-status (sis 'r-cnt-out 0 cnt-size))
+        (si 'link cnt-size)
+        (list* 'buf-act 'shift-act (sis 'r-cnt-in 0 cnt-size)))
 
   ;; W-DATA
   (list 'w-data
-        (list* 'w-data-status (sis 'w-data-out 0 data-width))
-        (si 'link data-width)
-        (list* 'shift-act 'buf-act (sis 'w-data-in 0 data-width)))
+        (list* 'w-data-status (sis 'w-data-out 0 data-size))
+        (si 'link data-size)
+        (list* 'shift-act 'buf-act (sis 'w-data-in 0 data-size)))
 
   ;; W-CNT
   (list 'w-cnt
-        (list* 'w-cnt-status (sis 'w-cnt-out 0 cnt-width))
-        (si 'link cnt-width)
-        (list* 'shift-act 'buf-act (sis 'w-cnt-in 0 cnt-width)))
+        (list* 'w-cnt-status (sis 'w-cnt-out 0 cnt-size))
+        (si 'link cnt-size)
+        (list* 'shift-act 'buf-act (sis 'w-cnt-in 0 cnt-size)))
 
   '(g0 (low) vss ())
   '(g1 (high) vdd ())
@@ -86,8 +86,8 @@
   ;; Shift
   (list 'r-cnt=0?
         '(r-cnt=0)
-        (si 'fast-zero cnt-width)
-        (sis 'r-cnt-out 0 cnt-width))
+        (si 'fast-zero cnt-size)
+        (sis 'r-cnt-out 0 cnt-size))
   '(s0 (r-cnt=0~) b-not (r-cnt=0))
   '(s1 (shift-full-in) b-and4 (r-data-status r-cnt-status r-cnt=0~ full-in))
   '(s2 (r-full) b-and3 (r-data-status r-cnt-status r-cnt=0))
@@ -99,42 +99,42 @@
         'joint-cntl
         (list 'shift-full-in 'w-empty- (si 'go 0)))
   (list 'shift-reg-op0
-        (sis 'w-data-in0 0 data-width)
-        (si 'v-buf data-width)
-        (append (sis 'r-data-out 1 (1- data-width))
+        (sis 'w-data-in0 0 data-size)
+        (si 'v-buf data-size)
+        (append (sis 'r-data-out 1 (1- data-size))
                 '(bit-in)))
   (list 'shift-cnt-op0
-        (sis 'w-cnt-in0 0 cnt-width)
-        (si 'counter cnt-width)
-        (sis 'r-cnt-out 0 cnt-width))
+        (sis 'w-cnt-in0 0 cnt-size)
+        (si 'counter cnt-size)
+        (sis 'r-cnt-out 0 cnt-size))
 
   (list 'out-cntl
         '(out-act)
         'joint-cntl
         (list 'r-full 'shift-empty-out- (si 'go 0)))
   (list 'shift-reg-op1
-        (sis 'w-data-in1 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'r-data-out 0 data-width))
+        (sis 'w-data-in1 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'r-data-out 0 data-size))
   (list 'shift-cnt-op1
-        (sis 'w-cnt-in1 0 cnt-width)
-        (si 'v-buf cnt-width)
-        (append (make-list (1- cnt-width) :initial-element 'low)
+        (sis 'w-cnt-in1 0 cnt-size)
+        (si 'v-buf cnt-size)
+        (append (make-list (1- cnt-size) :initial-element 'low)
                 '(high)))
 
   '(shift-cntl (shift-act) b-or (in-act out-act))
   (list 'shift-reg-op
-        (sis 'w-data-in 0 data-width)
-        (si 'tv-if (tree-number (make-tree data-width)))
+        (sis 'w-data-in 0 data-size)
+        (si 'tv-if (tree-number (make-tree data-size)))
         (cons 'r-cnt=0
-              (append (sis 'w-data-in1 0 data-width)
-                      (sis 'w-data-in0 0 data-width))))
+              (append (sis 'w-data-in1 0 data-size)
+                      (sis 'w-data-in0 0 data-size))))
   (list 'shift-cnt-op
-        (sis 'w-cnt-in 0 cnt-width)
-        (si 'tv-if (tree-number (make-tree cnt-width)))
+        (sis 'w-cnt-in 0 cnt-size)
+        (si 'tv-if (tree-number (make-tree cnt-size)))
         (cons 'r-cnt=0
-              (append (sis 'w-cnt-in1 0 cnt-width)
-                      (sis 'w-cnt-in0 0 cnt-width))))
+              (append (sis 'w-cnt-in1 0 cnt-size)
+                      (sis 'w-cnt-in0 0 cnt-size))))
 
   ;; Buffer
   '(b0 (buf-full-in) b-and (w-data-status w-cnt-status))
@@ -144,29 +144,29 @@
         'joint-cntl
         (list 'buf-full-in 'buf-empty-out- (si 'go 1)))
   (list 'buf-reg-op
-        (sis 'r-data-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'w-data-out 0 data-width))
+        (sis 'r-data-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'w-data-out 0 data-size))
   (list 'buf-cnt-op
-        (sis 'r-cnt-in 0 cnt-width)
-        (si 'v-buf cnt-width)
-        (sis 'w-cnt-out 0 cnt-width))
+        (sis 'r-cnt-in 0 cnt-size)
+        (si 'v-buf cnt-size)
+        (sis 'w-cnt-out 0 cnt-size))
 
   ;; OUTPUTS
   (list 'reg-out
-        (sis 'data-out 0 data-width)
-        (si 'v-wire data-width)
-        (sis 'r-data-out 0 data-width))
+        (sis 'data-out 0 data-size)
+        (si 'v-wire data-size)
+        (sis 'r-data-out 0 data-size))
   (list 'cnt-out<2?
         '(cnt-out<2)
-        (si 'fast-zero (1- cnt-width))
-        (sis 'r-cnt-out 1 (1- cnt-width)))
+        (si 'fast-zero (1- cnt-size))
+        (sis 'r-cnt-out 1 (1- cnt-size)))
   (list 'cnt-out=1?
         '(cnt-out=1)
         'b-and
         (list (si 'r-cnt-out 0) 'cnt-out<2)))
 
- (declare (xargs :guard (and (posp data-width) (posp cnt-width)))))
+ (declare (xargs :guard (and (posp data-size) (posp cnt-size)))))
 
 (make-event
  `(progn
@@ -177,48 +177,48 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; SIPO-SREG.
 
-(defund sipo-sreg$netlist (data-width cnt-width)
-  (declare (xargs :guard (and (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
-  (cons (sipo-sreg* data-width cnt-width)
-        (union$ (link$netlist data-width)
-                (link$netlist cnt-width)
+(defund sipo-sreg$netlist (data-size cnt-size)
+  (declare (xargs :guard (and (posp data-size)
+                              (natp cnt-size)
+                              (<= 3 cnt-size))))
+  (cons (sipo-sreg* data-size cnt-size)
+        (union$ (link$netlist data-size)
+                (link$netlist cnt-size)
                 *joint-cntl*
-                (fast-zero$netlist (1- cnt-width))
-                (fast-zero$netlist cnt-width)
-                (counter$netlist cnt-width)
-                (v-buf$netlist data-width)
-                (v-buf$netlist cnt-width)
-                (v-wire$netlist data-width)
-                (v-wire$netlist cnt-width)
-                (tv-if$netlist (make-tree data-width))
-                (tv-if$netlist (make-tree cnt-width))
+                (fast-zero$netlist (1- cnt-size))
+                (fast-zero$netlist cnt-size)
+                (counter$netlist cnt-size)
+                (v-buf$netlist data-size)
+                (v-buf$netlist cnt-size)
+                (v-wire$netlist data-size)
+                (v-wire$netlist cnt-size)
+                (tv-if$netlist (make-tree data-size))
+                (tv-if$netlist (make-tree cnt-size))
                 :test 'equal)))
 
 ;; Recognizer for SIPO-SREG
 
-(defund sipo-sreg& (netlist data-width cnt-width)
+(defund sipo-sreg& (netlist data-size cnt-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (posp data-width)
-                              (natp cnt-width)
-                              (<= 3 cnt-width))))
-  (b* ((subnetlist (delete-to-eq (si 'sipo-sreg data-width)
+                              (posp data-size)
+                              (natp cnt-size)
+                              (<= 3 cnt-size))))
+  (b* ((subnetlist (delete-to-eq (si 'sipo-sreg data-size)
                                  netlist)))
-    (and (equal (assoc (si 'sipo-sreg data-width) netlist)
-                (sipo-sreg* data-width cnt-width))
-         (link& subnetlist data-width)
-         (link& subnetlist cnt-width)
+    (and (equal (assoc (si 'sipo-sreg data-size) netlist)
+                (sipo-sreg* data-size cnt-size))
+         (link& subnetlist data-size)
+         (link& subnetlist cnt-size)
          (joint-cntl& subnetlist)
-         (fast-zero& subnetlist (1- cnt-width))
-         (fast-zero& subnetlist cnt-width)
-         (counter& subnetlist cnt-width)
-         (v-buf& subnetlist data-width)
-         (v-buf& subnetlist cnt-width)
-         (v-wire& subnetlist data-width)
-         (v-wire& subnetlist cnt-width)
-         (tv-if& subnetlist (make-tree data-width))
-         (tv-if& subnetlist (make-tree cnt-width)))))
+         (fast-zero& subnetlist (1- cnt-size))
+         (fast-zero& subnetlist cnt-size)
+         (counter& subnetlist cnt-size)
+         (v-buf& subnetlist data-size)
+         (v-buf& subnetlist cnt-size)
+         (v-wire& subnetlist data-size)
+         (v-wire& subnetlist cnt-size)
+         (tv-if& subnetlist (make-tree data-size))
+         (tv-if& subnetlist (make-tree cnt-size)))))
 
 ;; Sanity check
 
@@ -230,38 +230,38 @@
 
 ;; Constraints on the state of SIPO-SREG
 
-(defund sipo-sreg$st-format (st data-width cnt-width)
+(defund sipo-sreg$st-format (st data-size cnt-size)
   (b* ((r-data (get-field *sipo-sreg$r-data* st))
        (r-cnt (get-field *sipo-sreg$r-cnt* st))
        (w-data (get-field *sipo-sreg$w-data* st))
        (w-cnt (get-field *sipo-sreg$w-cnt* st)))
-    (and (posp data-width)
-         (natp cnt-width)
-         (<= 4 cnt-width)
-         (link$st-format r-data data-width)
-         (link$st-format r-cnt cnt-width)
-         (link$st-format w-data data-width)
-         (link$st-format w-cnt cnt-width))))
+    (and (posp data-size)
+         (natp cnt-size)
+         (<= 4 cnt-size)
+         (link$st-format r-data data-size)
+         (link$st-format r-cnt cnt-size)
+         (link$st-format w-data data-size)
+         (link$st-format w-cnt cnt-size))))
 
 (defthm sipo-sreg$st-format=>constraint
-  (implies (sipo-sreg$st-format st data-width cnt-width)
-           (and (posp data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
+  (implies (sipo-sreg$st-format st data-size cnt-size)
+           (and (posp data-size)
+                (natp cnt-size)
+                (<= 4 cnt-size)))
   :hints (("Goal" :in-theory (enable sipo-sreg$st-format)))
   :rule-classes :forward-chaining)
 
-(defund sipo-sreg$valid-st (st data-width cnt-width)
+(defund sipo-sreg$valid-st (st data-size cnt-size)
   (b* ((r-data (get-field *sipo-sreg$r-data* st))
        (r-cnt (get-field *sipo-sreg$r-cnt* st))
        (w-data (get-field *sipo-sreg$w-data* st))
        (w-cnt (get-field *sipo-sreg$w-cnt* st)))
-    (and (sipo-sreg$st-format st data-width cnt-width)
-         (equal data-width (expt 2 (1- cnt-width)))
-         (link$valid-st r-data data-width)
-         (link$valid-st r-cnt cnt-width)
-         (link$valid-st w-data data-width)
-         (link$valid-st w-cnt cnt-width))))
+    (and (sipo-sreg$st-format st data-size cnt-size)
+         (equal data-size (expt 2 (1- cnt-size)))
+         (link$valid-st r-data data-size)
+         (link$valid-st r-cnt cnt-size)
+         (link$valid-st w-data data-size)
+         (link$valid-st w-cnt cnt-size))))
 
 (local
  (defthm expt-linear-lower-<=-instance
@@ -271,17 +271,17 @@
    :rule-classes :linear))
 
 (defthmd sipo-sreg$valid-st=>constraint
-  (implies (sipo-sreg$valid-st st data-width cnt-width)
-           (and (natp data-width)
-                (<= 8 data-width)
-                (natp cnt-width)
-                (<= 4 cnt-width)))
+  (implies (sipo-sreg$valid-st st data-size cnt-size)
+           (and (natp data-size)
+                (<= 8 data-size)
+                (natp cnt-size)
+                (<= 4 cnt-size)))
   :hints (("Goal" :in-theory (enable sipo-sreg$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd sipo-sreg$valid-st=>st-format
-  (implies (sipo-sreg$valid-st st data-width cnt-width)
-           (sipo-sreg$st-format st data-width cnt-width))
+  (implies (sipo-sreg$valid-st st data-size cnt-size)
+           (sipo-sreg$st-format st data-size cnt-size))
   :hints (("Goal" :in-theory (enable sipo-sreg$valid-st))))
 
 ;; Extract the input and output signals for SIPO-SREG
@@ -353,7 +353,7 @@
                                        sipo-sreg$out-act))))
 
   (defthm sipo-sreg$in-out-acts-mutually-exclusive
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$in-act inputs st))
              (not (sipo-sreg$out-act inputs st)))
     :hints (("Goal" :in-theory (enable f-and4
@@ -376,7 +376,7 @@
                      (1- (len x))))))
 
   (defthm booleanp-sipo-sreg$cnt-out=1-1
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$in-act inputs st))
              (booleanp (sipo-sreg$cnt-out=1 st)))
     :hints (("Goal" :in-theory (enable f-and4
@@ -387,7 +387,7 @@
     :rule-classes (:rewrite :type-prescription))
 
   (defthm booleanp-sipo-sreg$cnt-out=1-2
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$out-act inputs st))
              (booleanp (sipo-sreg$cnt-out=1 st)))
     :hints (("Goal" :in-theory (enable f-and3
@@ -403,21 +403,21 @@
       (v-threefix (strip-cars r-data.d))))
 
   (defthm len-sipo-sreg$data-out-1
-    (implies (sipo-sreg$st-format st data-width cnt-width)
+    (implies (sipo-sreg$st-format st data-size cnt-size)
              (equal (len (sipo-sreg$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable sipo-sreg$st-format
                                        sipo-sreg$data-out))))
 
   (defthm len-sipo-sreg$data-out-2
-    (implies (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (sipo-sreg$valid-st st data-size cnt-size)
              (equal (len (sipo-sreg$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable sipo-sreg$valid-st
                                        sipo-sreg$data-out))))
 
   (defthm bvp-sipo-sreg$data-out-1
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$in-act inputs st))
              (bvp (sipo-sreg$data-out st)))
     :hints (("Goal" :in-theory (enable f-and4
@@ -426,7 +426,7 @@
                                        sipo-sreg$data-out))))
 
   (defthm bvp-sipo-sreg$data-out-2
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$out-act inputs st))
              (bvp (sipo-sreg$data-out st)))
     :hints (("Goal" :in-theory (enable f-and3
@@ -445,16 +445,16 @@
 
 (defthm sipo-sreg$value
   (b* ((inputs (list* full-in empty-out- bit-in go-signals)))
-    (implies (and (sipo-sreg& netlist data-width cnt-width)
+    (implies (and (sipo-sreg& netlist data-size cnt-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *sipo-sreg$go-num*)
-                  (sipo-sreg$st-format st data-width cnt-width))
-             (equal (se (si 'sipo-sreg data-width) inputs st netlist)
+                  (sipo-sreg$st-format st data-size cnt-size))
+             (equal (se (si 'sipo-sreg data-size) inputs st netlist)
                     (sipo-sreg$outputs inputs st))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'sipo-sreg data-width)
+           :expand (:free (inputs data-size)
+                          (se (si 'sipo-sreg data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             sipo-sreg&
@@ -469,7 +469,7 @@
 
 ;; This function specifies the next state of SIPO-SREG.
 
-(defun sipo-sreg$step (inputs st data-width cnt-width)
+(defun sipo-sreg$step (inputs st data-size cnt-size)
   (b* ((bit-in     (sipo-sreg$bit-in inputs))
        (go-signals (nthcdr *sipo-sreg$data-ins-len* inputs))
        (go-buf (nth 1 go-signals))
@@ -507,26 +507,25 @@
        (w-cnt-inputs
         (list* shift-act buf-act
                (fv-if r-cnt=0
-                      (append (make-list (1- cnt-width))
+                      (append (make-list (1- cnt-size))
                               '(t))
-                      (take cnt-width
-                            (fv-adder
-                             t
-                             (strip-cars r-cnt.d)
-                             (fv-not
-                              (cons t (make-list (1- cnt-width))))))))))
+                      (fv-adder-output
+                       t
+                       (strip-cars r-cnt.d)
+                       (fv-not
+                        (cons t (make-list (1- cnt-size)))))))))
     (list
      ;; R-DATA
-     (link$step r-data-inputs r-data data-width)
+     (link$step r-data-inputs r-data data-size)
      ;; R-CNT
-     (link$step r-cnt-inputs r-cnt cnt-width)
+     (link$step r-cnt-inputs r-cnt cnt-size)
      ;; W-DATA
-     (link$step w-data-inputs w-data data-width)
+     (link$step w-data-inputs w-data data-size)
      ;; W-CNT
-     (link$step w-cnt-inputs w-cnt cnt-width))))
+     (link$step w-cnt-inputs w-cnt cnt-size))))
 
 (defthm len-of-sipo-sreg$step
-  (equal (len (sipo-sreg$step inputs st data-width cnt-width))
+  (equal (len (sipo-sreg$step inputs st data-size cnt-size))
          *sipo-sreg$st-len*))
 
 ;; The state lemma for SIPO-SREG
@@ -534,16 +533,16 @@
 (defthm sipo-sreg$state
   (b* ((inputs (list* full-in empty-out- bit-in go-signals)))
     (implies
-     (and (sipo-sreg& netlist data-width cnt-width)
+     (and (sipo-sreg& netlist data-size cnt-size)
           (true-listp go-signals)
           (equal (len go-signals) *sipo-sreg$go-num*)
-          (sipo-sreg$st-format st data-width cnt-width))
-     (equal (de (si 'sipo-sreg data-width) inputs st netlist)
-            (sipo-sreg$step inputs st data-width cnt-width))))
+          (sipo-sreg$st-format st data-size cnt-size))
+     (equal (de (si 'sipo-sreg data-size) inputs st netlist)
+            (sipo-sreg$step inputs st data-size cnt-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'sipo-sreg data-width)
+           :expand (:free (inputs data-size)
+                          (de (si 'sipo-sreg data-size)
                               inputs st netlist))
            :in-theory (e/d (de-rules
                             sipo-sreg&
@@ -581,7 +580,7 @@
 
 (defthm booleanp-sipo-sreg$in-act
   (implies (and (sipo-sreg$input-format inputs)
-                (sipo-sreg$valid-st st data-width cnt-width))
+                (sipo-sreg$valid-st st data-size cnt-size))
            (booleanp (sipo-sreg$in-act inputs st)))
   :hints (("Goal"
            :in-theory (e/d (f-and4
@@ -593,7 +592,7 @@
 
 (defthm booleanp-sipo-sreg$out-act
   (implies (and (sipo-sreg$input-format inputs)
-                (sipo-sreg$valid-st st data-width cnt-width))
+                (sipo-sreg$valid-st st data-size cnt-size))
            (booleanp (sipo-sreg$out-act inputs st)))
   :hints (("Goal"
            :in-theory (e/d (f-and3
@@ -603,49 +602,49 @@
                            ())))
   :rule-classes (:rewrite :type-prescription))
 
-;;(simulate-lemma sipo-sreg nil data-width cnt-width)
+;;(simulate-lemma sipo-sreg nil data-size cnt-size)
 
 (progn
   (defthm sipo-sreg$st-format-preserved
     (implies
-     (sipo-sreg$st-format st data-width cnt-width)
+     (sipo-sreg$st-format st data-size cnt-size)
      (sipo-sreg$st-format (sipo-sreg$step
-                                     inputs st data-width cnt-width)
-                                    data-width
-                                    cnt-width))
+                                     inputs st data-size cnt-size)
+                                    data-size
+                                    cnt-size))
     :hints (("Goal" :in-theory (enable get-field
                                        sipo-sreg$step
                                        sipo-sreg$st-format))))
 
   (defthmd sipo-sreg$value-alt
     (implies
-     (and (sipo-sreg& netlist data-width cnt-width)
+     (and (sipo-sreg& netlist data-size cnt-size)
           (sipo-sreg$input-format inputs)
-          (sipo-sreg$st-format st data-width cnt-width))
-     (equal (se (si 'sipo-sreg data-width) inputs st netlist)
+          (sipo-sreg$st-format st data-size cnt-size))
+     (equal (se (si 'sipo-sreg data-size) inputs st netlist)
             (sipo-sreg$outputs inputs st)))
     :hints (("Goal" :in-theory (enable sipo-sreg$input-format))))
 
   (defthmd sipo-sreg$state-alt
     (implies
-     (and (sipo-sreg& netlist data-width cnt-width)
+     (and (sipo-sreg& netlist data-size cnt-size)
           (sipo-sreg$input-format inputs)
-          (sipo-sreg$st-format st data-width cnt-width))
-     (equal (de (si 'sipo-sreg data-width) inputs st netlist)
-            (sipo-sreg$step inputs st data-width cnt-width)))
+          (sipo-sreg$st-format st data-size cnt-size))
+     (equal (de (si 'sipo-sreg data-size) inputs st netlist)
+            (sipo-sreg$step inputs st data-size cnt-size)))
     :hints (("Goal" :in-theory (enable sipo-sreg$input-format))))
 
-  (run-gen sipo-sreg data-width cnt-width)
+  (run-gen sipo-sreg data-size cnt-size)
   (input-format-n-gen sipo-sreg)
 
   (defthmd sipo-sreg$de-n
-    (implies (and (sipo-sreg& netlist data-width cnt-width)
+    (implies (and (sipo-sreg& netlist data-size cnt-size)
                   (sipo-sreg$input-format-n inputs-seq n)
-                  (sipo-sreg$st-format st data-width cnt-width))
-             (equal (de-n (si 'sipo-sreg data-width)
+                  (sipo-sreg$st-format st data-size cnt-size))
+             (equal (de-n (si 'sipo-sreg data-size)
                           inputs-seq st netlist n)
                     (sipo-sreg$run
-                     inputs-seq st data-width cnt-width n)))
+                     inputs-seq st data-size cnt-size n)))
     :hints (("Goal" :in-theory (enable sipo-sreg$run
                                        sipo-sreg$state-alt)))))
 
@@ -679,7 +678,7 @@
 
 (defthm sipo-sreg$extract-not-empty
   (implies (and (sipo-sreg$out-act inputs st)
-                (sipo-sreg$valid-st st data-width cnt-width))
+                (sipo-sreg$valid-st st data-size cnt-size))
            (< 0 (len (sipo-sreg$extract st))))
   :hints (("Goal"
            :in-theory (e/d (f-and
@@ -692,9 +691,9 @@
 
 (defthmd len-of-sipo-sreg$extract-lemma
   (implies (and (sipo-sreg$out-act inputs st)
-                (sipo-sreg$valid-st st data-width cnt-width))
+                (sipo-sreg$valid-st st data-size cnt-size))
            (equal (len (sipo-sreg$extract st))
-                  data-width))
+                  data-size))
   :hints (("Goal" :in-theory (enable f-and3
                                      f-and
                                      f-or3
@@ -706,8 +705,8 @@
 (defthm len-of-sipo-sreg$extract-contrapositive-lemma-1
   (implies (and (sipo-sreg$out-act inputs st)
                 (not (equal (len (sipo-sreg$extract st))
-                            data-width)))
-           (not (sipo-sreg$valid-st st data-width cnt-width)))
+                            data-size)))
+           (not (sipo-sreg$valid-st st data-size cnt-size)))
   :hints (("Goal" :in-theory (enable f-and3
                                      f-and
                                      f-or3
@@ -717,9 +716,9 @@
                                      sipo-sreg$extract))))
 
 (defthm len-of-sipo-sreg$extract-contrapositive-lemma-2
-  (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+  (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                 (not (equal (len (sipo-sreg$extract st))
-                            data-width)))
+                            data-size)))
            (not (sipo-sreg$out-act inputs st)))
   :hints (("Goal" :in-theory (enable f-and3
                                      f-and
@@ -757,10 +756,10 @@
                    (len w-data.d))))))
 
   (defthm len-of-sipo-sreg$extract-upper-bound
-    (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+    (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$inv st))
              (<= (len (sipo-sreg$extract st))
-                 data-width))
+                 data-size))
     :hints (("Goal" :in-theory (enable sipo-sreg$valid-st
                                        sipo-sreg$inv
                                        sipo-sreg$extract)))
@@ -768,10 +767,10 @@
 
   (defthm len-of-sipo-sreg$extract-upper-bound-when-in-act
     (implies (and (sipo-sreg$in-act inputs st)
-                  (sipo-sreg$valid-st st data-width cnt-width)
+                  (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$inv st))
              (< (len (sipo-sreg$extract st))
-                data-width))
+                data-size))
     :hints (("Goal" :in-theory (e/d (f-and4
                                      sipo-sreg$valid-st
                                      sipo-sreg$st-format
@@ -811,10 +810,10 @@
 
   (defthm sipo-sreg$inv-preserved
     (implies (and (sipo-sreg$input-format inputs)
-                  (sipo-sreg$valid-st st data-width cnt-width)
+                  (sipo-sreg$valid-st st data-size cnt-size)
                   (sipo-sreg$inv st))
              (sipo-sreg$inv
-              (sipo-sreg$step inputs st data-width cnt-width)))
+              (sipo-sreg$step inputs st data-size cnt-size)))
     :hints (("Goal"
              :in-theory (e/d (get-field
                               f-sr
@@ -828,8 +827,8 @@
                              ()))))
   )
 
-;; The extracted next-state function for SIPO-SREG.  Note that this
-;; function avoids exploring the internal computation of SIPO-SREG.
+;; The extracted next-state function for SIPO-SREG.  Note that this function
+;; avoids exploring the internal computation of SIPO-SREG.
 
 (defund sipo-sreg$extracted-step (inputs st)
   (b* ((data (sipo-sreg$bit-in inputs))
@@ -857,9 +856,9 @@
               (not (nthcdr n l)))))
 
   (defthm sipo-sreg$extracted-step-correct
-    (b* ((next-st (sipo-sreg$step inputs st data-width cnt-width)))
+    (b* ((next-st (sipo-sreg$step inputs st data-size cnt-size)))
       (implies (and (sipo-sreg$input-format inputs)
-                    (sipo-sreg$valid-st st data-width cnt-width)
+                    (sipo-sreg$valid-st st data-size cnt-size)
                     (sipo-sreg$inv st))
                (equal (sipo-sreg$extract next-st)
                       (sipo-sreg$extracted-step inputs st))))
@@ -887,11 +886,11 @@
 
 (defthm sipo-sreg$valid-st-preserved
   (implies (and (sipo-sreg$input-format inputs)
-                (sipo-sreg$valid-st st data-width cnt-width))
+                (sipo-sreg$valid-st st data-size cnt-size))
            (sipo-sreg$valid-st
-            (sipo-sreg$step inputs st data-width cnt-width)
-            data-width
-            cnt-width))
+            (sipo-sreg$step inputs st data-size cnt-size)
+            data-size
+            cnt-size))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr
@@ -908,7 +907,7 @@
                            (if*)))))
 
 (defthm sipo-sreg$extract-lemma
-  (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+  (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                 (sipo-sreg$out-act inputs st))
            (equal (sipo-sreg$data-out st)
                   (sipo-sreg$extract st)))
@@ -926,7 +925,7 @@
 
 ;; Extract the accepted input sequence
 
-(defun sipo-sreg$in-seq (inputs-seq st data-width cnt-width n)
+(defun sipo-sreg$in-seq (inputs-seq st data-size cnt-size n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       nil
@@ -936,59 +935,59 @@
       (if (equal in-act t)
           (append (sipo-sreg$in-seq
                    (cdr inputs-seq)
-                   (sipo-sreg$step inputs st data-width cnt-width)
-                   data-width
-                   cnt-width
+                   (sipo-sreg$step inputs st data-size cnt-size)
+                   data-size
+                   cnt-size
                    (1- n))
                   (list data))
         (sipo-sreg$in-seq
          (cdr inputs-seq)
-         (sipo-sreg$step inputs st data-width cnt-width)
-         data-width
-         cnt-width
+         (sipo-sreg$step inputs st data-size cnt-size)
+         data-size
+         cnt-size
          (1- n))))))
 
-(defun sipo-sreg$netlist-in-seq
-    (inputs-seq st netlist data-width n)
+(defun sipo-sreg$in-seq-netlist
+    (inputs-seq st netlist data-size n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       nil
     (b* ((inputs (car inputs-seq))
-         (outputs (se (si 'sipo-sreg data-width)
+         (outputs (se (si 'sipo-sreg data-size)
                       inputs st netlist))
          (in-act (nth 0 outputs))
          (data (sipo-sreg$bit-in inputs)))
       (if (equal in-act t)
-          (append (sipo-sreg$netlist-in-seq
+          (append (sipo-sreg$in-seq-netlist
                    (cdr inputs-seq)
-                   (de (si 'sipo-sreg data-width)
+                   (de (si 'sipo-sreg data-size)
                        inputs st netlist)
                    netlist
-                   data-width
+                   data-size
                    (1- n))
                   (list data))
-        (sipo-sreg$netlist-in-seq
+        (sipo-sreg$in-seq-netlist
          (cdr inputs-seq)
-         (de (si 'sipo-sreg data-width)
+         (de (si 'sipo-sreg data-size)
              inputs st netlist)
          netlist
-         data-width
+         data-size
          (1- n))))))
 
 (defthm sipo-sreg$in-seq-lemma
-  (implies (and (sipo-sreg& netlist data-width cnt-width)
+  (implies (and (sipo-sreg& netlist data-size cnt-size)
                 (sipo-sreg$input-format-n inputs-seq n)
-                (sipo-sreg$st-format st data-width cnt-width))
-           (equal (sipo-sreg$netlist-in-seq
-                   inputs-seq st netlist data-width n)
+                (sipo-sreg$st-format st data-size cnt-size))
+           (equal (sipo-sreg$in-seq-netlist
+                   inputs-seq st netlist data-size n)
                   (sipo-sreg$in-seq
-                   inputs-seq st data-width cnt-width n)))
+                   inputs-seq st data-size cnt-size n)))
   :hints (("Goal" :in-theory (enable sipo-sreg$value-alt
                                      sipo-sreg$state-alt))))
 
 ;; Extract the valid output sequence
 
-(defun sipo-sreg$out-seq (inputs-seq st data-width cnt-width n)
+(defun sipo-sreg$out-seq (inputs-seq st data-size cnt-size n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       nil
@@ -997,43 +996,43 @@
          (data (sipo-sreg$data-out st))
          (seq (sipo-sreg$out-seq
                (cdr inputs-seq)
-               (sipo-sreg$step inputs st data-width cnt-width)
-               data-width
-               cnt-width
+               (sipo-sreg$step inputs st data-size cnt-size)
+               data-size
+               cnt-size
                (1- n))))
       (if (equal out-act t)
           (append seq (list data))
         seq))))
 
-(defun sipo-sreg$netlist-out-seq
-    (inputs-seq st netlist data-width n)
+(defun sipo-sreg$out-seq-netlist
+    (inputs-seq st netlist data-size n)
   (declare (xargs :measure (acl2-count n)))
   (if (zp n)
       nil
     (b* ((inputs (car inputs-seq))
-         (outputs (se (si 'sipo-sreg data-width)
+         (outputs (se (si 'sipo-sreg data-size)
                       inputs st netlist))
          (out-act (nth 1 outputs))
-         (data (take data-width (nthcdr 3 outputs)))
-         (seq (sipo-sreg$netlist-out-seq
+         (data (take data-size (nthcdr 3 outputs)))
+         (seq (sipo-sreg$out-seq-netlist
                (cdr inputs-seq)
-               (de (si 'sipo-sreg data-width)
+               (de (si 'sipo-sreg data-size)
                    inputs st netlist)
                netlist
-               data-width
+               data-size
                (1- n))))
       (if (equal out-act t)
           (append seq (list data))
         seq))))
 
 (defthm sipo-sreg$out-seq-lemma
-  (implies (and (sipo-sreg& netlist data-width cnt-width)
+  (implies (and (sipo-sreg& netlist data-size cnt-size)
                 (sipo-sreg$input-format-n inputs-seq n)
-                (sipo-sreg$st-format st data-width cnt-width))
-           (equal (sipo-sreg$netlist-out-seq
-                   inputs-seq st netlist data-width n)
+                (sipo-sreg$st-format st data-size cnt-size))
+           (equal (sipo-sreg$out-seq-netlist
+                   inputs-seq st netlist data-size n)
                   (sipo-sreg$out-seq
-                   inputs-seq st data-width cnt-width n)))
+                   inputs-seq st data-size cnt-size n)))
   :hints (("Goal" :in-theory (enable sipo-sreg$value-alt
                                      sipo-sreg$state-alt))))
 
@@ -1060,10 +1059,10 @@
 
   (local
    (defthm sipo-sreg$dataflow-correct-aux
-     (implies (and (sipo-sreg$valid-st st data-width cnt-width)
+     (implies (and (sipo-sreg$valid-st st data-size cnt-size)
                    (sipo-sreg$inv st)
                    (consp (sipo-sreg$extract st)))
-              (equal (pack-rev data-width
+              (equal (pack-rev data-size
                                (sipo-sreg$extract st))
                      (list (sipo-sreg$extract st))))
      :hints
@@ -1076,23 +1075,23 @@
   (defthmd sipo-sreg$dataflow-correct
     (b* ((extracted-st (sipo-sreg$extract st))
          (final-st (sipo-sreg$run
-                    inputs-seq st data-width cnt-width n))
+                    inputs-seq st data-size cnt-size n))
          (final-extracted-st (sipo-sreg$extract final-st)))
       (implies
        (and (sipo-sreg$input-format-n inputs-seq n)
-            (sipo-sreg$valid-st st data-width cnt-width)
+            (sipo-sreg$valid-st st data-size cnt-size)
             (sipo-sreg$inv st))
        (equal (append1 final-extracted-st
                        (sipo-sreg$out-seq
-                        inputs-seq st data-width cnt-width n))
+                        inputs-seq st data-size cnt-size n))
               (pack-rev
-               data-width
+               data-size
                (append extracted-st
                        (rev (sipo-sreg$in-seq
-                             inputs-seq st data-width cnt-width n)))))))
+                             inputs-seq st data-size cnt-size n)))))))
     :hints (("Goal"
              :induct (sipo-sreg$in-seq
-                      inputs-seq st data-width cnt-width n)
+                      inputs-seq st data-size cnt-size n)
              :in-theory (enable append1
                                 pack-rev
                                 sipo-sreg$valid-st=>constraint
@@ -1101,22 +1100,22 @@
 
   (defthmd sipo-sreg$functionally-correct
     (b* ((extracted-st (sipo-sreg$extract st))
-         (final-st (de-n (si 'sipo-sreg data-width)
+         (final-st (de-n (si 'sipo-sreg data-size)
                          inputs-seq st netlist n))
          (final-extracted-st (sipo-sreg$extract final-st)))
       (implies
-       (and (sipo-sreg& netlist data-width cnt-width)
+       (and (sipo-sreg& netlist data-size cnt-size)
             (sipo-sreg$input-format-n inputs-seq n)
-            (sipo-sreg$valid-st st data-width cnt-width)
+            (sipo-sreg$valid-st st data-size cnt-size)
             (sipo-sreg$inv st))
        (equal (append1 final-extracted-st
-                       (sipo-sreg$netlist-out-seq
-                        inputs-seq st netlist data-width n))
+                       (sipo-sreg$out-seq-netlist
+                        inputs-seq st netlist data-size n))
               (pack-rev
-               data-width
+               data-size
                (append extracted-st
-                       (rev (sipo-sreg$netlist-in-seq
-                             inputs-seq st netlist data-width n)))))))
+                       (rev (sipo-sreg$in-seq-netlist
+                             inputs-seq st netlist data-size n)))))))
     :hints (("Goal"
              :use sipo-sreg$dataflow-correct
              :in-theory (enable sipo-sreg$valid-st=>st-format

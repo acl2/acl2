@@ -33,27 +33,27 @@
 (defconst *alt-merge$go-num* 2)
 (defconst *alt-merge$st-len* 2)
 
-(defun alt-merge$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 3 (* 2 (mbe :logic (nfix data-width)
-                 :exec  data-width))))
+(defun alt-merge$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 3 (* 2 (mbe :logic (nfix data-size)
+                 :exec  data-size))))
 
-(defun alt-merge$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (alt-merge$data-ins-len data-width)
+(defun alt-merge$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (alt-merge$data-ins-len data-size)
      *alt-merge$go-num*))
 
 ;; DE module generator of ALT-MERGE
 
 (module-generator
- alt-merge* (data-width)
- (si 'alt-merge data-width)
+ alt-merge* (data-size)
+ (si 'alt-merge data-size)
  (list* 'full-in0 'full-in1 'empty-out-
-        (append (sis 'data0-in 0 data-width)
-                (sis 'data1-in 0 data-width)
+        (append (sis 'data0-in 0 data-size)
+                (sis 'data1-in 0 data-size)
                 (sis 'go 0 *alt-merge$go-num*)))
  (list* 'act 'act0 'act1
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(select select-buf)
  (list
   ;; LINKS
@@ -84,11 +84,11 @@
   '(alt-merge-cntl (act) b-or (act0 act1))
 
   (list 'alt-merge-op0
-        (sis 'data-out 0 data-width)
-        (si 'tv-if (tree-number (make-tree data-width)))
+        (sis 'data-out 0 data-size)
+        (si 'tv-if (tree-number (make-tree data-size)))
         (cons 'select-out
-              (append (sis 'data1-in 0 data-width)
-                      (sis 'data0-in 0 data-width))))
+              (append (sis 'data1-in 0 data-size)
+                      (sis 'data0-in 0 data-size))))
   '(alt-merge-op1 (select-buf-in) b-not (select-out))
 
   ;; Buffer
@@ -98,7 +98,7 @@
         (list 'select-buf-status 'select-status (si 'go 1)))
   '(buf-op (select-in) b-buf (select-buf-out)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -107,25 +107,25 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-MERGE.
 
-(defund alt-merge$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (alt-merge* data-width)
+(defund alt-merge$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (alt-merge* data-size)
         (union$ (link1$netlist)
                 *joint-cntl*
-                (tv-if$netlist (make-tree data-width))
+                (tv-if$netlist (make-tree data-size))
                 :test 'equal)))
 
 ;; Recognizer for ALT-MERGE
 
-(defund alt-merge& (netlist data-width)
+(defund alt-merge& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'alt-merge data-width) netlist)))
-    (and (equal (assoc (si 'alt-merge data-width) netlist)
-                (alt-merge* data-width))
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-merge data-size) netlist)))
+    (and (equal (assoc (si 'alt-merge data-size) netlist)
+                (alt-merge* data-size))
          (link1& subnetlist)
          (joint-cntl& subnetlist)
-         (tv-if& subnetlist (make-tree data-width)))))
+         (tv-if& subnetlist (make-tree data-size)))))
 
 ;; Sanity check
 
@@ -148,41 +148,41 @@
 (progn
   ;; Extract the 1st input data item
 
-  (defun alt-merge$data0-in (inputs data-width)
+  (defun alt-merge$data0-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 3 inputs)))
 
   (defthm len-alt-merge$data0-in
-    (equal (len (alt-merge$data0-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (alt-merge$data0-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable alt-merge$data0-in))
 
   ;; Extract the 2nd input data item
 
-  (defun alt-merge$data1-in (inputs data-width)
+  (defun alt-merge$data1-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (b* ((width (mbe :logic (nfix data-width)
-                     :exec  data-width)))
-      (take width
-            (nthcdr (+ 3 width) inputs))))
+                                (natp data-size))))
+    (b* ((size (mbe :logic (nfix data-size)
+                     :exec  data-size)))
+      (take size
+            (nthcdr (+ 3 size) inputs))))
 
   (defthm len-alt-merge$data1-in
-    (equal (len (alt-merge$data1-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (alt-merge$data1-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable alt-merge$data1-in))
 
   ;; Extract the "act0" signal
 
-  (defund alt-merge$act0 (inputs st data-width)
+  (defund alt-merge$act0 (inputs st data-size)
     (b* ((full-in0   (nth 0 inputs))
          (empty-out- (nth 2 inputs))
-         (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (alt-merge$data-ins-len data-size) inputs))
 
          (go-alt-merge (nth 0 go-signals))
 
@@ -200,15 +200,15 @@
   (defthm alt-merge$act0-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 2 inputs) t))
-             (not (alt-merge$act0 inputs st data-width)))
+             (not (alt-merge$act0 inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-and3 alt-merge$act0))))
 
   ;; Extract the "act1" signal
 
-  (defund alt-merge$act1 (inputs st data-width)
+  (defund alt-merge$act1 (inputs st data-size)
     (b* ((full-in1   (nth 1 inputs))
          (empty-out- (nth 2 inputs))
-         (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (alt-merge$data-ins-len data-size) inputs))
 
          (go-alt-merge (nth 0 go-signals))
 
@@ -226,20 +226,20 @@
   (defthm alt-merge$act1-inactive
     (implies (or (not (nth 1 inputs))
                  (equal (nth 2 inputs) t))
-             (not (alt-merge$act1 inputs st data-width)))
+             (not (alt-merge$act1 inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-and3 alt-merge$act1))))
 
   ;; Extract the "act" signal
 
-  (defund alt-merge$act (inputs st data-width)
-    (f-or (alt-merge$act0 inputs st data-width)
-          (alt-merge$act1 inputs st data-width)))
+  (defund alt-merge$act (inputs st data-size)
+    (f-or (alt-merge$act0 inputs st data-size)
+          (alt-merge$act1 inputs st data-size)))
 
   (defthm alt-merge$act-inactive
     (implies (or (and (not (nth 0 inputs))
                       (not (nth 1 inputs)))
                  (equal (nth 2 inputs) t))
-             (not (alt-merge$act inputs st data-width)))
+             (not (alt-merge$act inputs st data-size)))
     :hints (("Goal" :in-theory (enable alt-merge$act))))
   )
 
@@ -250,23 +250,23 @@
                       (append data0-in data1-in go-signals)))
        (select (get-field *alt-merge$select* st))
        (select.d (get-field *link1$d* select)))
-    (implies (and (posp data-width)
-                  (alt-merge& netlist data-width)
+    (implies (and (posp data-size)
+                  (alt-merge& netlist data-size)
                   (true-listp data0-in)
-                  (equal (len data0-in) data-width)
+                  (equal (len data0-in) data-size)
                   (true-listp data1-in)
-                  (equal (len data1-in) data-width)
+                  (equal (len data1-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *alt-merge$go-num*))
-             (equal (se (si 'alt-merge data-width) inputs st netlist)
-                    (list* (alt-merge$act inputs st data-width)
-                           (alt-merge$act0 inputs st data-width)
-                           (alt-merge$act1 inputs st data-width)
+             (equal (se (si 'alt-merge data-size) inputs st netlist)
+                    (list* (alt-merge$act inputs st data-size)
+                           (alt-merge$act0 inputs st data-size)
+                           (alt-merge$act1 inputs st data-size)
                            (fv-if (car select.d) data1-in data0-in)))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'alt-merge data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'alt-merge data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             alt-merge&
                             alt-merge*$destructure
@@ -277,8 +277,8 @@
 
 ;; This function specifies the next state of ALT-MERGE.
 
-(defun alt-merge$step (inputs st data-width)
-  (b* ((go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs))
+(defun alt-merge$step (inputs st data-size)
+  (b* ((go-signals (nthcdr (alt-merge$data-ins-len data-size) inputs))
 
        (go-buf (nth 1 go-signals))
 
@@ -289,7 +289,7 @@
        (select-buf.s (get-field *link1$s* select-buf))
        (select-buf.d (get-field *link1$d* select-buf))
 
-       (act (alt-merge$act inputs st data-width))
+       (act (alt-merge$act inputs st data-size))
        (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
 
        (select-inputs (list buf-act act (car select-buf.d)))
@@ -301,7 +301,7 @@
      (link1$step select-buf-inputs select-buf))))
 
 (defthm len-of-alt-merge$step
-  (equal (len (alt-merge$step inputs st data-width))
+  (equal (len (alt-merge$step inputs st data-size))
          *alt-merge$st-len*))
 
 ;; The state lemma for ALT-MERGE
@@ -309,17 +309,17 @@
 (defthm alt-merge$state
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals))))
-    (implies (and (alt-merge& netlist data-width)
-                  (equal (len data0-in) data-width)
-                  (equal (len data1-in) data-width)
+    (implies (and (alt-merge& netlist data-size)
+                  (equal (len data0-in) data-size)
+                  (equal (len data1-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *alt-merge$go-num*))
-             (equal (de (si 'alt-merge data-width) inputs st netlist)
-                    (alt-merge$step inputs st data-width))))
+             (equal (de (si 'alt-merge data-size) inputs st netlist)
+                    (alt-merge$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'alt-merge data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'alt-merge data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             alt-merge&
                             alt-merge*$destructure
@@ -336,15 +336,15 @@
 
 ;; Conditions on the inputs
 
-(defund alt-merge$input-format (inputs data-width)
+(defund alt-merge$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in0   (nth 0 inputs))
        (full-in1   (nth 1 inputs))
        (empty-out- (nth 2 inputs))
-       (data0-in   (alt-merge$data0-in inputs data-width))
-       (data1-in   (alt-merge$data1-in inputs data-width))
-       (go-signals (nthcdr (alt-merge$data-ins-len data-width) inputs)))
+       (data0-in   (alt-merge$data0-in inputs data-size))
+       (data1-in   (alt-merge$data1-in inputs data-size))
+       (go-signals (nthcdr (alt-merge$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in0)
      (booleanp full-in1)
@@ -358,9 +358,9 @@
                    (append data0-in data1-in go-signals))))))
 
 (defthm booleanp-alt-merge$act0
-  (implies (and (alt-merge$input-format inputs data-width)
+  (implies (and (alt-merge$input-format inputs data-size)
                 (alt-merge$valid-st st))
-           (booleanp (alt-merge$act0 inputs st data-width)))
+           (booleanp (alt-merge$act0 inputs st data-size)))
   :hints (("Goal" :in-theory (enable f-and3
                                      alt-merge$input-format
                                      alt-merge$valid-st
@@ -368,9 +368,9 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act1
-  (implies (and (alt-merge$input-format inputs data-width)
+  (implies (and (alt-merge$input-format inputs data-size)
                 (alt-merge$valid-st st))
-           (booleanp (alt-merge$act1 inputs st data-width)))
+           (booleanp (alt-merge$act1 inputs st data-size)))
   :hints (("Goal" :in-theory (enable f-and3
                                      alt-merge$input-format
                                      alt-merge$valid-st
@@ -378,16 +378,16 @@
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-merge$act
-  (implies (and (alt-merge$input-format inputs data-width)
+  (implies (and (alt-merge$input-format inputs data-size)
                 (alt-merge$valid-st st))
-           (booleanp (alt-merge$act inputs st data-width)))
+           (booleanp (alt-merge$act inputs st data-size)))
   :hints (("Goal" :in-theory (enable alt-merge$act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-merge$valid-st-preserved
-  (implies (and (alt-merge$input-format inputs data-width)
+  (implies (and (alt-merge$input-format inputs data-size)
                 (alt-merge$valid-st st))
-           (alt-merge$valid-st (alt-merge$step inputs st data-width)))
+           (alt-merge$valid-st (alt-merge$step inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr
@@ -410,10 +410,10 @@
     (not (equal select.s select-buf.s))))
 
 (defthm alt-merge$inv-preserved
-  (implies (and (alt-merge$input-format inputs data-width)
+  (implies (and (alt-merge$input-format inputs data-size)
                 (alt-merge$valid-st st)
                 (alt-merge$inv st))
-           (alt-merge$inv (alt-merge$step inputs st data-width)))
+           (alt-merge$inv (alt-merge$step inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr

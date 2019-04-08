@@ -152,17 +152,10 @@
        (mod (modr/m->mod modr/m))
 
        (p2 (prefixes->seg prefixes))
-       (p3? (equal #.*operand-size-override* (prefixes->opr prefixes)))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 2 8) operand-size)
-        (if (equal proc-mode #.*64-bit-mode*)
-            8 ; Intel manual, Mar'17, Volume 1, Section 6.3.7
-          (b* ((cs-attr (the (unsigned-byte 16) (xr :seg-hidden-attr #.*cs* x86)))
-               (cs.d (code-segment-descriptor-attributesBits->d cs-attr)))
-            (if (= cs.d 1)
-                (if p3? 2 4)
-              (if p3? 4 2)))))
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 

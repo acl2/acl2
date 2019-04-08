@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/numbered-names" :dir :system)
+(include-book "kestrel/utilities/system/numbered-names" :dir :system)
 (include-book "kestrel/utilities/symbol-true-list-alists" :dir :system)
-(include-book "kestrel/utilities/terms" :dir :system)
+(include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (include-book "def-error-checker")

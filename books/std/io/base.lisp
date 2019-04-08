@@ -35,30 +35,16 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "system/f-put-global" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/basic/bytep" :dir :system)
 (include-book "file-measure")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/revappend" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "std/strings/coerce" :dir :system))
 
-(defsection bytep
-
-  ;; This should probably be defined elsewhere.
-  ;;
-  ;; We leave this enabled since arithmetic theories probably shouldn't need to
-  ;; know about it.
-
-  (defun bytep (x)
-    (declare (xargs :guard t))
-    (mbe :logic (unsigned-byte-p 8 x)
-         :exec (and (natp x)
-                    (< x 256))))
-
-  (defthm bytep-compound-recognizer
-    (implies (bytep x)
-             (and (integerp x)
-                  (<= 0 x)))
-    :rule-classes :compound-recognizer))
+; We enable this since arithmetic theories probably shouldn't need to know
+; about it.
+(in-theory (enable bytep))
 
 ;; Various guard-related facts about IO functions.  BOZO maybe some of these
 ;; theorems should be local.

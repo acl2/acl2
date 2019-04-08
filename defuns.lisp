@@ -4489,7 +4489,12 @@
         ((eq (car name) 'lambda)
          (cond
           ((well-formed-lambda-objectp name wrld)
-           (value-cmp name))
+           (value-cmp
+
+; We call hons-copy here for the same reason that is given in
+; translate11-lambda-object.
+
+            (hons-copy name)))
           (t (er-cmp ctx
                      "~x0 is not a well-formed LAMBDA expression.  See :DOC ~
                       verify-guards."

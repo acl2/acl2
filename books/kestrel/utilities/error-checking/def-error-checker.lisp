@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/enumerations" :dir :system)
-(include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

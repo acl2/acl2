@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; February 2019
 
 (in-package "ADE")
 
@@ -86,8 +86,7 @@
    (implies (natp m)
             (equal (assoc-eq-values
                     (sis 'Q m n)
-                    (se-occ (latch-n-body m n)
-                            wire-alist st-alist netlist))
+                    (se-occ (latch-n-body m n) wire-alist st-alist netlist))
                    (fv-if (assoc-eq-value 'clk wire-alist)
                           (assoc-eq-values (sis 'D m n) wire-alist)
                           (strip-cars
@@ -103,12 +102,12 @@
 
 (defthm latch-n$value
   (implies (and (latch-n& netlist n)
-                (equal (len d) n)
-                (true-listp d)
+                (true-listp inputs)
+                (equal (len inputs) (1+ n))
                 (equal (len st) n)
                 (true-listp st))
-           (equal (se (si 'latch-n n) (list* clk d) st netlist)
-                  (fv-if clk d (strip-cars st))))
+           (equal (se (si 'latch-n n) inputs st netlist)
+                  (fv-if (car inputs) (cdr inputs) (strip-cars st))))
   :hints (("Goal"
            :expand (:free (inputs n)
                           (se (si 'latch-n n) inputs st netlist))
@@ -176,12 +175,12 @@
 
 (defthm latch-n$state
   (implies (and (latch-n& netlist n)
-                (equal (len d) n)
-                (true-listp d)
+                (true-listp inputs)
+                (equal (len inputs) (1+ n))
                 (equal (len st) n)
                 (true-listp st))
-           (equal (de (si 'latch-n n) (list* clk d) st netlist)
-                  (pairlis$ (fv-if clk d (strip-cars st))
+           (equal (de (si 'latch-n n) inputs st netlist)
+                  (pairlis$ (fv-if (car inputs) (cdr inputs) (strip-cars st))
                             nil)))
   :hints (("Goal"
            :expand (:free (inputs n)
@@ -203,7 +202,7 @@
     (cons
      (list (si 'G m)                   ; Occurrence name - G_m
            (list (si 'Q m) (si 'Q~ m)) ; Outputs (Q_m, Q~_m)
-           'FD1                        ; Type FD1
+           'FF                         ; Type FF
            (list 'CLK (si 'D m)))      ; Inputs
      (ff-n-body (1+ m) (1- n)))))
 
@@ -280,11 +279,11 @@
   (implies (and (ff-n& netlist n)
                 (equal (len st) n)
                 (true-listp st))
-           (equal (se (si 'ff-n n) ins st netlist)
+           (equal (se (si 'ff-n n) inputs st netlist)
                   (v-threefix (strip-cars st))))
   :hints (("Goal"
            :expand (:free (n)
-                          (se (si 'ff-n n) ins st netlist))
+                          (se (si 'ff-n n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              ff-n&
                              ff-n*$destructure)
@@ -349,12 +348,12 @@
 
 (defthm ff-n$state
   (implies (and (ff-n& netlist n)
-                (equal (len d) n)
-                (true-listp d)
+                (true-listp inputs)
+                (equal (len inputs) (1+ n))
                 (equal (len st) n)
                 (true-listp st))
-           (equal (de (si 'ff-n n) (list* clk d) st netlist)
-                  (pairlis$ (fv-if clk d (strip-cars st))
+           (equal (de (si 'ff-n n) inputs st netlist)
+                  (pairlis$ (fv-if (car inputs) (cdr inputs) (strip-cars st))
                             nil)))
   :hints (("Goal"
            :expand (:free (inputs n)

@@ -33,45 +33,45 @@
 (defconst *queue3$go-num* 4)
 (defconst *queue3$st-len* 3)
 
-(defun queue3$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 2 (mbe :logic (nfix data-width)
-            :exec  data-width)))
+(defun queue3$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 2 (mbe :logic (nfix data-size)
+            :exec  data-size)))
 
-(defun queue3$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (queue3$data-ins-len data-width)
+(defun queue3$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (queue3$data-ins-len data-size)
      *queue3$go-num*))
 
 ;; DE module generator of Q3
 
 (module-generator
- queue3* (data-width)
- (si 'queue3 data-width)
- (list* 'full-in 'empty-out- (append (sis 'data-in 0 data-width)
+ queue3* (data-size)
+ (si 'queue3 data-size)
+ (list* 'full-in 'empty-out- (append (sis 'data-in 0 data-size)
                                      (sis 'go 0 *queue3$go-num*)))
  (list* 'in-act 'out-act
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(l0 l1 l2)
  (list
   ;; LINKS
   ;; L0
   (list 'l0
-        (list* 'l0-status (sis 'd0-out 0 data-width))
-        (si 'link data-width)
-        (list* 'in-act 'trans1-act (sis 'd0-in 0 data-width)))
+        (list* 'l0-status (sis 'd0-out 0 data-size))
+        (si 'link data-size)
+        (list* 'in-act 'trans1-act (sis 'd0-in 0 data-size)))
 
   ;; L1
   (list 'l1
-        (list* 'l1-status (sis 'd1-out 0 data-width))
-        (si 'link data-width)
-        (list* 'trans1-act 'trans2-act (sis 'd1-in 0 data-width)))
+        (list* 'l1-status (sis 'd1-out 0 data-size))
+        (si 'link data-size)
+        (list* 'trans1-act 'trans2-act (sis 'd1-in 0 data-size)))
 
   ;; L2
   (list 'l2
-        (list* 'l2-status (sis 'd2-out 0 data-width))
-        (si 'link data-width)
-        (list* 'trans2-act 'out-act (sis 'd2-in 0 data-width)))
+        (list* 'l2-status (sis 'd2-out 0 data-size))
+        (si 'link data-size)
+        (list* 'trans2-act 'out-act (sis 'd2-in 0 data-size)))
 
   ;; JOINTS
   ;; In
@@ -80,29 +80,29 @@
         'joint-cntl
         (list 'full-in 'l0-status (si 'go 0)))
   (list 'in-op
-        (sis 'd0-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'data-in 0 data-width))
+        (sis 'd0-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'data-in 0 data-size))
 
-  ;; Transfer data1
+  ;; Transfer data from L0 to L1
   (list 'trans1-cntl
         '(trans1-act)
         'joint-cntl
         (list 'l0-status 'l1-status (si 'go 1)))
   (list 'trans1-op
-        (sis 'd1-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'd0-out 0 data-width))
+        (sis 'd1-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'd0-out 0 data-size))
 
-  ;; Transfer data2
+  ;; Transfer data from L1 to L2
   (list 'trans2-cntl
         '(trans2-act)
         'joint-cntl
         (list 'l1-status 'l2-status (si 'go 2)))
   (list 'trans2-op
-        (sis 'd2-in 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'd1-out 0 data-width))
+        (sis 'd2-in 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'd1-out 0 data-size))
 
   ;; Out
   (list 'out-cntl
@@ -110,11 +110,11 @@
         'joint-cntl
         (list 'l2-status 'empty-out- (si 'go 3)))
   (list 'out-op
-        (sis 'data-out 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'd2-out 0 data-width)))
+        (sis 'data-out 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'd2-out 0 data-size)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -122,25 +122,25 @@
 
 ;; DE netlist generator.  A generated netlist will contain an instance of Q3.
 
-(defund queue3$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (queue3* data-width)
-        (union$ (link$netlist data-width)
+(defund queue3$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (queue3* data-size)
+        (union$ (link$netlist data-size)
                 *joint-cntl*
-                (v-buf$netlist data-width)
+                (v-buf$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for Q3
 
-(defund queue3& (netlist data-width)
+(defund queue3& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'queue3 data-width) netlist)))
-    (and (equal (assoc (si 'queue3 data-width) netlist)
-                (queue3* data-width))
-         (link& subnetlist data-width)
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'queue3 data-size) netlist)))
+    (and (equal (assoc (si 'queue3 data-size) netlist)
+                (queue3* data-size))
+         (link& subnetlist data-size)
          (joint-cntl& subnetlist)
-         (v-buf& subnetlist data-width))))
+         (v-buf& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -152,37 +152,37 @@
 
 ;; Constraints on the state of Q3
 
-(defund queue3$st-format (st data-width)
+(defund queue3$st-format (st data-size)
   (b* ((l0 (get-field *queue3$l0* st))
        (l1 (get-field *queue3$l1* st))
        (l2 (get-field *queue3$l2* st)))
-    (and (link$st-format l0 data-width)
-         (link$st-format l1 data-width)
-         (link$st-format l2 data-width))))
+    (and (link$st-format l0 data-size)
+         (link$st-format l1 data-size)
+         (link$st-format l2 data-size))))
 
 (defthm queue3$st-format=>constraint
-  (implies (queue3$st-format st data-width)
-           (natp data-width))
+  (implies (queue3$st-format st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable queue3$st-format)))
   :rule-classes :forward-chaining)
 
-(defund queue3$valid-st (st data-width)
+(defund queue3$valid-st (st data-size)
   (b* ((l0 (get-field *queue3$l0* st))
        (l1 (get-field *queue3$l1* st))
        (l2 (get-field *queue3$l2* st)))
-    (and (link$valid-st l0 data-width)
-         (link$valid-st l1 data-width)
-         (link$valid-st l2 data-width))))
+    (and (link$valid-st l0 data-size)
+         (link$valid-st l1 data-size)
+         (link$valid-st l2 data-size))))
 
 (defthmd queue3$valid-st=>constraint
-  (implies (queue3$valid-st st data-width)
-           (natp data-width))
+  (implies (queue3$valid-st st data-size)
+           (natp data-size))
   :hints (("Goal" :in-theory (enable queue3$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd queue3$valid-st=>st-format
-  (implies (queue3$valid-st st data-width)
-           (queue3$st-format st data-width))
+  (implies (queue3$valid-st st data-size)
+           (queue3$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (queue3$st-format
                                    queue3$valid-st)
                                   (link$st-format)))))
@@ -192,24 +192,24 @@
 (progn
   ;; Extract the input data
 
-  (defun queue3$data-in (inputs data-width)
+  (defun queue3$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 2 inputs)))
 
   (defthm len-queue3$data-in
-    (equal (len (queue3$data-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (queue3$data-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable queue3$data-in))
 
   ;; Extract the "in-act" signal
 
-  (defund queue3$in-act (inputs st data-width)
+  (defund queue3$in-act (inputs st data-size)
     (b* ((full-in (nth 0 inputs))
-         (go-signals (nthcdr (queue3$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (queue3$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
 
          (l0 (get-field *queue3$l0* st))
@@ -218,14 +218,14 @@
 
   (defthm queue3$in-act-inactive
     (implies (not (nth 0 inputs))
-             (not (queue3$in-act inputs st data-width)))
+             (not (queue3$in-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable queue3$in-act))))
 
   ;; Extract the "out-act" signal
 
-  (defund queue3$out-act (inputs st data-width)
+  (defund queue3$out-act (inputs st data-size)
     (b* ((empty-out- (nth 1 inputs))
-         (go-signals (nthcdr (queue3$data-ins-len data-width) inputs))
+         (go-signals (nthcdr (queue3$data-ins-len data-size) inputs))
          (go-out (nth 3 go-signals))
 
          (l2 (get-field *queue3$l2* st))
@@ -234,7 +234,7 @@
 
   (defthm queue3$out-act-inactive
     (implies (equal (nth 1 inputs) t)
-             (not (queue3$out-act inputs st data-width)))
+             (not (queue3$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable queue3$out-act))))
 
   ;; Extract the output data
@@ -244,30 +244,30 @@
                                        (get-field *queue3$l2* st)))))
 
   (defthm len-queue3$data-out-1
-    (implies (queue3$st-format st data-width)
+    (implies (queue3$st-format st data-size)
              (equal (len (queue3$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable queue3$st-format
                                        queue3$data-out))))
 
   (defthm len-queue3$data-out-2
-    (implies (queue3$valid-st st data-width)
+    (implies (queue3$valid-st st data-size)
              (equal (len (queue3$data-out st))
-                    data-width))
+                    data-size))
     :hints (("Goal" :in-theory (enable queue3$valid-st
                                        queue3$data-out))))
 
   (defthm bvp-queue3$data-out
-    (implies (and (queue3$valid-st st data-width)
-                  (queue3$out-act inputs st data-width))
+    (implies (and (queue3$valid-st st data-size)
+                  (queue3$out-act inputs st data-size))
              (bvp (queue3$data-out st)))
     :hints (("Goal" :in-theory (enable queue3$valid-st
                                        queue3$out-act
                                        queue3$data-out))))
 
-  (defun queue3$outputs (inputs st data-width)
-    (list* (queue3$in-act inputs st data-width)
-           (queue3$out-act inputs st data-width)
+  (defun queue3$outputs (inputs st data-size)
+    (list* (queue3$in-act inputs st data-size)
+           (queue3$out-act inputs st data-size)
            (queue3$data-out st)))
   )
 
@@ -275,17 +275,17 @@
 
 (defthm queue3$value
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (queue3& netlist data-width)
-                  (equal (len data-in) data-width)
+    (implies (and (queue3& netlist data-size)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue3$go-num*)
-                  (queue3$st-format st data-width))
-             (equal (se (si 'queue3 data-width) inputs st netlist)
-                    (queue3$outputs inputs st data-width))))
+                  (queue3$st-format st data-size))
+             (equal (se (si 'queue3 data-size) inputs st netlist)
+                    (queue3$outputs inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'queue3 data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'queue3 data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             queue3&
                             queue3*$destructure
@@ -298,9 +298,9 @@
 ;; This function specifies the next state of Q3, namely, the next states of
 ;; three links L0, L1, and L2.
 
-(defun queue3$step (inputs st data-width)
-  (b* ((data-in    (queue3$data-in inputs data-width))
-       (go-signals (nthcdr (queue3$data-ins-len data-width) inputs))
+(defun queue3$step (inputs st data-size)
+  (b* ((data-in    (queue3$data-in inputs data-size))
+       (go-signals (nthcdr (queue3$data-ins-len data-size) inputs))
 
        (go-trans1 (nth 1 go-signals))
        (go-trans2 (nth 2 go-signals))
@@ -314,8 +314,8 @@
        (l2 (get-field *queue3$l2* st))
        (l2.s (get-field *link$s* l2))
 
-       (in-act (queue3$in-act inputs st data-width))
-       (out-act (queue3$out-act inputs st data-width))
+       (in-act (queue3$in-act inputs st data-size))
+       (out-act (queue3$out-act inputs st data-size))
        (trans1-act (joint-act (car l0.s) (car l1.s) go-trans1))
        (trans2-act (joint-act (car l1.s) (car l2.s) go-trans2))
 
@@ -324,32 +324,32 @@
        (l2-inputs (list* trans2-act out-act (strip-cars l1.d))))
     (list
      ;; L0
-     (link$step l0-inputs l0 data-width)
+     (link$step l0-inputs l0 data-size)
      ;; L1
-     (link$step l1-inputs l1 data-width)
+     (link$step l1-inputs l1 data-size)
      ;; L2
-     (link$step l2-inputs l2 data-width))))
+     (link$step l2-inputs l2 data-size))))
 
 (defthm len-of-queue3$step
-  (equal (len (queue3$step inputs st data-width))
+  (equal (len (queue3$step inputs st data-size))
          *queue3$st-len*))
 
 ;; The state lemma for Q3
 
 (defthm queue3$state
   (b* ((inputs (list* full-in empty-out- (append data-in go-signals))))
-    (implies (and (queue3& netlist data-width)
+    (implies (and (queue3& netlist data-size)
                   (true-listp data-in)
-                  (equal (len data-in) data-width)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *queue3$go-num*)
-                  (queue3$st-format st data-width))
-             (equal (de (si 'queue3 data-width) inputs st netlist)
-                    (queue3$step inputs st data-width))))
+                  (queue3$st-format st data-size))
+             (equal (de (si 'queue3 data-size) inputs st netlist)
+                    (queue3$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'queue3 data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'queue3 data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             queue3&
                             queue3*$destructure
@@ -367,13 +367,13 @@
 
 ;; Conditions on the inputs
 
-(defund queue3$input-format (inputs data-width)
+(defund queue3$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in    (nth 0 inputs))
        (empty-out- (nth 1 inputs))
-       (data-in    (queue3$data-in inputs data-width))
-       (go-signals (nthcdr (queue3$data-ins-len data-width) inputs)))
+       (data-in    (queue3$data-in inputs data-size))
+       (go-signals (nthcdr (queue3$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out-)
@@ -384,18 +384,18 @@
             (list* full-in empty-out- (append data-in go-signals))))))
 
 (defthm booleanp-queue3$in-act
-  (implies (and (queue3$input-format inputs data-width)
-                (queue3$valid-st st data-width))
-           (booleanp (queue3$in-act inputs st data-width)))
+  (implies (and (queue3$input-format inputs data-size)
+                (queue3$valid-st st data-size))
+           (booleanp (queue3$in-act inputs st data-size)))
   :hints (("Goal" :in-theory (enable queue3$input-format
                                      queue3$valid-st
                                      queue3$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue3$out-act
-  (implies (and (queue3$input-format inputs data-width)
-                (queue3$valid-st st data-width))
-           (booleanp (queue3$out-act inputs st data-width)))
+  (implies (and (queue3$input-format inputs data-size)
+                (queue3$valid-st st data-size))
+           (booleanp (queue3$out-act inputs st data-size)))
   :hints (("Goal" :in-theory (enable queue3$input-format
                                      queue3$valid-st
                                      queue3$out-act)))
@@ -417,8 +417,8 @@
     (extract-valid-data (list l0 l1 l2))))
 
 (defthm queue3$extract-not-empty
-  (implies (and (queue3$out-act inputs st data-width)
-                (queue3$valid-st st data-width))
+  (implies (and (queue3$out-act inputs st data-size)
+                (queue3$valid-st st data-size))
            (< 0 (len (queue3$extract st))))
   :hints (("Goal"
            :in-theory (e/d (queue3$valid-st
@@ -430,29 +430,29 @@
 ;; The extracted next-state function for Q3.  Note that this function avoids
 ;; exploring the internal computation of Q3.
 
-(defund queue3$extracted-step (inputs st data-width)
-  (b* ((data (queue3$data-in inputs data-width))
+(defund queue3$extracted-step (inputs st data-size)
+  (b* ((data (queue3$data-in inputs data-size))
        (extracted-st (queue3$extract st))
        (n (1- (len extracted-st))))
     (cond
-     ((equal (queue3$out-act inputs st data-width) t)
+     ((equal (queue3$out-act inputs st data-size) t)
       (cond
-       ((equal (queue3$in-act inputs st data-width) t)
+       ((equal (queue3$in-act inputs st data-size) t)
         (cons data (take n extracted-st)))
        (t (take n extracted-st))))
      (t (cond
-         ((equal (queue3$in-act inputs st data-width) t)
+         ((equal (queue3$in-act inputs st data-size) t)
           (cons data extracted-st))
          (t extracted-st))))))
 
 ;; The single-step-update property
 
 (defthm queue3$extracted-step-correct
-  (b* ((next-st (queue3$step inputs st data-width)))
-    (implies (and (queue3$input-format inputs data-width)
-                  (queue3$valid-st st data-width))
+  (b* ((next-st (queue3$step inputs st data-size)))
+    (implies (and (queue3$input-format inputs data-size)
+                  (queue3$valid-st st data-size))
              (equal (queue3$extract next-st)
-                    (queue3$extracted-step inputs st data-width))))
+                    (queue3$extracted-step inputs st data-size))))
   :hints (("Goal"
            :in-theory (enable get-field
                               f-sr
@@ -472,10 +472,10 @@
 ;; Prove that queue3$valid-st is an invariant.
 
 (defthm queue3$valid-st-preserved
-  (implies (and (queue3$input-format inputs data-width)
-                (queue3$valid-st st data-width))
-           (queue3$valid-st (queue3$step inputs st data-width)
-                            data-width))
+  (implies (and (queue3$input-format inputs data-size)
+                (queue3$valid-st st data-size))
+           (queue3$valid-st (queue3$step inputs st data-size)
+                            data-size))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             queue3$input-format
@@ -488,8 +488,8 @@
                            (nfix)))))
 
 (defthm queue3$extract-lemma
-  (implies (and (queue3$valid-st st data-width)
-                (queue3$out-act inputs st data-width))
+  (implies (and (queue3$valid-st st data-size)
+                (queue3$out-act inputs st data-size))
            (equal (list (queue3$data-out st))
                   (nthcdr (1- (len (queue3$extract st)))
                           (queue3$extract st))))
@@ -503,7 +503,7 @@
 ;; Extract the accepted input sequence
 
 (seq-gen queue3 in in-act 0
-         (queue3$data-in inputs data-width))
+         (queue3$data-in inputs data-size))
 
 ;; Extract the valid output sequence
 

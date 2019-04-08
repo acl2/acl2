@@ -44,13 +44,13 @@
 
 (defthm 1-bit-<$value
   (implies (1-bit-<& netlist)
-           (equal (se '1-bit-< (list ind-in flag-in a b) sts netlist)
+           (equal (se '1-bit-< (list ind-in flag-in a b) st netlist)
                   (list (f-or (f-and3 flag-in (f-not a) b)
                               ind-in)
                         (f-and (f-xnor a b) flag-in))))
   :hints (("Goal"
            :expand (:free (inputs)
-                          (se '1-bit-< inputs sts netlist))
+                          (se '1-bit-< inputs st netlist))
            :in-theory (enable de-rules 1-bit-<&))))
 
 ;; ======================================================================
@@ -227,7 +227,7 @@
         (net-arity-okp (v-<$netlist 64))
         (v-<& (v-<$netlist 64) 64))))
 
-(defun v-<-body-induct (m n wire-alist sts-alist netlist)
+(defun v-<-body-induct (m n wire-alist st-alist netlist)
   (if (zp n)
       wire-alist
     (v-<-body-induct
@@ -236,9 +236,9 @@
      (se-occ-bindings 1
                       (v-<-body m n)
                       wire-alist
-                      sts-alist
+                      st-alist
                       netlist)
-     sts-alist
+     st-alist
      netlist)))
 
 (local
@@ -252,7 +252,7 @@
             (equal (assoc-eq-value (si 'ind m+n)
                                    (se-occ (v-<-body m n)
                                            wire-alist
-                                           sts-alist
+                                           st-alist
                                            netlist))
                    (fv-<
                     (assoc-eq-value (si 'ind m) wire-alist)
@@ -265,7 +265,7 @@
                                sis)
             :induct (v-<-body-induct m n
                                      wire-alist
-                                     sts-alist
+                                     st-alist
                                      netlist)))))
 
 (local
@@ -276,7 +276,7 @@
             (equal (assoc-eq-value (si 'ind n)
                                    (se-occ (v-<-body 0 n)
                                            wire-alist
-                                           sts-alist
+                                           st-alist
                                            netlist))
                    (fv-<
                     (assoc-eq-value (si 'ind 0) wire-alist)
@@ -293,12 +293,12 @@
                 (equal (len b) n))
            (equal (se (si 'v-< n)
                       (append a b)
-                      sts
+                      st
                       netlist)
                   (list (fv-< nil t a b))))
   :hints (("Goal"
            :expand (:free (inputs n)
-                          (se (si 'v-< n) inputs sts netlist))
+                          (se (si 'v-< n) inputs st netlist))
            :in-theory (e/d* (de-rules
                              v-<&
                              v-<*$destructure)

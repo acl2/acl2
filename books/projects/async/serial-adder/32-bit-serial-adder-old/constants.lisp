@@ -10,7 +10,7 @@
 
 ;; ======================================================================
 
-(defconst *data-width* 32)
+(defconst *data-size* 32)
 
 (defconst *v1* (list t))
 (defconst *v000* (list nil nil nil))

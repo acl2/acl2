@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "core")
 

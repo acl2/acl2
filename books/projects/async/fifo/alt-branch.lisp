@@ -31,26 +31,26 @@
 (defconst *alt-branch$go-num* 2)
 (defconst *alt-branch$st-len* 2)
 
-(defun alt-branch$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 3 (mbe :logic (nfix data-width)
-            :exec  data-width)))
+(defun alt-branch$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 3 (mbe :logic (nfix data-size)
+            :exec  data-size)))
 
-(defun alt-branch$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (alt-branch$data-ins-len data-width)
+(defun alt-branch$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (alt-branch$data-ins-len data-size)
      *alt-branch$go-num*))
 
 ;; DE module generator of ALT-BRANCH
 
 (module-generator
- alt-branch* (data-width)
- (si 'alt-branch data-width)
+ alt-branch* (data-size)
+ (si 'alt-branch data-size)
  (list* 'full-in 'empty-out0- 'empty-out1-
-        (append (sis 'data-in 0 data-width)
+        (append (sis 'data-in 0 data-size)
                 (sis 'go 0 *alt-branch$go-num*)))
  (list* 'act 'act0 'act1
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  '(select select-buf)
  (list
   ;; LINKS
@@ -81,9 +81,9 @@
   '(alt-branch-cntl (act) b-or (act0 act1))
 
   (list 'alt-branch-op0
-        (sis 'data-out 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'data-in 0 data-width))
+        (sis 'data-out 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'data-in 0 data-size))
   '(alt-branch-op1 (select-buf-in) b-not (select-out))
 
   ;; Buffer
@@ -93,7 +93,7 @@
         (list 'select-buf-status 'select-status (si 'go 1)))
   '(buf-op (select-in) b-buf (select-buf-out)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
@@ -102,25 +102,25 @@
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; ALT-BRANCH.
 
-(defund alt-branch$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (alt-branch* data-width)
+(defund alt-branch$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (alt-branch* data-size)
         (union$ (link1$netlist)
                 *joint-cntl*
-                (v-buf$netlist data-width)
+                (v-buf$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for ALT-BRANCH
 
-(defund alt-branch& (netlist data-width)
+(defund alt-branch& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'alt-branch data-width) netlist)))
-    (and (equal (assoc (si 'alt-branch data-width) netlist)
-                (alt-branch* data-width))
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'alt-branch data-size) netlist)))
+    (and (equal (assoc (si 'alt-branch data-size) netlist)
+                (alt-branch* data-size))
          (link1& subnetlist)
          (joint-cntl& subnetlist)
-         (v-buf& subnetlist data-width))))
+         (v-buf& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -143,25 +143,25 @@
 (progn
   ;; Extract the input data
 
-  (defun alt-branch$data-in (inputs data-width)
+  (defun alt-branch$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 3 inputs)))
 
   (defthm len-alt-branch$data-in
-    (equal (len (alt-branch$data-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (alt-branch$data-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable alt-branch$data-in))
 
   ;; Extract the "act0" signal
 
-  (defund alt-branch$act0 (inputs st data-width)
+  (defund alt-branch$act0 (inputs st data-size)
     (b* ((full-in     (nth 0 inputs))
          (empty-out0- (nth 1 inputs))
-         (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (alt-branch$data-ins-len data-size) inputs))
 
          (go-alt-branch (nth 0 go-signals))
 
@@ -179,15 +179,15 @@
   (defthm alt-branch$act0-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 1 inputs) t))
-             (not (alt-branch$act0 inputs st data-width)))
+             (not (alt-branch$act0 inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-or3 alt-branch$act0))))
 
   ;; Extract the "act1" signal
 
-  (defund alt-branch$act1 (inputs st data-width)
+  (defund alt-branch$act1 (inputs st data-size)
     (b* ((full-in     (nth 0 inputs))
          (empty-out1- (nth 2 inputs))
-         (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (alt-branch$data-ins-len data-size) inputs))
 
          (go-alt-branch (nth 0 go-signals))
 
@@ -207,20 +207,20 @@
   (defthm alt-branch$act1-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 2 inputs) t))
-             (not (alt-branch$act1 inputs st data-width)))
+             (not (alt-branch$act1 inputs st data-size)))
     :hints (("Goal" :in-theory (enable f-or3 alt-branch$act1))))
 
   ;; Extract the "act" signal
 
-  (defund alt-branch$act (inputs st data-width)
-    (f-or (alt-branch$act0 inputs st data-width)
-          (alt-branch$act1 inputs st data-width)))
+  (defund alt-branch$act (inputs st data-size)
+    (f-or (alt-branch$act0 inputs st data-size)
+          (alt-branch$act1 inputs st data-size)))
 
   (defthm alt-branch$act-inactive
     (implies (or (not (nth 0 inputs))
                  (and (equal (nth 1 inputs) t)
                       (equal (nth 2 inputs) t)))
-             (not (alt-branch$act inputs st data-width)))
+             (not (alt-branch$act inputs st data-size)))
     :hints (("Goal" :in-theory (enable alt-branch$act))))
   )
 
@@ -229,20 +229,20 @@
 (defthm alt-branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
-    (implies (and (alt-branch& netlist data-width)
+    (implies (and (alt-branch& netlist data-size)
                   (true-listp data-in)
-                  (equal (len data-in) data-width)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *alt-branch$go-num*))
-             (equal (se (si 'alt-branch data-width) inputs st netlist)
-                    (list* (alt-branch$act inputs st data-width)
-                           (alt-branch$act0 inputs st data-width)
-                           (alt-branch$act1 inputs st data-width)
+             (equal (se (si 'alt-branch data-size) inputs st netlist)
+                    (list* (alt-branch$act inputs st data-size)
+                           (alt-branch$act0 inputs st data-size)
+                           (alt-branch$act1 inputs st data-size)
                            (v-threefix data-in)))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'alt-branch data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'alt-branch data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             alt-branch&
                             alt-branch*$destructure
@@ -253,8 +253,8 @@
 
 ;; This function specifies the next state of ALT-BRANCH.
 
-(defun alt-branch$step (inputs st data-width)
-  (b* ((go-signals (nthcdr (alt-branch$data-ins-len data-width) inputs))
+(defun alt-branch$step (inputs st data-size)
+  (b* ((go-signals (nthcdr (alt-branch$data-ins-len data-size) inputs))
 
        (go-buf (nth 1 go-signals))
 
@@ -265,7 +265,7 @@
        (select-buf.s (get-field *link1$s* select-buf))
        (select-buf.d (get-field *link1$d* select-buf))
 
-       (act (alt-branch$act inputs st data-width))
+       (act (alt-branch$act inputs st data-size))
        (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
 
        (select-inputs (list buf-act act (car select-buf.d)))
@@ -277,7 +277,7 @@
      (link1$step select-buf-inputs select-buf))))
 
 (defthm len-of-alt-branch$step
-  (equal (len (alt-branch$step inputs st data-width))
+  (equal (len (alt-branch$step inputs st data-size))
          *alt-branch$st-len*))
 
 ;; The state lemma for ALT-BRANCH
@@ -285,16 +285,16 @@
 (defthm alt-branch$state
   (b* ((inputs (list* full-in empty-out0- empty-out1-
                       (append data-in go-signals))))
-    (implies (and (alt-branch& netlist data-width)
-                  (equal (len data-in) data-width)
+    (implies (and (alt-branch& netlist data-size)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *alt-branch$go-num*))
-             (equal (de (si 'alt-branch data-width) inputs st netlist)
-                    (alt-branch$step inputs st data-width))))
+             (equal (de (si 'alt-branch data-size) inputs st netlist)
+                    (alt-branch$step inputs st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (de (si 'alt-branch data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (de (si 'alt-branch data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             alt-branch&
                             alt-branch*$destructure
@@ -311,14 +311,14 @@
 
 ;; Conditions on the inputs
 
-(defund alt-branch$input-format (inputs data-width)
+(defund alt-branch$input-format (inputs data-size)
   (declare (xargs :guard (and (true-listp inputs)
-                              (natp data-width))))
+                              (natp data-size))))
   (b* ((full-in     (nth 0 inputs))
        (empty-out0- (nth 1 inputs))
        (empty-out1- (nth 2 inputs))
-       (data-in     (alt-branch$data-in inputs data-width))
-       (go-signals  (nthcdr (alt-branch$data-ins-len data-width) inputs)))
+       (data-in     (alt-branch$data-in inputs data-size))
+       (go-signals  (nthcdr (alt-branch$data-ins-len data-size) inputs)))
     (and
      (booleanp full-in)
      (booleanp empty-out0-)
@@ -331,35 +331,35 @@
                    (append data-in go-signals))))))
 
 (defthm booleanp-alt-branch$act0
-  (implies (and (alt-branch$input-format inputs data-width)
+  (implies (and (alt-branch$input-format inputs data-size)
                 (alt-branch$valid-st st))
-           (booleanp (alt-branch$act0 inputs st data-width)))
+           (booleanp (alt-branch$act0 inputs st data-size)))
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act0)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act1
-  (implies (and (alt-branch$input-format inputs data-width)
+  (implies (and (alt-branch$input-format inputs data-size)
                 (alt-branch$valid-st st))
-           (booleanp (alt-branch$act1 inputs st data-width)))
+           (booleanp (alt-branch$act1 inputs st data-size)))
   :hints (("Goal" :in-theory (enable alt-branch$input-format
                                      alt-branch$valid-st
                                      alt-branch$act1)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-alt-branch$act
-  (implies (and (alt-branch$input-format inputs data-width)
+  (implies (and (alt-branch$input-format inputs data-size)
                 (alt-branch$valid-st st))
-           (booleanp (alt-branch$act inputs st data-width)))
+           (booleanp (alt-branch$act inputs st data-size)))
   :hints (("Goal" :in-theory (enable alt-branch$act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm alt-branch$valid-st-preserved
-  (implies (and (alt-branch$input-format inputs data-width)
+  (implies (and (alt-branch$input-format inputs data-size)
                 (alt-branch$valid-st st))
            (alt-branch$valid-st
-            (alt-branch$step inputs st data-width)))
+            (alt-branch$step inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr
@@ -381,10 +381,10 @@
     (not (equal select.s select-buf.s))))
 
 (defthm alt-branch$inv-preserved
-  (implies (and (alt-branch$input-format inputs data-width)
+  (implies (and (alt-branch$input-format inputs data-size)
                 (alt-branch$valid-st st)
                 (alt-branch$inv st))
-           (alt-branch$inv (alt-branch$step inputs st data-width)))
+           (alt-branch$inv (alt-branch$step inputs st data-size)))
   :hints (("Goal"
            :in-theory (e/d (get-field
                             f-sr

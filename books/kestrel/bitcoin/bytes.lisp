@@ -10,8 +10,8 @@
 
 (in-package "BITCOIN")
 
+(include-book "kestrel/fty/defbytelist" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
-(include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

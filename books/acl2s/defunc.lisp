@@ -294,7 +294,34 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ,@decls
                  ,(replace-in-term name fun-ind-name lbody)))
        (defun (if skip-admissibilityp `(skip-proofs ,defun) defun))
-       (defthm (if skip-admissibilityp 'defthmskip 'defthm)))
+       (defthm (if skip-admissibilityp 'defthmskip 'defthm))
+       (ind-defthm
+        `(,defthm ,ind-scheme-name
+           t
+           :rule-classes ((:induction :pattern ,(cons name formals)
+                                      :condition ,ic
+                                      :scheme ,(cons fun-ind-name formals)))))
+       (def-rule-conc
+         `(equal (,name ,@formals) ,ebody))
+       (def-rule-body
+         (if (equal ic t)
+             def-rule-conc
+           `(implies ,ic ,def-rule-conc)))
+       (def-rule
+         `(with-output
+           :stack :push :off :all
+           (make-event
+            (let ((controller-alist (acl2::controller-alist ',name (w state))))
+              `(with-output
+                :stack :pop 
+                (,',defthm ,(make-sym ',name 'definition-rule)
+                  ,',def-rule-body
+                  :hints (("Goal" :use ,',name :in-theory nil))
+                  :rule-classes ((:definition
+                                  ,@(if ,recursivep
+                                        `(:controller-alist
+                                          ((,',name ,@controller-alist)))
+                                      nil))))))))))
     (append
 
 ; Submit a function to get an induction scheme?
@@ -312,29 +339,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 ; Induction scheme
      (and recursivep
-          `((,defthm ,ind-scheme-name
-              t
-              :rule-classes ((:induction :pattern ,(cons name formals)
-                                         :condition ,ic
-                                         :scheme ,(cons fun-ind-name formals))))))
+          `(,ind-defthm))
 
 ; Definitional Rule
 ; Can use skip-proofs here, but this should be fast     
-     `((with-output :stack :push :off :all
-         (make-event
-          (let ((controller-alist (acl2::controller-alist ',name (w state))))
-            `(with-output
-              :stack :pop
-              (,',defthm ,(make-sym ',name 'definition-rule)
-                (implies ,',ic
-                         (equal ,(cons ',name ',formals)
-                                ,',ebody))
-                :hints (("Goal" :use ,',name :in-theory nil))
-                :rule-classes ((:definition
-                                ,@(if ,recursivep
-                                      `(:controller-alist
-                                        ((,',name ,@controller-alist)))
-                                    nil)))))))))
+     `(,def-rule)
      ;; The controller-alist argument above is useful when
      ;; we use CCG analysis or an explicit measure. We
      ;; should use whatever controller-alist we used for the

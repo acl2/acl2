@@ -12,8 +12,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/event-forms" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
+(include-book "kestrel/utilities/system/world-queries" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

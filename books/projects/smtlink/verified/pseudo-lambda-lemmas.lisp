@@ -7,7 +7,7 @@
 
 (in-package "SMT")
 ;; for lambda expression
-(include-book "kestrel/utilities/terms" :dir :system)
+(include-book "kestrel/utilities/system/terms" :dir :system)
 
 (encapsulate ()
   (local (in-theory (enable pseudo-lambdap)))

@@ -10,7 +10,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/top" :dir :system)
 ;; for lambda expression
-(include-book "kestrel/utilities/terms" :dir :system)
+(include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 
 (include-book "../../verified/extractor")

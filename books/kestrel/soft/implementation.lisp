@@ -10,10 +10,10 @@
 
 (in-package "SOFT")
 
-(include-book "kestrel/utilities/defchoose-queries" :dir :system)
-(include-book "kestrel/utilities/defun-sk-queries" :dir :system)
+(include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
+(include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "kestrel/utilities/event-forms" :dir :system)
+(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/symbol-symbol-alists" :dir :system)

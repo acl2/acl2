@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; January 2019
 
 (in-package "ADE")
 
@@ -15,41 +15,41 @@
 ;; DE Module Generator of COUNTER
 
 (module-generator
- counter* (data-width)
- (si 'counter data-width)
- (sis 'data-in 0 data-width)
- (sis 'data-out 0 data-width)
+ counter* (data-size)
+ (si 'counter data-size)
+ (sis 'data-in 0 data-size)
+ (sis 'data-out 0 data-size)
  ()
  (list
   '(g0 (low) vss ())
   '(g1 (high) vdd ())
   (list 'sub-1
-        (sis 'data-out 0 (1+ data-width))
-        (si 'ripple-sub data-width)
-        (append (sis 'data-in 0 data-width)
+        (sis 'data-out 0 (1+ data-size))
+        (si 'ripple-sub data-size)
+        (append (sis 'data-in 0 data-size)
                 (cons 'high
-                      (make-list (1- data-width)
+                      (make-list (1- data-size)
                                  :initial-element 'low)))))
- (declare (xargs :guard (posp data-width))))
+ (declare (xargs :guard (posp data-size))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; COUNTER.
 
-(defund counter$netlist (data-width)
-  (declare (xargs :guard (posp data-width)))
-  (cons (counter* data-width)
-        (union$ (ripple-sub$netlist data-width)
+(defund counter$netlist (data-size)
+  (declare (xargs :guard (posp data-size)))
+  (cons (counter* data-size)
+        (union$ (ripple-sub$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for COUNTER
 
-(defund counter& (netlist data-width)
+(defund counter& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (posp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'counter data-width) netlist)))
-    (and (equal (assoc (si 'counter data-width) netlist)
-                (counter* data-width))
-         (ripple-sub& subnetlist data-width))))
+                              (posp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'counter data-size) netlist)))
+    (and (equal (assoc (si 'counter data-size) netlist)
+                (counter* data-size))
+         (ripple-sub& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -63,21 +63,21 @@
 
 (defthm counter$value
   (implies
-   (and (posp data-width)
-        (counter& netlist data-width)
+   (and (posp data-size)
+        (counter& netlist data-size)
         (true-listp inputs)
-        (equal (len inputs) data-width))
-   (equal (se (si 'counter data-width) inputs st netlist)
-          (take data-width
-                (fv-adder t
-                          inputs
-                          (fv-not
-                           (cons t (make-list (1- data-width))))))))
+        (equal (len inputs) data-size))
+   (equal (se (si 'counter data-size) inputs st netlist)
+          (fv-adder-output t
+                           inputs
+                           (fv-not
+                            (cons t (make-list (1- data-size)))))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (data-width)
-                          (se (si 'counter data-width) inputs st netlist))
+           :expand (:free (data-size)
+                          (se (si 'counter data-size) inputs st netlist))
            :in-theory (e/d (de-rules
+                            fv-adder-output
                             counter&
                             counter*$destructure)
                            (de-module-disabled-rules)))))
@@ -95,11 +95,10 @@
                 (< 0 (v-to-nat a))
                 (bvp a))
            (equal (v-to-nat
-                   (take n
-                         (v-adder t
-                                  a
-                                  (v-not
-                                   (cons t (repeat (1- n) nil))))))
+                   (v-adder-output t
+                                   a
+                                   (v-not
+                                    (cons t (repeat (1- n) nil)))))
                   (1- (v-to-nat a)))))
 
 

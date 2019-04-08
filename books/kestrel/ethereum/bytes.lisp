@@ -10,8 +10,8 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/deflist-of-len" :dir :system)
-(include-book "kestrel/utilities/fixbytes/defbytelist" :dir :system)
+(include-book "kestrel/fty/defbytelist" :dir :system)
+(include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -48,7 +48,7 @@
 ; ("list-defuns") would be redundant and hence its rules would remain disabled.
 
 ; (include-book "names") ; for increment-name-suffix-safe
-(include-book "kestrel/utilities/numbered-names" :dir :system)
+(include-book "kestrel/utilities/system/numbered-names" :dir :system)
 ; (include-book "../utilities/runes") ; for drop-fake-runes
 (include-book "runes") ; for drop-fake-runes
 ;(include-book "utilities") ; drop?
@@ -56,7 +56,7 @@
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "misc/expander" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "kestrel/utilities/world-queries" :dir :system)
+(include-book "kestrel/utilities/system/world-queries" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/copy-def" :dir :system) ; includes tools/flag
 ; (include-book "utilities/process-keyword-args")

@@ -18,26 +18,26 @@
 
 (defconst *branch$go-num* 1)
 
-(defun branch$data-ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ 4 (mbe :logic (nfix data-width)
-            :exec  data-width)))
+(defun branch$data-ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ 4 (mbe :logic (nfix data-size)
+            :exec  data-size)))
 
-(defun branch$ins-len (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (+ (branch$data-ins-len data-width)
+(defun branch$ins-len (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (+ (branch$data-ins-len data-size)
      *branch$go-num*))
 
 ;; DE module generator of BRANCH
 
 (module-generator
- branch* (data-width)
- (si 'branch data-width)
+ branch* (data-size)
+ (si 'branch data-size)
  (list* 'full-in 'empty-out0- 'empty-out1- 'select
-        (append (sis 'data-in 0 data-width)
+        (append (sis 'data-in 0 data-size)
                 (sis 'go 0 *branch$go-num*)))
  (list* 'act 'act0 'act1
-        (sis 'data-out 0 data-width))
+        (sis 'data-out 0 data-size))
  ()
  (list
   '(g0 (select~) b-not (select))
@@ -54,32 +54,32 @@
   '(branch-cntl (act) b-or (act0 act1))
 
   (list 'branch-op
-        (sis 'data-out 0 data-width)
-        (si 'v-buf data-width)
-        (sis 'data-in 0 data-width)))
+        (sis 'data-out 0 data-size)
+        (si 'v-buf data-size)
+        (sis 'data-in 0 data-size)))
 
- (declare (xargs :guard (natp data-width))))
+ (declare (xargs :guard (natp data-size))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; BRANCH.
 
-(defund branch$netlist (data-width)
-  (declare (xargs :guard (natp data-width)))
-  (cons (branch* data-width)
-        (union$ (v-buf$netlist data-width)
+(defund branch$netlist (data-size)
+  (declare (xargs :guard (natp data-size)))
+  (cons (branch* data-size)
+        (union$ (v-buf$netlist data-size)
                 *joint-cntl*
                 :test 'equal)))
 
 ;; Recognizer for BRANCH
 
-(defund branch& (netlist data-width)
+(defund branch& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
-                              (natp data-width))))
-  (b* ((subnetlist (delete-to-eq (si 'branch data-width) netlist)))
-    (and (equal (assoc (si 'branch data-width) netlist)
-                (branch* data-width))
+                              (natp data-size))))
+  (b* ((subnetlist (delete-to-eq (si 'branch data-size) netlist)))
+    (and (equal (assoc (si 'branch data-size) netlist)
+                (branch* data-size))
          (joint-cntl& subnetlist)
-         (v-buf& subnetlist data-width))))
+         (v-buf& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -94,26 +94,26 @@
 (progn
   ;; Extract the input data
 
-  (defun branch$data-in (inputs data-width)
+  (defun branch$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
-                                (natp data-width))))
-    (take (mbe :logic (nfix data-width)
-               :exec  data-width)
+                                (natp data-size))))
+    (take (mbe :logic (nfix data-size)
+               :exec  data-size)
           (nthcdr 4 inputs)))
 
   (defthm len-branch$data-in
-    (equal (len (branch$data-in inputs data-width))
-           (nfix data-width)))
+    (equal (len (branch$data-in inputs data-size))
+           (nfix data-size)))
 
   (in-theory (disable branch$data-in))
 
   ;; Extract the "act0" signal
 
-  (defund branch$act0 (inputs data-width)
+  (defund branch$act0 (inputs data-size)
     (b* ((full-in     (nth 0 inputs))
          (empty-out0- (nth 1 inputs))
          (select      (nth 3 inputs))
-         (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (branch$data-ins-len data-size) inputs))
 
          (go-branch (nth 0 go-signals))
 
@@ -124,16 +124,16 @@
   (defthm branch$act0-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 1 inputs) t))
-             (not (branch$act0 inputs data-width)))
+             (not (branch$act0 inputs data-size)))
     :hints (("Goal" :in-theory (enable branch$act0))))
 
   ;; Extract the "act1" signal
 
-  (defund branch$act1 (inputs data-width)
+  (defund branch$act1 (inputs data-size)
     (b* ((full-in     (nth 0 inputs))
          (empty-out1- (nth 2 inputs))
          (select      (nth 3 inputs))
-         (go-signals  (nthcdr (branch$data-ins-len data-width) inputs))
+         (go-signals  (nthcdr (branch$data-ins-len data-size) inputs))
 
          (go-branch (nth 0 go-signals))
 
@@ -144,20 +144,20 @@
   (defthm branch$act1-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 2 inputs) t))
-             (not (branch$act1 inputs data-width)))
+             (not (branch$act1 inputs data-size)))
     :hints (("Goal" :in-theory (enable branch$act1))))
 
   ;; Extract the "act" signal
 
-  (defund branch$act (inputs data-width)
-    (f-or (branch$act0 inputs data-width)
-          (branch$act1 inputs data-width)))
+  (defund branch$act (inputs data-size)
+    (f-or (branch$act0 inputs data-size)
+          (branch$act1 inputs data-size)))
 
   (defthm branch$act-inactive
     (implies (or (not (nth 0 inputs))
                  (and (equal (nth 1 inputs) t)
                       (equal (nth 2 inputs) t)))
-             (not (branch$act inputs data-width)))
+             (not (branch$act inputs data-size)))
     :hints (("Goal" :in-theory (enable branch$act))))
   )
 
@@ -166,20 +166,20 @@
 (defthm branch$value
   (b* ((inputs (list* full-in empty-out0- empty-out1- select
                       (append data-in go-signals))))
-    (implies (and (branch& netlist data-width)
+    (implies (and (branch& netlist data-size)
                   (true-listp data-in)
-                  (equal (len data-in) data-width)
+                  (equal (len data-in) data-size)
                   (true-listp go-signals)
                   (equal (len go-signals) *branch$go-num*))
-             (equal (se (si 'branch data-width) inputs st netlist)
-                    (list* (branch$act inputs data-width)
-                           (branch$act0 inputs data-width)
-                           (branch$act1 inputs data-width)
+             (equal (se (si 'branch data-size) inputs st netlist)
+                    (list* (branch$act inputs data-size)
+                           (branch$act0 inputs data-size)
+                           (branch$act1 inputs data-size)
                            (v-threefix data-in)))))
   :hints (("Goal"
            :do-not-induct t
-           :expand (:free (inputs data-width)
-                          (se (si 'branch data-width) inputs st netlist))
+           :expand (:free (inputs data-size)
+                          (se (si 'branch data-size) inputs st netlist))
            :in-theory (e/d (de-rules
                             branch&
                             branch*$destructure

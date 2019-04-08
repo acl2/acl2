@@ -116,20 +116,20 @@
 
 (defun define-next-state-1 (state-table)
   (b* ((state-names (strip-cars state-table))
-       (next-sts (add-prefix-to-names "NEXT-" state-names))
-       (unwinded-next-sts (unwind-next-sts state-table))
-       (spec (compute-next-sts state-names unwinded-next-sts)))
+       (next-st (add-prefix-to-names "NEXT-" state-names))
+       (unwinded-next-st (unwind-next-st state-table))
+       (spec (compute-next-st state-names unwinded-next-st)))
     `((defun next-state (decoded-state)
         (declare (xargs :guard (true-listp decoded-state)))
         (b* ,(append (bind-values state-names 0 'decoded-state)
                      spec)
-          (list ,@next-sts)))
+          (list ,@next-st)))
 
       (defun f$next-state (decoded-state)
         (declare (xargs :guard (true-listp decoded-state)))
         (b* ,(append (bind-values state-names 0 'decoded-state)
                      (b-to-f spec))
-          (list ,@next-sts)))
+          (list ,@next-st)))
 
       (defthm f$next-state=next-state
         (implies (bvp decoded-state)
@@ -145,7 +145,7 @@
         (list
          'next-state
          (sis 's 0 32)
-         ',next-sts
+         ',next-st
          ()
          (append (list ,@(wire-occs state-names 's 0))
                  ',(fn-to-module-body 0 (flatten-binding 'x 0 spec t)))))

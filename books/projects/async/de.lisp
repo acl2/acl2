@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; January 2019
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
@@ -45,21 +45,21 @@
 
 ;; This has to be connected to SE and DE below!!!
 
-(defun primp-call-syntaxp (fn ins sts)
+(defun primp-call-syntaxp (fn ins st)
   (declare (xargs :guard t))
   (and (symbolp fn)
        (primp fn)
        (true-listp ins)
-       (true-listp sts)))
+       (true-listp st)))
 
-(defun primp-call-arityp (fn ins sts)
-  (declare (xargs :guard (primp-call-syntaxp fn ins sts)))
+(defun primp-call-arityp (fn ins st)
+  (declare (xargs :guard (primp-call-syntaxp fn ins st)))
   (and (= (primp-ins fn) (len ins))
-       (= (primp-sts fn) (len sts))))
+       (= (primp-st fn) (len st))))
 
-(defun se-primp-apply (fn ins sts)
-  (declare (xargs :guard (and (primp-call-syntaxp fn ins sts)
-                              (primp-call-arityp  fn ins sts))))
+(defun se-primp-apply (fn ins st)
+  (declare (xargs :guard (and (primp-call-syntaxp fn ins st)
+                              (primp-call-arityp  fn ins st))))
   (case fn
     (b-and       (list (f-and  (car ins) (cadr ins))))
     (b-and3      (list (f-and3 (car ins) (cadr ins) (caddr ins))))
@@ -111,18 +111,18 @@
     (b-xnor      (list (f-xnor (car ins) (cadr ins))))
     (b-xor       (list (f-xor  (car ins) (cadr ins))))
 
-    (fd1         (list (f-buf (car sts))
-                       (f-not (car sts))))
+    (ff          (list (f-buf (car st))
+                       (f-not (car st))))
     (latch       (list (f-if (car ins)
                              (cadr ins)
-                             (car sts))
+                             (car st))
                        (f-if (car ins)
                              (f-not (cadr ins))
-                             (f-not (car sts)))))
+                             (f-not (car st)))))
 
     ;; LINK-CNTL is a new primitive for modeling self-timed modules using the
     ;; link-joint model.
-    (link-cntl   (list (f-buf (car sts))))
+    (link-cntl   (list (f-buf (car st))))
 
     (pullup      (list (f-pullup (car ins))))
     (t-buf       (list (ft-buf (car ins) (cadr ins))))
@@ -133,49 +133,48 @@
 
     (otherwise   nil)))
 
-(defun de-primp-apply (fn ins sts)
-  (declare (xargs :guard (and (primp-call-syntaxp fn ins sts)
-                              (primp-call-arityp  fn ins sts))))
+(defun de-primp-apply (fn ins st)
+  (declare (xargs :guard (and (primp-call-syntaxp fn ins st)
+                              (primp-call-arityp  fn ins st))))
   (case fn
-    (fd1       (list (f-if (car ins) (cadr ins) (car sts))))
-    (latch     (list (f-if (car ins) (cadr ins) (car sts))))
+    (ff        (list (f-if (car ins) (cadr ins) (car st))))
+    (latch     (list (f-if (car ins) (cadr ins) (car st))))
 
     ;; LINK-CNTL is a new primitive for modeling self-timed modules using the
     ;; link-joint model.
-    (link-cntl (list (f-sr (car ins) (cadr ins) (car sts))))
+    (link-cntl (list (f-sr (car ins) (cadr ins) (car st))))
 
     (otherwise nil)))
 
-(defun len-se-primp-apply (fn ins sts)
+(defun len-se-primp-apply (fn ins st)
   (declare (xargs :guard t)
-           (ignore ins sts))
+           (ignore ins st))
   (case fn
-    ((fd1 latch) 2)
-    (otherwise   1)))
+    ((ff latch) 2)
+    (otherwise  1)))
 
-(defun len-de-primp-apply (fn ins sts)
+(defun len-de-primp-apply (fn ins st)
   (declare (xargs :guard (true-listp ins))
-           (ignore ins sts))
+           (ignore ins st))
   (case fn
-    ((fd1 latch link-cntl) 1)
-    (otherwise             0)))
+    ((ff latch link-cntl) 1)
+    (otherwise            0)))
 
 (defthm len-de-primp-apply-lemma
-  (equal (len (de-primp-apply fn ins sts))
-         (len-de-primp-apply fn ins sts)))
+  (equal (len (de-primp-apply fn ins st))
+         (len-de-primp-apply fn ins st)))
 
 (in-theory (disable se-primp-apply de-primp-apply))
 
-; We now define the DE language.  This is a derivative from the
-; DUAL-EVAL language.  The DE language is designed to be simple,
-; suitable for teaching, and for performing experiments.
+; We now define the DE language.  This is a derivative from the DUAL-EVAL
+; language.  The DE language is designed to be simple, suitable for teaching,
+; and for performing experiments.
 
-; A module is the representation of a non-primitive FSM.  It is
-; composed of five elements: name, inputs, outputs, states, and
-; occurrences.  Each occurrence is itself composed of four pieces:
-; name, outputs, primitive or module reference, and inputs.  The
-; following macros are the destructor operations for accessing the
-; various pieces of a module.
+; A module is the representation of a non-primitive FSM.  It is composed of
+; five elements: name, inputs, outputs, states, and occurrences.  Each
+; occurrence is itself composed of four pieces: name, outputs, primitive or
+; module reference, and inputs.  The following macros are the destructor
+; operations for accessing the various pieces of a module.
 
 (deflabel md-accessors-defuns-section)
 
@@ -191,7 +190,7 @@
   (declare (xargs :guard (consp-n x 3)))
   (caddr x))
 
-(defun-inline md-sts    (x)
+(defun-inline md-st    (x)
   (declare (xargs :guard (consp-n x 4)))
   (cadddr x))
 
@@ -258,7 +257,7 @@
        (let ((md-name  (md-name  module))
              (md-ins   (md-ins   module))
              (md-outs  (md-outs  module))
-             (md-sts   (md-sts   module))
+             (md-st    (md-st   module))
              (md-occs  (md-occs  module)))
          (and
           (symbolp           md-name)
@@ -275,10 +274,10 @@
           (occs-syntax-okp   md-occs)
           (no-duplicatesp-eq (strip-cars md-occs))
           ;; States
-          (symbol-listp      md-sts)
-          (no-duplicatesp-eq md-sts)
+          (symbol-listp      md-st)
+          (no-duplicatesp-eq md-st)
           ;; State names subset of Occurrence names
-          (subsetp md-sts (strip-cars md-occs))
+          (subsetp md-st (strip-cars md-occs))
           ))))
 
 (defun net-syntax-okp (netlist)
@@ -315,12 +314,12 @@
 		(atom (assoc-eq fn netlist)))
            (equal (assoc-eq fn netlist) nil)))
 
-(defthm symbol-listp-md-of-ins-outs-and-sts
+(defthm symbol-listp-md-of-ins-outs-and-st
   (implies (and (net-syntax-okp netlist)
                 (consp (assoc-equal fn netlist)))
            (and (symbol-listp (md-ins (assoc-equal fn netlist)))
                 (symbol-listp (md-outs (assoc-equal fn netlist)))
-                (symbol-listp (md-sts (assoc-eq fn netlist)))))
+                (symbol-listp (md-st (assoc-eq fn netlist)))))
   :hints (("Goal" :induct (assoc-equal fn netlist))))
 
 (defthm net-syntax-okp->module-syntax-okp
@@ -330,9 +329,9 @@
   :hints (("Goal" :in-theory (disable module-syntax-okp)))
   :rule-classes (:rewrite :type-prescription))
 
-; Facts that would be expensive to have around because of the function
-; symbols involved on the left-hand side, so we globaly disable them
-; and enable them when appropriate.
+; Facts that would be expensive to have around because of the function symbols
+; involved on the left-hand side, so we globaly disable them and enable them
+; when appropriate.
 
 (defthmd consp-assoc-eq-fn-of-non-empty-netlist
   (implies (and (net-syntax-okp netlist)
@@ -384,10 +383,10 @@
     (let* ((module      (car netlist))
            (cdr-netlist (cdr netlist))
            (md-name     (md-name module)))
-      (and (not (assoc-eq md-name cdr-netlist))  ; No self-referential modules
-           (net-arity-okp cdr-netlist)           ; Check all inferior modules
-           (occs-arity-okp (md-occs module)      ; For each occurrence, check
-                           cdr-netlist)))))      ; its arity
+      (and (not (assoc-eq md-name cdr-netlist)) ; No self-referential modules
+           (net-arity-okp cdr-netlist)          ; Check all inferior modules
+           (occs-arity-okp (md-occs module)     ; For each occurrence, check
+                           cdr-netlist)))))     ; its arity
 
 (in-theory (disable occ-accessors-defuns md-accessors-defuns))
 
@@ -426,11 +425,11 @@
 
 ; The measure function for the DE recursions.
 
-(defun se-measure (fn-or-occurs netlist)
+(defun se-measure (fn-or-occs netlist)
   (declare (xargs :guard t))
   (make-ord (1+ (len netlist))
             1
-            (acl2-count fn-or-occurs)))
+            (acl2-count fn-or-occs)))
 
 (defthm acl2-count-of-occs-fn-car-occs
   (implies (consp (double-rewrite occs))
@@ -439,32 +438,31 @@
   :hints (("Goal" :in-theory (enable occ-fn)))
   :rule-classes (:rewrite :linear))
 
-(defun sts-okp-guard (fn sts)
+(defun st-okp-guard (fn st)
   (declare (xargs :guard t))
    (and (symbolp fn)
-        (true-listp sts)))
+        (true-listp st)))
 
-(defun sts-occs-okp-guard (occs sts-alist netlist)
+(defun st-occs-okp-guard (occs st-alist netlist)
   (declare (xargs :guard (net-syntax-okp netlist)))
-  (and (symbol-alistp sts-alist)
+  (and (symbol-alistp st-alist)
        (occs-syntax-okp occs)
        (occs-arity-okp occs netlist)
        (no-duplicatesp-eq (strip-cars occs))
-       ;;What about adding (no-duplicatesp-eq (strip-cars sts-alist)) ?
+       ;;What about adding (no-duplicatesp-eq (strip-cars st-alist)) ?
        ))
 
-; The STS-OKP and STS-OCC-OKP functions check structure of state
-; argument.  These functions are intended to make assure that the STS
-; argument is "isomorphic" to the way it will be destructured by the
-; SE, SE-OCC interpreter.
+; The ST-OKP and ST-OCC-OKP functions check structure of state argument.  These
+; functions are intended to make assure that the ST argument is "isomorphic" to
+; the way it will be destructured by the SE, SE-OCC interpreter.
 
 (mutual-recursion
 
- (defun sts-okp (fn sts netlist)
+ (defun st-okp (fn st netlist)
    (declare (xargs :measure (se-measure fn netlist)
                    :guard (and (net-syntax-okp netlist)
                                (net-arity-okp netlist)
-                               (sts-okp-guard fn sts))
+                               (st-okp-guard fn st))
                    :guard-hints
                    (("Goal"
                      :use net-syntax-okp->module-syntax-okp
@@ -473,73 +471,71 @@
                                          symbol-alistp
                                          symbol-listp)))))
    (if (primp fn)
-       (= (primp-sts fn) (len sts))
+       (= (primp-st fn) (len st))
      (let ((module (assoc-eq fn netlist)))
        (if (atom module)
            nil
-         (let* ((md-sts     (md-sts   module))
-                (md-occs    (md-occs  module))
-                (sts-alist  (pairlis$ md-sts sts)))
-           (and (= (len md-sts) (len sts))
-                (sts-occs-okp md-occs sts-alist
+         (let* ((md-st    (md-st   module))
+                (md-occs  (md-occs  module))
+                (st-alist (pairlis$ md-st st)))
+           (and (= (len md-st) (len st))
+                (st-occs-okp md-occs st-alist
                               (delete-to-eq fn netlist))))))))
 
- (defun sts-occs-okp (occs sts-alist netlist)
+ (defun st-occs-okp (occs st-alist netlist)
    (declare (xargs :measure (se-measure occs netlist)
                    :guard (and (net-syntax-okp netlist)
                                (net-arity-okp netlist)
-                               (sts-occs-okp-guard occs sts-alist netlist))))
+                               (st-occs-okp-guard occs st-alist netlist))))
    (if (atom occs)
        t
-     (let* ((occur    (car occs))
-            (occ-name (occ-name occur))
-            (occ-fn   (occ-fn   occur))
-            (sts      (assoc-eq-value occ-name sts-alist)))
-       (and (true-listp sts)
-            (sts-okp occ-fn sts netlist)
-            (sts-occs-okp (cdr occs) sts-alist netlist))))))
+     (let* ((occ      (car occs))
+            (occ-name (occ-name occ))
+            (occ-fn   (occ-fn   occ))
+            (st       (assoc-eq-value occ-name st-alist)))
+       (and (true-listp st)
+            (st-okp occ-fn st netlist)
+            (st-occs-okp (cdr occs) st-alist netlist))))))
 
-(defthm sts-occs-okp-update-alist
+(defthm st-occs-okp-update-alist
   (implies (not (member occ-name (strip-cars occs)))
-           (equal (sts-occs-okp occs
-                         (update-alist occ-name sts sts-alist)
-                         netlist)
-                  (sts-occs-okp occs sts-alist netlist)))
+           (equal (st-occs-okp occs
+                               (update-alist occ-name st st-alist)
+                               netlist)
+                  (st-occs-okp occs st-alist netlist)))
   :hints (("Goal"
            :in-theory (enable occ-name))
           ("Subgoal *1/3"
-           :expand (sts-occs-okp occs
-                                 (update-alist occ-name sts sts-alist)
-                                 netlist))))
+           :expand (st-occs-okp occs
+                                (update-alist occ-name st st-alist)
+                                netlist))))
 
 
 ;                              DE
 
-; This is an attempt to define the DE interpreter which is similar in
-; spirit to the NQTHM version of DUAL-EVAL language.  We define the DE
-; syntax recognizer and the DE semantic interpreter.  The DE language
-; recognizer is actually a litany of recognizers, each of which futher
-; constrain the language.
+; This is an attempt to define the DE interpreter which is similar in spirit to
+; the NQTHM version of DUAL-EVAL language.  We define the DE syntax recognizer
+; and the DE semantic interpreter.  The DE language recognizer is actually a
+; litany of recognizers, each of which futher constrain the language.
 
-; This DE language is designed to represent FSMs, thus the primitives
-; are themselves FSMs.  To evaluate a module requires its inputs and
-; its state (combinational-only modules do not have a state).  We
-; require a module to have at least one input or one output.
+; This DE language is designed to represent FSMs, thus the primitives are
+; themselves FSMs.  To evaluate a module requires its inputs and its state
+; (combinational-only modules do not have a state).  We require a module to
+; have at least one input or one output.
 
-; The name DUAL-EVAL is derived from the fact that DUAL-EVAL (DE)
-; requires two inputs (the current inputs and state), produces two
-; outputs (the outputs and the next state), and it requires two passes
-; to compute the result.  We actually define two pairs of mutually
-; recursive functions: SE (Single Eval) and DE (Dual-Eval).  SE
-; computes the "wire" values for a module, and DE computes the next
-; state value after calling SE to get the wire values.
+; The name DUAL-EVAL is derived from the fact that DUAL-EVAL (DE) requires two
+; inputs (the current inputs and state), produces two outputs (the outputs and
+; the next state), and it requires two passes to compute the result.  We
+; actually define two pairs of mutually recursive functions: SE (Single Eval)
+; and DE (Dual-Eval).  SE computes the "wire" values for a module, and DE
+; computes the next state value after calling SE to get the wire values.
 
 
 (defun se-ins-guard (fn ins netlist)
   (declare (xargs :guard (net-syntax-okp netlist)
                   :guard-hints
                   (("Goal" :in-theory (e/d (consp-assoc-eq-fn-of-non-empty-netlist)
-                                           (md-occs md-sts))))))
+                                           (md-occs md-st))))))
   (and (symbolp fn)
        (true-listp ins)
        ;; Check form of top-level INS argument
@@ -550,20 +546,20 @@
                     (len ins))
            nil))))
 
-(defun se-guard (fn ins sts netlist)
+(defun se-guard (fn ins st netlist)
   (declare (xargs :guard t))
   (and (net-syntax-okp netlist)
        (net-arity-okp netlist)
-       (sts-okp-guard fn sts)
-       (sts-okp fn sts netlist)
+       (st-okp-guard fn st)
+       (st-okp fn st netlist)
        (se-ins-guard fn ins netlist)))
 
-(defun se-occ-guard (occs wire-alist sts-alist netlist)
+(defun se-occ-guard (occs wire-alist st-alist netlist)
   (declare (xargs :guard t))
   (and (net-syntax-okp netlist)
        (net-arity-okp netlist)
-       (sts-occs-okp-guard occs sts-alist netlist)
-       (sts-occs-okp occs sts-alist netlist)
+       (st-occs-okp-guard occs st-alist netlist)
+       (st-occs-okp occs st-alist netlist)
        ;; Check form of WIRE-ALIST
        (symbol-alistp wire-alist)
        ;; Likely need to know that WIRE-ALIST has values for all inputs
@@ -571,134 +567,133 @@
 
 (mutual-recursion
 
- (defun se (fn ins sts netlist)
+ (defun se (fn ins st netlist)
    (declare (xargs :measure (se-measure fn netlist)
-                   :guard (se-guard fn ins sts netlist)
+                   :guard (se-guard fn ins st netlist)
                    :verify-guards nil))
    (if (primp fn)
-       (se-primp-apply fn ins sts)
+       (se-primp-apply fn ins st)
      (let ((module (assoc-eq fn netlist)))
        (if (atom module)
            nil
          (let* ((md-ins     (md-ins   module))
                 (md-outs    (md-outs  module))
-                (md-sts     (md-sts   module))
+                (md-st      (md-st    module))
                 (md-occs    (md-occs  module))
                 (wire-alist (pairlis$ md-ins ins))
-                (sts-alist  (pairlis$ md-sts sts)))
+                (st-alist   (pairlis$ md-st st)))
            (assoc-eq-values
             md-outs
-            (se-occ md-occs wire-alist sts-alist
+            (se-occ md-occs wire-alist st-alist
                     (delete-to-eq fn netlist))))))))
 
- (defun se-occ (occs wire-alist sts-alist netlist)
+ (defun se-occ (occs wire-alist st-alist netlist)
    (declare (xargs :measure (se-measure occs netlist)
-                   :guard (se-occ-guard occs wire-alist sts-alist netlist)
+                   :guard (se-occ-guard occs wire-alist st-alist netlist)
                    :verify-guards nil))
    (if (atom occs)
        wire-alist
-     (let* ((occur     (car occs))
-            (occ-name  (occ-name occur))
-            (occ-outs  (occ-outs occur))
-            (occ-fn    (occ-fn   occur))
-            (occ-ins   (occ-ins  occur))
-            (ins       (assoc-eq-values occ-ins wire-alist))
-            (sts       (assoc-eq-value  occ-name sts-alist))
-            (new-vals  (se occ-fn ins sts netlist))
+     (let* ((occ       (car occs))
+            (occ-name  (occ-name occ))
+            (occ-outs  (occ-outs occ))
+            (occ-fn    (occ-fn   occ))
+            (occ-ins   (occ-ins  occ))
+            (ins       (assoc-eq-values occ-ins  wire-alist))
+            (st        (assoc-eq-value  occ-name st-alist))
+            (new-vals  (se occ-fn ins st netlist))
             (new-alist (pairlis$ occ-outs new-vals))
-            (new-wire-alist
-             (append new-alist wire-alist)))
-       (se-occ (cdr occs) new-wire-alist sts-alist netlist)))))
+            (new-wire-alist (append new-alist wire-alist)))
+       (se-occ (cdr occs) new-wire-alist st-alist netlist)))))
 
 (mutual-recursion
 
- (defun de (fn ins sts netlist)
+ (defun de (fn ins st netlist)
    (declare (xargs :measure (se-measure fn netlist)
-                   :guard (se-guard fn ins sts netlist)
+                   :guard (se-guard fn ins st netlist)
                    :verify-guards nil))
    (if (primp fn)
-       (de-primp-apply fn ins sts)
+       (de-primp-apply fn ins st)
      (let ((module (assoc-eq fn netlist)))
        (if (atom module)
            nil
          (let* ((md-ins      (md-ins   module))
-                (md-sts      (md-sts   module))
+                (md-st       (md-st    module))
                 (md-occs     (md-occs  module))
                 (wire-alist  (pairlis$ md-ins ins))
-                (sts-alist   (pairlis$ md-sts sts))
+                (st-alist    (pairlis$ md-st st))
                 (new-netlist (delete-to-eq fn netlist)))
            (assoc-eq-values
-            md-sts
+            md-st
             (de-occ md-occs
-                    (se-occ md-occs wire-alist sts-alist new-netlist)
-                    sts-alist new-netlist)))))))
+                    (se-occ md-occs wire-alist st-alist new-netlist)
+                    st-alist
+                    new-netlist)))))))
 
- (defun de-occ (occs wire-alist sts-alist netlist)
+ (defun de-occ (occs wire-alist st-alist netlist)
    (declare (xargs :measure (se-measure occs netlist)
-                   :guard (se-occ-guard occs wire-alist sts-alist netlist)
+                   :guard (se-occ-guard occs wire-alist st-alist netlist)
                    :verify-guards nil))
    (if (atom occs)
-       sts-alist
-     (let* ((occur    (car occs))
-            (occ-name (occ-name occur))
-            (occ-fn   (occ-fn   occur))
-            (occ-ins  (occ-ins  occur))
+       st-alist
+     (let* ((occ      (car occs))
+            (occ-name (occ-name occ))
+            (occ-fn   (occ-fn   occ))
+            (occ-ins  (occ-ins  occ))
             (ins      (assoc-eq-values occ-ins  wire-alist))
-            (sts-pair (assoc-eq        occ-name sts-alist))
-            (sts      (mbe :logic (assoc-eq-value occ-name sts-alist)
-                           :exec  (cdr sts-pair)))
-            (new-sts-alist
+            (st-pair  (assoc-eq        occ-name st-alist))
+            (st       (mbe :logic (assoc-eq-value occ-name st-alist)
+                           :exec  (cdr st-pair)))
+            (new-st-alist
              (mbe :logic (update-alist occ-name
-                                       (de occ-fn ins sts netlist)
-                                       sts-alist)
-                  :exec (if (atom sts-pair)
-                            sts-alist
-                          (update-alist occ-name
-                                        (de occ-fn ins sts netlist)
-                                        sts-alist)))))
-       (de-occ (cdr occs) wire-alist new-sts-alist netlist)))))
+                                       (de occ-fn ins st netlist)
+                                       st-alist)
+                  :exec  (if (atom st-pair)
+                             st-alist
+                           (update-alist occ-name
+                                         (de occ-fn ins st netlist)
+                                         st-alist)))))
+       (de-occ (cdr occs) wire-alist new-st-alist netlist)))))
 
 ; se lemmas
 
 (defthmd open-se
   (and
    (implies (primp fn)
-            (equal (se fn ins sts netlist)
-                   (se-primp-apply fn ins sts)))
+            (equal (se fn ins st netlist)
+                   (se-primp-apply fn ins st)))
    (implies (not (primp fn))
-            (equal (se fn ins sts netlist)
+            (equal (se fn ins st netlist)
                    (let ((module (assoc-eq fn netlist)))
                      (if (atom module)
                          nil
                        (let* ((md-ins (md-ins module))
                               (md-outs (md-outs module))
-                              (md-sts (md-sts module))
+                              (md-st (md-st module))
                               (md-occs (md-occs module))
                               (wire-alist (pairlis$ md-ins ins))
-                              (sts-alist (pairlis$ md-sts sts)))
+                              (st-alist (pairlis$ md-st st)))
                          (assoc-eq-values
                           md-outs
-                          (se-occ md-occs wire-alist sts-alist
+                          (se-occ md-occs wire-alist st-alist
                                   (delete-to-eq fn netlist))))))))))
 
-(defun se-occ-induct (occs wire-alist sts-alist netlist)
-  ;; Need this because "induction machine" for SE-OCC is involved with
-  ;; a mutual recursion; this definition is stand alone.
-  (declare (ignorable sts-alist netlist))
+(defun se-occ-induct (occs wire-alist st-alist netlist)
+  ;; Need this because "induction machine" for SE-OCC is involved with a mutual
+  ;; recursion; this definition is stand alone.
+  (declare (ignorable st-alist netlist))
   (if (atom occs)
       wire-alist
-    (let* ((occur     (car occs))
-           (occ-name  (occ-name occur))
-           (occ-outs  (occ-outs occur))
-           (occ-fn    (occ-fn   occur))
-           (occ-ins   (occ-ins  occur))
+    (let* ((occ       (car occs))
+           (occ-name  (occ-name occ))
+           (occ-outs  (occ-outs occ))
+           (occ-fn    (occ-fn   occ))
+           (occ-ins   (occ-ins  occ))
            (ins       (assoc-eq-values occ-ins  wire-alist))
-           (sts       (assoc-eq-value  occ-name sts-alist))
-           (new-vals  (se occ-fn ins sts netlist))
+           (st        (assoc-eq-value  occ-name st-alist))
+           (new-vals  (se occ-fn ins st netlist))
            (new-alist (pairlis$ occ-outs new-vals))
-           (new-wire-alist
-            (append new-alist wire-alist)))
-      (se-occ-induct (cdr occs) new-wire-alist sts-alist netlist))))
+           (new-wire-alist (append new-alist wire-alist)))
+      (se-occ-induct (cdr occs) new-wire-alist st-alist netlist))))
 
 (encapsulate
  ()
@@ -724,11 +719,11 @@
  (defthm symbol-alistp-se-occ
    (implies (and (symbol-alistp wire-alist)
                  (occs-syntax-okp occs))
-            (and (alistp (se-occ occs wire-alist sts-alist netlist))
-                 (symbol-alistp (se-occ occs wire-alist sts-alist netlist))))
+            (and (alistp (se-occ occs wire-alist st-alist netlist))
+                 (symbol-alistp (se-occ occs wire-alist st-alist netlist))))
    :hints
    (("Goal"
-     :induct (se-occ-induct occs wire-alist sts-alist netlist)
+     :induct (se-occ-induct occs wire-alist st-alist netlist)
      :in-theory (disable symbol-alistp occ-outs
                          occ-arity-okp occs-arity-okp)))))
 
@@ -795,15 +790,15 @@
          (b-xnor      (list (f-xnor (car ins) (cadr ins))))
          (b-xor       (list (f-xor  (car ins) (cadr ins))))
 
-         (fd1         (list (f-buf (car sts))
-                            (f-not (car sts))))
+         (ff          (list (f-buf (car st))
+                            (f-not (car st))))
          (latch       (list (f-if (car ins)
                                   (cadr ins)
-                                  (car sts))
+                                  (car st))
                             (f-if (car ins)
                                   (f-not (cadr ins))
-                                  (f-not (car sts)))))
-         (link-cntl   (list (f-buf (car sts))))
+                                  (f-not (car st)))))
+         (link-cntl   (list (f-buf (car st))))
 
          (pullup      (list (f-pullup (car ins))))
          (t-buf       (list (ft-buf (car ins) (cadr ins))))
@@ -816,47 +811,48 @@
 
 (defthmd open-de
   (and
-   (implies (primp fn)
-            (equal (de fn ins sts netlist)
-                   (de-primp-apply fn ins sts)))
-   (implies (not (primp fn))
-            (equal (de fn ins sts netlist)
-                   (let ((module (assoc-eq fn netlist)))
-                     (if (atom module)
-                         nil
-                       (let* ((md-ins      (md-ins   module))
-                              (md-sts      (md-sts   module))
-                              (md-occs     (md-occs  module))
-                              (wire-alist  (pairlis$ md-ins ins))
-                              (sts-alist   (pairlis$ md-sts sts))
-                              (new-netlist (delete-to-eq fn netlist)))
-                         (assoc-eq-values
-                          md-sts
-                          (de-occ md-occs
-                                  (se-occ md-occs wire-alist sts-alist
-                                          new-netlist)
-                                  sts-alist new-netlist)))))))))
+   (implies
+    (primp fn)
+    (equal (de fn ins st netlist)
+           (de-primp-apply fn ins st)))
+   (implies
+    (not (primp fn))
+    (equal (de fn ins st netlist)
+           (let ((module (assoc-eq fn netlist)))
+             (if (atom module)
+                 nil
+               (let* ((md-ins      (md-ins   module))
+                      (md-st       (md-st    module))
+                      (md-occs     (md-occs  module))
+                      (wire-alist  (pairlis$ md-ins ins))
+                      (st-alist    (pairlis$ md-st st))
+                      (new-netlist (delete-to-eq fn netlist)))
+                 (assoc-eq-values
+                  md-st
+                  (de-occ md-occs
+                          (se-occ md-occs wire-alist st-alist new-netlist)
+                          st-alist
+                          new-netlist)))))))))
 
-(defun de-occ-induct (occs wire-alist sts-alist netlist)
+(defun de-occ-induct (occs wire-alist st-alist netlist)
   (declare (xargs :guard (and (symbol-alistp wire-alist)
                               ;; Using :guard to make formals relevant.
-                              (symbol-alistp sts-alist)
+                              (symbol-alistp st-alist)
                               (symbol-alistp netlist))
                   :verify-guards nil))
   (if (atom occs)
-      sts-alist
-    (let* ((occur    (car occs))
-           (occ-name (occ-name occur))
-           (occ-fn   (occ-fn   occur))
-           (occ-ins  (occ-ins  occur))
+      st-alist
+    (let* ((occ      (car occs))
+           (occ-name (occ-name occ))
+           (occ-fn   (occ-fn   occ))
+           (occ-ins  (occ-ins  occ))
            (ins      (assoc-eq-values occ-ins  wire-alist))
-           (sts      (assoc-eq-value  occ-name sts-alist))
-           (new-sts-alist
+           (st       (assoc-eq-value  occ-name st-alist))
+           (new-st-alist
             (update-alist occ-name
-                          (de occ-fn ins sts netlist)
-                          sts-alist)))
-      (de-occ-induct (cdr occs) wire-alist new-sts-alist
-                     netlist))))
+                          (de occ-fn ins st netlist)
+                          st-alist)))
+      (de-occ-induct (cdr occs) wire-alist new-st-alist netlist))))
 
 (encapsulate
  ()
@@ -880,15 +876,13 @@
 
  (defthm symbol-alistp-de-occ
    (implies (and (symbol-alistp wire-alist)
-                 (symbol-alistp sts-alist)
+                 (symbol-alistp st-alist)
                  (occs-syntax-okp occs))
-            (and (alistp (de-occ occs wire-alist sts-alist
-                                 netlist))
-                 (symbol-alistp (de-occ occs wire-alist sts-alist
-                                        netlist))))
+            (and (alistp (de-occ occs wire-alist st-alist netlist))
+                 (symbol-alistp (de-occ occs wire-alist st-alist netlist))))
    :hints
    (("Goal"
-     :induct (de-occ-induct occs wire-alist sts-alist netlist)
+     :induct (de-occ-induct occs wire-alist st-alist netlist)
      :expand (occs-syntax-okp occs)
      :in-theory (e/d (occ-name)
                      (occ-outs symbol-alistp
@@ -909,9 +903,9 @@
  `(progn
     ,@(primitives-lemmas-gen
        'de
-       '((fd1       (list (f-if (car ins) (cadr ins) (car sts))))
-         (latch     (list (f-if (car ins) (cadr ins) (car sts))))
-         (link-cntl (list (f-sr (car ins) (cadr ins) (car sts))))))))
+       '((ff        (list (f-if (car ins) (cadr ins) (car st))))
+         (latch     (list (f-if (car ins) (cadr ins) (car st))))
+         (link-cntl (list (f-sr (car ins) (cadr ins) (car st))))))))
 
 ;; ======================================================================
 
@@ -966,48 +960,48 @@
 
 (in-theory (disable se-occ-bindings))
 
-(defun de-occ-bindings (n occs wire-alist sts-alist netlist)
+(defun de-occ-bindings (n occs wire-alist st-alist netlist)
   (if (zp n)
-      sts-alist
-    (b* ((occur    (car occs))
-         (occ-name (occ-name occur))
-         (occ-fn   (occ-fn   occur))
-         (occ-ins  (occ-ins  occur))
+      st-alist
+    (b* ((occ      (car occs))
+         (occ-name (occ-name occ))
+         (occ-fn   (occ-fn   occ))
+         (occ-ins  (occ-ins  occ))
          (ins      (assoc-eq-values occ-ins  wire-alist))
-         (sts      (assoc-eq-value  occ-name sts-alist))
-         (new-sts-alist
+         (st       (assoc-eq-value  occ-name st-alist))
+         (new-st-alist
           (update-alist occ-name
-                        (de occ-fn ins sts netlist)
-                        sts-alist)))
+                        (de occ-fn ins st netlist)
+                        st-alist)))
       (de-occ-bindings
        (1- n)
        (cdr occs)
        wire-alist
-       new-sts-alist
+       new-st-alist
        netlist))))
 
 (defthm open-de-occ-bindings
   (and
    (implies (zp n)
-            (equal (de-occ-bindings n occs wire-alist sts-alist netlist)
-                   sts-alist))
+            (equal (de-occ-bindings n occs wire-alist st-alist netlist)
+                   st-alist))
    (implies (not (zp n))
-            (equal (de-occ-bindings n occs wire-alist sts-alist netlist)
-                   (b* ((occur    (car occs))
-                        (occ-name (occ-name occur))
-                        (occ-fn   (occ-fn   occur))
-                        (occ-ins  (occ-ins  occur))
+            (equal (de-occ-bindings n occs wire-alist st-alist netlist)
+                   (b* ((occ      (car occs))
+                        (occ-name (occ-name occ))
+                        (occ-fn   (occ-fn   occ))
+                        (occ-ins  (occ-ins  occ))
                         (ins      (assoc-eq-values occ-ins  wire-alist))
-                        (sts      (assoc-eq-value  occ-name sts-alist))
-                        (new-sts-alist
+                        (st       (assoc-eq-value  occ-name st-alist))
+                        (new-st-alist
                          (update-alist occ-name
-                                       (de occ-fn ins sts netlist)
-                                       sts-alist)))
+                                       (de occ-fn ins st netlist)
+                                       st-alist)))
                      (de-occ-bindings
                       (1- n)
                       (cdr occs)
                       wire-alist
-                      new-sts-alist
+                      new-st-alist
                       netlist))))))
 
 (in-theory (disable de-occ-bindings))
@@ -1015,67 +1009,67 @@
 ;; ======================================================================
 
 (defthm len-de
-  (implies (se-guard fn ins sts netlist)
-           (equal (len (de fn ins sts netlist))
+  (implies (se-guard fn ins st netlist)
+           (equal (len (de fn ins st netlist))
                   (if (primp fn)
-                      (len-de-primp-apply fn ins sts)
+                      (len-de-primp-apply fn ins st)
                     (if (assoc-eq fn netlist)
-                        (len (md-sts (assoc-eq fn netlist)))
+                        (len (md-st (assoc-eq fn netlist)))
                       0))))
   :hints
   (("Goal"
     :do-not-induct t
-    :expand (de fn ins sts netlist))))
+    :expand (de fn ins st netlist))))
 
-(defthm sts-okp-de-primp-apply
+(defthm st-okp-de-primp-apply
   (implies (and (primp fn)
-                (se-guard fn ins sts netlist))
-           (sts-okp fn (de-primp-apply fn ins sts) netlist))
+                (se-guard fn ins st netlist))
+           (st-okp fn (de-primp-apply fn ins st) netlist))
   :hints
-  (("Goal" :in-theory (enable de-primp-apply primp-sts primp))))
+  (("Goal" :in-theory (enable de-primp-apply primp-st primp))))
 
 (defthm se-guard-de-primp-apply
   (implies (and (primp fn)
-                (se-guard fn ins sts netlist))
-           (se-guard fn ins (de-primp-apply fn ins sts) netlist))
+                (se-guard fn ins st netlist))
+           (se-guard fn ins (de-primp-apply fn ins st) netlist))
   :hints
-  (("Goal" :in-theory (enable de-primp-apply primp-sts primp))))
+  (("Goal" :in-theory (enable de-primp-apply primp-st primp))))
 
 (defthm assoc-eq-value-de-occ
   (implies (not (member name (strip-cars occs)))
            (equal (assoc-eq-value name
                                   (de-occ occs
                                           wire-alist
-                                          sts-alist
+                                          st-alist
                                           netlist))
-                  (assoc-eq-value name sts-alist)))
+                  (assoc-eq-value name st-alist)))
   :hints (("Goal"
            :in-theory (enable occ-name)
-           :induct (de-occ-induct occs wire-alist sts-alist netlist))))
+           :induct (de-occ-induct occs wire-alist st-alist netlist))))
 
 (defthm de-occ-update-alist
   (implies (and (not (member name (strip-cars occs)))
                 (not (member nil (strip-cars occs))))
            (equal (de-occ occs
                           wire-alist
-                          (update-alist name sts sts-alist)
+                          (update-alist name st st-alist)
                           netlist)
-                  (update-alist name sts
-                                (de-occ occs wire-alist sts-alist netlist))))
+                  (update-alist name st
+                                (de-occ occs wire-alist st-alist netlist))))
   :hints (("Goal"
            :in-theory (enable occ-name)
-           :induct (de-occ-induct occs wire-alist sts-alist netlist))))
+           :induct (de-occ-induct occs wire-alist st-alist netlist))))
 
 (defthm assoc-eq-value-de-occ-update-alist-same-name
   (implies (and (not (member name (strip-cars occs)))
-                (consp (assoc-eq name sts-alist)))
+                (consp (assoc-eq name st-alist)))
            (equal (assoc-eq-value name
                                   (de-occ occs
                                           wire-alist
-                                          (update-alist name sts
-                                                        sts-alist)
+                                          (update-alist name st
+                                                        st-alist)
                                           netlist))
-                  sts)))
+                  st)))
 
 (defthm assoc-eq-value-de-occ-update-alist-diff-names
   (implies (and (not (equal name1 name2))
@@ -1084,13 +1078,13 @@
            (equal (assoc-eq-value name1
                                   (de-occ occs
                                           wire-alist
-                                          (update-alist name2 sts
-                                                        sts-alist)
+                                          (update-alist name2 st
+                                                        st-alist)
                                           netlist))
                   (assoc-eq-value name1
                                   (de-occ occs
                                           wire-alist
-                                          sts-alist
+                                          st-alist
                                           netlist)))))
 
 (defthm assoc-eq-values-de-occ-update-alist
@@ -1100,23 +1094,22 @@
            (equal (assoc-eq-values names
                                    (de-occ occs
                                            wire-alist
-                                           (update-alist name sts sts-alist)
+                                           (update-alist name st st-alist)
                                            netlist))
                   (assoc-eq-values names
                                    (de-occ occs
                                            wire-alist
-                                           sts-alist
+                                           st-alist
                                            netlist)))))
 
 (in-theory (disable de-occ-update-alist))
 
 (defthm strip-cars-de-occ
-  (equal (strip-cars (de-occ occs wire-alist sts-alist
-                             netlist))
-         (strip-cars sts-alist))
+  ;; de-occ preserves the state's structure.
+  (equal (strip-cars (de-occ occs wire-alist st-alist netlist))
+         (strip-cars st-alist))
   :hints (("Goal"
-           :induct (de-occ-induct occs wire-alist sts-alist
-                                  netlist))))
+           :induct (de-occ-induct occs wire-alist st-alist netlist))))
 
 (make-flag flag-de ; flag function name
            de      ; any member of the clique
@@ -1133,80 +1126,78 @@
                 (symbol-alistp lst))
             (true-listp lst))))
 
-(defun well-formed-sts (fn sts netlist)
+(defun well-formed-st (fn st netlist)
   (declare (xargs :guard t))
   (and (net-syntax-okp netlist)
        (net-arity-okp netlist)
-       (sts-okp-guard fn sts)
-       (sts-okp fn sts netlist)))
+       (st-okp-guard fn st)
+       (st-okp fn st netlist)))
 
-(defthm se-guard=>well-formed-sts
-  (implies (se-guard fn ins sts netlist)
-           (well-formed-sts fn sts netlist))
+(defthm se-guard=>well-formed-st
+  (implies (se-guard fn ins st netlist)
+           (well-formed-st fn st netlist))
   :rule-classes :forward-chaining)
 
-(defun well-formed-sts-occs (occs sts-alist netlist)
+(defun well-formed-st-occs (occs st-alist netlist)
   (declare (xargs :guard t))
   (and (net-syntax-okp netlist)
        (net-arity-okp netlist)
-       (sts-occs-okp-guard occs sts-alist netlist)
-       (sts-occs-okp occs sts-alist netlist)))
+       (st-occs-okp-guard occs st-alist netlist)
+       (st-occs-okp occs st-alist netlist)))
 
-(defthm se-occ-guard=>well-formed-sts-occs
-  (implies (se-occ-guard occs wire-alist sts-alist netlist)
-           (well-formed-sts-occs occs sts-alist netlist))
+(defthm se-occ-guard=>well-formed-st-occs
+  (implies (se-occ-guard occs wire-alist st-alist netlist)
+           (well-formed-st-occs occs st-alist netlist))
   :rule-classes :forward-chaining)
 
 (local
- (defthm well-formed-sts-de<->well-formed-sts-occs-de-occ-aux
+ (defthm well-formed-st-de<->well-formed-st-occs-de-occ-aux
    (IMPLIES (AND (PRIMP FN)
                  (SYMBOLP FN)
-                 (TRUE-LISTP STS)
-                 (EQUAL (PRIMP-STS FN) (LEN STS))
-                 (NOT (EQUAL FN 'FD1))
+                 (TRUE-LISTP ST)
+                 (EQUAL (PRIMP-ST FN) (LEN ST))
+                 (NOT (EQUAL FN 'FF))
                  (NOT (EQUAL FN 'LATCH))
                  (NOT (EQUAL FN 'LINK-CNTL)))
-            (EQUAL (LEN STS) 0))
+            (EQUAL (LEN ST) 0))
    :hints (("Goal" :in-theory (enable primp)))))
 
-(defthm well-formed-sts-de<->well-formed-sts-occs-de-occ
+(defthm well-formed-st-de<->well-formed-st-occs-de-occ
   (if (equal flag 'term)
-      (implies (well-formed-sts fn sts netlist)
-               (well-formed-sts fn (de fn ins sts netlist) netlist))
-    (implies (well-formed-sts-occs occs sts-alist netlist)
-             (well-formed-sts-occs occs
-                                   (de-occ occs wire-alist sts-alist
-                                           netlist)
+      (implies (well-formed-st fn st netlist)
+               (well-formed-st fn (de fn ins st netlist) netlist))
+    (implies (well-formed-st-occs occs st-alist netlist)
+             (well-formed-st-occs occs
+                                   (de-occ occs wire-alist st-alist netlist)
                                    netlist)))
   :hints (("Goal"
            :in-theory (enable occ-name)
            :induct (flag-de flag
-                            fn ins sts
-                            occs wire-alist sts-alist
+                            fn ins st
+                            occs wire-alist st-alist
                             netlist))
           ("Subgoal *1/4"
-           :cases ((consp (assoc (car (car occs)) sts-alist))
-                   (not (consp (assoc (car (car occs)) sts-alist)))))
+           :cases ((consp (assoc (car (car occs)) st-alist))
+                   (not (consp (assoc (car (car occs)) st-alist)))))
           ("Subgoal *1/2"
            :use net-syntax-okp->module-syntax-okp))
   :rule-classes nil)
 
-(defthm well-formed-sts-de
-  (implies (well-formed-sts fn sts netlist)
-           (well-formed-sts fn (de fn ins sts netlist) netlist))
+(defthm well-formed-st-de
+  (implies (well-formed-st fn st netlist)
+           (well-formed-st fn (de fn ins st netlist) netlist))
   :hints (("Goal"
-           :by (:instance well-formed-sts-de<->well-formed-sts-occs-de-occ
+           :by (:instance well-formed-st-de<->well-formed-st-occs-de-occ
                           (flag 'term))))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm well-formed-sts-occs-de-occ
-  (implies (well-formed-sts-occs occs sts-alist netlist)
-           (well-formed-sts-occs occs
-                                 (de-occ occs wire-alist sts-alist
-                                         netlist)
-                                 netlist))
+(defthm well-formed-st-occs-de-occ
+  (implies (well-formed-st-occs occs st-alist netlist)
+           (well-formed-st-occs occs
+                                (de-occ occs wire-alist st-alist netlist)
+                                netlist))
   :hints (("Goal"
-           :by (:instance well-formed-sts-de<->well-formed-sts-occs-de-occ
+           :by (:instance well-formed-st-de<->well-formed-st-occs-de-occ
                           (flag 'list))))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1223,109 +1214,110 @@
     (and (se-ins-guard fn (car inputs-seq) netlist)
          (de-sim-guard fn (cdr inputs-seq) netlist))))
 
-(defun de-sim (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+(defun de-sim (fn inputs-seq st netlist)
+  (declare (xargs :guard (and (well-formed-st fn st netlist)
                               (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
-      sts
+      st
     (de-sim fn
             (cdr inputs-seq)
-            (de fn (car inputs-seq) sts netlist)
+            (de fn (car inputs-seq) st netlist)
             netlist)))
 
 (defthm open-de-sim-atom
   (implies (atom inputs-seq)
-           (equal (de-sim fn inputs-seq sts netlist)
-                  sts)))
+           (equal (de-sim fn inputs-seq st netlist)
+                  st)))
 
 (defthm open-de-sim
   (implies (consp inputs-seq)
-           (equal (de-sim fn inputs-seq sts netlist)
+           (equal (de-sim fn inputs-seq st netlist)
                   (de-sim fn (cdr inputs-seq)
-                          (de fn (car inputs-seq) sts netlist)
+                          (de fn (car inputs-seq) st netlist)
                           netlist))))
 
 (in-theory (disable de-sim))
 
-(defun de-sim-trace (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+(defun de-sim-trace (fn inputs-seq st netlist)
+  (declare (xargs :guard (and (well-formed-st fn st netlist)
                               (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
-      (list sts)
-    (cons sts
+      (list st)
+    (cons st
           (de-sim-trace fn
                         (cdr inputs-seq)
-                        (de fn (car inputs-seq) sts netlist)
+                        (de fn (car inputs-seq) st netlist)
                         netlist))))
 
-(defun simulate (fn inputs-seq sts netlist)
-  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+(defun simulate (fn inputs-seq st netlist)
+  (declare (xargs :guard (and (well-formed-st fn st netlist)
                               (de-sim-guard fn inputs-seq netlist))
                   :verify-guards nil))
   (if (atom inputs-seq)
       nil
-    (let ((value (se fn (car inputs-seq) sts netlist))
-          (new-sts (de fn (car inputs-seq) sts netlist)))
-      (cons (list value new-sts)
-            (simulate fn (cdr inputs-seq) new-sts netlist)))))
+    (let ((value (se fn (car inputs-seq) st netlist))
+          (new-st (de fn (car inputs-seq) st netlist)))
+      (cons (list value new-st)
+            (simulate fn (cdr inputs-seq) new-st netlist)))))
 
-(defun de-n (fn inputs-seq sts netlist n)
-  (declare (xargs :guard (and (well-formed-sts fn sts netlist)
+(defun de-n (fn inputs-seq st netlist n)
+  (declare (xargs :guard (and (well-formed-st fn st netlist)
                               (de-sim-guard fn inputs-seq netlist)
                               (equal (len inputs-seq) n)
                               (natp n))
                   :verify-guards nil))
   (if (zp n)
-      sts
+      st
     (de-n fn
           (cdr inputs-seq)
-          (de fn (car inputs-seq) sts netlist)
+          (de fn (car inputs-seq) st netlist)
           netlist
           (1- n))))
 
 (defthm de-m+n
   (implies (and (natp m)
                 (natp n))
-           (equal (de-n fn inputs-seq sts netlist (+ m n))
-                  (de-n fn (nthcdr m inputs-seq)
-                        (de-n fn inputs-seq sts netlist m)
+           (equal (de-n fn inputs-seq st netlist (+ m n))
+                  (de-n fn
+                        (nthcdr m inputs-seq)
+                        (de-n fn inputs-seq st netlist m)
                         netlist
                         n)))
   :hints (("Goal"
-           :induct (de-n fn inputs-seq sts netlist m))))
+           :induct (de-n fn inputs-seq st netlist m))))
 
 (defthm open-de-n-zp
   (implies (zp n)
-           (equal (de-n fn inputs-seq sts netlist n)
-                  sts)))
+           (equal (de-n fn inputs-seq st netlist n)
+                  st)))
 
 (defthm open-de-n
   (implies (not (zp n))
-           (equal (de-n fn inputs-seq sts netlist n)
+           (equal (de-n fn inputs-seq st netlist n)
                   (de-n fn
                         (cdr inputs-seq)
-                        (de fn (car inputs-seq) sts netlist)
+                        (de fn (car inputs-seq) st netlist)
                         netlist
                         (1- n)))))
 
 (in-theory (disable de-n))
 
 (verify-guards de-sim
- :hints (("Goal" :in-theory (disable de sts-okp))))
+ :hints (("Goal" :in-theory (disable de st-okp))))
 
 (verify-guards de-sim-trace
- :hints (("Goal" :in-theory (disable de sts-okp))))
+ :hints (("Goal" :in-theory (disable de st-okp))))
 
 (verify-guards simulate
- :hints (("Goal" :in-theory (disable se de sts-okp))))
+ :hints (("Goal" :in-theory (disable se de st-okp))))
 
 (verify-guards de-n
- :hints (("Goal" :in-theory (disable de sts-okp))))
+ :hints (("Goal" :in-theory (disable de st-okp))))
 
 (in-theory (disable se-guard se-occ-guard
-                    well-formed-sts well-formed-sts-occs))
+                    well-formed-st well-formed-st-occs))
 
 ;; ======================================================================
 
@@ -1336,7 +1328,7 @@
     get-field
     len-1-true-listp=>true-listp
     nthcdr-of-pos-const-idx
-    md-name md-ins md-outs md-sts md-occs
+    md-name md-ins md-outs md-st md-occs
     occ-name occ-outs occ-fn occ-ins
     take-of-len-free))
 
