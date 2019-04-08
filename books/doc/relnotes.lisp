@@ -394,6 +394,10 @@
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
  bytes, moved from @(csee std/io).</p>
 
+ <p>Added a recognizer @(tsee nibblep) for ``standard'' (i.e. unsigned 4-bit)
+ nibbles, moved from
+ @('[books]/projects/oracle/stv-invariant-extraction-pitfall/alu.lisp').</p>
+
  <h4>@(csee std/io)</h4>
 
  <p>Added new lemmas to the <see topic='@(url combine-functions)'>Std/io
