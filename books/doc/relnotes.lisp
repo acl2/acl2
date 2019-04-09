@@ -336,6 +336,13 @@
 
  <li>An existing fixtype @(tsee nati) for natural numbers and infinity.</li>
 
+ <li>New fixtypes @(tsee byte), @(tsee byte-list), @(tsee byte-list20), @(tsee
+ byte-list32), and @(tsee byte-list64) for (unsigned 8-bit) bytes, true lists
+ of bytes, and true lists of 20, 32, and 64 bytes.</li>
+
+ <li>New fixtypes @(tsee nibble) and @(tsee nibble-list) for (unsigned 4-bit)
+ nibbles and true lists of nibbles.</li>
+
  </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
