@@ -2485,13 +2485,29 @@
     ModR/M byte or not."
     :long
     "<p>
-     This is based on Intel manual, Mar'17, Volume 2, Tables 2-1 and 2-2,
+     This is based on Intel manual, Jan'19, Volume 2, Tables 2-1 and 2-2,
      as well as AMD manual, Dec'17, Volume 3, Tables A-33 and A-35.
      When the address size is 32 or 64 bits,
      Intel Table 2-2 and AMD Table A-35 apply:
      a SIB byte is expected exactly when
      ModR/M.mod is not #b11 and ModR/M.r/m is #b100.
      When the address size is 16 bits, no SIB byte is expected.
+     </p>
+     <p>
+     Intel Table 2-3 applies to 32-bit addresses,
+     but Section 2.2.1.3 says that it also applies to 64-bit addresses.
+     AMD Table A-35 mentions both 32-bit and 64-bit addressing.
+     </p>
+     <p>
+     Intel manual, Jan'19, Volume 2, Table 2-7 is not very clear,
+     giving the impression that a SIB byte may be required
+     when Mod = 00 and R/M = 101 (last column of first row).
+     But AMD manual, Dec'17, Volume 3, Table 1-16
+     (which corresponds to Intel Table 2-7) clearly says that
+     no SIB byte is present in the first row.
+     Intel's last column of first row means that,
+     in order to use @('Disp32') instead of @('RIP+Disp32'),
+     64-bit mode must use the encoding with SIB in the second row.
      </p>
      <p>
      The second argument of this function says whether
