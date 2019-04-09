@@ -1,6 +1,6 @@
-; Ordered Maps (Omaps) -- Fixtype and Fixing Theorems
+; Ordered Maps (Omaps) -- Fixing Theorems
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,8 @@
 (in-package "OMAP")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/fty/map" :dir :system)
+
+(include-book "core")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
