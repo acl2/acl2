@@ -46,7 +46,8 @@
   :returns (hash byte-listp
                  :hints (("Goal"
                           :in-theory
-                          (enable byte-listp-rewrite-unsigned-byte-listp))))
+                          (enable
+                           acl2::byte-listp-rewrite-unsigned-byte-listp))))
   :short "SHA-256 hash function."
   (crypto::sha-256 bytes)
   :no-function t
@@ -73,7 +74,8 @@
   :returns (hash byte-listp
                  :hints (("Goal"
                           :in-theory
-                          (enable byte-listp-rewrite-unsigned-byte-listp))))
+                          (enable
+                           acl2::byte-listp-rewrite-unsigned-byte-listp))))
   :short "RIPEMD-160 hash function."
   (crypto::ripemd-160 bytes)
   :no-function t
@@ -102,7 +104,8 @@
   :returns (hash byte-listp
                  :hints (("Goal"
                           :in-theory
-                          (enable byte-listp-rewrite-unsigned-byte-listp))))
+                          (enable
+                           acl2::byte-listp-rewrite-unsigned-byte-listp))))
   :short "HMAC-SHA-512 keyed hash function."
   (crypto::hmac-sha-512 key text)
   :no-function t
@@ -130,7 +133,8 @@
   :returns (bytes byte-listp
                   :hints (("Goal"
                            :in-theory
-                           (enable byte-listp-rewrite-unsigned-byte-listp))))
+                           (enable
+                            acl2::byte-listp-rewrite-unsigned-byte-listp))))
   :short "Represent a point in compressed or uncompressed form."
   :long
   (xdoc::topstring-p

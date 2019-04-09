@@ -194,7 +194,7 @@
 
  <p>Added fixtypes for bytes and byte sequences.</p>
 
- <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+ <p>Replaced uses of @(tsee ubyte8) with @(tsee byte).</p>
 
  <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
  the previous placeholders for cryptographic functions into <see topic='@(url

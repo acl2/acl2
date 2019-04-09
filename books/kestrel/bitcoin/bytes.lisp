@@ -10,28 +10,23 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/fty/defbytelist" :dir :system)
+(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc bytes
+(defsection bytes
   :parents (bitcoin)
   :short "Bytes."
   :long
-  (xdoc::topstring-p
-   "In Bitcoin, as in most modern contexts,
-    the unqualified term `byte' denotes an (unsigned) 8-bit byte."))
-
-(fty::defbyte byte
-  :size 8
-  :pred bytep
-  :parents (bytes)
-  :short "Fixtype of bytes.")
-
-(defsection byte-fix-ext
-  :extension byte-fix
+  (xdoc::topstring
+   (xdoc::p
+    "In Bitcoin, as in most modern contexts,
+     the unqualified term `byte' denotes an unsigned 8-bit byte.")
+   (xdoc::p
+    "We use the library type @(tsee byte)
+     to model bytes in our Bitcoin model."))
 
   (defrule natp-of-byte-fix
     (natp (byte-fix x))
@@ -55,22 +50,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc byte-sequences
+(defsection byte-sequences
   :parents (bytes)
   :short "Byte sequences."
   :long
-  (xdoc::topstring-p
-   "These are finite lists of bytes,
-    which model byte arrays in particular."))
-
-(fty::defbytelist byte-list
-  :elt-type byte
-  :pred byte-listp
-  :parents (byte-sequences)
-  :short "Fixtype of true lists of @(see byte)s.")
-
-(defsection byte-listp-ext
-  :extension byte-listp
+  (xdoc::topstring
+   (xdoc::p
+    "These are finite lists of bytes,
+     which model byte arrays in particular.")
+   (xdoc::p
+    "We use the library type @(tsee byte-list)
+     to model byte sequences in our Bitcoin model."))
 
   (defrule nat-listp-when-byte-listp
     (implies (byte-listp bytes)
@@ -83,10 +73,7 @@
 
   (defthm-dab-return-types
     dab-digit-listp-of-256-rewrite-byte-listp
-    byte-listp-of))
-
-(defsection byte-list-fix-ext
-  :extension byte-list-fix
+    byte-listp-of)
 
   (defrule car-of-byte-list-fix
     (implies (consp x)
@@ -108,10 +95,7 @@
     (equal (byte-list-fix x)
            (unsigned-byte-list-fix 8 x))
     :enable (byte-fix-rewrite-unsigned-byte-fix
-             unsigned-byte-list-fix)))
-
-(defsection byte-list-equiv-ext
-  :extension byte-list-equiv
+             unsigned-byte-list-fix))
 
   (defcong byte-list-equiv byte-list-equiv (append x y) 1)
 
