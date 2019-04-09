@@ -194,7 +194,7 @@
 
  <p>Added fixtypes for bytes and byte sequences.</p>
 
- <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+ <p>Replaced uses of @(tsee ubyte8) with @(tsee byte).</p>
 
  <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
  the previous placeholders for cryptographic functions into <see topic='@(url
@@ -336,6 +336,13 @@
 
  <li>An existing fixtype @(tsee nati) for natural numbers and infinity.</li>
 
+ <li>New fixtypes @(tsee byte), @(tsee byte-list), @(tsee byte-list20), @(tsee
+ byte-list32), and @(tsee byte-list64) for (unsigned 8-bit) bytes, true lists
+ of bytes, and true lists of 20, 32, and 64 bytes.</li>
+
+ <li>New fixtypes @(tsee nibble) and @(tsee nibble-list) for (unsigned 4-bit)
+ nibbles and true lists of nibbles.</li>
+
  </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
@@ -393,6 +400,10 @@
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
  bytes, moved from @(csee std/io).</p>
+
+ <p>Added a recognizer @(tsee nibblep) for ``standard'' (i.e. unsigned 4-bit)
+ nibbles, moved from
+ @('[books]/projects/oracle/stv-invariant-extraction-pitfall/alu.lisp').</p>
 
  <h4>@(csee std/io)</h4>
 

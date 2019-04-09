@@ -1,4 +1,4 @@
-; FTY -- Fixtype of Omaps
+; FTY -- Fixtype of True Lists of (Unsigned 8-bit) Bytes
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,29 +8,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "OMAP")
+(in-package "ACL2")
 
-(include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/utilities/omaps/core" :dir :system)
+(include-book "kestrel/fty/defbytelist" :dir :system)
+
+(include-book "byte")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection map
-  :parents (fty::fty-extensions fty::specific-types omaps)
+(fty::defbytelist byte-list
+  :elt-type byte
+  :pred byte-listp
+  :parents (fty::fty-extensions fty::specific-types byte)
   :short
   (xdoc::topstring
    "A "
    (xdoc::seeurl "fty::fty" "fixtype")
-   " of "
-   (xdoc::seeurl "omap::omaps" "omaps")
+   " of true lists of "
+   (xdoc::seeurl "bytep" "(unsigned 8-bit) bytes")
    ".")
   :long
   (xdoc::topstring-p
-   "This is similar to the fixtype @(tsee set::set) of osets.")
-
-  (fty::deffixtype map
-    :pred mapp
-    :fix mfix
-    :equiv mequiv
-    :define t
-    :forward t))
+   "We use @(tsee fty::defbytelist) to generate this fixtype,
+    along with the recognizer, fixer, and equivalence."))

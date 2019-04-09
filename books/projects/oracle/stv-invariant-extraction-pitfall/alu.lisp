@@ -64,10 +64,6 @@
   :outputs
   '(("ans" _ _ ans _))) ; [3:0]
 
-(define nibblep (x)
-  (and (natp x)
-       (< x (expt 2 4))))
-
 (define doomsday-step ((a nibblep)
                        (b nibblep))
   :verify-guards nil

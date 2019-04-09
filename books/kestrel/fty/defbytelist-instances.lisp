@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defbytelist-instances
-  :parents (fty-extensions fty defbytelist)
+  :parents (fty-extensions specific-types defbytelist)
   :short "Fixtypes of true lists of unsigned and signed bytes of various sizes,
           with some accompanying theorems."
   :long

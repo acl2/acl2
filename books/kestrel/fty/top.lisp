@@ -10,6 +10,11 @@
 
 (in-package "FTY")
 
+(include-book "byte")
+(include-book "byte-list")
+(include-book "byte-list20")
+(include-book "byte-list32")
+(include-book "byte-list64")
 (include-book "defbyte")
 (include-book "defbyte-instances")
 (include-book "defbytelist")
@@ -19,6 +24,8 @@
 (include-book "defomap")
 (include-book "defset")
 (include-book "map")
+(include-book "nibble")
+(include-book "nibble-list")
 (include-book "nati")
 (include-book "set")
 
@@ -35,3 +42,19 @@
   :long
   (xdoc::topstring-p
    "These could be merged with FTY at some point."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc specific-types
+  :parents (fty-extensions fty)
+  :short
+  (xdoc::topstring "Various specific "
+                   (xdoc::seeurl "fty" "fixtypes")
+                   ".")
+  :long
+  (xdoc::topstring-p
+   "These complement the "
+   (xdoc::seeurl "basetypes" "base types")
+   " and the "
+   (xdoc::seeurl "baselists" "base list types")
+   "."))

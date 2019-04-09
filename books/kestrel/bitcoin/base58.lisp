@@ -391,7 +391,7 @@
                  :in-theory
                  (enable
                   acl2::unsigned-byte-listp-rewrite-dab-digit-listp
-                  byte-listp-rewrite-unsigned-byte-listp
+                  acl2::byte-listp-rewrite-unsigned-byte-listp
                   base58-value-listp-rewrite-dab-digit-listp-58)))
   ///
 

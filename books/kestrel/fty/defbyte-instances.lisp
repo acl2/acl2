@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defbyte-instances
-  :parents (fty-extensions fty defbyte)
+  :parents (fty-extensions specific-types defbyte)
   :short "Fixtypes of unsigned and signed bytes of various sizes,
           with some accompanying theorems."
   :long
