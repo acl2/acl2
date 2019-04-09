@@ -296,7 +296,7 @@
                          (equal (mv-nth 1 (rlp-encode-tree-list (cdr xs)))
                                 (mv-nth 1 (rlp-encode-tree-list (cdr ys)))))))
     :use car-encodings-same-len
-    :enable true-listp-when-byte-listp-rewrite)
+    :enable acl2::true-listp-when-byte-listp-rewrite)
 
   (local
    (defthm-double-tree-induction-flag
@@ -326,7 +326,7 @@
                                  rlp-encode-tree-list
                                  helper-lemma-1
                                  helper-lemma-2
-                                 true-listp-when-byte-listp-rewrite)))))
+                                 acl2::true-listp-when-byte-listp-rewrite)))))
 
   (defrule rlp-encode-tree-injective
     (implies (and (not (mv-nth 0 (rlp-encode-tree x)))
@@ -406,7 +406,7 @@
                    (len (mv-nth 1 (rlp-encode-bytes y)))))
     :enable (len-of-rlp-encode-bytes-from-prefix
              list-equiv
-             true-listp-when-byte-listp-rewrite)
+             acl2::true-listp-when-byte-listp-rewrite)
     :use ((:instance acl2::same-car-when-prefixp-and-consp
            (x (mv-nth 1 (rlp-encode-bytes x)))
            (y (mv-nth 1 (rlp-encode-bytes y))))
@@ -450,7 +450,7 @@
                    (len (mv-nth 1 (rlp-encode-tree y)))))
     :enable (len-of-rlp-encode-tree-from-prefix
              list-equiv
-             true-listp-when-byte-listp-rewrite)
+             acl2::true-listp-when-byte-listp-rewrite)
     :use ((:instance acl2::same-car-when-prefixp-and-consp
            (x (mv-nth 1 (rlp-encode-tree x)))
            (y (mv-nth 1 (rlp-encode-tree y))))

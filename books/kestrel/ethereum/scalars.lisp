@@ -20,9 +20,11 @@
   :parents (basics)
   :short "Scalars."
   :long
-  (xdoc::topstring-p
-   "[YP:3] says that scalars are
-    non-negative integers in the set @($\\mathbb{N}$),
-    i.e. natural numbers.
-    We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
-    to model scalars in our Ethereum model."))
+  (xdoc::topstring
+   (xdoc::p
+    "[YP:3] says that scalars are
+     non-negative integers in the set @($\\mathbb{N}$),
+     i.e. natural numbers.")
+   (xdoc::p
+    "We use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
+     to model scalars in our Ethereum model.")))

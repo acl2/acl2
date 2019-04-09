@@ -184,7 +184,8 @@
           (implies (omap::in key (nibblelist-bytelist-mfix map))
                    (equal (take x key) (nibble-list-fix l))))
   :guard-hints (("Goal"
-                 :in-theory (enable true-listp-when-nibble-listp-rewrite)))
+                 :in-theory
+                 (enable acl2::true-listp-when-nibble-listp-rewrite)))
   ///
 
   (fty::deffixequiv mmp-encode-c-forall
@@ -531,7 +532,7 @@
                   (mmp-encode-c-max.elementp map x))
              (not (equal (nibblelist-bytelist-map-sup-len-key map) x)))
     :use (keys-len-lower-bound keys-len-upper-bound keys-same-prefix)
-    :enable true-listp-when-nibble-listp-rewrite
+    :enable acl2::true-listp-when-nibble-listp-rewrite
 
     :prep-lemmas
 
@@ -687,7 +688,8 @@
   :verify-guards nil ; done below
   ///
   (verify-guards mmp-encode-u-map
-    :hints (("Goal" :in-theory (enable true-listp-when-nibble-listp-rewrite))))
+    :hints (("Goal"
+             :in-theory (enable acl2::true-listp-when-nibble-listp-rewrite))))
 
   (defrule nibblelist-bytelist-map-sup-len-key-of-mmp-encode-u-map-leq
     (<= (nibblelist-bytelist-map-sup-len-key (mmp-encode-u-map map i nibble))

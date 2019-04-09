@@ -14,16 +14,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "ETHEREUM" (append (set-difference-eq *std-pkg-symbols*
-                                              '(byte))
+(defpkg "ETHEREUM" (append *std-pkg-symbols*
                            '(assert-equal
                              bendian=>nat
+                             byte-fix
+                             byte-list
+                             byte-list-equiv
+                             byte-list-fix
+                             byte-list20
+                             byte-list20p
+                             byte-list32
+                             byte-list32p
+                             byte-list64
+                             byte-list64p
+                             byte-listp
+                             bytep
                              defmax-nat
                              defxdoc+
                              lnfix
-                             nat=>bendian
                              nat
+                             nat=>bendian
                              nat=>bendian*
+                             nibble
+                             nibble-fix
+                             nibble-list
+                             nibble-list-fix
+                             nibble-listp
+                             nibblep
                              prefixp
                              string=>nats
                              trim-bendian*

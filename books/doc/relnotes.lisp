@@ -197,7 +197,8 @@
 
  <p>Added fixtypes for bytes and byte sequences.</p>
 
- <p>Replaced uses of @(tsee ubyte8) with @(tsee byte).</p>
+ <p>Replaced uses of @(tsee ubyte8) and @(tsee ubyte8-list) with @(tsee byte)
+ and @(tsee byte-list).</p>
 
  <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
  the previous placeholders for cryptographic functions into <see topic='@(url
@@ -251,9 +252,9 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved several names by using @('byte') instead of @('ubyte8') and
- @('nibble') instead of @('ubyte4').  Introduced and used fixtypes for byte
- arrays of certain sizes.</p>
+ <p>Replaced uses of @(tsee ubyte8), @(tsee ubyte8-list), @(tsee ubyte4), and
+ @(tsee ubyte4-list) with @(tsee byte), @(tsee byte-list), @(tsee nibble), and
+ @(tsee nibble-list).</p>
 
  <p>Modified the formalizations of RLP encoding and decoding to return an
  explicit error flag.  Added theorems showing that RLP encodings are decodable:

@@ -273,7 +273,7 @@
 
   (verify-guards rlp-encode-tree
     :hints (("Goal"
-             :in-theory (enable true-listp-when-byte-listp-rewrite))))
+             :in-theory (enable acl2::true-listp-when-byte-listp-rewrite))))
 
   (fty::deffixequiv-mutual rlp-encode-tree)
 
