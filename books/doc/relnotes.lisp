@@ -161,6 +161,9 @@
  <b>J</b>ava)</see>, a simple Java code generator that turns ACL2 functions
  into AIJ representations that are evaluated by the AIJ interpreter.</li>
 
+ <li>A <see topic='@(url java::language)'>formalization</see> in ACL2 of some
+ aspects of the Java language.</li>
+
  </ul>
 
  <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
