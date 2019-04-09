@@ -4,9 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors: Andrew Brock <andrew.brock@oracle.com>
-;          David L. Rager <david.rager@oracle.com>
-;          Alessandro Coglio <coglio@kestrel.edu>
+; Author: Alessandro Coglio <coglio@kestrel.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
