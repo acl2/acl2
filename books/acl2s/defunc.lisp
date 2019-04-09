@@ -290,13 +290,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (fun-ind-name (make-sym name 'induction-scheme-from-definition))
        (ind-scheme-name (make-sym name 'induction-scheme))
-       (defun `(defun ,fun-ind-name ,formals
+       (defun `(defun-no-test ,fun-ind-name ,formals
                  ,@decls
                  ,(replace-in-term name fun-ind-name lbody)))
        (defun (if skip-admissibilityp `(skip-proofs ,defun) defun))
-       (defthm (if skip-admissibilityp 'defthmskip 'defthm))
+       (defthmnotest (if skip-admissibilityp 'defthmskipall 'defthm-no-test))
        (ind-defthm
-        `(,defthm ,ind-scheme-name
+        `(,defthmnotest ,ind-scheme-name
            t
            :rule-classes ((:induction :pattern ,(cons name formals)
                                       :condition ,ic
@@ -314,7 +314,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (let ((controller-alist (acl2::controller-alist ',name (w state))))
               `(with-output
                 :stack :pop 
-                (,',defthm ,(make-sym ',name 'definition-rule)
+                (,',defthmnotest ,(make-sym ',name 'definition-rule)
                   ,',def-rule-body
                   :hints (("Goal" :use ,',name :in-theory nil))
                   :rule-classes ((:definition
