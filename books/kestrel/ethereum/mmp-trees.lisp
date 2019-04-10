@@ -10,12 +10,12 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/crypto/keccak-256-placeholder" :dir :system)
 (include-book "kestrel/utilities/defmax-nat/implementation" :dir :system)
 (include-book "kestrel/utilities/lists/take-theorems" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/prefixp" :dir :system)
 
-(include-book "crypto")
 (include-book "hex-prefix")
 (include-book "rlp/encoding")
 (include-book "database")
@@ -1083,7 +1083,7 @@
          ((mv c-error? c-root c-database) (mmp-encode-c map i))
          ((when c-error?) (mv c-error? nil nil))
          ((when (< (len c-root) 32)) (mv nil c-root c-database))
-         (hash (keccak-256 c-root))
+         (hash (crypto::keccak-256 c-root))
          (pair? (omap::in hash c-database))
          (collisionp (and pair?
                           (not (equal (cdr pair?)

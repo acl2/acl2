@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "kestrel/crypto/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,4 +47,5 @@
                              trim-bendian*
                              unsigned-byte-fix
                              unsigned-byte-list-fix
-                             std::define-sk)))
+                             std::define-sk
+                             crypto::keccak-256)))

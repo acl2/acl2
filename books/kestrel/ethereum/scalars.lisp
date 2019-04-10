@@ -10,8 +10,6 @@
 
 (in-package "ETHEREUM")
 
-(include-book "centaur/fty/top" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
