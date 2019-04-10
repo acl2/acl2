@@ -282,11 +282,27 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (t (cons (subst-fun-sym new old (car l))
                   (subst-fun-lst new old (cdr l)))))))
 
+(mutual-recursion
+ (defun fun-syms-in-term (term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
+   (cond ((acl2::variablep term) nil)
+         ((acl2::fquotep term) nil)
+         (t (cons (acl2::ffn-symb term)
+                  (fun-syms-in-term-lst (acl2::fargs term))))))
+
+ (defun fun-syms-in-term-lst (l)
+   (declare (xargs :guard (pseudo-term-listp l)
+                   :verify-guards nil))
+   (cond ((endp l) nil)
+         (t (append (fun-syms-in-term (car l))
+                    (fun-syms-in-term-lst (cdr l)))))))
+
 (defun fun-sym-in-termp (f term)
   (declare (xargs :guard (and (acl2::legal-variablep f)
                               (pseudo-termp term))
                   :verify-guards nil))
-  (not (equal term (subst-fun-sym (list f f) f term))))
+  (and (member-equal f (fun-syms-in-term term)) t))
 
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist wrld make-staticp d?)
