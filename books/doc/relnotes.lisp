@@ -484,6 +484,9 @@
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
 
+ <p>Added a recognizer @(tsee bit-listp) for true lists of bits, and associated
+ theorems.</p>
+
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 
  <p>Finished adding support for 32-bit application-level execution for all the
