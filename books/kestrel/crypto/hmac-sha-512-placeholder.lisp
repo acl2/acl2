@@ -10,7 +10,7 @@
 
 (in-package "CRYPTO")
 
-(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
+(include-book "kestrel/fty/byte-list64" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,9 +62,9 @@
 
     (((hmac-sha-512 * *) => *
       :formals (key text)
-      :guard (and (unsigned-byte-listp 8 key)
+      :guard (and (byte-listp key)
                   (< (len key) (expt 2 125))
-                  (unsigned-byte-listp 8 text)
+                  (byte-listp text)
                   (< (len text) (- (expt 2 125) 128)))))
 
     (local
@@ -72,27 +72,20 @@
        (declare (ignore key text))
        (make-list 64 :initial-element 0)))
 
-    (defrule unsigned-byte-listp-8-of-hmac-sha-512
-      (unsigned-byte-listp 8 (hmac-sha-512 key text)))
+    (defrule byte-list64p-of-hmac-sha-512
+      (byte-list64p (hmac-sha-512 key text)))
 
     (defrule len-of-hmac-sha-512
       (equal (len (hmac-sha-512 key text))
              64))
 
-    (defrule hmac-sha-512-fixes-input-key
-      (equal (hmac-sha-512 (unsigned-byte-list-fix 8 key) text)
-             (hmac-sha-512 key text)))
-
-    (defrule hmac-sha-512-fixes-input-text
-      (equal (hmac-sha-512 key (unsigned-byte-list-fix 8 text))
-             (hmac-sha-512 key text))))
+    (fty::deffixequiv hmac-sha-512
+      :args ((key byte-listp) (text byte-listp))))
 
   (defrule true-listp-of-hmac-sha-512
     (true-listp (hmac-sha-512 key text))
     :rule-classes :type-prescription
-    :use (:instance acl2::true-listp-when-unsigned-byte-listp
-          (width 8) (x (hmac-sha-512 key text)))
-    :disable acl2::true-listp-when-unsigned-byte-listp)
+    :enable acl2::true-listp-when-byte-listp)
 
   (defrule consp-of-hmac-sha-512
     (consp (hmac-sha-512 key text))

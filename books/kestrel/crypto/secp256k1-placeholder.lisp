@@ -11,9 +11,9 @@
 (in-package "CRYPTO")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -357,10 +357,11 @@
 (define secp256k1-point-to-bytes ((point secp256k1-pointp)
                                   (compressp booleanp))
   :returns (bytes
-            (unsigned-byte-listp 8 bytes)
+            byte-listp
             :hints (("Goal"
                      :in-theory
                      (enable
+                      acl2::byte-listp-rewrite-unsigned-byte-listp
                       acl2::unsigned-byte-listp-rewrite-dab-digit-listp))))
   :short "Represent a point in compressed or uncompressed form."
   :long

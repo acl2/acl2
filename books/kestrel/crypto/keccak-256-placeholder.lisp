@@ -10,7 +10,7 @@
 
 (in-package "CRYPTO")
 
-(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
+(include-book "kestrel/fty/byte-list32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,30 +40,27 @@
 
     (((keccak-256 *) => *
       :formals (bytes)
-      :guard (unsigned-byte-listp 8 bytes)))
+      :guard (byte-listp bytes)))
 
     (local
      (defun keccak-256 (bytes)
        (declare (ignore bytes))
        (make-list 32 :initial-element 0)))
 
-    (defrule unsigned-byte-listp-8-of-keccak-256
-      (unsigned-byte-listp 8 (keccak-256 bytes)))
+    (defrule byte-list32p-of-keccak-256
+      (byte-list32p (keccak-256 bytes)))
 
     (defrule len-of-keccak-256
       (equal (len (keccak-256 bytes))
              32))
 
-    (defrule keccak-256-fixes-input
-      (equal (keccak-256 (unsigned-byte-list-fix 8 bytes))
-             (keccak-256 bytes))))
+    (fty::deffixequiv keccak-256
+      :args ((bytes byte-listp))))
 
   (defrule true-listp-of-keccak-256
     (true-listp (keccak-256 bytes))
     :rule-classes :type-prescription
-    :use (:instance acl2::true-listp-when-unsigned-byte-listp
-          (width 8) (x (keccak-256 bytes)))
-    :disable acl2::true-listp-when-unsigned-byte-listp)
+    :enable acl2::true-listp-when-byte-listp)
 
   (defrule consp-of-keccak-256
     (consp (keccak-256 bytes))
