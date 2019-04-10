@@ -66,7 +66,9 @@
    (xdoc::p
     "The combined length of version prefix and payload
      must not exceed the (large) limit for SHA-256.
-     See the guard of @(tsee sha-256).")
+     See the guard of "
+    (xdoc::seeurl "crypto::sha-256-placeholder" "@('sha-256')")
+    ".")
    (xdoc::p
     "We require the version to be non-empty.
      A version that is the empty list of bytes does not seem to make sense.

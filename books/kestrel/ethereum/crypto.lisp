@@ -25,5 +25,6 @@
      Our Ethereum model uses cryptographic functions
      from external libraries.")
    (xdoc::p
-    "In particular, the function @(tsee keccak-256)
-     corresponds to @($\\mathtt{KEC}$) [YP:3].")))
+    "In particular, the function "
+    (xdoc::seeurl "crypto::keccak-256-placeholder" "@('keccak-256')")
+    " corresponds to @($\\mathtt{KEC}$) [YP:3].")))
