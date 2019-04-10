@@ -200,9 +200,8 @@
  <p>Replaced uses of @(tsee ubyte8) and @(tsee ubyte8-list) with @(tsee byte)
  and @(tsee byte-list).</p>
 
- <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
- the previous placeholders for cryptographic functions into <see topic='@(url
- crypto::cryptography)'>a new library</see>.</p>
+ <p>Moved the previous placeholders for cryptographic functions into <see
+ topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
  hierarchical deterministic wallets.</p>
@@ -279,9 +278,8 @@
 
  <p>Improved some documentation.</p>
 
- <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
- the previous placeholders for cryptographic functions into <see topic='@(url
- crypto::cryptography)'>a new library</see>.</p>
+ <p>Moved the previous placeholders for cryptographic functions into <see
+ topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
  <h4>Filesystem Books</h4>
 
