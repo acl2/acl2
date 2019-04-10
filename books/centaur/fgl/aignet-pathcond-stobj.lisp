@@ -53,21 +53,21 @@
   (nbalist-bits$c :type bitarr)
   (nbalist-stack$c :type acl2::intstack))
 
-(define nbalist-stobj-to-nbalist-aux ((stack acl2::intstack$ap)
-                                      (bits bit-listp))
+(define nbalist-stobj-nbalist$c-logic ((stack acl2::intstack$ap)
+                                        (bits bit-listp))
   :returns (nbalist)
   (if (atom stack)
       nil
     (cons (cons (nfix (car stack)) (bfix (nth (car stack) bits)))
-          (nbalist-stobj-to-nbalist-aux (cdr stack) bits)))
+          (nbalist-stobj-nbalist$c-logic (cdr stack) bits)))
   ///
-  (defret lookup-in-nbalist-stobj-to-nbalist-aux
+  (defret lookup-in-nbalist-stobj-nbalist$c-logic
     (equal (hons-assoc-equal key nbalist)
            (and (natp key)
                 (member key (acl2::nat-list-fix stack))
                 (cons key (bfix (nth key bits))))))
 
-  (defret nbalistp-of-nbalist-stobj-to-nbalist-aux
+  (defret nbalistp-of-nbalist-stobj-nbalist$c-logic
     (implies (no-duplicatesp-equal (acl2::nat-list-fix stack))
              (nbalistp nbalist)))
   
@@ -80,20 +80,64 @@
                       (nth n x))
            :hints(("Goal" :in-theory (enable nth)))))
 
-  (defthm nbalist-stobj-to-nbalist-aux-of-update-non-member
+  (defthm nbalist-stobj-nbalist$c-logic-of-update-non-member
     (implies (not (member-equal (nfix n) (acl2::nat-list-fix stack)))
-             (equal (nbalist-stobj-to-nbalist-aux stack (update-nth n val bits))
-                    (nbalist-stobj-to-nbalist-aux stack bits))))
+             (equal (nbalist-stobj-nbalist$c-logic stack (update-nth n val bits))
+                    (nbalist-stobj-nbalist$c-logic stack bits))))
 
-  (defthm nbalist-stobj-to-nbalist-aux-of-resize-bits
+  (defthm nbalist-stobj-nbalist$c-logic-of-resize-bits
     (implies (<= (len bits) (nfix n))
-             (equal (nbalist-stobj-to-nbalist-aux stack (resize-list bits n 0))
-                    (nbalist-stobj-to-nbalist-aux stack bits))))
+             (equal (nbalist-stobj-nbalist$c-logic stack (resize-list bits n 0))
+                    (nbalist-stobj-nbalist$c-logic stack bits))))
 
-  (defthm nbalist-stobj-to-nbalist-aux-of-nat-list-fix
-    (equal (nbalist-stobj-to-nbalist-aux (acl2::nat-list-fix stack) bits)
-           (nbalist-stobj-to-nbalist-aux stack bits))
-    :hints(("Goal" :in-theory (enable acl2::nat-list-fix)))))
+  (defthm nbalist-stobj-nbalist$c-logic-of-nat-list-fix
+    (equal (nbalist-stobj-nbalist$c-logic (acl2::nat-list-fix stack) bits)
+           (nbalist-stobj-nbalist$c-logic stack bits))
+    :hints(("Goal" :in-theory (enable acl2::nat-list-fix))))
+
+  (defthm nth-of-nbalist-stobj-nbalist$c-logic
+    (equal (nth n (nbalist-stobj-nbalist$c-logic stack bits))
+           (and (< (nfix n) (len stack))
+                (cons (nfix (nth n stack))
+                      (bfix (nth (nth n stack) bits)))))
+    :hints(("Goal" :in-theory (enable nth)))))
+
+
+(define nbalist-stobj-nbalist$c-aux ((n natp)
+                                      acl2::intstack
+                                      bitarr)
+  :measure (nfix (- (acl2::intstack-count acl2::intstack) (nfix n)))
+  :guard (<= n (acl2::intstack-count acl2::intstack))
+  :returns (nbalist (equal nbalist
+                           (nbalist-stobj-nbalist$c-logic (nthcdr n acl2::intstack) bitarr))
+                    :hints(("Goal" :induct t)
+                           (and stable-under-simplificationp
+                                '(:expand ((nbalist-stobj-nbalist$c-logic (nthcdr n acl2::intstack) bitarr))))))
+  :prepwork ((local (defthm nthcdr-of-nil
+                      (equal (nthcdr n nil) nil)))
+             (local (defthm consp-of-nthcdr
+                      (iff (consp (nthcdr n x))
+                           (< (nfix n) (len x)))
+                      :hints(("Goal" :in-theory (enable nthcdr)))))
+             (local (defthm car-of-nthcdr
+                      (equal (car (nthcdr n x))
+                             (nth n x))
+                      :hints(("Goal" :in-theory (enable nthcdr nth)))))
+             (local (defthm cdr-of-nthcdr
+                      (equal (cdr (nthcdr n x))
+                             (nthcdr n (cdr x)))
+                      :hints(("Goal" :in-theory (enable nthcdr))))))
+  (if (mbe :logic (zp (nfix (- (acl2::intstack-count acl2::intstack) (nfix n))))
+           :exec (eql n (acl2::intstack-count acl2::intstack)))
+      nil
+    (b* ((elt (acl2::intstack-nth n acl2::intstack))
+         (bit (mbe :logic (get-bit elt bitarr)
+                   :exec (if (< elt (bits-length bitarr))
+                             (get-bit elt bitarr)
+                           0))))
+      (cons (cons elt bit)
+            (nbalist-stobj-nbalist$c-aux (1+ (lnfix n)) acl2::intstack bitarr)))))
+
 
 
 
@@ -101,19 +145,24 @@
          (implies (acl2::u32-listp x)
                   (nat-listp x))))
 
-(define nbalist-stobj-to-nbalist (nbalist-stobj$c)
-  :non-executable t
+(define nbalist-stobj-nbalist$c (nbalist-stobj$c)
   :returns (nbalist)
-  (nbalist-stobj-to-nbalist-aux (nth *nbalist-stack$c* nbalist-stobj$c)
-                                (nth *nbalist-bits$c* nbalist-stobj$c))
+  (mbe :logic (non-exec
+               (nbalist-stobj-nbalist$c-logic (nth *nbalist-stack$c* nbalist-stobj$c)
+                                               (nth *nbalist-bits$c* nbalist-stobj$c)))
+       :exec (stobj-let ((bitarr (nbalist-bits$c nbalist-stobj$c))
+                         (acl2::intstack (nbalist-stack$c nbalist-stobj$c)))
+                        (nbalist)
+                        (nbalist-stobj-nbalist$c-aux 0 acl2::intstack bitarr)
+                        nbalist))
   ///
-  (defret lookup-in-nbalist-stobj-to-nbalist
+  (defret lookup-in-nbalist-stobj-nbalist$c
     (equal (hons-assoc-equal key nbalist)
            (and (natp key)
                 (member key (acl2::nat-list-fix (nth *nbalist-stack$c* nbalist-stobj$c)))
                 (cons key (bfix (nth key (nth *nbalist-bits$c* nbalist-stobj$c)))))))
 
-  (defret nbalistp-of-nbalist-stobj-to-nbalist
+  (defret nbalistp-of-nbalist-stobj-nbalist$c
     (implies (nbalist-stobj$cp nbalist-stobj$c)
              (nbalistp nbalist)))
   
@@ -135,7 +184,7 @@
 (define nbalist-len$c (nbalist-stobj$c)
   :returns (len natp :rule-classes :type-prescription)
   :enabled t
-  (mbe :logic (len (nbalist-stobj-to-nbalist nbalist-stobj$c))
+  (mbe :logic (len (nbalist-stobj-nbalist$c nbalist-stobj$c))
        :exec (stobj-let ((acl2::intstack (nbalist-stack$c nbalist-stobj$c)))
                         (len)
                         (acl2::intstack-count acl2::intstack)
@@ -147,7 +196,7 @@
   :guard (non-exec (ec-call (nbalist-stobj$c-size-ok nbalist-stobj$c)))
   :returns (ans acl2::maybe-bitp :rule-classes :type-prescription)
   (mbe :logic (cdr (hons-assoc-equal (nfix id)
-                                     (nbalist-stobj-to-nbalist nbalist-stobj$c)))
+                                     (nbalist-stobj-nbalist$c nbalist-stobj$c)))
        :exec (stobj-let ((acl2::intstack (nbalist-stack$c nbalist-stobj$c))
                          (bitarr (nbalist-bits$c nbalist-stobj$c)))
                         (ans)
@@ -186,14 +235,14 @@
                         nbalist-stobj$c))
   ///
 
-  (defret nbalist-stobj-to-nbalist-of-nbalist-push$c
-    (equal (nbalist-stobj-to-nbalist new-nbalist-stobj$c)
-           (b* ((old-nbalist (nbalist-stobj-to-nbalist nbalist-stobj$c)))
+  (defret nbalist-stobj-nbalist$c-of-nbalist-push$c
+    (equal (nbalist-stobj-nbalist$c new-nbalist-stobj$c)
+           (b* ((old-nbalist (nbalist-stobj-nbalist$c nbalist-stobj$c)))
              (if (hons-assoc-equal (nfix id) old-nbalist)
                  old-nbalist
                (cons (cons (nfix id) (bfix val)) old-nbalist))))
-    :hints(("Goal" :in-theory (enable nbalist-stobj-to-nbalist
-                                      nbalist-stobj-to-nbalist-aux
+    :hints(("Goal" :in-theory (enable nbalist-stobj-nbalist$c
+                                      nbalist-stobj-nbalist$c-logic
                                       nbalist-lookup$c))))
 
   (defret nbalist-stobj$c-size-ok-of-<fn>
@@ -214,11 +263,11 @@
              (acl2::intstack-pop acl2::intstack)
              nbalist-stobj$c)
   ///
-  (defret nbalist-stobj-to-nbalist-of-nbalist-pop$c
-    (equal (nbalist-stobj-to-nbalist new-nbalist-stobj$c)
-           (cdr (nbalist-stobj-to-nbalist nbalist-stobj$c)))
-    :hints(("Goal" :in-theory (enable nbalist-stobj-to-nbalist
-                                      nbalist-stobj-to-nbalist-aux))))
+  (defret nbalist-stobj-nbalist$c-of-nbalist-pop$c
+    (equal (nbalist-stobj-nbalist$c new-nbalist-stobj$c)
+           (cdr (nbalist-stobj-nbalist$c nbalist-stobj$c)))
+    :hints(("Goal" :in-theory (enable nbalist-stobj-nbalist$c
+                                      nbalist-stobj-nbalist$c-logic))))
 
   (defret nbalist-stobj$c-size-ok-of-<fn>
     (implies (nbalist-stobj$c-size-ok nbalist-stobj$c)
@@ -233,6 +282,17 @@
                             (id (nbalist-stobj$c-size-ok-witness . ,(cdr lit)))))
                      :in-theory (e/d ()
                                      (nbalist-stobj$c-size-ok-necc))))))))
+
+
+(define nbalist-stobj-nthkey$c ((n natp)
+                                nbalist-stobj$c)
+  :guard (< n (nbalist-len$c nbalist-stobj$c))
+  (stobj-let ((acl2::intstack (nbalist-stack$c nbalist-stobj$c)))
+             (elt)
+             (acl2::intstack-nth n acl2::intstack)
+             elt))
+
+
 
 (define nbalist-stobj$ap (nbalist)
   :enabled t
@@ -271,6 +331,33 @@
 
 
   
+(define nbalist-stobj-nbalist$a ((nbalist nbalist-stobj$ap))
+  :enabled t
+  (nbalist-fix nbalist))
+
+
+(local (defthm consp-of-nth-when-nbalistp
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (consp (nth n x)))
+         :hints(("Goal" :in-theory (enable nth nbalistp)))))
+
+(local (defthm true-listp-when-nbalistp
+         (implies (nbalistp x)
+                  (true-listp x))
+         :hints(("Goal" :in-theory (enable nbalistp)))))
+
+(define nbalist-stobj-nthkey$a ((n natp)
+                                (nbalist nbalist-stobj$ap))
+  :guard (< n (nbalist-stobj-len$a nbalist))
+  :enabled t
+  (car (nth n (nbalist-fix nbalist))))
+
+;; (define nbalist-stobj-nthval$a ((n natp)
+;;                                 (nbalist nbalist-stobj$ap))
+;;   :guard (< n (nbalist-stobj-len$a nbalist))
+;;   (cdr (nth n (nbalist-fix nbalist))))
+
 
 
 (encapsulate nil
@@ -278,19 +365,22 @@
    (define nbalist-stobj-corr (nbalist-stobj$c nbalist)
      :enabled t
      :verify-guards nil
-     (and (equal nbalist (nbalist-stobj-to-nbalist nbalist-stobj$c))
+     (and (equal nbalist (nbalist-stobj-nbalist$c nbalist-stobj$c))
           (nbalist-stobj$c-size-ok nbalist-stobj$c))))
 
   (local (defthm nbalist-stobj$c-size-ok-of-empty
            (nbalist-stobj$c-size-ok '(nil nil))
            :hints(("Goal" :in-theory (enable nbalist-stobj$c-size-ok)))))
 
-  (local (defthm nbalist-stobj-to-nbalist-of-empty
-           (not (nbalist-stobj-to-nbalist '(nil nil)))
-           :hints(("Goal" :in-theory (e/d (nbalist-stobj-to-nbalist)
-                                          ((nbalist-stobj-to-nbalist)))))))
+  (local (defthm nbalist-stobj-nbalist$c-of-empty
+           (not (nbalist-stobj-nbalist$c '(nil nil)))
+           :hints(("Goal" :in-theory (e/d (nbalist-stobj-nbalist$c)
+                                          ((nbalist-stobj-nbalist$c)))))))
 
-  (local (in-theory (enable nbalist-lookup$c)))
+  (local (in-theory (enable nbalist-lookup$c
+                            nbalist-stobj-nthkey$a
+                            nbalist-stobj-nthkey$c
+                            nbalist-stobj-nbalist$c)))
 
   (defabsstobj-events nbalist-stobj
     :concrete nbalist-stobj$c
@@ -308,7 +398,12 @@
                                   :protect t)
               (nbalist-stobj-pop :logic nbalist-stobj-pop$a
                                 :exec nbalist-pop$c
-                                :protect t))))
+                                :protect t)
+              (nbalist-stobj-nbalist :logic nbalist-stobj-nbalist$a
+                                     :exec nbalist-stobj-nbalist$c)
+
+              (nbalist-stobj-nthkey :logic nbalist-stobj-nthkey$a
+                                     :exec nbalist-stobj-nthkey$c))))
   
 
 (define nbalist-stobj-lookup ((id natp)

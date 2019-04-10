@@ -1,4 +1,4 @@
-; GL - A Symbolic Simulation Framework for ACL2
+ ; GL - A Symbolic Simulation Framework for ACL2
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -38,130 +38,153 @@
 (include-book "bfr")
 (include-book "arith-base")
 ;; (include-book "pathcond-stobj")
-(include-book "std/stobjs/updater-independence" :dir :system)
 (include-book "defapply")
+(include-book "std/stobjs/nicestobj" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
 
+(acl2::defstobj-clone u32arr aignet::u32arr :pkg fgl-fgl)
+(acl2::defstobj-clone ipasir ipasir::ipasir :pkg fgl-fgl)
+(acl2::defstobj-clone sat-lits aignet::sat-lits :pkg fgl-fgl)
+(acl2::defstobj-clone strash aignet::strash :pkg fgl-fgl)
+
+(stobjs::defnicestobj logicman
+  (aignet :type aignet)
+  (strash :type strash)
+  (ipasir :type ipasir)
+  (sat-lits :type sat-lits)
+  (mode :type (satisfies bfr-mode-p) :pred bfr-mode-p :fix bfr-mode-fix :initially 0)
+  (aignet-refcounts :type u32arr)
+  (refcounts-index :type (integer 0 *) :pred natp :fix nfix :initially 0))
 
 
+(local (in-theory (disable aignet::aignetp
+                           aignet::strashp
+                           ipasir::ipasirp
+                           aignet::sat-litsp
+                           aignet::u32arrp)))
 
-(defconst *logicman-fields*
-  '((aignet :type aignet::aignet)
-    (aignet-refcounts :type aignet::aignet-refcounts)
-    (strash :type aignet::strash)
-    (ipasir :type ipasir::ipasir)
-    (sat-lits :type aignet::sat-lits)
-    ;; (pathcond :type pathcond)
-    ;; (bvar-db :type bvar-db)
-    ;; (prof :type interp-profiler)
-    (mode :type (satisfies bfr-mode-p) :initially 0)))
+;; (defconst *logicman-fields*
+;;   '((aignet :type aignet::aignet)
+;;     (strash :type aignet::strash)
+;;     (ipasir :type ipasir::ipasir)
+;;     (sat-lits :type aignet::sat-lits)
+;;     ;; (pathcond :type pathcond)
+;;     ;; (bvar-db :type bvar-db)
+;;     ;; (prof :type interp-profiler)
+;;     (mode :type (satisfies bfr-mode-p) :initially 0)
+;;     (aignet-refcounts :type aignet::aignet-refcounts)
+;;     ;; refcounts are up to date up to this aignet ID
+;;     (refcounts-index :type (integer 0 *) :initially 0)))
 
 
               
 
-(local (defun logicman-fields-to-templates (fields)
-         (declare (xargs :mode :program))
-         (if (atom fields)
-             nil
-           (cons (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
-                                                (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
-                                                (<type> . ,(third (car fields)))
-                                                (<rest> . ,(cdddr (car fields))))
-                                       :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
-                                       :pkg-sym 'fgl::foo)
-                 (logicman-fields-to-templates (cdr fields))))))
+;; (local (defun logicman-fields-to-templates (fields)
+;;          (declare (xargs :mode :program))
+;;          (if (atom fields)
+;;              nil
+;;            (cons (acl2::make-tmplsubst :atoms `((<field> . ,(caar fields))
+;;                                                 (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
+;;                                                 (:<fieldcase> . ,(if (atom (cdr fields))
+;;                                                                      t
+;;                                                                    (intern$ (symbol-name (caar fields)) "KEYWORD")))
+;;                                                 (<type> . ,(third (car fields)))
+;;                                                 (<rest> . ,(cdddr (car fields))))
+;;                                        :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
+;;                                        :pkg-sym 'fgl::foo)
+;;                  (logicman-fields-to-templates (cdr fields))))))
 
-(make-event
- `(defconst *logicman-field-templates*
-    ',(logicman-fields-to-templates *logicman-fields*)))
+;; (make-event
+;;  `(defconst *logicman-field-templates*
+;;     ',(logicman-fields-to-templates *logicman-fields*)))
   
 
-(make-event
- (acl2::template-subst
-  '(defstobj logicman
-     (:@proj fields (logicman-><field> :type <type> . <rest>)))
-  :subsubsts `((fields . ,*logicman-field-templates*))))
+;; (make-event
+;;  (acl2::template-subst
+;;   '(defstobj logicman
+;;      (:@proj fields (logicman-><field> :type <type> . <rest>)))
+;;   :subsubsts `((fields . ,*logicman-field-templates*))))
 
-(defthm logicmanp-implies-aignetp
-  (implies (logicmanp logicman)
-           (aignet::node-listp (logicman->aignet logicman))))
+;; (defthm logicmanp-implies-aignetp
+;;   (implies (logicmanp logicman)
+;;            (aignet::node-listp (logicman->aignet logicman))))
 
-(defthm logicmanp-implies-bfr-mode-p
-  (implies (logicmanp logicman)
-           (bfr-mode-p (logicman->mode logicman))))
+;; (defthm logicmanp-implies-bfr-mode-p
+;;   (implies (logicmanp logicman)
+;;            (bfr-mode-p (logicman->mode logicman))))
+
 
 ;; (defthm logicmanp-implies-pathcondp
 ;;   (implies (logicmanp logicman)
 ;;            (pathcondp (logicman->pathcond logicman))))
 
-(in-theory (disable logicmanp))
+;; (in-theory (disable logicmanp))
 
-(make-event
- (acl2::template-subst
-  '(std::defenum logicman-field-p ((:@proj fields :<field>)))
-  :subsubsts `((fields . ,*logicman-field-templates*))))
+;; (make-event
+;;  (acl2::template-subst
+;;   '(std::defenum logicman-field-p ((:@proj fields :<field>)))
+;;   :subsubsts `((fields . ,*logicman-field-templates*))))
 
-(make-event
- (acl2::template-subst
-  '(define logicman-get ((key logicman-field-p) &optional (logicman 'logicman))
-     ;; bozo define doesn't correctly support :non-executable t with macro args
-     (declare (xargs :non-executable t))
-     :no-function t
-     :prepwork ((local (in-theory (enable logicman-field-fix))))
-     (prog2$ (acl2::throw-nonexec-error 'logicman-get-fn (list key logicman))
-             (case key
-               (:@proj fields (:<field> (logicman-><field> logicman)))
-               (t (logicman->mode logicman)))))
-  :subsubsts `((fields . ,(butlast *logicman-field-templates* 1)))))
+;; (make-event
+;;  (acl2::template-subst
+;;   '(define logicman-get ((key logicman-field-p) &optional (logicman 'logicman))
+;;      ;; bozo define doesn't correctly support :non-executable t with macro args
+;;      (declare (xargs :non-executable t))
+;;      :no-function t
+;;      :prepwork ((local (in-theory (enable logicman-field-fix))))
+;;      (prog2$ (acl2::throw-nonexec-error 'logicman-get-fn (list key logicman))
+;;              (case key
+;;                (:@proj fields (:<fieldcase> (logicman-><field> logicman))))))
+;;   :subsubsts `((fields . ,*logicman-field-templates*))))
 
-(make-event
- (acl2::template-subst
-  '(defsection logicman-field-basics
-     (local (in-theory (enable logicman-get
-                               logicman-field-fix)))
-     (:@append fields
-      (def-updater-independence-thm logicman-><field>-updater-independence
-        (implies (equal (logicman-get :<field> new)
-                        (logicman-get :<field> old))
-                 (equal (logicman-><field> new)
-                        (logicman-><field> old))))
+;; (make-event
+;;  (acl2::template-subst
+;;   '(defsection logicman-field-basics
+;;      (local (in-theory (enable logicman-get
+;;                                logicman-field-fix)))
+;;      (:@append fields
+;;       (def-updater-independence-thm logicman-><field>-updater-independence
+;;         (implies (equal (logicman-get :<field> new)
+;;                         (logicman-get :<field> old))
+;;                  (equal (logicman-><field> new)
+;;                         (logicman-><field> old))))
 
-      (defthm update-logicman-><field>-preserves-others
-        (implies (not (equal (logicman-field-fix i) :<field>))
-                 (equal (logicman-get i (update-logicman-><field> x logicman))
-                        (logicman-get i logicman))))
+;;       (defthm update-logicman-><field>-preserves-others
+;;         (implies (not (equal (logicman-field-fix i) :<field>))
+;;                  (equal (logicman-get i (update-logicman-><field> x logicman))
+;;                         (logicman-get i logicman))))
 
-      (defthm update-logicman-><field>-self-preserves-logicman
-        (implies (logicmanp logicman)
-                 (equal (update-logicman-><field>
-                         (logicman-><field> logicman)
-                         logicman)
-                        logicman))
-        :hints(("Goal" :in-theory (enable logicmanp
-                                          aignet::redundant-update-nth))))
+;;       (defthm update-logicman-><field>-self-preserves-logicman
+;;         (implies (logicmanp logicman)
+;;                  (equal (update-logicman-><field>
+;;                          (logicman-><field> logicman)
+;;                          logicman)
+;;                         logicman))
+;;         :hints(("Goal" :in-theory (enable logicmanp
+;;                                           aignet::redundant-update-nth))))
 
-      (defthm logicman-><field>-of-update-logicman-><field>
-        (equal (logicman-><field> (update-logicman-><field> x logicman))
-               x)))
+;;       (defthm logicman-><field>-of-update-logicman-><field>
+;;         (equal (logicman-><field> (update-logicman-><field> x logicman))
+;;                x)))
 
-     (:@proj fields
-      (in-theory (disable logicman-><field>
-                          update-logicman-><field>)))
+;;      (:@proj fields
+;;       (in-theory (disable logicman-><field>
+;;                           update-logicman-><field>)))
 
-     (local (in-theory (disable logicman-get
-                                logicman-field-fix)))
+;;      (local (in-theory (disable logicman-get
+;;                                 logicman-field-fix)))
 
-     ;; test:
-     (local 
-      (defthm logicman-test-updater-independence
-        (b* ((logicman1 (update-logicman->strash strash logicman))
-             (logicman2 (update-logicman->ipasir ipasir logicman)))
-          (and (equal (logicman->mode logicman2) (logicman->mode logicman))
-               (equal (logicman->mode logicman1) (logicman->mode logicman)))))))
+;;      ;; test:
+;;      (local 
+;;       (defthm logicman-test-updater-independence
+;;         (b* ((logicman1 (update-logicman->strash strash logicman))
+;;              (logicman2 (update-logicman->ipasir ipasir logicman)))
+;;           (and (equal (logicman->mode logicman2) (logicman->mode logicman))
+;;                (equal (logicman->mode logicman1) (logicman->mode logicman)))))))
   
-  :subsubsts `((fields . ,*logicman-field-templates*))))
+;;   :subsubsts `((fields . ,*logicman-field-templates*))))
 
 
 
@@ -246,42 +269,48 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   :verify-guards nil
   (and (aignet::aignet-extension-p (logicman->aignet new)
                                    (logicman->aignet old))
+       (equal (aignet::num-regs (logicman->aignet new))
+              (aignet::num-regs (logicman->aignet old)))
        ;; (bvar-db-extension-p (logicman->bvar-db new)
        ;;                      (logicman->bvar-db old))
-       (equal (logicman->mode new) (logicman->mode old)))
+       (equal (logicman->mode new) (logicman->mode old))
+       (equal (logicman->ipasir new) (logicman->ipasir old))
+       (equal (logicman->sat-lits new) (logicman->sat-lits old))
+       (equal (logicman->aignet-refcounts new) (logicman->aignet-refcounts old))
+       (equal (logicman->refcounts-index new) (logicman->refcounts-index old)))
   ///
-  (def-updater-independence-thm logicman-extension-p-updater-independence-1
-    (implies (and (equal (logicman-get :aignet new)
-                         (logicman-get :aignet old))
-                  ;; (equal (logicman-get :bvar-db new)
-                  ;;        (logicman-get :bvar-db old))
-                  (equal (logicman-get :mode new)
-                         (logicman-get :mode old))
-                  (logicman-extension-p old other))
-             (logicman-extension-p new other)))
+  ;; (def-updater-independence-thm logicman-extension-p-updater-independence-1
+  ;;   (implies (and (equal (logicman-get :aignet new)
+  ;;                        (logicman-get :aignet old))
+  ;;                 ;; (equal (logicman-get :bvar-db new)
+  ;;                 ;;        (logicman-get :bvar-db old))
+  ;;                 (equal (logicman-get :mode new)
+  ;;                        (logicman-get :mode old))
+  ;;                 (logicman-extension-p old other))
+  ;;            (logicman-extension-p new other)))
 
-  (def-updater-independence-thm logicman-extension-p-updater-independence-2
-    (implies (and (equal (logicman-get :aignet new)
-                         (logicman-get :aignet old))
-                  ;; (equal (logicman-get :bvar-db new)
-                  ;;        (logicman-get :bvar-db old))
-                  (equal (logicman-get :mode new)
-                         (logicman-get :mode old))
-                  (logicman-extension-p other old))
-             (logicman-extension-p other new)))
+  ;; (def-updater-independence-thm logicman-extension-p-updater-independence-2
+  ;;   (implies (and (equal (logicman-get :aignet new)
+  ;;                        (logicman-get :aignet old))
+  ;;                 ;; (equal (logicman-get :bvar-db new)
+  ;;                 ;;        (logicman-get :bvar-db old))
+  ;;                 (equal (logicman-get :mode new)
+  ;;                        (logicman-get :mode old))
+  ;;                 (logicman-extension-p other old))
+  ;;            (logicman-extension-p other new)))
 
-  (def-updater-independence-thm logicman-extension-p-updater-independence-2
-    (implies (and (equal (logicman-get :aignet new)
-                         (logicman-get :aignet old))
-                  ;; (equal (logicman-get :bvar-db new)
-                  ;;        (logicman-get :bvar-db old))
-                  (equal (logicman-get :mode new)
-                         (logicman-get :mode old))
-                  (logicman-extension-p other old))
-             (logicman-extension-p other new)))
+  ;; (def-updater-independence-thm logicman-extension-p-updater-independence-2
+  ;;   (implies (and (equal (logicman-get :aignet new)
+  ;;                        (logicman-get :aignet old))
+  ;;                 ;; (equal (logicman-get :bvar-db new)
+  ;;                 ;;        (logicman-get :bvar-db old))
+  ;;                 (equal (logicman-get :mode new)
+  ;;                        (logicman-get :mode old))
+  ;;                 (logicman-extension-p other old))
+  ;;            (logicman-extension-p other new)))
 
-  (in-theory (disable logicman-extension-p-updater-independence-1
-                      logicman-extension-p-updater-independence-2))
+  ;; (in-theory (disable logicman-extension-p-updater-independence-1
+  ;;                     logicman-extension-p-updater-independence-2))
 
   (defmacro bind-logicman-extension (new old-var)
     `(and (bind-free (acl2::prev-stobj-binding ,new ',old-var mfc state))
@@ -300,14 +329,14 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (logicman-extension-p y z))
              (logicman-extension-p x z)))
 
-  (defthm logicman-extension-when-same
-    (implies (and (equal (logicman-get :aignet new)
-                         (logicman-get :aignet old))
-                  ;; (equal (logicman-get :bvar-db new)
-                  ;;        (logicman-get :bvar-db old))
-                  (equal (logicman-get :mode new)
-                         (logicman-get :mode old)))
-             (logicman-extension-p new old)))
+  ;; (defthm logicman-extension-when-same
+  ;;   (implies (and (equal (logicman-get :aignet new)
+  ;;                        (logicman-get :aignet old))
+  ;;                 ;; (equal (logicman-get :bvar-db new)
+  ;;                 ;;        (logicman-get :bvar-db old))
+  ;;                 (equal (logicman-get :mode new)
+  ;;                        (logicman-get :mode old)))
+  ;;            (logicman-extension-p new old)))
 
   (defthm logicman->mode-of-extension
     (implies (bind-logicman-extension x y)
@@ -1369,6 +1398,11 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (bfr-p x))
          :hints(("Goal" :in-theory (enable bfr-p)))))
 
+(defthm logicman->mode-when-not-others
+  (implies (and (not (equal (logicman->mode logicman) (bfrmode :bdd)))
+                (not (equal (logicman->mode logicman) (bfrmode :aignet))))
+           (equal (equal (logicman->mode logicman) (bfrmode :aig)) t)))
+
 (local (defthm ubdd-p-when-bfr-p
          (implies (and (bfr-p x)
                        (bfrstate-mode-is :bdd)
@@ -1422,9 +1456,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 (define bfr-not ((x lbfr-p) &optional (logicman 'logicman))
-  :returns (bfr lbfr-p :hints(("Goal" :in-theory (enable bfr-p
-                                                         aignet-lit->bfr
-                                                         bfr->aignet-lit))))
+  :returns (bfr lbfr-p :hints((and stable-under-simplificationp
+                                   '(:in-theory (enable bfr-p
+                                                        aignet-lit->bfr
+                                                        bfr->aignet-lit)))))
   :prepwork ((local (defthm lit->var-not-0
                       (implies (and (satlink::litp x)
                                     (not (equal x 1))
@@ -1568,6 +1603,14 @@ logicman stobj.  If no logicman argument is supplied, the variable named
          (implies (aignet::aignet-litp x aignet)
                   (<= (satlink::lit->var x) (aignet::fanin-count aignet)))
          :hints(("Goal" :in-theory (enable aignet::aignet-idp)))))
+
+
+(local
+ #!aignet
+ (defthm node-listp-when-aignetp
+   (implies (aignetp x)
+            (node-listp x))
+   :hints(("Goal" :in-theory (enable aignetp)))))
 
 ;; (defthm aignet-litp-of-bfr->aignet-lit-bfrstate
 ;;   (aignet::aignet-litp (bfr->aignet-lit x (bfrstate 0 (aignet::fanin-count aignet))) aignet)
@@ -2490,3 +2533,69 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                           (aabf-syntactically-equal equal)
                           (aabf-extension-p logicman-extension-p)))))))
 
+
+
+
+
+(define logicman-invar (logicman)
+  (non-exec
+   (b* (;; (mode (logicman->mode logicman))
+        (refcounts-index (logicman->refcounts-index logicman)))
+     (stobj-let ((aignet (logicman->aignet logicman))
+                 (ipasir (logicman->ipasir logicman))
+                 (sat-lits (logicman->sat-lits logicman))
+                 (u32arr (logicman->aignet-refcounts logicman)))
+                (ok)
+                (and (<= (lnfix refcounts-index) (aignet::u32-length u32arr))
+                     (eql (aignet::num-regs aignet) 0)
+                     (aignet::sat-lits-wfp sat-lits aignet)
+                     (ipasir::ipasir-some-history ipasir)
+                     (ipasir::ipasir-empty-new-clause ipasir)
+                     (not (eq (ipasir::ipasir-get-status ipasir) :undef))
+                     (aignet::sat-lit-list-listp (non-exec (ipasir::ipasir$a->formula ipasir)) sat-lits)
+                     (aignet::sat-lit-listp (non-exec (ipasir::ipasir$a->assumption ipasir)) sat-lits)
+                     (ec-call (aignet::cnf-for-aignet aignet (ipasir::ipasir$a->formula ipasir) sat-lits)))
+                ok)))
+  ///
+  (defthm logicman-invar-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (logicman-invar old))
+             (logicman-invar new))
+    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+
+
+
+(define logicman-update-refcounts (logicman)
+  :returns (new-logicman)
+  (b* ((refcounts-index (lnfix (logicman->refcounts-index logicman))))
+    (stobj-let ((aignet (logicman->aignet logicman))
+                (u32arr (logicman->aignet-refcounts logicman)))
+               (u32arr num-fanins)
+               (b* ((u32arr (if (< (u32-length u32arr) (aignet::num-fanins aignet))
+                                (resize-u32 (* 2 (aignet::num-fanins aignet)) u32arr)
+                              u32arr))
+                    (u32arr (aignet::aignet-count-gate-refs-tailrec
+                             (min refcounts-index (aignet::num-fanins aignet)) u32arr aignet)))
+                 (mv u32arr (aignet::num-fanins aignet)))
+               (update-logicman->refcounts-index num-fanins logicman)))
+  ///
+  (local (defthm len-of-aignet-count-gate-refs-tailrec
+           (<= (len u32arr)
+               (len (aignet::aignet-count-gate-refs-tailrec n u32arr logicman)))
+           :hints(("Goal" :in-theory (enable aignet::aignet-count-gate-refs-tailrec)))
+           :rule-classes :linear))
+
+  (defret <fn>-updater-independence
+    (implies (and (not (equal (logicman-field-fix key) :aignet-refcounts))
+                  (not (equal (logicman-field-fix key) :refcounts-index)))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman))))
+
+  (defret refcounts-length-of-<fn>
+    (< (aignet::fanin-count (logicman->aignet logicman))
+       (len (logicman->aignet-refcounts new-logicman)))
+    :rule-classes :linear)
+
+  (defret logicman->refcounts-index-of-<fn>
+    (equal (logicman->refcounts-index new-logicman)
+           (aignet::num-fanins (logicman->aignet logicman)))))

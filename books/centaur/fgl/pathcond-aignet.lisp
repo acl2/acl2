@@ -228,7 +228,38 @@
     :hints (("goal" :cases ((aignet-pathcond-eval new nbalist invals regvals)))
             (and stable-under-simplificationp
                  (let ((lit (assoc 'aignet-pathcond-eval clause)))
-                   `(:expand (,lit)))))))
+                   `(:expand (,lit))))))
+
+  (defcong bits-equiv equal (aignet-pathcond-eval aignet nbalist invals regvals) 4
+    :hints (("goal" :cases ((aignet-pathcond-eval aignet nbalist invals regvals)))
+            (and stable-under-simplificationp
+                 (let ((lit (assoc 'aignet-pathcond-eval clause)))
+                   `(:expand (,lit))))))
+
+  (defthm aignet-pathcond-eval-of-take-num-ins
+    (implies (<= (num-ins aignet) (nfix n))
+             (iff (aignet-pathcond-eval aignet pathcond (take n invals) regvals)
+                  (aignet-pathcond-eval aignet pathcond invals regvals)))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (assoc 'aignet-pathcond-eval clause)))
+                   `(:expand (,lit))))))
+
+  (defthm aignet-pathcond-eval-of-take-num-regs
+    (implies (<= (num-regs aignet) (nfix n))
+             (iff (aignet-pathcond-eval aignet pathcond invals (take n regvals))
+                  (aignet-pathcond-eval aignet pathcond invals regvals)))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (assoc 'aignet-pathcond-eval clause)))
+                   `(:expand (,lit))))))
+
+  (defthm aignet-pathcond-eval-norm-regvals-when-no-regs
+    (implies (and (syntaxp (not (equal regvals ''nil)))
+                  (equal (num-regs aignet) 0))
+             (iff (aignet-pathcond-eval aignet pathcond invals regvals)
+                  (aignet-pathcond-eval aignet pathcond invals nil)))
+    :hints (("Goal" :use ((:instance aignet-pathcond-eval-of-take-num-regs
+                           (n 0)))
+             :in-theory (disable aignet-pathcond-eval-of-take-num-regs)))))
 
 
 
@@ -812,6 +843,8 @@
   (defthm nbalist-extension-of-nbalist-stobj-rewind
     (nbalist-extension-p x (nbalist-stobj-rewind len x))
     :hints(("Goal" :in-theory (enable nbalist-extension-p)))))
+
+
                   
 (defstobj aignet-pathcond$c
   (aignet-pathcond-nbalist$c :type nbalist-stobj)
@@ -870,9 +903,59 @@
              (nbalist-stobj-len nbalist-stobj)
              len))
 
+(define aignet-pathcond->nbalist$c (aignet-pathcond$c)
+  :enabled t
+  (stobj-let ((nbalist-stobj (aignet-pathcond-nbalist$c aignet-pathcond$c)))
+             (nbalist)
+             (nbalist-stobj-nbalist nbalist-stobj)
+             nbalist))
+
 (define aignet-pathcond-len$a (aignet-pathcond$a)
   :enabled t
   (len (ec-call (nbalist-fix aignet-pathcond$a))))
+
+(define aignet-pathcond->nbalist$a ((aignet-pathcond$a nbalist-stobj$ap))
+  :enabled t
+  (nbalist-fix aignet-pathcond$a))
+
+(local (defthm consp-of-nth-when-nbalistp
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (consp (nth n x)))
+         :hints(("Goal" :in-theory (enable nth nbalistp)))))
+
+(local (defthm true-listp-when-nbalistp
+         (implies (nbalistp x)
+                  (true-listp x))
+         :hints(("Goal" :in-theory (enable nbalistp)))))
+
+(define aignet-pathcond-nthkey$a ((n natp)
+                                  (aignet-pathcond$a nbalist-stobj$ap))
+  :guard (< n (aignet-pathcond-len$a aignet-pathcond$a))
+  :enabled t
+  (car (nth n (nbalist-fix aignet-pathcond$a))))
+
+(define aignet-pathcond-lookup$a ((n natp)
+                                  (aignet-pathcond$a nbalist-stobj$ap))
+  :enabled t
+  (nbalist-lookup n aignet-pathcond$a))
+
+(define aignet-pathcond-nthkey$c ((n natp)
+                                  aignet-pathcond$c)
+  :enabled t
+  :guard (< n (aignet-pathcond-len$c aignet-pathcond$c))
+  (stobj-let ((nbalist-stobj (aignet-pathcond-nbalist$c aignet-pathcond$c)))
+             (key)
+             (nbalist-stobj-nthkey n nbalist-stobj)
+             key))
+
+(define aignet-pathcond-lookup$c ((n natp)
+                                  aignet-pathcond$c)
+  :enabled t
+  (stobj-let ((nbalist-stobj (aignet-pathcond-nbalist$c aignet-pathcond$c)))
+             (key)
+             (nbalist-stobj-lookup n nbalist-stobj)
+             key))
 
 (define aignet-pathcond-rewind$c ((len natp) aignet-pathcond$c)
   :enabled t
@@ -906,12 +989,19 @@
                                        :exec aignet-pathcond-implies$c
                                        :protect t)
               (aignet-pathcond-assume :logic aignet-pathcond-assume$a
-                                           :exec aignet-pathcond-assume$c
-                                           :protect t)
+                                      :exec aignet-pathcond-assume$c
+                                      :protect t)
               (aignet-pathcond-len :logic aignet-pathcond-len$a
                                    :exec aignet-pathcond-len$c)
               (aignet-pathcond-rewind :logic aignet-pathcond-rewind$a
                                       :exec aignet-pathcond-rewind$c
-                                      :protect t))))
+                                      :protect t)
+              
+              (aignet-pathcond-nthkey :logic aignet-pathcond-nthkey$a
+                                      :exec aignet-pathcond-nthkey$c)
+              (aignet-pathcond-lookup :logic aignet-pathcond-lookup$a
+                                      :exec aignet-pathcond-lookup$c)
+              (aignet-pathcond->nbalist :logic aignet-pathcond->nbalist$a
+                                       :exec aignet-pathcond->nbalist$c))))
 
 

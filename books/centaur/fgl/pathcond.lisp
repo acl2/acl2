@@ -32,6 +32,7 @@
 
 (include-book "logicman")
 (include-book "pathcond-base")
+(include-book "pathcond-aignet-ipasir")
 (include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "theory"))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
@@ -781,6 +782,150 @@
     (equal (len (logicman-pathcond-eval-checkpoints! env pathcond logicman))
            (+ 1 (pathcond-rewind-stack-len (lbfr-mode) pathcond)))))
 
+
+
+      
+                
+(local (defthm cdr-of-nthcdr
+         (equal (cdr (nthcdr n x))
+                (nthcdr n (cdr x)))))
+(local (defthm hons-assoc-equal-in-pairlis-numlist
+         (implies (and (natp start) (natp n))
+                  (equal (cdr (hons-assoc-equal n (pairlis$ (numlist start 1 k) (nthcdr start x))))
+                         (and (< (- n start) (nfix k))
+                              (<= start n)
+                              (nth n x))))
+         :hints(("Goal" :in-theory (enable car-of-nthcdr)
+                 :induct (numlist start 1 k)))))
+
+(local (defthm hons-assoc-equal-in-pairlis-numlist-base
+         (implies (natp n)
+                  (equal (cdr (hons-assoc-equal n (pairlis$ (numlist 0 1 k) x)))
+                         (and (< n (nfix k))
+                              (nth n x))))
+         :hints(("Goal" :use ((:instance hons-assoc-equal-in-pairlis-numlist
+                               (start 0)))
+                 :in-theory (disable hons-assoc-equal-in-pairlis-numlist)))))
+                          
+
+(local
+ (defthm nth-alist-to-bitarr-of-pairlis$
+   (acl2::bit-equiv (nth n (alist-to-bitarr k (pairlis$ (acl2::numlist 0 1 k) bits) nil))
+                    (if (< (nfix n) (nfix k))
+                        (bool->bit (nth n bits))
+                      0))))
+
+(define bools->bits (x)
+  :Returns (bits)
+  (if (atom x)
+      nil
+    (cons (bool->bit (car x))
+          (bools->bits (cdr x))))
+  ///
+  (defret len-of-<fn>
+    (equal (len bits) (len x)))
+  (defretd nth-of-<fn>
+    (equal (nth n bits)
+           (and (< (nfix n) (len x))
+                (bool->bit (nth n x))))
+    :hints(("Goal" :in-theory (enable nth)
+            :induct (nth n x))))
+  (defret nth-of-<fn>-under-bit-equiv
+    (acl2::bit-equiv (nth n bits)
+                     (bool->bit (nth n x)))
+    :hints(("Goal" :in-theory (enable nth-of-bools->bits)))))
+
+(define bits->bools (x)
+  :Returns (bits)
+  (if (atom x)
+      nil
+    (cons (bit->bool (car x))
+          (bits->bools (cdr x))))
+  ///
+  (defret len-of-<fn>
+    (equal (len bits) (len x)))
+  (defret nth-of-<fn>
+    (equal (nth n bits)
+           (bit->bool (nth n x)))
+    :hints(("Goal" :in-theory (enable nth)
+            :induct (nth n x)))))
+
+(local
+ (defthm alist-to-bitarr-of-pairlis$-under-bits-equiv
+   (acl2::bits-equiv (alist-to-bitarr k (pairlis$ (acl2::numlist 0 1 k) bools) nil)
+                     (take k (bools->bits bools)))
+   :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
+
+(local
+ (defthm bools->bits-of-bits->bools-under-bits-equiv
+   (acl2::bits-equiv (bools->bits (bits->bools x)) x)
+   :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
+
+
+(define logicman-pathcond-to-ipasir (pathcond logicman)
+  :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
+              (logicman-invar logicman)
+              (lbfr-mode-is :aignet)
+              )
+  :guard-hints (("goal" :in-theory (enable logicman-pathcond-p
+                                           logicman-invar)))
+  :returns (new-logicman)
+  (b* (((unless (mbt (lbfr-mode-is :aignet))) logicman)
+       (logicman (logicman-update-refcounts logicman)))
+    (stobj-let ((aignet (logicman->aignet logicman))
+                (sat-lits (logicman->sat-lits logicman))
+                (ipasir (logicman->ipasir logicman))
+                (u32arr (logicman->aignet-refcounts logicman)))
+               (sat-lits ipasir)
+               (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                          (sat-lits ipasir)
+                          (aignet::aignet-pathcond-to-ipasir
+                           aignet-pathcond aignet sat-lits ipasir u32arr)
+                          (mv sat-lits ipasir))
+               logicman))
+  ///
+  (defret logicman-invar-of-<fn>
+    (implies (and (logicman-invar logicman)
+                  (logicman-pathcond-p pathcond))
+             (logicman-invar new-logicman))
+    :hints(("Goal" :in-theory (enable logicman-invar
+                                      logicman-pathcond-p))))
+
+  (local (defthm eval-cube-of-append
+           (equal (satlink::eval-cube (append x y) env)
+                  (b-and (satlink::eval-cube x env)
+                         (satlink::eval-cube y env)))
+           :hints(("Goal" :in-theory (enable satlink::eval-cube)))))
+
+  (local (defthm eval-formula-of-append
+           (equal (satlink::eval-formula (append x y) env)
+                  (b-and (satlink::eval-formula x env)
+                         (satlink::eval-formula y env)))
+           :hints(("Goal" :in-theory (enable satlink::eval-formula)))))
+
+  (defret logicman-ipasir-assumption-of-<fn>
+    (implies (and (logicman-invar logicman)
+                  (logicman-pathcond-p pathcond)
+                  (equal (satlink::eval-formula
+                          (ipasir::ipasir$a->formula (logicman->ipasir new-logicman))
+                          env)
+                         1)
+                  (lbfr-mode-is :aignet)
+                  (nth *pathcond-enabledp* pathcond))
+             (equal (satlink::eval-cube
+                     (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman))
+                     env)
+                    (b-and (satlink::eval-cube (ipasir::ipasir$a->assumption (logicman->ipasir logicman)) env)
+                           (b* ((vals (aignet::cnf->aignet-invals
+                                       nil env (logicman->sat-lits new-logicman)
+                                       (logicman->aignet logicman))))
+                             (bool->bit (logicman-pathcond-eval (pairlis$
+                                                                 (acl2::numlist 0 1
+                                                                                (aignet::num-ins (logicman->aignet logicman)))
+                                                                 (bits->bools vals))
+                                                                pathcond logicman))))))
+    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p
+                                      logicman-pathcond-eval)))))
 
 
 
