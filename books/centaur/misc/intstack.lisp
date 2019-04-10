@@ -507,7 +507,12 @@
   (and (< x (intstack$c-bits-length intstack$c))
        (eql (intstack$c-bitsi x intstack$c) 1)))
 
-
+(define intstack$c-nth ((n natp :type (integer 0 *))
+                        (intstack$c))
+  :guard (and (< n (intstack$c-count intstack$c))
+              (<= (intstack$c-count intstack$c) (intstack$c-stack-length intstack$c)))
+  :split-types t
+  (intstack$c-stacki (- (1- (intstack$c-count intstack$c)) n) intstack$c))
 
 
 
@@ -541,6 +546,17 @@
   :enabled t
   (ec-call (nthcdr (- (len intstack$a) (nfix n)) intstack$a)))
 
+(local (defthm true-listp-when-u32-listp
+         (implies (u32-listp x)
+                  (true-listp x))))
+
+(define intstack$a-nth ((n natp :type (integer 0 *))
+                        (intstack$a intstack$ap))
+  :guard (< n (intstack$a-count intstack$a))
+  :prepwork ((local (in-theory (enable nth-in-u32-listp-natp))))
+  :enabled t
+  (lnfix (nth n intstack$a)))
+
 
 (define intstack-corr (intstack$c intstack$a)
   :non-executable t
@@ -568,7 +584,16 @@
 
 (local (in-theory (enable intstack$c-bits-consistent-necc
                           intstack$c-bits-consistent-implies-not-member
-                          intstack$c-member)))
+                          intstack$c-member
+                          nth-in-u32-listp-natp
+                          intstack$c-nth)))
+
+;; (local (defthm nth-of-rev
+;;          (equal (nth n (rev x))
+;;                 (and (< (nfix n) (len x))
+;;                      (nth (- (1- (len x)) (nfix n)) x)))
+;;          :hints(("Goal" :in-theory (enable rev nth)))))
+                  
 
 (defabsstobj-events intstack
   :concrete intstack$c
@@ -588,7 +613,9 @@
                               :exec intstack$c-rewind
                               :protect t)
             (intstack-member^ :logic intstack$a-member
-                              :exec intstack$c-member)))
+                              :exec intstack$c-member)
+            (intstack-nth :logic intstack$a-nth
+                          :exec intstack$c-nth)))
 
 (define intstack-push ((x natp) intstack)
   :enabled t

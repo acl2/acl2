@@ -290,6 +290,25 @@ defthm would disappear.</p>
    ))
 
 
+(defun combine-tmplsubsts (a b)
+  ;; Combine the fields of the given template substs.  Keys of b that are in a as well will be shadowed.
+  (b* (((tmplsubst a))
+       ((tmplsubst b)))
+    (make-tmplsubst
+     :atoms (append a.atoms b.atoms)
+     :strs (append a.strs b.strs)
+     :string-strs (append a.string-strs b.string-strs)
+     :pkg-sym (or a.pkg-sym b.pkg-sym)
+     :splices (append a.splices b.splices)
+     :features (append a.features b.features)
+     :subsubsts (append a.subsubsts b.subsubsts))))
+
+(defun combine-each-tmplsubst-with-default (as b)
+  (if (atom as)
+      nil
+    (cons (combine-tmplsubsts (car as) b)
+          (combine-each-tmplsubst-with-default (cdr as) b))))
+
 ;; returns (mv changedp tree), avoids unnecessary consing.
 ;; The precedence among the substitutions is as the argument ordering suggests:
 ;; subtrees are substituted first, then atoms, and strings into symbols only if
