@@ -111,22 +111,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (t (and (simple-termp (car lst))
                  (simple-term-listp (cdr lst)))))))
 
-(defun replace-in-term (old new term)
-  "replace all occurrences of old in term with new"
-  (declare (xargs :guard t))
-  (cond ((equal term old)
-         new)
-        ((atom term)
-         term)
-        (t (cons (replace-in-term old new (car term))
-                 (replace-in-term old new (cdr term))))))
-
-(defun in-termp (x term)
-  ;; is x in term?
-  (declare (xargs :guard t))
-  (not (equal term (replace-in-term x (list x x) term))))
-
-
 (defun xargs-kwd-alist1 (decls keywords ctx al)
   (if (atom decls)
       al
@@ -235,9 +219,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (avoid-lst (union-eq fun-args vars))
        (return-var (acl2::generate-variable '_ret avoid-lst nil nil wrld)))
     `(let ((,return-var ,body))
-       (if ,(replace-in-term `(,fun-name ,@fun-args)
-                             return-var
-                             output-contract)
+       (if ,(acl2::subst-expr return-var
+                              `(,fun-name ,@fun-args)
+                              output-contract)
            ,return-var
          (er hard ',fun-name
              ;; harshrc-- Should we really give an hard
@@ -277,6 +261,33 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       body
     (add-output-contract-check body oc name formals wrld)))
 
+(mutual-recursion
+ (defun subst-fun-sym (new old form)
+   (declare (xargs :guard (and (pseudo-termp new)
+                               (acl2::legal-variablep old)
+                               (pseudo-termp form))
+                   :verify-guards nil))
+   (cond ((acl2::variablep form)
+          form)
+         ((acl2::fquotep form) form)
+         (t (acl2::cons-term (acl2::subst-var new old (acl2::ffn-symb form))
+                             (subst-fun-lst new old (acl2::fargs form))))))
+
+ (defun subst-fun-lst (new old l)
+   (declare (xargs :guard (and (pseudo-termp new)
+                               (acl2::legal-variablep old)
+                               (pseudo-term-listp l))
+                   :verify-guards nil))
+   (cond ((endp l) nil)
+         (t (cons (subst-fun-sym new old (car l))
+                  (subst-fun-lst new old (cdr l)))))))
+
+(defun fun-sym-in-termp (f term)
+  (declare (xargs :guard (and (acl2::legal-variablep f)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (not (equal term (subst-fun-sym (list f f) f term))))
+
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist wrld make-staticp d?)
   "Generate events which simulate a typed ACL2s language."
@@ -292,7 +303,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (ind-scheme-name (make-sym name 'induction-scheme))
        (defun `(defun-no-test ,fun-ind-name ,formals
                  ,@decls
-                 ,(replace-in-term name fun-ind-name lbody)))
+                 ,(subst-fun-sym fun-ind-name name lbody)))
        (defun (if skip-admissibilityp `(skip-proofs ,defun) defun))
        (defthmnotest (if skip-admissibilityp 'defthmskipall 'defthm-no-test))
        (ind-defthm
@@ -1068,7 +1079,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (er hard ctx "~|The output contract has to be a term. ~x0 is not.~%" output-contract))
 ;       (signature (defdata::get1 :sig kwd-alist))
 
-       (recp (in-termp name body))
+       (recp (fun-sym-in-termp name body))
        (kwd-alist (put-assoc :recursivep recp kwd-alist))
 
        (docs (filter-strings decls/docs))
