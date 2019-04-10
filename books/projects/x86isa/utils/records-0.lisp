@@ -1,12 +1,12 @@
 ; Author:
-; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Shilpi Goel <shigoel@cs.utexas.edu>
 
 ;; This book is a slightly modified version of the records book by Rob
 ;; Sumners and Matt Kaufmann (books/misc/records.lisp).
 
 ;; Differences between this book and books/misc/records.lisp:
 ;; - This book uses 0 instead of NIL for absent fields and for the empty record.
-;; - This book uses ILL-FORMED-KEY instead of NIL as the "bad key".
+;; - This book uses (ILL-FORMED-KEY) instead of NIL as the "bad key".
 
 (in-package "X86ISA")
 
@@ -14,10 +14,12 @@
 
 ;; ======================================================================
 
+; The "bad key".
 (defun ill-formed-key ()
   (declare (xargs :guard t))
   "unlikely-we-should-ever-encounter-this-particular-string-as-a-key!?!?!?!")
 
+; Recognize NIL-terminated alists with ordered keys and no 0 values.
 (defun well-formed-alistp-aux (x)
   (declare (xargs :guard t))
   (or (null x)
@@ -29,12 +31,16 @@
                     (ACL2::<< (caar x) (caadr x))))
            (well-formed-alistp-aux (cdr x)))))
 
+; Recognize 0 and non-empty WELL-FORMED-ALISTP-AUX values (see above).
+; Here 0 is the empty record.
 (defun well-formed-alistp (x)
   (declare (xargs :guard t))
   (and (not (equal x nil))
        (or (eql x 0)
            (well-formed-alistp-aux x))))
 
+; Recognize NIL-terminated alists with ordered keys
+; without the bad key and without 0 values.
 (defun good-alistp-aux (x)
   (declare (xargs :guard t))
   (or (null x)
@@ -47,6 +53,8 @@
                     (ACL2::<< (caar x) (caadr x))))
            (good-alistp-aux (cdr x)))))
 
+; Recognize 0 and non-empty GOOD-ALISTP-AUX values (see above).
+; Here 0 is the empty record.
 (defun good-alistp (x)
   (declare (xargs :guard t))
   (and (not (equal x nil))
@@ -65,6 +73,9 @@
                         good-alistp-implies-well-formed-alistp)
                        ())))
 
+; Recognize values outside WELL-FORMED-ALISTP,
+; and WELL-FORMED-ALISTP values with just a pair consisting of
+; the bad key and recursively an ILL-FORMED-ALISTP value.
 (defun ill-formed-alistp (x)
   (declare (xargs :guard t))
   (or (not (well-formed-alistp x))
@@ -85,6 +96,8 @@
    (implies (good-alistp x)
             (not (ill-formed-alistp x)))))
 
+; Read key I from record R.
+; Return 0 if key not present.
 (defun gi (i r)
   (declare (xargs :guard t
                   :measure (acl2-count r)))
@@ -100,6 +113,8 @@
             (gi i (cdr r))
           0)))))
 
+; Auxiliary function to write value V for key I in record R.
+; Used by SI (below) when V is not 0.
 (defun si-aux (i v r)
   (declare (xargs :guard t))
   (if (or (atom r) (atom (car r)))
@@ -116,6 +131,8 @@
 ;;            (equal (len (si-aux i v r))
 ;;                   (len r))))
 
+; Remove key I from record R.
+; Used by SI (below) when V is 0.
 (defun si-kill (i r)
   (declare (xargs :guard t))
   (if (or (atom r) (atom (car r)))
@@ -124,6 +141,8 @@
         (cdr r)
       (cons (car r) (si-kill i (cdr r))))))
 
+; Write value V for key I in record R.
+; Treat 0 as the empty record.
 (defun si (i v r)
   (declare (xargs :guard t))
   (if (eql r 0)
@@ -226,13 +245,15 @@
 
 ;; Conversion functions:
 
-(defun acl2->map (x) ;; function mapping acl2 objects to well-formed records.
+; Map ACL2 objects to well-formed records.
+(defun acl2->map (x)
   (declare (xargs :guard t))
   (if (ill-formed-alistp x)
       (list (cons (ill-formed-key) x))
     x))
 
-(defun map->acl2 (x) ;; inverse of acl2->map.
+; Inverse of ACL2->MAP.
+(defun map->acl2 (x)
   (declare (xargs :guard t))
   (if (well-formed-alistp x)
       (if (ill-formed-alistp x)
@@ -269,11 +290,13 @@
 
 ;; Definition of gz and sz:
 
-(defun gz (i x) ;; the generic record g(et) which works on any ACL2 object.
+; The generic record g(et) which works on any ACL2 object.
+(defun gz (i x)
   (declare (xargs :guard t))
   (gi i (acl2->map x)))
 
-(defun sz (i v x) ;; the generic record s(et) which works on any ACL2 object.
+; The generic record s(et) which works on any ACL2 object.
+(defun sz (i v x)
   (declare (xargs :guard t))
   (map->acl2 (si i v (acl2->map x))))
 
