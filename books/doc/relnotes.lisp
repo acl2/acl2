@@ -345,6 +345,8 @@
  <li>New fixtypes @(tsee nibble) and @(tsee nibble-list) for (unsigned 4-bit)
  nibbles and true lists of nibbles.</li>
 
+ <li>A new fixtype @(tsee bit-list) for true lists of bits.</li>
+
  </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
