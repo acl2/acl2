@@ -53,11 +53,15 @@
                             ubyte8p
                             unsigned-byte-fix
                             unsigned-byte-list-fix
+                            crypto::hmac-sha-512
+                            crypto::ripemd-160
+                            crypto::sha-256
                             crypto::secp256k1-add
                             crypto::secp256k1-generator
                             crypto::secp256k1-infinityp
                             crypto::secp256k1-mul
                             crypto::secp256k1-order
+                            crypto::secp256k1-point-to-bytes
                             crypto::secp256k1-pointp
                             crypto::secp256k1-priv-key
                             crypto::secp256k1-priv-key-p

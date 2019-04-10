@@ -10,11 +10,14 @@
 
 (in-package "BITCOIN")
 
+(include-book "kestrel/crypto/hmac-sha-512-placeholder" :dir :system)
+(include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
 (include-book "kestrel/fty/defbytelist-instances" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
+(include-book "bytes")
 (include-book "crypto")
 
 (local (include-book "kestrel/utilities/lists/prefixp-theorems" :dir :system))
