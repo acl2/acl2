@@ -18,6 +18,7 @@
 (defpkg "ETHEREUM" (append *std-pkg-symbols*
                            '(assert-equal
                              bendian=>nat
+                             byte
                              byte-fix
                              byte-list
                              byte-list-equiv

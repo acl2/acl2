@@ -62,6 +62,10 @@
      delete
      find
      map
+     set
+     byte
+     read
+     write
      )))
 
 (defpkg "STR"

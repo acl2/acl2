@@ -17,6 +17,7 @@
 
 (defpkg "BITCOIN" (append *std-pkg-symbols*
                           '(bendian=>nat
+                            byte
                             byte-fix
                             byte-list
                             byte-listp
