@@ -125,12 +125,6 @@
           (cons (cons i v) r)
         (cons (car r) (si-aux i v (cdr r)))))))
 
-;; (defthmd len-si-aux-1
-;;   (implies (and (well-formed-alistp-aux r)
-;;                 (member i (strip-cars r)))
-;;            (equal (len (si-aux i v r))
-;;                   (len r))))
-
 ; Remove key I from record R.
 ; Used by SI (below) when V is 0.
 (defun si-kill (i r)
