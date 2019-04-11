@@ -100,6 +100,7 @@
 ; We load logops-lemmas first so that the old style :doc-strings don't get
 ; stripped away when they're loaded redundantly later.
 (include-book "ihs/logops-lemmas" :dir :system)
+(include-book "ihs/math-lemmas" :dir :system)
 
 (include-book "centaur/bitops/top" :dir :system)
 (include-book "centaur/bitops/congruences" :dir :system)
