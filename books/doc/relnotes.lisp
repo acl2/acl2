@@ -272,7 +272,7 @@
  hashes (i.e. byte arrays of length 32) to byte arrays.</p>
 
  <p>Added a formalization of the format of transactions and of their RLP
- encoding.</p>
+ encoding and decoding.</p>
 
  <p>Added several other theorems.  Improved some existing theorems.</p>
 
