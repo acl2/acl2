@@ -10,7 +10,8 @@
 
 (in-package "FTY")
 
-(include-book "defbytelist")
+(include-book "defubytelist")
+(include-book "defsbytelist")
 (include-book "defbyte-instances")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,82 +31,6 @@
    (xdoc::p
     "These fixtypes are based on
      <see topic='@(url defbyte-instances)'>these fixtypes</see>.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection defubytelist
-  :parents (defbytelist-instances)
-  :short "Specialized form of @(tsee defbytelist)
-          for ``standard'' true lists of
-          unsigned bytes of explicit integer sizes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This macro just takes a positive integer as input.")
-   (xdoc::p
-    "This macro generates fixtypes called @('acl2::ubyte<size>-list'),
-     where @('<size>') consists of the decimal digits of the size.
-     The recognizer, fixer, and equivalence are called
-     @('acl2::ubyte<size>-listp'),
-     @('acl2::ubyte<size>-list-fix'), and
-     @('acl2::ubyte<size>-list-equiv').")
-   (xdoc::p
-    "This macro also generates
-     some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::@def "defubytelist"))
-
-  (defmacro defubytelist (size)
-    (declare (xargs :guard (posp size)))
-    `(defbytelist
-       ,(acl2::packn (list 'acl2::ubyte size '-list))
-       :elt-type ,(acl2::packn (list 'acl2::ubyte size))
-       :pred ,(acl2::packn (list 'acl2::ubyte size '-listp))
-       :fix ,(acl2::packn (list 'acl2::ubyte size '-list-fix))
-       :equiv ,(acl2::packn (list 'acl2::ubyte size '-list-equiv))
-       :parents (defbytelist-instances)
-       :short ,(concatenate
-                'string
-                "Fixtype of true lists of unsigned bytes of size "
-                (coerce (explode-nonnegative-integer size 10 nil) 'string)
-                "."))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection defsbytelist
-  :parents (defbytelist-instances)
-  :short "Specialized form of @(tsee defbytelist)
-          for ``standard'' true lists of
-          signed bytes of explicit integer sizes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This macro just takes a positive integer as input.")
-   (xdoc::p
-    "This macro generates fixtypes called @('acl2::sbyte<size>-list'),
-     where @('<size>') consists of the decimal digits of the size.
-     The recognizer, fixer, and equivalence are called
-     @('acl2::sbyte<size>-listp'),
-     @('acl2::sbyte<size>-list-fix'), and
-     @('acl2::sbyte<size>-list-equiv').")
-   (xdoc::p
-    "This also generates
-     some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::@def "defsbytelist"))
-
-  (defmacro defsbytelist (size)
-    (declare (xargs :guard (posp size)))
-    `(defbytelist
-       ,(acl2::packn (list 'acl2::sbyte size '-list))
-       :elt-type ,(acl2::packn (list 'acl2::sbyte size))
-       :pred ,(acl2::packn (list 'acl2::sbyte size '-listp))
-       :fix ,(acl2::packn (list 'acl2::sbyte size '-list-fix))
-       :equiv ,(acl2::packn (list 'acl2::sbyte size '-list-equiv))
-       :parents (defbytelist-instances)
-       :short ,(concatenate
-                'string
-                "Fixtype of true lists of signed bytes of size "
-                (coerce (explode-nonnegative-integer size 10 nil) 'string)
-                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
