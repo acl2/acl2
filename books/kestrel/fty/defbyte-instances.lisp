@@ -10,7 +10,8 @@
 
 (in-package "FTY")
 
-(include-book "defbyte")
+(include-book "defubyte")
+(include-book "defsbyte")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,82 +27,6 @@
     "If fixtypes of unsigned or signed bytes of a certain size
      are needed but are not among the ones defined here,
      they can be added here.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection defubyte
-  :parents (defbyte-instances)
-  :short "Specialized form of @(tsee defbyte)
-          for ``standard'' unsigned bytes of explicit integer sizes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This macro just takes a positive integer as input.")
-   (xdoc::p
-    "This macro generates fixtypes called @('acl2::ubyte<size>'),
-     where @('<size>') consists of the decimal digits of the size.
-     The recognizer, fixer, and equivalence are called
-     @('acl2::ubyte<size>p'),
-     @('acl2::ubyte<size>-fix'), and
-     @('acl2::ubyte<size>-equiv').")
-   (xdoc::p
-    "This macro also generates
-     some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::@def "defubyte"))
-
-  (defmacro defubyte (size)
-    (declare (xargs :guard (posp size)))
-    `(defbyte
-       ,(acl2::packn (list 'acl2::ubyte size))
-       :size ,size
-       :signed nil
-       :pred ,(acl2::packn (list 'acl2::ubyte size 'p))
-       :fix ,(acl2::packn (list 'acl2::ubyte size '-fix))
-       :equiv ,(acl2::packn (list 'acl2::ubyte size '-equiv))
-       :parents (defbyte-instances)
-       :short ,(concatenate
-                'string
-                "Fixtype of unsigned bytes of size "
-                (coerce (explode-nonnegative-integer size 10 nil) 'string)
-                "."))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection defsbyte
-  :parents (defbyte-instances)
-  :short "Specialized form of @(tsee defbyte)
-          for ``standard'' signed bytes of explicit integer sizes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This macro just takes a positive integer as input.")
-   (xdoc::p
-    "This macro generates fixtypes called @('acl2::sbyte<size>'),
-     where @('<size>') consists of the decimal digits of the size.
-     The recognizer, fixer, and equivalence are called
-     @('acl2::sbyte<size>p'),
-     @('acl2::sbyte<size>-fix'), and
-     @('acl2::sbyte<size>-equiv').")
-   (xdoc::p
-    "This also generates
-     some standardized XDOC parents and short, and no XDOC long.")
-   (xdoc::@def "defsbyte"))
-
-  (defmacro defsbyte (size)
-    (declare (xargs :guard (posp size)))
-    `(defbyte
-       ,(acl2::packn (list 'acl2::sbyte size))
-       :size ,size
-       :signed t
-       :pred ,(acl2::packn (list 'acl2::sbyte size 'p))
-       :fix ,(acl2::packn (list 'acl2::sbyte size '-fix))
-       :equiv ,(acl2::packn (list 'acl2::sbyte size '-equiv))
-       :parents (defbyte-instances)
-       :short ,(concatenate
-                'string
-                "Fixtype of signed bytes of size "
-                (coerce (explode-nonnegative-integer size 10 nil) 'string)
-                "."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
