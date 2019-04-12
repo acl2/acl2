@@ -1,4 +1,4 @@
-; FTY -- Signed Byte List Fixtype Instance Generator
+; FTY -- Standard Signed Byte List Fixtype Instance Generator
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -15,10 +15,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defsbytelist
-  :parents (defbytelist-instances)
-  :short "Specialized form of @(tsee defbytelist) for generating
-          fixtypes of ``standard'' true lists of
-          signed bytes of explicit integer sizes."
+  :parents (defbytelist-standard-instances)
+  :short "Specialized form of @(tsee defbytelist)
+          for generating standard fixtypes
+          of true lists of signed bytes of explicit integer sizes."
   :long
   (xdoc::topstring
    (xdoc::p

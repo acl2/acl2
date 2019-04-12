@@ -1,4 +1,4 @@
-; FTY -- Unsigned Byte Fixtype Instance Generator
+; FTY -- Standard Unsigned Byte Fixtype Instance Generator
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -15,9 +15,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defubyte
-  :parents (defbyte-instances)
+  :parents (defbyte-standard-instances)
   :short "Specialized form of @(tsee defbyte) for generating
-          fixtypes of ``standard'' unsigned bytes of explicit integer sizes."
+          standard fixtypes of unsigned bytes of explicit integer sizes."
   :long
   (xdoc::topstring
    (xdoc::p

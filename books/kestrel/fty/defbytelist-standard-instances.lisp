@@ -1,4 +1,4 @@
-; FTY -- Byte List Fixtype Instances
+; FTY -- Standard Byte List Fixtype Instances
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -12,25 +12,35 @@
 
 (include-book "defubytelist")
 (include-book "defsbytelist")
-(include-book "defbyte-instances")
+(include-book "defbyte-standard-instances")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defbytelist-instances
   :parents (fty-extensions specific-types defbytelist)
-  :short "Fixtypes of true lists of unsigned and signed bytes of various sizes,
+  :short "Standard fixtypes of
+          true lists of unsigned and signed bytes of various sizes,
           with some accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
+    "Here `standard' means that these all have uniform structure and naming.
+     They are unary counterparts of
+     @('(unsigned-byte-listp n ...)') and @('(signed-byte-listp n ...)'),
+     for various values of @('n').")
+   (xdoc::p
     "These are all generated via @(tsee defbytelist).")
    (xdoc::p
-    "If fixtypes of true lists of unsigned or signed bytes of a certain size
+    "If standard (in the sense above) fixtypes
+     of true lists of unsigned or signed bytes of a certain size
      are needed but are not among the ones defined here,
      they can be added here.")
    (xdoc::p
-    "These fixtypes are based on
-     <see topic='@(url defbyte-instances)'>these fixtypes</see>.")))
+    "These fixtypes are based on "
+    (xdoc::seeurl "defbyte-standard-instances"
+                  "the standard fixtypes
+                   of unsigned and signed bytes of various sizes")
+    " that correspond to the element types of the lists.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
