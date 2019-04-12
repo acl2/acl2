@@ -41,11 +41,6 @@
   (implies (true-list-listp lst)
            (true-list-listp (when$+ fn globals lst))))
 
-; (defthm true-list-member-pos-true-list-listp
-;   (implies (and (true-list-listp lst)
-;                 (not (true-listp newv)))
-;            (not (< (mempos newv lst) (len lst)))))
-
 (defthm true-listp-car-loop$-as-tuple
   (implies (true-list-listp tuple)
            (true-listp (car-loop$-as-tuple tuple))))
@@ -66,8 +61,8 @@
   (implies (true-list-listp tuple)
            (true-list-listp (loop$-as tuple))))
 
-(defthm len-mempos-loop$-as
-  (implies (< (mempos newv (loop$-as tuple)) (len (loop$-as tuple)))
+(defthm len-member-equal-loop$-as
+  (implies (member-equal newv (loop$-as tuple))
            (equal (len newv) (len tuple)))
   :hints (("Goal" :induct (loop$-as tuple))))
 
@@ -153,65 +148,52 @@
 ||#
 ; -----------------------------------------------------------------
 
-; Mempos rules
+; Member-equal Rules
 
 ; For plain loop$s
 
-(defthm len-when$
-  (<= (len (when$ p lst)) (len lst))
-  :rule-classes :linear)
+(defthm member-equal-when$
+  (iff (member-equal e (when$ p lst))
+       (and (member-equal e lst)
+            (apply$ p (list e)))))
 
-(defthm len-until$
-  (<= (len (until$ q lst)) (len lst))
-  :rule-classes :linear)
-
-(defthm mempos-when$
-  (iff (< (mempos e (when$ p lst)) (len (when$ p lst)))
-       (and
-        (< (mempos e lst) (len lst))
-        (apply$ p (list e)))))
-
-(defthm mempos-until$
-  (equal (mempos newv (until$ q lst))
-         (if (< (mempos newv lst)
-                (len (until$ q lst)))
-             (mempos newv lst)
-             (len (until$ q lst)))))
+(defthm member-equal-until$
+  (IFF (MEMBER-EQUAL NEWV (UNTIL$ Q LST))
+       (and (member-equal newv lst) 
+            (< (mempos newv lst)
+               (len (until$ q lst))))))
 
 ; For fancy loop$s
 
-(defthm len-when$+
-  (<= (len (when$+ p pglob lst)) (len lst))
-  :rule-classes :linear)
-
-(defthm len-until$+
-  (<= (len (until$+ q qglob lst)) (len lst))
-  :rule-classes :linear)
-
-(defthm len-loop$-as-car
-  (implies (consp tuple)
-           (<= (len (loop$-as tuple))
-               (len (car tuple))))
-  :rule-classes :linear)
-
-(defthm len-loop$-as-cadr
-  (implies (consp (cdr tuple))
-           (<= (len (loop$-as tuple))
-               (len (cadr tuple))))
-  :rule-classes :linear)
-
-(defthm mempos-when$+
-  (iff (< (mempos e (when$+ p pglob lst)) (len (when$+ p pglob lst)))
+(defthm member-equal-when$+
+  (iff (member-equal e (when$+ p pglob lst))
        (and
-        (< (mempos e lst) (len lst))
-        (apply$ p (list e pglob)))))
+        (member-equal e lst)
+        (apply$ p (list pglob e)))))
 
-(defthm mempos-until$+
-  (equal (mempos newv (until$+ q qglob lst))
-         (if (< (mempos newv lst)
-                (len (until$+ q qglob lst)))
-             (mempos newv lst)
-             (len (until$+ q qglob lst)))))
+(defthm member-equal-until$+
+  (iff (member-equal newv (until$+ q qglob lst))
+       (and (member-equal newv lst)
+            (< (mempos newv lst)
+               (len (until$+ q qglob lst))))))
+
+(defthm member-equal-newvar-components-1
+  (implies (member-equal newvar (loop$-as (list t1)))
+           (member-equal (car newvar) t1)))
+
+(defthm member-equal-newvar-components-2
+  (implies (member-equal newvar (loop$-as (list t1 t2)))
+           (and (member-equal (car newvar) t1)
+                (member-equal (cadr newvar) t2)))
+  :hints (("Goal" :induct (pairlis$ t1 t2))))
+
+(defthm member-equal-newvar-components-3
+  (implies (member-equal newvar (loop$-as (list t1 t2 t3)))
+           (and (member-equal (car newvar) t1)
+                (member-equal (cadr newvar) t2)
+                (member-equal (caddr newvar) t3)))
+  :hints (("Goal" :induct (list (pairlis$ t1 t2)
+                                (pairlis$ t2 t3)))))
 
 ; -----------------------------------------------------------------
 
@@ -243,31 +225,31 @@
 
 ; integer-listp --> integerp
 (defthm integer-listp-implies-integerp
-  (implies (and (< (mempos newv lst) (len lst))
+  (implies (and (member-equal newv lst)
                 (integer-listp lst))
            (integerp newv)))
 
 ; rational-listp --> rationalp
 (defthm rational-listp-implies-rationalp
-  (implies (and (< (mempos newv lst) (len lst))
+  (implies (and (member-equal newv lst)
                 (rational-listp lst))
            (rationalp newv)))
 
 ; acl2-number-listp --> acl2-numberp
 (defthm acl2-number-listp-implies-acl2-numberp
-  (implies (and (< (mempos newv lst) (len lst))
+  (implies (and (member-equal newv lst)
                 (acl2-number-listp lst))
            (acl2-numberp newv)))
 
 ; symbol-listp --> symbolp
 (defthm symbol-listp-implies-symbolp
-  (implies (and (< (mempos newv lst) (len lst))
+  (implies (and (member-equal newv lst)
                 (symbol-listp lst))
            (symbolp newv)))
 
 ; true-list-listp --> true-listp
 (defthm true-list-listp-implies-true-listp
-  (implies (and (< (mempos newv lst) (len lst))
+  (implies (and (member-equal newv lst)
                 (true-list-listp lst))
            (true-listp newv)))
 
@@ -275,7 +257,7 @@
 
 (defthm always$-p-lst-implies-p-element
   (implies (and (always$ fnp lst)
-                (< (mempos newv lst) (len lst)))
+                (member-equal newv lst))
            (apply$ fnp (list newv))))
 
 ; NOTE: These rules will have to be disabled after we've set up the rest of this
@@ -287,16 +269,15 @@
 ; below!
 
 
-; We don't want the plain-uqi lemmas firing on (mempos newv (LOOP$-AS ...)) so
+; We don't want the plain-uqi lemmas firing on (member-equal newv (LOOP$-AS ...)) so
 ; we intall a syntaxp hyp on each.
 
 (defthm plain-uqi-always$
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ fnp lst)
-                (<= xxx (len lst))
                 (not (apply$ fnp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm integer-listp-implies-always$-integerp
   (implies (integer-listp lst)
@@ -306,9 +287,8 @@
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'integerp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'integerp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm rational-listp-implies-always$-rationalp
   (implies (rational-listp lst)
@@ -318,9 +298,8 @@
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'rationalp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'rationalp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm acl2-number-listp-implies-always$-acl2-numberp
   (implies (acl2-number-listp lst)
@@ -330,9 +309,8 @@
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'acl2-numberp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'acl2-numberp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm symbol-listp-implies-always$-symbolp
   (implies (symbol-listp lst)
@@ -342,9 +320,8 @@
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'symbolp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'symbolp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm true-list-listp-implies-always$-true-listp
   (implies (true-list-listp lst)
@@ -354,17 +331,15 @@
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'true-listp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'true-listp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 (defthm plain-uqi-rational-list-listp
   (implies (and (syntaxp (not (and (consp lst)
                                    (eq (car lst) 'LOOP$-AS))))
                 (always$ 'rational-listp lst)
-                (<= xxx (len lst))
                 (not (apply$ 'rational-listp (list newv))))
-           (not (< (mempos newv lst) xxx))))
+           (not (member-equal newv lst))))
 
 ; We need to know that the legacy quantifiers hold on constructors of the lists
 ; we target.
@@ -399,75 +374,64 @@
 
 (encapsulate
   nil
-  (local (defthm mempos-nth-car-loop$-as-tuple
+  (local (defthm member-equal-nth-car-loop$-as-tuple
            (implies (and (CONSP TUPLE)
                          (NOT (EMPTY-LOOP$-AS-TUPLEP TUPLE))
                          (natp n)
                          (< n (len tuple)))
-                    (< (mempos (NTH N (CAR-LOOP$-AS-TUPLE TUPLE))
-                               (NTH N TUPLE))
-                       (len (NTH N TUPLE))))))
+                    (member-equal (NTH N (CAR-LOOP$-AS-TUPLE TUPLE))
+                               (NTH N TUPLE)))))
 
-  (local (defthm mempos-nth-cdr-loop$-as-tuple
+  (local (defthm member-equal-nth-cdr-loop$-as-tuple
            (implies (and (CONSP TUPLE)
                          (NOT (EMPTY-LOOP$-AS-TUPLEP TUPLE))
-                         (< (MEMPOS (NTH N NEWV)
-                                    (NTH N (CDR-LOOP$-AS-TUPLE TUPLE)))
-                            (LEN (NTH N (CDR-LOOP$-AS-TUPLE TUPLE)))))
-                    (< (mempos (nth n newv) (nth n tuple))
-                       (len (nth n tuple))))))
+                         (member-equal (NTH N NEWV)
+                                    (NTH N (CDR-LOOP$-AS-TUPLE TUPLE))))
+                    (member-equal (nth n newv) (nth n tuple)))))
 
-  (local (defthm mempos-loop$-as-implies-mempos-nth
-           (implies (and (< (mempos newv (loop$-as tuple))
-                            (len (loop$-as tuple)))
+  (local (defthm member-equal-loop$-as-implies-member-equal-nth
+           (implies (and (member-equal newv (loop$-as tuple))
                          (natp n)
                          (< n (len tuple)))
-                    (< (mempos (nth n newv) (nth n tuple))
-                       (len (nth n tuple))))))
+                    (member-equal (nth n newv) (nth n tuple)))))
 
   (defthm general-always$-nth-loop$-as-tuple
     (implies (and (always$ fnp (nth n tuple))
                   (not (apply$ fnp (list (nth n newv))))
                   (natp n)
                   (< n (len tuple)))
-             (not (< (mempos newv (loop$-as tuple)) (len (loop$-as tuple)))))
+             (not (member-equal newv (loop$-as tuple))))
     :rule-classes nil))
 
 (defthm fancy-uqi-always$-1
   (implies (and (always$ fnp lst1)
-                (not (apply$ fnp (list (car newv))))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (apply$ fnp (list (car newv)))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (tuple (cons lst1 rest))
                                   (n 0)))))
 
 (defthm fancy-uqi-always$-2
   (implies (and (always$ fnp lst2)
-                (not (apply$ fnp (list (cadr newv))))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (apply$ fnp (list (cadr newv)))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (tuple (cons lst1 (cons lst2 rest)))
                                   (n 1)))))
 
 (defthm fancy-uqi-always-3
   (implies (and (always$ fnp lst3)
-                (not (apply$ fnp (list (caddr newv))))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv (loop$-as
-                                 (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (apply$ fnp (list (caddr newv)))))
+           (not (member-equal newv (loop$-as
+                                 (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (tuple (cons lst1 (cons lst2 (cons lst3 rest))))
                                   (n 2)))))
 
 (defthm fancy-uqi-integer-1
   (implies (and (integer-listp lst1)
-                (not (integerp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (integerp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'integerp)
                                   (tuple (cons lst1 rest))
@@ -475,9 +439,8 @@
 
 (defthm fancy-uqi-integer-2
   (implies (and (integer-listp lst2)
-                (not (integerp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (integerp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'integerp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -485,12 +448,9 @@
 
 (defthm fancy-uqi-integer-3
   (implies (and (integer-listp lst3)
-                (not (integerp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (integerp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'integerp)
@@ -499,9 +459,8 @@
 
 (defthm fancy-uqi-rational-1
   (implies (and (rational-listp lst1)
-                (not (rationalp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (rationalp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'rationalp)
                                   (tuple (cons lst1 rest))
@@ -509,9 +468,8 @@
 
 (defthm fancy-uqi-rational-2
   (implies (and (rational-listp lst2)
-                (not (rationalp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (rationalp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'rationalp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -519,12 +477,9 @@
 
 (defthm fancy-uqi-rational-3
   (implies (and (rational-listp lst3)
-                (not (rationalp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (rationalp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'rationalp)
@@ -533,9 +488,8 @@
 
 (defthm fancy-uqi-acl2-number-1
   (implies (and (acl2-number-listp lst1)
-                (not (acl2-numberp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (acl2-numberp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'acl2-numberp)
                                   (tuple (cons lst1 rest))
@@ -543,10 +497,8 @@
 
 (defthm fancy-uqi-acl2-number-2
   (implies (and (acl2-number-listp lst2)
-                (not (acl2-numberp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest))))
-                   xxx)))
+                (not (acl2-numberp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'acl2-numberp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -554,12 +506,9 @@
 
 (defthm fancy-uqi-acl2-number-3
   (implies (and (acl2-number-listp lst3)
-                (not (acl2-numberp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (acl2-numberp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'acl2-numberp)
@@ -568,9 +517,8 @@
 
 (defthm fancy-uqi-symbol-1
   (implies (and (symbol-listp lst1)
-                (not (symbolp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (symbolp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'symbolp)
                                   (tuple (cons lst1 rest))
@@ -578,9 +526,8 @@
 
 (defthm fancy-uqi-symbol-2
   (implies (and (symbol-listp lst2)
-                (not (symbolp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (symbolp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'symbolp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -588,12 +535,9 @@
 
 (defthm fancy-uqi-symbol-3
   (implies (and (symbol-listp lst3)
-                (not (symbolp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (symbolp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'symbolp)
@@ -602,9 +546,8 @@
 
 (defthm fancy-uqi-true-list-1
   (implies (and (true-list-listp lst1)
-                (not (true-listp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (true-listp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'true-listp)
                                   (tuple (cons lst1 rest))
@@ -612,9 +555,8 @@
 
 (defthm fancy-uqi-true-list-2
   (implies (and (true-list-listp lst2)
-                (not (true-listp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (true-listp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'true-listp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -622,12 +564,9 @@
 
 (defthm fancy-uqi-true-list-3
   (implies (and (true-list-listp lst3)
-                (not (true-listp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (true-listp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'true-listp)
@@ -635,27 +574,24 @@
                         (n 2)))))
 
 (defthm structure-of-loop$-as-elements
-  (implies (< (mempos newv (loop$-as tuple)) (len (loop$-as tuple)))
+  (implies (member-equal newv (loop$-as tuple))
            (and (true-listp newv)
                 (equal (len newv) (len tuple))))
   :rule-classes nil)
 
 (defthm structure-of-loop$-as-elements-bridge
-  (and (implies (and (not (true-listp newv))
-                     (<= xxx (len (loop$-as tuple))))
-                (not (< (mempos newv (loop$-as tuple)) xxx)))
-       (implies (and (not (equal (len newv) (len tuple)))
-                     (<= xxx (len (loop$-as tuple))))
-                (not (< (mempos newv (loop$-as tuple)) xxx))))
+  (and (implies (not (true-listp newv))
+                (not (member-equal newv (loop$-as tuple))))
+       (implies (not (equal (len newv) (len tuple)))
+                (not (member-equal newv (loop$-as tuple)))))
   :hints (("Goal" :use structure-of-loop$-as-elements)))
 
 
 
 (defthm fancy-uqi-rational-listp-1
   (implies (and (always$ 'rational-listp lst1)
-                (not (rational-listp (car newv)))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (rational-listp (car newv))))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'rational-listp)
                                   (tuple (cons lst1 rest))
@@ -663,9 +599,8 @@
 
 (defthm fancy-uqi-rational-listp-2
   (implies (and (always$ 'rational-listp lst2)
-                (not (rational-listp (cadr newv)))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (rational-listp (cadr newv))))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'rational-listp)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -673,12 +608,9 @@
 
 (defthm fancy-uqi-rational-listp-3
   (implies (and (always$ 'rational-listp lst3)
-                (not (rational-listp (caddr newv)))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (rational-listp (caddr newv))))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'rational-listp)
@@ -687,9 +619,8 @@
 
 (defthm fancy-uqi-identity-1
   (implies (and (always$ 'identity lst1)
-                (not (car newv))
-                (<= xxx (len (loop$-as (cons lst1 rest)))))
-           (not (< (mempos newv (loop$-as (cons lst1 rest))) xxx)))
+                (not (car newv)))
+           (not (member-equal newv (loop$-as (cons lst1 rest)))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'identity)
                                   (tuple (cons lst1 rest))
@@ -697,9 +628,8 @@
 
 (defthm fancy-uqi-identity-2
   (implies (and (always$ 'identity lst2)
-                (not (cadr newv))
-                (<= xxx (len (loop$-as (cons lst1 (cons lst2 rest))))))
-           (not (< (mempos newv (loop$-as (cons lst1 (cons lst2 rest)))) xxx)))
+                (not (cadr newv)))
+           (not (member-equal newv (loop$-as (cons lst1 (cons lst2 rest))))))
   :hints (("Goal" :use (:instance general-always$-nth-loop$-as-tuple
                                   (fnp 'identity)
                                   (tuple (cons lst1 (cons lst2 rest)))
@@ -707,12 +637,9 @@
 
 (defthm fancy-uqi-identity-3
   (implies (and (always$ 'identity lst3)
-                (not (caddr newv))
-                (<= xxx
-                    (len (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
-           (not (< (mempos newv
-                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))
-                   xxx)))
+                (not (caddr newv)))
+           (not (member-equal newv
+                           (loop$-as (cons lst1 (cons lst2 (cons lst3 rest)))))))
   :hints (("Goal" :use (:instance
                         general-always$-nth-loop$-as-tuple
                         (fnp 'identity)
@@ -748,13 +675,12 @@
 (defthm general-plain-uqi-integer-listp-tails
   (implies (and (integer-listp lst)
                 (not (integer-listp newv)))
-           (not (< (mempos newv (tails lst)) (len (tails lst)))))
+           (not (member-equal newv (tails lst))))
   :rule-classes nil)
 
 (defthm plain-uqi-integer-listp-tails
   (implies (and (integer-listp lst)
-                (not (integer-listp newv))
-                (<= xxx (len (tails lst))))
-           (not (< (mempos newv (tails lst)) xxx)))
+                (not (integer-listp newv)))
+           (not (member-equal newv (tails lst))))
   :hints (("Goal" :use general-plain-uqi-integer-listp-tails)))
 

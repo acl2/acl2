@@ -687,11 +687,11 @@
 
 (defun mempos (e lst)
 
-; Even though it is not necessary to define mempos in order to build ACL2,
-; mempos is built-in: it is used in the special guard conjectures generated for
-; some loop$ scions.  We thus cannot let the user (re-)define it.  It is
-; identically defined in community book books/projects/apply/loop.lisp, which
-; should be included anytime the user is serious about using scions.
+; Even though it is not necessary to define mempos in order to build ACL2, but
+; because the book books/projects/apply/loop.lisp introduces it to establish
+; the loop$-as-correspondence rule, it is best not to let the user define it.
+; It is identically defined in community book books/projects/apply/loop.lisp,
+; which should be included anytime the user is serious about using scions.
 
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) 0)
