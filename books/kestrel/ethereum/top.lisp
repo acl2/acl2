@@ -39,7 +39,7 @@
      "The <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>,
       referenced as `[Wiki]' in the documentation of this library.")
     (xdoc::li
-     "The BYZANTIUM VERSION c70bcab of
+     "The BYZANTIUM VERSION dc41665 of
       the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
       Yellow Paper</a>,
       referenced as `[YP]' in the documentation of this library.
