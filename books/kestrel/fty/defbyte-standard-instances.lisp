@@ -10,8 +10,27 @@
 
 (in-package "FTY")
 
-(include-book "defubyte")
-(include-book "defsbyte")
+(include-book "ubyte1")
+(include-book "ubyte2")
+(include-book "ubyte3")
+(include-book "ubyte4")
+(include-book "ubyte8")
+(include-book "ubyte16")
+(include-book "ubyte32")
+(include-book "ubyte64")
+(include-book "ubyte128")
+(include-book "ubyte256")
+
+(include-book "sbyte1")
+(include-book "sbyte2")
+(include-book "sbyte3")
+(include-book "sbyte4")
+(include-book "sbyte8")
+(include-book "sbyte16")
+(include-book "sbyte32")
+(include-book "sbyte64")
+(include-book "sbyte128")
+(include-book "sbyte256")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,29 +52,3 @@
      of unsigned or signed bytes of a certain size
      are needed but are not among the ones defined here,
      they can be added here.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defubyte 1)
-(defubyte 2)
-(defubyte 3)
-(defubyte 4)
-(defubyte 8)
-(defubyte 16)
-(defubyte 32)
-(defubyte 64)
-(defubyte 128)
-(defubyte 256)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsbyte 1)
-(defsbyte 2)
-(defsbyte 3)
-(defsbyte 4)
-(defsbyte 8)
-(defsbyte 16)
-(defsbyte 32)
-(defsbyte 64)
-(defsbyte 128)
-(defsbyte 256)

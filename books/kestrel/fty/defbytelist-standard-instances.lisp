@@ -10,13 +10,31 @@
 
 (in-package "FTY")
 
-(include-book "defubytelist")
-(include-book "defsbytelist")
-(include-book "defbyte-standard-instances")
+(include-book "ubyte1-list")
+(include-book "ubyte2-list")
+(include-book "ubyte3-list")
+(include-book "ubyte4-list")
+(include-book "ubyte8-list")
+(include-book "ubyte16-list")
+(include-book "ubyte32-list")
+(include-book "ubyte64-list")
+(include-book "ubyte128-list")
+(include-book "ubyte256-list")
+
+(include-book "sbyte1-list")
+(include-book "sbyte2-list")
+(include-book "sbyte3-list")
+(include-book "sbyte4-list")
+(include-book "sbyte8-list")
+(include-book "sbyte16-list")
+(include-book "sbyte32-list")
+(include-book "sbyte64-list")
+(include-book "sbyte128-list")
+(include-book "sbyte256-list")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc defbytelist-instances
+(defxdoc defbytelist-standard-instances
   :parents (fty-extensions specific-types defbytelist)
   :short "Standard fixtypes of
           true lists of unsigned and signed bytes of various sizes,
@@ -41,29 +59,3 @@
                   "the standard fixtypes
                    of unsigned and signed bytes of various sizes")
     " that correspond to the element types of the lists.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defubytelist 1)
-(defubytelist 2)
-(defubytelist 3)
-(defubytelist 4)
-(defubytelist 8)
-(defubytelist 16)
-(defubytelist 32)
-(defubytelist 64)
-(defubytelist 128)
-(defubytelist 256)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsbytelist 1)
-(defsbytelist 2)
-(defsbytelist 3)
-(defsbytelist 4)
-(defsbytelist 8)
-(defsbytelist 16)
-(defsbytelist 32)
-(defsbytelist 64)
-(defsbytelist 128)
-(defsbytelist 256)

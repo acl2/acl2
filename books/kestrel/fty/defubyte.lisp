@@ -43,7 +43,7 @@
        :pred ,(acl2::packn (list 'acl2::ubyte size 'p))
        :fix ,(acl2::packn (list 'acl2::ubyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::ubyte size '-equiv))
-       :parents (defbyte-instances)
+       :parents (defbyte-standard-instances)
        :short ,(concatenate
                 'string
                 "Fixtype of unsigned bytes of size "

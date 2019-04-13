@@ -347,6 +347,10 @@
 
  <li>A new fixtype @(tsee bit-list) for true lists of bits.</li>
 
+ <li>Existing fixtypes @('ubyteN'), @('sbyteN'), @('ubyteN-list'), and
+ @('sbyteN-list') for standard(ly named) fixtypes for unsigned or signed (true
+ lists of) bytes of various sizes.</li>
+
  </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>

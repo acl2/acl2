@@ -43,7 +43,7 @@
        :pred ,(acl2::packn (list 'acl2::sbyte size 'p))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-equiv))
-       :parents (defbyte-instances)
+       :parents (defbyte-standard-instances)
        :short ,(concatenate
                 'string
                 "Fixtype of signed bytes of size "

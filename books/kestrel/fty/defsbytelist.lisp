@@ -43,7 +43,7 @@
        :pred ,(acl2::packn (list 'acl2::sbyte size '-listp))
        :fix ,(acl2::packn (list 'acl2::sbyte size '-list-fix))
        :equiv ,(acl2::packn (list 'acl2::sbyte size '-list-equiv))
-       :parents (defbytelist-instances)
+       :parents (defbytelist-standard-instances)
        :short ,(concatenate
                 'string
                 "Fixtype of true lists of signed bytes of size "
