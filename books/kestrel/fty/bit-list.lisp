@@ -18,6 +18,8 @@
 (fty::deflist bit-list
   :elt-type bit
   :true-listp t
+  :elementp-of-nil nil
+  :pred bit-listp
   :parents (fty::fty-extensions fty::specific-types bit-listp)
   :short
   (xdoc::topstring
