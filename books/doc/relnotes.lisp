@@ -404,6 +404,11 @@
  explicit list of function parameters.  The function is implicitly
  parameterized over the function variables that it depends on.</p>
 
+ <h4>@(csee std/alists)</h4>
+
+ <p>Added a function @(tsee remove-assocs), moved from
+ @('[books]/kestrel/utilities/').</p>
+
  <h4>@(csee std/basic)</h4>
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
