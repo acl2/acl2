@@ -39,10 +39,10 @@
              (len (coerce text 'list)))
           (nthcdr start (insert-text oldtext start text)))
     (coerce text 'list)))
-  :hints (("goal" :in-theory (enable insert-text) :do-not-induct t
-           :use (:theorem (equal (+ START (- START)
-                                    (LEN (COERCE TEXT 'LIST)))
-                                 (LEN (COERCE TEXT 'LIST)))))))
+  :hints (("goal" :in-theory (enable insert-text)
+           :use (:theorem (equal (+ start (- start)
+                                    (len (coerce text 'list)))
+                                 (len (coerce text 'list)))))))
 
 (defthm insert-text-correctness-3
   (implies (and (character-listp oldtext)

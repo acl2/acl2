@@ -298,35 +298,6 @@
                                      (y l)
                                      (z ac2)))))
 
-;; (defthm
-;;   take-of-take
-;;   (implies (and (true-listp l)
-;;                 (natp m)
-;;                 (integerp n)
-;;                 (<= m n)
-;;                 (<= m (len l)))
-;;            (equal (first-n-ac m (take n l) ac)
-;;                   (first-n-ac m l ac)))
-;;   :hints
-;;   (("goal" :do-not-induct t
-;;     :in-theory (disable binary-append-first-n-ac-nthcdr
-;;                         first-n-ac-of-binary-append-1)
-;;     :use ((:instance binary-append-first-n-ac-nthcdr (ac nil)
-;;                      (i n))
-;;           (:instance first-n-ac-of-binary-append-1 (i m)
-;;                      (x (first-n-ac n l nil))
-;;                      (y (nthcdr n l)))))
-;;    ("goal'4'" :in-theory (disable take-more)
-;;     :use (:instance take-more (i n)
-;;                     (ac1 nil)
-;;                     (ac2 nil)))
-;;    ("goal'6'"
-;;     :in-theory (disable first-n-ac-of-binary-append-1)
-;;     :use (:instance first-n-ac-of-binary-append-1 (i m)
-;;                     (x l)
-;;                     (y (make-list-ac (+ n (- (len l)))
-;;                                      nil nil))))))
-
 (defthm boolean-listp-of-revappend
   (implies (boolean-listp x)
            (equal (boolean-listp (revappend x y))
@@ -341,9 +312,11 @@
   (iff (consp (first-n-ac i l ac))
        (or (consp ac) (not (zp i)))))
 
-(defthm take-of-first-n-ac
-  (iff (consp (take i l))
-       (not (zp i))))
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/take.lisp, from where it was taken with thanks.
+(defthm consp-of-take
+    (equal (consp (take n xs))
+           (not (zp n))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.

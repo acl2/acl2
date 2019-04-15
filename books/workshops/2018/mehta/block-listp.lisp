@@ -140,8 +140,8 @@
                     text))
     :hints
     (("goal" :in-theory (enable make-blocks already-a-character-list))
-     ("subgoal *1/3.3'"
-      :in-theory (disable first-n-ac-of-make-character-list
+     ("subgoal *1/3.3"
+      :in-theory (disable take-of-make-character-list
                           take-of-too-many)
       :use ((:instance take-of-make-character-list
                        (i (len text))
