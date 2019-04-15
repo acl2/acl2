@@ -143,10 +143,9 @@
      ("subgoal *1/3.3'"
       :in-theory (disable first-n-ac-of-make-character-list
                           take-of-too-many)
-      :use ((:instance first-n-ac-of-make-character-list
+      :use ((:instance take-of-make-character-list
                        (i (len text))
-                       (l (first-n-ac 8 text nil))
-                       (ac nil))
+                       (l (first-n-ac 8 text nil)))
             (:instance take-of-too-many (x text)
                        (n *blocksize*)))))))
 

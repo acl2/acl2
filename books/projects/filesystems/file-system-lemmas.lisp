@@ -322,31 +322,31 @@
                     (y l)
                     (z ac2)))))
 
-(defthm
-  take-of-take
-  (implies (and (natp m)
-                (integerp n)
-                (<= m n)
-                (<= m (len l)))
-           (equal (first-n-ac m (take n l) ac)
-                  (first-n-ac m l ac)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (disable binary-append-first-n-ac-nthcdr
-                        first-n-ac-of-binary-append-1 take-more)
-    :use ((:instance binary-append-first-n-ac-nthcdr (ac nil)
-                     (i n))
-          (:instance first-n-ac-of-binary-append-1 (i m)
-                     (x (first-n-ac n l nil))
-                     (y (nthcdr n l)))
-          (:instance take-more (i n)
-                     (ac1 nil)
-                     (ac2 nil))
-          (:instance first-n-ac-of-binary-append-1 (i m)
-                     (x l)
-                     (y (make-list-ac (+ n (- (len l)))
-                                      nil nil)))))))
+;; (defthm
+;;   take-of-take
+;;   (implies (and (natp m)
+;;                 (integerp n)
+;;                 (<= m n)
+;;                 (<= m (len l)))
+;;            (equal (first-n-ac m (take n l) ac)
+;;                   (first-n-ac m l ac)))
+;;   :hints
+;;   (("goal"
+;;     :do-not-induct t
+;;     :in-theory (disable binary-append-first-n-ac-nthcdr
+;;                         first-n-ac-of-binary-append-1 take-more)
+;;     :use ((:instance binary-append-first-n-ac-nthcdr (ac nil)
+;;                      (i n))
+;;           (:instance first-n-ac-of-binary-append-1 (i m)
+;;                      (x (first-n-ac n l nil))
+;;                      (y (nthcdr n l)))
+;;           (:instance take-more (i n)
+;;                      (ac1 nil)
+;;                      (ac2 nil))
+;;           (:instance first-n-ac-of-binary-append-1 (i m)
+;;                      (x l)
+;;                      (y (make-list-ac (+ n (- (len l)))
+;;                                       nil nil)))))))
 
 (defthm boolean-listp-of-revappend
   (equal (boolean-listp (revappend x y))
