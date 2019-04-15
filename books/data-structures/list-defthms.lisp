@@ -183,8 +183,7 @@
    :rule-classes ((:rewrite)
                   (:type-prescription :corollary
                                       (implies (not (zp n))
-                                               (consp (take n l)))))
-   :hints (("Goal" :do-not-induct t))))
+                                               (consp (take n l)))))))
 
 (defthm consp-butlast
 ; Changed for ACL2 Version 5.1 by Matt Kaufmann, due to change in the
@@ -703,8 +702,7 @@
  (defthm take-append1
    (implies (<= n (len a))
             (equal (take n (append a b))
-                   (take n a)))
-   :hints (("Goal" :do-not-induct t))))
+                   (take n a)))))
 
 
 (defthm butlast-append1-crock

@@ -671,12 +671,16 @@
                (equal (car (nthcdr n x))
                       (mv-nth n x))
                :hints(("Goal" :in-theory (enable nthcdr mv-nth)))))
+      (local (defthm cdr-nthcdr
+               (equal (cdr (nthcdr n x))
+                      (nthcdr n (cdr x)))
+               :hints(("Goal" :in-theory (enable nthcdr mv-nth)))))
       (defthm get-mv-nths-correct
         (implies (and (natp start) (natp n))
                  (equal (partial-ev-lst (get-mv-nths start n term) al)
                         (take n (nthcdr start (partial-ev term al)))))
         :hints(("Goal" :in-theory (enable take-redefinition nthcdr)
-                :induct t
+                :induct (get-mv-nths start n term)
                 :expand ((:free (x) (nthcdr (+ 1 start) x))))))))
 
 

@@ -66,6 +66,10 @@
   (implies (true-listp lst)
    (= (xfirstn (len lst) lst) lst)))
 
+(local
+ (defthmd take-len--thm
+   (implies (true-listp lst)
+            (= (take (len lst) lst) lst))))
 
 ;; Generates tail-recursive and non-tail-recursive versions of the
 ;; occurrences function that are proved equal to each other.  Will be
@@ -453,7 +457,8 @@
    (= (occur-arr-iter xx 0 val s)
       (occurlist val (take xx (rd :memory s)))))
   :hints (("Goal" :in-theory
-           (e/d (xfirstn-n-minus-1-nth-minus-1--thm occur-arr-iter) ()))))
+           (e/d (take-n-minus-1-nth-minus-1--thm occur-arr-iter)
+                (acl2::first-n-ac-non-recursive)))))
 
 (defthm occur-arr-iter-=-occurlist
   (implies
@@ -461,7 +466,8 @@
         (integerp val)
         (integer-listp (rd :memory s)))
    (= (occur-arr-iter (len (rd :memory s)) 0 val s)
-      (occurlist val (rd :memory s)))))
+      (occurlist val (rd :memory s))))
+  :hints (("Goal" :in-theory (enable take-len--thm)) ))
 
 (defthm occur-arr-tailrec-=-occurlist
   (implies

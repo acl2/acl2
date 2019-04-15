@@ -92,15 +92,14 @@
     :hints (("Goal" :induct (first-n-ac n x ac)))))
 
  (local
-  (defthm len-reveappend
+  (defthm len-revappend
     (equal (len (revappend x y))
            (+ (len x) (len y)))))
 
  (local
-  (defthm len-first-n-ac
-    (equal (len (first-n-ac n x ac))
-           (+ (nfix n)
-              (len ac)))))
+  (defthm len-of-take
+    (equal (len (take n x))
+           (nfix n))))
 
  (local
   (defthm character-listp-nthcdr

@@ -2791,7 +2791,8 @@
            (implies (equal (nfix n) (num-regs aignet))
                     (equal (aignet-eval-to-env varmap invals (take n regvals) aignet)
                            (aignet-eval-to-env varmap invals regvals aignet)))
-           :hints(("Goal" :in-theory (enable aignet-eval-to-env)))))
+           :hints(("Goal" :in-theory (enable aignet-eval-to-env)
+                   :induct (aignet-eval-to-env varmap invals regvals aignet)))))
 
   (defthm-reg-eval-of-aig-fsm-to-aignet-ind-flag
     (defthm frame-regvals-of-aig-fsm-to-aignet
