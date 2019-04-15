@@ -161,6 +161,9 @@
  <b>J</b>ava)</see>, a simple Java code generator that turns ACL2 functions
  into AIJ representations that are evaluated by the AIJ interpreter.</li>
 
+ <li>A <see topic='@(url java::language)'>formalization</see> in ACL2 of some
+ aspects of the Java language.</li>
+
  </ul>
 
  <h4><see topic='@(url omap::omaps)'>Omaps</see></h4>
@@ -194,11 +197,11 @@
 
  <p>Added fixtypes for bytes and byte sequences.</p>
 
- <p>Improved several names by using @('byte') instead of @('ubyte8').</p>
+ <p>Replaced uses of @(tsee ubyte8) and @(tsee ubyte8-list) with @(tsee byte)
+ and @(tsee byte-list).</p>
 
- <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
- the previous placeholders for cryptographic functions into <see topic='@(url
- crypto::cryptography)'>a new library</see>.</p>
+ <p>Moved the previous placeholders for cryptographic functions into <see
+ topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
  <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
  hierarchical deterministic wallets.</p>
@@ -248,9 +251,9 @@
 
  <h4><see topic='@(url ethereum::ethereum)'>Ethereum</see></h4>
 
- <p>Improved several names by using @('byte') instead of @('ubyte8') and
- @('nibble') instead of @('ubyte4').  Introduced and used fixtypes for byte
- arrays of certain sizes.</p>
+ <p>Replaced uses of @(tsee ubyte8), @(tsee ubyte8-list), @(tsee ubyte4), and
+ @(tsee ubyte4-list) with @(tsee byte), @(tsee byte-list), @(tsee nibble), and
+ @(tsee nibble-list).</p>
 
  <p>Modified the formalizations of RLP encoding and decoding to return an
  explicit error flag.  Added theorems showing that RLP encodings are decodable:
@@ -269,15 +272,14 @@
  hashes (i.e. byte arrays of length 32) to byte arrays.</p>
 
  <p>Added a formalization of the format of transactions and of their RLP
- encoding.</p>
+ encoding and decoding.</p>
 
  <p>Added several other theorems.  Improved some existing theorems.</p>
 
  <p>Improved some documentation.</p>
 
- <p>Changed the cryptographic interfaces into cryptographic wrappers.  Moved
- the previous placeholders for cryptographic functions into <see topic='@(url
- crypto::cryptography)'>a new library</see>.</p>
+ <p>Moved the previous placeholders for cryptographic functions into <see
+ topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
  <h4>Filesystem Books</h4>
 
@@ -336,6 +338,19 @@
 
  <li>An existing fixtype @(tsee nati) for natural numbers and infinity.</li>
 
+ <li>New fixtypes @(tsee byte), @(tsee byte-list), @(tsee byte-list20), @(tsee
+ byte-list32), and @(tsee byte-list64) for (unsigned 8-bit) bytes, true lists
+ of bytes, and true lists of 20, 32, and 64 bytes.</li>
+
+ <li>New fixtypes @(tsee nibble) and @(tsee nibble-list) for (unsigned 4-bit)
+ nibbles and true lists of nibbles.</li>
+
+ <li>A new fixtype @(tsee bit-list) for true lists of bits.</li>
+
+ <li>Existing fixtypes @('ubyteN'), @('sbyteN'), @('ubyteN-list'), and
+ @('sbyteN-list') for standard(ly named) fixtypes for unsigned or signed (true
+ lists of) bytes of various sizes.</li>
+
  </ul>
 
  <h4><see topic='@(url ipasir::ipasir)'>Ipasir library</see></h4>
@@ -393,6 +408,10 @@
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
  bytes, moved from @(csee std/io).</p>
+
+ <p>Added a recognizer @(tsee nibblep) for ``standard'' (i.e. unsigned 4-bit)
+ nibbles, moved from
+ @('[books]/projects/oracle/stv-invariant-extraction-pitfall/alu.lisp').</p>
 
  <h4>@(csee std/io)</h4>
 
@@ -470,6 +489,9 @@
  <p>Refactored the old file
  @('[books]/kestrel/utilities/typed-list-theorems.lisp') into separate files
  under a new directory @('[books]/kestrel/utilities/typed-lists').</p>
+
+ <p>Added a recognizer @(tsee bit-listp) for true lists of bits, and associated
+ theorems.</p>
 
  <h4><see topic='@(url x86isa)'>X86ISA</see></h4>
 

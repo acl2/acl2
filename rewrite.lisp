@@ -12128,11 +12128,9 @@
 
 ; Warning: If you consider making a call of this function, ask yourself whether
 ; make-lambda-term would be more appropriate; the answer depends on why you are
-; calling this function.  For example, the present function requires that every
-; free variable in body is a member of formals, but make-lambda-term does not.
-; The present function will drop an unused formal, but make-lambda-term does
-; not (though its caller could choose to "hide" such a formal; see
-; translate11-let).
+; calling this function.  In particular, the present function will drop an
+; unused formal, but make-lambda-term does not (though its caller could choose
+; to "hide" such a formal; see translate11-let).
 
 ; Example:
 ; (make-lambda-application '(x y z)
@@ -12154,20 +12152,19 @@
       body)
      ((equal formals actuals)
       body)
-     ((set-difference-eq vars formals)
-      (er hard? 'make-lambda-application
-          "Unexpected unbound vars ~x0"
-          (set-difference-eq (reverse vars) formals)))
-     (t
+     (t (let ((extra-vars (set-difference-eq vars formals)))
 
-; The slightly tricky thing here is to avoid using all the formals,
-; since some might be irrelevant.  Note that the call of
-; intersection-eq below is necessary rather than just using vars, even
-; though it is a no-op when viewed as a set operation (as opposed to a
-; list operation), in order to preserve the order of the formals.
+; The slightly tricky thing here is to avoid using all the formals, since some
+; might be irrelevant.  Note that the call of intersection-eq below is
+; necessary rather than just using vars, even though it is a no-op when viewed
+; as a set operation (as opposed to a list operation), in order to preserve the
+; order of the formals.
 
-      (fcons-term (make-lambda (intersection-eq formals vars) body)
-                  (collect-by-position vars formals actuals))))))
+          (fcons-term (make-lambda (append? (intersection-eq formals vars)
+                                            extra-vars)
+                                   body)
+                      (append? (collect-by-position vars formals actuals)
+                               extra-vars)))))))
 
 ; The following two functions help us implement lambda-hide commuting,
 ; e.g., ((LAMBDA (x) (HIDE body)) arg) => (HIDE ((LAMBDA (x) body) arg)).

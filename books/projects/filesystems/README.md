@@ -22,8 +22,9 @@ $ ACL2_DIR/books/build/cert.pl --acl2 ACL2 file-system-*.lisp
 
 Alternatively, the filesystem models can be certified through the
 normal process of building the ACL2 books, explained on the ACL2
-[homepage](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/installation.html).
-The "make certify-books" command in step 4 will build the filesystem
+[installation
+page](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/installation.html). The
+"make certify-books" command in step 4 will build the filesystem
 books; this is simpler than using cert.pl although it takes longer.
 
 Either way, the certification must be completed before attempting the
@@ -42,6 +43,17 @@ tests; thus, root privileges on the testing machine are
 required. Implementation details can be found in the "Co-simulation"
 subsection of the accompanying paper.
 
+Installation note: these tests are known to work with an ACL2 built atop
+Clozure Common Lisp (CCL). At least one other Common Lisp
+implementation (SBCL) causes some tests to fail, on account of
+inconsistent handling of command line arguments by
+[oslib::argv](http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=OSLIB____ARGV). The
+ACL2 installation page points to instructions for
+[obtaining](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/requirements.html#Obtaining-CCL)
+and
+[installing](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/ccl.html)
+CCL.
+
 A brief listing of functions and theorems mentioned in the paper
 follows.
 * The function lofat-fs-p is in lofat.lisp.
@@ -52,7 +64,8 @@ lofat.lisp.
 * The equivalence proofs hifat-to-lofat-inversion,
 lofat-to-hifat-inversion, lofat-to-string-inversion,
 string-to-lofat-inversion and string-to-m1-fs-inversion are in
-lofat.lisp.
+lofat.lisp. Note, string-to-m1-fs-inversion has been renamed to
+string-to-hifat-inversion for consistency with the other functions.
 * The LoFAT implementations of the various system calls are in
 lofat.lisp; the HiFAT implementations are in hifat-syscalls.lisp.
 * An ACL2 program for checking disk equivalence is mentioned in the

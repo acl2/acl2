@@ -15,8 +15,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "CRYPTO" (append *std-pkg-symbols*
-                         '(defxdoc+
+                         '(byte-list-fix
+                           byte-listp
+                           byte-list20p
+                           byte-list32p
+                           byte-list64p
+                           defxdoc+
                            nat-equiv
                            nat=>bendian
+                           pos-fix
                            unsigned-byte-list-fix
                            unsigned-byte-listp)))

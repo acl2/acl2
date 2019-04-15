@@ -1,4 +1,4 @@
-; FTY -- Byte Fixtype Instances -- Tests
+; FTY -- Standard Byte Fixtype Instances -- Tests
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "defbyte-instances")
+(include-book "defbyte-standard-instances")
 
 (include-book "kestrel/utilities/testing" :dir :system)
 

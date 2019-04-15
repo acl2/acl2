@@ -233,3 +233,11 @@ functions over natural numbers.
 
 (defmacro defthmskip (name &rest args)
   `(skip-proofs (defthm ,name ,@args)))
+
+(defmacro defthmskipall (name &rest args)
+  `(skip-proofs (defthm-no-test ,name ,@args)))
+
+(defmacro defun-no-test (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled nil))
+    (defun ,name ,@args)))

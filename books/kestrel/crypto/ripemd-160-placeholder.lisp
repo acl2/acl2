@@ -10,7 +10,7 @@
 
 (in-package "CRYPTO")
 
-(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
+(include-book "kestrel/fty/byte-list20" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,31 +40,27 @@
 
     (((ripemd-160 *) => *
       :formals (bytes)
-      :guard (unsigned-byte-listp 8 bytes)))
+      :guard (byte-listp bytes)))
 
     (local
      (defun ripemd-160 (bytes)
        (declare (ignore bytes))
        (make-list 20 :initial-element 0)))
 
-    (defrule unsigned-byte-listp-8-of-ripemd-160
-      (unsigned-byte-listp 8 (ripemd-160 bytes)))
+    (defrule byte-list20p-of-ripemd-160
+      (byte-list20p (ripemd-160 bytes)))
 
     (defrule len-of-ripemd-160
       (equal (len (ripemd-160 bytes))
              20))
 
-    (defrule ripemd-160-fixes-input
-      (equal (ripemd-160 (unsigned-byte-list-fix 8 bytes))
-             (ripemd-160 bytes))
-      :enable unsigned-byte-list-fix))
+    (fty::deffixequiv ripemd-160
+      :args ((bytes byte-listp))))
 
   (defrule true-listp-of-ripemd-160
     (true-listp (ripemd-160 bytes))
     :rule-classes :type-prescription
-    :use (:instance acl2::true-listp-when-unsigned-byte-listp
-          (width 8) (x (ripemd-160 bytes)))
-    :disable acl2::true-listp-when-unsigned-byte-listp)
+    :enable acl2::true-listp-when-byte-listp)
 
   (defrule consp-of-ripemd-160
     (consp (ripemd-160 bytes))

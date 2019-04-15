@@ -541,11 +541,9 @@
 (thm
  (IMPLIES (AND (INTEGERP N)
                (<= 0 N)
-               (< (MEMPOS NEWV
-                          (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
-                                          (TAILS (MAKE-LIST-AC N 1/2 NIL)))))
-                  (LEN (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
-                                       (TAILS (MAKE-LIST-AC N 1/2 NIL))))))
+               (MEMBER-EQUAL NEWV
+                             (LOOP$-AS (LIST (TAILS (MAKE-LIST-AC N 1 NIL))
+                                             (TAILS (MAKE-LIST-AC N 1/2 NIL)))))
                (NOT (STRINGP (CAR NEWV)))
                (<= (LEN (CAR NEWV)) 6)
                (CADR NEWV)
@@ -553,7 +551,7 @@
           (TRUE-LISTP (APPEND (CAR NEWV) (CADR NEWV)))))
 
 ; To prove this with our machinery we need to rely on fancy-uqi-true-list-2.
-; All the uqi rules target the (< (mempos ...) ...) and contain the negation of
+; All the uqi rules target the (member-equal ...) and contain the negation of
 ; the type property of the appropriate element of newv as a hyp.  In the case
 ; of fancy-uqi-true-list-2 the relevant hyp is
 

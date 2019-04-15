@@ -24,7 +24,7 @@
    (xdoc::p
     "Transactions are described in [YP:4.2].
      We define a high-level fixtype for transactions,
-     and a function to RLP-encode them."))
+     and functions to RLP-encode/decode them."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -157,3 +157,117 @@
     (rlp-encode-tree tree))
   :no-function t
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk rlp-transaction-encoding-p ((encoding byte-listp))
+  :returns (yes/no booleanp)
+  :parents (transactions)
+  :short "Check if a byte array is an RLP encoding of a transaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which essentially characterizes the image of @(tsee rlp-encode-transaction)
+     (over transaction that can be encoded,
+     i.e. such that @(tsee rlp-encode-transaction)
+     returns a @('nil') error flag).")
+   (xdoc::p
+    "By definition,
+     the witness function is right inverse of the encoding function,
+     over the valid encodings."))
+  (exists (transaction)
+          (and (transactionp transaction)
+               (b* (((mv error? encoding1)
+                     (rlp-encode-transaction transaction)))
+                 (and (not error?)
+                      (equal encoding1 (byte-list-fix encoding))))))
+  :skolem-name rlp-transaction-encoding-witness
+  ///
+
+  (fty::deffixequiv rlp-transaction-encoding-p
+    :args ((encoding byte-listp))
+    :hints (("Goal"
+             :in-theory (disable rlp-transaction-encoding-p-suff)
+             :use ((:instance rlp-transaction-encoding-p-suff
+                    (transaction
+                     (rlp-transaction-encoding-witness
+                      (byte-list-fix encoding))))
+                   (:instance rlp-transaction-encoding-p-suff
+                    (transaction (rlp-transaction-encoding-witness encoding))
+                    (encoding (byte-list-fix encoding)))))))
+
+  (defrule rlp-transactionp-of-rlp-transaction-encoding-witness
+    (implies (rlp-transaction-encoding-p encoding)
+             (transactionp (rlp-transaction-encoding-witness encoding))))
+
+  (defrule rlp-encode-transaction-of-rlp-transaction-encoding-witness
+    (implies (rlp-transaction-encoding-p encoding)
+             (b* (((mv error? encoding1)
+                   (rlp-encode-transaction
+                    (rlp-transaction-encoding-witness encoding))))
+               (and (not error?)
+                    (equal encoding1
+                           (byte-list-fix encoding))))))
+
+  (defrule rlp-transaction-encoding-p-of-rlp-transaction-encode-when-no-error
+    (implies (not (mv-nth 0 (rlp-encode-transaction transaction)))
+             (rlp-transaction-encoding-p
+              (mv-nth 1 (rlp-encode-transaction transaction))))
+    :use (:instance rlp-transaction-encoding-p-suff
+          (encoding (mv-nth 1 (rlp-encode-transaction
+                               (transaction-fix transaction))))
+          (transaction (transaction-fix transaction)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rlp-decode-transaction ((encoding byte-listp))
+  :returns (mv (error? booleanp)
+               (transaction
+                transactionp
+                :hints
+                 (("Goal"
+                   :in-theory
+                   (e/d
+                    (rlp-transaction-encoding-p)
+                    (rlp-transaction-encoding-p-of-byte-list-fix-encoding))))))
+  :parents (transactions)
+  :short "RLP decoding of a transaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the byte array encodes some transaction, we return that transaction,
+     along with a @('nil') error flag.
+     Otherwise, we return a @('t') error flag,
+     and an irrelevant transaction as second result.")
+   (xdoc::p
+    "This is a declarative, non-executable definition,
+     which says that decoding is the inverse of encoding.
+     This is the intention of [YP:4.2], which only specifies encoding,
+     leaving decoding implicit.")
+   (xdoc::p
+    "More precisely, we define decoding as the right inverse of encoding
+     (with respect to byte arrays that are valid encodings of transactions),
+     as explicated by the theorem
+     @('rlp-encode-transaction-of-rlp-decode-transaction').")
+   (xdoc::p
+    "To prove that decoding is also the left inverse of encoding
+     (with respect to encodable transactions),
+     we need to prove the injectivity of encoding first;
+     this is future work."))
+  (b* ((encoding (byte-list-fix encoding)))
+    (if (rlp-transaction-encoding-p encoding)
+        (mv nil (rlp-transaction-encoding-witness encoding))
+      (mv t (transaction 0 0 0 nil 0 nil 0 0 0))))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defrule rlp-encode-transaction-of-rlp-decode-transaction
+    (implies (rlp-transaction-encoding-p encoding)
+             (b* (((mv d-error? transaction) (rlp-decode-transaction encoding))
+                  ((mv e-error? encoding1) (rlp-encode-transaction transaction)))
+               (and (not d-error?)
+                    (not e-error?)
+                    (equal encoding1
+                           (byte-list-fix encoding)))))))

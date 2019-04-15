@@ -476,7 +476,7 @@
                                 rlp-parse-tree
                                 rlp-parse-tree-list
                                 bytep
-                                true-listp-when-byte-listp-rewrite)
+                                acl2::true-listp-when-byte-listp-rewrite)
              :expand ((:free (x y) (rlp-parse-tree (cons (+ 128 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 183 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 192 x) y)))
@@ -618,7 +618,7 @@
                (and (not e-error?)
                     (equal encoding1
                            (byte-list-fix encoding)))))
-    :enable true-listp-when-byte-listp-rewrite
+    :enable acl2::true-listp-when-byte-listp-rewrite
     :use rlp-encode-tree-of-rlp-parse-tree
     :disable rlp-encode-tree-of-rlp-parse-tree)
 

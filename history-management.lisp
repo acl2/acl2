@@ -12357,8 +12357,8 @@
 ; (return-last 'progn (check-dcl-guardian guard1 &)
 ;               (return-last 'progn (check-dcl-guardian guard2 &)
 ;                             ...
-;                             body))
-; and we return (guard1 guard2 ...)
+;                             body)).
+; Each guardi was generated from a TYPE spec.  We return (guard1 guard2 ...).
 
   (case-match term
     (('RETURN-LAST ''PROGN ('CHECK-DCL-GUARDIAN guard &) rest)
@@ -12504,24 +12504,44 @@
            (fn (unquote (fargn scion-term 1))))
       (mv-let (style vars type-spec-exprs)
         (case-match fn
-          (('LAMBDA (var) ('DECLARE ('IGNORABLE . &) . &) &)
+          (('LAMBDA (var) ('DECLARE . edcls) &)
+           (let ((type-spec (assoc-eq 'type edcls)))
+             (cond (type-spec
+                    (mv :plain
+                        (list var)
+                        (list (conjoin (get-guards2 `(,type-spec) '(types)
+                                                    t wrld nil nil)))))
+                   (t (mv :plain (list var) (list *t*))))))
+          (('LAMBDA (var) . &)
            (mv :plain (list var) (list *t*)))
-          (('LAMBDA (var) ('DECLARE ('TYPE spec &) ('IGNORABLE . &) . &) &)
-           (mv :plain
-               (list var)
-               (list (conjoin (get-guards2 `((TYPE ,spec ,var)) '(types)
-                                           t wrld nil nil)))))
-          (('LAMBDA '(LOCALS GLOBALS)
+          (('LAMBDA '(LOOP$-GVARS LOOP$-IVARS)
                     ('DECLARE ('XARGS ':GUARD & ':SPLIT-TYPES 'T) . &)
                     ('RETURN-LAST
                      ''PROGN
                      ('QUOTE ('LAMBDA$ . &))
-                     (('LAMBDA locals-and-globals optionally-marked-body)
+                     (('LAMBDA loop$-gvars-and-loop$-ivars
+                               optionally-marked-body)
                       . &)))
+; Note: The type specs in a translated fancy LAMBDA object do not appear in
+; DECLARE forms!  Instead, they are coded as CHECK-DCL-GUARDIAN expressions
+; because they appear in a translated LET.  So we need a different way to
+; collect them.  See recover-type-spec-exprs.
+
+; Loop$-gvars-and-loop$-ivars is a list of symbols like (G1 G2 G3 L1 L2) where
+; the Gi are the (three, in this case) global variables involved in this lambda
+; and the Li are the (two) local variables.  We need to recover the names (L1
+; L2) and we don't know how many globals there are, but we can figure it out!
+
            (cond
-            ((<= n (length locals-and-globals))
+            ((<= n (length loop$-gvars-and-loop$-ivars))
              (mv :fancy
-                 (first-n-ac n locals-and-globals nil)
+                 (first-n-ac n
+                             (nthcdr
+                              (- (length loop$-gvars-and-loop$-ivars) n)
+                              loop$-gvars-and-loop$-ivars)
+                             nil)
+; Note:  None of the gvars have type specs!
+
                  (recover-type-spec-exprs optionally-marked-body)))
             (t (mv nil nil nil))))
           (& (mv nil nil nil)))
@@ -12706,6 +12726,108 @@
                         (if (eq style :plain) 1 2))))))
     (t nil)))
 
+(defun warrant-name-inverse (warrant-fn)
+
+; Warning: Keep this in sync with warrant-name.
+
+  (declare (xargs :guard (symbolp warrant-fn)))
+  (let ((warrant-fn-name (symbol-name warrant-fn)))
+    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+         (intern-in-package-of-symbol
+          (subseq warrant-fn-name
+                  15 ; (length "APPLY$-WARRANT-")
+                  (length warrant-fn-name))
+          warrant-fn))))
+
+(defun warrantp (warrant-fn wrld)
+
+; We check whether warrant-fn is the warrant of some function, fn.  But fn has
+; a warrant iff fn has a badge in the badge-table.
+
+  (declare (xargs :guard (and (symbolp warrant-fn)
+                              (plist-worldp wrld))))
+  (let* ((fn (warrant-name-inverse warrant-fn))
+         (badge (and fn
+                     (get-badge fn wrld))))
+    (and badge t)))
+
+(mutual-recursion
+
+(defun collect-warranted-fns (term ilk collect-p wrld)
+
+; This function collects a list of function symbols having warrants that may be
+; useful in simplifying the given term.
+
+; At the top level collect-p is nil, meaning that we are not collecting
+; function symbols.  Collection begins when entering a quoted constant that is
+; in an argument position whose ilk is :fn or :expr.
+
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (termp term wrld))))
+  (cond ((variablep term) nil)
+        ((fquotep term)
+         (let ((val (unquote term)))
+           (cond ((eq ilk :FN)
+                  (cond ((case-match val
+                           (('lambda . &) t)
+                           (& nil))
+                         (let ((body (car (last val))))
+                           (and (pseudo-termp body)
+                                (collect-warranted-fns body nil t wrld))))
+                        ((and (symbolp val)
+                              (warrantp val wrld))
+                         (list val))
+                        (t nil)))
+                 ((eq ilk :EXPR)
+                  (and (pseudo-termp val)
+                       (collect-warranted-fns val nil t wrld)))
+                 (t nil))))
+        ((flambda-applicationp term)
+         (union-equal
+          (collect-warranted-fns (lambda-body (ffn-symb term)) nil collect-p
+                                 wrld)
+          (collect-warranted-fns-lst (fargs term) nil collect-p wrld)))
+        (t (let ((badge (get-badge (ffn-symb term) wrld)))
+             (cond
+              (badge
+               (let* ((ilks0 (access apply$-badge badge :ilks))
+                      (ilks (if (eq ilks0 t) nil ilks0))
+                      (fns (collect-warranted-fns-lst (fargs term) ilks
+                                                      collect-p wrld)))
+                 (cond (collect-p (add-to-set-equal (ffn-symb term) fns))
+                       (t fns))))
+              (t
+               (collect-warranted-fns-lst (fargs term) nil collect-p
+                                          wrld)))))))
+
+(defun collect-warranted-fns-lst (lst ilks collect-p wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (term-listp lst wrld))))
+  (cond ((endp lst) nil)
+        (t (union-equal
+            (collect-warranted-fns (car lst) (car ilks) collect-p wrld)
+            (collect-warranted-fns-lst (cdr lst) (cdr ilks) collect-p wrld)))))
+)
+
+(defun collect-negated-warrants1 (lst clause)
+  (cond ((endp lst) clause)
+        ((equal clause *true-clause*) clause)
+        (t (collect-negated-warrants1
+            (cdr lst)
+            (add-literal (fcons-term* 'not
+                                      (fcons-term* (warrant-name (car lst))))
+                         clause
+
+; It's perhaps a bit inefficient to add to the end every time, but that seems
+; the most natural way to get the desired functionality (see the discussion
+; about Special Conjecture (b) in the Essay on LOOP$).
+
+                         t)))))
+
+(defun collect-negated-warrants (term wrld clause)
+  (collect-negated-warrants1 (collect-warranted-fns term nil nil wrld)
+                             clause))
+
 (defun special-loop$-guard-clauses (clause term wrld newvar ttree)
 
 ; Clause is an evolving clause governing an occurrence of term with derivation
@@ -12729,16 +12851,17 @@
     (let* ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*))
            (test-b (loop$-scion-restriction (ffn-symb term)
                                             *loop$-keyword-info*))
+
 ; Test-b is either NIL or a monadic predicate like ACL2-NUMBERP that the
 ; output of the apply$ must satisfy.
 
            (fn (unquote (fargn term 1)))
            (globals (if (eq style :plain)
                         nil
-                        (fargn term 2)))
+                      (fargn term 2)))
            (lst (if (eq style :plain)
                     (fargn term 2)
-                    (fargn term 3))))
+                  (fargn term 3))))
       (mv-let (var1 var2 fngp body)
         (cond
          ((symbolp fn)
@@ -12753,18 +12876,20 @@
         (declare (ignore body))
         (let* ((subst (if (eq style :plain)
                           `((,var1 . ,newvar))
-                          `((,var1 . ,newvar)
-                            (,var2 . ,globals))))
+                        `((,var1 . ,globals)
+                          (,var2 . ,newvar))))
+               (warranted-clause
+                (collect-negated-warrants term wrld clause))
                (special-conjecture-a
                 (if (equal fngp *t*)
                     *true-clause*
-                    (add-literal-smart
-                     (sublis-var subst fngp)
-                     (add-literal-smart
-                      `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
-                      clause
-                      t)
-                     t)))
+                  (add-literal-smart
+                   (sublis-var subst fngp)
+                   (add-literal-smart
+                    `(NOT (MEMBER-EQUAL ,newvar ,lst))
+                    warranted-clause
+                    t)
+                   t)))
                (special-conjecture-b
                 (if test-b
                     (add-literal-smart
@@ -12772,23 +12897,23 @@
                        (APPLY$ ',fn
                                ,(if (eq style :plain)
                                     `(CONS ,newvar 'NIL)
-                                    `(CONS ,newvar
-                                           (CONS ,globals
-                                                 'NIL)))))
+                                  `(CONS ,globals
+                                         (CONS ,newvar
+                                               'NIL)))))
                      (add-literal-smart
-                      `(NOT (< (MEMPOS ,newvar ,lst) (LEN ,lst)))
-                      clause
+                      `(NOT (MEMBER-EQUAL ,newvar ,lst))
+                      warranted-clause
                       t)
                      t)
-                    *true-clause*))
+                  *true-clause*))
                (special-conjectures-c
                 (special-loop$-guard-clauses-c clause term wrld)))
           (mv (append (if (equal special-conjecture-a *true-clause*)
                           nil
-                          (list special-conjecture-a))
+                        (list special-conjecture-a))
                       (if (equal special-conjecture-b *true-clause*)
                           nil
-                          (list special-conjecture-b))
+                        (list special-conjecture-b))
                       special-conjectures-c
                       )
               ttree)))))

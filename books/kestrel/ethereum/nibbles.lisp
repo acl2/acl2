@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/fty/defbytelist" :dir :system)
+(include-book "kestrel/fty/nibble-list" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,41 +18,23 @@
   :parents (basics)
   :short "Nibbles."
   :long
-  (xdoc::topstring-p
-   "[YP:C] describes @($\\mathbb{Y}$) as the set of nibbles,
-    which consist of 4 bits."))
-
-(fty::defbyte nibble
-  :size 4
-  :pred nibblep
-  :parents (nibbles)
-  :short "Fixtype of nibbles.")
+  (xdoc::topstring
+   (xdoc::p
+    "[YP:C] describes @($\\mathbb{Y}$) as the set of sequences of nibbles,
+     i.e. half bytes.
+     [YP] does not use any specific symbol for the set of nibbles
+     (unlike @($\\mathbb{O}$) for the set of bytes [YP:B]).
+     We use the library type @(tsee nibble) to model the set of nibbles.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc nibble-arrays
+(defsection nibble-arrays
   :parents (basics)
   :short "Nibble arrays."
   :long
   (xdoc::topstring-p
-   "[YP] does not use any specific symbol for nibble arrays
-    (unlike for byte arrays),
-    but nibble arrays are used in [YP],
-    e.g. @($y$) [YP:(190), YP:(191)] turns map keys as byte arrays
-    into map keys as nibble arrays.
-    We use true lists of @(see nibbles)
-    to model nibble arrays in our Ethereum model,
-    analogously to our model of
-    <see topic='@(url byte-arrays)'>byte arrays</see>."))
-
-(fty::defbytelist nibble-list
-  :elt-type nibble
-  :pred nibble-listp
-  :parents (nibble-arrays)
-  :short "Fixtype of nibble arrays.")
-
-(defsection nibble-list-fix-ext
-  :extension nibble-list-fix
+   "[YP:C] describes @($\\mathbb{Y}$) as the set of sequences of nibbles.
+    We use the library type @(see nibble-list) to model nibble arrays.")
 
   (defrule nibble-list-fix-of-rcons
     (equal (nibble-list-fix (rcons nibble nibbles))

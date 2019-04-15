@@ -34,7 +34,8 @@
      in a more restrictive context.
      For instance, the @(tsee acl2::ubyte4) and @(tsee acl2::ubyte8) fixtypes
      (and their recognizers, fixers, and equivalences)
-     are named according to a uniform scheme in @(tsee fty::defbyte-instances),
+     are named according to
+     a uniform scheme in @(tsee fty::defbyte-standard-instances),
      but in many contexts the names @('nibble') and @('byte')
      would be arguably more convenient.")
 

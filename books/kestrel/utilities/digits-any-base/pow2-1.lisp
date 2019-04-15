@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/fty/defbytelist-instances" :dir :system)
+(include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "pow2")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

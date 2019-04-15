@@ -360,7 +360,7 @@
                        (true-listp ac))))
   (cond
    ((endp lst) (revappend ac nil))
-   ((apply$ fn (list (car lst) globals)) (revappend ac nil))
+   ((apply$ fn (list globals (car lst))) (revappend ac nil))
    (t (until$+-ac fn globals (cdr lst) (cons (car lst) ac)))))
 
 #+acl2-devel ; else not redundant
@@ -373,7 +373,7 @@
   (mbe :logic
        (if (endp lst)
            nil
-           (if (apply$ fn (list (car lst) globals))
+           (if (apply$ fn (list globals (car lst)))
                nil
                (cons (car lst)
                      (until$+ fn globals (cdr lst)))))
@@ -434,7 +434,7 @@
       (revappend ac nil)
       (when$+-ac fn globals
                  (cdr lst)
-                 (if (apply$ fn (list (car lst) globals))
+                 (if (apply$ fn (list globals (car lst)))
                      (cons (car lst) ac)
                      ac))))
 
@@ -448,7 +448,7 @@
   (mbe :logic
        (if (endp lst)
            nil
-           (if (apply$ fn (list (car lst) globals))
+           (if (apply$ fn (list globals (car lst)))
                (cons (car lst)
                      (when$+ fn globals (cdr lst)))
                (when$+ fn globals (cdr lst))))
@@ -506,7 +506,7 @@
       ac
       (sum$+-ac fn globals
                 (cdr lst)
-                (+ (fix (apply$ fn (list (car lst) globals))) ac))))
+                (+ (fix (apply$ fn (list globals (car lst)))) ac))))
 
 #+acl2-devel ; else not redundant
 (defun$ sum$+ (fn globals lst)
@@ -518,7 +518,7 @@
   (mbe :logic
        (if (endp lst)
            0
-           (+ (fix (apply$ fn (list (car lst) globals)))
+           (+ (fix (apply$ fn (list globals (car lst))))
               (sum$+ fn globals (cdr lst))))
        :exec (sum$+-ac fn globals lst 0)))
 
@@ -551,7 +551,7 @@
                        (true-list-listp lst))))
   (if (endp lst)
       t
-      (if (apply$ fn (list (car lst) globals))
+      (if (apply$ fn (list globals (car lst)))
           (always$+ fn globals (cdr lst))
           nil)))
 
@@ -594,7 +594,7 @@
   (cond ((endp lst) (revappend ac nil))
         (t (collect$+-ac fn globals
                          (cdr lst)
-                         (cons (apply$ fn (list (car lst) globals)) ac)))))
+                         (cons (apply$ fn (list globals (car lst))) ac)))))
 
 #+acl2-devel ; else not redundant
 (defun$ collect$+ (fn globals lst)
@@ -605,7 +605,7 @@
   (mbe :logic
        (if (endp lst)
            nil
-           (cons (apply$ fn (list (car lst) globals))
+           (cons (apply$ fn (list globals (car lst)))
                  (collect$+ fn globals (cdr lst))))
        :exec (collect$+-ac fn globals lst nil)))
 
@@ -671,7 +671,7 @@
                         globals
                         (cdr lst)
                         (revappend-true-list-fix
-                         (apply$ fn (list (car lst) globals))
+                         (apply$ fn (list globals (car lst)))
                          ac)))))
 
 #+acl2-devel ; else not redundant
@@ -684,7 +684,7 @@
        (if (endp lst)
            nil
            (append
-            (true-list-fix (apply$ fn (list (car lst) globals)))
+            (true-list-fix (apply$ fn (list globals (car lst))))
             (append$+ fn globals (cdr lst))))
        :exec (append$+-ac fn globals lst nil)))
 

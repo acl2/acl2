@@ -52,24 +52,6 @@
    (xdoc::p
     "This corresponds to @($R_{\\mathrm{b}}$) [YP:(180)].")
    (xdoc::p
-    "That equation does not explicitly say that the byte array
-     can be encoded only if its length is below @($2^{64}$).
-     This can be inferred from the fact that, according to [YP:(183)],
-     encodings whose first byte is 192 or higher
-     are used for non-leaf trees.
-     In order for the encoding to be unambiguous
-     (in particular, to distinguish leaf trees from non-leaf trees),
-     the first byte that encodes a byte array must be below 192.
-     Thus, the length of the base-256 big-endian representation
-     of the length of the byte array,
-     which is added to 183, can be at most 8
-     (reaching 191 for the first byte of the encoding).
-     This means that the base-256 big-endian representation
-     of the length of the byte array
-     must have at most 8 digits,
-     i.e. it must be below @($256^8$), which is @($2^{64}$).
-     The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
-   (xdoc::p
     "The first result of this function is an error flag,
      which is @('t') if the argument byte array cannot be encoded;
      in this case, @('nil') is returned as the (irrelevant) second result.")
@@ -162,27 +144,6 @@
      corresponds to @($R_{\\mathrm{l}}$),
      and @(tsee rlp-encode-tree-list) corresponds to @($s$).")
    (xdoc::p
-    "[YP:(183)] does not explicitly say that the tree can be encoded
-     only if the total length of its encoded subtrees is below @($2^{64}$).
-     This can be inferred from the fact that the first byte, being a byte,
-     cannot exceed 255.
-     Thus, the length of the base-256 big-endian representation
-     of the length of the encoded subtrees,
-     which is added to 247, can be at most 8
-     (reaching 255 for the first byte of the encoding).
-     This means that the base-256 big-endian representation
-     of the length of the encoded subtrees
-     must have at most 8 digits,
-     i.e. it must be below @($256^8$), which is @($2^{64}$).
-     The encoding code in [Wiki:RLP] confirms this, via an explicit check.")
-   (xdoc::p
-    "Similarly, [YP:(184)] does not explicitly say that
-     the concatenation of the encoded subtrees
-     cannot be encoded if any subtree cannot be encoded.
-     This can be inferred from the fact that if a subtree encoding is too long,
-     the supertree encoding is at least that long.
-     The encoding code in [Wiki:RLP] confirms this, by propagating exceptions.")
-   (xdoc::p
     "The first result of this function is an error flag,
      which is @('t') if the argument tree cannot be encoded;
      in this case, @('nil') is returned as the (irrelevant) second result.")
@@ -273,7 +234,7 @@
 
   (verify-guards rlp-encode-tree
     :hints (("Goal"
-             :in-theory (enable true-listp-when-byte-listp-rewrite))))
+             :in-theory (enable acl2::true-listp-when-byte-listp-rewrite))))
 
   (fty::deffixequiv-mutual rlp-encode-tree)
 

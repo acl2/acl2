@@ -10,7 +10,7 @@
 
 (in-package "CRYPTO")
 
-(include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
+(include-book "kestrel/fty/byte-list32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,7 +40,7 @@
 
     (((sha-256 *) => *
       :formals (bytes)
-      :guard (and (unsigned-byte-listp 8 bytes)
+      :guard (and (byte-listp bytes)
                   (< (len bytes) (expt 2 61)))))
 
     (local
@@ -48,24 +48,20 @@
        (declare (ignore bytes))
        (make-list 32 :initial-element 0)))
 
-    (defrule unsigned-byte-listp-8-of-sha-256
-      (unsigned-byte-listp 8 (sha-256 bytes)))
+    (defrule byte-list32p-of-sha-256
+      (byte-list32p (sha-256 bytes)))
 
     (defrule len-of-sha-256
       (equal (len (sha-256 bytes))
              32))
 
-    (defrule sha-256-fixes-input
-      (equal (sha-256 (unsigned-byte-list-fix 8 bytes))
-             (sha-256 bytes))
-      :enable unsigned-byte-list-fix))
+    (fty::deffixequiv sha-256
+      :args ((bytes byte-listp))))
 
   (defrule true-listp-of-sha-256
     (true-listp (sha-256 bytes))
     :rule-classes :type-prescription
-    :use (:instance acl2::true-listp-when-unsigned-byte-listp
-          (width 8) (x (sha-256 bytes)))
-    :disable acl2::true-listp-when-unsigned-byte-listp)
+    :enable acl2::true-listp-when-byte-listp)
 
   (defrule consp-of-sha-256
     (consp (sha-256 bytes))

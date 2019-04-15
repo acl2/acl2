@@ -10,29 +10,22 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/fty/defbytelist" :dir :system)
-(include-book "kestrel/fty/deflist-of-len" :dir :system)
+(include-book "kestrel/fty/byte-list" :dir :system)
+(include-book "kestrel/fty/byte-list20" :dir :system)
+(include-book "kestrel/fty/byte-list32" :dir :system)
+(include-book "kestrel/fty/byte-list64" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-list-fixing" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc bytes
+(defsection bytes
   :parents (basics)
   :short "Bytes."
   :long
-  (xdoc::topstring-p
-   "[YP:B] describes @($\\mathbb{O}$) as the set of 8-bit bytes.
-    Unless otherwise stated, in the documentation of our Ethereum model,
-    the unqualified `byte' denotes an 8-bit byte."))
-
-(fty::defbyte byte
-  :size 8
-  :pred bytep
-  :parents (bytes)
-  :short "Fixtype of bytes.")
-
-(defsection byte-fix-ext
-  :extension byte-fix
+  (xdoc::topstring
+   (xdoc::p
+    "[YP:B] describes @($\\mathbb{O}$) as the set of 8-bit bytes.
+     We use the library type @(tsee byte) to model @($\\mathbb{O}$)."))
 
   (defrule natp-of-byte-fix
     (natp (byte-fix x))
@@ -51,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ byte-arrays
+(defsection byte-arrays
   :parents (basics)
   :short "Byte arrays."
   :long
@@ -59,32 +52,20 @@
    (xdoc::p
     "[YP:3] mentions the set @($\\mathbb{B}$) of byte arrays,
      and [YP:(178)] defines it as consisting of all finite sequences of bytes.
-     [YP:3] also introduces the notation @($\\mathbb{B}_k$) to denote
-     the set of byte arrays of length @($k$).")
+     We use the library type @(tsee byte-list) to model @($\\mathbb{B}$).")
    (xdoc::p
-    "We use true lists of @(see bytes)
-     to model byte arrays in our Ethereum model.
-     We introduce a fixtype @(tsee byte-list) to model @($\\mathbb{B}$).
-     We also introduce fixtypes @('byte-list<k>'),
-     for various values of @('<k>'),
-     to model @($\\mathbb{B}_k$) for the corresponding values of @($k$)."))
-  :order-subtopics t)
-
-(fty::defbytelist byte-list
-  :elt-type byte
-  :pred byte-listp
-  :parents (byte-arrays)
-  :short "Fixtype of byte arrays.")
-
-(defsection byte-listp-ext
-  :extension byte-listp
+    "[YP:3] also introduces the notation @($\\mathbb{B}_k$) to denote
+     the set of byte arrays of length @($k$).
+     We use the library types
+     @(tsee byte-list20), @(tsee byte-list32), and @(tsee byte-list64)
+     to model @($\\mathbb{B}_k$) for @($k\\in\\{20,32,64\\}$).
+     Arrays of 20 bytes may represent addresses [YP:4.1].
+     Arrays of 32 bytes may represent Keccak-256 hashes.
+     Arrays of 64 bytes may represent Keccak-512 hashes."))
 
   (defrule nat-listp-when-byte-listp
     (implies (byte-listp bytes)
-             (nat-listp bytes))))
-
-(defsection byte-list-fix-ext
-  :extension byte-list-fix
+             (nat-listp bytes)))
 
   (defrule car-of-byte-list-fix
     (implies (consp x)
@@ -100,33 +81,3 @@
            (unsigned-byte-list-fix 8 x))
     :enable (byte-fix-rewrite-unsigned-byte-fix
              unsigned-byte-list-fix)))
-
-(fty::deflist-of-len byte-list20
-  :list-type byte-list
-  :length 20
-  :pred byte-list20p
-  :parents (byte-arrays)
-  :short "Fixtype of byte arrays of length 20."
-  :long
-  (xdoc::topstring-p
-   "These may represent addresses [YP:4.1]."))
-
-(fty::deflist-of-len byte-list32
-  :list-type byte-list
-  :length 32
-  :pred byte-list32p
-  :parents (byte-arrays)
-  :short "Fixtype of byte arrays of length 32."
-  :long
-  (xdoc::topstring-p
-   "These may represent Keccak-256 hashes."))
-
-(fty::deflist-of-len byte-list64
-  :list-type byte-list
-  :length 64
-  :pred byte-list64p
-  :parents (byte-arrays)
-  :short "Fixtype of byte arrays of length 64."
-  :long
-  (xdoc::topstring-p
-   "These may represent Keccak-512 hashes."))

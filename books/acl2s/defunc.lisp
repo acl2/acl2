@@ -111,22 +111,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (t (and (simple-termp (car lst))
                  (simple-term-listp (cdr lst)))))))
 
-(defun replace-in-term (old new term)
-  "replace all occurrences of old in term with new"
-  (declare (xargs :guard t))
-  (cond ((equal term old)
-         new)
-        ((atom term)
-         term)
-        (t (cons (replace-in-term old new (car term))
-                 (replace-in-term old new (cdr term))))))
-
-(defun in-termp (x term)
-  ;; is x in term?
-  (declare (xargs :guard t))
-  (not (equal term (replace-in-term x (list x x) term))))
-
-
 (defun xargs-kwd-alist1 (decls keywords ctx al)
   (if (atom decls)
       al
@@ -235,9 +219,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (avoid-lst (union-eq fun-args vars))
        (return-var (acl2::generate-variable '_ret avoid-lst nil nil wrld)))
     `(let ((,return-var ,body))
-       (if ,(replace-in-term `(,fun-name ,@fun-args)
-                             return-var
-                             output-contract)
+       (if ,(acl2::subst-expr return-var
+                              `(,fun-name ,@fun-args)
+                              output-contract)
            ,return-var
          (er hard ',fun-name
              ;; harshrc-- Should we really give an hard
@@ -277,6 +261,49 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       body
     (add-output-contract-check body oc name formals wrld)))
 
+(mutual-recursion
+ (defun subst-fun-sym (new old form)
+   (declare (xargs :guard (and (pseudo-termp new)
+                               (acl2::legal-variablep old)
+                               (pseudo-termp form))
+                   :verify-guards nil))
+   (cond ((acl2::variablep form)
+          form)
+         ((acl2::fquotep form) form)
+         (t (acl2::cons-term (acl2::subst-var new old (acl2::ffn-symb form))
+                             (subst-fun-lst new old (acl2::fargs form))))))
+
+ (defun subst-fun-lst (new old l)
+   (declare (xargs :guard (and (pseudo-termp new)
+                               (acl2::legal-variablep old)
+                               (pseudo-term-listp l))
+                   :verify-guards nil))
+   (cond ((endp l) nil)
+         (t (cons (subst-fun-sym new old (car l))
+                  (subst-fun-lst new old (cdr l)))))))
+
+(mutual-recursion
+ (defun fun-syms-in-term (term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :verify-guards nil))
+   (cond ((acl2::variablep term) nil)
+         ((acl2::fquotep term) nil)
+         (t (cons (acl2::ffn-symb term)
+                  (fun-syms-in-term-lst (acl2::fargs term))))))
+
+ (defun fun-syms-in-term-lst (l)
+   (declare (xargs :guard (pseudo-term-listp l)
+                   :verify-guards nil))
+   (cond ((endp l) nil)
+         (t (append (fun-syms-in-term (car l))
+                    (fun-syms-in-term-lst (cdr l)))))))
+
+(defun fun-sym-in-termp (f term)
+  (declare (xargs :guard (and (acl2::legal-variablep f)
+                              (pseudo-termp term))
+                  :verify-guards nil))
+  (and (member-equal f (fun-syms-in-term term)) t))
+
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist wrld make-staticp d?)
   "Generate events which simulate a typed ACL2s language."
@@ -290,13 +317,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (fun-ind-name (make-sym name 'induction-scheme-from-definition))
        (ind-scheme-name (make-sym name 'induction-scheme))
-       (defun `(defun ,fun-ind-name ,formals
+       (defun `(defun-no-test ,fun-ind-name ,formals
                  ,@decls
-                 ,(replace-in-term name fun-ind-name lbody)))
+                 ,(subst-fun-sym fun-ind-name name lbody)))
        (defun (if skip-admissibilityp `(skip-proofs ,defun) defun))
-       (defthm (if skip-admissibilityp 'defthmskip 'defthm))
+       (defthmnotest (if skip-admissibilityp 'defthmskipall 'defthm-no-test))
        (ind-defthm
-        `(,defthm ,ind-scheme-name
+        `(,defthmnotest ,ind-scheme-name
            t
            :rule-classes ((:induction :pattern ,(cons name formals)
                                       :condition ,ic
@@ -314,7 +341,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (let ((controller-alist (acl2::controller-alist ',name (w state))))
               `(with-output
                 :stack :pop 
-                (,',defthm ,(make-sym ',name 'definition-rule)
+                (,',defthmnotest ,(make-sym ',name 'definition-rule)
                   ,',def-rule-body
                   :hints (("Goal" :use ,',name :in-theory nil))
                   :rule-classes ((:definition
@@ -789,36 +816,48 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;;           ((acl2::inhibit-output-lst acl2::*valid-output-names*))
 ;;           (acl2::translate form T logicp T "test-guards" (w state) state)))
 
-(defun test-guards1 (guards hints override-defaults state)
+(defun test-guards1 (guards hints override-defaults timeout state)
   (declare (xargs :mode :program :stobjs (state)))
   (if (endp guards)
       (value nil)
-    (b* (((mv erp & state) (test?-fn (car guards) hints override-defaults state))
+    (b* (((mv erp & state)
+          ;; test?-fn will use a timeout and if there is a timeout, erp=nil
+          (with-prover-time-limit
+           timeout
+           (test?-fn (car guards) hints override-defaults state)))
          (vl  (acl2s-defaults :get verbosity-level))
          (show-falsified-guards-p (and erp (cgen::normal-output-flag vl)))
+         ;; If there is a timeout, then show-falsified-guards-p=nil,
+         ;; so don't do potentially expensive simplification work.
+         ((unless show-falsified-guards-p) (value nil))
+
          (- (cgen::cw? show-falsified-guards-p "~|Body contract falsified in: ~%"))
 
 ; [2015-02-04 Wed] Add extra support to blame the falsified body contract by looking through lambda/let/assumptions/etc
 
-
          ((mv & gterm state) (cgen::check-syntax (car guards) NIL state))
          ((mv hyps concl state) (cgen::partition-hyps-concl gterm "test-guards" state))
+; This takes a long time sometimes, so quit before getting here with
+; unless checke above, but may also want to remove this simplification
+; and instead add a keyword setting. the code for removing it is
+; commented out below. 
          ((mv & nconcl state) (cgen::simplify-term (list 'not concl) hyps nil state))
+;         (nconcl (list 'not concl))
          (hyps1 (acl2::expand-assumptions-1 nconcl))
 
          (- (print-guard-extra-info-hyps (append hyps hyps1) show-falsified-guards-p))
          ((when erp) (mv t nil state)))
-      (test-guards1 (cdr guards) hints override-defaults state))))
+      (test-guards1 (cdr guards) hints override-defaults timeout state))))
 
 
-(defun test-guards (guard-obligation hints override-defaults state)
+(defun test-guards (guard-obligation hints override-defaults timeout state)
   "This is just a looping test?-fn over multiple guards, and on error, printing out the appropriate guard-info."
   (declare (xargs :mode :program :stobjs (state)))
   (b* ((guards (if (and (consp guard-obligation)
                         (eq 'ACL2::AND (car guard-obligation)))
                    (cdr guard-obligation)
                  (list guard-obligation))))
-    (test-guards1 guards hints override-defaults state)))
+    (test-guards1 guards hints override-defaults timeout state)))
 
 ;; If ld-error-action is :error, ld stops and returns, signalling an
 ;; error to its caller by returning an error triple with non-nil error
@@ -857,11 +896,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (b* (((er guard-ob) (acl2::function-guard-obligation ',name state))
                  (- (defdata::cw? ,debug "~| guard-obligation: ~x0~%" guard-ob))
                  (- (cw "~|Query: Testing body contracts ... ~%"))
-                 ((er &) (with-output :on (error)
-                                      (with-prover-time-limit
-                                       ,testing-timeout
-                                       (test-guards guard-ob ',hints '(:print-cgen-summary nil :num-witnesses 0) state))))
-                 )
+                 ((er &) (with-output
+                          :on (error)
+                          (with-prover-time-limit
+                           ,testing-timeout
+                           (test-guards guard-ob
+                                        ',hints
+                                        '(:print-cgen-summary nil :num-witnesses 0)
+                                        ,testing-timeout
+                                        state)))))
               (value '(value-triple :invisible))))) 'test?-phase state t))
        ((when (eq T (cadr trval))) (mv t nil state)) ;abort with error
        (- (cw "~|Query: Testing function contract ... ~%"))
@@ -870,8 +913,12 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          `(make-event
            (er-progn
             (with-output :on (error) (skip-proofs ,defun))
-            (with-output :on (error) (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0))
-            (value '(value-triple :invisible))))
+            (with-output
+             :on (error)
+             (with-prover-time-limit
+              ,testing-timeout
+              (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0)))
+             (value '(value-triple :invisible))))
          'test?-phase state t))
        ((when (eq T (cadr trval))) (mv t nil state)) ;abort with error
        ((mv end state) (acl2::read-run-time state))
@@ -1048,7 +1095,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (er hard ctx "~|The output contract has to be a term. ~x0 is not.~%" output-contract))
 ;       (signature (defdata::get1 :sig kwd-alist))
 
-       (recp (in-termp name body))
+       (recp (fun-sym-in-termp name body))
        (kwd-alist (put-assoc :recursivep recp kwd-alist))
 
        (docs (filter-strings decls/docs))

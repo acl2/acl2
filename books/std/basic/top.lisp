@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "bytep")
+(include-book "nibblep")
 (include-book "defs")
 (include-book "arith-equivs")
 (include-book "two-nats-measure")
