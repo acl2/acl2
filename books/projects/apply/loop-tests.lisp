@@ -92,16 +92,12 @@
 (thm (implies (and (natp k1) (natp k2) (natp k3)
                    (<= k1 k2) (<= k2 k3)
                    (warrant square))
-              (equal (f2 k1 k3)
-                     (append (f2 k1 k2)
-                             (f2 (1+ k2) k3)))))
+              (member (* k2 k2) (f2 k1 k3))))
 
 (must-fail
  (thm (implies (and (natp k1) (natp k2) (natp k3)
                     (<= k1 k2) (<= k2 k3))
-               (equal (f2 k1 k3)
-                      (append (f2 k1 k2)
-                              (f2 (1+ k2) k3))))))
+               (member (* k2 k2) (f2 k1 k3)))))
 
 ; Trans doesn't actually return the translated value; it returns (value
 ; :invisible).  So we call translate instead.
