@@ -134,11 +134,10 @@
                     (equal (alistp (revappend x y))
                            (alistp y)))))
 
-  (local (defthm alistp-first-n-ac
+  (local (defthm alistp-of-take
            (implies (and (alistp x)
-                         (alistp y)
                          (<= n (len x)))
-                    (alistp (first-n-ac n x y)))))
+                    (alistp (take n x)))))
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
