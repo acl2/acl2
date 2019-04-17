@@ -6367,21 +6367,6 @@
   (let ((fns (instantiable-ffn-symbs-lst lst trips ans nil)))
     (instantiable-ancestors fns trips ans)))
 
-(defun constraints-list (fns wrld acc seen)
-  (cond ((endp fns) acc)
-        (t (mv-let
-            (name x)
-            (constraint-info (car fns) wrld)
-            (cond ((unknown-constraints-p x)
-                   x)
-                  (name (cond ((member-eq name seen)
-                               (constraints-list (cdr fns) wrld acc seen))
-                              (t (constraints-list (cdr fns)
-                                                   wrld
-                                                   (union-equal x acc)
-                                                   (cons name seen)))))
-                  (t (constraints-list (cdr fns) wrld (cons x acc) seen)))))))
-
 (defun encapsulate-constraint (sig-fns exported-names new-trips wrld)
 
 ; This function implements the algorithm described in the first paragraph of
