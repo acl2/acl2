@@ -6364,7 +6364,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard
                    (and (integerp n)
                         (not (< n 0))
-                        (true-listp l))))
+                        (true-listp l))
+                   :verify-guards nil))
   #-acl2-loop-only
   (when (<= n most-positive-fixnum)
     (return-from take
@@ -6375,7 +6376,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; empty.
 
                        collect (pop l))))
-  (first-n-ac n l nil))
+  (mbe :logic
+       (if (zp n)
+           nil
+         (cons (car l)
+               (take (1- n) (cdr l))))
+       :exec
+       (first-n-ac n l nil)))
+
+(encapsulate
+  ()
+
+  (local
+   (defthm
+     take-guard-lemma-1
+     (equal (first-n-ac i l ac)
+            (revappend ac (take i l)))))
+
+  (verify-guards take))
 
 (defthm true-listp-take
 
@@ -19257,11 +19275,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (verify-termination-boot-strap subseq-list)
 
  (local
-  (defthm character-listp-first-n-ac
+  (defthm character-listp-of-take
     (implies (and (character-listp x)
-                  (character-listp y)
                   (<= n (length x)))
-             (character-listp (first-n-ac n x y)))))
+             (character-listp (take n x)))))
 
  (local
   (defthm len-nthcdr
@@ -26014,19 +26031,17 @@ Lisp definition."
     :hints (("Goal" :in-theory (enable standard-char-listp)))))
 
  (local
-  (defthm standard-char-listp-first-n-ac
+  (defthm standard-char-listp-of-take
     (implies (and (standard-char-listp x)
-                  (standard-char-listp ac)
                   (<= n (len x)))
-             (standard-char-listp (first-n-ac n x ac)))
+             (standard-char-listp (take n x)))
     :hints (("Goal" :in-theory (enable standard-char-listp)))))
 
  (local
-  (defthm character-listp-first-n-ac
+  (defthm character-listp-of-take
     (implies (and (character-listp x)
-                  (character-listp ac)
                   (<= n (len x)))
-             (character-listp (first-n-ac n x ac)))))
+             (character-listp (take n x)))))
 
  (local
   (defthm character-listp-nthcdr
@@ -26076,10 +26091,9 @@ Lisp definition."
            (+ (len x) (len y)))))
 
  (local
-  (defthm len-first-n-ac
-    (implies (true-listp ac)
-             (equal (len (first-n-ac n lst ac))
-                    (+ (nfix n) (len ac))))))
+  (defthm len-of-take
+    (equal (len (take n lst))
+           (nfix n))))
 
  (local
   (defthm len-subseq

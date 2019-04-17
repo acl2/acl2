@@ -19,6 +19,8 @@
 (defthm len-of-first-n-ac
   (implies (natp i) (equal (len (first-n-ac i l ac)) (+ i (len ac)))))
 
+(defthm len-of-take (equal (len (take n xs)) (nfix n)))
+
 (defthm nthcdr-of-binary-append-1
   (implies (and (integerp n) (>= n (len x)))
            (equal (nthcdr n (binary-append x y))
@@ -29,6 +31,11 @@
   (implies (and (natp i) (<= i (len x)))
            (equal (first-n-ac i (binary-append x y) ac)
                   (first-n-ac i x ac))))
+
+(defthm take-of-binary-append-1
+  (implies (and (natp i) (<= i (len x)))
+           (equal (take i (binary-append x y))
+                  (take i x))))
 
 (defthm by-slice-you-mean-the-whole-cake-1
   (implies (true-listp l)
@@ -52,6 +59,11 @@
 (defthm character-listp-of-first-n-ac
   (implies (and (character-listp l) (character-listp acc) (<= n (len l)))
            (character-listp (first-n-ac n l acc))))
+
+(defthm character-listp-of-take
+  (implies (character-listp l)
+           (equal (character-listp (take n l))
+                  (<= (nfix n) (len l)))))
 
 (defthm character-listp-of-nthcdr
   (implies (and (character-listp l))
@@ -264,6 +276,12 @@
                   (make-character-list (first-n-ac i l ac)))))
 
 (defthm
+  take-of-make-character-list
+  (implies (and (<= i (len l)))
+           (equal (take i (make-character-list l))
+                  (make-character-list (take i l)))))
+
+(defthm
   take-more
   (implies
    (and (true-listp l)
@@ -280,35 +298,6 @@
                                      (y l)
                                      (z ac2)))))
 
-(defthm
-  take-of-take
-  (implies (and (true-listp l)
-                (natp m)
-                (integerp n)
-                (<= m n)
-                (<= m (len l)))
-           (equal (first-n-ac m (take n l) ac)
-                  (first-n-ac m l ac)))
-  :hints
-  (("goal" :do-not-induct t
-    :in-theory (disable binary-append-first-n-ac-nthcdr
-                        first-n-ac-of-binary-append-1)
-    :use ((:instance binary-append-first-n-ac-nthcdr (ac nil)
-                     (i n))
-          (:instance first-n-ac-of-binary-append-1 (i m)
-                     (x (first-n-ac n l nil))
-                     (y (nthcdr n l)))))
-   ("goal'4'" :in-theory (disable take-more)
-    :use (:instance take-more (i n)
-                    (ac1 nil)
-                    (ac2 nil)))
-   ("goal'6'"
-    :in-theory (disable first-n-ac-of-binary-append-1)
-    :use (:instance first-n-ac-of-binary-append-1 (i m)
-                    (x l)
-                    (y (make-list-ac (+ n (- (len l)))
-                                     nil nil))))))
-
 (defthm boolean-listp-of-revappend
   (implies (boolean-listp x)
            (equal (boolean-listp (revappend x y))
@@ -322,6 +311,12 @@
 (defthm consp-of-first-n-ac
   (iff (consp (first-n-ac i l ac))
        (or (consp ac) (not (zp i)))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/take.lisp, from where it was taken with thanks.
+(defthm consp-of-take
+    (equal (consp (take n xs))
+           (not (zp n))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.

@@ -136,13 +136,12 @@
                     text))
     :hints
     (("goal" :in-theory (enable make-blocks))
-     ("subgoal *1/3.3'"
-      :in-theory (disable first-n-ac-of-make-character-list
+     ("subgoal *1/3.3"
+      :in-theory (disable take-of-make-character-list
                           take-of-too-many)
-      :use ((:instance first-n-ac-of-make-character-list
+      :use ((:instance take-of-make-character-list
                        (i (len text))
-                       (l (first-n-ac 8 text nil))
-                       (ac nil))
+                       (l (first-n-ac 8 text nil)))
             (:instance take-of-too-many (x text)
                        (n *blocksize*)))))))
 
@@ -199,16 +198,11 @@
                   (len blocks)))
   :hints
   (("goal" :in-theory (enable make-blocks feasible-file-length-p))
-   ("subgoal *1/8.1'"
+   ("subgoal *1/8"
     :expand (append (car blocks)
                     (unmake-blocks (cdr blocks) (+ -8 n))))
+   ("subgoal *1/5.2" :cases ((atom (cdr blocks))) :expand (len (cdr blocks)))
    ("subgoal *1/5.1'"
     :expand (append (car blocks)
                     (unmake-blocks (cdr blocks) (+ -8 n))))
-   ("subgoal *1/2'4'" :expand (make-blocks (first-n-ac n (car blocks) nil)))
-   ("subgoal *1/2.1'" :in-theory (disable len-of-first-n-ac)
-    :use (:instance len-of-first-n-ac (i n)
-                    (l (car blocks))
-                    (ac nil)))
-   ("subgoal *1/5.2'" :cases ((atom (cdr blocks))))
-   ("subgoal *1/5.2'''" :expand (len (cdr blocks)))))
+   ("subgoal *1/2" :expand (make-blocks (first-n-ac n (car blocks) nil)))))

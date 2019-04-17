@@ -290,6 +290,10 @@
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
 
+ <p>Recent improvements to the filesystem books include proofs of correctness of
+ filesystem representation transformations in terms of invertibility, and an
+ expanded set of POSIX system calls verified through refinement.</p>
+
  <h4>FTY Type Definition Library</h4>
 
  <p>Added an option @(':non-emptyp') to @('fty::deflist') and @('std::deflist')
@@ -426,6 +430,12 @@
  <p>The definition of function @(see list-fix) from
  @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
  sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <p>The built-in function @(tsee take) has been redefined exactly along the
+ lines suggested by the theorem @('take-redefinition') from
+ @('\"books/std/lists/take.lisp\"').  @('Take-redefinition) itself has been
+ left in place in order to minimize changes to existing books.  See @(see
  note-8-2) for details.</p>
 
  <h4>@(csee std/util)</h4>

@@ -72,9 +72,10 @@
          (equal (len (revappend x y))
                 (+ (len x) (len y)))))
 
-(local (defthm len-first-n-ac
-         (equal (len (first-n-ac i l ac))
-                (+ (nfix i) (len ac)))))
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
+(local (defthm len-of-take
+         (equal (len (take i l))
+                (nfix i))))
 
 (verify-termination find-dot-dot)
 
