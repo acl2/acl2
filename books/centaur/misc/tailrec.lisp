@@ -28,6 +28,9 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
+;
+; Includes tweaks made by Mihir Mehta 4/2019 for a change to the
+; definition of take.
 
 (in-package "ACL2")
 

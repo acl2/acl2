@@ -432,11 +432,12 @@
  sources in a way that minimizes changes to existing books.  See @(see
  note-8-2) for details.</p>
 
- <p>The built-in function take has been redefined exactly along the lines
- suggested by the theorem take-redefinition from
- @('\"books/std/lists/take.lisp\"'). take-redefinition itself has been left in
- place in order to minimize changes to existing books.  See @(see
+ <p>The built-in function @(tsee take) has been redefined exactly along the
+ lines suggested by the theorem @('take-redefinition') from
+ @('\"books/std/lists/take.lisp\"').  @('Take-redefinition) itself has been
+ left in place in order to minimize changes to existing books.  See @(see
  note-8-2) for details.</p>
+
  <h4>@(csee std/util)</h4>
 
  <p>Added macros @(tsee std::defthm-natp), @(tsee std::defthm-unsigned-byte-p),

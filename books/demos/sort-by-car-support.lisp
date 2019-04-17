@@ -134,6 +134,7 @@
                     (equal (alistp (revappend x y))
                            (alistp y)))))
 
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
   (local (defthm alistp-of-take
            (implies (and (alistp x)
                          (<= n (len x)))

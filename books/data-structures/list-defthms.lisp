@@ -7,6 +7,9 @@
 ; 1717 West Sixth Street, Suite 290
 ; Austin, TX 78703-4776 U.S.A.
 
+; Includes tweaks made by Mihir Mehta 4/2019 for a change to the
+; definition of take.
+
 (in-package "ACL2")
 (include-book "list-defuns")
 

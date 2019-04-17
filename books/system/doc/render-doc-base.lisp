@@ -96,6 +96,7 @@
     (equal (len (revappend x y))
            (+ (len x) (len y)))))
 
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
  (local
   (defthm len-of-take
     (equal (len (take n x))

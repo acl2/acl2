@@ -1,5 +1,8 @@
 (in-package "RTL")
 
+; Includes tweaks made by Mihir Mehta 4/2019 for a change to the
+; definition of take.
+
 (include-book "newton")
 (include-book "rcp")
 (local (include-book "bits"))
