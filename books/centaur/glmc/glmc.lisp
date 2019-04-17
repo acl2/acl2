@@ -128,7 +128,7 @@
                   (acl2::clauses-result
                    (glmc-generic clause config interp-st state)))))
            (glcp-generic-geval-ev (disjoin clause) a))
-  :rule-classes :clause-processor)
+  :rule-classes nil)
 
 (set-enforce-redundancy nil)
 
@@ -191,7 +191,8 @@
                                        (& (mv nil nil)))))
                                  (and fn
                                       (rassoc fn ',subst)
-                                      `(:expand ((,fn . ,args)))))))))
+                                      `(:expand ((,fn . ,args)))))))
+                  :rule-classes :clause-processor))
               (table glmc-info 'latest-glmc-clause-proc ',name)))))
 
 (defmacro def-glmc-clause-processor (name)

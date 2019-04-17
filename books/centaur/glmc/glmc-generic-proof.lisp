@@ -8763,4 +8763,4 @@
              (glcp-generic-geval-ev (disjoin clause) a))
     ;; :hints (("goal" :cases ((CONSP (GLMC-GENERIC-TERM-LEVEL-ALISTS CONFIG A)))))
     :otf-flg t
-    :rule-classes :clause-processor))
+    :rule-classes nil))

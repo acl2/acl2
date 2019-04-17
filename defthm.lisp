@@ -4398,6 +4398,34 @@
                     (t (cons fn ans))))
             ignore-fns))))
 
+(defun constraints-list (fns wrld acc seen)
+  (cond ((endp fns) acc)
+        (t (mv-let
+            (name x)
+            (constraint-info (car fns) wrld)
+            (cond ((unknown-constraints-p x)
+                   x)
+                  (name (cond ((member-eq name seen)
+                               (constraints-list (cdr fns) wrld acc seen))
+                              (t (constraints-list (cdr fns)
+                                                   wrld
+                                                   (union-equal x acc)
+                                                   (cons name seen)))))
+                  (t (constraints-list (cdr fns) wrld (cons x acc) seen)))))))
+
+(defun constraint-info+ (fn wrld)
+
+; This function normally agrees with constraint-info, but
+; extends that function's result in the case that fn is defined by
+; mutual-recursion.  In that case, we return (mv t lst) where lst is the list
+; of constraints of the siblings of fn.
+ 
+  (let ((fns (getpropc fn 'recursivep nil wrld)))
+    (cond ((and (consp fns)
+                (consp (cdr fns)))
+           (mv t (constraints-list fns wrld nil nil)))
+          (t (constraint-info fn wrld)))))
+
 (defun immediate-canonical-ancestors (fn wrld ignore-fns rlp)
 
 ; This function is analogous to immediate-instantiable-ancestors, but it
@@ -4408,8 +4436,8 @@
 
   (let ((guard-anc
          (canonical-ffn-symbs (guard fn nil wrld) wrld nil ignore-fns rlp)))
-    (mv-let (name x)
-            (constraint-info fn wrld)
+    (mv-let (name x) ; name could be t
+            (constraint-info+ fn wrld)
             (cond
              ((unknown-constraints-p x)
               (collect-canonical-siblings (unknown-constraints-supporters x)

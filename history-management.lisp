@@ -10342,6 +10342,10 @@
 
 (defun constraint-info (fn wrld)
 
+; Warning: If fn is defined by mutual-recursion, this function returns only the
+; defining equation for f, not of its mutual-recursion siblings.  To obtain
+; their constraints as well, see constraint-info+.
+
 ; This function returns a pair (mv flg x).  In the simplest and perhaps most
 ; common case, there is no 'constraint-lst property for fn, e.g., when fn is
 ; defined by defun or defchoose and not in the scope of an encapsulate.  In
