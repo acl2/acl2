@@ -53,14 +53,16 @@
   :parents (std/lists take)
   :short "Lemmas about @(see take) available in the @(see std/lists) library."
 
-  :long "<p>ACL2's built-in definition of @('take') is not especially good for
-reasoning since it is written in terms of the tail-recursive function
-@('first-n-ac').  We provide a much nicer @(see definition) rule:</p>
+  :long "<p>Through ACL2 Version 8.1, ACL2's built-in definition of @('take')
+was not especially good for reasoning since it was written in terms of the
+tail-recursive function @('first-n-ac').  We provided a much nicer @(see
+definition) rule:</p>
 
   @(def take-redefinition)
 
-<p>And we also set up an analogous @(see induction) rule.  We generally
-recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
+<p>This rule is is now essentially the built-in logical definition of @(tsee
+take), however, so this rule might no longer be necessary.  We also set up an
+analogous @(see induction) rule.</p>"
 
   (encapsulate
     ()
