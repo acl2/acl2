@@ -2110,9 +2110,9 @@
 
  @({
  git checkout master
- git merge my-branch
  # Get master up-to-date (this is just ``git pull'' with a check):
  bin/pull.sh
+ git merge my-branch
  # Possibly run ``regression-everything'' before the final push just below.
  git push https://github.com/acl2/acl2 master
  })</li>
