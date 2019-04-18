@@ -94,10 +94,12 @@
 #-(or sbcl lispworks cmucl)
 (defun bignum-extract (x slice)
 
-  ;; Simple Lisp version for most Lisps.
+  ;; Simple Lisp version for most Lisps.  (Matt K. mode 4/2019: Added acl2::
+  ;; package prefix since byte is excluded from the list of symbols imported
+  ;; into "BITSETS" in books/std/package.lsp.)
   #-(and Clozure x86-64)
   (the (unsigned-byte 32)
-       (ldb (byte 32 (* 32 slice)) x))
+       (ldb (acl2::byte 32 (* 32 slice)) x))
 
   #+(and Clozure x86-64)
   (cond ((not (typep slice 'fixnum))

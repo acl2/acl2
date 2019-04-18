@@ -1191,6 +1191,8 @@
  nth-of-bpb_reserved-1
  nth-of-bpb_reserved-2)
 
+(comp t) ; Matt K. mod 4/2019 (needed for avoiding stack overflow in Allegro CL)
+
 (defthm
   fat32-in-memoryp-of-create-fat32-in-memory
   (fat32-in-memoryp (create-fat32-in-memory)))
