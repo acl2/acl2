@@ -1793,6 +1793,22 @@
  support of other functions.</p>
  </color>
 
+ <p>The following two additional steps are occasionally advisable, especially
+ for patches that change definitions that are in @(':')@(tsee logic) mode.
+ Feel free to ask an ACL2 author if they are necessary; as of this writing,
+ that would be Matt Kaufmann, at @('kaufmann@cs.utexas.edu').</p>
+
+ <ul>
+
+ <li>Run ``@('make proofs')''.  That should conclude with the message,
+ ``Initialization SUCCEEDED.''</li>
+
+ <li>Do a ``devel'' build, regression, and check.  See @(see
+ verify-guards-for-system-functions), specifically the six steps at the end of
+ the topic.</li>
+
+ </ul>
+
  <h3>Regression testing</h3>
 
  <p>Now do a regression test.  The most complete regression is done using the
