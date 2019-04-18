@@ -2027,9 +2027,10 @@
  <p><b>IMPORTANT</b>: Before reading this topic, be sure to read the topic,
  @(see developers-guide-maintenance).  The present topic assumes that you have
  followed the process there to make changes in your copy of ACL2 and the @(see
- community-books), including testing and documentation.  Here are the steps for
- contributing your changes when they are complete and fully tested and
- documented.</p>
+ community-books), including testing and documentation. In particular, you
+ should have completed the devel-check process laid out in the topic, @(see
+ verify-guards-for-system-functions).  Here are the steps for contributing your
+ changes when they are complete and fully tested and documented.</p>
 
  <ol>
 
@@ -2110,9 +2111,9 @@
 
  @({
  git checkout master
- git merge my-branch
  # Get master up-to-date (this is just ``git pull'' with a check):
  bin/pull.sh
+ git merge my-branch
  # Possibly run ``regression-everything'' before the final push just below.
  git push https://github.com/acl2/acl2 master
  })</li>
