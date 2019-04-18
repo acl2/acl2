@@ -2078,8 +2078,9 @@
 
  <li>Send the commit hash and tarball (see ``Create a tarball'' above), as well
  as the name and URL of your new branch (as discussed above), to an ACL2
- author.  As of this writing, those are to be sent to Matt Kaufmann, at
- @('kaufmann@cs.utexas.edu').</li>
+ author.  Optionally also send the commit hash for the version of master that
+ was your starting point.  As of this writing, those are to be sent to Matt
+ Kaufmann, at @('kaufmann@cs.utexas.edu').</li>
 
  <li>The last steps will be done by Matt, who will start by getting your
  changes as follows.
@@ -2110,6 +2111,8 @@
  @({
  git checkout master
  git merge my-branch
+ # Get master up-to-date (this is just ``git pull'' with a check):
+ bin/pull.sh
  # Possibly run ``regression-everything'' before the final push just below.
  git push https://github.com/acl2/acl2 master
  })</li>

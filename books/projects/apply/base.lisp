@@ -283,17 +283,42 @@
                  (equal (ev$ x a) (cdr (assoc x a))))
         (equal (ev$ (list 'quote obj) a)
                obj)
-        (implies (force (suitably-tamep-listp 3 nil args))
+        (implies (suitably-tamep-listp 3 nil args) ; See note on forcing below.
                  (equal (ev$ (cons 'if args) a)
                         (if (ev$ (car args) a)
                             (ev$ (cadr args) a)
-                            (ev$ (caddr args) a))))
+                          (ev$ (caddr args) a))))
         (implies (and (not (eq fn 'quote))
                       (not (eq fn 'if))
-                      (force (tamep (cons fn args))))
+                      (tamep (cons fn args))) ; See note on forcing below.
                  (equal (ev$ (cons fn args) a)
                         (apply$ fn (ev$-list args a)))))
    :hints (("Subgoal 1" :expand (ev$ (cons fn args) a)))))
+
+; Note: At one time we FORCEd the two tameness requirements ab ove.  We found
+; that unsatisfactory because proofs sometimes failed for hard-to-debug reasons
+; if the relevant apply$-fn lemma proved by (defwarrant fn) was disabled.
+; E.g., if square is a warranted function and apply$-square is disabled, then
+; the following theorem is provable without knowledge of square, but the user
+; who tries to avoid knowledge of square by disabling apply$-square will be
+; sorely disappointed.
+
+; (thm (implies (and ;; (warrant square)
+;                (natp k1) (natp k2) (natp k3)
+;                (<= k1 k2) (<= k2 k3))
+;               (equal (f2 k1 k3)
+;                      (append (f2 k1 k2)
+;                              (f2 (1+ k2) k3))))
+;      :hints (("Goal" :in-theory (disable apply$-square))))
+
+; The reason this fails is that ev$-opener continues to fire, forcing tameness
+; requirements that are obscure to most users.
+
+; Removing the forcing doesn't negatively affect any proof as of the pre-
+; release of Version 8.2.  But we have very little experience with user
+; engagement with apply$, much less with direct use of ev$.  So this decision
+; to remove the forcing may be only a superficial solution.  Another solution
+; would be to document ev$ and its opener in gory detail!
 
 (defthm ev$-list-def
   (equal (ev$-list x a)
@@ -620,7 +645,7 @@
 (in-theory (disable compose))
 
 (in-theory
- (disable 
+ (disable
   (:DEFINITION FN-EQUAL)
   (:DEFINITION EV$-LIST)
   (:DEFINITION EV$)
