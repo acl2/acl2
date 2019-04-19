@@ -354,6 +354,14 @@
                                                       "-INJECTIVITY+"))
        (lendian-to-nat-injectivity+ (add-suffix-to-fn lendian-to-nat
                                                       "-INJECTIVITY+"))
+       (len-of-nat-to-bendian*-leq-width (packn-pos (list 'len-of-
+                                                          nat-to-bendian*
+                                                          '-leq-width)
+                                                    name))
+       (len-of-nat-to-lendian*-leq-width (packn-pos (list 'len-of-
+                                                          nat-to-lendian*
+                                                          '-leq-width)
+                                                    name))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
@@ -834,6 +842,46 @@
            :in-theory '(,lendian-to-nat
                         lendian=>nat-injectivity+
                         ,digits-fix-correct)))
+       (len-of-nat-to-bendian*-leq-width-event
+        `(defruled ,len-of-nat-to-bendian*-leq-width
+           :parents (,nat-to-bendian*)
+           (implies (and (natp ,nat)
+                         (natp ,width))
+                    (equal (<= (len (,nat-to-bendian* ,nat))
+                               ,width)
+                           (< ,nat
+                              (expt ,base ,width))))
+           :rule-classes ((:rewrite
+                           :corollary
+                           (implies (and (natp ,nat)
+                                         (natp ,width))
+                                    (equal (> (len (,nat-to-bendian* ,nat))
+                                              ,width)
+                                           (>= ,nat
+                                               (expt ,base ,width))))
+                           :hints (("Goal" :in-theory '(not)))))
+           :in-theory '(dab-basep natp ,nat-to-bendian*)
+           :use (:instance len-of-nat=>bendian*-leq-width (base ,base))))
+       (len-of-nat-to-lendian*-leq-width-event
+        `(defruled ,len-of-nat-to-lendian*-leq-width
+           :parents (,nat-to-lendian*)
+           (implies (and (natp ,nat)
+                         (natp ,width))
+                    (equal (<= (len (,nat-to-lendian* ,nat))
+                               ,width)
+                           (< ,nat
+                              (expt ,base ,width))))
+           :rule-classes ((:rewrite
+                           :corollary
+                           (implies (and (natp ,nat)
+                                         (natp ,width))
+                                    (equal (> (len (,nat-to-lendian* ,nat))
+                                              ,width)
+                                           (>= ,nat
+                                               (expt ,base ,width))))
+                           :hints (("Goal" :in-theory '(not)))))
+           :in-theory '(dab-basep natp ,nat-to-lendian*)
+           :use (:instance len-of-nat=>lendian*-leq-width (base ,base))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -881,6 +929,8 @@
        ,lendian-to-nat-injectivity*-event
        ,bendian-to-nat-injectivity+-event
        ,lendian-to-nat-injectivity+-event
+       ,len-of-nat-to-bendian*-leq-width-event
+       ,len-of-nat-to-lendian*-leq-width-event
        ,name-event)))
 
 (defsection defdigits-macro-definition
