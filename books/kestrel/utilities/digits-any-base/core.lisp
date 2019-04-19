@@ -155,17 +155,8 @@
     (implies (dab-digit-listp base x)
              (nat-listp x)))
 
-  (defrule dab-digit-listp-of-dab-base-fix-base
-    (equal (dab-digit-listp (dab-base-fix base) x)
-           (dab-digit-listp base x)))
-
-  (defrule dab-digit-listp-of-dab-base-fix-base-normalize-const
-    (implies  (syntaxp (and (quotep base)
-                            (not (dab-basep (cadr base)))))
-              (equal (dab-digit-listp base x)
-                     (dab-digit-listp (dab-base-fix base) x))))
-
-  (defcong dab-base-equiv equal (dab-digit-listp base x) 1))
+  (fty::deffixequiv dab-digit-listp
+    :args ((base dab-basep))))
 
 (define dab-digit-list-fix ((base dab-basep) (x (dab-digit-listp base x)))
   :returns (fixed-x (dab-digit-listp base fixed-x))
