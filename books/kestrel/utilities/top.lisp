@@ -16,6 +16,8 @@
 (include-book "assert")
 (include-book "auto-instance")
 (include-book "auto-termination")
+(include-book "bits-as-digits")
+(include-book "bytes-as-digits")
 (include-book "copy-def")
 (include-book "define-sk")
 (include-book "defmacroq")
