@@ -293,11 +293,6 @@
   :hooks (:fix)
   ///
 
-  (more-returns
-   (nat natp
-        :rule-classes :type-prescription
-        :name lendian=>nat-type-prescription))
-
   (defrule lendian=>nat-of-dab-digit-list-fix-digits
     (equal (lendian=>nat base (dab-digit-list-fix base digits))
            (lendian=>nat base digits)))
