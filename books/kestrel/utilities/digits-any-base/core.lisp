@@ -53,7 +53,7 @@
    (xdoc::p
     "Any integer above 1 raised to a positive power is a valid base,
      e.g. binary, octal, and hexadecimal bases."))
-  (and (natp x)
+  (and (integerp x)
        (>= x 2))
   ///
 
