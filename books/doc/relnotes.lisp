@@ -241,6 +241,12 @@
  <p>The macro to generate additional return types for conversions from natural
  numbers to digits has been generalized and renamed.</p>
 
+ <p>A macro @(tsee defdigits) has been added, to generate specialized versions
+ of the conversion operations, and some theorems about them, for specific bases
+ and specific recognizers and fixers of (lists of) digits.  Used this macro for
+ the library fixtypes of bits and bytes (as digits in base 2 and 256
+ respectively).</p>
+
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
  <p>Added more error-checking functions.</p>
