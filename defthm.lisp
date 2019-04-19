@@ -4419,7 +4419,7 @@
 ; extends that function's result in the case that fn is defined by
 ; mutual-recursion.  In that case, we return (mv t lst) where lst is the list
 ; of constraints of the siblings of fn.
- 
+
   (let ((fns (getpropc fn 'recursivep nil wrld)))
     (cond ((and (consp fns)
                 (consp (cdr fns)))
@@ -11539,23 +11539,30 @@
     (make-ctx-for-event
      (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
      "( THM ...)")
-    (let ((wrld (w state))
-          (ens (ens state)))
-      (er-let* ((hints (translate-hints+ 'thm
-                                         hints
-                                         (default-hints wrld)
-                                         ctx wrld state)))
-               (er-let* ((tterm (translate term t t t ctx wrld state))
+    (cond
+     ((ld-skip-proofsp state)
+      (value nil))
+     (t
+      (let ((wrld (w state))
+            (ens (ens state)))
+        (er-let* ((hints (translate-hints+ 'thm
+                                           hints
+                                           (default-hints wrld)
+                                           ctx wrld state)))
+          (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-                         (ttree (prove tterm
-                                       (make-pspv ens wrld state
-                                                  :displayed-goal term
-                                                  :otf-flg otf-flg)
-                                       hints ens wrld ctx state)))
-                        (value nil)))))
-   (pprogn (io? prove nil state
+                    (ttree (prove tterm
+                                  (make-pspv ens wrld state
+                                             :displayed-goal term
+                                             :otf-flg otf-flg)
+                                  hints ens wrld ctx state)))
+            (value nil)))))))
+   (pprogn (io? summary nil state
                 nil
-                (fms "Proof succeeded.~%" nil
+                (fms (if (ld-skip-proofsp state)
+                         "Proof skipped.~%"
+                       "Proof succeeded.~%")
+                     nil
                      (proofs-co state) state nil))
            (value :invisible))))
 
