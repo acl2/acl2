@@ -21,7 +21,7 @@
 (include-book "defmacroq")
 (include-book "defmax-nat/top")
 (include-book "defthmr")
-(include-book "digits-any-base/pow2-instances")
+(include-book "digits-any-base/top")
 (include-book "directed-untranslate")
 (include-book "doublets")
 (include-book "enumerations")
