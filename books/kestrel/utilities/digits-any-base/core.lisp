@@ -715,7 +715,8 @@
                              (equal (> (len (nat=>bendian* base nat))
                                        width)
                                     (>= nat
-                                        (expt base width))))))))
+                                        (expt base width))))
+                    :hints (("Goal" :in-theory '(not)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
