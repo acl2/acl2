@@ -14551,6 +14551,20 @@
 
 ; See pkg-names.
 
+; For the following book we get a stack overflow in pkg-names-memoize in Step 3
+; of certification.
+
+; (in-package "ACL2")
+; (include-book "projects/apply/top" :dir :system)
+; (make-event `(defconst *m* ',(make-list 10000000)))
+
+; Before trying to fix pkg-names-memoize, however, note that if we comment out
+; the include-book form above, then instead we get a stack overflow in
+; ser-encode-conses in Step 4.  So it might not be worth trying to improve
+; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
+; might be difficult fixes that aren't necessary; see the workaround using
+; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
+
   (cond ((consp x)
          (hons-union-ordered-string-lists
           (pkg-names-memoize (car x))
