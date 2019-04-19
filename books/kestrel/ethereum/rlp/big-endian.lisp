@@ -31,7 +31,12 @@
     "Digits in base 256 are bytes.
      We introduce return type theorems for @(tsee nat=>bendian*)
      (and for the other number-to-digit conversions,
-     even though we do not use them here)."))
+     even though we do not use them here).")
+   (xdoc::p
+    "We also introduce two linear rules
+     that relate certain specific upper bounds on
+     numbers and their big-endian representations in base 256.
+     These upper bounds apply to the encoding of lengths in RLP."))
 
   (defruled dab-digit-listp-of-256-is-byte-listp
     (equal (acl2::dab-digit-listp 256 digits)
@@ -40,4 +45,20 @@
 
   (acl2::defthm-dab-return-types
    dab-digit-listp-of-256-is-byte-listp
-   byte-listp-of))
+   byte-listp-of)
+
+  (defruled len-of-nat=>bendian*-leq-8
+    (implies (< nat (expt 2 64))
+             (<= (len (nat=>bendian* 256 nat))
+                 8))
+    :rule-classes :linear
+    :use (:instance acl2::len-of-nat=>bendian*-leq-width
+          (base 256) (width 8)))
+
+  (defruled bendian->nat-lt-2^64
+    (implies (<= (len digits) 8)
+             (< (bendian=>nat 256 digits)
+                (expt 2 64)))
+    :rule-classes :linear
+    :use (:instance acl2::len-of-nat=>bendian*-leq-width
+          (base 256) (width 8) (nat (bendian=>nat 256 digits)))))
