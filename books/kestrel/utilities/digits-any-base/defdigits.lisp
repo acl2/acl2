@@ -362,6 +362,26 @@
                                                           nat-to-lendian*
                                                           '-leq-width)
                                                     name))
+       (len-0-of-nat-to-bendian* (packn-pos (list 'len-0-of-
+                                                  nat-to-bendian*)
+                                            name))
+       (len-0-of-nat-to-lendian* (packn-pos (list 'len-0-of-
+                                                  nat-to-lendian*)
+                                            name))
+       (consp-pf-nat-to-bendian*-iff-not-zp (packn-pos (list 'consp-of-
+                                                             nat-to-bendian*
+                                                             '-iff-not-zp)
+                                                       name))
+       (consp-pf-nat-to-lendian*-iff-not-zp (packn-pos (list 'consp-of-
+                                                             nat-to-lendian*
+                                                             '-iff-not-zp)
+                                                       name))
+       (trim-bendian*-of-nat-to-bendian* (packn-pos (list 'trim-bendian*-of
+                                                          nat-to-bendian*)
+                                                    name))
+       (trim-lendian*-of-nat-to-lendian* (packn-pos (list 'trim-lendian*-of
+                                                          nat-to-lendian*)
+                                                    name))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
@@ -882,6 +902,42 @@
                            :hints (("Goal" :in-theory '(not)))))
            :in-theory '(dab-basep natp ,nat-to-lendian*)
            :use (:instance len-of-nat=>lendian*-leq-width (base ,base))))
+       (len-0-of-nat-to-bendian*-event
+        `(defrule ,len-0-of-nat-to-bendian*
+           (equal (equal (len (,nat-to-bendian* ,x)) 0)
+                  (zp ,x))
+           :enable ,nat-to-bendian*
+           :use (:instance acl2::len-0-of-nat=>bendian* (base ,base))))
+       (len-0-of-nat-to-lendian*-event
+        `(defrule ,len-0-of-nat-to-lendian*
+           (equal (equal (len (,nat-to-lendian* ,x)) 0)
+                  (zp ,x))
+           :enable ,nat-to-lendian*
+           :use (:instance acl2::len-0-of-nat=>lendian* (base ,base))))
+       (consp-pf-nat-to-bendian*-iff-not-zp-event
+        `(defrule ,consp-pf-nat-to-bendian*-iff-not-zp
+           (equal (consp (,nat-to-bendian* ,nat))
+                  (not (zp ,nat)))
+           :enable ,nat-to-bendian*
+           :use (:instance consp-of-nat=>bendian*-iff-not-zp (base ,base))))
+       (consp-pf-nat-to-lendian*-iff-not-zp-event
+        `(defrule ,consp-pf-nat-to-lendian*-iff-not-zp
+           (equal (consp (,nat-to-lendian* ,nat))
+                  (not (zp ,nat)))
+           :enable ,nat-to-lendian*
+           :use (:instance consp-of-nat=>lendian*-iff-not-zp (base ,base))))
+       (trim-bendian*-of-nat-to-bendian*-event
+        `(defrule ,trim-bendian*-of-nat-to-bendian*
+           (equal (trim-bendian* (,nat-to-bendian* ,nat))
+                  (,nat-to-bendian* ,nat))
+           :enable ,nat-to-bendian*
+           :use (:instance trim-bendian*-of-nat=>bendian* (base ,base))))
+       (trim-lendian*-of-nat-to-lendian*-event
+        `(defrule ,trim-lendian*-of-nat-to-lendian*
+           (equal (trim-lendian* (,nat-to-lendian* ,nat))
+                  (,nat-to-lendian* ,nat))
+           :enable ,nat-to-lendian*
+           :use (:instance trim-lendian*-of-nat=>lendian* (base ,base))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -931,6 +987,12 @@
        ,lendian-to-nat-injectivity+-event
        ,len-of-nat-to-bendian*-leq-width-event
        ,len-of-nat-to-lendian*-leq-width-event
+       ,len-0-of-nat-to-bendian*-event
+       ,len-0-of-nat-to-lendian*-event
+       ,consp-pf-nat-to-bendian*-iff-not-zp-event
+       ,consp-pf-nat-to-lendian*-iff-not-zp-event
+       ,trim-bendian*-of-nat-to-bendian*-event
+       ,trim-lendian*-of-nat-to-lendian*-event
        ,name-event)))
 
 (defsection defdigits-macro-definition
