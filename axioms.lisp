@@ -5228,7 +5228,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defvar *aokp*
 
-; The variable *aokp* indicates that state of using attachments, and can take
+; The variable *aokp* indicates the state of using attachments, and can take
 ; any of three sorts of values, as follows.
 
 ; nil
@@ -5265,6 +5265,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   t)
 
 (defmacro aokp ()
+
+; See *aokp* for explanation of that variable.
+
   '*aokp*)
 
 #+hons

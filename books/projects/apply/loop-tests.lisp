@@ -3,7 +3,7 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; This file contains examples from the paper under development, "Iteration in
-; ACL2".
+; ACL2".  At the end are some additional tests.
 
 (in-package "ACL2")
 
@@ -366,3 +366,116 @@
 ; ; (f) Common Lisp loop call [0.08 seconds, 0 bytes]:
 ; (time$ (loop for i of-type integer in *m* sum (double i)))
 ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Additional tests (not tied to the paper)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; The first batch, involving g1 and g2 below, involves apply$ rather than
+;;; loop$ (but is relevant to loop$ because it's relevant to apply$).
+
+(defun$ g1 (x)
+  (declare (xargs :guard t))
+  x)
+
+(thm (implies (warrant g1) ; necessary
+              (equal (apply$ 'g1 (list 3))
+                     3)))
+
+(must-fail
+; Fails, as it should:
+ (thm (equal (apply$ 'g1 (list 3))
+             3)))
+
+(memoize 'g1)
+
+(thm (implies (warrant g1) ; necessary
+              (equal (apply$ 'g1 (list 3))
+                     3)))
+
+(must-fail
+; Still fails in spite of memoization, as it should:
+ (thm (equal (apply$ 'g1 (list 3))
+             3)))
+
+; Now let's bury the apply$ call in a guard-verified function.
+
+(defun$ g2 (x)
+  (declare (xargs :guard t))
+  (apply$ 'g1 (list x)))
+
+(thm (implies (warrant g1) ; necessary
+              (equal (g2 3)
+                     3)))
+
+(must-fail
+; Fails, as it should:
+ (thm (equal (g2 3)
+             3)))
+
+(memoize 'g2)
+
+(thm (implies (warrant g1) ; necessary
+              (equal (g2 3)
+                     3)))
+
+(must-fail
+; Still fails in spite of memoization, as it should:
+ (thm (equal (g2 3)
+             3)))
+
+; Prints a warning about memoization results not being stored:
+(value-triple (g2 3))
+
+(must-fail
+; Still fails in spite of memoization, as it should:
+ (thm (equal (g2 3)
+             3)))
+
+;;; The second batch addresses loop$ more directly than above (where we focused
+;;; on apply$).
+
+(defun$ loop1 (x)
+  (declare (xargs :guard t))
+  (loop$ for i from 1 to 3 collect (cons (g2 i) x)))
+
+; Caused an assertion (expecting *aokp* to be non-nil) until fix around
+; 4/19/2019.
+(thm (implies (and (warrant g1) (warrant g2)) ; both are necessary
+              (equal (loop1 'a)
+                     '((1 . a) (2 . a) (3 . a)))))
+
+(must-fail
+; Fails, as it should:
+ (thm (implies (and (warrant g1))
+               (equal (loop1 'a)
+                      '((1 . a) (2 . a) (3 . a))))))
+
+(must-fail
+; Fails, as it should:
+ (thm (implies (and (warrant g2))
+               (equal (loop1 'a)
+                      '((1 . a) (2 . a) (3 . a))))))
+
+(memoize 'loop1) ; and g2 is already memoized
+
+(thm (implies (and (warrant g1) (warrant g2)) ; both are necessary
+              (equal (loop1 'a)
+                     '((1 . a) (2 . a) (3 . a)))))
+
+(must-fail
+; Fails in spite of memoization, as it should:
+ (thm (equal (loop1 'a)
+             '((1 . a) (2 . a) (3 . a)))))
+
+(must-fail
+; Still fails in spite of memoization, as it should:
+ (thm (implies (and (warrant g1))
+               (equal (loop1 'a)
+                      '((1 . a) (2 . a) (3 . a))))))
+
+(must-fail
+; Still fails in spite of memoization, as it should:
+ (thm (implies (and (warrant g2))
+               (equal (loop1 'a)
+                      '((1 . a) (2 . a) (3 . a))))))
