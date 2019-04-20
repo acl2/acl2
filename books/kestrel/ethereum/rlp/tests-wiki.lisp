@@ -108,7 +108,7 @@
   0)
 
 (defconst *zero-bytes*
-  (nat=>bendian* 256 *zero-scalar*))
+  (nat=>bebytes* *zero-scalar*))
 
 (defconst *zero-tree*
   (rlp-tree-leaf *zero-bytes*))

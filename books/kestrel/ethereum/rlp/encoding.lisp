@@ -42,7 +42,7 @@
                          :hints (("Goal"
                                   :in-theory
                                   (enable bytep
-                                          len-of-nat=>bendian*-leq-8)))))
+                                          len-of-nat=>bebytes*-leq-8)))))
   :short "RLP encoding of a byte array."
   :long
   (xdoc::topstring
@@ -79,7 +79,7 @@
                                                    bytes)))
                                 (mv nil encoding)))
           ((< (len bytes)
-              (expt 2 64)) (b* ((be (nat=>bendian* 256 (len bytes)))
+              (expt 2 64)) (b* ((be (nat=>bebytes* (len bytes)))
                                 (encoding (cons (+ 183 (len be))
                                                 (append be bytes))))
                              (mv nil encoding)))
@@ -98,7 +98,7 @@
              (<= (car (mv-nth 1 (rlp-encode-bytes bytes)))
                  191))
     :rule-classes :linear
-    :enable len-of-nat=>bendian*-leq-8)
+    :enable len-of-nat=>bebytes*-leq-8)
 
   (defruled len-of-rlp-encode-bytes-from-prefix
     (b* (((mv error? encoding) (rlp-encode-bytes bytes)))
@@ -110,8 +110,7 @@
                     (t (b* ((lenlen (- (car encoding) 183)))
                          (+ 1
                             lenlen
-                            (bendian=>nat 256 (take lenlen
-                                                    (cdr encoding)))))))))))
+                            (bebytes=>nat (take lenlen (cdr encoding)))))))))))
 
   (defrule len-of-rlp-encode-bytes-lower-bound-when-len-len
     (b* (((mv error? encoding) (rlp-encode-bytes bytes)))
@@ -194,7 +193,7 @@
                          (mv nil encoding)))
                       ((< (len encoding)
                           (expt 2 64))
-                       (b* ((be (nat=>bendian* 256 (len encoding)))
+                       (b* ((be (nat=>bebytes* (len encoding)))
                             (encoding (cons (+ 247 (len be))
                                             (append be encoding))))
                          (mv nil encoding)))
@@ -215,7 +214,7 @@
     :no-function t)
 
   :returns-hints (("Goal" :in-theory (enable bytep
-                                             len-of-nat=>bendian*-leq-8)))
+                                             len-of-nat=>bebytes*-leq-8)))
 
   ///
 
@@ -269,13 +268,12 @@
                      (b* ((lenlen (- (car encoding) 183)))
                        (+ 1
                           lenlen
-                          (bendian=>nat 256 (take lenlen (cdr encoding))))))
+                          (bebytes=>nat (take lenlen (cdr encoding))))))
                     ((< (car encoding) (+ 192 56)) (1+ (- (car encoding) 192)))
                     (t (b* ((lenlen (- (car encoding) 247)))
                          (+ 1
                             lenlen
-                            (bendian=>nat 256 (take lenlen
-                                                    (cdr encoding))))))))))
+                            (bebytes=>nat (take lenlen (cdr encoding))))))))))
     :expand (rlp-encode-tree tree)
     :enable len-of-rlp-encode-bytes-from-prefix)
 
@@ -331,7 +329,7 @@
     "The first result of this function is an error flag,
      which is @('t') if the argument scalar is so large that
      its big-endian representation exceeds @($2^{64}$) in length."))
-  (rlp-encode-bytes (nat=>bendian* 256 (nfix scalar)))
+  (rlp-encode-bytes (nat=>bebytes* (nfix scalar)))
   :no-function t
   :hooks (:fix))
 
@@ -528,7 +526,7 @@
     (implies (rlp-scalar-encoding-p encoding)
              (rlp-bytes-encoding-p encoding))
     :use (:instance rlp-bytes-encoding-p-suff
-          (bytes (nat=>bendian* 256 (rlp-scalar-encoding-witness encoding))))
+          (bytes (nat=>bebytes* (rlp-scalar-encoding-witness encoding))))
     :enable rlp-encode-scalar)
 
   (defruled rlp-scalar-encoding-p-when-rlp-bytes-encoding-p-and-no-leading-zeros
@@ -538,7 +536,6 @@
                          (rlp-bytes-encoding-witness encoding)))
              (rlp-scalar-encoding-p encoding))
     :use (:instance rlp-scalar-encoding-p-suff
-          (scalar (bendian=>nat 256 (rlp-bytes-encoding-witness encoding))))
+          (scalar (bebytes=>nat (rlp-bytes-encoding-witness encoding))))
     :enable (rlp-encode-scalar
-             rlp-bytes-encoding-p
-             dab-digit-listp-of-256-is-byte-listp)))
+             rlp-bytes-encoding-p)))

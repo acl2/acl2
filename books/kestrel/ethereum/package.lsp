@@ -17,7 +17,7 @@
 
 (defpkg "ETHEREUM" (append *std-pkg-symbols*
                            '(assert-equal
-                             bendian=>nat
+                             bebytes=>nat
                              byte
                              byte-fix
                              byte-list
@@ -35,8 +35,7 @@
                              defxdoc+
                              lnfix
                              nat
-                             nat=>bendian
-                             nat=>bendian*
+                             nat=>bebytes*
                              nibble
                              nibble-fix
                              nibble-list

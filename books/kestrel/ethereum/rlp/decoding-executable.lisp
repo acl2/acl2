@@ -338,7 +338,7 @@
                     irrelevant
                     nil))
                (encoding (nthcdr lenlen encoding))
-               (len (bendian=>nat 256 len-bytes))
+               (len (bebytes=>nat len-bytes))
                ((when (<= len 55))
                 (mv (rlp-error-non-optimal-long-length (cons first len-bytes))
                     irrelevant
@@ -380,7 +380,7 @@
               irrelevant
               nil))
          (encoding (nthcdr lenlen encoding))
-         (len (bendian=>nat 256 len-bytes))
+         (len (bebytes=>nat len-bytes))
          ((when (<= len 55))
           (mv (rlp-error-non-optimal-long-length (cons first len-bytes))
               irrelevant
@@ -428,10 +428,7 @@
                 (len encoding)))
     :expand ((rlp-parse-tree encoding)))
 
-  (verify-guards rlp-parse-tree
-    :hints (("Goal"
-             :in-theory
-             (enable dab-digit-listp-of-256-is-byte-listp))))
+  (verify-guards rlp-parse-tree)
 
   (fty::deffixequiv rlp-parse-tree
     :hints (("Goal"
@@ -477,7 +474,7 @@
                                 rlp-parse-tree-list
                                 bytep
                                 acl2::true-listp-when-byte-listp-rewrite
-                                len-of-nat=>bendian*-leq-8)
+                                len-of-nat=>bebytes*-leq-8)
              :expand ((:free (x y) (rlp-parse-tree (cons (+ 128 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 183 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 192 x) y)))
@@ -510,8 +507,7 @@
                               rlp-encode-bytes
                               rlp-parse-tree
                               rlp-parse-tree-list
-                              dab-digit-listp-of-256-is-byte-listp
-                              bendian->nat-lt-2^64)
+                              bebytes->nat-lt-2^64)
                              (acl2::nthcdr-of-nthcdr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -717,10 +713,8 @@
        ((when error?) (mv error? 0))
        ((unless (equal (trim-bendian* bytes) bytes))
         (mv (rlp-error-leading-zeros-in-scalar bytes) 0))
-       (scalar (bendian=>nat 256 bytes)))
+       (scalar (bebytes=>nat bytes)))
     (mv nil scalar))
-  :guard-hints (("Goal"
-                 :in-theory (enable dab-digit-listp-of-256-is-byte-listp)))
   :hooks (:fix)
   ///
 

@@ -282,7 +282,7 @@
   (defruled rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness
     (implies (rlp-scalar-encoding-p encoding)
              (equal (rlp-bytes-encoding-witness encoding)
-                    (nat=>bendian* 256 (rlp-scalar-encoding-witness encoding))))
+                    (nat=>bebytes* (rlp-scalar-encoding-witness encoding))))
     :use (rlp-encode-scalar-of-rlp-scalar-encoding-witness
           rlp-encode-bytes-of-rlp-bytes-encoding-witness)
     :disable (rlp-encode-scalar-of-rlp-scalar-encoding-witness
@@ -293,17 +293,17 @@
   (defruled rlp-scalar-encoding-witness-as-rlp-bytes-encoding-witness
     (implies (rlp-scalar-encoding-p encoding)
              (equal (rlp-scalar-encoding-witness encoding)
-                    (bendian=>nat 256 (rlp-bytes-encoding-witness encoding))))
+                    (bebytes=>nat (rlp-bytes-encoding-witness encoding))))
     :use (rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness
           (:instance lemma
            (x (rlp-bytes-encoding-witness encoding))
-           (y (nat=>bendian* 256 (rlp-scalar-encoding-witness encoding)))))
+           (y (nat=>bebytes* (rlp-scalar-encoding-witness encoding)))))
 
     :prep-lemmas
     ((defruled lemma
        (implies (equal x y)
-                (equal (bendian=>nat 256 x)
-                       (bendian=>nat 256 y))))))
+                (equal (bebytes=>nat x)
+                       (bebytes=>nat y))))))
 
   (theory-invariant
    (incompatible
@@ -315,7 +315,7 @@
            (b* (((mv error? bytes) (rlp-decode-bytes encoding))
                 ((when error?) (mv t 0))
                 ((unless (equal (trim-bendian* bytes) bytes)) (mv t 0))
-                (scalar (bendian=>nat 256 bytes)))
+                (scalar (bebytes=>nat bytes)))
              (mv nil scalar)))
     :enable (rlp-decode-bytes
              rlp-bytes-encoding-witness-as-rlp-scalar-encoding-witness)
