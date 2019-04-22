@@ -81,12 +81,20 @@
          (binary-append (make-character-list x) (make-character-list y))))
 
 ;; The following is redundant with the definition in
-;; books/std/lists/nthcdr.lisp, from where it was taken with thanks to Jared
-;; Davis.
+;; books/std/lists/nthcdr.lisp, from where it was taken with thanks.
 (defthm len-of-nthcdr
   (equal (len (nthcdr n l))
          (nfix (- (len l) (nfix n))))
   :hints (("Goal" :induct (nthcdr n l))))
+
+;; The following is redundant with the definition in
+;; books/std/lists/nthcdr.lisp, from where it was taken with thanks.
+(defthm consp-of-nthcdr
+  (equal (consp (nthcdr n x))
+         (< (nfix n) (len x)))
+  :hints (("Goal" :in-theory (disable len-of-nthcdr)
+           :use ((:instance len-of-nthcdr (l x)))
+           :expand (len (nthcdr n x)))))
 
 (defthm revappend-of-binary-append-1
   (equal (revappend x (binary-append y z))
@@ -385,28 +393,6 @@
 (defthm true-listp-when-string-list
   (implies (string-listp x)
            (true-listp x)))
-
-;; The following definitions are taken from
-;; books/std/lists/nthcdr.lisp with thanks to Jared
-;; Davis.
-(encapsulate
-  ()
-
-  (local (defthmd l0
-           (implies (< (nfix n) (len x))
-                    (consp (nthcdr n x)))
-           :hints(("Goal" :induct (nthcdr n x)))))
-
-  (local (defthmd l1
-           (implies (not (< (nfix n) (len x)))
-                    (not (consp (nthcdr n x))))
-           :hints(("goal" :induct (nthcdr n x)))))
-
-  (defthm consp-of-nthcdr
-    (equal (consp (nthcdr n x))
-           (< (nfix n) (len x)))
-    :hints(("Goal" :use ((:instance l0)
-                         (:instance l1))))))
 
 (defthm
   binary-append-take-nthcdr
@@ -754,3 +740,7 @@
            (equal (append (take n l) (cons x y))
                   (append (take (+ n 1) l) y)))
   :hints (("Goal" :induct (take n l)) ))
+
+(defthmd take-of-nthcdr
+  (equal (take n1 (nthcdr n2 l))
+         (nthcdr n2 (take (+ (nfix n1) (nfix n2)) l))))

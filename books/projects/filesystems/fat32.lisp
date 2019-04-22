@@ -236,17 +236,7 @@
    (fat32-entry-list-p l)
    (equal (fat32-entry-list-p (update-nth key val l))
           (and (<= (nfix key) (len l))
-               (fat32-entry-p val))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies (and (< key (len l))
-                  (fat32-entry-list-p l))
-             (equal (fat32-entry-list-p (update-nth key val l))
-                    (fat32-entry-p val))))))
-
-(in-theory (disable (:rewrite fat32-entry-list-p-of-update-nth . 2)))
+               (fat32-entry-p val)))))
 
 (defthm fat32-entry-list-p-of-revappend
   (equal (fat32-entry-list-p (revappend x y))
@@ -365,12 +355,11 @@
     :in-theory (e/d (fat32-update-lower-28 fat32-entry-mask)
                     (logapp loghead logtail)))))
 
-;; taken from page 18 of the fat overview - the constant 268435448 is written
-;; out as 0xFFFFFF8 therein
+;; This is taken from page 18 of the fat specification.
 (defund fat32-is-eof (fat-content)
   (declare (xargs :guard (fat32-masked-entry-p fat-content)
                   :guard-hints (("Goal'" :in-theory (enable fat32-masked-entry-p)))))
-  (>= fat-content 268435448))
+  (>= fat-content #xFFFFFF8))
 
 (defthm fat32-is-eof-correctness-1
   (implies (< fat-content *ms-bad-cluster*)
@@ -435,15 +424,6 @@
          (fat32-build-index-list fa-table masked-current-cluster
                                  length cluster-size)))
      (fat32-masked-entry-list-p index-list))))
-
-(defthm
-  fat32-build-index-list-correctness-3
-  (b* (((mv & error-code)
-        (fat32-build-index-list fa-table masked-current-cluster
-                                length cluster-size)))
-    (and (integerp error-code)
-         (or (equal error-code 0)
-             (equal error-code (- *eio*))))))
 
 (defthm
   fat32-build-index-list-correctness-4
@@ -779,24 +759,15 @@
   find-n-free-clusters-correctness-8
   (integer-listp (find-n-free-clusters fa-table n)))
 
-(defthm
-  find-n-free-clusters-correctness-7
-  (implies
-   (and
-    (< (nfix m)
-       (len (find-n-free-clusters fa-table n)))
-    (>= (len fa-table)
-        *ms-first-data-cluster*))
-   (and
-    (<= *ms-first-data-cluster*
-        (nth m
-             (find-n-free-clusters fa-table n)))
-    (< (nth m
-             (find-n-free-clusters fa-table n))
-        (len fa-table))))
+(defthm find-n-free-clusters-correctness-7
+  (implies (< (nfix m)
+              (len (find-n-free-clusters fa-table n)))
+           (and (<= *ms-first-data-cluster*
+                    (nth m (find-n-free-clusters fa-table n)))
+                (< (nth m (find-n-free-clusters fa-table n))
+                   (len fa-table))))
   :rule-classes :linear
-  :hints
-  (("goal" :in-theory (e/d (find-n-free-clusters) (nth)))))
+  :hints (("goal" :in-theory (e/d (find-n-free-clusters) (nth)))))
 
 (defthm
   len-of-find-n-free-clusters
@@ -1087,7 +1058,15 @@
      (mv-nth
       1
       (fat32-build-index-list fa-table masked-current-cluster
-                              length cluster-size))))))
+                              length cluster-size))))
+   (:linear
+    :corollary
+    (<=
+     (mv-nth
+      1
+      (fat32-build-index-list fa-table masked-current-cluster
+                              length cluster-size))
+     0))))
 
 (defthm
   fat32-build-index-list-correctness-7
