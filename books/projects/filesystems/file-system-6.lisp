@@ -13,11 +13,6 @@
 (include-book "file-system-4")
 (include-book "fat32")
 
-(local
- (in-theory (e/d
-             ((:rewrite fat32-entry-list-p-of-update-nth . 2))
-             ((:rewrite fat32-entry-list-p-of-update-nth . 1)))))
-
 ;; question: if fat entries are 28 bits long, then how is the maximum size
 ;; determined to be 4 GB?
 ;; also, how are we gonna do this without a feasible length restriction?
@@ -334,8 +329,8 @@
   :hints
   (("goal" :in-theory (enable l6-file-index-list))
    ("Goal'''"
-    :in-theory (disable fat32-build-index-list-correctness-3)
-    :use (:instance fat32-build-index-list-correctness-3
+    :in-theory (disable integerp-of-fat32-build-index-list)
+    :use (:instance integerp-of-fat32-build-index-list
                     (masked-current-cluster
                      (l6-regular-file-first-cluster file))
                     (length (l6-regular-file-length file))
@@ -1588,10 +1583,7 @@
 (defthm
   l6-wrchs-correctness-1-lemma-17
   (implies
-   (and (fat32-entry-list-p fa-table)
-        (>= (len fa-table)
-            *ms-first-data-cluster*)
-        (fat32-masked-entry-list-p value-list)
+   (and (fat32-masked-entry-list-p value-list)
         (equal (len index-list)
                (len value-list))
         (lower-bounded-integer-listp index-list *ms-first-data-cluster*)
@@ -1603,10 +1595,9 @@
                         index-list t)))
   :hints
   (("goal" :in-theory (enable set-indices-in-fa-table
+                              set-indices-in-alv
                               lower-bounded-integer-listp)
-    :induct (set-indices-in-fa-table fa-table index-list value-list))
-   ("subgoal *1/1''" :in-theory (enable set-indices-in-alv))
-   ("subgoal *1/3.4'" :in-theory (e/d (set-indices-in-alv)))))
+    :induct (set-indices-in-fa-table fa-table index-list value-list))))
 
 (defthm
   l6-wrchs-correctness-1-lemma-18

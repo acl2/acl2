@@ -843,6 +843,11 @@
                 (pseudo-term-listp ac))
            (pseudo-term-listp (first-n-ac i lst ac))))
 
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
+(defthm pseudo-term-listp-take
+  (implies (pseudo-term-listp lst)
+           (pseudo-term-listp (take i lst))))
+
 (include-book "tools/flag" :dir :system)
 
 (make-flag ext-one-way-unify1-simple)

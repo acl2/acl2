@@ -1170,19 +1170,24 @@
         *t*))
      (& *t*))))
 
+(defun rewrite-rule-term-exec (x)
+  (declare (xargs :guard (and (weak-rewrite-rule-p x)
+                              (or (eq (access rewrite-rule x :subclass) 'meta)
+                                  (true-listp (access rewrite-rule x :hyps))))))
+  (if (eq (access rewrite-rule x :subclass) 'meta)
+      *t*
+    `(implies ,(conjoin (access rewrite-rule x :hyps))
+              (,(access rewrite-rule x :equiv)
+               ,(access rewrite-rule x :lhs)
+               ,(access rewrite-rule x :rhs)))))
+
 (defun rewrite-rule-term (x)
 
-; This function is not intended to be executed.  It turns a rewrite-rule record
-; into a term.
+; This function turns a rewrite-rule record into a term.  Consider using
+; rewrite-rule-term-exec instead when its guard doesn't cause problems.
 
   (declare (xargs :guard t))
-  (non-exec
-   (if (eq (access rewrite-rule x :subclass) 'meta)
-       *t*
-     `(implies ,(conjoin (access rewrite-rule x :hyps))
-               (,(access rewrite-rule x :equiv)
-                ,(access rewrite-rule x :lhs)
-                ,(access rewrite-rule x :rhs))))))
+  (ec-call (rewrite-rule-term-exec x)))
 
 (defmacro meta-extract-global-fact (obj state)
 ; See meta-extract-global-fact+.

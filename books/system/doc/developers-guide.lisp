@@ -1793,6 +1793,22 @@
  support of other functions.</p>
  </color>
 
+ <p>The following two additional steps are occasionally advisable, especially
+ for patches that change definitions that are in @(':')@(tsee logic) mode.
+ Feel free to ask an ACL2 author if they are necessary; as of this writing,
+ that would be Matt Kaufmann, at @('kaufmann@cs.utexas.edu').</p>
+
+ <ul>
+
+ <li>Run ``@('make proofs')''.  That should conclude with the message,
+ ``Initialization SUCCEEDED.''</li>
+
+ <li>Do a ``devel'' build, regression, and check.  See @(see
+ verify-guards-for-system-functions), specifically the six steps at the end of
+ the topic.</li>
+
+ </ul>
+
  <h3>Regression testing</h3>
 
  <p>Now do a regression test.  The most complete regression is done using the
@@ -2078,8 +2094,9 @@
 
  <li>Send the commit hash and tarball (see ``Create a tarball'' above), as well
  as the name and URL of your new branch (as discussed above), to an ACL2
- author.  As of this writing, those are to be sent to Matt Kaufmann, at
- @('kaufmann@cs.utexas.edu').</li>
+ author.  Optionally also send the commit hash for the version of master that
+ was your starting point.  As of this writing, those are to be sent to Matt
+ Kaufmann, at @('kaufmann@cs.utexas.edu').</li>
 
  <li>The last steps will be done by Matt, who will start by getting your
  changes as follows.
@@ -2109,6 +2126,8 @@
 
  @({
  git checkout master
+ # Get master up-to-date (this is just ``git pull'' with a check):
+ bin/pull.sh
  git merge my-branch
  # Possibly run ``regression-everything'' before the final push just below.
  git push https://github.com/acl2/acl2 master

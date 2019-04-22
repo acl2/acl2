@@ -43,29 +43,6 @@
      `byte arrays' in [YP:B] and [Wiki:RLP], and also `strings' in [Wiki:RLP];
      we use the former term in preference to the latter,
      because it seems clearer.
-     </p>
-     <p>
-     It may be unclear, at first,
-     whether the empty sequence in @($\\mathbb{L}$) [YP:(177)]
-     is distinct from
-     the empty sequence in @($\\mathbb{B}$) [YP:(178)],
-     and whether @($\\mathbb{T}$) [YP:(176)],
-     which is defined as a non-disjoint union,
-     contains a single empty sequence or two distinct ones.
-     According to [YP:(180)] (see @(tsee rlp-encode-bytes)),
-     the empty sequence from @($\\mathbb{B}$)
-     is encoded as the singleton byte array containing 128.
-     According to [YP:(183)] (see @(tsee rlp-encode-tree)),
-     the empty sequence from @($\\mathbb{L}$)
-     is encoded as the singleton byte array containing 192.
-     Given these two different encodings, it seems reasonable to assume
-     that the two empty sequences from the two sets are distinct.
-     Accordingly, in our model of RLP trees,
-     the leaf tree with the empty byte array is distinct from
-     the non-leaf tree with no subtrees.
-     This disambiguation is also supported by the fact that
-     the code in [Wiki:RLP] treats those two empty sequences differently
-     (one is a string, the other one is a list).
      </p>"
     (:leaf ((bytes byte-list)))
     (:nonleaf ((subtrees rlp-tree-list)))

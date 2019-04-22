@@ -1,6 +1,6 @@
-; Representation of Natural Numbers as Digits in Arbitrary Bases
+; Representation of Natural Numbers as Digits in Arbitrary Bases -- Core
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
    (xdoc::p
     "Any integer above 1 raised to a positive power is a valid base,
      e.g. binary, octal, and hexadecimal bases."))
-  (and (natp x)
+  (and (integerp x)
        (>= x 2))
   ///
 
@@ -155,17 +155,8 @@
     (implies (dab-digit-listp base x)
              (nat-listp x)))
 
-  (defrule dab-digit-listp-of-dab-base-fix-base
-    (equal (dab-digit-listp (dab-base-fix base) x)
-           (dab-digit-listp base x)))
-
-  (defrule dab-digit-listp-of-dab-base-fix-base-normalize-const
-    (implies  (syntaxp (and (quotep base)
-                            (not (dab-basep (cadr base)))))
-              (equal (dab-digit-listp base x)
-                     (dab-digit-listp (dab-base-fix base) x))))
-
-  (defcong dab-base-equiv equal (dab-digit-listp base x) 1))
+  (fty::deffixequiv dab-digit-listp
+    :args ((base dab-basep))))
 
 (define dab-digit-list-fix ((base dab-basep) (x (dab-digit-listp base x)))
   :returns (fixed-x (dab-digit-listp base fixed-x))
@@ -301,11 +292,6 @@
   :verify-guards nil ; done below
   :hooks (:fix)
   ///
-
-  (more-returns
-   (nat natp
-        :rule-classes :type-prescription
-        :name lendian=>nat-type-prescription))
 
   (defrule lendian=>nat-of-dab-digit-list-fix-digits
     (equal (lendian=>nat base (dab-digit-list-fix base digits))
@@ -715,7 +701,8 @@
                              (equal (> (len (nat=>bendian* base nat))
                                        width)
                                     (>= nat
-                                        (expt base width))))))))
+                                        (expt base width))))
+                    :hints (("Goal" :in-theory '(not)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

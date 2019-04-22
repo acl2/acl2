@@ -476,20 +476,14 @@
                                 rlp-parse-tree
                                 rlp-parse-tree-list
                                 bytep
-                                acl2::true-listp-when-byte-listp-rewrite)
+                                acl2::true-listp-when-byte-listp-rewrite
+                                len-of-nat=>bendian*-leq-8)
              :expand ((:free (x y) (rlp-parse-tree (cons (+ 128 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 183 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 192 x) y)))
-                      (:free (x y) (rlp-parse-tree (cons (+ 247 x) y)))))
-            '(:use ((:instance acl2::len-of-nat=>bendian*-leq-width
-                     (nat (len (rlp-tree-leaf->bytes tree)))
-                     (base 256)
-                     (width 8))
-                    (:instance acl2::len-of-nat=>bendian*-leq-width
-                     (nat (len (mv-nth 1 (rlp-encode-tree-list
-                                          (rlp-tree-nonleaf->subtrees tree)))))
-                     (base 256)
-                     (width 8))))))
+                      (:free (x y) (rlp-parse-tree (cons (+ 247 x) y)))))))
+
+
 
   (defthm-rlp-parse-tree-flag
 
@@ -510,25 +504,14 @@
                       (equal encoding1 (byte-list-fix encoding)))))
       :flag rlp-parse-tree-list)
 
-    :hints ('(:use ((:instance acl2::len-of-nat=>bendian*-leq-width
-                     (nat (bendian=>nat
-                           256 (take (+ -183 (car (byte-list-fix encoding)))
-                                     (cdr (byte-list-fix encoding)))))
-                     (base 256)
-                     (width 8))
-                    (:instance acl2::len-of-nat=>bendian*-leq-width
-                     (nat (bendian=>nat
-                           256 (take (+ -247 (car (byte-list-fix encoding)))
-                                     (cdr (byte-list-fix encoding)))))
-                     (base 256)
-                     (width 8))))
-            ("Goal"
+    :hints (("Goal"
              :in-theory (e/d (rlp-encode-tree
                               rlp-encode-tree-list
                               rlp-encode-bytes
                               rlp-parse-tree
                               rlp-parse-tree-list
-                              dab-digit-listp-of-256-is-byte-listp)
+                              dab-digit-listp-of-256-is-byte-listp
+                              bendian->nat-lt-2^64)
                              (acl2::nthcdr-of-nthcdr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

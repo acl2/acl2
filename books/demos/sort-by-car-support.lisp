@@ -134,11 +134,11 @@
                     (equal (alistp (revappend x y))
                            (alistp y)))))
 
-  (local (defthm alistp-first-n-ac
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
+  (local (defthm alistp-of-take
            (implies (and (alistp x)
-                         (alistp y)
                          (<= n (len x)))
-                    (alistp (first-n-ac n x y)))))
+                    (alistp (take n x)))))
 
   (local (include-book "arithmetic-5/top" :dir :system))
 

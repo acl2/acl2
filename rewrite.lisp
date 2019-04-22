@@ -4024,6 +4024,30 @@
                                     (cons (car l) without-lst)))))
 
 (defun disc-tree (x)
+
+; A disc-tree, or ``discrimination tree'' is a data structure that organizes a
+; set of clauses.  The basic shape is
+
+; disc-tree := (TIP clauses) | (NODE lit disc-tree_1 disc-tree_2),
+
+; The ``clauses in a disc-tree'' is just the set of all the clauses occurring
+; in some tip.  This is computed by sweep-clauses.
+
+; But the important invariant of a disc-tree NODE is that all the clauses in
+; disc-tree_1 contain a (positive or negative) occurrence of lit, and none of
+; the clauses in disc-tree_2 contain such an occurrence.
+
+; We test this invariant below by collecting all the clauses in disc-tree_i
+; and confirming that either every clause or no clause contains the lit.  We
+; use filter-with-and-without to partition the clauses in a list according to
+; whether they contain an occurrence of lit.  If we partition the clauses in
+; disc-tree_i into ``with lit'' and ``without lit'' buckets, the ``with lit''
+; bucket is set equal to the entire set of disc-tree_1 and the ``without lit''
+; bucket is set equal to the entire set for disc-tree_2.  But rather than test
+; set equality we exploit the fact that we know filter-with-and-without really
+; partitions and just test that the ``without lit'' bucket is empty for
+; disc-tree_1 and the ``with lit'' bucket is empty for disc-tree_2.
+
   (and (or (consp x) (equal x nil))
        (cond ((equal (car x) 'node)
               (and (true-listp x)
@@ -4032,19 +4056,17 @@
                    (disc-tree (caddr x))
                    (disc-tree (cadddr x))
                    (mv-let (with-lst without-lst)
-                           (filter-with-and-without (cadr x)
-                                                    (sweep-clauses (caddr x))
-                                                    nil nil)
-                           (declare (ignore without-lst))
-                           (equal (sweep-clauses (caddr x))
-                                  with-lst))
+                     (filter-with-and-without (cadr x)
+                                              (sweep-clauses (caddr x))
+                                              nil nil)
+                     (declare (ignore with-lst))
+                     (null without-lst))
                    (mv-let (with-lst without-lst)
-                           (filter-with-and-without (cadr x)
-                                                    (sweep-clauses (cadddr x))
-                                                    nil nil)
-                           (declare (ignore with-lst))
-                           (equal (sweep-clauses (cadddr x))
-                                  without-lst))))
+                     (filter-with-and-without (cadr x)
+                                              (sweep-clauses (cadddr x))
+                                              nil nil)
+                     (declare (ignore without-lst))
+                     (null with-lst))))
              (t (pseudo-term-list-listp (cdr x))))))
 
 (defun find-clauses1 (clause tree ac)

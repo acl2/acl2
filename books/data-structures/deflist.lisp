@@ -25,6 +25,8 @@
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ; Modified by Jared Davis, October 2014, to port documentation to xdoc.
+; Includes tweaks made by Mihir Mehta 4/2019 for a change to the
+; definition of take.
 
 (in-package "ACL2")
 
@@ -538,31 +540,28 @@
   :rule-classes nil
   :hints (("Goal" :do-not-induct t :in-theory (enable list-type-revappend11))))
 
-; ---------- FIRST-N-AC ----------
+; ---------- TAKE ----------
 
-(defmacro list-type-first-n-ac-lemma (elem-type-fn list-type-fn formals &optional (guard 't))
+(defmacro list-type-take-lemma (elem-type-fn list-type-fn formals &optional (guard 't))
   (declare (ignore elem-type-fn))
   (let* ((nvars (u::unique-symbols 1 (intern-in-package-of-symbol "N" list-type-fn) formals))
-	 (acvars (u::unique-symbols 1 (intern-in-package-of-symbol "AC" list-type-fn) formals))
-	 (nvar (car nvars))
-	 (acvar (car acvars)))
+	 (nvar (car nvars)))
     `(implies ,(my-conjoin (my-conjuncts guard)
 			   `((,list-type-fn ,@formals)
-			     (,list-type-fn ,@(replace-equal 'l acvar formals))
 			     (<= ,nvar (len l))))
 	      (,list-type-fn
-	       ,@(replace-equal 'l `(first-n-ac ,nvar l ,acvar) formals)))))
+	       ,@(replace-equal 'l `(take ,nvar l) formals)))))
 
-(defthm list-type-first-n-ac00
-  (list-type-first-n-ac-lemma elem-type00 list-type00 (l))
+(defthm list-type-take00
+  (list-type-take-lemma elem-type00 list-type00 (l))
   :hints (("Goal" :induct t :in-theory (enable list-type-cdr00 list-type-revappend00))))
 
-(defthm list-type-first-n-ac10
-  (list-type-first-n-ac-lemma elem-type10 list-type10 (l a))
+(defthm list-type-take10
+  (list-type-take-lemma elem-type10 list-type10 (l a))
   :hints (("Goal" :induct t :in-theory (enable list-type-cdr10 list-type-revappend10))))
 
-(defthm list-type-first-n-ac11
-  (list-type-first-n-ac-lemma elem-type11 list-type11 (a l))
+(defthm list-type-take11
+  (list-type-take-lemma elem-type11 list-type11 (a l))
   :hints (("Goal" :induct t :in-theory (enable list-type-cdr11 list-type-revappend11))))
 
 ; ---------- BUTLAST ----------

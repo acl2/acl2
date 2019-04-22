@@ -40,12 +40,9 @@
   :returns (mv (error? booleanp)
                (encoding byte-listp
                          :hints (("Goal"
-                                  :in-theory (enable bytep)
-                                  :use (:instance
-                                        acl2::len-of-nat=>bendian*-leq-width
-                                        (nat (len bytes))
-                                        (base 256)
-                                        (width 8))))))
+                                  :in-theory
+                                  (enable bytep
+                                          len-of-nat=>bendian*-leq-8)))))
   :short "RLP encoding of a byte array."
   :long
   (xdoc::topstring
@@ -101,10 +98,7 @@
              (<= (car (mv-nth 1 (rlp-encode-bytes bytes)))
                  191))
     :rule-classes :linear
-    :use (:instance acl2::len-of-nat=>bendian*-leq-width
-          (nat (len bytes))
-          (base 256)
-          (width 8)))
+    :enable len-of-nat=>bendian*-leq-8)
 
   (defruled len-of-rlp-encode-bytes-from-prefix
     (b* (((mv error? encoding) (rlp-encode-bytes bytes)))
@@ -220,15 +214,8 @@
     :measure (rlp-tree-list-count trees)
     :no-function t)
 
-  :returns-hints (("Goal"
-                   :in-theory (enable bytep))
-                  '(:use (:instance
-                          acl2::len-of-nat=>bendian*-leq-width
-                          (nat (len
-                                (mv-nth 1 (rlp-encode-tree-list
-                                           (rlp-tree-nonleaf->subtrees tree)))))
-                          (base 256)
-                          (width 8))))
+  :returns-hints (("Goal" :in-theory (enable bytep
+                                             len-of-nat=>bendian*-leq-8)))
 
   ///
 

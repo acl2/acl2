@@ -241,6 +241,12 @@
  <p>The macro to generate additional return types for conversions from natural
  numbers to digits has been generalized and renamed.</p>
 
+ <p>A macro @(tsee defdigits) has been added, to generate specialized versions
+ of the conversion operations, and some theorems about them, for specific bases
+ and specific recognizers and fixers of (lists of) digits.  Used this macro for
+ the library fixtypes of bits and bytes (as digits in base 2 and 256
+ respectively).</p>
+
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
  <p>Added more error-checking functions.</p>
@@ -289,6 +295,10 @@
  work are available in the paper <i>Formalising Filesystems in the ACL2 Theorem
  Prover: an Application to FAT32</i>, to appear in the proceedings of
  ACL2-2018.</p>
+
+ <p>Recent improvements to the filesystem books include proofs of correctness of
+ filesystem representation transformations in terms of invertibility, and an
+ expanded set of POSIX system calls verified through refinement.</p>
 
  <h4>FTY Type Definition Library</h4>
 
@@ -404,6 +414,11 @@
  explicit list of function parameters.  The function is implicitly
  parameterized over the function variables that it depends on.</p>
 
+ <h4>@(csee std/alists)</h4>
+
+ <p>Added a function @(tsee remove-assocs), moved from
+ @('[books]/kestrel/utilities/').</p>
+
  <h4>@(csee std/basic)</h4>
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
@@ -426,6 +441,12 @@
  <p>The definition of function @(see list-fix) from
  @('\"books/std/lists/list-fix.lisp\"') has been incorporated into the ACL2
  sources in a way that minimizes changes to existing books.  See @(see
+ note-8-2) for details.</p>
+
+ <p>The built-in function @(tsee take) has been redefined exactly along the
+ lines suggested by the theorem @('take-redefinition') from
+ @('\"books/std/lists/take.lisp\"').  @('Take-redefinition) itself has been
+ left in place in order to minimize changes to existing books.  See @(see
  note-8-2) for details.</p>
 
  <h4>@(csee std/util)</h4>

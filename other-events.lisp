@@ -6367,21 +6367,6 @@
   (let ((fns (instantiable-ffn-symbs-lst lst trips ans nil)))
     (instantiable-ancestors fns trips ans)))
 
-(defun constraints-list (fns wrld acc seen)
-  (cond ((endp fns) acc)
-        (t (mv-let
-            (name x)
-            (constraint-info (car fns) wrld)
-            (cond ((unknown-constraints-p x)
-                   x)
-                  (name (cond ((member-eq name seen)
-                               (constraints-list (cdr fns) wrld acc seen))
-                              (t (constraints-list (cdr fns)
-                                                   wrld
-                                                   (union-equal x acc)
-                                                   (cons name seen)))))
-                  (t (constraints-list (cdr fns) wrld (cons x acc) seen)))))))
-
 (defun encapsulate-constraint (sig-fns exported-names new-trips wrld)
 
 ; This function implements the algorithm described in the first paragraph of
@@ -14565,6 +14550,20 @@
 (defun pkg-names-memoize (x)
 
 ; See pkg-names.
+
+; For the following book we get a stack overflow in pkg-names-memoize in Step 3
+; of certification.
+
+; (in-package "ACL2")
+; (include-book "projects/apply/top" :dir :system)
+; (make-event `(defconst *m* ',(make-list 10000000)))
+
+; Before trying to fix pkg-names-memoize, however, note that if we comment out
+; the include-book form above, then instead we get a stack overflow in
+; ser-encode-conses in Step 4.  So it might not be worth trying to improve
+; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
+; might be difficult fixes that aren't necessary; see the workaround using
+; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
 
   (cond ((consp x)
          (hons-union-ordered-string-lists

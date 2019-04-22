@@ -2828,7 +2828,7 @@
 ; When *warrant-reqs* is a list, reset it to its initial non-nil value.  See
 ; the Essay on Evaluation of Apply$ and Loop$ Calls During Proofs.
 
-                             (setq *warrant-reqs* (and *warrant-reqs* t)))
+                             (setq *warrant-reqs* (and saved-warrant-reqs t)))
                            (,prog1-fn
                             ,body
                             (cond
@@ -2842,7 +2842,7 @@
                                       (union-eq *warrant-reqs*
                                                 saved-warrant-reqs))))
                              ((eq saved-warrant-reqs t)
-                              (setq *warrant-reqs* saved-warrant-reqs)))))
+                              (setq *warrant-reqs* t)))))
                          (progn
                            (cond
                             (,*attached-fn-temp*
@@ -2857,11 +2857,13 @@
 ; Special variable *aokp* was protected by a LET above when executing body,
 ; which could have set it to a function symbol whose attachment was used.  That
 ; value was however saved in *attached-fn-temp*, which we now use to update
-; *aokp* since *sokp* was restored, after the execution of body, to its
+; *aokp* since *aokp* was restored, after the execution of body, to its
 ; previous value (by popping out of its binding scope).
 
                            (when ,*attached-fn-temp* ; optimization
-                             (assert *aokp*)
+                             (assert (or *aokp*
+                                         (eq ,*attached-fn-temp*
+                                             :{apply$-or-badge}-userfn)))
                              (update-attached-fn-called ,*attached-fn-temp*))
                            (mv? ,@vars))))))))))))))))
 

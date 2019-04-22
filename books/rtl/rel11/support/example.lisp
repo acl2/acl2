@@ -1,5 +1,8 @@
 (in-package "RTL")
 
+; Includes tweaks made by Mihir Mehta 4/2019 for a change to the
+; definition of take.
+
 (include-book "newton")
 (include-book "rcp")
 (local (include-book "bits"))
@@ -480,11 +483,10 @@
   (local-defthm member-open-1-lemma
     (implies (and (natp n)
                   (<= n (len lst)))
-             (iff (or (member-equal a lst)
-                      (member-equal a acc))
-                  (or (member-equal a (first-n-ac n lst acc))
+             (iff (member-equal a lst)
+                  (or (member-equal a (take n lst))
                       (member-equal a (nthcdr n lst)))))
-    :hints (("Goal" :induct (first-n-ac n lst acc)))
+    :hints (("Goal" :induct (take n lst)))
     :rule-classes nil)
 
   (defthm member-open-1
@@ -496,8 +498,7 @@
                       (member-equal a (nthcdr *mem-open-len* lst)))))
     :hints (("Goal" :use ((:instance member-open-1-lemma
                                      (n *mem-open-len*)
-                                     (lst lst)
-                                     (acc nil))))))
+                                     (lst lst))))))
 ))
 
 (local-defthm member-open-2

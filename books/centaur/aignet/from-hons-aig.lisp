@@ -121,7 +121,7 @@
   (mbe :logic (non-exec (env-to-bitarr vars env))
        :exec (b* ((bitarr (resize-bits (len vars) bitarr)))
                (env-update-bitarr-aux 0 vars env bitarr))))
- 
+
 
 (local (defthm hons-assoc-equal-in-pairlis
          (equal (hons-assoc-equal v (pairlis$ vars vals))
@@ -152,7 +152,7 @@
            (equal (nth n x) 1))
     :hints(("Goal" :in-theory (enable nth))))
 
-  (local 
+  (local
    (defthm bits-to-bools-aux-is-bits-to-bools
      (equal (bits-to-bools-aux i bitarr)
             (bits-to-bools (nthcdr i bitarr)))
@@ -201,7 +201,7 @@
        :exec (frame-to-bools-aux n 0 frames))
   ///
 
-  (local 
+  (local
    (defthm frame-to-bools-aux-is-frame-to-bools
      (equal (frame-to-bools-aux n i frames)
             (bits-to-bools (nthcdr i (nth n (stobjs::2darr->rows frames)))))
@@ -223,7 +223,7 @@
         nil))
     (cons (pairlis$ invars (frame-to-bools n frames))
           (aignet-frames-to-aig-envs-aux (1+ (lnfix n)) frames invars))))
-       
+
 
 (define aignet-frame-array-to-aig-envs (frame-arr (invars true-listp))
   :non-executable t
@@ -758,7 +758,7 @@
                    (aiglist-to-aignet x xmemo varmap gatesimp strash aignet)))
                (implies (aignet-extension-p aignet-ext new-aignet)
                         (aignet-litp (nth n lits) aignet-ext)))))
-    
+
 
   (defun bools->bits (x)
     (declare (xargs :guard t))
@@ -897,7 +897,7 @@
     (and (fanin-litp (mk-lit start 0) aignet)
          (fanin-id-range-p (+ 1 (lnfix start)) (1- n) aignet)))
   ///
-  
+
   (std::set-define-current-function aignet-add-ins)
   (local (std::defret fanin-id-range-p-of-aignet-add-ins-lemma
            (fanin-id-range-p (+ 1 (fanin-count aignet)) n new-aignet)
@@ -963,9 +963,9 @@
 
 
 
-                        
-           
-                
+
+
+
 
 
 
@@ -1419,7 +1419,7 @@
 ;; ; (inp-lits (lits-of-type 0 nins (input-type)))
 ;; ; (varmap    (acl2::make-fal (pairlis$ input-vars inp-lits) varmap))
 ;;          ((mv varmap aignet)   (add-to-varmap all-vars nil varmap aignet))
-         
+
          (aignet (aignet-add-ins nins aignet))
          (aignet (aignet-add-regs nregs aignet))
 
@@ -1829,7 +1829,7 @@
     ///
     (def-aignet-preservation-thms aig-fsm-set-nxsts)
 
-    
+
     (std::defret other-stype-count-of-aig-fsm-set-nxsts
       (implies (not (equal (stype-fix stype) :nxst))
                (equal (stype-count stype new-aignet)
@@ -1840,7 +1840,7 @@
     ;;               (reg-id (regnum->id regnum aignet))
     ;;               (aignet (aignet-set-nxst (car reg-lits) reg-id aignet)))
     ;;            (aig-fsm-set-nxsts-nth-ind (1- (nfix n)) (1+ (lnfix regnum)) (cdr reg-lits) aignet))))
-    
+
     (std::defret lookup-nxst-fanin-of-aig-fsm-set-nxsts
       (implies (And (aignet-lit-listp reg-lits aignet)
                     (< (nfix n) (+ (nfix regnum) (len reg-lits)))
@@ -1886,7 +1886,7 @@
     ;;           :induct t
     ;;           :do-not-induct t)))
     )
-  
+
 
 
   ;; (define aig-fsm-set-nxsts (reg-alist reg-lits varmap aignet)
@@ -1992,7 +1992,7 @@
   ;;                    (alist-keys reg-alist) varmap aignet))
   ;;              (equal new-varmap varmap)))
 
-  
+
 
   ;;   (std::defret lookup-of-aig-fsm-set-nxsts-is-extension
   ;;     (implies (and (alistp reg-alist)
@@ -2089,7 +2089,7 @@
                (equal (lookup-stype n stype new-aignet)
                       (lookup-stype n stype aignet)))
       :hints(("Goal" :in-theory (enable lookup-stype)))))
-  
+
 
 
   ;; (defthm add-to-varmap-preserves-lookup
@@ -2223,7 +2223,7 @@
     ;;                                aignet2))
     ;;          :hints (("goal":use ((:instance co-fanin-aignet-litp-when-aignet-nodes-ok
     ;;                                (id (fanin-count (lookup-stype n (po-stype) aignet)))))))))
-    
+
 
     (defthm aig-fsm-to-aignet-output-correct
       (b* (((mv aignet varmap ?invars ?regvars)
@@ -2378,7 +2378,7 @@
              (len invars)))
 
 
-    
+
     (std::defret aig-fsm-to-aignet-input-varmap-lookup
       (implies (and (member v (acl2::aiglist-vars (append (alist-vals reg-alist) out-list)))
                     (not (hons-assoc-equal v reg-alist)))
@@ -2423,7 +2423,7 @@
 
 
 
-  
+
 
 
 
@@ -2600,7 +2600,7 @@
 ;;          (,new-env))
 ;;         (equal extract-vars-tmp-env
 ;;                (acl2::aig-env-extract extract-vars-tmp-vars ,new-env))))
-        
+
 ;; (defthm aig-eval-of-extract-vars-propagate
 ;;   (implies (bind-aig-env-extract-env (acl2::aiglist-vars x) env new-env)
 ;;            (equal (aig-eval x env)
@@ -2791,7 +2791,9 @@
            (implies (equal (nfix n) (num-regs aignet))
                     (equal (aignet-eval-to-env varmap invals (take n regvals) aignet)
                            (aignet-eval-to-env varmap invals regvals aignet)))
-           :hints(("Goal" :in-theory (enable aignet-eval-to-env)))))
+           :hints(("Goal" :in-theory (enable aignet-eval-to-env)
+; Mihir M. mod, 04/2019: Adapt to the new definition of take.
+                   :induct (aignet-eval-to-env varmap invals regvals aignet)))))
 
   (defthm-reg-eval-of-aig-fsm-to-aignet-ind-flag
     (defthm frame-regvals-of-aig-fsm-to-aignet
@@ -2903,7 +2905,7 @@
                     (len (stobjs::2darr->rows frames)))))
 
   (fty::deffixcong nat-equiv equal (frames-fix-row row frames) row))
-                 
+
 
 ;; (define frames-arr-fix ((ncols natp)
 ;;                         (arr))
@@ -2920,7 +2922,7 @@
 
 ;;   (std::defret len-of-frames-arr-fix
 ;;     (equal (len new-arr) (len arr))))
-    
+
 
 ;; (define frames-fix (frames)
 ;;   :non-executable t
@@ -3090,7 +3092,7 @@
 
   (std::defret consp-of-envs-to-bitarrs
     (equal (consp bitarrs) (consp envs))))
-           
+
 
 (define aig-envs-to-aignet-frames-aux ((n natp) vars envs frames)
   :guard (and (<= (+ n (len envs)) (frames-nrows frames))
@@ -3158,7 +3160,7 @@
   (fty::deffixcong nat-equiv equal (aig-envs-to-aignet-frames-aux n vars env frames) n)
 
   (verify-guards aig-envs-to-aignet-frames-aux))
-  
+
 
 (define aig-envs-to-aignet-frames (vars envs frames)
   :enabled t
