@@ -164,12 +164,6 @@
   (implies (not (rational-listp x))
            (not (unsigned-byte-listp n x))))
 
-;; At some point, the following theorem has to be moved to
-;; file-system-lemmas.lisp.
-(defthmd take-of-nthcdr
-  (equal (take n1 (nthcdr n2 l))
-         (nthcdr n2 (take (+ (nfix n1) (nfix n2)) l))))
-
 ;; This cannot be moved to to file-system-lemmas.lisp, because it's expressed
 ;; in terms of explode.
 (defthm len-of-explode-of-string-append
