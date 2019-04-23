@@ -382,15 +382,26 @@
        (trim-lendian*-of-nat-to-lendian* (packn-pos (list 'trim-lendian*-of
                                                           nat-to-lendian*)
                                                     name))
+       (bendian-to-nat-of-append (add-suffix-to-fn bendian-to-nat "-OF-APPEND"))
+       (lendian-to-nat-of-append (add-suffix-to-fn lendian-to-nat "-OF-APPEND"))
+       (bendian-to-nat-of-all-zeros (packn-pos (list bendian-to-nat
+                                                     '-of-all-zero-constant)
+                                               name))
+       (lendian-to-nat-of-all-zeros (packn-pos (list lendian-to-nat
+                                                     '-of-all-zero-constant)
+                                               name))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
        (digits1 (packn-pos (list "DIGITS1") name))
        (digits2 (packn-pos (list "DIGITS2") name))
+       (hidigits (packn-pos (list "HIDIGITS") name))
+       (lodigits (packn-pos (list "LODIGITS") name))
        (nat (packn-pos (list "NAT") name))
        (nat1 (packn-pos (list "NAT1") name))
        (nat2 (packn-pos (list "NAT2") name))
        (width (packn-pos (list "WIDTH") name))
+       (n (packn-pos (list "N") name))
        ;; string representation of the base,
        ;; used in the generated documentation:
        (base-string (coerce (explode-nonnegative-integer base 10 nil) 'string))
@@ -938,6 +949,34 @@
                   (,nat-to-lendian* ,nat))
            :enable ,nat-to-lendian*
            :use (:instance trim-lendian*-of-nat=>lendian* (base ,base))))
+       (bendian-to-nat-of-append-event
+        `(defruled ,bendian-to-nat-of-append
+           (equal (,bendian-to-nat (append ,hidigits ,lodigits))
+                  (+ (* (,bendian-to-nat ,hidigits)
+                        (expt ,base (len ,lodigits)))
+                     (,bendian-to-nat ,lodigits)))
+           :enable ,bendian-to-nat
+           :use (:instance bendian=>nat-of-append (base ,base))))
+       (lendian-to-nat-of-append-event
+        `(defruled ,lendian-to-nat-of-append
+           (equal (,lendian-to-nat (append ,lodigits ,hidigits))
+                  (+ (,lendian-to-nat ,lodigits)
+                     (* (,lendian-to-nat ,hidigits)
+                        (expt ,base (len ,lodigits)))))
+           :enable ,lendian-to-nat
+           :use (:instance lendian=>nat-of-append (base ,base))))
+       (bendian-to-nat-of-all-zeros-event
+        `(defrule ,bendian-to-nat-of-all-zeros
+           (equal (,bendian-to-nat (repeat ,n 0))
+                  0)
+           :enable ,bendian-to-nat
+           :use (:instance bendian=>nat-of-all-zeros (base ,base))))
+       (lendian-to-nat-of-all-zeros-event
+        `(defrule ,lendian-to-nat-of-all-zeros
+           (equal (,lendian-to-nat (repeat ,n 0))
+                  0)
+           :enable ,lendian-to-nat
+           :use (:instance lendian=>nat-of-all-zeros (base ,base))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -993,6 +1032,10 @@
        ,consp-pf-nat-to-lendian*-iff-not-zp-event
        ,trim-bendian*-of-nat-to-bendian*-event
        ,trim-lendian*-of-nat-to-lendian*-event
+       ,bendian-to-nat-of-append-event
+       ,lendian-to-nat-of-append-event
+       ,bendian-to-nat-of-all-zeros-event
+       ,lendian-to-nat-of-all-zeros-event
        ,name-event)))
 
 (defsection defdigits-macro-definition
