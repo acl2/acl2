@@ -10,7 +10,6 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 (include-book "kestrel/utilities/lists/index-of-theorems" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
@@ -378,7 +377,7 @@
      to a true list of natural numbers, not to a true list of bytes.
      Thus, we use an @(tsee mbe) there,
      so that the encoding function fixes its input to a true list of bytes."))
-  (b* ((nat (bendian=>nat 256 bytes))
+  (b* ((nat (bebytes=>nat bytes))
        (vals (nat=>bendian* 58 nat))
        (number-of-zeros (- (len bytes)
                            (len (trim-bendian*
@@ -389,20 +388,13 @@
     chars)
   :guard-hints (("Goal"
                  :in-theory
-                 (enable
-                  acl2::unsigned-byte-listp-rewrite-dab-digit-listp
-                  acl2::byte-listp-rewrite-unsigned-byte-listp
-                  base58-value-listp-rewrite-dab-digit-listp-58)))
+                 (enable base58-value-listp-rewrite-dab-digit-listp-58)))
+  :hooks (:fix)
   ///
-
-  (fty::deffixequiv base58-encode
-    :hints (("Goal"
-             :in-theory
-             (enable byte-list-fix-rewrite-dab-digit-list-fix-256))))
 
   (defruled base58-encode-same-natural-number
     (equal (bendian=>nat 58 (base58-chars=>vals (base58-encode bytes)))
-           (bendian=>nat 256 bytes))
+           (bebytes=>nat bytes))
     :enable (acl2::bendian=>nat-of-append
              base58-value-listp-rewrite-dab-digit-listp-58)))
 
@@ -443,7 +435,7 @@
        (number-of-zeros (- (len vals)
                            (len (trim-bendian* vals))))
        (bytes (append (repeat number-of-zeros 0)
-                      (nat=>bendian* 256 nat))))
+                      (nat=>bebytes* nat))))
     bytes)
   :hooks (:fix)
   :guard-hints (("Goal"
@@ -452,9 +444,9 @@
   ///
 
   (defruled base58-decode-same-natural-number
-    (equal (bendian=>nat 256 (base58-decode chars))
+    (equal (bebytes=>nat (base58-decode chars))
            (bendian=>nat 58 (base58-chars=>vals chars)))
-    :enable acl2::bendian=>nat-of-append))
+    :enable acl2::bebytes=>nat-of-append))
 
 (defsection base58-encode/decode-inverses-theorems
   :parents (base58-encode base58-decode)
@@ -467,8 +459,7 @@
     :enable (base58-encode
              base58-decode
              base58-value-list-fix-rewrite-dab-digit-list-fix-58
-             acl2::bendian=>nat-of-append
-             byte-list-fix-rewrite-dab-digit-list-fix-256)
+             acl2::bendian=>nat-of-append)
     :use (:instance acl2::append-of-repeat-and-trim-bendian*
           (acl2::digits (byte-list-fix bytes)))
     :disable acl2::append-of-repeat-and-trim-bendian*
@@ -479,7 +470,7 @@
            (base58-character-list-fix chars))
     :enable (base58-encode
              base58-decode
-             acl2::bendian=>nat-of-append
+             acl2::bebytes=>nat-of-append
              dab-digit-list-fix-58-rewrite-base58-value-list-fix)
     :use ((:instance acl2::append-of-repeat-and-trim-bendian*
            (acl2::digits (base58-chars=>vals chars)))

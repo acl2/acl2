@@ -55,16 +55,14 @@
       when the argument is a private key,
       we use @(tsee secp256k1-priv-to-pub).")
     (xdoc::li
-     "@($\\mathsf{ser}_{32}$) is @(tsee nat=>bendian)
-      with base 256 and width 4.")
+     "@($\\mathsf{ser}_{32}$) is @(tsee nat=>bebytes) with width 4.")
     (xdoc::li
-     "@($\\mathsf{ser}_{256}$) is @(tsee nat=>bendian)
-      with base 256 and width 32.")
+     "@($\\mathsf{ser}_{256}$) is @(tsee nat=>bebytes) with width 32.")
     (xdoc::li
      "@($\\mathsf{ser}_\\mathsf{P}$) is @(tsee secp256k1-point-to-bytes)
       with the compression flag set.")
     (xdoc::li
-     "@($\\mathsf{parse}_{256}$) is @(tsee bendian=>nat) with base 256."))
+     "@($\\mathsf{parse}_{256}$) is @(tsee bebytes=>nat)."))
    (xdoc::p
     "The operations defined below should suffice to cover
      the use cases that BIP 32 should cater to:")
@@ -245,16 +243,16 @@
        (i (mbe :logic (ubyte32-fix i) :exec i))
        (data (if (>= i (expt 2 31))
                  (append (list 0)
-                         (nat=>bendian 256 32 parent.key)
-                         (nat=>bendian 256 4 i))
+                         (nat=>bebytes 32 parent.key)
+                         (nat=>bebytes 4 i))
                (append (secp256k1-point-to-bytes
                         (secp256k1-priv-to-pub parent.key)
                         t)
-                       (nat=>bendian 256 4 i))))
+                       (nat=>bebytes 4 i))))
        (big-i (hmac-sha-512 parent.chain-code data))
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
-       (parsed-big-i-l (bendian=>nat 256 big-i-l))
+       (parsed-big-i-l (bebytes=>nat big-i-l))
        (n (secp256k1-order))
        ((when (>= parsed-big-i-l n)) (mv t irrelevant-child))
        (child.key (mod (+ parsed-big-i-l parent.key) n))
@@ -264,7 +262,6 @@
   :no-function t
   :guard-hints (("Goal"
                  :in-theory (e/d (ubyte32p
-                                  dab-digit-listp-of-256-rewrite-byte-listp
                                   bip32-chain-code-p
                                   secp256k1-priv-key-p)
                                  (mod))))
@@ -299,11 +296,11 @@
        (i (mbe :logic (ubyte32-fix i) :exec i))
        ((when (>= i (expt 2 31))) (mv t irrelevant-child))
        (data (append (secp256k1-point-to-bytes parent.key t)
-                     (nat=>bendian 256 4 i)))
+                     (nat=>bebytes 4 i)))
        (big-i (hmac-sha-512 parent.chain-code data))
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
-       (parsed-big-i-l (bendian=>nat 256 big-i-l))
+       (parsed-big-i-l (bebytes=>nat big-i-l))
        (n (secp256k1-order))
        ((when (>= parsed-big-i-l n)) (mv t irrelevant-child))
        (child.key (secp256k1-add (secp256k1-mul parsed-big-i-l
@@ -315,8 +312,7 @@
   :no-function t
   :guard-hints (("Goal"
                  :in-theory (enable secp256k1-pub-key-p
-                                    bip32-chain-code-p
-                                    dab-digit-listp-of-256-rewrite-byte-listp)))
+                                    bip32-chain-code-p)))
   :prepwork ((local (include-book "std/lists/nthcdr" :dir :system)))
   :hooks (:fix))
 
@@ -1211,8 +1207,7 @@
        ((mv key-data chain-code version)
         (bip32-ext-key-case
          key
-         :priv (mv (cons 0 (nat=>bendian
-                            256 32 (bip32-ext-priv-key->key key.get)))
+         :priv (mv (cons 0 (nat=>bebytes 32 (bip32-ext-priv-key->key key.get)))
                    (bip32-ext-priv-key->chain-code key.get)
                    (if mainnet?
                        *bip32-version-priv-main*
@@ -1223,10 +1218,10 @@
                   (if mainnet?
                       *bip32-version-pub-main*
                     *bip32-version-pub-test*)))))
-    (append (nat=>bendian 256 4 version)
+    (append (nat=>bebytes 4 version)
             (list depth)
             parent
-            (nat=>bendian 256 4 index)
+            (nat=>bebytes 4 index)
             chain-code
             key-data))
   :guard-hints (("Goal" :in-theory (enable ubyte32p)))
@@ -1587,7 +1582,7 @@
        (big-i (hmac-sha-512 hmac-key hmac-data))
        (big-i-l (take 32 big-i))
        (big-i-r (nthcdr 32 big-i))
-       (parsed-big-i-l (bendian=>nat 256 big-i-l))
+       (parsed-big-i-l (bebytes=>nat big-i-l))
        (n (secp256k1-order))
        ((when (or (= parsed-big-i-l 0)
                   (>= parsed-big-i-l n)))
@@ -1599,8 +1594,7 @@
   :prepwork ((local (include-book "std/lists/nthcdr" :dir :system)))
   :guard-hints (("Goal"
                  :in-theory (enable secp256k1-priv-key-p
-                                    bip32-chain-code-p
-                                    dab-digit-listp-of-256-rewrite-byte-listp)))
+                                    bip32-chain-code-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

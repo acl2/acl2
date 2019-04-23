@@ -193,24 +193,16 @@
 
  <h4><see topic='@(url bitcoin::bitcoin)'>Bitcoin</see></h4>
 
- <p>Improved the documentation.</p>
-
- <p>Added fixtypes for bytes and byte sequences.</p>
-
  <p>Replaced uses of @(tsee ubyte8) and @(tsee ubyte8-list) with @(tsee byte)
  and @(tsee byte-list).</p>
 
  <p>Moved the previous placeholders for cryptographic functions into <see
  topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
- <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 32 for
- hierarchical deterministic wallets.</p>
+ <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 43, and 44
+ for hierarchical deterministic wallets.</p>
 
- <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 43 for
- hierarchical deterministic wallets.</p>
-
- <p>Added a formalization of BIP (Bitcoin Improvement Proposal) 44 for
- hierarchical deterministic wallets.</p>
+ <p>Improved the existing documentation.</p>
 
  <h4>Bytes</h4>
 

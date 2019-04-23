@@ -16,7 +16,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "BITCOIN" (append *std-pkg-symbols*
-                          '(bendian=>nat
+                          '(bebytes=>nat
+                            bendian=>nat
                             byte
                             byte-fix
                             byte-list
@@ -36,6 +37,8 @@
                             index-of
                             nat
                             nat-equiv
+                            nat=>bebytes
+                            nat=>bebytes*
                             nat=>bendian
                             nat=>bendian*
                             prefixp

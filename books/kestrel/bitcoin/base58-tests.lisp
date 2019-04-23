@@ -21,12 +21,9 @@
 
 (acl2::assert-equal
  (base58-encode
-  (nat=>bendian 256
-                25
-                #x00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31c7f18fe8))
+  (nat=>bebytes 25 #x00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31c7f18fe8))
  (explode "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs"))
 
 (acl2::assert-equal
- (bendian=>nat 256
-               (base58-decode (explode "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs")))
+ (bebytes=>nat (base58-decode (explode "1PMycacnJaSqwwJqjawXBErnLsZ7RkXUAs")))
  #x00f54a5851e9372b87810a8e60cdd2e7cfd80b6e31c7f18fe8)
