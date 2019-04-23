@@ -69,7 +69,7 @@
                 "Unable to open file ~x0 for output."
                 outfile))
            (t (pprogn
-               (princ$ "Source files:" ch state)
+               (princ$ "Source files (not including doc.lisp):" ch state)
                (newline ch state)
                (princ$ "------------------------------------" ch state)
                (fms "  CODE LINES:~| ~c0 lines, ~c1 characters"
