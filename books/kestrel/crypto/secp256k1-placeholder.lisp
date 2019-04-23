@@ -11,8 +11,7 @@
 (in-package "CRYPTO")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/fty/byte-list" :dir :system)
-(include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
+(include-book "kestrel/utilities/bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
@@ -356,13 +355,7 @@
 
 (define secp256k1-point-to-bytes ((point secp256k1-pointp)
                                   (compressp booleanp))
-  :returns (bytes
-            byte-listp
-            :hints (("Goal"
-                     :in-theory
-                     (enable
-                      acl2::byte-listp-rewrite-unsigned-byte-listp
-                      acl2::unsigned-byte-listp-rewrite-dab-digit-listp))))
+  :returns (bytes byte-listp)
   :short "Represent a point in compressed or uncompressed form."
   :long
   (xdoc::topstring-p
@@ -370,9 +363,9 @@
   (b* (((secp256k1-point point) point))
     (cond ((secp256k1-infinityp point) (list 0))
           (compressp (cons (if (evenp point.y) 2 3)
-                           (nat=>bendian 256 32 point.x)))
-          (t (cons 4 (append (nat=>bendian 256 32 point.x)
-                             (nat=>bendian 256 32 point.y))))))
+                           (nat=>bebytes 32 point.x)))
+          (t (cons 4 (append (nat=>bebytes 32 point.x)
+                             (nat=>bebytes 32 point.y))))))
   :no-function t
   :hooks (:fix)
   ///

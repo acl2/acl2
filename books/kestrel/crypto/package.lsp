@@ -22,7 +22,5 @@
                            byte-list64p
                            defxdoc+
                            nat-equiv
-                           nat=>bendian
-                           pos-fix
-                           unsigned-byte-list-fix
-                           unsigned-byte-listp)))
+                           nat=>bebytes
+                           pos-fix)))
