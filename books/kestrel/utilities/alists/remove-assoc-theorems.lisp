@@ -1,6 +1,6 @@
 ; Alist Utilities -- Theorems about REMOVE-ASSOC-EQUAL
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,4 +20,19 @@
 
   (defthm alistp-of-remove-assoc-equal
     (implies (alistp x)
-             (alistp (remove-assoc-equal key x)))))
+             (alistp (remove-assoc-equal a x))))
+
+  (defthm acl2-count-of-remove-assoc-equal-upper-bound
+    (<= (acl2-count (remove-assoc-equal a x))
+        (acl2-count x))
+    :rule-classes :linear)
+
+  (defthm symbol-alistp-of-remove-assoc-equal
+    (implies (symbol-alistp x)
+             (symbol-alistp (remove-assoc-equal a x))))
+
+  (defthm eqlable-alistp-of-remove-assoc-equal
+    (implies (eqlable-alistp x)
+             (eqlable-alistp (remove-assoc-equal a x)))))
+
+(in-theory (disable remove-assoc-equal))
