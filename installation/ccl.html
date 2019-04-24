@@ -3,78 +3,9 @@
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
-<p>These self-contained instructions show how to install Clozure CL on
-  Linux.  They might be a bit more convenient for ACL2 users than
-  those on
-  the <a href="https://ccl.clozure.com/install.html">"Installing
-  Clozure CL"</a> page.  A table on that page shows how to make small
-  changes in the names below if your platform is other than Linux,
-  e.g., Mac OS X (Darwin).</p>
-
-<hr size=3 noshade>
-
-<pre>
-# Obtain a ccl distribution in a fresh directory:
-mkdir temp
-cd temp
-git clone https://github.com/Clozure/ccl
-# Rename that directory as suggested below, after
-# executing the following three commands.
-cd ccl
-git rev-parse HEAD
-cd ../../
-# Change directory name, and then go back to ccl directory:
-# You'll want the last 10 hex digits to match those of the
-# output from the "git rev-parse HEAD" command above: do
-# that twice here and once further below.
-mv temp 2017-12-07-6be8298fe5
-cd 2017-12-07-6be8298fe5/ccl
-
-# If you are on a Mac, skip this wget command and see just below.
-wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/linuxx86.tar.gz
-# On a Mac, do this instead:
-# curl --location https://github.com/Clozure/ccl/releases/download/v1.12-dev.4/darwinx86.tar.gz > darwinx86.tar.gz
-# Now untar.  NOTE: This is for linux.
-# For a Mac: tar xfz darwinx86.tar.gz
-tar xfz linuxx86.tar.gz
-
-# Rebuild the kernel (on a Mac: ./dx86cl64)
-./lx86cl64
-# This welcomes you, e.g.:
-#   Clozure Common Lisp Version 1.12-dev/v1.12-dev.1  (LinuxX8664)
-# Now submit this command:
-? (rebuild-ccl :full t)
-# After it returns, quit:
-? (quit)
-# Now, back at the shell, rebuild the kernel again just to be safe:
-# For a Mac: ./dx86cl64
-./lx86cl64
-? (rebuild-ccl :full t)
-? (quit)
-</pre>
-
-<hr size=3 noshade>
-
-Finally, create an executable script like the following.
-Be sure to change the name ("2017-12-07-6be8298fe5") to
-match the name change already made above.
-
-<hr size=3 noshade>
-
-<pre>
-#!/bin/sh
-
-export CCL_DEFAULT_DIRECTORY=/projects/acl2/lisps/ccl/2017-12-07-6be8298fe5/ccl
-${CCL_DEFAULT_DIRECTORY}/scripts/ccl64 "$@"
-</pre>
-
-<hr size=3 noshade>
-
-Make sure that your script is executable, e.g.:
-
-<pre>
-chmod +x my-script
-</pre>
+<p>This page has been replaced by
+  the <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____CCL-INSTALLATION">ccl-updates</a>
+  page in the ACL2 documentation.</p>
 
 </BODY>
 </HTML>
