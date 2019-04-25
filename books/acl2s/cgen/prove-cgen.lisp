@@ -152,16 +152,14 @@
          (cw? (normal-output-flag vl)
               "~| -- ~x0~%"  top-A)
          (cw? (normal-output-flag vl)
-"~|WARNING: The above counterexample is not consistent with top-level form. ~
- This is most likely due to the application of an elim rule that generalized ~
- its parent goal. If that is not what happened, then please report this ~
- example to ACL2s authors.~%")
+"~|Note: The above counterexample is not consistent with the top-level form. ~
+ Counterexamples are only guaranteed to be consistent with subgoals.~%")
          (value nil))
       (progn$
        (cw? (normal-output-flag vl)
             "~| -- ~x0~%"  top-A)
        (cw? (normal-output-flag vl)
-"~|NOTE: The above witness is not consistent with the top-level form. ~
+"~|Note: The above witness is not consistent with the top-level form. ~
  Witnesses are only guaranteed to be consistent with subgoals.~%")
        (value nil))
        )))
