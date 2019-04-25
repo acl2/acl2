@@ -390,6 +390,10 @@
        (lendian-to-nat-of-all-zeros (packn-pos (list lendian-to-nat
                                                      '-of-all-zero-constant)
                                                name))
+       (bendian-to-nat-upper-bound (add-suffix-to-fn bendian-to-nat
+                                                     "-UPPER-BOUND"))
+       (lendian-to-nat-upper-bound (add-suffix-to-fn lendian-to-nat
+                                                     "-UPPER-BOUND"))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
@@ -977,6 +981,20 @@
                   0)
            :enable ,lendian-to-nat
            :use (:instance lendian=>nat-of-all-zeros (base ,base))))
+       (bendian-to-nat-upper-bound-event
+        `(defrule ,bendian-to-nat-upper-bound
+           (< (,bendian-to-nat ,digits)
+              (expt ,base (len ,digits)))
+           :rule-classes ((:linear :trigger-terms ((,bendian-to-nat ,digits))))
+           :enable ,bendian-to-nat
+           :use (:instance bendian=>nat-upper-bound (base ,base))))
+       (lendian-to-nat-upper-bound-event
+        `(defrule ,lendian-to-nat-upper-bound
+           (< (,lendian-to-nat ,digits)
+              (expt ,base (len ,digits)))
+           :rule-classes ((:linear :trigger-terms ((,lendian-to-nat ,digits))))
+           :enable ,lendian-to-nat
+           :use (:instance lendian=>nat-upper-bound (base ,base))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -1036,6 +1054,8 @@
        ,lendian-to-nat-of-append-event
        ,bendian-to-nat-of-all-zeros-event
        ,lendian-to-nat-of-all-zeros-event
+       ,bendian-to-nat-upper-bound-event
+       ,lendian-to-nat-upper-bound-event
        ,name-event)))
 
 (defsection defdigits-macro-definition
