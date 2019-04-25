@@ -15,6 +15,7 @@
 (include-book "ubyte3-list")
 (include-book "ubyte4-list")
 (include-book "ubyte8-list")
+(include-book "ubyte11-list")
 (include-book "ubyte16-list")
 (include-book "ubyte32-list")
 (include-book "ubyte64-list")

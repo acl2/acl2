@@ -66,6 +66,7 @@
 (include-book "typed-lists/top")
 (include-book "typed-tuples")
 (include-book "ubi")
+(include-book "ubyte11s-as-digits")
 (include-book "unsigned-byte-fixing")
 (include-book "unsigned-byte-list-fixing")
 (include-book "untranslate-preprocessing")

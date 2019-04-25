@@ -15,6 +15,7 @@
 (include-book "ubyte3")
 (include-book "ubyte4")
 (include-book "ubyte8")
+(include-book "ubyte11")
 (include-book "ubyte16")
 (include-book "ubyte32")
 (include-book "ubyte64")
