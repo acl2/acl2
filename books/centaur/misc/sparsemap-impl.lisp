@@ -2172,7 +2172,8 @@
                                                                                    x))))
                            (if (assoc k x)
                                (1- (len (remove-duplicates-equal (strip-cars x))))
-                             (len (remove-duplicates-equal (strip-cars x))))))))
+                             (len (remove-duplicates-equal (strip-cars x))))))
+           :hints (("Goal" :in-theory (enable remove-assoc-equal)))))
 
   (local (defthm not-alist-equiv-when-lookup-unequal
            (implies (and (alistp x) (alistp y)
