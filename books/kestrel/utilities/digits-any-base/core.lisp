@@ -1252,6 +1252,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection lendian=>nat-ext
+  :extension lendian=>nat
+
+  ;; The proof of the following theorem implicitly uses
+  ;; the rewrite rule NAT=>LENDIAN*-OF-LENDIAN=>NAT.
+
+  (defrule lendian=>nat-upper-bound
+    (< (lendian=>nat base digits)
+       (expt (dab-base-fix base) (len digits)))
+    :rule-classes ((:linear :trigger-terms ((lendian=>nat base digits))))
+    :use (:instance len-of-nat=>lendian*-leq-width
+          (nat (lendian=>nat base digits))
+          (base (dab-base-fix base))
+          (width (len digits)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bendian=>nat-ext
+  :extension bendian=>nat
+
+  ;; The proof of the following theorem implicitly uses
+  ;; the rewrite rule NAT=>BENDIAN*-OF-BENDIAN=>NAT.
+
+  (defrule bendian=>nat-upper-bound
+    (< (bendian=>nat base digits)
+       (expt (dab-base-fix base) (len digits)))
+    :rule-classes ((:linear :trigger-terms ((bendian=>nat base digits))))
+    :use (:instance len-of-nat=>bendian*-leq-width
+          (nat (bendian=>nat base digits))
+          (base (dab-base-fix base))
+          (width (len digits)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection digits=>nat-injectivity-theorems
   :short "Theorems about the injectivity of
           the conversions from digits to natural numbers."
