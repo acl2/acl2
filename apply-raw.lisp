@@ -1684,13 +1684,13 @@
             (setq *cl-cache* (access cl-cache cl-cache :size))
             (cond
 
-; To see why we use EQ when comparing lambda objects below instead of EQUAL,
-; see the comment about hons-copy in translate11-lambda-object.
+; To see why we use hons-equal-lite when comparing lambda objects below instead
+; of EQUAL, see the comment about hons-copy in translate11-lambda-object.
 
-             ((eq (access cl-cache-line
-                          (car valid-cl-alist)
-                          :lambda-object)
-                  fn)
+             ((hons-equal-lite (access cl-cache-line
+                                       (car valid-cl-alist)
+                                       :lambda-object)
+                               fn)
 
 ; The call to valid-cl-cache-line below destructively changes the line.
 ; Furthermore, this line is still the top (first) line in cl-cache :alist, so
@@ -1725,10 +1725,10 @@
 ; effect of that optimization, so we don't bother with it here.
 
                     when (or (null (car tail)) ; fn not found
-                             (eq (access cl-cache-line
-                                         (car tail)
-                                         :lambda-object)
-                                 fn))
+                             (hons-equal-lite (access cl-cache-line
+                                                      (car tail)
+                                                      :lambda-object)
+                                              fn))
                     do
 
 ; We have either found fn's line in the cache or have searched all lines
@@ -1766,7 +1766,7 @@
                             previous-tail (cdr previous-tail))
                       (assert (eq tail (access cl-cache cl-cache :last)))
                       (let* ((found
-                              (eq
+                              (hons-equal-lite
                                (access cl-cache-line (car tail) :lambda-object)
                                fn))
                              (line

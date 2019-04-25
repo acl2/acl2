@@ -5654,9 +5654,10 @@
 
   (declare (ignore state))
   (prog2$
-   (io? error t state (alist str ctx)
-        (error-fms nil ctx str alist state)
-        :chk-translatable nil)
+   (our-with-terminal-input ; probably not necessary because of (io? ... t ...)
+    (io? error t state (alist str ctx)
+         (error-fms nil ctx str alist state)
+         :chk-translatable nil))
    (mv@par t nil state)))
 
 (defun error1-safe (ctx str alist state)

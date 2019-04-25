@@ -13085,8 +13085,11 @@
 ;   ; 2.02 seconds realtime, 2.02 seconds runtime
 
 ; Our solution is to apply hons-copy (called just above) so that the translated
-; lambda object is unique.  Thus, we now call EQ where we formerly called EQUAL
-; in fetch-cl-cache-line.
+; lambda object is unique.  Thus, we now call hons-equal-lite where we formerly
+; called equal in fetch-cl-cache-line.  It may seem tempting to call eq there,
+; but lambdas in raw Lisp function bodies are very unlikely to be honsed.  We
+; might sometime try to fix this by somehow incorporating hons-copy into the
+; raw Lisp definition of lambda$.
 
   (cond
    ((and (eq stobjs-out t)
@@ -13453,6 +13456,61 @@
 ; expression, not a quoted function symbol.  See special-loop$-guard-clauses.
 
 ; X here is a form beginning with LOOP$.
+
+; Here we record some ideas that we have begun to consider for augmenting the
+; guards generated for the lambda$s in a loop$ expression.
+
+; To refresh our memories, UNTIL, WHEN, and OPERATOR expressions all generate
+; lambda$ expressions.  Those lambda$s currently carry guards stated in the
+; OF-TYPE clauses together with any :GUARD clauses.
+
+; We have recognized three other sources from which we could augment these
+; lambda$ guards:
+
+; (1) If v ranges over ``FROM lo TO hi BY incr'' then we could add things like
+; (integerp v) or even bounds like (<= lo v) and (<= v hi).  Note: the upper
+; bound may be complicated in the case of the lambda$ for an UNTIL, where the
+; upper bound for v is probably one incr step beyond hi.  But for the OPERATOR
+; lambda$, it is (<= v hi).  The main point is that the target itself gives us
+; some guard information for each lambda$ we generate.
+
+; (2) If v rangers over ``ON lst'' we can augment the guard of the lambda$s
+; with (consp v), again being careful to consider giving extra care for the
+; UNTIL lambda$ versus the others.
+
+; (3) If there is an ``UNTIL expr'' or a ``WHEN expr'' we could augment the
+; guard of the OPERATOR lambda$ with expr.  This could be problematic if expr
+; is expensive to compute.  Note also that expr might involve variables other
+; than the iteration variables.  If that's the case, we're already generating
+; fancy loop$ lambda$s, so it shouldn't be too much trouble to make suitable
+; modifications to translate11-loop$.
+
+; It is possible that for all but guard-verified evaluation, these implicit
+; guards -- at least for (3) -- might be much more expensive to compute than
+; the guard needed for the lambda.
+
+; We see a trade-off: If we implicitly augment the guards of the lambda$s
+; maximally, we stand a better chance of verifying the guards of DEFUNs
+; containing loop$s, without requiring the user to add explicit :guard clauses
+; to the loop$.  There is no obvious downside if all we care about are loop$s
+; in guard-verified DEFUNs, where loop$ expressions are evaluated using Common
+; Lisp loop.  If we think about other loop$s, the upside is that the augmented
+; guards might be provable by tau and get the lambda$ :GOOD status in the cache
+; without having required the user to add a :guard clause.  The downside is
+; that the augmented guard may be overkill and slow down guard checking except
+; in guard-verified execution (using Common Lisp loop).  The trade-off is hard
+; to evaluate because if the augmented guard is actually needed for guard
+; verification -- e.g., if we're iterating over an ON target the lambda$ might
+; actually need the (consp v) that the user didn't bother to write.  In that
+; case, tau will fail, the lambda will be marked :BAD, and interpreted.  But it
+; all runs silently and the user may never realize that a :guard clause would
+; have sped things up.
+
+; A middle ground would, of course, be to augment the guard using (1) and (2)
+; but ignore anything we could learn from the UNTIL and WHEN expressions.  Or,
+; we could do some cheap syntactic check of the UNTIL and WHEN expressions and
+; see if they include, as a syntactic conjunct, (consp v) or (integerp v), and
+; add those inferred restrictions.
 
   (let ((bindings0 bindings) ; save original bindings
         (bindings nil)       ; set bindings to nil for trans-values calls below

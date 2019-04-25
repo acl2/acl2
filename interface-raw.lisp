@@ -1241,7 +1241,7 @@
 ; program-p = t when attempting to approximate raw Lisp behavior.
 
   (cond
-   ((or (atom x) (eq (car x) 'quote))
+   ((atom x)
     (cond ((keywordp x)
            (kwote x))
           ((symbolp x)
@@ -1254,6 +1254,17 @@
            x)
           ((atom x) (kwote x))
           (t x)))
+   ((eq (car x) 'quote)
+    (cond ((and ; (consp (cdr x)) ; always true
+		  (consp (cadr x))
+		  (eq (car (cadr x)) 'lambda))
+
+; Just as we apply hons-copy when translating lambda objects in
+; translate11-lambda-object, we hons-copy here as well, to support fast lookup
+; by fetch-cl-cache-line.
+
+	   (hons-copy x))
+	  (t x)))
    ((eq (car x) 'lambda$)
     (mv-let (flg tx bindings)
       (translate11-lambda-object x

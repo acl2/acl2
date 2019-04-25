@@ -13714,6 +13714,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-guard-checking-event
     when-pass-2
     loop$
+    our-with-terminal-input
     ))
 
 (defmacro with-live-state (form)
@@ -24673,6 +24674,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+acl2-loop-only
   form)
 
+(defmacro our-with-terminal-input (x)
+
+; This identity macro has the side effect of permitting a thread to read from
+; the terminal when another thread already has the lock on that.  See for
+; example this page.
+
+; https://ccl.clozure.com/manual/chapter7.5.html#Background-Terminal-Input
+
+; The danger in using this macro is that the thread will keep control of a lock
+; that prevents other threads from reading terminal input.  In particular it
+; could be a problem if in ACL2(p), a call of wormhole (which uses this macro,
+; in wormhole1) by other than the main thread runs indefinitely by repeatedly
+; expecting user input.
+
+  #+(and ccl acl2-par (not acl2-loop-only))
+  `(ccl::with-terminal-input ,x)
+  #-(and ccl acl2-par (not acl2-loop-only))
+  x)
+
 (defun wormhole1 (name input form ld-specials)
 
 ; Here is the world's fanciest no-op.
@@ -24688,37 +24708,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil
 
   #-acl2-loop-only
-  (cond
-   (*inhibit-wormhole-activityp* nil)
-   ((let ((temp (cdr (assoc-equal name *wormhole-status-alist*))))
+  (our-with-terminal-input
+   (cond
+    (*inhibit-wormhole-activityp* nil)
+    ((let ((temp (cdr (assoc-equal name *wormhole-status-alist*))))
 
 ; Note:  Below we inline wormhole-entry-code, to be defined later.
 
-      (and (consp temp)
-           (eq (car temp) :SKIP)))
-    nil)
-   (t
-    (let ((*wormholep* t)
-          (state *the-live-state*)
-          (*wormhole-cleanup-form*
+       (and (consp temp)
+            (eq (car temp) :SKIP)))
+     nil)
+    (t
+     (let ((*wormholep* t)
+           (state *the-live-state*)
+           (*wormhole-cleanup-form*
 
 ; WARNING:  The own-cons and the progn form constructed below must be NEW!
 ; See note below.
 
-           (let ((own-cons (cons nil nil)))
-             (list 'progn
-                   `(cond ((car (quote ,own-cons))
-                           (error "Attempt to execute *wormhole-cleanup-form* ~
+            (let ((own-cons (cons nil nil)))
+              (list 'progn
+                    `(cond ((car (quote ,own-cons))
+                            (error "Attempt to execute *wormhole-cleanup-form* ~
                                    twice!"))
-                          (t (setq *wormhole-status-alist*
-                                   (put-assoc-equal
-                                    ',name
-                                    (f-get-global 'wormhole-status
-                                                  *the-live-state*)
-                                    *wormhole-status-alist*))))
-                   `(fix-trace ',(f-get-global 'trace-specs *the-live-state*))
-                   `(setf (car (quote ,own-cons)) t)
-                   'state))))
+                           (t (setq *wormhole-status-alist*
+                                    (put-assoc-equal
+                                     ',name
+                                     (f-get-global 'wormhole-status
+                                                   *the-live-state*)
+                                     *wormhole-status-alist*))))
+                    `(fix-trace ',(f-get-global 'trace-specs *the-live-state*))
+                    `(setf (car (quote ,own-cons)) t)
+                    'state))))
 
 ; Note: What's going on above? The cleanup form's spine is new conses because
 ; we smash them, inserting new formi's between the cond and the setf.  When
@@ -24737,43 +24758,43 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; got executed once by Lisp's unwind-protect and later by our acl2-unwind or
 ; the eval below.
 
-      (cond ((null name) (return-from wormhole1 nil)))
-      (push-car (cons "Post-hoc unwind-protect for wormhole"
+       (cond ((null name) (return-from wormhole1 nil)))
+       (push-car (cons "Post-hoc unwind-protect for wormhole"
 
 ; Robert Krug tells us that CCL complained before we introduced function
 ; below.  We use a non-special lexical variable to capture the current value of
 ; *wormhole-cleanup-form* (as we formerly did) as we push the function onto the
 ; stack.
 
-                      (let ((acl-non-special-var *wormhole-cleanup-form*))
-                        (function
-                         (lambda nil (eval acl-non-special-var)))))
-                *acl2-unwind-protect-stack*
-                'wormhole1)
+                       (let ((acl-non-special-var *wormhole-cleanup-form*))
+                         (function
+                          (lambda nil (eval acl-non-special-var)))))
+                 *acl2-unwind-protect-stack*
+                 'wormhole1)
 
 ; The f-put-globals about to be performed will be done undoably.
 
-      (f-put-global 'wormhole-name name state)
-      (f-put-global 'wormhole-input input state)
-      (f-put-global 'wormhole-status
-                    (cdr (assoc-equal name *wormhole-status-alist*))
-                    state)
-      (bind-acl2-time-limit
+       (f-put-global 'wormhole-name name state)
+       (f-put-global 'wormhole-input input state)
+       (f-put-global 'wormhole-status
+                     (cdr (assoc-equal name *wormhole-status-alist*))
+                     state)
+       (bind-acl2-time-limit
 
 ; See the comments in bind-acl2-time-limit to understand why we are using it
 ; here.
 
-       (ld-fn (append
-               `((standard-oi . (,form . ,*standard-oi*))
-                 (standard-co . ,*standard-co*)
-                 (proofs-co . ,*standard-co*))
-               ld-specials)
-              state
-              t)
-       nil)
-      (eval *wormhole-cleanup-form*)
-      (pop (car *acl2-unwind-protect-stack*))
-      nil))))
+        (ld-fn (append
+                `((standard-oi . (,form . ,*standard-oi*))
+                  (standard-co . ,*standard-co*)
+                  (proofs-co . ,*standard-co*))
+                ld-specials)
+               state
+               t)
+        nil)
+       (eval *wormhole-cleanup-form*)
+       (pop (car *acl2-unwind-protect-stack*))
+       nil)))))
 
 (defun wormhole-p (state)
   (declare (xargs :guard (state-p state)))
