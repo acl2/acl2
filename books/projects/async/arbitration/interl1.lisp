@@ -9,7 +9,7 @@
 (in-package "ADE")
 
 (include-book "arb-merge1")
-(include-book "../fifo/queue20-l")
+(include-book "../fifo/queue40-l")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -31,13 +31,13 @@
 ;;
 ;; Construct a DE module generator for circuits performing the
 ;; first-come-first-served arbitrated merge using the link-joint model.  These
-;; circuits consist of two 20-link queues connected to the two input ports of
+;; circuits consist of two 40-link queues connected to the two input ports of
 ;; an arbitrated merge.
 
 (defconst *interl$select-num* *arb-merge$select-num*)
 (defconst *interl$prim-go-num* 2)
 (defconst *interl$go-num* (+ *interl$prim-go-num*
-                             (* 2 *queue20-l$go-num*)
+                             (* 2 *queue40-l$go-num*)
                              *arb-merge$go-num*))
 (defconst *interl$st-len* 2)
 
@@ -63,40 +63,40 @@
                 (cons 'select (sis 'go 0 *interl$go-num*))))
  (list* 'in0-act 'in1-act 'out-act
         (sis 'data-out 0 data-size))
- '(q20-l0 q20-l1)
+ '(q40-l0 q40-l1)
  (list
   ;; LINKS
-  ;; 20-link queue Q20-L0
-  (list 'q20-l0
-        (list* 'q20-l0-ready-in- 'q20-l0-ready-out
-               (sis 'q20-l0-data-out 0 data-size))
-        (si 'queue20-l data-size)
+  ;; 40-link queue Q40-L0
+  (list 'q40-l0
+        (list* 'q40-l0-ready-in- 'q40-l0-ready-out
+               (sis 'q40-l0-data-out 0 data-size))
+        (si 'queue40-l data-size)
         (list* 'in0-act 'out-act0
-               (append (sis 'q20-l0-data-in 0 data-size)
+               (append (sis 'q40-l0-data-in 0 data-size)
                        (sis 'go
                             *interl$prim-go-num*
-                            *queue20-l$go-num*))))
+                            *queue40-l$go-num*))))
 
-  ;; 20-link queue Q20-L1
-  (list 'q20-l1
-        (list* 'q20-l1-ready-in- 'q20-l1-ready-out
-               (sis 'q20-l1-data-out 0 data-size))
-        (si 'queue20-l data-size)
+  ;; 40-link queue Q40-L1
+  (list 'q40-l1
+        (list* 'q40-l1-ready-in- 'q40-l1-ready-out
+               (sis 'q40-l1-data-out 0 data-size))
+        (si 'queue40-l data-size)
         (list* 'in1-act 'out-act1
-               (append (sis 'q20-l1-data-in 0 data-size)
+               (append (sis 'q40-l1-data-in 0 data-size)
                        (sis 'go
                             (+ *interl$prim-go-num*
-                               *queue20-l$go-num*)
-                            *queue20-l$go-num*))))
+                               *queue40-l$go-num*)
+                            *queue40-l$go-num*))))
 
   ;; JOINTS
   ;; In0
   (list 'in0-cntl
         '(in0-act)
         'joint-cntl
-        (list 'full-in0 'q20-l0-ready-in- (si 'go 0)))
+        (list 'full-in0 'q40-l0-ready-in- (si 'go 0)))
   (list 'in0-op
-        (sis 'q20-l0-data-in 0 data-size)
+        (sis 'q40-l0-data-in 0 data-size)
         (si 'v-buf data-size)
         (sis 'data0-in 0 data-size))
 
@@ -104,9 +104,9 @@
   (list 'in1-cntl
         '(in1-act)
         'joint-cntl
-        (list 'full-in1 'q20-l1-ready-in- (si 'go 1)))
+        (list 'full-in1 'q40-l1-ready-in- (si 'go 1)))
   (list 'in1-op
-        (sis 'q20-l1-data-in 0 data-size)
+        (sis 'q40-l1-data-in 0 data-size)
         (si 'v-buf data-size)
         (sis 'data1-in 0 data-size))
 
@@ -115,13 +115,13 @@
         (list* 'out-act 'out-act0 'out-act1
                (sis 'data-out 0 data-size))
         (si 'arb-merge data-size)
-        (list* 'q20-l0-ready-out 'q20-l1-ready-out 'empty-out-
-               (append (sis 'q20-l0-data-out 0 data-size)
-                       (sis 'q20-l1-data-out 0 data-size)
+        (list* 'q40-l0-ready-out 'q40-l1-ready-out 'empty-out-
+               (append (sis 'q40-l0-data-out 0 data-size)
+                       (sis 'q40-l1-data-out 0 data-size)
                        (cons 'select
                              (sis 'go
                                   (+ *interl$prim-go-num*
-                                     (* 2 *queue20-l$go-num*))
+                                     (* 2 *queue40-l$go-num*))
                                   *arb-merge$go-num*))))))
 
  (declare (xargs :guard (natp data-size))))
@@ -129,7 +129,7 @@
 (make-event
  `(progn
     ,@(state-accessors-gen 'interl
-                           '(q20-l0 q20-l1)
+                           '(q40-l0 q40-l1)
                            0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
@@ -138,7 +138,7 @@
 (defund interl$netlist (data-size)
   (declare (xargs :guard (natp data-size)))
   (cons (interl* data-size)
-        (union$ (queue20-l$netlist data-size)
+        (union$ (queue40-l$netlist data-size)
                 (arb-merge$netlist data-size)
                 :test 'equal)))
 
@@ -152,7 +152,7 @@
                 (interl* data-size))
          (joint-cntl& subnetlist)
          (v-buf& subnetlist data-size)
-         (queue20-l& subnetlist data-size)
+         (queue40-l& subnetlist data-size)
          (arb-merge& subnetlist data-size))))
 
 ;; Sanity check
@@ -166,11 +166,11 @@
 ;; Constraints on the state of INTERL
 
 (defund interl$st-format (st data-size)
-  (b* ((q20-l0 (get-field *interl$q20-l0* st))
-       (q20-l1 (get-field *interl$q20-l1* st)))
+  (b* ((q40-l0 (get-field *interl$q40-l0* st))
+       (q40-l1 (get-field *interl$q40-l1* st)))
     (and (< 0 data-size)
-         (queue20-l$st-format q20-l0 data-size)
-         (queue20-l$st-format q20-l1 data-size))))
+         (queue40-l$st-format q40-l0 data-size)
+         (queue40-l$st-format q40-l1 data-size))))
 
 (defthm interl$st-format=>constraint
   (implies (interl$st-format st data-size)
@@ -179,23 +179,23 @@
   :rule-classes :forward-chaining)
 
 (defund interl$valid-st (st data-size)
-  (b* ((q20-l0 (get-field *interl$q20-l0* st))
-       (q20-l1 (get-field *interl$q20-l1* st)))
+  (b* ((q40-l0 (get-field *interl$q40-l0* st))
+       (q40-l1 (get-field *interl$q40-l1* st)))
     (and (< 0 data-size)
-         (queue20-l$valid-st q20-l0 data-size)
-         (queue20-l$valid-st q20-l1 data-size))))
+         (queue40-l$valid-st q40-l0 data-size)
+         (queue40-l$valid-st q40-l1 data-size))))
 
 (defthmd interl$valid-st=>constraint
   (implies (interl$valid-st st data-size)
            (posp data-size))
-  :hints (("Goal" :in-theory (enable queue20-l$valid-st=>constraint
+  :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                      interl$valid-st)))
   :rule-classes :forward-chaining)
 
 (defthmd interl$valid-st=>st-format
   (implies (interl$valid-st st data-size)
            (interl$st-format st data-size))
-  :hints (("Goal" :in-theory (e/d (queue20-l$valid-st=>st-format
+  :hints (("Goal" :in-theory (e/d (queue40-l$valid-st=>st-format
                                    interl$st-format
                                    interl$valid-st)
                                   ()))))
@@ -244,10 +244,10 @@
 
          (go-in0 (nth 0 go-signals))
 
-         (q20-l0 (get-field *interl$q20-l0* st))
-         (q20-l0-ready-in- (queue20-l$ready-in- q20-l0)))
+         (q40-l0 (get-field *interl$q40-l0* st))
+         (q40-l0-ready-in- (queue40-l$ready-in- q40-l0)))
 
-      (joint-act full-in0 q20-l0-ready-in- go-in0)))
+      (joint-act full-in0 q40-l0-ready-in- go-in0)))
 
   (defthm interl$in0-act-inactive
     (implies (not (nth 0 inputs))
@@ -264,10 +264,10 @@
 
          (go-in1 (nth 1 go-signals))
 
-         (q20-l1 (get-field *interl$q20-l1* st))
-         (q20-l1-ready-in- (queue20-l$ready-in- q20-l1)))
+         (q40-l1 (get-field *interl$q40-l1* st))
+         (q40-l1-ready-in- (queue40-l$ready-in- q40-l1)))
 
-      (joint-act full-in1 q20-l1-ready-in- go-in1)))
+      (joint-act full-in1 q40-l1-ready-in- go-in1)))
 
   (defthm interl$in1-act-inactive
     (implies (not (nth 1 inputs))
@@ -285,19 +285,19 @@
 
          (arb-merge-go-signals (take *arb-merge$go-num*
                                      (nthcdr (+ *interl$prim-go-num*
-                                                *queue20-l$go-num*
-                                                *queue20-l$go-num*)
+                                                *queue40-l$go-num*
+                                                *queue40-l$go-num*)
                                              go-signals)))
 
-         (q20-l0 (get-field *interl$q20-l0* st))
-         (q20-l1 (get-field *interl$q20-l1* st))
+         (q40-l0 (get-field *interl$q40-l0* st))
+         (q40-l1 (get-field *interl$q40-l1* st))
 
-         (q20-l0-ready-out (queue20-l$ready-out q20-l0))
-         (q20-l0-data-out (queue20-l$data-out q20-l0))
-         (q20-l1-ready-out (queue20-l$ready-out q20-l1))
-         (q20-l1-data-out (queue20-l$data-out q20-l1)))
-      (list* q20-l0-ready-out q20-l1-ready-out empty-out-
-             (append q20-l0-data-out q20-l1-data-out
+         (q40-l0-ready-out (queue40-l$ready-out q40-l0))
+         (q40-l0-data-out (queue40-l$data-out q40-l0))
+         (q40-l1-ready-out (queue40-l$ready-out q40-l1))
+         (q40-l1-data-out (queue40-l$data-out q40-l1)))
+      (list* q40-l0-ready-out q40-l1-ready-out empty-out-
+             (append q40-l0-data-out q40-l1-data-out
                      (cons select arb-merge-go-signals)))))
 
   ;; Extract the "out-act0" signal
@@ -344,16 +344,16 @@
              (not (interl$out-act inputs st data-size)))
     :hints (("Goal" :in-theory (enable interl$out-act))))
 
-  ;; Extract the inputs for link Q20-L0
+  ;; Extract the inputs for link Q40-L0
 
-  (defund interl$q20-l0-inputs (inputs st data-size)
+  (defund interl$q40-l0-inputs (inputs st data-size)
     (b* ((in0-act (interl$in0-act inputs st data-size))
          (data0-in (interl$data0-in inputs data-size))
          (go-signals (nthcdr (+ (interl$data-ins-len data-size)
                                 *interl$select-num*)
                              inputs))
 
-         (q20-l0-go-signals (take *queue20-l$go-num*
+         (q40-l0-go-signals (take *queue40-l$go-num*
                                   (nthcdr *interl$prim-go-num*
                                           go-signals)))
 
@@ -361,27 +361,27 @@
          (out-act0 (arb-merge$act0 arb-merge-inputs data-size)))
 
       (list* in0-act out-act0
-             (append data0-in q20-l0-go-signals))))
+             (append data0-in q40-l0-go-signals))))
 
-  ;; Extract the inputs for link Q20-L1
+  ;; Extract the inputs for link Q40-L1
 
-  (defund interl$q20-l1-inputs (inputs st data-size)
+  (defund interl$q40-l1-inputs (inputs st data-size)
     (b* ((in1-act (interl$in1-act inputs st data-size))
          (data1-in (interl$data1-in inputs data-size))
          (go-signals (nthcdr (+ (interl$data-ins-len data-size)
                                 *interl$select-num*)
                              inputs))
 
-         (q20-l1-go-signals (take *queue20-l$go-num*
+         (q40-l1-go-signals (take *queue40-l$go-num*
                                   (nthcdr (+ *interl$prim-go-num*
-                                             *queue20-l$go-num*)
+                                             *queue40-l$go-num*)
                                           go-signals)))
 
          (arb-merge-inputs (interl$arb-merge-inputs inputs st data-size))
          (out-act1 (arb-merge$act1 arb-merge-inputs data-size)))
 
       (list* in1-act out-act1
-             (append data1-in q20-l1-go-signals))))
+             (append data1-in q40-l1-go-signals))))
 
   ;; Extract the output data
 
@@ -400,7 +400,7 @@
     (implies (interl$valid-st st data-size)
              (equal (len (interl$data-out inputs st data-size))
                     data-size))
-    :hints (("Goal" :in-theory (enable queue20-l$valid-st=>constraint
+    :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                        interl$valid-st
                                        interl$data-out))))
 
@@ -448,16 +448,16 @@
 ;; This function specifies the next state of INTERL.
 
 (defun interl$step (inputs st data-size)
-  (b* ((q20-l0    (get-field *interl$q20-l0* st))
-       (q20-l1    (get-field *interl$q20-l1* st))
+  (b* ((q40-l0    (get-field *interl$q40-l0* st))
+       (q40-l1    (get-field *interl$q40-l1* st))
 
-       (q20-l0-inputs (interl$q20-l0-inputs inputs st data-size))
-       (q20-l1-inputs (interl$q20-l1-inputs inputs st data-size)))
+       (q40-l0-inputs (interl$q40-l0-inputs inputs st data-size))
+       (q40-l1-inputs (interl$q40-l1-inputs inputs st data-size)))
     (list
-      ;; Q20-L0
-     (queue20-l$step q20-l0-inputs q20-l0 data-size)
-     ;; Q20-L1
-     (queue20-l$step q20-l1-inputs q20-l1 data-size))))
+      ;; Q40-L0
+     (queue40-l$step q40-l0-inputs q40-l0 data-size)
+     ;; Q40-L1
+     (queue40-l$step q40-l1-inputs q40-l1 data-size))))
 
 (defthm len-of-interl$step
   (equal (len (interl$step inputs st data-size))
@@ -489,8 +489,8 @@
                             interl$st-format
                             interl$data0-in
                             interl$data1-in
-                            interl$q20-l0-inputs
-                            interl$q20-l1-inputs
+                            interl$q40-l0-inputs
+                            interl$q40-l1-inputs
                             interl$arb-merge-inputs
                             interl$in0-act
                             interl$in1-act)
@@ -529,46 +529,46 @@
                    (append data0-in data1-in (cons select go-signals)))))))
 
 (local
- (defthm interl$input-format=>q20-l0$input-format
+ (defthm interl$input-format=>q40-l0$input-format
    (implies (and (interl$input-format inputs data-size)
                  (interl$valid-st st data-size))
-            (queue20-l$input-format
-             (interl$q20-l0-inputs inputs st data-size)
-             (nth *interl$q20-l0* st)
+            (queue40-l$input-format
+             (interl$q40-l0-inputs inputs st data-size)
+             (nth *interl$q40-l0* st)
              data-size))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue20-l$input-format
-                             queue20-l$in-act
-                             queue20-l$out-act
-                             queue20-l$data-in
+                             queue40-l$input-format
+                             queue40-l$in-act
+                             queue40-l$out-act
+                             queue40-l$data-in
                              arb-merge$act0
                              interl$input-format
                              interl$valid-st
-                             interl$q20-l0-inputs
+                             interl$q40-l0-inputs
                              interl$arb-merge-inputs
                              interl$in0-act)
                             (nfix
                              link$st-format))))))
 
 (local
- (defthm interl$input-format=>q20-l1$input-format
+ (defthm interl$input-format=>q40-l1$input-format
    (implies (and (interl$input-format inputs data-size)
                  (interl$valid-st st data-size))
-            (queue20-l$input-format
-             (interl$q20-l1-inputs inputs st data-size)
-             (nth *interl$q20-l1* st)
+            (queue40-l$input-format
+             (interl$q40-l1-inputs inputs st data-size)
+             (nth *interl$q40-l1* st)
              data-size))
    :hints (("Goal"
             :in-theory (e/d (get-field
-                             queue20-l$input-format
-                             queue20-l$in-act
-                             queue20-l$out-act
-                             queue20-l$data-in
+                             queue40-l$input-format
+                             queue40-l$in-act
+                             queue40-l$out-act
+                             queue40-l$data-in
                              arb-merge$act1
                              interl$input-format
                              interl$valid-st
-                             interl$q20-l1-inputs
+                             interl$q40-l1-inputs
                              interl$arb-merge-inputs
                              interl$in1-act)
                             (nfix
@@ -651,12 +651,12 @@
 ;; The extraction functions for INTERL
 
 (defund interl$extract0 (st)
-  (b* ((q20-l0 (get-field *interl$q20-l0* st)))
-    (queue20-l$extract q20-l0)))
+  (b* ((q40-l0 (get-field *interl$q40-l0* st)))
+    (queue40-l$extract q40-l0)))
 
 (defund interl$extract1 (st)
-  (b* ((q20-l1 (get-field *interl$q20-l1* st)))
-    (queue20-l$extract q20-l1)))
+  (b* ((q40-l1 (get-field *interl$q40-l1* st)))
+    (queue40-l$extract q40-l1)))
 
 (defthm interl$extract0-not-empty
   (implies (and (interl$out-act0 inputs st data-size)
@@ -723,58 +723,58 @@
   ()
 
   (local
-   (defthm interl$q20-l0-data-in-rewrite
-     (equal (queue20-l$data-in
-             (interl$q20-l0-inputs inputs st data-size)
+   (defthm interl$q40-l0-data-in-rewrite
+     (equal (queue40-l$data-in
+             (interl$q40-l0-inputs inputs st data-size)
              data-size)
             (interl$data0-in inputs data-size))
      :hints (("Goal"
-              :in-theory (enable queue20-l$data-in
+              :in-theory (enable queue40-l$data-in
                                  interl$data0-in
-                                 interl$q20-l0-inputs)))))
+                                 interl$q40-l0-inputs)))))
 
   (local
-   (defthm interl$q20-l1-data-in-rewrite
-     (equal (queue20-l$data-in
-             (interl$q20-l1-inputs inputs st data-size)
+   (defthm interl$q40-l1-data-in-rewrite
+     (equal (queue40-l$data-in
+             (interl$q40-l1-inputs inputs st data-size)
              data-size)
             (interl$data1-in inputs data-size))
      :hints (("Goal"
-              :in-theory (enable queue20-l$data-in
+              :in-theory (enable queue40-l$data-in
                                  interl$data1-in
-                                 interl$q20-l1-inputs)))))
+                                 interl$q40-l1-inputs)))))
 
   (local
-   (defthm interl$q20-l0-in-act-rewrite
-     (equal (queue20-l$in-act (interl$q20-l0-inputs inputs st data-size))
+   (defthm interl$q40-l0-in-act-rewrite
+     (equal (queue40-l$in-act (interl$q40-l0-inputs inputs st data-size))
             (interl$in0-act inputs st data-size))
-     :hints (("Goal" :in-theory (enable queue20-l$in-act
+     :hints (("Goal" :in-theory (enable queue40-l$in-act
                                         interl$in0-act
-                                        interl$q20-l0-inputs)))))
+                                        interl$q40-l0-inputs)))))
 
   (local
-   (defthm interl$q20-l0-out-act-rewrite
-     (equal (queue20-l$out-act (interl$q20-l0-inputs inputs st data-size))
+   (defthm interl$q40-l0-out-act-rewrite
+     (equal (queue40-l$out-act (interl$q40-l0-inputs inputs st data-size))
             (interl$out-act0 inputs st data-size))
-     :hints (("Goal" :in-theory (enable queue20-l$out-act
+     :hints (("Goal" :in-theory (enable queue40-l$out-act
                                         interl$out-act0
-                                        interl$q20-l0-inputs)))))
+                                        interl$q40-l0-inputs)))))
 
   (local
-   (defthm interl$q20-l1-in-act-rewrite
-     (equal (queue20-l$in-act (interl$q20-l1-inputs inputs st data-size))
+   (defthm interl$q40-l1-in-act-rewrite
+     (equal (queue40-l$in-act (interl$q40-l1-inputs inputs st data-size))
             (interl$in1-act inputs st data-size))
-     :hints (("Goal" :in-theory (enable queue20-l$in-act
+     :hints (("Goal" :in-theory (enable queue40-l$in-act
                                         interl$in1-act
-                                        interl$q20-l1-inputs)))))
+                                        interl$q40-l1-inputs)))))
 
   (local
-   (defthm interl$q20-l1-out-act-rewrite
-     (equal (queue20-l$out-act (interl$q20-l1-inputs inputs st data-size))
+   (defthm interl$q40-l1-out-act-rewrite
+     (equal (queue40-l$out-act (interl$q40-l1-inputs inputs st data-size))
             (interl$out-act1 inputs st data-size))
-     :hints (("Goal" :in-theory (enable queue20-l$out-act
+     :hints (("Goal" :in-theory (enable queue40-l$out-act
                                         interl$out-act1
-                                        interl$q20-l1-inputs)))))
+                                        interl$q40-l1-inputs)))))
 
   (defthm interl$extracted-step-correct
     (b* ((next-st (interl$step inputs st data-size)))
@@ -786,8 +786,8 @@
                            (interl$extracted1-step inputs st data-size)))))
     :hints (("Goal"
              :in-theory (e/d (get-field
-                              queue20-l$extracted-step
-                              queue20-l$extracted-step
+                              queue40-l$extracted-step
+                              queue40-l$extracted-step
                               interl$extracted0-step
                               interl$extracted1-step
                               interl$valid-st
@@ -822,10 +822,10 @@
      (implies (and (interl$valid-st st data-size)
                    (interl$out-act0 inputs st data-size))
               (equal (interl$data-out inputs st data-size)
-                     (queue20-l$data-out (nth *interl$q20-l0* st))))
+                     (queue40-l$data-out (nth *interl$q40-l0* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue20-l$valid-st=>constraint
+                                 queue40-l$valid-st=>constraint
                                  arb-merge$act0
                                  arb-merge$act1
                                  arb-merge$data0-in
@@ -841,10 +841,10 @@
                    (interl$valid-st st data-size)
                    (interl$out-act1 inputs st data-size))
               (equal (interl$data-out inputs st data-size)
-                     (queue20-l$data-out (nth *interl$q20-l1* st))))
+                     (queue40-l$data-out (nth *interl$q40-l1* st))))
      :hints (("Goal"
               :in-theory (enable get-field
-                                 queue20-l$valid-st=>constraint
+                                 queue40-l$valid-st=>constraint
                                  arb-merge$act0
                                  arb-merge$act1
                                  arb-merge$data1-in
@@ -858,18 +858,18 @@
   (local
    (defthm interl$out-act0-rewrite
      (equal (interl$out-act0 inputs st data-size)
-            (queue20-l$out-act (interl$q20-l0-inputs inputs st data-size)))
-     :hints (("Goal" :in-theory (enable queue20-l$out-act
+            (queue40-l$out-act (interl$q40-l0-inputs inputs st data-size)))
+     :hints (("Goal" :in-theory (enable queue40-l$out-act
                                         interl$out-act0
-                                        interl$q20-l0-inputs)))))
+                                        interl$q40-l0-inputs)))))
 
   (local
    (defthm interl$out-act1-rewrite
      (equal (interl$out-act1 inputs st data-size)
-            (queue20-l$out-act (interl$q20-l1-inputs inputs st data-size)))
-     :hints (("Goal" :in-theory (enable queue20-l$out-act
+            (queue40-l$out-act (interl$q40-l1-inputs inputs st data-size)))
+     :hints (("Goal" :in-theory (enable queue40-l$out-act
                                         interl$out-act1
-                                        interl$q20-l1-inputs)))))
+                                        interl$q40-l1-inputs)))))
 
   (defthm interl$extract0-lemma
     (implies (and (interl$input-format inputs data-size)
@@ -879,11 +879,11 @@
                     (nthcdr (1- (len (interl$extract0 st)))
                             (interl$extract0 st))))
     :hints (("Goal"
-             :use interl$input-format=>q20-l0$input-format
+             :use interl$input-format=>q40-l0$input-format
              :in-theory (e/d (get-field
                               interl$valid-st
                               interl$extract0)
-                             (interl$input-format=>q20-l0$input-format)))))
+                             (interl$input-format=>q40-l0$input-format)))))
 
   (defthm interl$extract1-lemma
     (implies (and (interl$input-format inputs data-size)
@@ -893,11 +893,11 @@
                     (nthcdr (1- (len (interl$extract1 st)))
                             (interl$extract1 st))))
     :hints (("Goal"
-             :use interl$input-format=>q20-l1$input-format
+             :use interl$input-format=>q40-l1$input-format
              :in-theory (e/d (get-field
                               interl$valid-st
                               interl$extract1)
-                             (interl$input-format=>q20-l1$input-format)))))
+                             (interl$input-format=>q40-l1$input-format)))))
   )
 
 ;; Extract the accepted input sequences
@@ -916,8 +916,8 @@
 
 ;; The multi-step input-output relationship
 
-;; Let in0-seq and in1-seq represent two input sequences connected to Q20-L0
-;; and Q20-L1, respectively.  We might expect the output sequence is any
+;; Let in0-seq and in1-seq represent two input sequences connected to Q40-L0
+;; and Q40-L1, respectively.  We might expect the output sequence is any
 ;; interleaving of in0-seq and in1-seq.  More generally, our formalization also
 ;; takes into account that an initial state of INTERL may contain some valid
 ;; data, and there can be some valid data remaining in the final state after
@@ -925,8 +925,8 @@
 ;; interleaving x of two data sequences remaining in the final state, the
 ;; concatenation of x and the output sequence must be a member of (seq0 x
 ;; seq1); where seq0 is the concatenation of in0-seq and the valid data
-;; sequence in Q20-L0 at the intial state, and seq1 is the concatenation of
-;; in1-seq and the valid data sequence in Q20-L1 at the intial state.
+;; sequence in Q40-L0 at the intial state, and seq1 is the concatenation of
+;; in1-seq and the valid data sequence in Q40-L1 at the intial state.
 
 (progn
   (defthm member-append-interleave-1-instance

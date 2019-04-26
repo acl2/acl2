@@ -31,4 +31,80 @@ numbers.
 See arbitration/ for the modeling and verification of self-timed
 circuits that perform arbitrated merge operations.
 
+----------------------------------------------------------------------
+Book Overview
+----------------------------------------------------------------------
+
+Each sequential self-timed module is modeled and verified in a book
+consisting of the following four steps (e.g., see fifo/queue2.lisp and
+fifo/queue10.lisp).
+
+* DE Module Generator
+* Multi-Step State Lemma
+* Single-Step-Update Property
+* Relationship Between the Input and Output Sequences
+
+The structure of the above steps for a sequential self-timed module M
+is described as follows.
+
+1. DE Module Generator
+
+M*: DE module generator for M with parameterized data sizes.
+
+M$netlist: DE netlist generator for M.  A generated netlist will
+contain an instance of M.
+
+M&: Recognizer for M.
+
+M$st-format: conditions on the state format of M.
+
+M$valid-st: stronger conditions on the state format of M.  This
+predicate requires that the status of each link is either full or
+empty, and checks the validity of the data when the link is full.
+Note, M$valid-st implies M$st-format.
+
+M$outputs: specifying the outputs of M at the four-valued level.
+
+M$value: the value lemma for M.
+
+M$step: specifying the next state of M at the four-valued level.
+
+M$state: the state lemma for M.
+
+2. Multi-Step State Lemma
+
+M$input-format: conditions on the input format of M.  Note,
+M$input-format implies S$input-format, where S is a submodule of M if
+such S exists.
+
+Prove the multi-step state lemma for M using macro "simulate-lemma".
+
+3. Single-Step-Update Property
+
+M$extract: an extraction function for M.
+
+M$extracted-step: an extracted next-state function for M.
+
+M$inv: specifying a state invariant for M (if any).
+
+M$inv-preserved: a lemma confirming that M$inv is invariant (if M$inv
+exists).
+
+M$extracted-step-correct: a single-step-update property for M.
+
+4. Relationship Between the Input and Output Sequences
+
+M$valid-st-preserved: a lemma confirming that M$valid-st is invariant.
+
+M$extract-lemma: a lemma about the relationship between M$extract and
+the current output data.  We use this lemma in formalizing the
+relationship between the input and output sequences of M.
+
+Introduce functions that extract the accepted input and valid output
+sequences of M by applying macro "seq-gen".
+
+Formalize the relationship between the input and output sequences of M
+using macro "in-out-stream-lemma".
+
+
 
