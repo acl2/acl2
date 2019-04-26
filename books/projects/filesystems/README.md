@@ -4,7 +4,7 @@ details certain filesystem models and co-simulation tests applied to
 them; instructions for reviewing and executing these tests follow.
 
 Note: The books mentioned below were certified with a development
-snapshot of ACL2, dated 2019-03-30 and identified by commit hash
+snapshot of ACL2, dated 2019-04-17 and identified by commit hash
 d7e8dac3dd41c8b46281b5f26e09f108dbf995fb. The GNU/Linux programs
 mkfs.fat, diff, sudo, cp, mkdir, mv, rm, rmdir, stat, unlink, and wc
 are required in order to run the tests, as is the mtools suite of
