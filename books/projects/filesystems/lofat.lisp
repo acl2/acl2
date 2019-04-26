@@ -11455,7 +11455,7 @@ Some (rather awful) testing forms are
 
 (defun lofat-statfs (fat32-in-memory)
   (declare (xargs :stobjs (fat32-in-memory)
-                  :verify-guards nil))
+                  :guard (lofat-fs-p fat32-in-memory)))
   (b*
       ((total_blocks (count-of-clusters fat32-in-memory))
        (available_blocks
