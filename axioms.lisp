@@ -24676,21 +24676,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro our-with-terminal-input (x)
 
-; This identity macro has the side effect of permitting a thread to read from
-; the terminal when another thread already has the lock on that.  See for
-; example this page.
+; This identity macro was intended to have the side effect of permitting a
+; thread to read from the terminal when another thread already has the lock on
+; that.  See for example this page.
 
 ; https://ccl.clozure.com/manual/chapter7.5.html#Background-Terminal-Input
 
-; The danger in using this macro is that the thread will keep control of a lock
-; that prevents other threads from reading terminal input.  In particular it
-; could be a problem if in ACL2(p), a call of wormhole (which uses this macro,
-; in wormhole1) by other than the main thread runs indefinitely by repeatedly
-; expecting user input.
+; A danger in using ccl::with-terminal-input is that the thread will keep
+; control of a lock that prevents other threads from reading terminal input.
+; In particular it could be a problem if in ACL2(p), a call of wormhole (which
+; uses this macro, in wormhole1) by other than the main thread runs
+; indefinitely by repeatedly expecting user input.
 
-  #+(and ccl acl2-par (not acl2-loop-only))
-  `(ccl::with-terminal-input ,x)
-  #-(and ccl acl2-par (not acl2-loop-only))
+; Perhaps that's why this didn't work!  Specifically, ACL2(p) attempts to
+; certify community book books/std/osets/under-set-equiv.lisp hung when
+; defining this macro with ccl::with-terminal-input.
+
+; So for now, we simply make this the identity macro, in case some clearer
+; thinking about all this in the future finds a suitable way to invoke
+; ccl::with-terminal-input.
+
+; #+(and ccl acl2-par (not acl2-loop-only))
+; `(ccl::with-terminal-input ,x)
+; #-(and ccl acl2-par (not acl2-loop-only))
+
   x)
 
 (defun wormhole1 (name input form ld-specials)
