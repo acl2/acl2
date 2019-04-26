@@ -137,14 +137,13 @@
   (declare (xargs :guard (and (primp-call-syntaxp fn ins st)
                               (primp-call-arityp  fn ins st))))
   (case fn
-    (ff        (list (f-if (car ins) (cadr ins) (car st))))
-    (latch     (list (f-if (car ins) (cadr ins) (car st))))
+    ((ff latch) (list (f-if (car ins) (cadr ins) (car st))))
 
     ;; LINK-CNTL is a new primitive for modeling self-timed modules using the
     ;; link-joint model.
-    (link-cntl (list (f-sr (car ins) (cadr ins) (car st))))
+    (link-cntl  (list (f-sr (car ins) (cadr ins) (car st))))
 
-    (otherwise nil)))
+    (otherwise  nil)))
 
 (defun len-se-primp-apply (fn ins st)
   (declare (xargs :guard t)

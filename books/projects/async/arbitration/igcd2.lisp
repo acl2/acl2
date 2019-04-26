@@ -9,7 +9,7 @@
 (in-package "ADE")
 
 (include-book "interl2")
-(include-book "../gcd/gcd")
+(include-book "../gcd/gcd1")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -36,7 +36,7 @@
 
 (defconst *igcd$select-num* *interl$select-num*)
 (defconst *igcd$go-num* (+ *interl$go-num*
-                           *gcd$go-num*))
+                           *gcd1$go-num*))
 (defconst *igcd$st-len* 3)
 
 (defun igcd$data-ins-len (data-size)
@@ -61,14 +61,14 @@
                 (cons 'select (sis 'go 0 *igcd$go-num*))))
  (list* 'in0-act 'in1-act 'out-act
         (sis 'data-out 0 data-size))
- '(l interl gcd)
+ '(l interl gcd1)
  (list
   ;; LINK
   ;; L
   (list 'l
         (list* 'l-status (sis 'd-out 0 (* 2 data-size)))
         (si 'link (* 2 data-size))
-        (list* 'interl-out-act 'gcd-in-act (sis 'd-in 0 (* 2 data-size))))
+        (list* 'interl-out-act 'gcd1-in-act (sis 'd-in 0 (* 2 data-size))))
 
   ;; JOINTS
   ;; INTERL
@@ -81,22 +81,22 @@
                        (sis 'data1-in 0 (* 2 data-size))
                        (cons 'select (sis 'go 0 *interl$go-num*)))))
 
-  ;; GCD
-  (list 'gcd
-        (list* 'gcd-in-act 'out-act
+  ;; GCD1
+  (list 'gcd1
+        (list* 'gcd1-in-act 'out-act
                (sis 'data-out 0 data-size))
-        (si 'gcd data-size)
+        (si 'gcd1 data-size)
         (list* 'l-status 'empty-out-
                (append (sis 'd-out 0 (* 2 data-size))
                        (sis 'go
                             *interl$go-num*
-                            *gcd$go-num*)))))
+                            *gcd1$go-num*)))))
 
  (declare (xargs :guard (natp data-size))))
 
 (make-event
  `(progn
-    ,@(state-accessors-gen 'igcd '(l interl gcd) 0)))
+    ,@(state-accessors-gen 'igcd '(l interl gcd1) 0)))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
 ;; IGCD.
@@ -106,7 +106,7 @@
                               (<= 2 data-size))))
   (cons (igcd* data-size)
         (union$ (interl$netlist (* 2 data-size))
-                (gcd$netlist data-size)
+                (gcd1$netlist data-size)
                 :test 'equal)))
 
 ;; Recognizer for IGCD
@@ -120,7 +120,7 @@
                 (igcd* data-size))
          (link& subnetlist (* 2 data-size))
          (interl& subnetlist (* 2 data-size))
-         (gcd& subnetlist data-size))))
+         (gcd1& subnetlist data-size))))
 
 ;; Sanity check
 
@@ -135,10 +135,10 @@
 (defund igcd$st-format (st data-size)
   (b* ((l (get-field *igcd$l* st))
        (interl (get-field *igcd$interl* st))
-       (gcd (get-field *igcd$gcd* st)))
+       (gcd1 (get-field *igcd$gcd1* st)))
     (and (link$st-format l (* 2 data-size))
          (interl$st-format interl (* 2 data-size))
-         (gcd$st-format gcd data-size))))
+         (gcd1$st-format gcd1 data-size))))
 
 (defthm igcd$st-format=>constraint
   (implies (igcd$st-format st data-size)
@@ -150,16 +150,16 @@
 (defund igcd$valid-st (st data-size)
   (b* ((l (get-field *igcd$l* st))
        (interl (get-field *igcd$interl* st))
-       (gcd (get-field *igcd$gcd* st)))
+       (gcd1 (get-field *igcd$gcd1* st)))
     (and (link$valid-st l (* 2 data-size))
          (interl$valid-st interl (* 2 data-size))
-         (gcd$valid-st gcd data-size))))
+         (gcd1$valid-st gcd1 data-size))))
 
 (defthmd igcd$valid-st=>constraint
   (implies (igcd$valid-st st data-size)
            (and (natp data-size)
                 (<= 3 data-size)))
-  :hints (("Goal" :in-theory (enable gcd$valid-st=>constraint
+  :hints (("Goal" :in-theory (enable gcd1$valid-st=>constraint
                                      igcd$valid-st)))
   :rule-classes :forward-chaining)
 
@@ -167,7 +167,7 @@
   (implies (igcd$valid-st st data-size)
            (igcd$st-format st data-size))
   :hints (("Goal" :in-theory (e/d (interl$valid-st=>st-format
-                                   gcd$valid-st=>st-format
+                                   gcd1$valid-st=>st-format
                                    igcd$st-format
                                    igcd$valid-st)
                                   (link$st-format)))))
@@ -261,15 +261,15 @@
          (interl (get-field *igcd$interl* st)))
       (interl$data-out interl-inputs interl (* 2 data-size))))
 
-  ;; Extract the inputs for joint GCD
+  ;; Extract the inputs for joint GCD1
 
-  (defund igcd$gcd-inputs (inputs st data-size)
+  (defund igcd$gcd1-inputs (inputs st data-size)
     (b* ((empty-out- (nth 2 inputs))
          (go-signals (nthcdr (+ (igcd$data-ins-len data-size)
                                 *igcd$select-num*)
                              inputs))
 
-         (gcd-go-signals (take *gcd$go-num*
+         (gcd1-go-signals (take *gcd1$go-num*
                                (nthcdr *interl$go-num* go-signals)))
 
          (l (get-field *igcd$l* st))
@@ -278,7 +278,7 @@
 
       (list* (f-buf (car l.s)) empty-out-
              (append (v-threefix (strip-cars l.d))
-                     gcd-go-signals))))
+                     gcd1-go-signals))))
 
   ;; Extract the "in0-act" signal
 
@@ -297,15 +297,15 @@
   ;; Extract the "out-act" signal
 
   (defund igcd$out-act (inputs st data-size)
-    (gcd$out-act (igcd$gcd-inputs inputs st data-size)
-                 (get-field *igcd$gcd* st)
+    (gcd1$out-act (igcd$gcd1-inputs inputs st data-size)
+                 (get-field *igcd$gcd1* st)
                  data-size))
 
   ;; Extract the output data
 
   (defund igcd$data-out (inputs st data-size)
-    (gcd$data-out (igcd$gcd-inputs inputs st data-size)
-                  (get-field *igcd$gcd* st)
+    (gcd1$data-out (igcd$gcd1-inputs inputs st data-size)
+                  (get-field *igcd$gcd1* st)
                   data-size))
 
   (defthm len-igcd$data-out-1
@@ -372,7 +372,7 @@
                               igcd$data0-in
                               igcd$data1-in
                               igcd$interl-inputs
-                              igcd$gcd-inputs
+                              igcd$gcd1-inputs
                               igcd$in0-act
                               igcd$in1-act
                               igcd$out-act
@@ -384,24 +384,24 @@
   (defun igcd$step (inputs st data-size)
     (b* ((l (get-field *igcd$l* st))
          (interl (get-field *igcd$interl* st))
-         (gcd (get-field *igcd$gcd* st))
+         (gcd1 (get-field *igcd$gcd1* st))
 
          (interl-inputs (igcd$interl-inputs inputs st data-size))
-         (gcd-inputs (igcd$gcd-inputs inputs st data-size))
+         (gcd1-inputs (igcd$gcd1-inputs inputs st data-size))
 
          (interl-out-act (interl$out-act interl-inputs interl (* 2 data-size)))
-         (gcd-in-act (gcd$in-act gcd-inputs gcd data-size))
+         (gcd1-in-act (gcd1$in-act gcd1-inputs gcd1 data-size))
 
          (d-in (interl$data-out interl-inputs interl (* 2 data-size)))
 
-         (l-inputs (list* interl-out-act gcd-in-act d-in)))
+         (l-inputs (list* interl-out-act gcd1-in-act d-in)))
       (list
        ;; L
        (link$step l-inputs l (* 2 data-size))
        ;; Joint INTERL
        (interl$step interl-inputs interl (* 2 data-size))
-       ;; Joint GCD
-       (gcd$step gcd-inputs gcd data-size))))
+       ;; Joint GCD1
+       (gcd1$step gcd1-inputs gcd1 data-size))))
 
   (defthm len-of-igcd$step
     (equal (len (igcd$step inputs st data-size))
@@ -434,7 +434,7 @@
                               igcd$data0-in
                               igcd$data1-in
                               igcd$interl-inputs
-                              igcd$gcd-inputs
+                              igcd$gcd1-inputs
                               igcd$in0-act
                               igcd$in1-act
                               igcd$out-act)
@@ -482,7 +482,7 @@
              (* 2 data-size)))
    :hints (("Goal"
             :in-theory (e/d (open-nth
-                             gcd$valid-st=>constraint
+                             gcd1$valid-st=>constraint
                              interl$input-format
                              interl$data0-in
                              interl$data1-in
@@ -492,19 +492,19 @@
                             ())))))
 
 (local
- (defthm igcd$input-format=>gcd$input-format
+ (defthm igcd$input-format=>gcd1$input-format
    (implies (and (igcd$input-format inputs data-size)
                  (igcd$valid-st st data-size))
-            (gcd$input-format
-             (igcd$gcd-inputs inputs st data-size)
+            (gcd1$input-format
+             (igcd$gcd1-inputs inputs st data-size)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (gcd$valid-st=>constraint
-                             gcd$input-format
-                             gcd$data-in
+            :in-theory (e/d (gcd1$valid-st=>constraint
+                             gcd1$input-format
+                             gcd1$data-in
                              igcd$input-format
                              igcd$valid-st
-                             igcd$gcd-inputs)
+                             igcd$gcd1-inputs)
                             ())))))
 
 (defthm booleanp-igcd$in0-act
@@ -557,9 +557,9 @@
 
 (defund igcd$extract2 (st)
   (b* ((l (get-field *igcd$l* st))
-       (gcd (get-field *igcd$gcd* st)))
+       (gcd1 (get-field *igcd$gcd1* st)))
     (append (igcd$op-map (extract-valid-data (list l)))
-            (gcd$extract gcd))))
+            (gcd1$extract gcd1))))
 
 (defthm igcd$extract0-not-empty
   (implies (and (igcd$interl-out-act0 inputs st data-size)
@@ -598,8 +598,8 @@
 
 (progn
   (defund igcd$inv (st)
-    (b* ((gcd (get-field *igcd$gcd* st)))
-      (gcd$inv gcd)))
+    (b* ((gcd1 (get-field *igcd$gcd1* st)))
+      (gcd1$inv gcd1)))
 
   (defthm igcd$inv-preserved
     (implies (and (igcd$input-format inputs data-size)
@@ -704,7 +704,7 @@
     :hints (("Goal"
              :in-theory (e/d (get-field
                               f-sr
-                              gcd$valid-st=>constraint
+                              gcd1$valid-st=>constraint
                               interl$extracted0-step
                               interl$extracted1-step
                               igcd$extracted0-step
@@ -742,31 +742,31 @@
                               (nfix))))))
 
   (local
-   (defthm igcd$gcd-in-act-inactive
+   (defthm igcd$gcd1-in-act-inactive
      (implies (equal (nth *link$s*
                           (nth *igcd$l* st))
                      '(nil))
-              (not (gcd$in-act (igcd$gcd-inputs inputs st data-size)
-                               (nth *igcd$gcd* st)
+              (not (gcd1$in-act (igcd$gcd1-inputs inputs st data-size)
+                               (nth *igcd$gcd1* st)
                                data-size)))
      :hints (("Goal"
               :in-theory (e/d (get-field
-                               igcd$gcd-inputs)
+                               igcd$gcd1-inputs)
                               (nfix))))))
 
   (local
    (defthm igcd-aux-3
-     (b* ((gcd-inputs (igcd$gcd-inputs inputs st data-size))
+     (b* ((gcd1-inputs (igcd$gcd1-inputs inputs st data-size))
           (l (nth *igcd$l* st))
           (l.d (nth *link$d* l)))
        (implies (and (natp data-size)
                      (equal (len l.d) (* 2 data-size))
                      (bvp (strip-cars l.d)))
-                (equal (gcd$data-in gcd-inputs data-size)
+                (equal (gcd1$data-in gcd1-inputs data-size)
                        (strip-cars l.d))))
      :hints (("Goal" :in-theory (enable get-field
-                                        igcd$gcd-inputs
-                                        gcd$data-in)))))
+                                        igcd$gcd1-inputs
+                                        gcd1$data-in)))))
 
   (defthm igcd$extracted2-step-correct
     (b* ((next-st (igcd$step inputs st data-size)))
@@ -776,12 +776,12 @@
                (equal (igcd$extract2 next-st)
                       (igcd$extracted2-step inputs st data-size))))
     :hints (("Goal"
-             :use igcd$input-format=>gcd$input-format
+             :use igcd$input-format=>gcd1$input-format
              :in-theory (e/d (get-field
                               f-sr
                               interl$out-act
-                              gcd$valid-st=>constraint
-                              gcd$extracted-step
+                              gcd1$valid-st=>constraint
+                              gcd1$extracted-step
                               igcd$extracted2-step
                               igcd$valid-st
                               igcd$inv
@@ -792,7 +792,7 @@
                               igcd$interl-data-out
                               igcd$out-act
                               igcd$extract2)
-                             (igcd$input-format=>gcd$input-format
+                             (igcd$input-format=>gcd1$input-format
                               interl$extract0-lemma
                               interl$extract1-lemma)))))
   )
@@ -811,7 +811,7 @@
      (implies (and (equal (nth 2 inputs2) (nth 0 inputs1))
                    (booleanp (nth 2 inputs2)))
               (not (and (interl$out-act inputs2 st2 data-size2)
-                        (gcd$in-act inputs1 st1 data-size1))))
+                        (gcd1$in-act inputs1 st1 data-size1))))
      :hints (("Goal" :cases ((nth 2 inputs2))))))
 
   (local
@@ -828,14 +828,14 @@
                             data-size))
     :hints (("Goal"
              :use (igcd$input-format=>interl$input-format
-                   igcd$input-format=>gcd$input-format)
+                   igcd$input-format=>gcd1$input-format)
              :in-theory (e/d (get-field
                               igcd$valid-st
                               igcd$step
                               igcd$interl-inputs
-                              igcd$gcd-inputs)
+                              igcd$gcd1-inputs)
                              (igcd$input-format=>interl$input-format
-                              igcd$input-format=>gcd$input-format
+                              igcd$input-format=>gcd1$input-format
                               link$valid-st
                               link$step
                               nfix)))))

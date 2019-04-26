@@ -27,10 +27,10 @@
 
 (progn
   (defun interl$map-to-links (st)
-    (b* ((q20-l0 (get-field *interl$q20-l0* st))
-         (q20-l1 (get-field *interl$q20-l1* st)))
-      (append (list (cons 'q20-l0 (queue20-l$map-to-links q20-l0)))
-              (list (cons 'q20-l1 (queue20-l$map-to-links q20-l1))))))
+    (b* ((q40-l0 (get-field *interl$q40-l0* st))
+         (q40-l1 (get-field *interl$q40-l1* st)))
+      (append (list (cons 'q40-l0 (queue40-l$map-to-links q40-l0)))
+              (list (cons 'q40-l1 (queue40-l$map-to-links q40-l1))))))
 
   (defun interl$map-to-links-list (x)
     (if (atom x)
@@ -40,9 +40,9 @@
 
   (defund interl$st-gen (data-size)
     (declare (xargs :guard (natp data-size)))
-    (b* ((q20-l0 (queue20-l$st-gen data-size))
-         (q20-l1 (queue20-l$st-gen data-size)))
-      (list q20-l0 q20-l1)))
+    (b* ((q40-l0 (queue40-l$st-gen data-size))
+         (q40-l1 (queue40-l$st-gen data-size)))
+      (list q40-l0 q40-l1)))
 
   (defund interl$ins-and-st-test (data-size n state)
     (declare (xargs :guard (and (natp data-size)
@@ -109,10 +109,10 @@
   (defun igcd$map-to-links (st)
     (b* ((l (get-field *igcd$l* st))
          (interl (get-field *igcd$interl* st))
-         (gcd (get-field *igcd$gcd* st)))
+         (gcd1 (get-field *igcd$gcd1* st)))
       (append (list (cons 'interl (interl$map-to-links interl)))
               (map-to-links (list (cons 'l l)))
-              (list (cons 'gcd (gcd$map-to-links gcd))))))
+              (list (cons 'gcd1 (gcd1$map-to-links gcd1))))))
 
   (defun igcd$map-to-links-list (x)
     (if (atom x)
@@ -125,8 +125,8 @@
     (b* ((empty '(nil))
          (invalid-data (make-list (* 2 data-size) :initial-element '(x)))
          (interl (interl$st-gen (* 2 data-size)))
-         (gcd (gcd$st-gen data-size)))
-      (list (list empty invalid-data) interl gcd)))
+         (gcd1 (gcd1$st-gen data-size)))
+      (list (list empty invalid-data) interl gcd1)))
 
   (defund igcd$ins-and-st-test (data-size n state)
     (declare (xargs :guard (and (natp data-size)

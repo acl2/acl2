@@ -20,32 +20,36 @@ gcd-alg.lisp: a GCD algorithm and its correctness theorems.
 
 gcd-spec.lisp: a GCD specification at the bit-vector level.
 
-gcd.lisp: a circuit family, gcd, computing the Greatest Common Divisor
+gcd-body1.lisp: a combinational circuit model, gcd-body1, performing
+the GCD operation in one iteration.  It is constructed using the
+ripple-carry subtractor ripple-sub.
+
+gcd1.lisp: a circuit model, gcd1, computing the Greatest Common Divisor
 (GCD) of two natural numbers.
 
-comp-gcd-body.lisp: a circuit family, comp-gcd-body, performing the
+gcd-body2.lisp: a sequential circuit model, gcd-body2, performing the
 GCD operation in one iteration.  It is constructed using the
 ripple-carry subtractor ripple-sub.
 
-comp-gcd.lisp: a GCD circuit family, c-gcd, that contains
-comp-gcd-body as a submodule.
+gcd2.lisp: a GCD circuit model, gcd2, that contains gcd-body2 as a
+submodule.
 
-comp-gcd-body2.lisp: a circuit family, comp-gcd-body2, performing the
+gcd-body3.lisp: a sequential circuit model, gcd-body3, performing the
 GCD operation in one iteration.  It is constructed using the
 self-timed serial subtractor serial-sub.
 
-comp-gcd2.lisp: a GCD circuit family, c-gcd2, that contains
-comp-gcd-body2 as a submodule.
+gcd3.lisp: a GCD circuit model, gcd3, that contains gcd-body3 as a
+submodule.
 
-comp-gcd-cond.lisp: a circuit family, comp-gcd-cond, performing the
+comp-gcd-cond.lisp: a circuit model, comp-gcd-cond, performing the
 GCD condition. It contains Q2 and Q3 as submodules.
 
-comp-gcd3.lisp: a GCD circuit family, c-gcd3, that contains comp-gcd-cond
+comp-gcd.lisp: a GCD circuit model, c-gcd, that contains comp-gcd-cond
 as a submodule.
 
-q10-gcd.lisp: a GCD circuit family, q10-gcd, that concatenates Q10 and
-gcd.
+q10-gcd1.lisp: a GCD circuit model, q10-gcd1, that concatenates Q10 and
+gcd1.
 
-q10-comp-gcd3.lisp: a GCD circuit family, q10-c-gcd3, that concatenates
-Q10 and c-gcd3.
+q10-comp-gcd.lisp: a GCD circuit model, q10-c-gcd, that concatenates
+Q10 and c-gcd.
 

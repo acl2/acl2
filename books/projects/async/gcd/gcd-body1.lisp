@@ -17,28 +17,28 @@
 
 ;; ======================================================================
 
-;; DE Module Generator of GCD-BODY
+;; DE Module Generator of GCD-BODY1
 ;;
-;; GCD-BODY performs the gcd operation in one iteration.
+;; GCD-BODY1 performs the gcd operation in one iteration.
 
-(defconst *gcd-body$go-num* *merge$go-num*)
+(defconst *gcd-body1$go-num* *merge$go-num*)
 
-(defun gcd-body$data-ins-len (data-size)
+(defun gcd-body1$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
   (+ 2 (* 2 (mbe :logic (nfix data-size)
                  :exec  data-size))))
 
-(defun gcd-body$ins-len (data-size)
+(defun gcd-body1$ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
-  (+ (gcd-body$data-ins-len data-size)
-     *gcd-body$go-num*))
+  (+ (gcd-body1$data-ins-len data-size)
+     *gcd-body1$go-num*))
 
 (module-generator
- gcd-body* (data-size)
- (si 'gcd-body data-size)
+ gcd-body1* (data-size)
+ (si 'gcd-body1 data-size)
  (list* 'full-in 'empty-out-
         (append (sis 'data-in 0 (* 2 data-size))
-                (sis 'go 0 *gcd-body$go-num*)))
+                (sis 'go 0 *gcd-body1$go-num*)))
  (list* 'act
         (sis 'data-out 0 (* 2 data-size)))
  ()
@@ -81,25 +81,25 @@
  (declare (xargs :guard (natp data-size))))
 
 ;; DE netlist generator.  A generated netlist will contain an instance of
-;; GCD-BODY.
+;; GCD-BODY1.
 
-(defund gcd-body$netlist (data-size)
+(defund gcd-body1$netlist (data-size)
   (declare (xargs :guard (natp data-size)))
-  (cons (gcd-body* data-size)
+  (cons (gcd-body1* data-size)
         (union$ (merge$netlist (* 2 data-size))
                 (v-buf$netlist (* 2 data-size))
                 (v-<$netlist data-size)
                 (ripple-sub$netlist data-size)
                 :test 'equal)))
 
-;; Recognizer for GCD-BODY
+;; Recognizer for GCD-BODY1
 
-(defund gcd-body& (netlist data-size)
+(defund gcd-body1& (netlist data-size)
   (declare (xargs :guard (and (alistp netlist)
                               (natp data-size))))
-  (b* ((subnetlist (delete-to-eq (si 'gcd-body data-size) netlist)))
-    (and (equal (assoc (si 'gcd-body data-size) netlist)
-                (gcd-body* data-size))
+  (b* ((subnetlist (delete-to-eq (si 'gcd-body1 data-size) netlist)))
+    (and (equal (assoc (si 'gcd-body1 data-size) netlist)
+                (gcd-body1* data-size))
          (merge& subnetlist (* 2 data-size))
          (v-buf& subnetlist (* 2 data-size))
          (v-<& subnetlist data-size)
@@ -108,123 +108,123 @@
 ;; Sanity check
 
 (local
- (defthmd check-gcd-body$netlist-64
-   (and (net-syntax-okp (gcd-body$netlist 64))
-        (net-arity-okp (gcd-body$netlist 64))
-        (gcd-body& (gcd-body$netlist 64) 64))))
+ (defthmd check-gcd-body1$netlist-64
+   (and (net-syntax-okp (gcd-body1$netlist 64))
+        (net-arity-okp (gcd-body1$netlist 64))
+        (gcd-body1& (gcd-body1$netlist 64) 64))))
 
-;; Extract the input and output signals for GCD-BODY
+;; Extract the input and output signals for GCD-BODY1
 
 (progn
   ;; Extract the input data
 
-  (defun gcd-body$data-in (inputs data-size)
+  (defun gcd-body1$data-in (inputs data-size)
     (declare (xargs :guard (and (true-listp inputs)
                                 (natp data-size))))
     (take (* 2 (mbe :logic (nfix data-size)
                     :exec  data-size))
           (nthcdr 2 inputs)))
 
-  (defthm len-gcd-body$data-in
-    (equal (len (gcd-body$data-in inputs data-size))
+  (defthm len-gcd-body1$data-in
+    (equal (len (gcd-body1$data-in inputs data-size))
            (* 2 (nfix data-size))))
 
-  (in-theory (disable gcd-body$data-in))
+  (in-theory (disable gcd-body1$data-in))
 
   ;; Extract the "a<b" signal
 
-  (defund gcd-body$a<b (inputs data-size)
-    (b* ((data-in (gcd-body$data-in inputs data-size)))
+  (defund gcd-body1$a<b (inputs data-size)
+    (b* ((data-in (gcd-body1$data-in inputs data-size)))
       (fv-< nil t
             (rev (take data-size data-in))
             (rev (nthcdr data-size data-in)))))
 
   ;; Extract the 1st input data item for the merge
 
-  (defund gcd-body$data0-out (inputs data-size)
-    (b* ((data-in (gcd-body$data-in inputs data-size)))
+  (defund gcd-body1$data0-out (inputs data-size)
+    (b* ((data-in (gcd-body1$data-in inputs data-size)))
       (v-threefix
        (append (fv-adder-output t
                                 (take data-size data-in)
                                 (fv-not (nthcdr data-size data-in)))
                (nthcdr data-size data-in)))))
 
-  (defthm len-gcd-body$data0-out
-    (equal (len (gcd-body$data0-out inputs data-size))
+  (defthm len-gcd-body1$data0-out
+    (equal (len (gcd-body1$data0-out inputs data-size))
            (* 2 (nfix data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$data0-out))))
+    :hints (("Goal" :in-theory (enable gcd-body1$data0-out))))
 
-  (defthm bvp-gcd-body$data0-out
-    (implies (bvp (gcd-body$data-in inputs data-size))
-             (bvp (gcd-body$data0-out inputs data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$data0-out))))
+  (defthm bvp-gcd-body1$data0-out
+    (implies (bvp (gcd-body1$data-in inputs data-size))
+             (bvp (gcd-body1$data0-out inputs data-size)))
+    :hints (("Goal" :in-theory (enable gcd-body1$data0-out))))
 
   ;; Extract the 2nd input data item for the merge
 
-  (defund gcd-body$data1-out (inputs data-size)
-    (b* ((data-in (gcd-body$data-in inputs data-size)))
+  (defund gcd-body1$data1-out (inputs data-size)
+    (b* ((data-in (gcd-body1$data-in inputs data-size)))
       (v-threefix
        (append (fv-adder-output t
                                 (nthcdr data-size data-in)
                                 (fv-not (take data-size data-in)))
                (take data-size data-in)))))
 
-  (defthm len-gcd-body$data1-out
-    (equal (len (gcd-body$data1-out inputs data-size))
+  (defthm len-gcd-body1$data1-out
+    (equal (len (gcd-body1$data1-out inputs data-size))
            (* 2 (nfix data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$data1-out))))
+    :hints (("Goal" :in-theory (enable gcd-body1$data1-out))))
 
-  (defthm bvp-gcd-body$data1-out
-    (implies (bvp (gcd-body$data-in inputs data-size))
-             (bvp (gcd-body$data1-out inputs data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$data1-out))))
+  (defthm bvp-gcd-body1$data1-out
+    (implies (bvp (gcd-body1$data-in inputs data-size))
+             (bvp (gcd-body1$data1-out inputs data-size)))
+    :hints (("Goal" :in-theory (enable gcd-body1$data1-out))))
 
   ;; Extract the inputs for the merge joint
 
-  (defund gcd-body$me-inputs (inputs data-size)
+  (defund gcd-body1$me-inputs (inputs data-size)
     (b* ((full-in    (nth 0 inputs))
          (empty-out- (nth 1 inputs))
-         (go-signals (nthcdr (gcd-body$data-ins-len data-size) inputs))
+         (go-signals (nthcdr (gcd-body1$data-ins-len data-size) inputs))
 
-         (a<b (gcd-body$a<b inputs data-size))
-         (data0-out (gcd-body$data0-out inputs data-size))
-         (data1-out (gcd-body$data1-out inputs data-size)))
+         (a<b (gcd-body1$a<b inputs data-size))
+         (data0-out (gcd-body1$data0-out inputs data-size))
+         (data1-out (gcd-body1$data1-out inputs data-size)))
       (list* full-in full-in empty-out- a<b
              (append data0-out data1-out go-signals))))
 
   ;; Extract the "act" signal
 
-  (defund gcd-body$act (inputs data-size)
-    (merge$act (gcd-body$me-inputs inputs data-size)
+  (defund gcd-body1$act (inputs data-size)
+    (merge$act (gcd-body1$me-inputs inputs data-size)
                (* 2 data-size)))
 
-  (defthm gcd-body$act-inactive
+  (defthm gcd-body1$act-inactive
     (implies (or (not (nth 0 inputs))
                  (equal (nth 1 inputs) t))
-             (not (gcd-body$act inputs data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$me-inputs
-                                       gcd-body$act))))
+             (not (gcd-body1$act inputs data-size)))
+    :hints (("Goal" :in-theory (enable gcd-body1$me-inputs
+                                       gcd-body1$act))))
 
   ;; Extract the output data
 
-  (defund gcd-body$data-out (inputs data-size)
-    (fv-if (gcd-body$a<b inputs data-size)
-           (gcd-body$data1-out inputs data-size)
-           (gcd-body$data0-out inputs data-size)))
+  (defund gcd-body1$data-out (inputs data-size)
+    (fv-if (gcd-body1$a<b inputs data-size)
+           (gcd-body1$data1-out inputs data-size)
+           (gcd-body1$data0-out inputs data-size)))
 
-  (defthm len-gcd-body$data-out
-    (equal (len (gcd-body$data-out inputs data-size))
+  (defthm len-gcd-body1$data-out
+    (equal (len (gcd-body1$data-out inputs data-size))
            (* 2 (nfix data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$data-out))))
+    :hints (("Goal" :in-theory (enable gcd-body1$data-out))))
 
-  (defthm bvp-gcd-body$data-out
-    (implies (bvp (gcd-body$data-in inputs data-size))
-             (bvp (gcd-body$data-out inputs data-size)))
-    :hints (("Goal" :in-theory (enable gcd-body$a<b
-                                       gcd-body$data-out))))
+  (defthm bvp-gcd-body1$data-out
+    (implies (bvp (gcd-body1$data-in inputs data-size))
+             (bvp (gcd-body1$data-out inputs data-size)))
+    :hints (("Goal" :in-theory (enable gcd-body1$a<b
+                                       gcd-body1$data-out))))
   )
 
-;; The value lemma for GCD-BODY
+;; The value lemma for GCD-BODY1
 
 (encapsulate
   ()
@@ -236,33 +236,33 @@
               (equal (list (car l))
                      l))))
 
-  (defthm gcd-body$value
+  (defthm gcd-body1$value
     (b* ((inputs (list* full-in empty-out-
                         (append data-in go-signals))))
       (implies (and (posp data-size)
-                    (gcd-body& netlist data-size)
+                    (gcd-body1& netlist data-size)
                     (true-listp data-in)
                     (equal (len data-in) (* 2 data-size))
                     (true-listp go-signals)
-                    (equal (len go-signals) *gcd-body$go-num*))
-               (equal (se (si 'gcd-body data-size) inputs st netlist)
-                      (list* (gcd-body$act inputs data-size)
-                             (gcd-body$data-out inputs data-size)))))
+                    (equal (len go-signals) *gcd-body1$go-num*))
+               (equal (se (si 'gcd-body1 data-size) inputs st netlist)
+                      (list* (gcd-body1$act inputs data-size)
+                             (gcd-body1$data-out inputs data-size)))))
     :hints (("Goal"
              :do-not-induct t
              :expand (:free (inputs data-size)
-                            (se (si 'gcd-body data-size) inputs st netlist))
+                            (se (si 'gcd-body1 data-size) inputs st netlist))
              :in-theory (e/d (de-rules
                               fv-adder-output
-                              gcd-body&
-                              gcd-body*$destructure
-                              gcd-body$data-in
-                              gcd-body$me-inputs
-                              gcd-body$a<b
-                              gcd-body$act
-                              gcd-body$data-out
-                              gcd-body$data0-out
-                              gcd-body$data1-out)
+                              gcd-body1&
+                              gcd-body1*$destructure
+                              gcd-body1$data-in
+                              gcd-body1$me-inputs
+                              gcd-body1$a<b
+                              gcd-body1$act
+                              gcd-body1$data-out
+                              gcd-body1$data0-out
+                              gcd-body1$data1-out)
                              (append-take-nthcdr
                               de-module-disabled-rules)))))
   )

@@ -1,4 +1,4 @@
-# Copyright (C) 2017, Regents of the University of Texas
+# Copyright (C) 2019, Regents of the University of Texas
 # Written by Cuong Chau <ckcuong@cs.utexas.edu>
 # License: A 3-clause BSD license.  See the LICENSE file distributed with
 # ACL2.
@@ -26,7 +26,7 @@ JOBS ?= 4
 #======================================================================
 
 all:
-	$(BUILD_DIR)/cert.pl -j $(JOBS) -a $(ACL2) *.lisp arbitration/*.lisp fifo/*.lisp gcd/*.lisp serial-adder/*.lisp serial-adder/32-bit-serial-adder-old/*.lisp telescope/*.lisp
+	$(BUILD_DIR)/cert.pl -j $(JOBS) -a $(ACL2) *.lisp
 
 clean:
 	$(BUILD_DIR)/clean.pl

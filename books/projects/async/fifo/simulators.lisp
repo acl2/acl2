@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; April 2019
 
 (in-package "ADE")
 
@@ -13,9 +13,11 @@
 (include-book "queue10")
 (include-book "queue11-l")
 (include-book "queue20-l")
+(include-book "queue40-l")
 (include-book "round-robin1")
 (include-book "round-robin2")
 (include-book "round-robin3")
+(include-book "round-robin4")
 (include-book "wig-wag")
 
 ;; ======================================================================
@@ -35,13 +37,15 @@
 ;;; 11. Q10-L
 ;;; 12. Q11-L
 ;;; 13. Q20-L
-;;; 14. COMP-V-OR
-;;; 15. ALT-MERGE
-;;; 16. ALT-BRANCH
-;;; 17. WW
-;;; 18. RR1
-;;; 19. RR2
-;;; 20. RR3
+;;; 14. Q40-L
+;;; 15. COMP-V-OR
+;;; 16. ALT-MERGE
+;;; 17. ALT-BRANCH
+;;; 18. WW
+;;; 19. RR1
+;;; 20. RR2
+;;; 21. RR3
+;;; 22. RR4
 
 ;; ======================================================================
 
@@ -1095,7 +1099,84 @@
        state)))
   )
 
-;; 14. COMP-V-OR
+;; 14. Q40-L
+
+(progn
+  (defun queue40-l$map-to-links (st)
+    (b* ((q20-l0 (get-field *queue40-l$q20-l0* st))
+         (q20-l1 (get-field *queue40-l$q20-l1* st)))
+      (append (list (cons 'q20-l0 (queue10-l$map-to-links q20-l0)))
+              (list (cons 'q20-l1 (queue10-l$map-to-links q20-l1))))))
+
+  (defun queue40-l$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (queue40-l$map-to-links (car x))
+            (queue40-l$map-to-links-list (cdr x)))))
+
+  (defund queue40-l$st-gen (data-size)
+    (declare (xargs :guard (natp data-size)))
+    (b* ((q20-l0 (queue10-l$st-gen data-size))
+         (q20-l1 (queue10-l$st-gen data-size)))
+      (list q20-l0 q20-l1)))
+
+  (defund queue40-l$ins-and-st-test (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue40-l$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue40-l$st-gen data-size)))
+      (mv (and (queue40-l$input-format-n inputs-seq st data-size n)
+               (queue40-l$valid-st st data-size))
+          state)))
+
+  (local
+   (defthm queue40-l$ins-and-st-test-ok
+     (queue40-l$ins-and-st-test 4 10 state)))
+
+  (defund queue40-l$sim (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue40-l$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue40-l$st-gen data-size)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (queue40-l$map-to-links-list
+             (de-sim-trace (si 'queue40-l data-size)
+                           inputs-seq
+                           st
+                           (queue40-l$netlist data-size))))
+           0)
+          state)))
+
+  (defund queue40-l$in-out-sim (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (queue40-l$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (queue40-l$st-gen data-size)))
+      (mv
+       (append
+        (list (cons 'in-seq
+                    (v-to-nat-lst
+                     (queue40-l$in-seq inputs-seq st data-size n))))
+        (list (cons 'out-seq
+                    (v-to-nat-lst
+                     (queue40-l$out-seq inputs-seq st data-size n)))))
+       state)))
+  )
+
+;; 15. COMP-V-OR
 
 (progn
   (defun comp-v-or$map-to-links (st)
@@ -1187,7 +1268,7 @@
        state)))
   )
 
-;; 15. ALT-MERGE
+;; 16. ALT-MERGE
 
 (progn
   (defun alt-merge$map-to-links (st)
@@ -1225,7 +1306,7 @@
           state)))
   )
 
-;; 16. ALT-BRANCH
+;; 17. ALT-BRANCH
 
 (progn
   (defun alt-branch$map-to-links (st)
@@ -1263,7 +1344,7 @@
           state)))
   )
 
-;; 17. WW
+;; 18. WW
 
 (progn
   (defun wig-wag$map-to-links (st)
@@ -1352,7 +1433,7 @@
        state)))
   )
 
-;; 18. RR1
+;; 19. RR1
 
 (progn
   (defun round-robin1$map-to-links (st)
@@ -1453,7 +1534,7 @@
        state)))
   )
 
-;; 19. RR2
+;; 20. RR2
 
 (progn
   (defun round-robin2$map-to-links (st)
@@ -1541,7 +1622,7 @@
        state)))
   )
 
-;; 20. RR3
+;; 21. RR3
 
 (progn
   (defun round-robin3$map-to-links (st)
@@ -1629,4 +1710,90 @@
        state)))
   )
 
+;; 22. RR4
 
+(progn
+  (defun round-robin4$map-to-links (st)
+    (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
+         (q40-l1 (get-field *round-robin4$q40-l1* st))
+         (br (get-field *round-robin4$br* st))
+         (me (get-field *round-robin4$me* st)))
+      (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
+              (list (cons 'q40-l0 (queue40-l$map-to-links q40-l0)))
+              (list (cons 'q40-l1 (queue40-l$map-to-links q40-l1)))
+              (list (cons 'alt-merge (alt-merge$map-to-links me))))))
+
+  (defun round-robin4$map-to-links-list (x)
+    (if (atom x)
+        nil
+      (cons (round-robin4$map-to-links (car x))
+            (round-robin4$map-to-links-list (cdr x)))))
+
+  (defund round-robin4$st-gen (data-size)
+    (declare (xargs :guard (natp data-size)))
+    (b* ((full '(t))
+         (empty '(nil))
+         (q40-l0 (queue40-l$st-gen data-size))
+         (q40-l1 (queue40-l$st-gen data-size))
+         (br (list (list full '(nil))
+                   (list empty '(x))))
+         (me (list (list full '(nil))
+                   (list empty '(x)))))
+      (list q40-l0 q40-l1 br me)))
+
+  (defund round-robin4$ins-and-st-test (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (round-robin4$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (round-robin4$st-gen data-size)))
+      (mv (and (round-robin4$input-format-n inputs-seq data-size n)
+               (round-robin4$valid-st st data-size)
+               (round-robin4$inv st))
+          state)))
+
+  (local
+   (defthm round-robin4$ins-and-st-test-ok
+     (round-robin4$ins-and-st-test 4 10 state)))
+
+  (defund round-robin4$sim (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (round-robin4$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (round-robin4$st-gen data-size)))
+      (mv (pretty-list
+           (remove-dup-neighbors
+            (round-robin4$map-to-links-list
+             (de-sim-trace (si 'round-robin4 data-size)
+                           inputs-seq
+                           st
+                           (round-robin4$netlist data-size))))
+           0)
+          state)))
+
+  (defund round-robin4$in-out-sim (data-size n state)
+    (declare (xargs :guard (and (natp data-size)
+                                (natp n))
+                    :verify-guards nil
+                    :stobjs state))
+    (b* ((num-signals (round-robin4$ins-len data-size))
+         ((mv inputs-seq state)
+          (signal-vals-gen num-signals n state nil))
+         (st (round-robin4$st-gen data-size)))
+      (mv
+       (append
+        (list (cons 'in-seq
+                    (v-to-nat-lst
+                     (round-robin4$in-seq inputs-seq st data-size n))))
+        (list (cons 'out-seq
+                    (v-to-nat-lst
+                     (round-robin4$out-seq inputs-seq st data-size n)))))
+       state)))
+  )
