@@ -774,7 +774,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection nat=>digits=>nat-inversion-theorems
+(defsection nat=>digits=>nat-inverses-theorems
   :short "Theorems about converting natural numbers to digits and back."
   :long
   (xdoc::topstring
@@ -841,7 +841,7 @@
     "The conversions from natural numbers to digits
      are injective over natural numbers.
      These are simple consequences of the
-     <see topic='@(url nat=>digits=>nat-inversion-theorems)'>theorems about
+     <see topic='@(url nat=>digits=>nat-inverses-theorems)'>theorems about
      converting natural numbers to digits and back</see>."))
 
   (defrule nat=>lendian*-injectivity
@@ -1168,7 +1168,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection digits=>nat=>digits-inversion-theorems
+(defsection digits=>nat=>digits-inverses-theorems
   :short "Theorems about converting digits to natural numbers and back."
   :long
   (xdoc::topstring
@@ -1295,7 +1295,7 @@
     "The conversions from digits to natural numbers are injective
      over digits without superfluous zeros in the most significant positions.
      These are simple consequences of the
-     <see topic='@(url digits=>nat=>digits-inversion-theorems)'>theorems about
+     <see topic='@(url digits=>nat=>digits-inverses-theorems)'>theorems about
      converting digits to natural numbers and back</see>.
      The absence of suprfluous digits can be expressed by saying that
      the digits, fixed with @(tsee dab-digit-list-fix),
