@@ -12,5 +12,6 @@
 
 (include-book "core")
 (include-book "defdigits")
+(include-book "defthm-dab-return-types")
 (include-book "pow2")
 (include-book "pow2-instances")
