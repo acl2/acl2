@@ -1,6 +1,6 @@
-; ABNF Library (Excluding Examples)
+; ABNF (Excluding Examples)
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,8 @@
 
 (in-package "ABNF")
 
+; the order of the following INCLUDE-BOOKs determines
+; the order of the subtopics of the ABNF topic below:
 (include-book "abstract-syntax")
 (include-book "semantics")
 (include-book "operations")
@@ -71,51 +73,52 @@
 
    <p>
    In the documentation of this library,
-   `RFC' refers to the result of updating RFC 5234 as specified by RFC 7405.
-   Sections and subsections of RFC are referenced
-   by appending their numbers to `RFC:'.
-   For example, `RFC:3' refers to Section 3 of RFC 5234.
-   As another example, `RFC:2.3' refers to
+   `[RFC]' refers to the result of updating RFC 5234 as specified by RFC 7405.
+   Sections and subsections of [RFC] are referenced
+   by appending their designations separated by colon:
+   for example, `[RFC:3]' refers to Section 3 of RFC 5234.
+   As another example, `[RFC:2.3]' refers to
    the result of updating Section 2.3 of RFC 5234
    as specified in Section 2.1 of RFC 7405.
-   These references are enclosed in square brackets when used parenthetically,
-   as often done with bibliographic references.
+   These square-bracketed references may be used
+   as nouns or parenthetically.
    </p>
 
    <p>
-   The Kestrel Institute Technical Report
-   ``ABNF in ACL2'' of April 2017,
-   available <a href=\"http://www.kestrel.edu/~coglio\">here</a>,
+   The <a href=\"https://www.kestrel.edu/home/people/coglio/vstte18.pdf\"
+   >VSTTE 2018 paper
+   ``A Formalization of the ABNF Notation
+   and a Verified Parser of ABNF Grammars''</a>
+   by Alessandro Coglio
    provides an overview
    of the formalization of the ABNF notation
    and of the verified parser
    (but not of the operations on ABNF grammars).
-   The differences between the technical report and the ABNF library
-   are described
-   <see topic='@(url differences-with-technical-report)'>here</see>.
+   The differences between the paper and the ABNF library
+   are described <see topic='@(url differences-with-paper)'>here</see>.
    </p>"
 
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc differences-with-technical-report
+(defxdoc differences-with-paper
 
   :parents (abnf)
 
-  :short "Differences with the technical report."
+  :short "Differences with the paper."
 
   :long
 
   "<p>
-   For brevity, the technical report makes the following slight simplfications
+   For brevity, the paper makes the following slight simplfications
    compared to the ABNF library:
    </p>
 
    <ul>
 
      <li>
-     The forms in the technical reports omit
+     The forms in the paper omit
      guards,
      rule classes,
      measures,
@@ -126,7 +129,7 @@
      </li>
 
      <li>
-     The technical report uses
+     The paper uses
      @(tsee defun),
      @(tsee mutual-recursion),
      @(tsee defthm), and
@@ -139,13 +142,13 @@
      </li>
 
      <li>
-     The technical report uses slightly shorter names
+     The paper uses slightly shorter names
      for the parameters of some functions
      (e.g. @('alt') instead of @('alternation')).
      </li>
 
      <li>
-     The technical report uses @('*abnf-grammar*')
+     The paper uses @('*abnf-grammar*')
      as the name of the constant @(tsee *all-concrete-syntax-rules*).
      </li>
 

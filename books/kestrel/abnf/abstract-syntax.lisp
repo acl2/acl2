@@ -1,6 +1,6 @@
-; ABNF Library -- Abstract Syntax
+; ABNF -- Abstract Syntax
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,10 +39,10 @@
   "<p>
    ABNF is a language to describe the concrete syntax of languages.
    Being itself a language,
-   ABNF has its own concrete syntax, described in RFC:4 using ABNF itself.
+   ABNF has its own concrete syntax, described in [RFC:4] using ABNF itself.
    To break the self-description circularity,
    we start by formalizing an abstract syntax of ABNF,
-   based on an inspection of the concrete syntax in RFC:4.
+   based on an inspection of the concrete syntax in [RFC:4].
    The ABNF abstract syntax abstracts away from the ABNF concrete syntax
    things that are not relevant to the ABNF @(see semantics),
    such as blank space and comments,
@@ -57,10 +57,10 @@
   "<p>
    In the abstract syntax,
    we use character strings
-   for the rule names described in RFC:2.1
-   and by the rule @('rulename') in RFC:4.
+   for the rule names described in [RFC:2.1]
+   and by the rule @('rulename') in [RFC:4].
    We abstract away the restrictions on the characters allowed in rule names,
-   which RFC:4 requires to start with a letter
+   which [RFC:4] requires to start with a letter
    and only use letters, digits, and dashes;
    these are ACL2 characters.
    These restrictions are captured by the notion of
@@ -169,11 +169,11 @@
   "<p>
    In the abstract syntax,
    we use lists of natural numbers
-   for the numeric value notations described in RFC:2.3,
+   for the numeric value notations described in [RFC:2.3],
    and pairs of natural numbers
-   for the value range alternatives described in RFC:3.4;
+   for the value range alternatives described in [RFC:3.4];
    both notations are described by the rule @('num-val') (and sub-rules)
-   in RFC:4.
+   in [RFC:4].
    We abstract away the radix notations @('%b'), @('%d'), and @('%x').
    We also abstract away the restriction
    that lists of natural numbers be non-empty.
@@ -192,8 +192,8 @@
   "<p>
    In the abstract syntax,
    we use character strings
-   for the literal text strings described in RFC:2.3
-   and by the rule @('char-val') (and sub-rules) in RFC:4.
+   for the literal text strings described in [RFC:2.3]
+   and by the rule @('char-val') (and sub-rules) in [RFC:4].
    We tag strings with an indication of their case sensitivity,
    corresponding to the @('%s') and @('%i') notations.
    We abstract away the restriction
@@ -212,7 +212,7 @@
   "<p>
    In the abstract syntax,
    we use character strings
-   for the bracketed prose described by the rule @('prose-val') in RFC:4.
+   for the bracketed prose described by the rule @('prose-val') in [RFC:4].
    We abstract away the restriction
    that the prose include only certain characters
    (which all are ACL2 characters).
@@ -229,10 +229,10 @@
   :long
   "<p>
    In the abstract syntax,
-   for the repetition notation described in RFC:3.6 and RFC:3.7
-   and by rule @('repeat') in RFC:4,
+   for the repetition notation described in [RFC:3.6] and [RFC:3.7]
+   and by rule @('repeat') in [RFC:4],
    we use pairs of natural numbers and natural numbers plus infinity.
-   A specific repetition [RFC:3.7 is abstracted
+   A specific repetition [RFC:3.7] is abstracted
    to a variable repetition [RFC:3.6] with the same minimum and maximum.
    A repetition with a missing lower bound is abstracted
    to one with the default (i.e. 0) as lower bound.
@@ -256,8 +256,8 @@
     :long
     "<p>
      In the abstract syntax,
-     for the alternatives described in RFC:3.2
-     and by rule @('alternation') in RFC:4,
+     for the alternatives described in [RFC:3.2]
+     and by rule @('alternation') in [RFC:4],
      we use true lists of @(see concatenation)s.
      We abstract away comments and blank space.
      We also abstract away the restriction that
@@ -276,8 +276,8 @@
     :long
     "<p>
      In the abstract syntax,
-     for the concatenations described in RFC:3.1
-     and by rule @('concatenation') in RFC:4,
+     for the concatenations described in [RFC:3.1]
+     and by rule @('concatenation') in [RFC:4],
      we use true lists of @(see repetition)s.
      We abstract away comments and blank space.
      We also abstract away the restriction that
@@ -296,8 +296,8 @@
     :long
     "<p>
      In the abstract syntax,
-     for the repetitions described in RFC:3.6 and RFC:3.7
-     and by rule @('repetition') in RFC:4,
+     for the repetitions described in [RFC:3.6] and [RFC:3.7]
+     and by rule @('repetition') in [RFC:4],
      we use pairs consisting of repetition ranges and elements.
      A repetition with a missing repetition range is abstracted
      to one with a repetition range from 1 to 1.
@@ -316,7 +316,7 @@
     "<p>
      In the abstract syntax,
      an element (of a @(see repetition))
-     is defined in accordance with rule @('element') in RFC:4.
+     is defined in accordance with rule @('element') in [RFC:4].
      </p>"
     (:rulename ((get rulename)))
     (:group ((get alternation)))
@@ -338,7 +338,7 @@
    an indication of whether the rule provides incremental alternatives
    [RFC:3.3],
    and an alternation that defines the rule.
-   This corresponds to rule @('rule') in RFC:4,
+   This corresponds to rule @('rule') in [RFC:4],
    abstracting away comments and blank space.
    </p>"
   ((name rulename)
@@ -361,7 +361,7 @@
   "<p>
    In the abstract syntax,
    we use true lists of rules.
-   This corresponds to @('rulelist') in RFC:4,
+   This corresponds to @('rulelist') in [RFC:4],
    abstracting away comments and blank space.
    </p>"
   :elt-type rule
