@@ -14,13 +14,14 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/zp-lists" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc digits-any-base
+(defxdoc+ digits-any-base
   :parents (kestrel-utilities)
   :short "Conversions between natural numbers
           and their representations as digits in arbitrary bases."
@@ -36,9 +37,8 @@
    (xdoc::p
     "The name of some functions in these utilities start with @('dab'),
      which stands for `digits any base'.
-     Without this prefix, the names seem too ``general''.")))
-
-(local (xdoc::set-default-parents digits-any-base))
+     Without this prefix, the names seem too ``general''."))
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
