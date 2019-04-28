@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Digits in Arbitrary Bases -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -204,6 +204,30 @@
 (assert-equal (trim-lendian+ '(0 1)) '(0 1))
 
 (assert-equal (trim-lendian+ '(0 0)) '(0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (group-bendian 2 8 '(1 1 1 1 0 0 0 0 1 1 0 0 0 0 0 0)) '(240 192))
+
+(assert-equal (group-bendian 10 2 '(1 2 3 4 5 6)) '(12 34 56))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (group-lendian 2 8 '(1 1 1 1 0 0 0 0 1 1 0 0 0 0 0 0)) '(15 3))
+
+(assert-equal (group-lendian 10 2 '(1 2 3 4 5 6)) '(21 43 65))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (ungroup-bendian 2 8 '(254 1)) '(1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 1))
+
+(assert-equal (ungroup-bendian 10 2 '(98 8 0)) '(9 8 0 8 0 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (ungroup-lendian 2 8 '(254 1)) '(0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0))
+
+(assert-equal (ungroup-lendian 10 2 '(98 8 0)) '(8 9 8 0 0 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

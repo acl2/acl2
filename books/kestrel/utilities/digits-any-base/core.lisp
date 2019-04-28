@@ -1390,6 +1390,226 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define group-lendian ((base dab-basep)
+                       (exp posp)
+                       (digits (dab-digit-listp base digits)))
+  :guard (integerp (/ (len digits) (pos-fix exp)))
+  :returns (new-digits
+            (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
+                             new-digits))
+  :short "Group digits from a smaller base to a larger base, little-endian."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The larger base must be a positive power of the smaller base.
+     The argument @('base') is the smaller base;
+     the argument @('exp') is the positive power that yields the larger base,
+     which is thus @('base^exp').
+     The order of these two arguments is so that
+     the base comes before the exponent.")
+   (xdoc::p
+    "The argument @('digits') consists of digits in the smaller base.
+     We first convert the digits to the natural number they represent,
+     and then we convert that to digits in the larger base.
+     This has the effect of grouping
+     each contiguous sub-sequence of @('exp') digits in the smaller base
+     into a single digit in the larger base.
+     The number of input digits must be a multiple of @('exp'),
+     so that they can be evenly grouped into digits in the larget base.")
+   (xdoc::p
+    "The grouping of digits is little-endian:
+     each sub-sequence of @('exp') digits in the smaller base
+     is converted to a little-endian natural number
+     that becomes a digit in the larger base.")
+   (xdoc::p
+    "This operation is useful, for example, to turn
+     a sequence of nibbles into one of bytes,
+     or a sequence of bits into one of bytes,
+     or a sequence of numbers below 10 into one of numbers below 100.")
+   (xdoc::p
+    "As a degenerate case, if @('exp') is 1,
+     this operation leaves the digits unchanged."))
+  (b* ((exp (pos-fix exp))
+       (base^exp (expt (dab-base-fix base) exp))
+       (nat (lendian=>nat base digits))
+       (number-of-new-digits (ceiling (len digits) exp))
+       (new-digits (nat=>lendian base^exp number-of-new-digits nat)))
+    new-digits)
+  :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  ///
+
+  (defrule len-of-group-lendian
+    (equal (len (group-lendian base exp digits))
+           (ceiling (len digits) (pos-fix exp))))
+
+  (defrule group-lendian-when-exp-is-1
+    (equal (group-lendian base 1 digits)
+           (dab-digit-list-fix base digits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define group-bendian ((base dab-basep)
+                       (exp posp)
+                       (digits (dab-digit-listp base digits)))
+  :guard (integerp (/ (len digits) (pos-fix exp)))
+  :returns (new-digits
+            (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
+                             new-digits))
+  :short "Group digits from a smaller base to a larger base, big-endian."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee group-lendian),
+     but each sub-sequence of @('exp') digits in the smaller base
+     is converted to a big-endian number as a digit in the larger base."))
+  (b* ((exp (pos-fix exp))
+       (base^exp (expt (dab-base-fix base) exp))
+       (nat (bendian=>nat base digits))
+       (number-of-new-digits (ceiling (len digits) exp))
+       (new-digits (nat=>bendian base^exp number-of-new-digits nat)))
+    new-digits)
+  :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  ///
+
+  (defrule len-of-group-bendian
+    (equal (len (group-bendian base exp digits))
+           (ceiling (len digits) (pos-fix exp))))
+
+  (defrule group-bendian-when-exp-is-1
+    (equal (group-bendian base 1 digits)
+           (dab-digit-list-fix base digits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ungroup-lendian ((base dab-basep)
+                         (exp posp)
+                         (digits
+                          (dab-digit-listp (expt (dab-base-fix base)
+                                                 (pos-fix exp))
+                                           digits)))
+  :returns (new-digits (dab-digit-listp base new-digits))
+  :short "Ungroup digits from a larger base to a smaller base, little-endian."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse of @(tsee group-lendian).
+     As in that function,
+     the argument @('base') is the smaller base,
+     and the argument @('exp') is such that @('base^exp') is the larger base.
+     The @('digits') argument consists of the digits in the larger base.
+     Each input digit in the larger base
+     is converted to @('exp') digits in the smaller base, little-endian.")
+   (xdoc::p
+    "This operation is useful, for example, to turn
+     a sequence of bytes into one of nibbles,
+     or a sequence of bytes into one of bits,
+     or a sequence of numbers below 100 into one of numbers below 10.")
+   (xdoc::p
+    "As a degenerate case, if @('exp') is 1,
+     this operation leaves the digits unchanged."))
+  (b* ((exp (pos-fix exp))
+       (base^exp (expt (dab-base-fix base) exp))
+       (nat (lendian=>nat base^exp digits))
+       (number-of-new-digits (* (len digits) exp))
+       (new-digits (nat=>lendian base number-of-new-digits nat)))
+    new-digits)
+  :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  ///
+
+  (defrule len-of-ungroup-lendian
+    (equal (len (ungroup-lendian base exp digits))
+           (* (len digits) (pos-fix exp))))
+
+  (defrule ungroup-lendian-when-exp-is-1
+    (equal (ungroup-lendian base 1 digits)
+           (dab-digit-list-fix base digits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ungroup-bendian ((base dab-basep)
+                         (exp posp)
+                         (digits
+                          (dab-digit-listp (expt (dab-base-fix base)
+                                                 (pos-fix exp))
+                                           digits)))
+  :returns (new-digits (dab-digit-listp base new-digits))
+  :short "Ungroup digits from a larger base to a smaller base, little-endian."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee ungroup-lendian),
+     but each digit in the larger base is converted to
+     a big-endian sequence of @('exp') digits in the smaller base."))
+  (b* ((exp (pos-fix exp))
+       (base^exp (expt (dab-base-fix base) exp))
+       (nat (bendian=>nat base^exp digits))
+       (number-of-new-digits (* (len digits) exp))
+       (new-digits (nat=>bendian base number-of-new-digits nat)))
+    new-digits)
+  :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
+  :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  ///
+
+  (defrule len-of-ungroup-bendian
+    (equal (len (ungroup-bendian base exp digits))
+           (* (len digits) (pos-fix exp))))
+
+  (defrule ungroup-bendian-when-exp-is-1
+    (equal (ungroup-bendian base 1 digits)
+           (dab-digit-list-fix base digits))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection group/ungroup-inverses-theorems
+  :short "Theorems about grouping and ungrouping digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee ungroup-lendian) is left inverse of @(tsee group-lendian),
+     over lists of digits whose length is a multiple of
+     the power that relates smaller and larger bases.")
+   (xdoc::p
+    "@(tsee ungroup-bendian) is left inverse of @(tsee group-bendian),
+     over lists of digits whose length is a multiple of
+     the power that relates smaller and larger bases.")
+   (xdoc::p
+    "@(tsee ungroup-lendian) is right inverse of @(tsee group-lendian).")
+   (xdoc::p
+    "@(tsee ungroup-bendian) is right inverse of @(tsee group-bendian)."))
+
+  (defrule ungroup-lendian-of-group-lendian
+    (implies (integerp (/ (len digits) (pos-fix exp)))
+             (equal (ungroup-lendian base exp (group-lendian base exp digits))
+                    (dab-digit-list-fix base digits)))
+    :enable (group-lendian ungroup-lendian dab-base-fix)
+    :prep-books ((include-book "arithmetic/top-with-meta" :dir :system)))
+
+  (defrule ungroup-bendian-of-group-bendian
+    (implies (integerp (/ (len digits) (pos-fix exp)))
+             (equal (ungroup-bendian base exp (group-bendian base exp digits))
+                    (dab-digit-list-fix base digits)))
+    :enable (group-bendian ungroup-bendian dab-base-fix)
+    :prep-books ((include-book "arithmetic/top-with-meta" :dir :system)))
+
+  (defrule group-lendian-of-ungroup-lendian
+    (equal (group-lendian base exp (ungroup-lendian base exp digits))
+           (dab-digit-list-fix (expt (dab-base-fix base) (pos-fix exp))
+                               digits))
+    :enable (group-lendian ungroup-lendian dab-base-fix)
+    :prep-books ((include-book "arithmetic/top-with-meta" :dir :system)))
+
+  (defrule group-bendian-of-ungroup-bendian
+    (equal (group-bendian base exp (ungroup-bendian base exp digits))
+           (dab-digit-list-fix (expt (dab-base-fix base) (pos-fix exp))
+                               digits))
+    :enable (group-bendian ungroup-bendian dab-base-fix)
+    :prep-books ((include-book "arithmetic/top-with-meta" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defthm-dab-return-types-fn ((eq-thm-name symbolp)
                                     (prefix symbolp)
                                     (topic symbolp)

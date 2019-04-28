@@ -230,6 +230,9 @@
 
  <p>Some theorems have been added.</p>
 
+ <p>Added operations to group digits in a smaller base into digits in a larger
+ base, and vice versa, in both big-endian and little-endian.</p>
+
  <p>The macro to generate additional return types for conversions from natural
  numbers to digits has been generalized and renamed.</p>
 
