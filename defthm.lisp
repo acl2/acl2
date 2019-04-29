@@ -3297,26 +3297,7 @@
                                                             hyps concls
                                                             trigger-terms
                                                             wrld)
-                                       wrld)))(defun putprop-forward-chaining-rules-lst
-  (rune nume triggers hyps concls match-free wrld)
-  (cond ((null triggers)
-         (put-match-free-value match-free rune wrld))
-        (t (putprop-forward-chaining-rules-lst
-            rune nume
-            (cdr triggers)
-            hyps concls match-free
-            (putprop (ffn-symb (car triggers))
-                     'forward-chaining-rules
-                     (cons (make forward-chaining-rule
-                                 :rune rune
-                                 :nume nume
-                                 :trigger (car triggers)
-                                 :hyps hyps
-                                 :concls concls
-                                 :match-free match-free)
-                           (getpropc (ffn-symb (car triggers))
-                                     'forward-chaining-rules nil wrld))
-                     wrld)))))
+                                       wrld)))
 
 
 
