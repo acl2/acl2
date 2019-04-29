@@ -7269,7 +7269,7 @@ e2-e1+1.
          ruler-extenders-lst mp rel
          verbose time-limit hierarchy ;ccg
          hints guard-hints std-hints
-         otf-flg guard-debug measure-debug bodies symbol-class
+         otf-flg guard-debug guard-simplify measure-debug bodies symbol-class
          normalizeps split-types-terms new-lambda$-alist-pairs
          non-executablep
          #+:non-standard-analysis std-p
@@ -7312,6 +7312,7 @@ e2-e1+1.
          std-hints
          otf-flg
          guard-debug
+         guard-simplify
          bodies
          symbol-class
          normalizeps
@@ -7437,10 +7438,11 @@ e2-e1+1.
                 (measure-debug (nth 22 tuple))
                 (split-types-terms (nth 23 tuple))
                 (new-lambda$-alist-pairs (nth 24 tuple))
-                (ccms (nth 25 tuple))
-                (verbose (nth 26 tuple))
-                (time-limit (nth 27 tuple))
-                (hierarchy (nth 28 tuple)))
+                (guard-simplify (nth 25 tuple))
+                (ccms (nth 26 tuple))
+                (verbose (nth 27 tuple))
+                (time-limit (nth 28 tuple))
+                (hierarchy (nth 29 tuple)))
             (er-let*
              ((pair (ccg-defuns-fn0
                      names
@@ -7462,6 +7464,7 @@ e2-e1+1.
                      std-hints
                      otf-flg
                      guard-debug
+                     guard-simplify
                      measure-debug
                      bodies
                      symbol-class
