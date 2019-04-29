@@ -245,7 +245,8 @@
  <p>A macro @(tsee defdigit-grouping) has been added, to generate specialized
  versions of the digit grouping functions, and some theorems about them, for
  specific pair of bases such that the larger base is a positive power, greater
- than 1, of the smaller base.</p>
+ than 1, of the smaller base.  Used this macro for some library fixtypes
+ (e.g. to convert between bits and bytes).</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
