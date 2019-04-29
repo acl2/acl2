@@ -1,6 +1,6 @@
-; ABNF Library -- Parser
+; ABNF -- Parser
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -9299,7 +9299,7 @@
    </p>
 
    <p>
-   In the rules in RFC:4, certain repeated and optional syntactic entities
+   In the rules in [RFC:4], certain repeated and optional syntactic entities
    ``nest to the right'',
    e.g. @('1*BIT') nests to the right inside @('1*(\".\" 1*BIT)').
    When this kind of nesting occurs,

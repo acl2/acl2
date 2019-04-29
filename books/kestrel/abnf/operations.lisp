@@ -1,6 +1,6 @@
-; ABNF Library -- Operations
+; ABNF -- Operations
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,7 +39,7 @@
    Certain ABNF @(see grammar)s are valid according to the
    <see topic='@(url abstract-syntax)'>formalized abstract syntax</see>,
    but (include parts that) violate certain conditions that are
-   either required by the concrete syntax defined in RFC:4
+   either required by the concrete syntax defined in [RFC:4]
    or otherwise reasonably justifiable.
    These additional conditions are captured by the notion of well-formedness.
    </p>"
@@ -53,7 +53,7 @@
   :long
   "<p>
    Aside from all letters being lowercase,
-   these constraints are required by the rule @('rulename') in RFC:4.
+   these constraints are required by the rule @('rulename') in [RFC:4].
    The constraint that all letters be lowercase
    provides a normalized representation of rule names,
    which are case-insensitive [RFC:2.1].
@@ -77,7 +77,7 @@
   :long
   "<p>
    The condition on direct numeric value notations is required
-   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in RFC:4.
+   by the rules @('bin-val'), @('dec-val'), and @('hex-val') in [RFC:4].
    The condition on range numeric value notations is reasonably justifiable
    because no number exists in a range whose minimum exceeds the maximum;
    formally, no tree matches a malformed range numeric value notation.
@@ -104,9 +104,9 @@
   :long
   "<p>
    These allowed characters are consistent with
-   the rule @('quoted-string') in RFC:4.
+   the rule @('quoted-string') in [RFC:4].
    That rule allows empty strings,
-   so the rule @('char-val') in RFC:4 also allows empty strings.
+   so the rule @('char-val') in [RFC:4] also allows empty strings.
    An empty character value notation
    may play the role of the empty sequence of symbols
    (often denoted by @($\\epsilon$) in textbooks)
@@ -130,7 +130,7 @@
   :long
   "<p>
    These allowed characters are consistent with
-   the rule @('prose-val') in RFC:4.
+   the rule @('prose-val') in [RFC:4].
    That rule allows empty bracketed strings.
    Normally prose should be non-empty (so it provides some description),
    but in the formal semantics any tree matches prose,
@@ -177,7 +177,7 @@
     :long
     "<p>
      This non-emptiness condition
-     is required by the rule @('alternation') in RFC:4.
+     is required by the rule @('alternation') in [RFC:4].
      The well-formedness condition on the concatenations is structural.
      </p>
      @(def alternation-wfp)"
@@ -206,7 +206,7 @@
     :long
     "<p>
      This non-emptiness condition
-     is required by the rule @('concatenation') in RFC:4.
+     is required by the rule @('concatenation') in [RFC:4].
      The well-formedness condition on the repetitions is structural.
      </p>
      @(def concatenation-wfp)"
@@ -341,10 +341,10 @@
    The first condition is structural.
    The second condition is justifiable
    because duplicate rules are redundant.
-   The third condition is reasonably implied by RFC:3.3.
+   The third condition is reasonably implied by [RFC:3.3].
    </p>
    <p>
-   Non-emptiness is not required by the rule @('rulelist') in RFC:4,
+   Non-emptiness is not required by the rule @('rulelist') in [RFC:4],
    which allows just @('(*c-wsp c-nl)') groups without @('rule')s.
    </p>"
   (and (rule-list-wfp rules)

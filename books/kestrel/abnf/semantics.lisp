@@ -1,6 +1,6 @@
-; ABNF Library -- Semantics
+; ABNF -- Semantics
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -44,7 +44,7 @@
   :short "Symbols."
   :long
   "<p>
-   As explained in RFC:2.3, the terminal values of ABNF are natural numbers.
+   As explained in [RFC:2.3], the terminal values of ABNF are natural numbers.
    </p>
    <p>
    Rule names are the nonterminal symbols of ABNF.
@@ -144,7 +144,7 @@
      the element instances of the corresponding repetition.
      An empty inner list is used for a repetition of no elements.
      An empty outer list is used for an empty concatenation,
-     which is disallowed by RFC:4 but allowed by our abstract syntax;
+     which is disallowed by [RFC:4] but allowed by our abstract syntax;
      an empty outer list is also used for an option [RFC:3.8] that is absent.
      </p>
      <p>
