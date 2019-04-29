@@ -21,9 +21,9 @@
     (implies
      (and (not (equal key1 nil))
           (not (consp (assoc-equal key1 alist))))
-     (not (consp (assoc-equal key1 (remove1-equal x alist)))))))
+     (not (consp (assoc-equal key1 (remove1-equal x alist))))))
 
-
-
-
-
+  (defthm member-equal-of-remove1-equal
+    (implies (not (equal x1 x2))
+             (iff (member-equal x1 (remove1-equal x2 l))
+                  (member-equal x1 l)))))

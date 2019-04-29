@@ -746,3 +746,9 @@
 (defthmd take-of-nthcdr
   (equal (take n1 (nthcdr n2 l))
          (nthcdr n2 (take (+ (nfix n1) (nfix n2)) l))))
+
+;; Contributed to books/std/lists/remove1-equal.lisp
+(defthm member-equal-of-remove1-equal
+  (implies (not (equal x1 x2))
+           (iff (member-equal x1 (remove1-equal x2 l))
+                (member-equal x1 l))))
