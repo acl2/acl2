@@ -479,6 +479,7 @@
            (equal (len (remove1-assoc-equal key alist))
                   (- (len alist) 1))))
 
+;; Contributed to books/std/lists/remove1-equal.lisp
 (defthm len-of-remove1-equal
   (equal (len (remove1-equal x l))
          (if (member-equal x l)
@@ -493,6 +494,7 @@
    (not (consp (assoc-equal key1
                             (remove1-assoc-equal key2 alist))))))
 
+;; Contributed to books/std/lists/remove1-equal.lisp
 (defthm
   assoc-equal-of-remove1-equal
   (implies
