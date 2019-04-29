@@ -8,7 +8,7 @@
 
 (defsection std/lists/remove1-equal
   :parents (std/lists remove1)
-  :short "Lemmas about @(see remove1-equal) available in the @(see std/lists)
+  :short "Lemmas about @(see remove1) available in the @(see std/lists)
   library."
 
   (defthm len-of-remove1-equal
@@ -21,9 +21,12 @@
     (implies
      (and (not (equal key1 nil))
           (not (consp (assoc-equal key1 alist))))
-     (not (consp (assoc-equal key1 (remove1-equal x alist))))))
+     (not (consp (assoc-equal key1 (remove1-equal x alist)))))
+    :rule-classes (:rewrite :type-prescription))
 
   (defthm member-equal-of-remove1-equal
     (implies (not (equal x1 x2))
              (iff (member-equal x1 (remove1-equal x2 l))
                   (member-equal x1 l)))))
+
+(in-theory (disable remove1-equal))

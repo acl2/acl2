@@ -57,6 +57,7 @@
 (include-book "prefixp")
 (include-book "remove")
 (include-book "remove-duplicates")
+(include-book "remove1-equal")
 (include-book "repeat")
 (include-book "resize-list")
 (include-book "revappend")
