@@ -863,7 +863,10 @@ ifdef ACL2_COMP
 # since some Lisps have trouble certifying those, we play it safe and
 # skip them.  Books under build/test/ present a problem because of
 # dollar signs ($) in filenames, which doesn't seem worth solving.
-$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
+# -- Hmmm, this filtering doesn't actually eliminate all centaur
+# books.  That's OK provided the resulting targets all build
+# successfully.
+$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding some books (e.g., some centaur books))
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \
                 $(filter-out build/test%, \
