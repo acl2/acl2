@@ -219,7 +219,7 @@
              (mv nil bytes)))
     :enable (rlp-decode-tree
              rlp-tree-encoding-witness-as-rlp-bytes-encoding-witness)
-    :use ((:instance rlp-bytes-encoding-p-when-rlp-bytes-encoding-p-and-leaf
+    :use ((:instance rlp-bytes-encoding-p-when-rlp-tree-encoding-p-and-leaf
            (encoding (byte-list-fix encoding))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

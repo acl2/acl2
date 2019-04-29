@@ -454,7 +454,7 @@
           (tree (rlp-tree-leaf (rlp-bytes-encoding-witness encoding))))
     :enable rlp-encode-bytes-alt-def)
 
-  (defruled rlp-bytes-encoding-p-when-rlp-bytes-encoding-p-and-leaf
+  (defruled rlp-bytes-encoding-p-when-rlp-tree-encoding-p-and-leaf
     (implies (and (rlp-tree-encoding-p encoding)
                   (rlp-tree-case (rlp-tree-encoding-witness encoding) :leaf))
              (rlp-bytes-encoding-p encoding))
