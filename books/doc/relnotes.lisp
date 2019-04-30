@@ -420,6 +420,9 @@
  <p>Added a function @(tsee remove-assocs), moved from
  @('[books]/kestrel/utilities/').</p>
 
+ <p>Added some theorems about @(tsee remove-assoc-equal), moved from
+ @('[books]/kestrel/utilities/').</p>
+
  <h4>@(csee std/basic)</h4>
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
