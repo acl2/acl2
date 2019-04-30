@@ -36,9 +36,11 @@
 (lp)
 (set-rewrite-stack-limit nil)
 ; This may cause a stack overflow, but that's OK.
-(ld "../workshops/2004/legato/support/proof-by-generalization-mult.lisp") ;
+(ld ; linebreak to avoid warning during regression
+ "../workshops/2004/legato/support/proof-by-generalization-mult.lisp") ; ;
 :ubt 1
-(ld "../projects/hexnet/hexnet-model.lisp")
+(ld ; linebreak to avoid warning during regression
+ "../projects/hexnet/hexnet-model.lisp")
 :q
 (report-guard-checks) ; should show lots of checking
 ||#

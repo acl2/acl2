@@ -58,7 +58,7 @@
 #   almost-everything
 #                 An alias for "all"
 #
-#   certify-books Includes a substantial collection of books that may
+#   certify-books [DEPRECATED!] Includes a substantial collection of books that may
 #                 suffice for many purposes, omitting some specialized
 #                 directories including all workshops/ directories.
 #
@@ -189,9 +189,11 @@ export ACL2
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: basic all
+.PHONY: default basic all
 
-# Keep this before any other target so that basic will be the default target
+# Keep this before any other target so that default will be the default target
+default: basic
+
 basic:
 
 # Ensure that the following variable is simply expanded.
@@ -1375,14 +1377,7 @@ milawa-clean:
 
 clean: milawa-clean
 
-# Warning: ACL2's GNUmakefile uses the following "certify-books"
-# target to implement its own target, "certify-books", which some
-# might use to build all "appropriate" books when installing ACL2.  So
-# please be careful about making major changes to "certify-books" in
-# this Makefile.
-# We might only want to filter out centaur/vl and centaur/vl2014,
-# since those seem relatively expensive -- but we then need to filter
-# out others that depend on those two.
+# This "certify-books" target is DEPRECATED.
 .PHONY: certify-books
 certify-books: $(filter-out centaur/vl/% centaur/vl2014/% doc/% \
 		xdoc/% centaur/4v-sexpr/% centaur/regression/% \

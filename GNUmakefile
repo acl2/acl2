@@ -36,7 +36,7 @@
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make certify-books
-#                    ; Certify a nontrivial, useful subset of the community books.
+#                    ; [DEPRECATED] Certify a nontrivial, useful subset of the community books.
 #   make regression
 #                    ; Certify all the community books and, if present, the
 #                    ; workshops/ books as well.
@@ -56,7 +56,7 @@
 #                    ; Same as make regression, except that target "everything"
 #                    ; is used in community books file, Makefile.
 #   make clean-books ; Remove certificate files, object files, log files,
-#                    ; debris, ..., created by `make certify-books',
+#                    ; debris, ..., created by `make basic',
 #                    ; `make regression', etc.
 
 ###############################################################################
@@ -707,13 +707,13 @@ large-acl2p:
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"
 # command line.
 
-# Certify books that are not up-to-date, but only those that might reasonably
-# be useful to include in proof developments.
 # NOTE:  None of the book certification targets use PREFIX.  They use
 # "acl2" by default, but the ACL2 executable can be specified on the command
 # line with ACL2=<some_acl2_executable>.
 # Success can generally be determined by checking for the absence of ** in the
 # log.
+
+# This "certify-books" target is DEPRECATED.
 .PHONY: certify-books
 certify-books: check-books
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
@@ -733,6 +733,7 @@ regression-everything: check-books
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
 
 # Certify main books from scratch.
+# This "certify-books-fresh" target is DEPRECATED.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
@@ -749,11 +750,13 @@ regression-everything-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
 
 # The following allows for a relatively short test, in response to a request
-# from GCL maintainer Camm Maguire.
-.PHONY: certify-books-short
-certify-books-short: check-books
+# from GCL maintainer Camm Maguire.  The legacy name is
+# certify-books-short; the preferred name now is basic.
+.PHONY: basic certify-books-short
+basic: check-books
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
+certify-books-short: basic
 
 # The following target assumes that we are using an image built with
 # ACL2_DEVEL set, and then have certified the books mentioned in
