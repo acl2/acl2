@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Mihir Mehta (mihir@cs.utexas.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +35,11 @@
 
   (defthm eqlable-alistp-of-remove-assoc-equal
     (implies (eqlable-alistp x)
-             (eqlable-alistp (remove-assoc-equal a x)))))
+             (eqlable-alistp (remove-assoc-equal a x))))
+
+  (defthm strip-cars-of-remove-assoc-equal
+    (equal (strip-cars (remove-assoc-equal a x))
+           (remove-equal a (strip-cars x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
