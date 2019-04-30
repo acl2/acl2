@@ -529,6 +529,14 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert
+# The following could well be considered as slow books, too.
+# doc/top.cert
+# doc/top-fast.cert
+# projects/include-doc.cert
+# projects/doc.cert
+# projects/top-doc.cert
+# kestrel/auto-termination/defunt-tests.cert
+# ALSO, directory projects/async/gcd/ perhaps even projects/async/.
 
 ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
 
