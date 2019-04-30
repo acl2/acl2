@@ -2233,6 +2233,7 @@
              (equal (len (remove-duplicates-equal (strip-cars x)))
                     (len (remove-duplicates-equal (strip-cars y)))))
     :hints (("goal"
+             :in-theory (disable strip-cars-of-remove-assoc-equal)
              :induct (ind x y)
              :do-not-induct t)))
 
