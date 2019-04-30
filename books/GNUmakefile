@@ -536,7 +536,9 @@ ADDED_BOOKS := \
 # projects/doc.cert
 # projects/top-doc.cert
 # kestrel/auto-termination/defunt-tests.cert
-# ALSO, directory projects/async/gcd/ perhaps even projects/async/.
+# ALSO, directory projects/async/gcd/ (perhaps even projects/async/)
+# AND   directory projects/arm/
+# could be added as x86isa is below.
 
 ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
 
