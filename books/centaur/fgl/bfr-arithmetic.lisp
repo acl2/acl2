@@ -224,7 +224,7 @@
 
 (table aabf->bfr-map
        nil
-       '((aabf-eval                . bfr-eval)
+       '((aabf-eval                . gobj-bfr-eval)
          (aabf-p                   . lbfr-p)
          (aabf-pred                . bfr-not-depends-on-var)
          (aabf-true                . bfr-true)
@@ -237,7 +237,7 @@
          (aabf-ite                 . bfr-ite)
          (aabf-syntactically-equal . equal)
          (aabf-extension-p         . logicman-extension-nvars-preserved)
-         (aabflist-eval            . bfr-list-eval)
+         (aabflist-eval            . gobj-bfr-list-eval)
          (aabflist-p               . lbfr-listp)
          (aabflist-pred            . bfr-list-not-depends-on-var)
          (aabf-nest                . bfr-nest)
@@ -251,7 +251,7 @@
 
 (table aabf->bfr-functional-substitution
        nil
-       '((aabf-eval acl2::bfr-eval-fn)
+       '((aabf-eval gobj-bfr-eval-fn)
          (aabf-p (lambda (x man) (bfr-p x (logicman->bfrstate man))))
          (aabf-pred (lambda (x man) (not (bfr-depends-on var x man))))
          (aabf-true (lambda () t))
@@ -264,7 +264,7 @@
          (aabf-ite acl2::bfr-ite-fn)
          (aabf-syntactically-equal hons-equal)
          (aabf-extension-p (lambda (x y) (logicman-extension-nvars-preserved x y)))
-         (aabflist-eval bfr-list-eval-fn)
+         (aabflist-eval gobj-bfr-list-eval-fn)
          ;; (aabf-syntactically-true-p bfr-syntactically-true-p)
          ;; (aabf-syntactically-false-p bfr-syntactically-false-p)
          ;; (aabf-syntactically-zero-p bfr-syntactically-zero-p)
@@ -312,7 +312,7 @@
      :rule-classes nil
      :hints (("goal" :use ((:functional-instance aabf-trivial-thm
                             . ,(table-alist 'aabf->bfr-functional-substitution (w state))))
-              :in-theory (enable bfr-list-eval bfr-list-depends-on
+              :in-theory (enable gobj-bfr-list-eval bfr-list-depends-on
                                  ;; bfr-syntactically-true-p
                                  ;; bfr-syntactically-false-p
                                  ))))))
@@ -497,5 +497,3 @@
 
 (with-output :off (prove event observation) :summary (time acl2::form)
   (defsymbolic-to-bfr))
-
-

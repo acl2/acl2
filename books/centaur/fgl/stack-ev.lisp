@@ -47,7 +47,9 @@
                   (lbfr-listp (gl-object-bfrlist x) old))
              (equal (gl-object-ev x env new)
                     (gl-object-ev x env old)))
-    :hints(("Goal" :in-theory (enable gl-object-bfrlist)))))
+    :hints(("Goal" :in-theory (enable gl-object-bfrlist))))
+
+  (defcong logicman-equiv equal (gl-object-ev x env logicman) 3))
 
 (define gl-objectlist-ev ((x gl-objectlist-p)
                       (env gl-env-p)
@@ -65,7 +67,9 @@
                   (lbfr-listp (gl-objectlist-bfrlist x) old))
              (equal (gl-objectlist-ev x env new)
                     (gl-objectlist-ev x env old)))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist)))))
+    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+
+  (defcong logicman-equiv equal (gl-objectlist-ev x env logicman) 3))
 
 
 
@@ -103,7 +107,9 @@
     (implies (and (pseudo-var-p k)
                   (hons-assoc-equal k x))
              (equal (hons-assoc-equal k ans)
-                    (cons k (gl-object-ev (cdr (hons-assoc-equal k x)) env))))))
+                    (cons k (gl-object-ev (cdr (hons-assoc-equal k x)) env)))))
+
+  (defcong logicman-equiv equal (gl-object-alist-ev x env logicman) 3))
 
 (define constraint-instance-ev ((x constraint-instance-p)
                                        (env gl-env-p)
@@ -120,7 +126,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (constraint-instance-bfrlist x) old))
              (equal (constraint-instance-ev x env new)
-                    (constraint-instance-ev x env old)))))
+                    (constraint-instance-ev x env old))))
+
+  (defcong logicman-equiv equal (constraint-instance-ev x env logicman) 3))
 
 (define constraint-instancelist-ev ((x constraint-instancelist-p)
                                            (env gl-env-p)
@@ -137,7 +145,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (constraint-instancelist-bfrlist x) old))
              (equal (constraint-instancelist-ev x env new)
-                    (constraint-instancelist-ev x env old)))))
+                    (constraint-instancelist-ev x env old))))
+
+  (defcong logicman-equiv equal (constraint-instancelist-ev x env logicman) 3))
 
 (define scratchobj-ev ((x scratchobj-p)
                               (env gl-env-p)
@@ -173,7 +183,16 @@
 
   (defthm scratchobj-ev-of-scratchobj-bfr
     (equal (scratchobj-ev (Scratchobj-bfr val) env)
-           (scratchobj-bfr (gobj-bfr-eval val env)))))
+           (scratchobj-bfr (gobj-bfr-eval val env))))
+
+  (defcong logicman-equiv equal (scratchobj-ev x env logicman) 3
+    :hints(("Goal" :in-theory (disable scratchobj-ev-of-scratchobj-gl-obj
+                                       scratchobj-ev-of-scratchobj-gl-objlist
+                                       scratchobj-ev-of-scratchobj-bfr
+                                       ;; fgl-object-ev-of-scratchobj-gl-obj->val
+                                       ;; FGL-OBJECTLIST-EV-OF-SCRATCHOBJ-GL-OBJLIST->VAL
+                                       ;; GOBJ-BFR-EVAL-OF-SCRATCHOBJ-BFR->VAL
+                                       )))))
 
 (define scratchlist-ev ((x scratchlist-p)
                         (env gl-env-p)
@@ -189,7 +208,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (scratchlist-bfrlist x) old))
              (equal (scratchlist-ev x env new)
-                    (scratchlist-ev x env old)))))
+                    (scratchlist-ev x env old))))
+
+  (defcong logicman-equiv equal (scratchlist-ev x env logicman) 3))
 
 (define minor-frame-ev ((x minor-frame-p)
                                (env gl-env-p)
@@ -207,7 +228,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (minor-frame-bfrlist x) old))
              (equal (minor-frame-ev x env new)
-                    (minor-frame-ev x env old)))))
+                    (minor-frame-ev x env old))))
+
+  (defcong logicman-equiv equal (minor-frame-ev x env logicman) 3))
 
 (define minor-stack-ev ((x minor-stack-p)
                                (env gl-env-p)
@@ -224,7 +247,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (minor-stack-bfrlist x) old))
              (equal (minor-stack-ev x env new)
-                    (minor-stack-ev x env old)))))
+                    (minor-stack-ev x env old))))
+
+  (defcong logicman-equiv equal (minor-stack-ev x env logicman) 3))
 
 
 
@@ -244,7 +269,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (major-frame-bfrlist x) old))
              (equal (major-frame-ev x env new)
-                    (major-frame-ev x env old)))))
+                    (major-frame-ev x env old))))
+
+  (defcong logicman-equiv equal (major-frame-ev x env logicman) 3))
 
 (define major-stack-ev ((x major-stack-p)
                                (env gl-env-p)
@@ -261,7 +288,9 @@
     (implies (and (bind-logicman-extension new old)
                   (lbfr-listp (major-stack-bfrlist x) old))
              (equal (major-stack-ev x env new)
-                    (major-stack-ev x env old)))))
+                    (major-stack-ev x env old))))
+
+  (defcong logicman-equiv equal (major-stack-ev x env logicman) 3))
 
 
 
@@ -357,6 +386,81 @@
     (equal (major-stack-ev (stack$a-push-minor-frame stack) env)
            (stack$a-push-minor-frame (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-push-minor-frame)))))
+
+
+
+
+(defsection ev-identities
+  (defthm gl-object-ev-identity
+    (equal (gl-object-ev (gl-object-ev x env) env2 logicman2)
+           (gl-object-ev x env))
+    :hints(("Goal" :in-theory (enable gl-object-ev))))
+
+  (defthm gl-objectlist-ev-identity
+    (equal (gl-objectlist-ev (gl-objectlist-ev x env) env2 logicman2)
+           (gl-objectlist-ev x env))
+    :hints(("Goal" :in-theory (enable gl-objectlist-ev))))
+
+  (defthm bfr-eval-of-boolean
+    (implies (booleanp x)
+             (equal (bfr-eval x env) x))
+    :hints(("Goal" :in-theory (enable bfr-eval booleanp bfr->aignet-lit))))
+
+  (defthm gobj-bfr-eval-identity
+    (equal (gobj-bfr-eval (gobj-bfr-eval x env) env2 logicman2)
+           (gobj-bfr-eval x env))
+    :hints(("Goal" :in-theory (e/d (gobj-bfr-eval)))))
+
+  (defthm gobj-bfr-list-eval-identity
+    (equal (gobj-bfr-list-eval (gobj-bfr-list-eval x env) env2 logicman2)
+           (gobj-bfr-list-eval x env))
+    :hints(("Goal" :in-theory (e/d (gobj-bfr-list-eval)))))
+
+  (defthm gl-object-alist-ev-identity
+    (equal (gl-object-alist-ev (gl-object-alist-ev x env) env2 logicman2)
+           (gl-object-alist-ev x env))
+    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+
+  (defthm constraint-instance-ev-identity
+    (equal (constraint-instance-ev (constraint-instance-ev x env) env2 logicman2)
+           (constraint-instance-ev x env))
+    :hints(("Goal" :in-theory (enable constraint-instance-ev))))
+
+  (defthm constraint-instancelist-ev-identity
+    (equal (constraint-instancelist-ev (constraint-instancelist-ev x env) env2 logicman2)
+           (constraint-instancelist-ev x env))
+    :hints(("Goal" :in-theory (enable constraint-instancelist-ev))))
+
+  (defthm scratchobj-ev-identity
+    (equal (scratchobj-ev (scratchobj-ev x env) env2 logicman2)
+           (scratchobj-ev x env))
+    :hints(("Goal" :in-theory (e/d (scratchobj-ev)))))
+
+  (defthm scratchlist-ev-identity
+    (equal (scratchlist-ev (scratchlist-ev x env) env2 logicman2)
+           (scratchlist-ev x env))
+    :hints(("Goal" :in-theory (enable scratchlist-ev))))
+
+  (defthm minor-frame-ev-identity
+    (equal (minor-frame-ev (minor-frame-ev x env) env2 logicman2)
+           (minor-frame-ev x env))
+    :hints(("Goal" :in-theory (enable minor-frame-ev))))
+
+  (defthm minor-stack-ev-identity
+    (equal (minor-stack-ev (minor-stack-ev x env) env2 logicman2)
+           (minor-stack-ev x env))
+    :hints(("Goal" :in-theory (enable minor-stack-ev))))
+
+  (defthm major-frame-ev-identity
+    (equal (major-frame-ev (major-frame-ev x env) env2 logicman2)
+           (major-frame-ev x env))
+    :hints(("Goal" :in-theory (enable major-frame-ev))))
+
+  (defthm major-stack-ev-identity
+    (equal (major-stack-ev (major-stack-ev x env) env2 logicman2)
+           (major-stack-ev x env))
+    :hints(("Goal" :in-theory (enable major-stack-ev)))))
+
 
 
 

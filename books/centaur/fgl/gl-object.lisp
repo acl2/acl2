@@ -34,6 +34,7 @@
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "arith-base")
+(local (std::add-default-post-define-hook :fix))
 
 (fty::deftypes gl-object
   (fty::defflexsum gl-object
@@ -149,6 +150,15 @@ auto-bindings).</p>"
       (g-concrete (bools->int x))
     (g-integer x)))
 
+(define mk-g-cons ((x gl-object-p)
+                   (y gl-object-p))
+  :returns (cons gl-object-p :hints(("Goal" :in-theory (enable gl-object-p))))
+  (if (and (gl-object-case x :g-concrete)
+           (gl-object-case y :g-concrete))
+      (g-concrete (cons (g-concrete->val x)
+                        (g-concrete->val y)))
+    (g-cons x y)))
+
 (defines gl-object-symbolic-boolean-free
   (define gl-object-symbolic-boolean-free ((x gl-object-p))
     :measure (gl-object-count x)
@@ -172,3 +182,128 @@ auto-bindings).</p>"
   ///
   (fty::deffixequiv-mutual gl-object-symbolic-boolean-free
     :hints (("goal" :expand ((gl-objectlist-fix x))))))
+
+
+(define gobj-syntactic-booleanp ((x gl-object-p))
+  (gl-object-case x
+    :g-concrete (booleanp x.val)
+    :g-boolean t
+    :otherwise nil))
+
+(define gobj-syntactic-boolean-fix ((x gl-object-p))
+  :returns (mv okp (new-x gl-object-p))
+  (gl-object-case x
+    :g-concrete (mv t (and x.val t))
+    :g-boolean (mv t (gl-object-fix x))
+    :g-integer (mv t t)
+    :g-cons (mv t t)
+    :otherwise (mv nil nil))
+  ///
+  (defret gobj-syntactic-booleanp-of-<fn>
+    (gobj-syntactic-booleanp new-x)
+    :hints(("Goal" :in-theory (enable gobj-syntactic-booleanp)))))
+
+
+(define gobj-syntactic-boolean->bool ((x gl-object-p))
+  :guard (gobj-syntactic-booleanp x)
+  :guard-hints (("goal" :in-theory (enable gobj-syntactic-booleanp)))
+  :returns (bfr)
+  (gl-object-case x
+    :g-concrete x.val
+    :otherwise (and (mbt (gl-object-case x :g-boolean))
+                    (g-boolean->bool x))))
+
+(define gobj-syntactic-integerp ((x gl-object-p))
+  (gl-object-case x
+    :g-concrete (integerp x.val)
+    :g-integer t
+    :otherwise nil))
+
+(defthmd gl-object-p-when-integerp
+  (implies (integerp x)
+           (gl-object-p x))
+  :hints(("Goal" :in-theory (enable gl-object-p))))
+
+(defthmd gl-object-kind-when-integerp
+  (implies (integerp x)
+           (equal (gl-object-kind x) :g-concrete))
+  :hints(("Goal" :in-theory (enable gl-object-kind))))
+
+(defthmd g-concrete->val-when-integerp
+  (implies (integerp x)
+           (equal (g-concrete->val x) x))
+  :hints(("Goal" :in-theory (enable g-concrete->val))))
+
+(define gobj-syntactic-integer-fix ((x gl-object-p))
+  :returns (mv okp
+               (new-x gl-object-p))
+  :prepwork ((local (in-theory (enable gl-object-p-when-integerp
+                                       gl-object-kind-when-integerp
+                                       g-concrete->val-when-integerp))))
+  (gl-object-case x
+    :g-concrete (mv t (ifix x.val))
+    :g-boolean (mv t 0)
+    :g-integer (mv t (gl-object-fix x))
+    :g-cons (mv t 0)
+    :otherwise (mv nil 0))
+  ///
+  (defret gobj-syntactic-integerp-of-<fn>
+    (gobj-syntactic-integerp new-x)
+    :hints(("Goal" :in-theory (enable gobj-syntactic-integerp)))))
+
+(define gobj-syntactic-integer->bits ((x gl-object-p))
+  :guard (gobj-syntactic-integerp x)
+  :guard-hints (("goal" :in-theory (enable gobj-syntactic-integerp)))
+  :returns (bfrlist true-listp :rule-classes :type-prescription)
+  (gl-object-case x
+    :g-concrete (int->bools x.val)
+    :otherwise (and (mbt (gl-object-case x :g-integer))
+                    (g-integer->bits x))))
+
+
+
+(define gobj-syntactic-consp ((x gl-object-p))
+  (gl-object-case x
+    :g-concrete (consp x.val)
+    :g-cons t
+    :otherwise nil))
+
+(define gobj-syntactic-listp ((x gl-object-p))
+  (gl-object-case x
+    :g-concrete (or (consp x.val) (not x.val))
+    :g-cons t
+    :otherwise nil))
+
+(define gobj-syntactic-list-fix ((x gl-object-p))
+  :returns (mv okp (new-x gl-object-p))
+  (gl-object-case x
+    :g-concrete (mv t (if (consp x.val) (gl-object-fix x) nil))
+    :g-cons (mv t (gl-object-fix x))
+    :g-integer (mv t nil)
+    :g-boolean (mv t nil)
+    :otherwise (mv nil nil))
+  ///
+  (defret gobj-syntactic-listp-of-<fn>
+    (gobj-syntactic-listp new-x)
+    :hints(("Goal" :in-theory (enable gobj-syntactic-listp)))))
+
+(define gobj-syntactic-list->car ((x gl-object-p))
+  :guard (gobj-syntactic-listp x)
+  :guard-hints (("goal" :in-theory (enable gobj-syntactic-listp)))
+  :returns (car gl-object-p)
+  (gl-object-case x
+    :g-concrete (g-concrete (car x.val))
+    :otherwise (and (mbt (gl-object-case x :g-cons))
+                    (g-cons->car x))))
+
+(define gobj-syntactic-list->cdr ((x gl-object-p))
+  :guard (gobj-syntactic-listp x)
+  :guard-hints (("goal" :in-theory (enable gobj-syntactic-listp)))
+  :returns (cdr gl-object-p)
+  (gl-object-case x
+    :g-concrete (g-concrete (cdr x.val))
+    :otherwise (and (mbt (gl-object-case x :g-cons))
+                    (g-cons->cdr x))))
+
+
+

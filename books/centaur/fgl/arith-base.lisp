@@ -199,6 +199,27 @@ sign bit, which we must implicitly extend out to infinity.</p>"
     ;; :rule-classes ((:rewrite :backchain-limit-lst 0))
     ))
 
+(define scons (bit0 (rest-bits true-listp))
+  :returns (bits true-listp)
+  :inline t
+  (cons bit0
+        (if (atom rest-bits)
+            '(nil)
+          (mbe :logic (true-list-fix rest-bits)
+               :exec rest-bits)))
+  ///
+
+  (defret bools->int-of-scons
+    (equal (bools->int bits)
+           (intcons bit0 (bools->int rest-bits)))
+    :hints(("Goal" :in-theory (enable bools->int))))
+
+  (defret member-of-scons
+    (implies (and (not (equal v bit0))
+                  (not (member v rest-bits))
+                  v)
+             (not (member v bits)))))
+
 
 (define first/rest/end ((x true-listp))
   :short "Deconstruct a signed bit vector."
@@ -227,7 +248,15 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   x)
 
 
+(define int->bools ((x integerp))
+  :measure (integer-length x)
+  (b* ((x (lifix x))
+       ((when (eql x 0)) '(nil))
+       ((when (eql x -1)) '(t)))
+    (cons (intcar x)
+          (int->bools (intcdr x)))))
 
+      
 
 
 

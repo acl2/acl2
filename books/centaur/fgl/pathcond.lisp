@@ -193,7 +193,9 @@
   (defthm logicman-pathcond-eval-when-not-enabled
     (implies (not (pathcond-enabledp pathcond))
              (equal (logicman-pathcond-eval env pathcond logicman)
-                    t))))
+                    t)))
+
+  (defcong logicman-equiv equal (logicman-pathcond-eval pathcond env logicman) 3))
                                   
 
 
@@ -700,7 +702,12 @@
     (implies (nth *pathcond-enabledp* pathcond)
              (equal (len (logicman-pathcond-eval-checkpoints env pathcond logicman))
                     (pathcond-rewind-stack-len (lbfr-mode) pathcond)))
-    :hints(("Goal" :in-theory (enable maybe-cdr maybe-decr)))))
+    :hints(("Goal" :in-theory (enable maybe-cdr maybe-decr))))
+
+  (defcong logicman-equiv equal (logicman-pathcond-eval-checkpoints env pathcond logicman) 3
+    :hints (("goal" :induct (logicman-pathcond-eval-checkpoints env pathcond logicman)
+             :in-theory (enable maybe-cdr)
+             :expand ((logicman-pathcond-eval-checkpoints env pathcond logicman))))))
 
 
 (define logicman-pathcond-eval-checkpoints! (env pathcond logicman)
@@ -780,7 +787,11 @@
 
   (defthm len-of-logicman-pathcond-eval-checkpoints!
     (equal (len (logicman-pathcond-eval-checkpoints! env pathcond logicman))
-           (+ 1 (pathcond-rewind-stack-len (lbfr-mode) pathcond)))))
+           (+ 1 (pathcond-rewind-stack-len (lbfr-mode) pathcond))))
+
+  (defcong logicman-equiv equal (logicman-pathcond-eval-checkpoints! env pathcond logicman) 3
+    :hints (("goal"
+             :expand ((logicman-pathcond-eval-checkpoints! env pathcond logicman))))))
 
 
 
@@ -925,7 +936,11 @@
                                                                  (bits->bools vals))
                                                                 pathcond logicman))))))
     :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p
-                                      logicman-pathcond-eval)))))
+                                      logicman-pathcond-eval))))
+
+  (defret logicman-equiv-of-<fn>
+    (logicman-equiv new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-equiv)))))
 
 
 

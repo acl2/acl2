@@ -461,10 +461,11 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 (define bfr-list-fix ((x bfr-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :returns (new-x bfr-listp)
-  (if (atom x)
-      x
-    (cons (bfr-fix (car x))
-          (bfr-list-fix (cdr x))))
+  (mbe :logic (if (atom x)
+                  x
+                (cons (bfr-fix (car x))
+                      (bfr-list-fix (cdr x))))
+       :exec x)
   ///
   (defret bfr-list-fix-when-bfr-listp
     (implies (bfr-listp x)
@@ -747,6 +748,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 
 (defines gl-bfr-object-fix
+  :flag-local nil
   (define gl-bfr-object-fix ((x gl-bfr-object-p)
                              &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (gl-object-count x)
@@ -1035,6 +1037,9 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
         (bfr-listp-witness (cdr x) bfrstate)
       (car x)))
   ///
+  (defthm bfr-listp-witness-nonnil
+    (bfr-listp-witness x bfrstate))
+
   (local (defthm not-a-bfr-is-not-a-bfr
            (not (bfr-p 'not-a-bfr))
            :hints(("Goal" :in-theory (enable bfr-p aig-p ubddp)))))

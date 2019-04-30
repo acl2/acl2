@@ -274,10 +274,11 @@ logicman stobj.  If no logicman argument is supplied, the variable named
        ;; (bvar-db-extension-p (logicman->bvar-db new)
        ;;                      (logicman->bvar-db old))
        (equal (logicman->mode new) (logicman->mode old))
-       (equal (logicman->ipasir new) (logicman->ipasir old))
-       (equal (logicman->sat-lits new) (logicman->sat-lits old))
-       (equal (logicman->aignet-refcounts new) (logicman->aignet-refcounts old))
-       (equal (logicman->refcounts-index new) (logicman->refcounts-index old)))
+       ;; (equal (logicman->ipasir new) (logicman->ipasir old))
+       ;; (equal (logicman->sat-lits new) (logicman->sat-lits old))
+       ;; (equal (logicman->aignet-refcounts new) (logicman->aignet-refcounts old))
+       ;; (equal (logicman->refcounts-index new) (logicman->refcounts-index old))
+       )
   ///
   ;; (def-updater-independence-thm logicman-extension-p-updater-independence-1
   ;;   (implies (and (equal (logicman-get :aignet new)
@@ -2236,6 +2237,18 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (cdr (assoc-equal (pseudo-var-fix name) (gl-env->obj-alist env))))
 
 
+
+(defprod fgl-sat-config
+  ((ignore-pathcond booleanp :default t)
+   (ignore-constraint booleanp :default nil)
+   (ipasir-callback-limit acl2::maybe-natp :default nil)
+   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil)))
+
+(define fgl-sat-check ((params fgl-sat-config-p)
+                       x)
+  (declare (ignore params))
+  (if x t nil))
+
 (defconst *gl-object-eval-template*
   '(progn
      (defapply <apply> <ev>  <fns>)
@@ -2456,14 +2469,20 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   fgl-object-alist-eval
   fgl-apply
   fgl-ev
-  (equal not if iff
-         int bool concrete
-         return-last synp
-         cons car cdr 
-         intcons intcons* endint
-         intcar intcdr
-         typespec-check
-         implies))
+  (acl2-numberp
+   binary-* binary-+
+   unary-- unary-/ < char-code characterp
+   code-char complex complex-rationalp
+   coerce consp denominator imagpart
+   integerp intern-in-package-of-symbol
+   numerator rationalp realpart
+   stringp symbol-name symbol-package-name
+   symbolp
+
+   equal not if iff int bool
+   concrete return-last synp cons car cdr
+   intcons intcons* endint intcar intcdr
+   typespec-check implies fgl-sat-check))
 
 (acl2::def-ev-pseudo-term-fty-support fgl-ev fgl-ev-list)
 
@@ -2535,6 +2554,58 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 
+(define logicman-equiv (x y)
+  :non-executable t
+  :verify-guards nil
+  (and (equal (logicman->aignet x) (logicman->aignet y))
+       (equal (logicman->mode x) (logicman->mode y)))
+  ///
+  (defequiv logicman-equiv)
+  (defcong logicman-equiv equal (logicman->bfrstate logicman) 1
+    :hints(("Goal" :in-theory (enable logicman->bfrstate))))
+
+  (defcong logicman-equiv equal (logicman->mode logicman) 1)
+  (defcong logicman-equiv equal (logicman->aignet logicman) 1)
+
+
+  (local (in-theory (disable logicman-equiv)))
+
+  (defcong logicman-equiv equal (bfr-eval x env logicman) 3
+    :hints(("Goal" :in-theory (enable bfr-eval))))
+
+  (defcong logicman-equiv equal (bfr-list-eval x env logicman) 3
+    :hints(("Goal" :in-theory (enable bfr-list-eval))))
+
+  (defcong logicman-equiv equal (gobj-bfr-eval x env logicman) 3
+    :hints(("Goal" :in-theory (e/d (gobj-bfr-eval)
+                                   (gobj-bfr-eval-reduce-by-bfr-eval))
+            :do-not '(preprocess))))
+
+  (defcong logicman-equiv equal (gobj-bfr-list-eval x env logicman) 3
+    :hints(("Goal" :in-theory (enable gobj-bfr-list-eval))))
+
+  (defret-mutual fgl-object-eval-logicman-equiv-congruence
+    (defret fgl-object-eval-logicman-equiv-congruence
+      (implies (logicman-equiv logicman logicman2)
+               (equal (fgl-object-eval x env logicman)
+                      (fgl-object-eval x env logicman2)))
+      :hints ('(:expand ((:free (logicman) (fgl-object-eval x env logicman)))))
+      :rule-classes :congruence
+      :fn fgl-object-eval)
+
+    (defret fgl-objectlist-eval-logicman-equiv-congruence
+      (implies (logicman-equiv logicman logicman2)
+               (equal (fgl-objectlist-eval x env logicman)
+                      (fgl-objectlist-eval x env logicman2)))
+      :hints ('(:expand ((:free (logicman) (fgl-objectlist-eval x env logicman)))))
+      :rule-classes :congruence
+      :fn fgl-objectlist-eval)
+
+    :mutual-recursion fgl-object-eval)
+
+  (defcong logicman-equiv equal (fgl-object-alist-eval x env logicman) 3
+    :hints(("Goal" :in-theory (enable fgl-object-alist-eval)))))
+
 
 
 (define logicman-invar (logicman)
@@ -2559,7 +2630,15 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   ///
   (defthm logicman-invar-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (logicman-invar old))
+                  (logicman-invar old)
+                  (equal (logicman->ipasir new)
+                         (logicman->ipasir old))
+                  (equal (logicman->sat-lits new)
+                         (logicman->sat-lits old))
+                  (equal (logicman->refcounts-index new)
+                         (logicman->refcounts-index old))
+                  (equal (logicman->aignet-refcounts new)
+                         (logicman->aignet-refcounts old)))
              (logicman-invar new))
     :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
@@ -2598,4 +2677,8 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
   (defret logicman->refcounts-index-of-<fn>
     (equal (logicman->refcounts-index new-logicman)
-           (aignet::num-fanins (logicman->aignet logicman)))))
+           (aignet::num-fanins (logicman->aignet logicman))))
+
+  (defret logicman-equiv-of-<fn>
+    (logicman-equiv new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-equiv)))))
