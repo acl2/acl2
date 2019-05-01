@@ -44,7 +44,7 @@
 (local (include-book "std/lists/len" :dir :system))
 
 (defxdoc vl-expr-svex-translation
-  :parents (vl-design->svex-design)
+  :parents (vl-design->sv-design)
   :short "Compilation from (sized) @(see vl::vl) expressions into @(see
 sv::svex) expressions."
 
