@@ -199,8 +199,8 @@
  <p>Moved the previous placeholders for cryptographic functions into <see
  topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
- <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 43, and 44
- for hierarchical deterministic wallets.</p>
+ <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 39, 43,
+ and 44 for hierarchical deterministic wallets.</p>
 
  <p>Improved the existing documentation.</p>
 
@@ -241,6 +241,12 @@
  and specific recognizers and fixers of (lists of) digits.  Used this macro for
  some library fixtypes (e.g. bits and bytes as digits in base 2 and 256
  respectively).</p>
+
+ <p>A macro @(tsee defdigit-grouping) has been added, to generate specialized
+ versions of the digit grouping functions, and some theorems about them, for
+ specific pair of bases such that the larger base is a positive power, greater
+ than 1, of the smaller base.  Used this macro for some library fixtypes
+ (e.g. to convert between bits and bytes).</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
@@ -412,6 +418,9 @@
  <h4>@(csee std/alists)</h4>
 
  <p>Added a function @(tsee remove-assocs), moved from
+ @('[books]/kestrel/utilities/').</p>
+
+ <p>Added some theorems about @(tsee remove-assoc-equal), moved from
  @('[books]/kestrel/utilities/').</p>
 
  <h4>@(csee std/basic)</h4>

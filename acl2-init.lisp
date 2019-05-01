@@ -954,7 +954,10 @@ implementations.")
   (let* ((home (our-user-homedir-pathname))
          (fl (and home
                   (probe-file (merge-pathnames home "acl2-init.lsp")))))
-    (when fl (load fl))))
+    (when fl
+      (format t "; Loading file ~s...~%" fl)
+      (load fl)
+      (format t "; Finished loading file ~s.~%" fl))))
 
 (defun chmod-executable (sysout-name)
   (system-call "chmod" (list "+x" sysout-name)))

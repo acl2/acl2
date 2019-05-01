@@ -58,7 +58,7 @@
 #   almost-everything
 #                 An alias for "all"
 #
-#   certify-books Includes a substantial collection of books that may
+#   certify-books [DEPRECATED!] Includes a substantial collection of books that may
 #                 suffice for many purposes, omitting some specialized
 #                 directories including all workshops/ directories.
 #
@@ -189,9 +189,11 @@ export ACL2
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: basic all
+.PHONY: default basic all
 
-# Keep this before any other target so that basic will be the default target
+# Keep this before any other target so that default will be the default target
+default: basic
+
 basic:
 
 # Ensure that the following variable is simply expanded.
@@ -527,6 +529,16 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert
+# The following could well be considered as slow books, too.
+# doc/top.cert
+# doc/top-fast.cert
+# projects/include-doc.cert
+# projects/doc.cert
+# projects/top-doc.cert
+# kestrel/auto-termination/defunt-tests.cert
+# ALSO, directory projects/async/gcd/ (perhaps even projects/async/)
+# AND   directory projects/arm/
+# could be added as x86isa is below.
 
 ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
 
@@ -863,7 +875,10 @@ ifdef ACL2_COMP
 # since some Lisps have trouble certifying those, we play it safe and
 # skip them.  Books under build/test/ present a problem because of
 # dollar signs ($) in filenames, which doesn't seem worth solving.
-$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
+# -- Hmmm, this filtering doesn't actually eliminate all centaur
+# books.  That's OK provided the resulting targets all build
+# successfully.
+$(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding some books (e.g., some centaur books))
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \
                 $(filter-out build/test%, \
@@ -1372,14 +1387,7 @@ milawa-clean:
 
 clean: milawa-clean
 
-# Warning: ACL2's GNUmakefile uses the following "certify-books"
-# target to implement its own target, "certify-books", which some
-# might use to build all "appropriate" books when installing ACL2.  So
-# please be careful about making major changes to "certify-books" in
-# this Makefile.
-# We might only want to filter out centaur/vl and centaur/vl2014,
-# since those seem relatively expensive -- but we then need to filter
-# out others that depend on those two.
+# This "certify-books" target is DEPRECATED.
 .PHONY: certify-books
 certify-books: $(filter-out centaur/vl/% centaur/vl2014/% doc/% \
 		xdoc/% centaur/4v-sexpr/% centaur/regression/% \

@@ -46,7 +46,7 @@
                            nfix natp)))
 
 (defxdoc vl-svstmt
-  :parents (vl-design->svex-design)
+  :parents (vl-design->sv-design)
   :short "Discussion of creating svex assignments from combinational/latch-style
           always blocks."
   :long "<p>Verilog and SystemVerilog don't always cleanly translate to a

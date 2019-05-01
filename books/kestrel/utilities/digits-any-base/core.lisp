@@ -1394,9 +1394,12 @@
                        (exp posp)
                        (digits (dab-digit-listp base digits)))
   :guard (integerp (/ (len digits) (pos-fix exp)))
-  :returns (new-digits
-            (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
-                             new-digits))
+  :returns (new-digits (dab-digit-listp base^exp new-digits)
+                       :hyp (equal base^exp
+                                   (expt (dab-base-fix base) (pos-fix exp))))
+  ;; :returns (new-digits
+  ;;           (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
+  ;;                            new-digits))
   :short "Group digits from a smaller base to a larger base, little-endian."
   :long
   (xdoc::topstring
@@ -1437,7 +1440,18 @@
     new-digits)
   :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  :hooks (:fix)
   ///
+
+  (defrule group-lendian-of-dab-digit-list-fix-digits
+    (equal (group-lendian base exp (dab-digit-list-fix base digits))
+           (group-lendian base exp digits)))
+
+  (defrule group-lendian-of-dab-digit-list-fix-digits-normalize-const
+    (implies (syntaxp (and (quotep digits)
+                           (not (dab-digit-listp base (cadr digits)))))
+             (equal (group-lendian base exp digits)
+                    (group-lendian base exp (dab-digit-list-fix base digits)))))
 
   (defrule len-of-group-lendian
     (equal (len (group-lendian base exp digits))
@@ -1453,9 +1467,12 @@
                        (exp posp)
                        (digits (dab-digit-listp base digits)))
   :guard (integerp (/ (len digits) (pos-fix exp)))
-  :returns (new-digits
-            (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
-                             new-digits))
+  :returns (new-digits (dab-digit-listp base^exp new-digits)
+                       :hyp (equal base^exp
+                                   (expt (dab-base-fix base) (pos-fix exp))))
+  ;; :returns (new-digits
+  ;;           (dab-digit-listp (expt (dab-base-fix base) (pos-fix exp))
+  ;;                            new-digits))
   :short "Group digits from a smaller base to a larger base, big-endian."
   :long
   (xdoc::topstring
@@ -1471,7 +1488,18 @@
     new-digits)
   :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  :hooks (:fix)
   ///
+
+  (defrule group-bendian-of-dab-digit-list-fix-digits
+    (equal (group-bendian base exp (dab-digit-list-fix base digits))
+           (group-bendian base exp digits)))
+
+  (defrule group-bendian-of-dab-digit-list-fix-digits-normalize-const
+    (implies (syntaxp (and (quotep digits)
+                           (not (dab-digit-listp base (cadr digits)))))
+             (equal (group-bendian base exp digits)
+                    (group-bendian base exp (dab-digit-list-fix base digits)))))
 
   (defrule len-of-group-bendian
     (equal (len (group-bendian base exp digits))
@@ -1517,7 +1545,25 @@
     new-digits)
   :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  :hooks (:fix)
   ///
+
+  (defrule ungroup-lendian-of-dab-digit-list-fix-digits
+    (implies (equal base^exp
+                    (expt (dab-base-fix base)
+                          (pos-fix exp)))
+             (equal (ungroup-lendian base exp (dab-digit-list-fix base^exp
+                                                                  digits))
+                    (ungroup-lendian base exp digits))))
+
+  (defrule ungroup-lendian-of-dab-digit-list-fix-digits-normalize-const
+    (implies (syntaxp (and (quotep digits)
+                           (not (dab-digit-listp base (cadr digits)))))
+             (equal (ungroup-lendian base exp digits)
+                    (ungroup-lendian base exp (dab-digit-list-fix
+                                               (expt (dab-base-fix base)
+                                                     (pos-fix exp))
+                                               digits)))))
 
   (defrule len-of-ungroup-lendian
     (equal (len (ungroup-lendian base exp digits))
@@ -1551,7 +1597,25 @@
     new-digits)
   :prepwork ((local (include-book "arithmetic/top-with-meta" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable dab-basep)))
+  :hooks (:fix)
   ///
+
+  (defrule ungroup-bendian-of-dab-digit-list-fix-digits
+    (implies (equal base^exp
+                    (expt (dab-base-fix base)
+                          (pos-fix exp)))
+             (equal (ungroup-bendian base exp (dab-digit-list-fix base^exp
+                                                                  digits))
+                    (ungroup-bendian base exp digits))))
+
+  (defrule ungroup-bendian-of-dab-digit-list-fix-digits-normalize-const
+    (implies (syntaxp (and (quotep digits)
+                           (not (dab-digit-listp base (cadr digits)))))
+             (equal (ungroup-bendian base exp digits)
+                    (ungroup-bendian base exp (dab-digit-list-fix
+                                               (expt (dab-base-fix base)
+                                                     (pos-fix exp))
+                                               digits)))))
 
   (defrule len-of-ungroup-bendian
     (equal (len (ungroup-bendian base exp digits))

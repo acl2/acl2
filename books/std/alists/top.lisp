@@ -56,6 +56,7 @@
 (include-book "strip-cdrs")
 (include-book "pairlis")
 (include-book "remove-assocs")
+(include-book "remove-assoc-equal")
 
 (include-book "alist-defuns")
 
