@@ -591,7 +591,7 @@
 
 (fty::defbyte bip44-coin-type
   :size 31
-  :parents (coin-types)
+  :parents (bip44-coin-types)
   :short "Fixtype of coin types.")
 
 (fty::defset bip44-coin-type-set
