@@ -445,25 +445,27 @@
 ;x has to be an atom below, otherwise, we would have caught that case above.
     (('not x)      (put-assoc x (list ''nil) ans.))
 
-    ((P x)   (b* ((tname (defdata::is-type-predicate P wrld))
-                  ((unless tname) ans.)
-                  (curr-typs-entry (assoc-eq x ans.))
-                  ((unless (and curr-typs-entry
-                                (consp (cdr curr-typs-entry))))
+    ((P x) (declare (ignore P x))
+     (b* (((list P x) (defdata::expand-lambda term))
+          (tname (defdata::is-type-predicate P wrld))
+          ((unless tname) ans.)
+          (curr-typs-entry (assoc-eq x ans.))
+          ((unless (and curr-typs-entry
+                        (consp (cdr curr-typs-entry))))
 ; no or invalid entry, though this is not possible, because we call it with
 ; default type-alist of ((x . ('ACL2S::ALL)) ...)
-                   ans.)
-                  (curr-typs (cdr curr-typs-entry))
-                  (- (cw? (and (verbose-stats-flag vl)
-                               (consp (cdr curr-typs)))
-                          "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cdr curr-typs)))
-
-                  (curr-typ (car curr-typs))
-                  ((when (defdata::possible-constant-value-p curr-typ)) ans.)
-
-                  (final-typ (meet tname curr-typ vl wrld)))
-               (put-assoc x (list final-typ) ans.)))
-
+           ans.)
+          (curr-typs (cdr curr-typs-entry))
+          (- (cw? (and (verbose-stats-flag vl)
+                       (consp (cdr curr-typs)))
+                  "~|CEgen/Warning: Ignoring rest of union types ~x0 ~|" (cdr curr-typs)))
+          
+          (curr-typ (car curr-typs))
+          ((when (defdata::possible-constant-value-p curr-typ)) ans.)
+          
+          (final-typ (meet tname curr-typ vl wrld)))
+       (put-assoc x (list final-typ) ans.)))
+    
     ((R (f . &) (g . &)) (declare (ignore R f g)) ans.) ;ignore
 
 ;x has to be an atom below, otherwise, we would have caught that case

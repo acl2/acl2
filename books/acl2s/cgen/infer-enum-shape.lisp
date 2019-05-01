@@ -221,16 +221,18 @@
 ;x has to be an atom below, otherwise, we would have caught that case above.
       (('not x)      (put-eq-constraint. x ''nil vl ans.))
 
-      ((P x)   (b* ((tname (defdata::is-type-predicate P wrld))
-                    ((cons & cs%) (assoc-eq x ans.))
-                    (curr-typ (access cs% defdata-type))
-                    (smaller-typ (meet tname curr-typ vl wrld )))
-                (if tname
-                    (if (not (eq smaller-typ curr-typ))
-                        (put-defdata-type. x smaller-typ vl ans.)
-                      ans.)
-                  (add-constraints...))))
-
+      ((P x) (declare (ignore P x))
+       (b* (((list P x) (defdata::expand-lambda term))
+            (tname (defdata::is-type-predicate P wrld))
+            ((cons & cs%) (assoc-eq x ans.))
+            (curr-typ (access cs% defdata-type))
+            (smaller-typ (meet tname curr-typ vl wrld )))
+         (if tname
+             (if (not (eq smaller-typ curr-typ))
+                 (put-defdata-type. x smaller-typ vl ans.)
+               ans.)
+           (add-constraints...))))
+      
       ((R (f . &) (g . &)) (declare (ignore R f g)) (add-constraints...))
 
 ;x has to be an atom below, otherwise, we would have caught that case
