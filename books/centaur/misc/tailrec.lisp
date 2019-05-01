@@ -1441,7 +1441,11 @@
                     & ;; reclassifying
                     & ;; world
                     non-execp
-                    ?guard-debug))
+                    guard-debug
+                    ?measure-debug
+                    ?split-types-terms
+                    ?lambda$-stuff
+                    guard-simplify))
           (chk-acceptable-defuns tuple 'def-tr-fn world state))
          ((er &) (set-ld-redefinition-action redef-action state))
          (- (cw "symbol-class: ~x0~%" symbol-class))
@@ -1760,7 +1764,9 @@
                  `((verify-guards ,fn
                      :hints ,(cons `'(:use ,(dtr-sym fn "-REDEF")
                                       :in-theory (disable ,(dtr-sym fn "-REDEF")))
-                                   guard-hints))))
+                                   guard-hints)
+                     :guard-simplify ,guard-simplify
+                     :guard-debug ,guard-debug)))
 
           (in-theory (disable (:definition ,fn))))))))
 
@@ -1793,7 +1799,9 @@
 
    (def-tr my-run (pc prog sta)
      (declare (xargs :guard (and (natp pc) (true-listp prog))
-                     :stobjs sta))
+                     :stobjs sta
+                     :guard-simplify nil
+                     :guard-debug t))
      (if (< (len prog) pc)
          sta
        (mv-let (pc sta)
