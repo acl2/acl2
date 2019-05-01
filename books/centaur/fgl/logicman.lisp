@@ -2604,7 +2604,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
     :mutual-recursion fgl-object-eval)
 
   (defcong logicman-equiv equal (fgl-object-alist-eval x env logicman) 3
-    :hints(("Goal" :in-theory (enable fgl-object-alist-eval)))))
+    :hints(("Goal" :in-theory (enable fgl-object-alist-eval))))
+
+  (defcong logicman-equiv equal (bfr-nvars logicman) 1
+    :hints(("Goal" :in-theory (enable bfr-nvars logicman-equiv)))))
 
 
 
@@ -2640,7 +2643,24 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                   (equal (logicman->aignet-refcounts new)
                          (logicman->aignet-refcounts old)))
              (logicman-invar new))
-    :hints(("Goal" :in-theory (enable logicman-extension-p)))))
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (defthm logicman-invar-implies
+    (implies (logicman-invar logicman)
+             (b* ((refcounts-index (logicman->refcounts-index logicman))
+                  (aignet (logicman->aignet logicman))
+                  (ipasir (logicman->ipasir logicman))
+                  (sat-lits (logicman->sat-lits logicman))
+                  (u32arr (logicman->aignet-refcounts logicman)))
+               (and (<= refcounts-index (len u32arr))
+                    (equal (aignet::stype-count :reg aignet) 0)
+                    (aignet::sat-lits-wfp sat-lits aignet)
+                    (consp (ipasir::ipasir$a->history ipasir))
+                    (equal (ipasir::ipasir$a->new-clause ipasir) nil)
+                    (not (equal (ipasir::ipasir$a->status ipasir) :undef))
+                    (aignet::sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
+                    (aignet::sat-lit-listp (ipasir::ipasir$a->assumption ipasir) sat-lits)
+                    (aignet::cnf-for-aignet aignet (ipasir::ipasir$a->formula ipasir) sat-lits))))))
 
 
 

@@ -99,7 +99,7 @@
                                     aignet::aignet-pathcond-p-necc)))
            (and stable-under-simplificationp
                 (let ((lit (car (last clause))))
-                  `(:expand (,lit)
+                  `(:expand ((:with aignet::aignet-pathcond-p ,lit))
                     :use ((:instance aignet::aignet-pathcond-p-necc
                            (nbalist (nth *pathcond-aignet* x))
                            (aignet (logicman->aignet logicman))
@@ -164,7 +164,7 @@
                                                  regvals)))
                    (and stable-under-simplificationp
                         (let ((lit (assoc 'aignet-pathcond-eval clause)))
-                          `(:expand (,lit)))))))
+                          `(:expand ((:with aignet-pathcond-eval ,lit))))))))
 
   (local (defthm bfr-nvars-of-logicman-extension-rw
            (implies (logicman-extension-p new old)
@@ -873,6 +873,32 @@
    :hints(("Goal" :in-theory (enable acl2::bits-equiv)))))
 
 
+;; (defconst *logicman-empty-ipasir*
+;;   (ipasir::make-ipasir$a :status :input :history '(ok)))
+
+;; (define logicman-delete-ipasir (logicman)
+;;   :non-executable t
+;;   :verify-guards nil
+;;   :returns new-logicman
+;;   (update-logicman->ipasir *logicman-empty-ipasir* logicman)
+;;   ///
+;;   (defret logicman->ipasir-of-<fn>
+;;     (equal (logicman->ipasir new-logicman)
+;;            *logicman-empty-ipasir*))
+
+;;   (defret logicman-get-of-<fn>
+;;     (implies (not (equal (logicman-field-fix key) :ipasir))
+;;              (equal (logicman-get key new-logicman)
+;;                     (logicman-get key logicman))))
+
+;;   (defret logicman-invar-of-<fn>
+;;     (implies (logicman-invar logicman)
+;;              (logicman-invar new-logicman))
+;;     :hints(("Goal" :in-theory (enable logicman-invar)))))
+
+
+
+
 (define logicman-pathcond-to-ipasir (pathcond logicman)
   :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
               (logicman-invar logicman)
@@ -940,7 +966,68 @@
 
   (defret logicman-equiv-of-<fn>
     (logicman-equiv new-logicman logicman)
-    :hints(("Goal" :in-theory (enable logicman-equiv)))))
+    :hints(("Goal" :in-theory (enable logicman-equiv))))
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix key) :sat-lits))
+                  (not (equal (logicman-field-fix key) :ipasir))
+                  (not (equal (logicman-field-fix key) :refcounts-index))
+                  (not (equal (logicman-field-fix key) :aignet-refcounts)))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman))))
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  ;; (defret ipasir-formula-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (ipasir::ipasir$a->formula (logicman->ipasir new-logicman))
+  ;;             (append (ipasir::ipasir$a->formula (logicman->ipasir
+  ;;                                                 (logicman-pathcond-to-ipasir
+  ;;                                                  pathcond (logicman-delete-ipasir logicman))))
+  ;;                     (ipasir::ipasir$a->formula ipasir))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+  ;; (defret ipasir-assumption-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman))
+  ;;             (append (ipasir::ipasir$a->assumption (logicman->ipasir
+  ;;                                                    (logicman-pathcond-to-ipasir
+  ;;                                                     pathcond (logicman-delete-ipasir logicman))))
+  ;;                     (ipasir::ipasir$a->assumption ipasir))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+
+  ;; (defret sat-lits-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (logicman->sat-lits new-logicman)
+  ;;             (logicman->sat-lits
+  ;;              (logicman-pathcond-to-ipasir
+  ;;               pathcond (logicman-delete-ipasir logicman)))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+
+  (defret sat-lit-extension-p-of-<fn>
+    (implies (equal sat-lits (logicman->sat-lits logicman))
+             (aignet::sat-lit-extension-p (logicman->sat-lits new-logicman) sat-lits)))
 
 
+  (defret nbalist-has-sat-lits-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (logicman-invar logicman)
+                  (logicman-pathcond-p pathcond logicman))
+             (aignet::nbalist-has-sat-lits
+              (nth *pathcond-aignet* pathcond)
+              (logicman->sat-lits new-logicman)))
+    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
 
