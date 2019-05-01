@@ -16,7 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defdigit-grouping bits/bytes-digit-grouping
+(defdigit-grouping bits/ubyte11s-digit-grouping
   :smaller bits-as-digits-in-base-2
   :larger ubyte11s-as-digits-in-base-2048
   :group-bendian bits=>beubyte11s
