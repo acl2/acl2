@@ -1577,7 +1577,7 @@
      we return an error flag as the first result;
      in this case, the second result (the key) is irrelevant).
      Otherwise, the first result is @('nil'), i.e. no error."))
-  (b* ((hmac-key (acl2::string=>nats "Bitcoin seed"))
+  (b* ((hmac-key (string=>nats "Bitcoin seed"))
        (hmac-data seed)
        (big-i (hmac-sha-512 hmac-key hmac-data))
        (big-i-l (take 32 big-i))
