@@ -463,10 +463,10 @@ data last modified: [2014-08-06]
 
 (defun user-record-theory-ev1 (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-constructors new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs pdef new-constructors new-types kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
-    (case-match odef
+    (case-match pdef
       (('RECORD . fname-tname-alist) (b* ((tnames (strip-cdrs fname-tname-alist))
                                           ;(- (assert$ (proper-symbol-listp tnames) nil))
                                           (dprex (predicate-names tnames))

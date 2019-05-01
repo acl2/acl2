@@ -304,7 +304,6 @@
                 (>= i 1))
            (equal (nth-pos (pos-index i))
                   i)))
-
 |#
 
 #|
@@ -324,6 +323,24 @@
          i))
 
 |#
+
+(defun negp (x)
+  (declare (xargs :guard t))
+  (and (integerp x) 
+       (< x 0)))
+
+(defun nth-neg-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (- -1 n))
+
+(defun non-pos-integerp (x)
+  (declare (xargs :guard t))
+  (and (integerp x) 
+       (<= x 0)))
+
+(defun nth-non-pos-integer-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (+ 1 n))
 
 ;;integers
 (defun nth-integer-builtin (n)
@@ -347,6 +364,7 @@
   (if (< i 0)
     (1+ (* (- (1+ i)) 2))
     (* i 2)))
+
 #||
 (encapsulate nil
   (local 
@@ -380,6 +398,218 @@
             i))))
 ||#
 
+(defun neg-ratiop (x)
+  (declare (xargs :guard t))
+  (and (rationalp x)
+       (not (integerp x))
+       (< x 0)))
+
+(defun nth-neg-ratio-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (if (or (zp n)
+          (<= n 2))
+      -1/2
+    (let* ((two-n-list (defdata::split-nat 2 n))
+           (alpha  (car two-n-list))
+           (beta (cadr two-n-list))
+           (den (+ 2 alpha))
+           (num (+ (floor beta den) beta)))
+      (- (/ num den)))))
+
+(defun pos-ratiop (x)
+  (declare (xargs :guard t))
+  (and (rationalp x)
+       (not (integerp x))
+       (> x 0)))
+
+(defun nth-pos-ratio-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (if (or (zp n)
+          (<= n 2))
+      1/2
+    (let* ((two-n-list (defdata::split-nat 2 n))
+           (alpha  (car two-n-list))
+           (beta (cadr two-n-list))
+           (den (+ 2 alpha))
+           (num (+ (floor beta den) beta)))
+      (/ num den))))
+
+(defun non-neg-ratiop (x)
+  (declare (xargs :guard t))
+  (and (rationalp x)
+       (not (integerp x))
+       (>= x 0)))
+
+(defun nth-non-neg-ratio-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (cond
+   ((zp n) 0)
+   ((<= n 2) 1/2)
+   (t (let* ((two-n-list (defdata::split-nat 2 n))
+             (alpha  (car two-n-list))
+             (beta (cadr two-n-list))
+             (den (+ 2 alpha))
+             (num (+ (floor beta den) beta)))
+        (/ num den)))))
+
+(defun non-pos-ratiop (x)
+  (declare (xargs :guard t))
+  (and (rationalp x)
+       (not (integerp x))
+       (<= x 0)))
+
+(defun nth-non-pos-ratio-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (cond
+   ((zp n) 0)
+   ((<= n 2) -1/2)
+   (t (let* ((two-n-list (defdata::split-nat 2 n))
+             (alpha  (car two-n-list))
+             (beta (cadr two-n-list))
+             (den (+ 2 alpha))
+             (num (+ (floor beta den) beta)))
+        (- (/ num den))))))
+
+;(defdata rat (oneof 0 pos-ratio neg-ratio))
+;DOESNT WORK so pos/neg ratio are not consistent types ;TODO
+;(local (include-book "arithmetic-5/top" :dir :system))
+;(thm (nat-listp (defdata::split-nat 2 n)))
+;(thm (pos-ratiop (nth-pos-ratio n)))
+
+
+#|
+(defdata int (oneof 0 pos neg))
+(thm (iff (integerp x) (intp x)))
+|#
+
+(defun neg-rationalp (x)
+  (declare (xargs :guard t))
+  (and (rationalp x) 
+       (< x 0)))
+
+(defun nth-neg-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (nth-neg-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
+(defun pos-rationalp (x)
+  (declare (xargs :guard t))
+  (and (rationalp x) 
+       (> x 0)))
+
+(defun nth-pos-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (nth-pos-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
+(defun non-neg-rationalp (x)
+  (declare (xargs :guard t))
+  (and (rationalp x) 
+       (>= x 0)))
+
+(defun nth-non-neg-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (nth-nat-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
+(defun non-pos-rationalp (x)
+  (declare (xargs :guard t))
+  (and (rationalp x) 
+       (<= x 0)))
+
+(defun nth-non-pos-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (* -1 (nth-nat-builtin (car two-n-list))))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
+;(defdata rational (oneof 0 pos-rational neg-rational))
+(defun nth-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (num (nth-integer-builtin (car two-n-list)))
+         (den (nth-pos-builtin (cadr two-n-list))))
+    (/ num den)))
+
+(defthm nth-rat-is-ratp
+  (implies (natp x)
+           (rationalp (nth-rational-builtin x)))
+  :rule-classes (:rewrite :type-prescription))
+
+ ;lo included, hi included
+
+(defun nth-rational-between (n lo hi);inclusive
+  (declare (xargs :guard (and (natp n)
+                              (rationalp lo)
+                              (rationalp hi))))
+
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (den (nth-pos-builtin (car two-n-list)))
+         (num (nth-integer-between (cadr two-n-list) 0 (1+ den)))
+         (range (- hi lo)))
+    (+ lo (* (/ num den) range))))       
+
+(defun nth-complex-rational-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (let* ((two-n-list (defdata::split-nat 2 n))
+         (rpart (nth-pos-rational-builtin (defdata::nfixg (car two-n-list))))
+         (ipart (nth-pos-rational-builtin (defdata::nfixg (cadr two-n-list)))))
+    (complex rpart ipart)))
+
+(defun nth-complex-rational-between (n lo hi)
+  (declare (xargs :guard (and (natp n) (complex/complex-rationalp lo) (complex/complex-rationalp hi))))
+  (b* ((rlo (realpart lo))
+       (rhi (realpart hi))
+       (ilo (imagpart lo))
+       (ihi (imagpart hi))
+       ((list n1 n2) (defdata::split-nat 2 n)))
+    (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
+
+;; (encapsulate 
+;;  ((nth-acl2-number (n) t :guard (natp n)))
+;;  (local (defun nth-acl2-number (n)
+;;           (declare (xargs :guard (natp n)))
+;;           (declare (ignore n))
+;;           0)))
+
+(defun nth-acl2-number-builtin (n)
+  (declare (xargs :guard (natp n)))
+  (b* (((mv choice seed)
+        (defdata::switch-nat 4 n)))
+    (case choice
+          (0 (nth-nat-builtin seed))
+          (1 (nth-integer-builtin seed))
+          (2 (nth-rational-builtin seed))
+          (t (nth-complex-rational-builtin seed)))))
+
+;; (defattach nth-acl2-number nth-acl2-number-builtin)
+
+(defun nth-acl2-number-between (n lo hi)
+  (b* (((mv choice seed)
+        (defdata::switch-nat 3 n)))
+    (case choice
+          (0 (nth-integer-between seed lo hi))
+          (1 (nth-rational-between seed lo hi))
+          (t (nth-complex-rational-between seed lo hi)))))
+
+(defun nth-number-between-fn (n lo hi type)
+  (case type
+    (integer (nth-integer-between n lo hi))
+    (rational (nth-rational-between n lo hi))
+    (complex-rational (nth-complex-rational-between n lo hi))
+    (t (nth-acl2-number-between n lo hi))))
+  
+
+(defmacro nth-number-between (n lo hi &key type)
+  `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
+
 ;;only strings upto len 1 to 8
 (defun nth-string-builtin (n)
   (declare (xargs :guard (natp n)))
@@ -393,9 +623,6 @@
   (implies (natp n)
            (stringp (nth-string-builtin n)))
   :rule-classes (:rewrite :type-prescription))
-
-           
-  
 
 (defun standard-stringp (x)
   (declare (xargs :guard t))
@@ -440,181 +667,6 @@
 (defun nth-alpha-num-character (n)
   (declare (xargs :guard (natp n)))
   (nth (mod n *len-alpha-num-chars*) *alpha-num-chars*))
-
-
-(defun positive-ratiop (x)
-  (declare (xargs :guard t))
-  (and (rationalp x)
-       (not (integerp x))
-       (> x 0)
-       ))
-
-(defun nth-positive-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (if (or (zp n)
-          (<= n 2))
-      (/ 1 2)
-    (let* ((two-n-list (defdata::split-nat 2 n))
-                       (alpha  (car two-n-list))
-                       (beta (cadr two-n-list))
-                       (den (+ 2 alpha))
-                       (num (+ (floor beta den) beta)))
-                  (/ num den))))
-    
-
-
-(defun negative-ratiop (x)
-  (declare (xargs :guard t))
-  (and (rationalp x)
-       (not (integerp x))
-       (< x 0)
-       ))
-
-
-(defun nth-negative-ratio-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (if (or (zp n)
-          (<= n 2))
-      (- 0 (/ 1 2))
-      (let* ((two-n-list (defdata::split-nat 2 n))
-             (alpha  (car two-n-list))
-             (beta (cadr two-n-list))
-             (den (+ 2 alpha))
-             (num (+ (floor beta den) beta)))
-        (- 0 (/ num den)))))
-
-
-;(defdata rat (oneof 0 positive-ratio negative-ratio))
-;DOESNT WORK so positive/negative ratio are not consistent types ;TODO
-;(local (include-book "arithmetic-5/top" :dir :system))
-;(thm (nat-listp (defdata::split-nat 2 n)))
-;(thm (positive-ratiop (nth-positive-ratio n)))
-
-
-(defun negp (x)
-  (declare (xargs :guard t))
-  (and (integerp x) 
-       (< x 0)
-       ))
-
-(defun nth-neg-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (- -1 n))
- 
-#|
-(defdata int (oneof 0 pos neg))
-(thm (iff (integerp x) (intp x)))
-|#
-
-(defun nth-positive-rational-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-pos-builtin (car two-n-list)))
-         (den (nth-pos-builtin (cadr two-n-list))))
-    (/ num den)))
-
-(defun nth-negative-rational-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-neg-builtin (car two-n-list)))
-         (den (nth-pos-builtin (cadr two-n-list))))
-    (/ num den)))
-
-(defun positive-rationalp (x)
-  (declare (xargs :guard t))
-  (and (rationalp x) 
-       (> x 0)
-       ))
-(defun negative-rationalp (x)
-  (declare (xargs :guard t))
-  (and (rationalp x) 
-       (< x 0)
-       ))
-
-;(defdata rational (oneof 0 positive-rational negative-rational))
-(defun nth-rational-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (num (nth-integer-builtin (car two-n-list)))
-         (den (nth-pos-builtin (cadr two-n-list))))
-    (/ num den)))
-
-
-
-(defthm nth-rat-is-ratp
-  (implies (natp x)
-           (rationalp (nth-rational-builtin x)))
-  :rule-classes (:rewrite :type-prescription))
-
- ;lo included, hi included
-    
-  
-(defun nth-rational-between (n lo hi);inclusive
-  (declare (xargs :guard (and (natp n)
-                              (rationalp lo)
-                              (rationalp hi))))
-
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (den (nth-pos-builtin (car two-n-list)))
-         (num (nth-integer-between (cadr two-n-list) 0 (1+ den)))
-         (range (- hi lo)))
-    (+ lo (* (/ num den) range))))       
-
-
-(defun nth-complex-rational-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (let* ((two-n-list (defdata::split-nat 2 n))
-         (rpart (nth-positive-rational-builtin (defdata::nfixg (car two-n-list))))
-         (ipart (nth-positive-rational-builtin (defdata::nfixg (cadr two-n-list)))))
-    (complex rpart ipart)))
-
-(defun nth-complex-rational-between (n lo hi)
-  (declare (xargs :guard (and (natp n) (complex/complex-rationalp lo) (complex/complex-rationalp hi))))
-  (b* ((rlo (realpart lo))
-       (rhi (realpart hi))
-       (ilo (imagpart lo))
-       (ihi (imagpart hi))
-       ((list n1 n2) (defdata::split-nat 2 n)))
-    (complex (nth-rational-between n1 rlo rhi) (nth-rational-between n2 ilo ihi))))
-
-
-;; (encapsulate 
-;;  ((nth-acl2-number (n) t :guard (natp n)))
-;;  (local (defun nth-acl2-number (n)
-;;           (declare (xargs :guard (natp n)))
-;;           (declare (ignore n))
-;;           0)))
-
-(defun nth-acl2-number-builtin (n)
-  (declare (xargs :guard (natp n)))
-  (b* (((mv choice seed)
-        (defdata::switch-nat 4 n)))
-    (case choice
-          (0 (nth-nat-builtin seed))
-          (1 (nth-integer-builtin seed))
-          (2 (nth-rational-builtin seed))
-          (t (nth-complex-rational-builtin seed)))))
-
-;; (defattach nth-acl2-number nth-acl2-number-builtin)
-
-(defun nth-acl2-number-between (n lo hi)
-  (b* (((mv choice seed)
-        (defdata::switch-nat 3 n)))
-    (case choice
-          (0 (nth-integer-between seed lo hi))
-          (1 (nth-rational-between seed lo hi))
-          (t (nth-complex-rational-between seed lo hi)))))
-
-(defun nth-number-between-fn (n lo hi type)
-  (case type
-    (integer (nth-integer-between n lo hi))
-    (rational (nth-rational-between n lo hi))
-    (complex-rational (nth-complex-rational-between n lo hi))
-    (t (nth-acl2-number-between n lo hi))))
-  
-
-(defmacro nth-number-between (n lo hi &key type)
-  `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
 
 ;(defdata character-list (listof character))
 ;;only strings upto len 1 to 8
@@ -661,66 +713,6 @@
       `(nth ,(mod seed type-size) ,type-enum))))||#
 
 
-(defconst *number-testing-limit* 1000)
-
-;ADDED restricted testing enumerators for all number types
-(defun nth-nat-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-nat-builtin n-small)))
-
-(defun nth-pos-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-pos-builtin n-small)))
-
-(defun nth-neg-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-neg-builtin n-small)))
-
-(defun nth-integer-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-integer-builtin n-small)))
-
-(defun nth-positive-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-positive-ratio-builtin n-small)))
-
-(defun nth-negative-ratio-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-negative-ratio-builtin n-small)))
-
-(defun nth-rational-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-rational-builtin n-small)))
-
-(defun nth-positive-rational-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-positive-rational-builtin n-small)))
-
-(defun nth-negative-rational-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-negative-rational-builtin n-small)))
-
-(defun nth-acl2-number-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-acl2-number-builtin n-small)))
-
-(defun nth-complex-rational-testing (n)
-  (declare (xargs :guard (natp n)))
-  (let ((n-small (mod n *number-testing-limit*)))
-    (nth-complex-rational-builtin n-small)))
-
-
-
 ; register-type ought to also test if not prove the following:
 ; TODO:Note it does not prove that type is sound neither that is is complete
 ; By Type Soundness i mean (thm (implies (natp n) (Tp (nth-T n)))
@@ -731,19 +723,158 @@
 (defmacro register-custom-type  (typename typesize enum pred &key verbose)
   `(defdata::register-type ,typename :domain-size ,typesize :predicate ,pred :enumerator ,enum :verbose ,verbose))
 
+(register-custom-type neg t nth-neg-builtin negp )
+(register-custom-type pos t nth-pos-builtin posp)
 (register-custom-type nat t nth-nat-builtin natp)
 
-(register-custom-type pos t nth-pos-builtin posp)
+(defdata non-neg-integer nat)
 
-(register-custom-type neg t nth-neg-builtin negp )
-(register-custom-type integer t nth-integer-builtin integerp )
-(register-custom-type positive-ratio t nth-positive-ratio-builtin  positive-ratiop)
-(register-custom-type negative-ratio t nth-negative-ratio-builtin  negative-ratiop )
-(register-custom-type positive-rational t nth-positive-rational-builtin  positive-rationalp )
-(register-custom-type negative-rational t nth-negative-rational-builtin  negative-rationalp )
+(defthm non-neg-integer-is-nat
+  (equal (non-neg-integerp x)
+         (natp x)))
+
+(register-custom-type non-pos-integer
+                      t
+                      nth-non-pos-integer-builtin
+                      non-pos-integerp)
+
+(register-custom-type integer t nth-integer-builtin integerp)
+
+(register-custom-type neg-ratio
+                      t
+                      nth-neg-ratio-builtin
+                      neg-ratiop)
+
+(register-custom-type pos-ratio
+                      t
+                      nth-pos-ratio-builtin
+                      pos-ratiop)
+
+(register-custom-type non-neg-ratio
+                      t
+                      nth-non-neg-ratio-builtin
+                      non-neg-ratiop)
+
+(register-custom-type non-pos-ratio
+                      t
+                      nth-non-pos-ratio-builtin
+                      non-pos-ratiop)
+
+(defdata ratio (oneof pos-ratio neg-ratio)) 
+
+(register-custom-type neg-rational
+                      t
+                      nth-neg-rational-builtin
+                      neg-rationalp)
+
+(register-custom-type pos-rational
+                      t
+                      nth-pos-rational-builtin
+                      pos-rationalp)
+
+(register-custom-type non-neg-rational
+                      t
+                      nth-non-neg-rational-builtin
+                      non-neg-rationalp)
+
+(register-custom-type non-pos-rational
+                      t
+                      nth-non-pos-rational-builtin
+                      non-pos-rationalp)
+
 (register-custom-type rational t nth-rational-builtin  rationalp )
 (register-custom-type complex-rational t nth-complex-rational-builtin  complex-rationalp )
 (register-custom-type acl2-number t nth-acl2-number-builtin  acl2-numberp )
+
+(defconst *number-testing-limit* 1000)
+
+;ADDED restricted testing enumerators for all number types
+(defun nth-neg-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-neg-builtin n-small)))
+
+(defun nth-pos-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-pos-builtin n-small)))
+
+(defun nth-nat-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-nat-builtin n-small)))
+
+(defun nth-non-pos-integer-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-pos-integer-builtin n-small)))
+
+(defun nth-integer-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-integer-builtin n-small)))
+
+(defun nth-neg-ratio-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-neg-ratio-builtin n-small)))
+
+(defun nth-pos-ratio-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-pos-ratio-builtin n-small)))
+
+(defun nth-non-neg-ratio-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-neg-ratio-builtin n-small)))
+
+(defun nth-non-pos-ratio-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-pos-ratio-builtin n-small)))
+
+(defun nth-ratio-testing (n)
+  (declare (xargs :guard (natp n) :mode :program))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-ratio-builtin n-small)))
+
+(defun nth-neg-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-neg-rational-builtin n-small)))
+
+(defun nth-pos-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-pos-rational-builtin n-small)))
+
+(defun nth-non-neg-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-neg-rational-builtin n-small)))
+
+(defun nth-non-pos-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-non-pos-rational-builtin n-small)))
+
+(defun nth-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-rational-builtin n-small)))
+
+(defun nth-complex-rational-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-complex-rational-builtin n-small)))
+
+(defun nth-acl2-number-testing (n)
+  (declare (xargs :guard (natp n)))
+  (let ((n-small (mod n *number-testing-limit*)))
+    (nth-acl2-number-builtin n-small)))
+
+
 (register-custom-type boolean 2 nth-boolean-builtin  booleanp );taken care of by define-enumeration-type
 (register-custom-type symbol t nth-symbol-builtin  symbolp)
 
@@ -853,56 +984,84 @@
              (mv (nth-z-builtin n) (the (unsigned-byte 31) seed))))
 (defdata::register-type z :domain-size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
-
 ;Subtype relations betweem the above
-;pos is a subtype of nat (Note the direction)
-(defdata-subtype pos nat)
 
-;nat is a subtype of integer
-(defdata-subtype nat integer)
-(defdata-subtype neg integer)
-(defdata-subtype integer rational)
-(defdata-subtype positive-ratio rational)
-(defdata-subtype positive-rational rational) ;Aug 18 2011
-(defdata-subtype negative-ratio rational)
-(defdata-subtype negative-rational rational) ;Aug 18 2011
-(defdata-subtype complex-rational acl2-number)
-(defdata-subtype rational acl2-number)
-(defdata-subtype acl2-number atom)
-(defdata-subtype boolean symbol)
-(defdata-subtype proper-symbol symbol)
+(defdata-subtype-strict neg non-pos-integer)
+(defdata-subtype-strict neg neg-rational)
 
-(defdata-subtype standard-char character :hints (("Goal" :in-theory (enable standard-char-p))))
-(defdata-subtype character atom)
-(defdata-subtype string atom)
-(defdata-subtype symbol atom)
+(defdata-subtype-strict pos nat)
+(defdata-subtype-strict pos pos-rational)
 
-(defdata ratio (oneof positive-ratio negative-ratio)) 
+(defdata-subtype-strict nat integer)
 
+(defdata-subtype-strict non-pos-integer integer)
 
-(defdata-subtype ratio rational) 
+(defdata-subtype-strict integer rational)
 
-;added 26th Sep '13
-(defdata-subtype neg negative-rational)
-(defdata-subtype pos positive-rational) 
-(defdata-subtype negative-rational z)
-(defdata-subtype ratio z)
-(defdata-subtype complex-rational z)
-(defdata-subtype symbol z)
-(defdata-subtype character z)
-(defdata-subtype string z)
-(defdata-disjoint pos z)
+(defdata-subtype-strict neg-ratio non-pos-ratio)
+(defdata-subtype-strict neg-ratio non-pos-rational)
 
-(defdata-subtype standard-string string)
+(defdata-subtype-strict pos-ratio non-neg-ratio)
+(defdata-subtype-strict pos-ratio non-neg-rational)
+
+(defdata-subtype-strict non-neg-ratio ratio)
+(defdata-subtype-strict non-pos-ratio ratio)
+
+(defdata-subtype-strict ratio rational)
+  
+(defdata-subtype-strict neg-rational non-pos-rational) 
+(defdata-subtype-strict pos-rational non-neg-rational) 
+
+(defdata-subtype-strict non-neg-rational rational)
+(defdata-subtype-strict non-pos-rational rational)
+
+(defdata-subtype-strict rational acl2-number)
+
+(defdata-subtype-strict complex-rational acl2-number)
+
+(defdata-subtype-strict acl2-number atom)
+
+(defdata-subtype-strict non-pos-rational z)
+(defdata-subtype-strict ratio z)
+(defdata-subtype-strict complex-rational z)
+(defdata-subtype-strict symbol z)
+(defdata-subtype-strict character z)
+(defdata-subtype-strict string z)
+
+(defdata-disjoint-strict neg nat)
+(defdata-disjoint-strict pos non-pos-integer)
+
+(defdata-disjoint-strict integer ratio)
+
+; probably don't need these 2
+(defdata-disjoint-strict neg-ratio non-neg-rational)
+(defdata-disjoint-strict pos-ratio non-pos-rational)
+
+(defdata-disjoint-strict neg-rational non-neg-rational)
+(defdata-disjoint-strict pos-rational non-pos-rational)
+
+(defdata-disjoint-strict rational complex-rational)
+
+(defdata-disjoint-strict pos z)
+
+(defdata-subtype-strict boolean symbol)
+(defdata-subtype-strict proper-symbol symbol)
+
+(defdata-subtype-strict standard-char character :hints (("Goal" :in-theory (enable standard-char-p))))
+(defdata-subtype-strict character atom)
+(defdata-subtype-strict string atom)
+(defdata-subtype-strict symbol atom)
+
+(defdata-subtype-strict standard-string string)
 
 
 ;Disjoint relations between the above types
-(defdata-disjoint acl2-number character)
-(defdata-disjoint acl2-number symbol)
-(defdata-disjoint character string)
-(defdata-disjoint character symbol)
-(defdata-disjoint string symbol)
-(defdata-disjoint boolean proper-symbol)
+(defdata-disjoint-strict acl2-number character)
+(defdata-disjoint-strict acl2-number symbol)
+(defdata-disjoint-strict character string)
+(defdata-disjoint-strict character symbol)
+(defdata-disjoint-strict string symbol)
+(defdata-disjoint-strict boolean proper-symbol)
 
 ;lists of atoms
 (defthm termination-tree-enum-cdr
@@ -940,7 +1099,7 @@
 ;cons
 (defdata cons-atom (cons atom atom))
 
-(defdata-disjoint cons-atom atom)
+(defdata-disjoint-strict cons-atom atom)
 
 
 (defdata cons-ca-ca (cons cons-atom cons-atom))         
@@ -1095,18 +1254,18 @@
 
 (defdata string-list (listof string))
 (defdata atom-list (listof atom))
-(defdata-subtype pos-list nat-list)
-(defdata-subtype nat-list integer-list)
-(defdata-subtype integer-list rational-list)
-(defdata-subtype complex-rational-list acl2-number-list)
-(defdata-subtype rational-list acl2-number-list )
-(defdata-subtype acl2-number-list atom-list)
-(defdata-subtype boolean-list symbol-list)
-(defdata-subtype standard-char-list character-list)
-(defdata-subtype character-list atom-list)
-(defdata-subtype string-list atom-list)
+(defdata-subtype-strict pos-list nat-list)
+(defdata-subtype-strict nat-list integer-list)
+(defdata-subtype-strict integer-list rational-list)
+(defdata-subtype-strict complex-rational-list acl2-number-list)
+(defdata-subtype-strict rational-list acl2-number-list )
+(defdata-subtype-strict acl2-number-list atom-list)
+(defdata-subtype-strict boolean-list symbol-list)
+(defdata-subtype-strict standard-char-list character-list)
+(defdata-subtype-strict character-list atom-list)
+(defdata-subtype-strict string-list atom-list)
 
-(defdata-subtype symbol-list atom-list)
+(defdata-subtype-strict symbol-list atom-list)
 
 
 
@@ -1305,24 +1464,20 @@
 ; -- Ohh well, lets ride on cons for now. [2014-09-24 Wed]
 
 
-
-
 (defdata list (oneof cons nil))
 
-
-
-(DEFUNS (NTH-TL-builtin
-               (X)
-               (declare (xargs :mode :program))
-               (DECLARE (XARGS :guard (natp x) :verify-guards nil
-                               :MEASURE (NFIX X)))
-               (IF (OR (NOT (INTEGERP X)) (< X 1))
-                   'NIL
-                   (LET ((X (- X 1)))
-                        (LET ((INFXLST (DEFDATA::SPLIT-NAT 2 X)))
-                             (CONS (LET ((X (NTH 0 INFXLST))) (NTH-ALL X))
-                                   (LET ((X (NTH 1 INFXLST)))
-                                        (NTH-TL-builtin X))))))))
+(defuns (nth-tl-builtin
+         (x)
+         (declare (xargs :mode :program))
+         (declare (xargs :guard (natp x) :verify-guards nil
+                         :measure (nfix x)))
+         (if (or (not (integerp x)) (< x 1))
+             'nil
+           (let ((x (- x 1)))
+             (let ((infxlst (defdata::split-nat 2 x)))
+               (cons (let ((x (nth 0 infxlst))) (nth-all x))
+                     (let ((x (nth 1 infxlst)))
+                       (nth-tl-builtin x))))))))
 
 (defun nth-tl/acc-builtin (i1 seed.)
   (declare (type (unsigned-byte 31) seed.))
@@ -1421,25 +1576,24 @@
 (verify-termination character-alistp)
 (defdata character-alist (alistof character all))
 (defdata r-symbol-alist (alistof all symbol))
-(defdata-subtype symbol-alist alist)
-(defdata-subtype character-alist alist)
-(defdata-subtype r-symbol-alist alist)
+(defdata-subtype-strict symbol-alist alist)
+(defdata-subtype-strict character-alist alist)
+(defdata-subtype-strict r-symbol-alist alist)
 
 ;TODO standard-string-alist has very poor theory support!!
 ;(defdata standard-string-list (listof standard-string))
-;(defdata-subtype standard-string-list string-list)
+;(defdata-subtype-strict standard-string-list string-list)
 ;(defdata standard-string-alist (alistof standard-string all)) 
-;(defdata-subtype standard-string-alist alist)
+;(defdata-subtype-strict standard-string-alist alist)
 
 ;(verify-guards nth-true-list)
 (defdata true-list-list (listof true-list))
-(defdata-subtype true-list-list true-list)
-
+(defdata-subtype-strict true-list-list true-list)
 
 
 ;added 26th Sep '13
-(defdata-subtype cons z)
-(defdata-subtype list z)
+(defdata-subtype-strict cons z)
+(defdata-subtype-strict list z)
 
 
 (defun all-but-zero-nil-tp (x)
@@ -1459,8 +1613,8 @@
               1  ;string
               2  ;char
               1  ;pos
-              5 ;positive-ratio
-              5 ;negative-ratio
+              5 ;pos-ratio
+              5 ;neg-ratio
               5 ;complex-rational
               5  ;rational-list
               2  ;sym-list
@@ -1478,8 +1632,8 @@
               (3 (nth-string seed))
               (4 (nth-character seed))
               (5 (nth-pos seed))
-              (6 (nth-positive-ratio seed))
-              (7 (nth-negative-ratio seed))
+              (6 (nth-pos-ratio seed))
+              (7 (nth-neg-ratio seed))
               (8 (nth-complex-rational seed))
               (9 (nth-rational-list seed))
               (10 (nth-symbol-list seed))
@@ -1551,16 +1705,16 @@
 
 (register-custom-type all-but-nil t nth-all-but-nil-builtin  all-but-nilp)
 
-(defdata-subtype all-but-zero-nil-t all)
-(defdata-subtype all-but-nil all) ;make this the pseudo top type!
+(defdata-subtype-strict all-but-zero-nil-t all)
+(defdata-subtype-strict all-but-nil all) ;make this the pseudo top type!
 
-(defdata-subtype acons cons :hints (("Goal" :in-theory (enable aconsp))))
-(defdata-subtype cons all-but-nil)
-(defdata-subtype atom all)
-(defdata-subtype atom-list true-list)
-(defdata-subtype alist true-list)
-(defdata-subtype list all)
-(defdata-subtype true-list list)
+(defdata-subtype-strict acons cons :hints (("Goal" :in-theory (enable aconsp))))
+(defdata-subtype-strict cons all-but-nil)
+(defdata-subtype-strict atom all)
+(defdata-subtype-strict atom-list true-list)
+(defdata-subtype-strict alist true-list)
+(defdata-subtype-strict list all)
+(defdata-subtype-strict true-list list)
 
 
 
@@ -1638,17 +1792,17 @@
                :enum/acc nth-improper-cons-uniform-builtin
                :predicate improper-consp)
 
-(defdata-subtype improper-cons cons)
+(defdata-subtype-strict improper-cons cons)
 
 
-(defdata-subtype proper-cons cons)
+(defdata-subtype-strict proper-cons cons)
 
 ;this was missing before and so we werent inferring proper-consp when
 ;type-alist knew both true-listp and proper-consp, and this is common in ACL2
-(defdata-subtype proper-cons  true-list)
+(defdata-subtype-strict proper-cons  true-list)
 
-(defdata-disjoint proper-cons improper-cons)
-(defdata-disjoint atom cons)
+(defdata-disjoint-strict proper-cons improper-cons)
+(defdata-disjoint-strict atom cons)
 
 
 
@@ -1725,16 +1879,15 @@
                :enumerator nth-even-builtin)
 
 (defun nth-odd-builtin (n) 
-  (declare (xargs :guard (natp n)))
-  (if (evenp n)
-      (1+ n)
-    (- n)))
+  (declare (xargs :verify-guards nil :guard (natp n)))
+  (1+ (* 2 (nth-integer n))))
 
 ;(defun nth-odd (n) (1+ (* 2 (nth-integer))))
 (defdata::register-type odd 
                :predicate oddp 
                :enumerator nth-odd-builtin)
 
-(defdata-subtype var symbol)
+(defdata-subtype-strict var symbol)
 
 (in-theory (disable varp))
+

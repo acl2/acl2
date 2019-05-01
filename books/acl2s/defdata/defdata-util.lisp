@@ -5,11 +5,11 @@
 ;;Bunch of utility functions for use by just defdata
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
-
 (in-package "DEFDATA")
 
 (set-verify-guards-eagerness 2)
 (include-book "std/util/bstar" :dir :system)
+(include-book "acl2s/utilities" :dir :system)
 
 ;; (defun modify-symbol (prefix sym postfix)
 ;;   (declare (xargs :guard (and (symbolp sym)
@@ -21,7 +21,6 @@
 ;;     (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
 ;;       (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
 ;;       (intern-in-package-of-symbol name sym))))
-
 
 (defun str/sym-listp (x)
   (declare (xargs :guard T))
@@ -50,7 +49,6 @@
                                           separator
                                           (join-names (cdr xs) separator))))))
 
-
 (defthm join-names-is-stringp
   (stringp (join-names x sep)))
 
@@ -59,7 +57,6 @@
 (defun extract-kwd-val-fn (key args default)
   (declare (xargs :guard (and (keywordp key)
                               (true-listp args))))
-
   (let* ((lst (member key args))
          (val (and (consp lst) (consp (cdr lst)) (cadr lst))))
     (or val default)))
@@ -109,7 +106,6 @@
                  "DEFDATA"))
        ;; (- (cw "~| pkg to be used is : ~x0~%" pkg~))
        )
-
   (intern$ (join-names ss sep) pkg~)))
 
 (defun modify-symbol-lst (prefix syms postfix pkg)
@@ -139,8 +135,6 @@
   (declare (xargs :guard (symbol-listp syms)))
   (for ((sym in syms)) (collect (symbol-name sym))))
 
-
-
 (verify-termination ACL2::>=-LEN)
 (verify-termination ACL2::ALL->=-LEN)
 ; Commented out by Matt K., 12/23/2018.  The following is ill-formed, but was
@@ -156,19 +150,17 @@
         (t (cons (cadar x)
                  (strip-cadrs (cdr x))))))
 
-
 (defconst *defthm-aliases*
   '(acl2::defthm acl2::defthmd acl2::defthm+ acl2::defrule acl2::defaxiom))
+
 (defloop get-event-names (xs)
   "get names from defthm events"
   (declare (xargs :guard (acl2::all->=-len xs 2)))
   (for ((x in xs)) (append (and (member-eq (car x) *defthm-aliases*) (list (cadr x))))))
 
-
 (defun keywordify (sym)
   (declare (xargs :guard (symbolp sym)))
   (intern-in-package-of-symbol (symbol-name sym) :a))
-
 
 ; utility fn to print if verbose flag is true
 (defmacro cw? (verbose-flag &rest rst)
@@ -213,6 +205,7 @@
   (implies (keywordp x)
            (not (proper-symbolp x)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
 (defthm proper-symbol-disjoint-with-bool
   (implies (booleanp x)
            (not (proper-symbolp x)))
@@ -243,6 +236,16 @@
        ((unless (and (consp entry) (consp (cdr entry)))) nil))
     (natp (cadr entry))))
 
+
+; DEFDATA TABLES
+
+; TYPE METADATA TABLE
+(table type-metadata-table nil nil :clear)
+
+; TYPE ALIAS TABLES
+(table pred-alias-table nil nil :clear)
+(table type-alias-table nil nil :clear)
+
 ; Doesnt work
 ;; (defthm table-alist-are-alists
 ;;   (implies (and (plist-worldp w)
@@ -257,7 +260,6 @@
   (or (eq P 'ACL2S::ALLP)
       (assoc P (table-alist 'ACL2S::ALLP-ALIASES wrld))))
 
-
 ; TODO -- use this in places where we check for Top type.
 (defun is-top (typename wrld)
   "is typename an alias of acl2s::all?"
@@ -266,7 +268,6 @@
   (declare (xargs :verify-guards nil))
   (or (eq typename 'ACL2S::ALL)
       (rassoc typename (table-alist 'ACL2S::ALLP-ALIASES wrld))))
-
 
 ; CHECK with J. TODO What if there is some information in pos-implicants of P1,
 ; that is missed below!?
@@ -316,7 +317,6 @@
 
 ;----------above is copied from utilities.lisp -----------------------
 
-
 (local
  (defthm valid-subseq-of-string-is-string
    (implies (and (stringp pname)
@@ -330,7 +330,6 @@
 (defun get-typesymbol-from-pred-P-naming-convention (sym)
   (declare (xargs :guard (and (symbolp sym))
                   :guard-hints (("Goal" :in-theory (disable acl2::length acl2::subseq)))))
-
   (let* ((pred-name (acl2::symbol-name sym))
         (len-predname (acl2::length pred-name)))
     (if (and
@@ -340,7 +339,6 @@
         (intern-in-package-of-symbol typename sym))
       NIL))) ;TODO.Beware
       ;(er hard 'get-typesymbol-from-pred "~x0 doesnt follow our convention of predicates ending with 'p'.~%" sym))))
-
 
 ;;-- (make-predicate-symbol 'integer "ACL2S B") ==> ACL2S B::INTEGERP
 (defun make-predicate-symbol (sym pkg)
@@ -363,17 +361,13 @@
   (declare (xargs :guard (and (symbolp sym)
                               (not (equal pkg ""))
                               (stringp pkg))))
-
   (s+ "NTH-" sym :pkg pkg))
 
 (defun make-uniform-enumerator-symbol (sym pkg)
     (declare (xargs :guard (and (symbolp sym)
                                 (not (equal pkg ""))
                                 (stringp pkg))))
-
   (s+ "NTH-" sym "/ACC" :pkg pkg))
-
-
 
 ;;--check arity of macro optional arguments
 (defun optional-macro-args-allow-arity (margs n)
@@ -430,7 +424,6 @@
            (true-listp (acl2-getprop name 'acl2::macro-args world
                                      :default :undefined)))))
 
-
 (defun allow-arity-lst (name-lst n world)
   (declare (xargs :guard (and (symbol-listp name-lst)
                               (natp n)
@@ -452,10 +445,6 @@
       (and (plausible-predicate-functionp      (car name-lst) world)
            (plausible-predicate-function-listp (cdr name-lst) world))))
 
-
-
-
-
 (defun possible-constant-value-p (def)
   (declare (xargs :guard t))
   (if (consp def)
@@ -468,7 +457,6 @@
         (booleanp def);t or nil
         (legal-constantp def))))
 
-
 (defun put2-fn (nm key val al)
   (declare (xargs :guard (eqlable-alistp al)))
   (let ((lookup1 (assoc nm al)))
@@ -476,8 +464,6 @@
              (eqlable-alistp (cdr lookup1)))
         (put-assoc nm (put-assoc key val (cdr lookup1)) al)
       al)))
-
-
 
 (defun get2-fn (nm key al default)
   (declare (xargs :guard (eqlable-alistp al)))
@@ -489,7 +475,6 @@
                    (cdr lookup2))
               default))
       default)))
-
 
 (defmacro get2 (name key al &optional default)
   `(get2-fn ,name ,key ,al ,default))
@@ -504,7 +489,6 @@
 (defmacro get1 (key  kwd-alist &optional default)
   `(get1-fn ,key ,kwd-alist ,default))
 
-
 (defloop rget2 (key2 val2 al)
   "return the key which has alist containing key2=val2"
   (declare (xargs :verify-guards nil))
@@ -514,7 +498,12 @@
 
 (defun type-name (pred wrld)
   (declare (xargs :verify-guards nil))
-  (rget2 :predicate pred (table-alist 'type-metadata-table wrld)))
+  (b* ((tbl (table-alist 'type-metadata-table wrld))
+       (ptbl (table-alist 'pred-alias-table wrld))
+       (ptype (assoc-equal :type (acl2s::get-alist pred ptbl))))
+    (if ptype
+        (cdr ptype)
+      (rget2 :predicate pred tbl))))
 
 ;; (defmacro table-add-event (nm key val &key (splice 't))
 ;;   "add (append if splice is t) val onto the existing entry at key in table nm. top-level-event"
@@ -534,10 +523,6 @@
   `(make-event
     '(table ,nm ,key (union-equal (cdr (assoc ,key (table-alist ',nm world))) ,val))))
 
-
-
-
-
 (defun get-all (key D) ;D is a dictionary/alist
   (declare (xargs :guard (eqlable-alistp D)))
   (if (endp D)
@@ -545,7 +530,6 @@
     (if (eql key (caar D))
         (cons (cdar D) (get-all key (cdr D)))
       (get-all key (cdr D)))))
-
 
 (defun apply-mget-to-x-lst (fields quotep)
   (declare (xargs :guard (and (booleanp quotep)
@@ -555,7 +539,6 @@
     (let ((d-keyword-name (intern (symbol-name (car fields)) "KEYWORD")))
       (cons (list 'acl2::mget (if quotep (kwote d-keyword-name) d-keyword-name) 'x)
             (apply-mget-to-x-lst (cdr fields) quotep)))))
-
 
 ;find recursive records
 (defun find-recursive-records (preds new-constructors)
@@ -574,18 +557,15 @@
         (cons (car new-constructors) (find-recursive-records preds (cdr new-constructors)))
       (find-recursive-records preds (cdr new-constructors))))))
 
-
-
 ;(verify-termination acl2::rule-name-designatorp)
 (defun runes-to-be-disabled1 (names wrld ans)
   (declare (xargs :mode :program))
   (if (endp names)
       ans
-  (b* ((name (car names)))
-
-    (if (acl2::rule-name-designatorp name nil wrld);filter runes
-        (runes-to-be-disabled1 (cdr names) wrld (cons name ans))
-      (runes-to-be-disabled1 (cdr names) wrld ans)))))
+    (b* ((name (car names)))
+      (if (acl2::rule-name-designatorp name nil wrld) ;filter runes
+          (runes-to-be-disabled1 (cdr names) wrld (cons name ans))
+        (runes-to-be-disabled1 (cdr names) wrld ans)))))
 
 (defun runes-to-be-disabled (names wrld)
   (declare (xargs :mode :program))
@@ -596,41 +576,98 @@
                               (symbol-listp params)
                               (= (len fns) (len params)))))
   (if (endp fns)
-    nil
+      nil
     (if (eq (car fns) 'ACL2S::ALLP)
         (build-one-param-calls (cdr fns) (cdr params))
       (cons (list (car fns) (car params))
             (build-one-param-calls (cdr fns) (cdr params))))))
 
 (include-book "coi/symbol-fns/symbol-fns" :dir :system)
+
 (defun numbered-vars (x k)
   (declare (xargs :guard (and (symbolp x)
                               (natp k))))
   (reverse (symbol-fns::item-to-numbered-symbol-list-rec x k)))
-
 
 (defun type-metadata-table (wrld)
   "api to get the alist representing defdata type metadata table"
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'defdata::type-metadata-table wrld))
 
+(defun type-alias-table (wrld)
+  "api to get the alist representing defdata type-alias table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::type-alias-table wrld))
+
+(defun pred-alias-table (wrld)
+  "api to get the alist representing defdata pred-alias table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::pred-alias-table wrld))
+
+(defun base-alias-type (type atbl)
+  (declare (xargs :verify-guards nil))
+  (b* ((atype (assoc-equal :type (acl2s::get-alist type atbl))))
+    (if (consp atype)
+        (cdr atype)
+      type)))
+
+(defun base-alias-pred (pred ptbl)
+  (declare (xargs :verify-guards nil))
+  (b* ((ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
+    (if (consp ppred)
+        (cdr ppred)
+      pred)))
+
+(defmacro defdata-alias (alias type &optional pred)
+  `(make-event
+    (b* ((pkg (current-package state))
+         (tbl (table-alist 'type-metadata-table (w state)))
+         (atbl (table-alist 'type-alias-table (w state)))
+         (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
+         (type (base-alias-type ',type atbl))
+         (predicate (acl2s::get-alist :predicate (acl2s::get-alist type tbl)))
+         (x (intern$ "X" pkg))
+         ((unless predicate)
+          (er hard 'defdata-alias
+ "~%**Unknown type**: ~x0 is not a known type name.~%" ',type )))
+      `(encapsulate
+        ()
+        (table type-alias-table
+               ',',alias
+               '((:pred . ,pred)
+                 (:type . ,type)
+                 (:predicate . ,predicate))
+               :put)
+        (table pred-alias-table
+               ',pred
+               '((:alias . ,',alias)
+                 (:type . ,type)
+                 (:predicate . ,predicate))
+               :put)
+        (defmacro ,pred (,x) `(,',predicate ,,x))))))
+
 (defmacro predicate-name (tname &optional M)
 ; if Metadata table is not provided, wrld should be in scope.
   (if M
       `(get2 ,tname :predicate ,M)
-    `(get2 ,tname :predicate (table-alist 'type-metadata-table wrld))))
+    `(get2 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
+           :predicate (table-alist 'type-metadata-table wrld))))
 
 (defmacro enumerator-name (tname &optional M)
 ; if Metadata table is not provided, wrld should be in scope.
   (if M
       `(get1 :enumerator (get1 ,tname ,M))
-    `(get1 :enumerator  (get1 ,tname (table-alist 'type-metadata-table wrld)))))
+    `(get1 :enumerator
+           (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
+                 (table-alist 'type-metadata-table wrld)))))
 
 (defmacro enum/acc-name (tname &optional M)
 ; if Metadata table is not provided, wrld should be in scope.
   (if M
       `(get1 :enum/acc (get1 ,tname ,M))
-    `(get1 :enum/acc  (get1 ,tname (table-alist 'type-metadata-table wrld)))))
+    `(get1 :enum/acc
+           (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
+                 (table-alist 'type-metadata-table wrld)))))
 
 (defloop predicate-names-fn (tnames M)
   (declare (xargs :guard (and (symbol-listp tnames)
@@ -642,11 +679,8 @@
       `(predicate-names-fn ,tnames ,M)
     `(predicate-names-fn ,tnames (table-alist 'type-metadata-table wrld))))
 
-
-
 (defloop possible-constant-values-p (xs)
   (for ((x in xs)) (always (possible-constant-value-p x))))
-
 
 (mutual-recursion
  (defun texp-constituent-types1 (texp tnames wrld include-recursive-references-p)
@@ -677,10 +711,11 @@
 (defun recursive-type-p (type-name wrld)
   (declare (xargs :verify-guards nil))
   (b* ((table (table-alist 'type-metadata-table wrld))
-        (norm-def (get2 type-name :normalized-def table))
-        (clique-names (get2 type-name :clique table)))
+       (type-name
+        (base-alias-type type-name (table-alist 'type-alias-table wrld)))
+       (norm-def (get2 type-name :normalized-def table))
+       (clique-names (get2 type-name :clique table)))
     (is-recursive-type-exp norm-def clique-names wrld)))
-
 
 (defun constituent-types1 (p wrld)
   (declare (xargs :verify-guards nil))
@@ -692,8 +727,6 @@
 (defloop constituent-types (ps wrld)
   (declare (xargs :verify-guards nil))
   (for ((p in ps)) (append (constituent-types1 p  wrld))))
-
-
 
 (defun named-defdata-exp-p (texp)
   "is it named, i.e of form (name . typename)"
@@ -753,23 +786,17 @@
          (t
           (let* ((expanded-args (expand-lambda-lst (fargs term)))
                  (fn (acl2::ffn-symb term)))
-
             (cond ((acl2::flambdap fn) ;get rid of the lambda application
                    (acl2::subcor-var (acl2::lambda-formals fn)
-                               expanded-args
-                               (expand-lambda (acl2::lambda-body fn))))
-
+                                     expanded-args
+                                     (expand-lambda (acl2::lambda-body fn))))
                   (t (acl2::cons-term fn expanded-args)))))))
 
-(defun expand-lambda-lst (term-lst)
-  (declare (xargs :guard (pseudo-term-listp term-lst)))
-  (cond ((endp term-lst) '())
-        (t (cons (expand-lambda (car term-lst))
-                 (expand-lambda-lst (cdr term-lst))))))
-
- )
-
-
+ (defun expand-lambda-lst (term-lst)
+   (declare (xargs :guard (pseudo-term-listp term-lst)))
+   (cond ((endp term-lst) '())
+         (t (cons (expand-lambda (car term-lst))
+                  (expand-lambda-lst (cdr term-lst)))))))
 
 (defun separate-kwd-args (args defs-ans)
   (declare (xargs :guard (true-listp defs-ans)))
@@ -780,8 +807,6 @@
         (mv defs-ans args)
       (separate-kwd-args (cdr args)
                          (append defs-ans (list (car args)))))))
-
-
 
 ; nat * nat -> (listof nat)
 (defun make-numlist-from (curr size)
@@ -803,8 +828,7 @@
    (if (atom texps)
        nil
      (cons (keep-names (car texps))
-           (keep-names-lst (cdr texps)))))
- )
+           (keep-names-lst (cdr texps))))))
 
 (mutual-recursion
  (defun remove-names (texp)
@@ -818,15 +842,13 @@
    (if (atom texps)
        nil
      (cons (remove-names (car texps))
-           (remove-names-lst (cdr texps)))))
- )
+           (remove-names-lst (cdr texps))))))
 
 (defmacro commentary (yes &rest args)
   `(value-triple
     (prog2$
      (cw? ,yes ,@args)
      :invisible)))
-
 
 (defloop pair-prefix (prefix xs)
   (declare (xargs :guard (true-listp xs)))
@@ -881,7 +903,6 @@
 (defun forbidden-names-builtin () '(defdata::x acl2::x acl2s::x))
 (defattach forbidden-names forbidden-names-builtin)
 
-
 (defun remove1-assoc-all (key alst)
   "delete from alst all entries with key"
   (declare (xargs :guard (alistp alst)))
@@ -911,7 +932,6 @@
        (equal (assoc-equal key A1) (assoc-equal key A2))
        (alist-equiv (remove1-assoc-all key A1) (remove1-assoc-all key A2))))))
 
-
 (defloop collect-declares (xs)
   (for ((x in xs)) (append (and (consp x) (equal 'ACL2::DECLARE (car x))
                                 (true-listp x) (cdr x)))))
@@ -937,7 +957,6 @@
        (formals (cadr args))
        ;(formal-stars (make-list (len formals) :initial-element 'ACL2::*))
        (guard (extract-guard-from-edecls (collect-declares args))))
-
     `(PROGN
       (DEFUN ,b-name . ,(cdr args))
       (VERIFY-GUARDS ,b-name)
@@ -949,7 +968,6 @@
                 (,b-name . ,formals))))
       (DEFATTACH ,name ,b-name))))
 
-
 (defun convert-listpairs-to-conspairs (listpairs)
   (declare (xargs :guard (acl2::symbol-doublet-listp listpairs)))
   (if (endp listpairs)
@@ -959,7 +977,6 @@
                  (snd (cadr lstpair)))
             (cons fst snd))
           (convert-listpairs-to-conspairs (cdr listpairs)))))
-
 
 ; self-explanatory
 ; convert ((a . b) ...) to ((a b) ...)
@@ -993,7 +1010,6 @@
                                      (cdr term)
                                    (list term)))))
 
-      
 (mutual-recursion
 ;; code taken from structures.lisp in data-structures book.
  (defun get-vars1 (term ans)
@@ -1012,6 +1028,7 @@
    (if (endp terms)
        ans
      (get-vars1-lst (cdr terms) (get-vars1 (car terms) ans)))))
+
 (defun get-vars (term)
   (declare (xargs :verify-guards nil))
   (get-vars1 term '()))
