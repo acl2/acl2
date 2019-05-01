@@ -197,26 +197,7 @@
      it is assumed that an XDOC topic with the same name exists as well:
      thus, a subtopic of it is generated,
      named @('pred-additional-theorems')
-     and containing the theorems associated to @('pred').")
-
-   (xdoc::h3 "Note about Packages")
-
-   (xdoc::p
-    "When using @('defbyte') to define 8-bit bytes
-     (the most common size of bytes in modern contexts)
-     `@('byte')' could be a reasonable name for the fixtype.
-     However, note that the @('\"ACL2\"') package
-     imports a symbol with that name from the @('\"COMMON-LISP\"') package;
-     that symbol may be then implicitly imported
-     in a user-defined package @('\"P\"') where @('defbyte') is used.
-     This means that @('p::byte') is actually @('common-lisp::byte'),
-     and that function and theorem names derived from it by @('defbyte')
-     will end up in the @('\"ACL2\"') package
-     rather than in the @('\"P\"') package,
-     e.g. @('acl2::byte-fix') instead of @('p::byte-fix').
-     Thus, it is recommended to arrange for @('\"P\"')
-     to exclude the symbol @('common-lisp::byte'),
-     so that @('p::byte') is a different symbol.")))
+     and containing the theorems associated to @('pred').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
