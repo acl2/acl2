@@ -122,12 +122,22 @@
    (xdoc::desc
     "@('pred')"
     (xdoc::p
-     "The recognizer for the fixtype, guard-verified."))
+     "The recognizer for the fixtype, guard-verified.")
+    (xdoc::p
+     "As a special case, if a function with this name already exists,
+      it is not (re-)generated.
+      This is mainly to accomodate the existing recognizers
+      @(tsee acl2::bytep) and @(tsee acl2::nibblep),
+      but it is a more general mechanism."))
 
    (xdoc::desc
     "@('booleanp-of-pred')"
     (xdoc::p
-     "A rewrite rule saying that @('pred') is boolean-valued."))
+     "A rewrite rule saying that @('pred') is boolean-valued.")
+    (xdoc::p
+     "If @('pred') already exists (see above),
+      it is assumed that a theorem like this already exists as well:
+      thus, this theorem is not (re-)generated."))
 
    (xdoc::desc
     "@('pred-forward-binpred')"
@@ -182,7 +192,12 @@
       the unary function call satisfies @(tsee posp)."))
 
    (xdoc::p
-    "The above items are generated with XDOC documentation.")
+    "The above items are generated with XDOC documentation.
+     If @('pred') already exists (see above),
+     it is assumed that an XDOC topic with the same name exists as well:
+     thus, a subtopic of it is generated,
+     named @('pred-additional-theorems')
+     and containing the theorems associated to @('pred').")
 
    (xdoc::h3 "Note about Packages")
 
@@ -377,12 +392,22 @@
                               nil
                             (acl2::packn-pos (list type '-is-posp)
                                              pkg-witness)))
+       ;; name of the XDOC topic to generate if the recognizer already exists:
+       (pred-additional-theorems (acl2::add-suffix-to-fn
+                                  pred "-ADDITIONAL-THEOREMS"))
        ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
        (yes/no (intern-in-package-of-symbol "YES/NO" pkg-witness))
        (fixed-x (intern-in-package-of-symbol "FIXED-X" pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
+                              "@(tsee "
+                              (acl2::string-downcase (symbol-package-name type))
+                              "::"
+                              (acl2::string-downcase (symbol-name type))
+                              ")"))
+       ;; reference to the recognizer for the generated XDOC documentation:
+       (pred-ref (concatenate 'string
                               "@(tsee "
                               (acl2::string-downcase (symbol-package-name type))
                               "::"
@@ -407,40 +432,57 @@
                  (posp ,size)
                  :rule-classes (:rewrite :type-prescription)))))
        (pred-event
-        `(define ,pred (,x)
-           :returns (,yes/no booleanp
-                             :name ,booleanp-of-pred
-                             :hints (("Goal"
-                                      :in-theory
-                                      '(,pred
-                                        (:t ,binpred)
-                                        acl2::booleanp-compound-recognizer))))
-           :parents (,type)
-           :short ,(concatenate 'string "Recognizer for " type-ref ".")
-           (mbe :logic (,binpred ,size ,x)
-                :exec (and (integerp ,x)
-                           (<= ,lower-bound ,x)
-                           (< ,x ,upper-bound)))
-           :guard-hints (("Goal"
-                          :in-theory '(,binpred
-                                       integer-range-p
-                                       (:e expt)
-                                       ,@(and type-size-is-posp
-                                              (list type-size-is-posp)))))
-           :no-function t
-           ///
-           (defrule ,pred-forward-binpred
-             (implies (,pred ,x)
-                      (,binpred ,size ,x))
-             :rule-classes :forward-chaining
-             :in-theory '(,pred))
-           (defruled ,binpred-rewrite-pred
-             (equal (,binpred ,size ,x)
-                    (,pred ,x))
-             :in-theory '(,pred))
-           (theory-invariant
-            (incompatible (:rewrite ,binpred-rewrite-pred)
-                          (:definition ,pred)))))
+        (if (function-symbolp pred wrld)
+            `(defsection ,pred-additional-theorems
+               :parents (,pred ,type)
+               :short ,(concatenate 'string
+                                    "Additional theorems about " pred-ref ".")
+               (defrule ,pred-forward-binpred
+                 (implies (,pred ,x)
+                          (,binpred ,size ,x))
+                 :rule-classes :forward-chaining
+                 :in-theory '(,pred))
+               (defruled ,binpred-rewrite-pred
+                 (equal (,binpred ,size ,x)
+                        (,pred ,x))
+                 :in-theory '(,pred))
+               (theory-invariant
+                (incompatible (:rewrite ,binpred-rewrite-pred)
+                              (:definition ,pred))))
+          `(define ,pred (,x)
+             :returns (,yes/no booleanp
+                               :name ,booleanp-of-pred
+                               :hints (("Goal"
+                                        :in-theory
+                                        '(,pred
+                                          (:t ,binpred)
+                                          acl2::booleanp-compound-recognizer))))
+             :parents (,type)
+             :short ,(concatenate 'string "Recognizer for " type-ref ".")
+             (mbe :logic (,binpred ,size ,x)
+                  :exec (and (integerp ,x)
+                             (<= ,lower-bound ,x)
+                             (< ,x ,upper-bound)))
+             :guard-hints (("Goal"
+                            :in-theory '(,binpred
+                                         integer-range-p
+                                         (:e expt)
+                                         ,@(and type-size-is-posp
+                                                (list type-size-is-posp)))))
+             :no-function t
+             ///
+             (defrule ,pred-forward-binpred
+               (implies (,pred ,x)
+                        (,binpred ,size ,x))
+               :rule-classes :forward-chaining
+               :in-theory '(,pred))
+             (defruled ,binpred-rewrite-pred
+               (equal (,binpred ,size ,x)
+                      (,pred ,x))
+               :in-theory '(,pred))
+             (theory-invariant
+              (incompatible (:rewrite ,binpred-rewrite-pred)
+                            (:definition ,pred))))))
        (fix-event
         `(define ,fix ((,x ,pred))
            :returns (,fixed-x ,pred
