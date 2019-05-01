@@ -16,8 +16,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "BITCOIN" (append *std-pkg-symbols*
-                          '(bebytes=>nat
+                          '(bebytes=>bits
+                            bebytes=>nat
                             bendian=>nat
+                            bit-listp
+                            bits=>bebytes
+                            bits=>beubyte11s
                             byte
                             byte-fix
                             byte-list
@@ -44,6 +48,9 @@
                             prefixp
                             string=>nats
                             trim-bendian*
+                            ubyte11-fix
+                            ubyte11-listp
+                            ubyte11p
                             ubyte32
                             ubyte32-fix
                             ubyte32-list
