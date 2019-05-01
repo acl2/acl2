@@ -69,7 +69,12 @@
                       (ec-call (logicman-pathcond-p-fn pathcond logicman))
                       (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
                       (not (consp (bvar-db-bfrlist bvar-db)))
-                      (equal (next-bvar bvar-db) (bfr-nvars logicman))))
+                      (equal (next-bvar bvar-db) (bfr-nvars logicman))
+                      (logicman-invar logicman)
+                      (stobj-let ((ipasir (logicman->ipasir logicman)))
+                                 (ok)
+                                 (equal (ipasir-get-assumption ipasir) nil)
+                                 ok)))
                ok))
   ///
   (defthm interp-st-bfrs-ok-implies
@@ -83,7 +88,9 @@
                     (not (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
                     (interp-st-nvars-ok interp-st)
                     (equal (next-bvar$a (interp-st->bvar-db interp-st))
-                           (bfr-nvars (interp-st->logicman interp-st))))))
+                           (bfr-nvars (interp-st->logicman interp-st)))
+                    (logicman-invar logicman)
+                    (equal (ipasir::ipasir$a->assumption (logicman->ipasir (interp-st->logicman interp-st))) nil))))
     :hints(("Goal" :in-theory (enable interp-st-nvars-ok))))
 
   (acl2::def-updater-independence-thm interp-st-bfrs-ok-updater-independence
@@ -106,7 +113,15 @@
   (defthm interp-st-bfrs-ok-of-logicman-extension
     (implies (and (interp-st-bfrs-ok interp-st)
                   (logicman-extension-p new-logicman (interp-st->logicman interp-st))
-                  (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st))))
+                  (equal (bfr-nvars new-logicman) (bfr-nvars (interp-st->logicman interp-st)))
+                  (equal (logicman->ipasir new-logicman)
+                         (logicman->ipasir (interp-st->logicman interp-st)))
+                  (equal (logicman->sat-lits new-logicman)
+                         (logicman->sat-lits (interp-st->logicman interp-st)))
+                  (equal (logicman->refcounts-index new-logicman)
+                         (logicman->refcounts-index (interp-st->logicman interp-st)))
+                  (equal (logicman->aignet-refcounts new-logicman)
+                         (logicman->aignet-refcounts (interp-st->logicman interp-st))))
              (interp-st-bfrs-ok (update-interp-st->logicman new-logicman interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-stack

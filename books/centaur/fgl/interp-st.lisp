@@ -820,7 +820,12 @@
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
                      (append (gl-object-bfrlist x)
-                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))))
+                             (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
+
+  (defret logicman-get-of-<fn>
+    (implies (not (equal (logicman-field-fix key) :aignet))
+             (equal (logicman-get key (interp-st->logicman new-interp-st))
+                    (logicman-get key (interp-st->logicman interp-st))))))
 
 (define interp-st-add-term-bvar-unique ((x gl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
@@ -869,4 +874,82 @@
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
                      (append (gl-object-bfrlist x)
-                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))))
+                             (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
+
+  (defret logicman-get-of-<fn>
+    (implies (not (equal (logicman-field-fix key) :aignet))
+             (equal (logicman-get key (interp-st->logicman new-interp-st))
+                    (logicman-get key (interp-st->logicman interp-st))))))
+
+
+(def-updater-independence-thm logicman->aignet-of-interp-st->logicman
+  (implies (equal (logicman-get :aignet (interp-st->logicman new))
+                  (logicman-get :aignet (interp-st->logicman old)))
+           (equal (logicman->aignet (interp-st->logicman new))
+                  (logicman->aignet (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->aignet-of-update)))))
+
+(def-updater-independence-thm logicman->strash-of-interp-st->logicman
+  (implies (equal (logicman-get :strash (interp-st->logicman new))
+                  (logicman-get :strash (interp-st->logicman old)))
+           (equal (logicman->strash (interp-st->logicman new))
+                  (logicman->strash (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->strash-of-update)))))
+
+(def-updater-independence-thm logicman->ipasir-of-interp-st->logicman
+  (implies (equal (logicman-get :ipasir (interp-st->logicman new))
+                  (logicman-get :ipasir (interp-st->logicman old)))
+           (equal (logicman->ipasir (interp-st->logicman new))
+                  (logicman->ipasir (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->ipasir-of-update)))))
+
+(def-updater-independence-thm logicman->sat-lits-of-interp-st->logicman
+  (implies (equal (logicman-get :sat-lits (interp-st->logicman new))
+                  (logicman-get :sat-lits (interp-st->logicman old)))
+           (equal (logicman->sat-lits (interp-st->logicman new))
+                  (logicman->sat-lits (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->sat-lits-of-update)))))
+
+(def-updater-independence-thm logicman->mode-of-interp-st->logicman
+  (implies (equal (logicman-get :mode (interp-st->logicman new))
+                  (logicman-get :mode (interp-st->logicman old)))
+           (equal (logicman->mode (interp-st->logicman new))
+                  (logicman->mode (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->mode-of-update)))))
+
+(def-updater-independence-thm logicman->aignet-refcounts-of-interp-st->logicman
+  (implies (equal (logicman-get :aignet-refcounts (interp-st->logicman new))
+                  (logicman-get :aignet-refcounts (interp-st->logicman old)))
+           (equal (logicman->aignet-refcounts (interp-st->logicman new))
+                  (logicman->aignet-refcounts (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->aignet-refcounts-of-update)))))
+
+(def-updater-independence-thm logicman->refcounts-index-of-interp-st->logicman
+  (implies (equal (logicman-get :refcounts-index (interp-st->logicman new))
+                  (logicman-get :refcounts-index (interp-st->logicman old)))
+           (equal (logicman->refcounts-index (interp-st->logicman new))
+                  (logicman->refcounts-index (interp-st->logicman old))))
+  :hints(("Goal" :in-theory (e/d (logicman-get)
+                                 (logicman->refcounts-index-of-update)))))
+
+
+(def-updater-independence-thm logicman-invar-of-interp-st-logicman-extension
+  (implies (and (equal new-logicman (interp-st->logicman new))
+                (equal old-logicman (interp-st->logicman old))
+                (logicman-extension-p new-logicman old-logicman)
+                (logicman-invar old-logicman)
+                (equal (logicman->ipasir new-logicman)
+                       (logicman->ipasir old-logicman))
+                (equal (logicman->sat-lits new-logicman)
+                       (logicman->sat-lits old-logicman))
+                (equal (logicman->refcounts-index new-logicman)
+                       (logicman->refcounts-index old-logicman))
+                (equal (logicman->aignet-refcounts new-logicman)
+                       (logicman->aignet-refcounts old-logicman)))
+           (logicman-invar (interp-st->logicman new))))

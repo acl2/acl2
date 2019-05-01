@@ -821,6 +821,14 @@
 ;; BOZO move
 
 
+(defthm logicman-get-of-bfr-ite-bss-fn
+  (implies (and (not (equal (logicman-field-fix key) :aignet))
+                (not (equal (logicman-field-fix key) :strash)))
+           (equal (logicman-get key (mv-nth 1 (bfr-ite-bss-fn c v1 v0 logicman)))
+                  (logicman-get key logicman)))
+  :hints(("Goal" :in-theory (enable bfr-ite-bss-fn
+                                    bfr-ite-bss-fn-aux))))
+
 (define gl-object-basic-merge ((test lbfr-p)
                                (then gl-object-p)
                                (else gl-object-p)
@@ -1040,7 +1048,14 @@
   (deffixequiv gl-object-basic-merge
     :hints (("goal" :induct (gl-object-basic-merge test then else logicman)
              :expand ((:free (then) (gl-object-basic-merge test then else logicman))
-                      (:free (else) (gl-object-basic-merge test then else logicman)))))))
+                      (:free (else) (gl-object-basic-merge test then else logicman))))))
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix key) :aignet))
+                  (not (equal (logicman-field-fix key) :strash)))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman)))
+    :hints(("Goal" :expand (<call>) :induct <call>))))
 
 
 
@@ -1258,6 +1273,13 @@
   :irrelevant-formals-ok t
   :enabled t
   (mv (g-boolean bfr) interp-st))
+  ;; (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
+  ;;       )
+  ;;      ((fgl-sat-config config)))
+  ;;   (stobj-let ((logicman (interp-st->logicman interp-st))
+  ;;               (pathcond (interp-st->pathcond interp-st))
+                
+  ;;      (
 
 (define interp-st-sat-check ((params gl-object-p)
                              (bfr interp-st-bfr-p)
@@ -3262,119 +3284,131 @@
       )))
 
 
-;; Giant hack to get enough lemmas that we don't have to rely on (slow)
-;; bfr-listp-when-not-member-witness reasoning.  Not at all sure this is worth anything.
-(defsection interp-st-bfrs-ok-lemmas
-  (local
-   (make-event
-    (b* ((state (f-put-global 'interp-st-bfrs-ok-lemma-clauses nil state)))
-      (value '(value-triple :invisible)))))
-
-  (set-tau-auto-mode nil)
-  (local (defund hyp-marker (x) x))
-  (local (in-theory (disable (:t hyp-marker))))
-  (local (defcong iff iff (hyp-marker x) 1 :hints(("Goal" :in-theory (enable hyp-marker)))))
-  (local (defthm remove-hyp-marker
-           (implies (acl2::rewriting-negative-literal `(hyp-marker ,x))
-                    (iff (hyp-marker x) x))
-           :hints(("Goal" :in-theory (enable hyp-marker)))))
-                    
-  (local (in-theory (disable bfr-listp-when-not-member-witness
-                             ;; INTERP-ST-BFRS-OK-UPDATER-INDEPENDENCE
-                             ;; INTERP-ST-BFRS-OK-OF-UPDATE-STACK
-                             )))
-  ;; (local (defstub dummy-concl () t))
-  (local
-   (make-event
-    '(:or
-      (with-output
-        :off (event prove)
-        :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
-        (std::defret-mutual-generate interp-st-bfrs-ok-of-<fn>
-          :formal-hyps
-          (((interp-st-bfr-p x)           (hyp-marker (lbfr-p x (interp-st->logicman interp-st))))
-           ((gl-object-p x)               (hyp-marker (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman interp-st))))
-           ((gl-objectlist-p x)           (hyp-marker (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman interp-st))))
-           (interp-st                     (hyp-marker (interp-st-bfrs-ok interp-st)))
-           ((constraint-instancelist-p x) (hyp-marker (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman interp-st)))))
-          
-          :rules
-          ((t (:add-concl (equal (w new-state) (w state))))
-           ;; (t (:add-keyword :hints ('(:do-not-induct t)
-           ;;                          (let ((flag (find-flag-is-hyp clause)))
-           ;;                            (and flag
-           ;;                                 (prog2$ (cw "flag: ~x0~%" flag)
-           ;;                                         '(:no-op t)))))))
-           ((:fnname gl-rewrite-try-rules)
-            (:add-hyp (hyp-marker (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist)))))
-          
-          :hints ((fgl-interp-default-hint 'gl-interp-term id nil world)
-                  (let ((flag (find-flag-is-hyp clause)))
-                    (and flag
-                         (prog2$ (cw "flag: ~x0~%" flag)
-                                 '(:no-op t))))
-                  (if stable-under-simplificationp
-                      (let ((state (f-put-global
-                                    'interp-st-bfrs-ok-lemma-clauses
-                                    (cons clause (@ interp-st-bfrs-ok-lemma-clauses))
-                                    state)))
-                        (value '(:by nil)))
-                    (value nil)))
-          :mutual-recursion gl-interp
-          ;; :hints ((fgl-interp-default-hint 'gl-interp-term id nil world))
-          ))
-      (value-triple :clauses-generated))))
-
-  (local (defun process-bfrs-ok-clause (clause hyps)
-           ;; returns (mv thms hyps)
-           (declare (xargs :mode :program))
-           (if (atom clause)
-               (mv nil hyps)
-             (let ((lit (car clause)))
-               (case-match lit
-                 (('not ('acl2::flag-is &))
-                  (process-bfrs-ok-clause (cdr clause) hyps))
-                 (('equal ('w &) ('w &)) (process-bfrs-ok-clause (cdr clause) hyps))
-                 (('not ('equal ('w &) ('w &))) (process-bfrs-ok-clause (cdr clause) hyps))
-                 (('hyp-marker x)
-                  (b* (((mv thms hyps) (process-bfrs-ok-clause (cdr clause) hyps)))
-                    (mv (cons (append hyps (list x)) thms) hyps)))
-                 (& (process-bfrs-ok-clause (cdr clause) (cons (car clause) hyps))))))))
-
-  (local (defun process-bfrs-ok-clauses (clauses)
-           (declare (xargs :mode :program))           
-           (if (atom clauses)
-               nil
-             (b* (((mv thms &) (process-bfrs-ok-clause (car clauses) nil)))
-               (append thms (process-bfrs-ok-clauses (cdr clauses)))))))
-
-  (local (make-event
-          (b* ((state (f-put-global 'interp-st-bfrs-ok-lemma-thm-clauses
-                                    (acl2::subsumption-replacement-loop
-                                     (acl2::merge-sort-length
-                                      (process-bfrs-ok-clauses (@ interp-st-bfrs-ok-lemma-clauses)))
-                                     nil nil)
-                                    state)))
-            (value '(value-triple :thms-generated)))))
-
-  (local (in-theory (enable bfr-listp-when-not-member-witness)))
-
-  (local (defun name-and-record-thms (thms n w)
-           (declare (xargs :mode :program))
-           (if (atom thms)
-               nil
-             (cons `(defthm ,(intern-in-package-of-symbol
-                              (concatenate 'string
-                                           "INTERP-ST-BFRS-OK-LEMMA-" (str::natstr n))
-                              'foo)
-                      ,(acl2::prettyify-clause (car thms) t w))
-                   (name-and-record-thms (cdr thms) (+ 1 n) w)))))
-
-  (make-event
-   (cons 'progn
-         (name-and-record-thms (@ interp-st-bfrs-ok-lemma-thm-clauses) 0 (w state)))))
 
 
+;; This was an attempted hack to get enough lemmas so as not to have to rely on
+;; bfr-listp-when-not-member-witness reasoning to relieve the hyps of our
+;; induction hyps.  But it doesn't seem to work.  I'm going to leave it here
+;; commented out in order to preserve the idea.
+(make-event
+ (let ((event '(local
+                (defsection interp-st-bfrs-ok-lemmas
+                  (local
+                   (make-event
+                    (b* ((state (f-put-global 'interp-st-bfrs-ok-lemma-clauses nil state)))
+                      (value '(value-triple :invisible)))))
+
+                  (set-tau-auto-mode nil)
+                  (local (defund hyp-marker (x) x))
+                  (local (in-theory (disable (:t hyp-marker))))
+                  (local (defcong iff iff (hyp-marker x) 1 :hints(("Goal" :in-theory (enable hyp-marker)))))
+                  (local (defthm remove-hyp-marker
+                           (implies (acl2::rewriting-negative-literal `(hyp-marker ,x))
+                                    (iff (hyp-marker x) x))
+                           :hints(("Goal" :in-theory (enable hyp-marker)))))
+                  
+                  (local (in-theory (disable bfr-listp-when-not-member-witness
+                                             ;; INTERP-ST-BFRS-OK-UPDATER-INDEPENDENCE
+                                             ;; INTERP-ST-BFRS-OK-OF-UPDATE-STACK
+                                             )))
+                  (local (defstub dummy-concl (x) t))
+                  
+                  (local
+                   (make-event
+                    '(:or
+                      (with-output
+                        :off (event prove)
+                        :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
+                        (std::defret-mutual-generate interp-st-bfrs-ok-of-<fn>
+                          :formal-hyps
+                          (((interp-st-bfr-p x)           (hyp-marker (lbfr-p x (interp-st->logicman interp-st))))
+                           ((gl-object-p x)               (hyp-marker (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman interp-st))))
+                           ((gl-objectlist-p x)           (hyp-marker (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman interp-st))))
+                           (interp-st                     (hyp-marker (interp-st-bfrs-ok interp-st)))
+                           ((constraint-instancelist-p x) (hyp-marker (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman interp-st)))))
+                          
+                          :rules
+                          ((t (:add-concl ;; (equal (w new-state) (w state))
+                               (dummy-concl new-interp-st)))
+                           ;; (t (:add-keyword :hints ('(:do-not-induct t)
+                           ;;                          (let ((flag (find-flag-is-hyp clause)))
+                           ;;                            (and flag
+                           ;;                                 (prog2$ (cw "flag: ~x0~%" flag)
+                           ;;                                         '(:no-op t)))))))
+                           ((:fnname gl-rewrite-try-rules)
+                            (:add-hyp (hyp-marker (scratchobj-case (stack$a-top-scratch (interp-st->stack interp-st)) :gl-objlist)))))
+                          
+                          :hints ((fgl-interp-default-hint 'gl-interp-term id nil world)
+                                  (let ((flag (find-flag-is-hyp clause)))
+                                    (and flag
+                                         (prog2$ (cw "flag: ~x0~%" flag)
+                                                 '(:no-op t))))
+                                  (if stable-under-simplificationp
+                                      (let ((state (f-put-global
+                                                    'interp-st-bfrs-ok-lemma-clauses
+                                                    (cons clause (@ interp-st-bfrs-ok-lemma-clauses))
+                                                    state)))
+                                        (value '(:by nil)))
+                                    (value nil)))
+                          :mutual-recursion gl-interp
+                          ;; :hints ((fgl-interp-default-hint 'gl-interp-term id nil world))
+                          ))
+                      (value-triple :clauses-generated))))
+
+                  (local (defun process-bfrs-ok-clause (clause hyps)
+                           ;; returns (mv thms hyps)
+                           (declare (xargs :mode :program))
+                           (if (atom clause)
+                               (mv nil hyps)
+                             (let ((lit (car clause)))
+                               (case-match lit
+                                 (('not ('acl2::flag-is &))
+                                  (process-bfrs-ok-clause (cdr clause) hyps))
+                                 (('equal ('w &) ('w &)) (process-bfrs-ok-clause (cdr clause) hyps))
+                                 (('not ('equal ('w &) ('w &))) (process-bfrs-ok-clause (cdr clause) hyps))
+                                 (('dummy-concl &) (process-bfrs-ok-clause (cdr clause) hyps))
+                                 (('not ('dummy-concl &)) (process-bfrs-ok-clause (cdr clause) hyps))
+                                 (('hyp-marker x)
+                                  (b* (((mv thms hyps) (process-bfrs-ok-clause (cdr clause) hyps)))
+                                    (mv (cons (append hyps (list x)) thms) hyps)))
+                                 (& (process-bfrs-ok-clause (cdr clause) (cons (car clause) hyps))))))))
+
+                  (local (defun process-bfrs-ok-clauses (clauses)
+                           (declare (xargs :mode :program))           
+                           (if (atom clauses)
+                               nil
+                             (b* (((mv thms &) (process-bfrs-ok-clause (car clauses) nil)))
+                               (append thms (process-bfrs-ok-clauses (cdr clauses)))))))
+
+                  (local (make-event
+                          (b* ((state (f-put-global 'interp-st-bfrs-ok-lemma-thm-clauses
+                                                    (acl2::subsumption-replacement-loop
+                                                     (acl2::merge-sort-length
+                                                      (process-bfrs-ok-clauses (@ interp-st-bfrs-ok-lemma-clauses)))
+                                                     nil nil)
+                                                    state)))
+                            (value '(value-triple :thms-generated)))))
+
+                  (local (in-theory (enable bfr-listp-when-not-member-witness)))
+
+                  (local (defun name-and-record-thms (thms n w)
+                           (declare (xargs :mode :program))
+                           (if (atom thms)
+                               nil
+                             (cons `(defthm ,(intern-in-package-of-symbol
+                                              (concatenate 'string
+                                                           "INTERP-ST-BFRS-OK-LEMMA-" (str::natstr n))
+                                              'foo)
+                                      ,(acl2::prettyify-clause (car thms) t w))
+                                   (name-and-record-thms (cdr thms) (+ 1 n) w)))))
+
+                  (make-event
+                   (cons 'progn
+                         (name-and-record-thms (@ interp-st-bfrs-ok-lemma-thm-clauses) 0 (w state))))))))
+   (declare (ignore event))
+   '(value-triple :skipped)))
+
+;; (local (in-theory (disable bfr-listp-when-not-member-witness)))
 
 
 
@@ -5404,6 +5438,9 @@
 
 (local (acl2::use-trivial-ancestors-check))
 
+(local (in-theory (disable acl2::rewrite-rule-term)))
+
+
 (defsection iff-forall-extensions
   (defun-sk iff-forall-extensions (obj term eval-alist)
     (forall (ext)
@@ -6661,8 +6698,6 @@
     (equal (unreachable-cond bfr nil env logicman)
            t)))
 
-
-(local (in-theory (disable acl2::rewrite-rule-term)))
 
 ;; this dumb thing is important for urewrite-clause-proc in combination with my-by-hint-cp
 (defthm if-t-nil
