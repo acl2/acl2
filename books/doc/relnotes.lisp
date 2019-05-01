@@ -199,8 +199,8 @@
  <p>Moved the previous placeholders for cryptographic functions into <see
  topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
- <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 43, and 44
- for hierarchical deterministic wallets.</p>
+ <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 39, 43,
+ and 44 for hierarchical deterministic wallets.</p>
 
  <p>Improved the existing documentation.</p>
 
