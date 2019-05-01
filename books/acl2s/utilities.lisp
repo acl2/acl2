@@ -99,7 +99,7 @@ and so on.
      (add-macro-fn ,macro ,bin-fun ,right-associate-p)))
 
 (defxdoc test-then-skip-proofs
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "The ACL2s version of @('skip-proofs')."
   :long"<p>
 A macro that is similar to @('skip-proofs'), except that we first perform
@@ -134,7 +134,7 @@ testing. The macro supports testing for @(see thm),
    (t `(skip-proofs ,thm))))
 
 (defxdoc thm-no-test
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('thm') with testing disabled."
   :long"<p>
 A macro that uses @('with-outer-locals') to locally turn off
@@ -152,7 +152,7 @@ A macro that uses @('with-outer-locals') to locally turn off
                               (t (value `(value-triple :passed))))))))
 
 (defxdoc defthm-no-test
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('defthm') with testing disabled."
   :long"<p>
 A macro that uses @('with-outer-locals') to locally turn off
