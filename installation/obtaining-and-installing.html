@@ -175,7 +175,7 @@ program.  You may want to use the -i option, "<code>tar xpvfi
 8.1.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
 resulting tarball and its extracted directory will consist of
-about 80 MB and 250 MB, respectively.  Additional space is
+about 80 MB and 260 MB, respectively.  Additional space is
 required to build an executable image, probably between about 100 MB and 300 MB
 depending on the platform (including the host Lisp); and more will be
 required to <A HREF="using.html#Certifying">certify books</A>.
@@ -437,9 +437,11 @@ Subtopics of this section are as follows.
 <BR><HR><BR>
 <H3><A NAME="Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A></H3>
 
-You may want to skip this section and instead read <A
-HREF="windows7.html">Instructions from David Rager for building ACL2
-on Windows</A>.
+You may want to skip this section and instead
+read <A HREF="windows7.html">Instructions from David Rager for
+building ACL2 on Windows</A>.  See also
+additional <a href="../../distrib/windows/">information about ACL2 on
+Windows</a>.
 
 <!-- The following is only for non-incremental releases. -->
 Or, you may be able to <a href="#Pre-Built-Images">download a pre-built ACL2 image</a>
@@ -648,7 +650,8 @@ system and community books at each ACL2 release.  While that should
 suffice for many ACL2 users, nevertheless for those who prefer to
 obtain the latest developments, the ACL2 source code and community
 books have been made available between ACL2 releases, by way of
-revision control using git.
+revision control using git.  These GitHub versions generally work very
+well, but the authors of ACL2 issue this disclaimer at startup:
 <i>The authors of ACL2 consider git distributions to be experimental;
 while they will likely be fully functional in most cases, they could
 however be incomplete, fragile, and unable to pass our own
