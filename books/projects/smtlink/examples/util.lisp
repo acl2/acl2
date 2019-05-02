@@ -1,8 +1,15 @@
+;; Copyright (C) 2015, University of British Columbia
+;; Written by Yan Peng (May 2019)
+;;
+;; License: A 3-clause BSD license.
+;; See the LICENSE file distributed with ACL2
+
 (in-package "SMT")
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "centaur/fty/top" :dir :system) ; for defalist, etc.
 (include-book "../top")
+(include-book "basictypes")
 
 (defprod sig
   ((module symbolp)
@@ -53,8 +60,6 @@
        (rest (cdr (any-trace-fix tr)))
        ((unless (sigs-in-bool-table sigs first)) nil))
     (sigs-in-bool-trace sigs rest)))
-
-(defoption maybe-integer integerp)
 
 (define boolval ((bit booleanp))
   :returns (n integerp)
