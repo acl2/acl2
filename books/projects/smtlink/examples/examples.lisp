@@ -11,6 +11,7 @@
 ;; def-saved-event is a wrapper that is used by the documentation system,
 ;; and can be ignored by the reader.
 ;; Check the book centaur/sv/tutorial/support.lisp for detailed explanation.
+(include-book "basictypes")
 
 ; cert_param: (uses-smtlink)
 
@@ -449,12 +450,7 @@ finds out @('integerp') is not a supported function.</p>
           :smtlink
           (:fty (sandwich))))
   :rule-classes nil)
-)
-
-
-(def-saved-event maybe-integer-example
-  (defoption maybe-integer integerp)
-  )
+) 
 
 (def-saved-event x^2+y^2-fixed-example
   (define x^2+y^2-fixed ((x maybe-integer-p)
