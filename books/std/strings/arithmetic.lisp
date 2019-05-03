@@ -150,7 +150,7 @@
   (implies (character-listp x)
            (equal (character-listp (take n x))
                   (<= (nfix n) (len x))))
-  :hints(("Goal" :in-theory (enable take-redefinition))))
+  :hints(("Goal" :in-theory (enable take))))
 
 (defthm character-listp-of-rev
   (equal (character-listp (rev x))

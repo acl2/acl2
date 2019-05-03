@@ -109,7 +109,7 @@
                     (append (take n bitarr)
                             (env-to-bitarr vars env)
                             (nthcdr (+ (nfix n) (len vars)) bitarr))))
-    :hints(("Goal" :in-theory (e/d (env-to-bitarr) (acl2::take-redefinition nthcdr (force)))))))
+    :hints(("Goal" :in-theory (e/d (env-to-bitarr) (acl2::take nthcdr (force)))))))
 
 (local (defthm nthcdr-of-length
          (implies (and (true-listp x)
@@ -1300,7 +1300,7 @@
 ;;   (local (in-theory (enable first-n-rev-alist-keys
 ;;                             set-difference$)))
 ;;   (local (include-book "centaur/misc/lists" :dir :system))
-;;   (local (in-theory (disable acl2::take-redefinition)))
+;;   (local (in-theory (disable acl2::take)))
 
 ;;   (defthm first-n-rev-def
 ;;     (implies (and (alistp alist)
@@ -3140,7 +3140,7 @@
                             (nthcdr (+ (nfix n) (len envs)) (stobjs::2darr->rows frames)))))
     :hints(("Goal" :in-theory (e/d (envs-to-bitarrs
                                     env-to-frame-is-update-nth)
-                                   (acl2::take-redefinition nthcdr (force))))))
+                                   (acl2::take nthcdr (force))))))
 
   (std::defret aig-envs-to-aignet-frames-aux-lookup
     (implies (equal (len vars) (frames-ncols frames))

@@ -558,7 +558,7 @@ ACL2 !>
                              (take k (nthcdr n x)))
                      (take (+ n k) x)))
      :hints (("goal" :induct (take n x)
-              :in-theory (enable take-redefinition))))
+              :in-theory (enable take))))
 
    (defthm consp-nth-symbol-alist
      (implies (and (symbol-alistp x)

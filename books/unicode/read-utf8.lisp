@@ -42,7 +42,7 @@
 
 (local (in-theory (disable signed-byte-p)))
 
-(local (in-theory (disable take-redefinition)))
+(local (in-theory (disable take)))
 
 (local (defthm signed-byte-p-resolver
          (implies (and (integerp n)
@@ -286,7 +286,7 @@
                                       acc)))
   :hints(("Goal"
           :in-theory (e/d (read-utf8-fast utf8=>ustring-fast
-                                          take-redefinition)
+                                          take)
                           (nthcdr-bytes-2
                            nthcdr-bytes-3
                            nthcdr-bytes-4))
@@ -303,7 +303,7 @@
 
 (encapsulate
   ()
-  (local (in-theory (enable take-redefinition)))
+  (local (in-theory (enable take)))
 
   (local (defthm terrible-lemma-1
            (implies (and (integerp x)

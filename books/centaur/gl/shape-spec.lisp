@@ -782,7 +782,7 @@
          :hints(("Goal" :in-theory (enable shape-spec-obj-in-range-iff)))))
 
 
-         
+
 
 (local
  (encapsulate nil
@@ -1714,7 +1714,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
   (defthm ev-of-make-nth-terms
     (equal (sspec-geval-ev-lst (make-nth-terms x start n) a)
            (take n (nthcdr start (sspec-geval-ev x a))))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition
+    :hints(("Goal" :in-theory (enable acl2::take
                                       nthcdr))))
 
   (defthm len-of-make-nth-terms
@@ -2280,7 +2280,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                   (no-duplicatesp (shape-spec-indices x)))
              (no-duplicatesp (g-integer->bits x)))
     :hints (("goal" :expand ((shape-spec-indices x))))))
-                  
+
 
 (defines shape-spec-env-term
   (define shape-spec-env-term ((x shape-specp)
@@ -2353,7 +2353,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                        (car (sspec-geval-ev (shape-spec-env-term x obj-term) a)))
                       (shape-spec-indices x)))
       :hints ('(:expand ((shape-spec-env-term x obj-term)
-                         (shape-spec-indices x)))) 
+                         (shape-spec-indices x))))
       :flag ss)
     (defthm indices-of-shape-spec-env-term-iff
       (implies (shape-specp x)
@@ -2361,7 +2361,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                        (car (sspec-geval-ev (shape-spec-env-term-iff x obj-term) a)))
                       (shape-spec-indices x)))
       :hints ('(:expand ((shape-spec-env-term-iff x obj-term)
-                         (shape-spec-indices x)))) 
+                         (shape-spec-indices x))))
       :flag iff)
     (defthm indices-of-shape-spec-list-env-term
       (implies (shape-spec-listp x)
@@ -2380,7 +2380,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                        (cdr (sspec-geval-ev (shape-spec-env-term x obj-term) a)))
                       (shape-spec-vars x)))
       :hints ('(:expand ((shape-spec-env-term x obj-term)
-                         (shape-spec-vars x)))) 
+                         (shape-spec-vars x))))
       :flag ss)
     (defthm vars-of-shape-spec-env-term-iff
       (implies (shape-specp x)
@@ -2388,7 +2388,7 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
                        (cdr (sspec-geval-ev (shape-spec-env-term-iff x obj-term) a)))
                       (shape-spec-vars x)))
       :hints ('(:expand ((shape-spec-env-term-iff x obj-term)
-                         (shape-spec-vars x)))) 
+                         (shape-spec-vars x))))
       :flag iff)
     (defthm vars-of-shape-spec-list-env-term
       (implies (shape-spec-listp x)
@@ -2636,4 +2636,3 @@ for (e.g.)  adding rules to the coverage strategy are likely to change.</p>")
 
 
   )
-

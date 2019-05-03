@@ -682,7 +682,7 @@
         (implies (and (natp start) (natp n))
                  (equal (partial-ev-lst (get-mv-nths start n term) al)
                         (take n (nthcdr start (partial-ev term al)))))
-        :hints(("Goal" :in-theory (enable take-redefinition nthcdr)
+        :hints(("Goal" :in-theory (enable take nthcdr)
                 :induct (get-mv-nths start n term)
                 :expand ((:free (x) (nthcdr (+ 1 start) x))))))))
 
@@ -1843,9 +1843,3 @@
              (otherwise (prog2$ (cw "bad instruction: ~x0~%" (car instr))
                                 sta))))))
      :diverge (mk-sta))))
-
-
-
-
-
-

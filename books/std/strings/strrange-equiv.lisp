@@ -88,7 +88,7 @@
   (local (include-book "std/lists/take" :dir :system))
   (local (include-book "std/lists/nthcdr" :dir :system))
 
-  (local (in-theory (disable nth nthcdr acl2::take-redefinition
+  (local (in-theory (disable nth nthcdr acl2::take
                              acl2::take-of-len-free nfix)))
 
   (local (defthm make-character-list-redef
@@ -110,7 +110,7 @@
                       (:free (x y) (nthcdr (+ 1 x) y)))
              :do-not-induct t)))
 
-  
+
   (defthmd strrange-equiv-equals-subseqs-equal
     (equal (strrange-equiv len x xidx y yidx)
            (equal (subseq (str-fix x) (nfix xidx) (+ (nfix len) (nfix xidx)))

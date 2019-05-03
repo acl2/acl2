@@ -108,7 +108,7 @@
   (defcong nats-equiv nats-equiv (revappend x y) 2)
 
   (defcong nats-equiv nats-equiv (take n x) 2
-    :hints(("Goal" :in-theory (enable take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
   (defcong nats-equiv nats-equiv (nthcdr n x) 2)
 
@@ -116,4 +116,3 @@
 
   (defcong nat-equiv nats-equiv (replicate n x) 2
     :hints(("Goal" :in-theory (enable replicate)))))
-

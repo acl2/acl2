@@ -2551,7 +2551,7 @@ created when we process their packages, etc.</p>"
                       (replicate (- (ifix k) (nfix (- (ifix b) (ifix a)))) nil))))
      :hints(("Goal"
              :induct (ind k a b)
-             :in-theory (enable acl2::take-redefinition ints-from repeat))
+             :in-theory (enable acl2::take ints-from repeat))
             (and stable-under-simplificationp
                  '(:in-theory (enable nfix repeat))))))
 

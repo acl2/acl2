@@ -1342,8 +1342,7 @@ place; these annotations can be useful in error messages.</li>
               (implies (and (vl-exprlist-p x)
                             (< (nfix n) (len x)))
                        (vl-exprlist-p (take n x)))
-              :hints(("Goal" :in-theory (enable acl2::take-redefinition
-                                                acl2::take-induction)))))
+              :hints(("Goal" :in-theory (enable acl2::take)))))
      (local (defthm vl-exprlist-p-of-append-tmp
               (implies (and (vl-exprlist-p x)
                             (vl-exprlist-p y))
@@ -1810,14 +1809,14 @@ fairly easily solve the HIDEXPR problem.</p>"
                (vl-exprlist-fix (take n x))
              (append (vl-exprlist-fix x)
                      (replicate (- (nfix n) (len x)) nil))))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
 
   (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 2)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
   (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 
 

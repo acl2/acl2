@@ -575,7 +575,7 @@
  (defthm run-gified-ev-lst-take
    (equal (run-gified-ev-lst (acl2::take n x) a)
           (acl2::take n (run-gified-ev-lst x a)))
-   :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+   :hints(("Goal" :in-theory (enable acl2::take)))))
 
 (local
  (defthm list-fix-run-gified-ev-lst
@@ -1063,7 +1063,7 @@
    (defthm gobj-listp-take
      (implies (gobj-listp gobj)
               (gobj-listp (acl2::take n gobj)))
-     :hints(("Goal" :in-theory (enable gobj-listp acl2::take-redefinition
+     :hints(("Goal" :in-theory (enable gobj-listp acl2::take
                                        acl2::replicate))))
 
    (defun count-down2-cdr (n m l)
@@ -1076,7 +1076,7 @@
                    (< (nfix n) (nfix m)))
               (gobj-listp (acl2::take n gobj)))
      :hints (("goal" :induct (count-down2-cdr m n gobj)
-              :in-theory (enable gobj-listp acl2::take-redefinition nfix))))
+              :in-theory (enable gobj-listp acl2::take nfix))))
 
    ;; (Defthm gobjectp-nth-when-gobj-listp-take
    ;;   (implies (and (gobj-listp (acl2::take m x))
@@ -1190,7 +1190,7 @@
                                          n formals actuals) a)
                      (acl2::take (len formals)
                                         (nthcdr n (run-gified-ev actuals a)))))
-     :hints(("Goal" :in-theory (enable nth nthcdr acl2::take-redefinition))))
+     :hints(("Goal" :in-theory (enable nth nthcdr acl2::take))))
 
 
 
@@ -1235,7 +1235,7 @@
                       nil)))
      :hints(("Goal"
              :induct t
-             :in-theory (enable acl2::take-redefinition)
+             :in-theory (enable acl2::take)
              :expand ((:free (a b c)
                              (acl2::ev-apply-arglist-on-result
                               n a b c))))
@@ -1257,7 +1257,7 @@
                         (len formals)
                         (nthcdr idx (run-gified-ev varname a)))))
        :hints(("Goal" :in-theory (enable my-equal-of-cons
-                                         acl2::take-redefinition
+                                         acl2::take
                                          nths-matching-formalsp))))
 
      (defthmd nths-matching-formalsp-make-nths-matching-formals-ev1
@@ -1359,7 +1359,7 @@
 
    (local
     (in-theory (disable
-                        cheap-default-car cheap-default-cdr acl2::take-redefinition
+                        cheap-default-car cheap-default-cdr acl2::take
                         ev-quote-clause-correct-for-run-gified-ev
                         ev-lookup-var-clause-correct-for-run-gified-ev
                         nth-when-len-smaller

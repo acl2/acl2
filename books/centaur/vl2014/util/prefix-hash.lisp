@@ -81,11 +81,11 @@
 
   (defthm prefixp-of-take-prefix-len-1
     (prefixp (take (prefix-len a b) a) a)
-    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable prefixp acl2::take))))
 
   (defthm prefixp-of-take-prefix-len-2
     (prefixp (take (prefix-len a b) a) b)
-    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable prefixp acl2::take))))
 
   (defthm prefix-len-of-take
     (implies (and (natp n)
@@ -94,7 +94,7 @@
                     (if (< (prefix-len a x) n)
                         (prefix-len a x)
                       n)))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
 
   (defthm prefix-len-of-butlast
     ;; The hyp is ugly, but butlast has terrible behavior when N is not a natural
@@ -234,7 +234,7 @@
                          (true-listp p))
                     (equal (take (len p) x)
                            p))
-           :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition)))))
+           :hints(("Goal" :in-theory (enable prefixp acl2::take)))))
 
   (local (defthm l3
            (implies (and (prefixp p x)
@@ -336,5 +336,3 @@
                     (prefixp a key))
                (cons a (cons val (cdr (hons-assoc-equal a alist))))
              (hons-assoc-equal a alist)))))
-
-

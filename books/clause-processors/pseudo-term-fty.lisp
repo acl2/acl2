@@ -107,7 +107,7 @@ of term and access the fields; see its documentation for examples.</p>
   ///
   (defthm symbol-listp-of-remove-non-symbols
     (symbol-listp (remove-non-symbols x)))
-  
+
   (defthm remove-non-symbols-when-symbol-listp
     (implies (symbol-listp x)
              (equal (remove-non-symbols x) x))))
@@ -120,7 +120,7 @@ of term and access the fields; see its documentation for examples.</p>
               (remove-corresp-non-symbols (cdr x) (cdr y)))
       (remove-corresp-non-symbols (cdr x) (cdr y))))
   ///
-  
+
   (defthm pseudo-term-listp-of-remove-corresp-non-symbols
     (implies (pseudo-term-listp y)
              (pseudo-term-listp (remove-corresp-non-symbols x y))))
@@ -181,7 +181,7 @@ of term and access the fields; see its documentation for examples.</p>
 
   :flag-local nil
   ///
-  
+
   (local (in-theory (disable pseudo-term-fix
                              pseudo-term-list-fix)))
 
@@ -315,7 +315,7 @@ of term and access the fields; see its documentation for examples.</p>
          (true-list-fix x)))
 
 
-                             
+
 (defxdoc def-ev-pseudo-term-congruence
   :parents (pseudo-term-fty)
   :short "Prove that @(see pseudo-term-fix) is transparent to an evaluator and
@@ -453,7 +453,7 @@ introduced by it.</p>")
   (defthm pseudo-lambda-fix-when-pseudo-lambda-p
     (implies (pseudo-lambda-p x)
              (equal (pseudo-lambda-fix x) x)))
-  
+
   (fty::deffixtype pseudo-lambda :pred pseudo-lambda-p :fix pseudo-lambda-fix :equiv pseudo-lambda-equiv :define t))
 
 (define pseudo-lambda->formals ((x pseudo-lambda-p))
@@ -561,7 +561,7 @@ introduced by it.</p>")
     (implies (not (consp x))
              (equal (pseudo-fn-fix x)
                     (pseudo-fnsym-fix x))))
-  
+
   (fty::deffixtype pseudo-fn :pred pseudo-fn-p :fix pseudo-fn-fix :equiv pseudo-fn-equiv :define t))
 
 
@@ -673,7 +673,7 @@ introduced by it.</p>")
                                        pseudo-termp))))
   (pseudo-var-fix name)
   ///
-    
+
   (defthm kind-of-pseudo-term-var
     (equal (pseudo-term-kind (pseudo-term-var name)) :var))
 
@@ -781,7 +781,7 @@ introduced by it.</p>")
     :hints(("Goal" :in-theory (enable pseudo-term-fncall->fn
                                       pseudo-term-kind)
             :expand ((:free (a b) (pseudo-term-fix (cons a b)))))))
-  
+
   ;; this is kind of a yucky way to do it but it will work without having to
   ;; prove a whole new list of theorems for each evaluator
   (defthm base-ev-of-pseudo-term-fncall
@@ -998,7 +998,7 @@ introduced by it.</p>")
     :hints(("Goal" :in-theory (enable pseudo-term-lambda->body
                                       pseudo-lambda)
             :expand ((:free (a b) (pseudo-term-fix (cons a b)))))))
-  
+
   (defthm base-ev-of-pseudo-term-lambda
     (equal (base-ev (pseudo-term-lambda formals body args) a)
            (base-ev body (pairlis$ formals (base-ev-list args a))))
@@ -1108,7 +1108,7 @@ introduced by it.</p>")
 (local (defthm pseudo-term-listp-of-take
          (implies (pseudo-term-listp x)
                   (pseudo-term-listp (take n x)))
-         :hints(("Goal" :in-theory (enable take-redefinition)))))
+         :hints(("Goal" :in-theory (enable take)))))
 
 (define pseudo-fn-args-fix ((fn pseudo-fn-p)
                             (args pseudo-term-listp))
@@ -1140,7 +1140,7 @@ introduced by it.</p>")
                                            pseudo-lambda-p
                                            pseudo-fn-args-p-when-consp
                                            pseudo-term-fncall)))
-  
+
   (mbe :logic
        (if (consp fn)
            (pseudo-term-lambda (pseudo-lambda->formals fn)
@@ -1192,7 +1192,7 @@ introduced by it.</p>")
                         '((fn   . pseudo-term-call->fn)
                           (args . pseudo-term-call->args))
                         args forms rest-expr)))
-           
+
 (define pseudo-term-const->val ((x pseudo-termp))
   :parents (pseudo-term-quote
             pseudo-term-null)
@@ -1295,7 +1295,7 @@ all the cases and all the accessors that can be used in each case.</p>
                 (pseudo-term-count x)))
     :hints (("goal" :expand ((pseudo-term-count x))))
     :rule-classes :linear)
-  
+
   (defthm pseudo-term-list-count-of-pseudo-term-call->args
     (implies (member (pseudo-term-kind x) '(:fncall :lambda))
              (< (pseudo-term-list-count (pseudo-term-call->args x))

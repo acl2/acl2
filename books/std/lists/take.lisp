@@ -29,62 +29,20 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@kookamara.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 ;
 ; take.lisp
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
+
 (include-book "list-fix")
 (include-book "equiv")
 (local (include-book "std/basic/inductions" :dir :system))
 
-(defun simpler-take-induction (n xs)
-  ;; Not generally meant to be used; only meant for take-induction
-  ;; and take-redefinition.
-  (if (zp n)
-      nil
-    (cons (car xs)
-          (simpler-take-induction (1- n) (cdr xs)))))
-
-
-(in-theory (disable (:definition take)))
-
 (defsection std/lists/take
   :parents (std/lists take)
   :short "Lemmas about @(see take) available in the @(see std/lists) library."
-
-  :long "<p>Through ACL2 Version 8.1, ACL2's built-in definition of @('take')
-was not especially good for reasoning since it was written in terms of the
-tail-recursive function @('first-n-ac').  We provided a much nicer @(see
-definition) rule:</p>
-
-  @(def take-redefinition)
-
-<p>This rule is is now essentially the built-in logical definition of @(tsee
-take), however, so this rule might no longer be necessary.  We also set up an
-analogous @(see induction) rule.</p>"
-
-  (encapsulate
-    ()
-    (local (in-theory (enable take)))
-
-    (local (defthm equivalence-lemma
-             (implies (true-listp acc)
-                      (equal (first-n-ac n xs acc)
-                             (revappend acc (simpler-take-induction n xs))))))
-
-    (defthm take-redefinition
-      (equal (take n x)
-             (if (zp n)
-                 nil
-               (cons (car x)
-                     (take (1- n) (cdr x)))))
-      :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
-
-  (defthm take-induction t
-    :rule-classes ((:induction
-                    :pattern (take n x)
-                    :scheme (simpler-take-induction n x))))
 
   (defthm consp-of-take
     (equal (consp (take n xs))

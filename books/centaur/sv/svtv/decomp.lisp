@@ -2252,7 +2252,7 @@ trigger on any of the following:</p>
   (implies (and (svexlist-p x)
                 (<= (nfix n) (len x)))
            (svexlist-p (take n x)))
-  :hints(("Goal" :in-theory (enable acl2::take-redefinition
+  :hints(("Goal" :in-theory (enable acl2::take
                                     svexlist-p))))
 
 
@@ -2267,7 +2267,7 @@ trigger on any of the following:</p>
   (implies (<= (nfix n) (len x))
            (equal (svexlist-eval (take n x) env)
                   (take n (svexlist-eval x env))))
-  :hints(("Goal" :in-theory (enable svexlist-eval)
+  :hints(("Goal" :in-theory (enable svexlist-eval take)
           :induct (take n x)
           :expand ((svexlist-eval x env)))))
 

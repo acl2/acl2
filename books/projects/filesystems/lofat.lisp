@@ -1217,7 +1217,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthm
      update-data-region-alt-lemma-1
@@ -1289,7 +1289,7 @@
                                remember-that-time-with-update-nth
                                by-slice-you-mean-the-whole-cake-2
                                take-of-nthcdr)
-           (append take take-redefinition))
+           (append take))
       :induct (update-data-region fat32-in-memory str len)))))
 
 (defthm
@@ -3435,9 +3435,10 @@
           length (cluster-size fat32-in-memory)))
   :rule-classes :definition
   :hints
-  (("goal" :in-theory (enable get-clusterchain
-                              fati fat-length effective-fat nth
-                              get-clusterchain-alt-lemma-1))))
+  (("goal" :in-theory (e/d (get-clusterchain
+                            fati fat-length effective-fat nth
+                            get-clusterchain-alt-lemma-1)
+                           (take-when-atom)))))
 
 (encapsulate
   ()
@@ -3571,7 +3572,8 @@
   :hints
   (("goal" :in-theory
     (e/d (fat-length fati effective-fat
-                     nth get-clusterchain-contents)))))
+                     nth get-clusterchain-contents)
+         (take-when-atom)))))
 
 (defthm
   get-contents-from-clusterchain-of-update-data-regioni
@@ -3942,7 +3944,7 @@
     :in-theory
     (e/d (fat32-filename-p lofat-to-hifat-helper)
          (nth-of-string=>nats
-          natp-of-cluster-size take-redefinition))
+          natp-of-cluster-size take))
     :induct
     (lofat-to-hifat-helper fat32-in-memory
                                      dir-ent-list entry-limit)))
@@ -4001,7 +4003,7 @@
                            lofat-to-hifat-helper
                            useful-dir-ent-list-p)
          (nth-of-string=>nats natp-of-cluster-size
-                              take-redefinition))
+                              take))
     :induct (lofat-to-hifat-helper
              fat32-in-memory
              dir-ent-list entry-limit))))
@@ -5805,7 +5807,7 @@
                       (bpb_bytspersec fat32-in-memory))
                    90)
                 :initial-element (code-char 0)))))
-  
+
   :instructions ((:dive 1 2 1)
                  :x
                  :up (:rewrite str::explode-of-implode)
@@ -10759,7 +10761,7 @@
                        (:REWRITE NTH-WHEN-ATOM)
                        (:DEFINITION UPDATE-DATA-REGION)
                        (:REWRITE CONSP-OF-TAKE)
-                       (:DEFINITION TAKE-REDEFINITION)
+                       (:DEFINITION TAKE)
                        (:REWRITE
                         RESIZE-FAT-OF-FAT-LENGTH-WHEN-FAT32-IN-MEMORYP
                         . 2)

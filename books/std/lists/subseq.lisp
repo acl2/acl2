@@ -85,7 +85,7 @@ ability to write nice rules about @('subseq-list').</p>
     (implies (natp n)
              (equal (subseq-list x n (len x))
                     (nthcdr n (list-fix x))))
-    :hints(("Goal" :in-theory (enable take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
 ; We could strengthen the above rules by turning them into something like (take
 ; n (append x (repeat (- start) nil))) in the negative case, but that is

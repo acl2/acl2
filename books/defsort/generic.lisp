@@ -40,7 +40,7 @@
 (local (include-book "std/lists/equiv" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "ihs/ihs-lemmas" :dir :system))
-(local (in-theory (disable floor mod take-redefinition nthcdr)))
+(local (in-theory (disable floor mod take nthcdr)))
 
 (defthmd comparable-mergesort-admission-nthcdr
   (implies (consp (cdr x))
@@ -133,7 +133,7 @@
                    (force (<= (nfix n) (len x))))
               (comparable-listp (take n x)))
      :hints(("Goal"
-             :in-theory (enable take-redefinition)
+             :in-theory (enable take)
              :induct (take n x))))
 
    (defthm comparable-listp-of-nthcdr
@@ -413,7 +413,7 @@
 ;;                         (natp len2))
 ;;                    (equal (NTHCDR len1 (TAKE (+ len1 len2) X))
 ;;                           (TAKE len2 (NTHCDR len1 X))))
-;;           :hints(("Goal" :in-theory (e/d (take-redefinition nthcdr)
+;;           :hints(("Goal" :in-theory (e/d (take nthcdr)
 ;;                                          (open-small-nthcdr
 ;;                                           nthcdr-of-cdr))
 ;;                   :induct (nthcdr len1 x)))
@@ -589,7 +589,7 @@
             (equal (+ (duplicity a (nthcdr n x))
                       (duplicity a (take n x)))
                    (duplicity a x)))
-   :hints(("Goal" :in-theory (enable take-redefinition nthcdr)))))
+   :hints(("Goal" :in-theory (enable take nthcdr)))))
 
 (defthm duplicity-of-comparable-merge
   (equal (duplicity a (comparable-merge x y))
@@ -622,7 +622,7 @@
          (len x))
   :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort)
                                   floor-bounded-by-/)
-                                 (take-redefinition nthcdr))
+                                 (take nthcdr))
           :induct (comparable-mergesort x)
           :expand ((comparable-mergesort x)))))
 
@@ -630,7 +630,7 @@
   (equal (consp (comparable-mergesort x))
          (consp x))
   :hints(("Goal" :in-theory (e/d ((:i comparable-mergesort))
-                                 (take-redefinition nthcdr))
+                                 (take nthcdr))
           :induct (comparable-mergesort x)
           :expand ((comparable-mergesort x)))))
 
@@ -675,7 +675,7 @@
                           (natp len2))
                      (equal (NTHCDR len1 (TAKE (+ len1 len2) X))
                             (TAKE len2 (NTHCDR len1 X))))
-            :hints(("Goal" :in-theory (e/d (take-redefinition nthcdr)
+            :hints(("Goal" :in-theory (e/d (take nthcdr)
                                            (open-small-nthcdr
                                             nthcdr-of-cdr))
                     :induct (nthcdr len1 x)))
@@ -1129,4 +1129,3 @@
                          (x (comparable-mergesort x))
                          (y (comparable-insertsort x))))
            :in-theory (disable compare-equiv-elts-of-unequal-lists))))
-

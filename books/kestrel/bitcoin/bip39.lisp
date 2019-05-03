@@ -149,7 +149,6 @@
     :enable (bip39-entropyp
              bip39-entropy-size-p
              bip39-entropy-fix)
-    :disable acl2::take-redefinition
     :prep-books ((include-book "arithmetic/top-with-meta" :dir :system)))
 
   (defruled values-of-len-of-bip39-entropy-to-word-indexes
