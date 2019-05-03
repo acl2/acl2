@@ -173,6 +173,12 @@ thing:</p>
          ;; It can only be the concatenation case.
          (expr := (vl-parse-concatenation))
          (return expr))
+       (when (vl-is-token? :vl-lparen)
+         ;; This isn't explicitly allowed but we'll deal with it anyway
+         (:= (vl-match))
+         (lvalue := (vl-parse-net-lvalue-2012-aux))
+         (:= (vl-match-token :vl-rparen))
+         (return lvalue))
        ;; Otherwise we're in the identifier case.
        (expr := (vl-parse-indexed-id-2012))
        (return expr)))
