@@ -161,5 +161,4 @@ this new one, we only found a couple of examples in the regression where this
 was the case, and these were due to (in our view) bad rules.  So in practice,
 this seems to be fairly undisruptive.</p>")
 
-(defxdoc trivial-ancestors-check
-  :short "See @(see use-trivial-ancestors-check).")
+(defpointer trivial-ancestors-check use-trivial-ancestors-check)
