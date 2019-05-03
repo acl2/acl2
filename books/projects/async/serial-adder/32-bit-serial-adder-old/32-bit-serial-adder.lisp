@@ -1212,7 +1212,7 @@
                                          async-adder$inv-st)
                                         (nth
                                          nthcdr
-                                         take-redefinition
+                                         take
                                          open-v-threefix
                                          car-cdr-elim))))))
 
@@ -1269,7 +1269,7 @@
                                          async-adder$inv-st)
                                         (nth
                                          nthcdr
-                                         take-redefinition
+                                         take
                                          open-v-threefix
                                          car-cdr-elim)))))))
 
@@ -1533,7 +1533,7 @@
                                          v-threefix-append)
                                         (nth
                                          nthcdr
-                                         take-redefinition
+                                         take
                                          append-v-threefix
                                          car-cdr-elim))))))
 
@@ -1591,7 +1591,7 @@
                                          v-threefix-append)
                                         (nth
                                          nthcdr
-                                         take-redefinition
+                                         take
                                          append-v-threefix
                                          car-cdr-elim)))))))
 
@@ -2852,4 +2852,3 @@
                               open-fv-serial-sum
                               open-fv-serial-carry
                               car-cdr-elim))))))
-

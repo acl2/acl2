@@ -252,7 +252,7 @@
 
 (defsection smme-mem-accessors
 
-  
+
   (defthm smme-memp-is-u32-listp
     (equal (smme-memp x)
            (u32-listp x)))
@@ -430,7 +430,7 @@
              (smme-wfp new))
     :hints(("Goal" :in-theory (enable ;; smme-sizes-okp
                                       stobjs::nth-when-range-nat-equiv))))
-                  
+
   ;; (defthm smme-wfp-of-update-smme-memi
   ;;   (implies (smme-wfp smme)
   ;;            (smme-wfp (update-smme-memi i v smme))))
@@ -627,7 +627,7 @@
              :in-theory (disable smme-wfp-implies-blockstarts-monotonic)
              :cases ((< (nfix m) (nfix n))
                      (< (nfix n) (nfix m))))))
-  
+
   (defthm smme-addrs-with-different-i
     (implies (not (equal (nfix i1) (nfix i2)))
              (not (equal (smme-addr n i1 smme)
@@ -944,7 +944,7 @@
   ;;            (smme-wfp (smme-maybe-grow-mem n smme)))
   ;;   :hints(("Goal" :in-theory (disable smme-maybe-grow-mem))))
   )
-             
+
 
 
 ;; (defthm blocksize-of-smme-maybe-grow-sizes
@@ -1234,7 +1234,7 @@
     (implies (< (nfix n) (smme-block-start (smme-nblocks smme) smme))
              (nat-equiv (nth n (nth *smme-memi* new-smme))
                         (nth n (nth *smme-memi* smme)))))
-  
+
   (defret new-block-start-of-smme-addblock
     (implies (equal (smme-nblocks smme1) (smme-nblocks smme))
              (equal (smme-block-start (+ 1 (smme-nblocks smme1)) new-smme)
@@ -1391,7 +1391,7 @@
                   (< 0 (smme-nblocks smme)))
              (nat-equiv (nth n (nth *smme-memi* new-smme))
                         (nth n (nth *smme-memi* smme)))))
-  
+
   (defret new-block-start-of-smme-resize-last
     (implies (equal (smme-nblocks smme1) (smme-nblocks smme))
              (equal (smme-block-start (smme-nblocks smme1) new-smme)
@@ -1996,7 +1996,7 @@
            (equal (smml-block-start n (take n x))
                   (smml-block-start n x)))
   :hints (("goal" :induct t
-           :in-theory (disable smml-block-start-alt)
+           :in-theory (e/d (take) (smml-block-start-alt))
            :expand ((:free (x) (smml-block-start n x))))))
 
 (defthm smml-fast-read-of-take
@@ -2007,7 +2007,7 @@
   :hints(("Goal" :in-theory (e/d () (smml-block-start-alt)))))
 
 ;; (defthm smml-fast-read-of-take
-;;   (implies (< (nfix n) (smml-block-start 
+;;   (implies (< (nfix n) (smml-block-start
 
 
 (defthm u32-listp-of-repeat
@@ -2018,7 +2018,7 @@
 (defthm u32-list-listp-take
   (implies (u32-list-listp x)
            (u32-list-listp (take n x)))
-  :hints(("Goal" :in-theory (disable take-of-too-many take-when-atom))))
+  :hints(("Goal" :in-theory (e/d (take) (take-of-too-many take-when-atom)))))
 
 (local (defthm len-equal-0
          (equal (equal (len x) 0) (atom x))))

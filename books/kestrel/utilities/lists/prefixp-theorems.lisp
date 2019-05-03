@@ -36,7 +36,7 @@
              (equal (take n x)
                     (take n y)))
     :rule-classes nil
-    :enable take-redefinition)
+    :enable take)
 
   (defrule prefixp-of-cdr-cdr
     (implies (and (prefixp x y)

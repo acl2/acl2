@@ -1495,7 +1495,7 @@
                             bvp-is-true-listp
                             bvp-cvzbv
                             v-threefix-bvp
-                            take-redefinition
+                            take
                             f-gates=b-gates
                             open-v-threefix)))))
 

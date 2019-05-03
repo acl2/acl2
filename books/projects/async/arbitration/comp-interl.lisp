@@ -830,7 +830,7 @@
                                len-nthcdr
                                append
                                take-of-too-many
-                               take-redefinition)))))
+                               take)))))
    ))
 
 (defthm booleanp-comp-interl2$in0-act
@@ -2010,7 +2010,7 @@
                                    append
                                    prepend-rec
                                    take-of-too-many
-                                   take-redefinition)))))
+                                   take)))))
 
 (defthmd comp-interl2$functionally-correct
   (b* ((extracted0-st (comp-interl2$extract0 st))
@@ -2153,5 +2153,3 @@
 ;;                      (comp-interl2$out-seq inputs-seq st data-size n)))))
 ;;        state)))
 ;;   )
-
-

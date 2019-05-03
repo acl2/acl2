@@ -148,12 +148,12 @@
            (implies (and (member a (take n x))
                          (<= (nfix n) (len x)))
                     (member a x))
-           :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+           :hints(("Goal" :in-theory (enable acl2::take)))))
 
   (local (defthm l1
            (implies (<= (nfix n) (len x))
                     (subsetp-equal (take n x) x))
-           :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+           :hints(("Goal" :in-theory (enable acl2::take)))))
 
   (defthmd deflist-lemma-subsetp-of-butlast
     (subsetp-equal (butlast x n) x))
@@ -241,9 +241,7 @@
     acl2::default-<-1
     acl2::default-unary-minus
     acl2::unicity-of-0
-    acl2::take-redefinition
-    acl2::take-induction
-    acl2::simpler-take-induction
+    acl2::take
     acl2::list-fix-when-not-consp
     acl2::list-fix-when-true-listp
     acl2::list-fix-of-cons

@@ -85,7 +85,7 @@
                     revappend
                     no-duplicatesp-equal
                     make-character-list
-                    take-redefinition
+                    take
                     nthcdr
                     subseq-list
                     resize-list
@@ -193,5 +193,3 @@ rev), etc.</dd>
 <p>These rules allow for some very powerful equivalence-based reasoning.  When
 introducing new list-processing functions, it is generally a good idea to
 define the appropriate @(see congruence) rules for these relations.</p>")
-
-

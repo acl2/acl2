@@ -21,7 +21,7 @@
  (deftheory round-robin1$disabled-rules
    '(if*
      not
-     take-redefinition
+     take
      pairlis$
      strip-cars
      true-listp
@@ -1232,4 +1232,3 @@
 ;; The multi-step input-output relationship
 
 (in-out-stream-lemma round-robin1 :inv t)
-

@@ -2290,14 +2290,14 @@ unnamed (plain) arguments followed by some named arguments.</p>"
                (vl-exprlist-fix (take n x))
              (append (vl-exprlist-fix x)
                      (replicate (- (nfix n) (len x)) nil))))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
 
   (defcong vl-exprlist-equiv vl-exprlist-equiv (list-fix x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (append x y) 2)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (rev x) 1)
   (defcong vl-exprlist-equiv vl-exprlist-equiv (take n x) 2
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
   (defcong vl-exprlist-equiv vl-exprlist-equiv (nthcdr n x) 2))
 
 

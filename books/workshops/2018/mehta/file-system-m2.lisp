@@ -1655,10 +1655,12 @@
                      (+ data-region-index len))
         ac)))
     :hints
-    (("goal" :in-theory (enable take-redefinition
-                                revappend-removal data-regioni))
+    (("goal" :in-theory (e/d (take
+                              revappend-removal data-regioni)
+                             (take-when-atom)))
      ("subgoal *1/2.4'''" :expand (repeat (+ -1 len) nil))
-     ("subgoal *1/2.1'''" :expand (repeat (+ -1 len) nil))))
+     ("subgoal *1/2.1'''" :expand (repeat (+ -1 len) nil))
+     ))
 
   (defthm
     get-dir-ent-helper-correctness-1

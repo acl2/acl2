@@ -98,11 +98,11 @@
 
   (defthm prefixp-of-take-prefix-len-1
     (prefixp (take (prefix-len a b) a) a)
-    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable prefixp acl2::take))))
 
   (defthm prefixp-of-take-prefix-len-2
     (prefixp (take (prefix-len a b) a) b)
-    :hints(("Goal" :in-theory (enable prefixp acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable prefixp acl2::take))))
 
   (defthm prefix-len-of-take
     (implies (and (natp n)
@@ -111,7 +111,7 @@
                     (if (< (prefix-len a x) n)
                         (prefix-len a x)
                       n)))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable acl2::take))))
 
   (defthm prefix-len-of-butlast
     ;; The hyp is ugly, but butlast has terrible behavior when N is not a natural
@@ -178,9 +178,3 @@
                   t))
   :hints(("Goal" :in-theory (enable recursive-butlast-1 prefixp)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-
-
-
-
-

@@ -115,7 +115,7 @@ the list @('y')."
   (defthm prefixp-of-take
     (equal (prefixp (take n x) x)
            (<= (nfix n) (len x)))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
   (defthm prefixp-reflexive
     (prefixp x x)

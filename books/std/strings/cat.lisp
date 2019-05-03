@@ -77,7 +77,7 @@ conses, where @('n') is the length of @('x').</p>"
                      (equal (append (take (- n 1) x) (cons (nth (- n 1) x) y))
                             (append (take n x) y)))
             :hints(("goal"
-                    :in-theory (enable acl2::take-redefinition)
+                    :in-theory (enable acl2::take)
                     :induct (take n x)))))
 
   (defthm append-chars-aux-correct
@@ -269,5 +269,3 @@ and reverse the result string.</p>"
 
   (defcong streqv equal (join x separator) 2)
   (defcong istreqv istreqv (join x separator) 2))
-
-

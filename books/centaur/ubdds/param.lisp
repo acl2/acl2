@@ -525,7 +525,7 @@
                                  vars)
                   (bfix-list
                    (take n (nthcdr start vars)))))
-  :hints(("Goal" :in-theory (enable take-redefinition))))
+  :hints(("Goal" :in-theory (enable take))))
 
 (defthm ubdd-listp-make-list-ac
   (equal (ubdd-listp (make-list-ac n nil acc))

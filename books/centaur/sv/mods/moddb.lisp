@@ -80,7 +80,7 @@
                     (cons (car x) (take (1- n) (cdr x)))))
            :rule-classes ((:definition :controller-alist ((take t nil)))))
 
-         (in-theory (disable acl2::take-redefinition))))
+         (in-theory (disable acl2::take))))
 
 (local (defun count-down (idx min)
          (declare (xargS :measure (nfix (- (nfix idx) (nfix min)))))
@@ -581,7 +581,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (defthm elab-modinst-list-names-of-take
       (equal (elab-modinst-list-names (take n x))
              (namelist-fix (take n (elab-modinst-list-names x))))
-      :hints(("Goal" :in-theory (e/d (replicate)))))
+      :hints(("Goal" :in-theory (e/d (replicate take)))))
 
     (defthm len-of-elab-modinst-list-names
       (equal (len (elab-modinst-list-names x))
@@ -1102,7 +1102,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                            (and (member k x)
                                 (< (index-of k x)
                                    (nfix n)))))
-             :hints(("Goal" :in-theory (enable index-of)))))
+             :hints(("Goal" :in-theory (enable index-of take)))))
 
     (local (defthm member-when-nth
              (implies (and (equal k (nth n x))
@@ -1175,7 +1175,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                   :expand (,(car (last clause))))))
     :otf-flg t)
 
-  (local (in-theory (disable acl2::take-redefinition)))
+  (local (in-theory (disable acl2::take)))
 
   (defthm wirelist-fix-of-update-nth
     (implies (<= (nfix n) (len x))
@@ -1187,7 +1187,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (implies (<= (nfix n) (len x))
              (equal (wirelist-fix (take n x))
                     (take n (wirelist-fix x))))
-    :hints(("Goal" :in-theory (enable wirelist-fix))))
+    :hints(("Goal" :in-theory (enable wirelist-fix take))))
 
   (defthm nth-of-wirelist-fix
     (implies (< (nfix n) (len x))
@@ -1201,7 +1201,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                          (and (member k x)
                               (< (index-of k x)
                                  (nfix n)))))
-           :hints(("Goal" :in-theory (enable index-of)))))
+           :hints(("Goal" :in-theory (enable index-of take)))))
 
   (defthm elab-mod$c-add-wire-update
     (implies (elab-mod$c-wires-ok elab-mod$c)
@@ -1405,7 +1405,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                            (and (member k x)
                                 (< (index-of k x)
                                    (nfix n)))))
-             :hints(("Goal" :in-theory (enable index-of)))))
+             :hints(("Goal" :in-theory (enable index-of take)))))
 
     (local (defthm member-when-nth
              (implies (and (equal k (nth n x))
@@ -1483,7 +1483,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                (elab-modinst$c-copy elab-modinst$c elab-modinst$c2)
                elab-mod$c))
   ///
-  (local (in-theory (disable acl2::take-redefinition
+  (local (in-theory (disable acl2::take
                              elab-mod$c-modinsts-ok-implies-lookup-name)))
 
   (defthm elab-mod$c-modinsts-ok-of-elab-mod$c-add-inst
@@ -1947,7 +1947,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                              acl2::nth-when-too-large-cheap
                              len not member
                              acl2::take-of-len-free
-                             acl2::take-redefinition
+                             acl2::take
                              acl2::nth-when-atom
                              elab-modinst$cp)))
 
@@ -2059,7 +2059,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                            (and (index-of k x)
                                 (< (index-of k x) (nfix n))
                                 (index-of k x))))
-           :hints(("Goal" :in-theory (enable index-of len)))))
+           :hints(("Goal" :in-theory (enable index-of len take)))))
 
   (local (defthm len-when-equal-take
            (implies (equal x (take n y))
@@ -2104,7 +2104,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                          (and (member k x)
                               (< (index-of k x)
                                  (nfix n)))))
-           :hints(("Goal" :in-theory (enable index-of len)))))
+           :hints(("Goal" :in-theory (enable index-of len take)))))
 
 
   (defthm remove-duplicates-equal-when-no-duplicates-under-list-equiv
@@ -2284,7 +2284,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (defthm elab-mods->names-of-take
       (implies (<= (nfix n) (len elab-mods))
                (equal (elab-mods->names (take n elab-mods))
-                      (take n (elab-mods->names elab-mods)))))
+                      (take n (elab-mods->names elab-mods))))
+      :hints (("Goal" :in-theory (enable take))))
 
     (defthm len-of-elab-mods->names
       (equal (len (elab-mods->names x))
@@ -2343,14 +2344,15 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
   (fty::deffixcong elab-mod$a-equiv elab-modlist-equiv (replicate n d) d
     :hints(("Goal" :in-theory (enable replicate))))
   (fty::deffixcong elab-mod$a-equiv elab-modlist-equiv (resize-list lst n d) d)
-  (fty::deffixcong elab-modlist-equiv elab-modlist-equiv (take n x) x)
+  (fty::deffixcong elab-modlist-equiv elab-modlist-equiv (take n x) x
+    :hints (("Goal" :in-theory (enable take))
+            '(:expand (take n (elab-modlist-fix x)))))
   (fty::deffixcong elab-modlist-equiv elab-modlist-equiv (append x y) x)
   (fty::deffixcong elab-modlist-equiv elab-modlist-equiv (append x y) y)
   (fty::deffixcong elab-modlist-equiv elab-modlist-equiv (update-nth n v x) x
     :hints(("Goal" :in-theory (enable update-nth))))
   (fty::deffixcong elab-mod$a-equiv elab-modlist-equiv (update-nth n v x) v
     :hints(("Goal" :in-theory (enable update-nth))))
-
   (fty::deffixcong elab-mod$a-equiv modname-equiv (g :name x) x))
 
 (defsection moddb-stobj
@@ -2507,6 +2509,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (fty::deffixcong elab-modlist-norm-equiv elab-modlist-equiv
       (take n mods) mods
       :hints(("Goal" :in-theory (e/d (elab-modlist-norm
+                                      take
                                       my-open-take)
                                      (acl2::take-when-atom
 ; Matt K. mod 5/2016 (type-set bit for {1}):
@@ -2780,7 +2783,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                :in-theory (e/d ()
                                ((elab-mods->names)
                                 moddb-find-bad-index
-                                acl2::take-redefinition
+                                acl2::take
                                 acl2::take-of-len-free
                                 moddb-indices-ok-implies))))
       :otf-flg t)
@@ -2800,9 +2803,8 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              (let ((name (modname-fix (g :name (nth n mods)))))
                (implies (< (nfix n) (nfix nmods))
                         (member name (elab-mods->names (take nmods mods)))))
-             :hints(("Goal" :in-theory (e/d (elab-mods->names my-open-take nth)
-                                            (acl2::take-redefinition
-                                             acl2::take-when-atom))))))
+             :hints(("Goal" :in-theory (e/d (elab-mods->names my-open-take nth take)
+                                            (acl2::take-when-atom))))))
 
     (local (defthm name-nth-index-name-take
              (let ((name (modname-fix (g :name (nth n mods)))))
@@ -2816,7 +2818,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                             (acl2::integerp-of-index-of
                                              ;; ACL2::INDEX-OF-IFF-MEMBER
                                              acl2::take-when-atom
-                                             acl2::take-redefinition))
+                                             acl2::take))
                      :induct (ind2 n nmods mods)))))
 
     (local (defthmd equal-of-cons
@@ -3595,7 +3597,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
              (elab-modlist-equiv (take n (resize-list lst m d))
                                  (take n lst)))
     :hints (("goal" :induct (ind n m lst)
-             :in-theory (enable acl2::take-redefinition elab-mods->names))))
+             :in-theory (enable acl2::take elab-mods->names))))
 
 
   (defthm moddb-maybe-grow-under-moddb-norm-equiv
@@ -3695,9 +3697,9 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     (local (defthm update-nth-of-take-length
              (equal (update-nth n v (take n x))
                     (take (+ 1 (nfix n)) (update-nth n v x)))
-             :hints(("Goal" :in-theory (e/d (acl2::take-redefinition update-nth))))))
+             :hints(("Goal" :in-theory (e/d (acl2::take update-nth))))))
 
-    (local (in-theory (disable acl2::take-redefinition
+    (local (in-theory (disable acl2::take
                                acl2::take-of-update-nth
                                acl2::take-after-update-nth)))
 
@@ -3712,7 +3714,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                     (if (zp n)
                         nil
                       (cons (car x) (take (1- n) (cdr x)))))
-             :hints(("Goal" :in-theory (enable acl2::take-redefinition)))
+             :hints(("Goal" :in-theory (enable acl2::take)))
              :rule-classes ((:definition :controller-alist ((take t nil))))))
 
     (local (defun ind (n m mods)

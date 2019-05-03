@@ -111,7 +111,7 @@
                     (natp n)
                     (<= n (len xs)))
                (byte-listp (take n xs)))
-      :hints (("Goal" :induct (ACL2::simpler-take-induction n x))))
+      :hints (("Goal" :in-theory (enable take))))
 
     (defthm byte-listp-read-n-bytes-from-string
       (implies (and (natp n)

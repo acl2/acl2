@@ -68,7 +68,7 @@
          (implies (equal (nfix n) (len x))
                   (equal (take n (append x y))
                          (list-fix x)))
-         :hints(("Goal" :in-theory (e/d (acl2::take-redefinition))
+         :hints(("Goal" :in-theory (e/d (acl2::take))
                  :induct (nthcdr n x)))))
 
 (local (in-theory (disable double-containment)))
@@ -821,7 +821,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                  (lognot (4vec->lower x)))))
 
 
-  
+
   (local
    (encapsulate nil
      (local (in-theory (disable* (:rules-of-class :linear :here)
@@ -1024,7 +1024,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                   (logbitp-reasoning))
            :otf-flg t))
 
-  
+
   (local (defthm 4vec-zero-ext-of-concat
            (implies (and (2vec-p w1) (2vec-p w2)
                          (<= 0 (2vec->val w1))
@@ -1150,7 +1150,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                              (equal lower-impl (aig-logapp-nss width lower-spec (list-fix lower-acc)))))))
      :rewrite :direct))
   (local (in-theory (disable svex-concat->a4vec-lower-acc-elim-correct)))
-  
+
   (local (std::defret-mutual svex-concat->a4vec-lower-acc-elim-lemma
            (defret svex-concat->a4vec-lower-acc-elim-lemma
              (svex-concat->a4vec-lower-acc-elim-correct x width env masks)
@@ -1237,18 +1237,18 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
            :hints(("Goal" :in-theory (enable 4vec-mask 4vec-zero-ext))
                   (logbitp-reasoning))))
 
-  
+
   (local (defthm 4vec-zero-ext-0
            (equal (4vec-zero-ext 0 x) 0)
            :hints(("Goal" :in-theory (enable 4vec-zero-ext)))))
 
-  
+
 
   ;; (local (Defthm 4vec-zero-ext-of-zp
   ;;                   (equal (4vec-zero-ext (2vec width) x) 0))
   ;;          :hints(("Goal" :in-theory (enable* 4vec-zero-ext
   ;;                                             ihsext-recursive-redefs))))
-  
+
   (local (defthm 4vec-concat-0
            (equal (4vec-concat width x 0)
                   (4vec-zero-ext width x))
@@ -1382,7 +1382,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                            (4vec-mask m2 b)))
            :hints(("Goal" :in-theory (enable 4vec-mask? 4vec-mask 4vec-bit? 3vec-bit? 4vmask-subsumes))
                   (logbitp-reasoning))))
-  
+
 
   ;; (local (defthm 4vec-zero-ext-to-concat
   ;;          (equal (4vec-zero-ext w x)
@@ -2556,7 +2556,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (4vec-mask mask2 val2))
     :templates (v)
     :instance-rulename svex-envs-mask-equiv-on-vars-instancing)
-  
+
   (local (defexample svex-envs-mask-equiv-on-vars-mask-look-example
            :pattern (svex-mask-lookup (svex-var var) masks)
            :templates (var)
@@ -2846,7 +2846,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                         `(:expand (,(car (last clause))
                                    (:free (acc)
                                     (svex-varmasks/env->aig-env-rec vars masks boolmasks env nextvar acc))))))))
-                   
+
   (defthm svex-varmasks/env->aig-env-accumulator-elim
     (implies (syntaxp (not (equal acc ''nil)))
              (equal (mv-nth 1 (svex-varmasks/env->aig-env-rec
@@ -3083,7 +3083,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
   (defthm svexlist-full-masks-p-of-nthcdr
     (implies (svexlist-full-masks-p x masks)
              (svexlist-full-masks-p (nthcdr n x) masks)))
-  
+
   (defthmd svexlist-full-masks-p-of-svexlist-mask-alist-lemma
     (implies (subsetp (svexlist-fix y) (svexlist-fix x))
              (svexlist-full-masks-p y (svexlist-mask-alist x)))
@@ -3106,8 +3106,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (4veclist-fix 4vecs)))
     :hints(("Goal" :in-theory (enable 4veclist-mask svex-argmasks-lookup 4veclist-fix 4vec-mask)
             :induct (cdr2 x 4vecs)))))
-                    
-  
+
+
 
 (defsection general-correctness-theorems
   (local (defthm subsetp-intersection
@@ -3498,7 +3498,7 @@ except that we memoize the results and we use fast alist lookups."
 
   (defret len-of-<fn>
     (equal (len new-x) (len x))))
-  
+
 
 (define symbolic-params-x-out-cond ((symbolic-params alistp))
   ;; Only makes sense to x out unused variables if
@@ -3649,7 +3649,7 @@ obviously 2-vectors.</p>"
             (set-reasoning)
             (and stable-under-simplificationp
                  '(:cases ((member acl2::k0 (svexlist-vars x)))))))
-  
+
   (gl::def-gl-rewrite svexlist-eval-for-symbolic-redef
     (equal (svexlist-eval-for-symbolic x env symbolic-params)
            (svexlist-eval-gl x env symbolic-params))))
@@ -3673,7 +3673,7 @@ obviously 2-vectors.</p>"
 ;;       (gl::bool->sign (car v))
 ;;     (logcons (acl2::bool->bit (car v))
 ;;              (v2i-alt (cdr v)))))
-  
+
 
 (local (defthm v2i-of-aig-eval-list
          (equal (gl::v2i (aig-eval-list x env))
@@ -3686,8 +3686,8 @@ obviously 2-vectors.</p>"
 
 (define v2i-first-n ((n natp) (v true-listp))
   :returns (v2i (equal v2i (gl::v2i (take n v)))
-                :hints(("Goal" :in-theory (e/d (acl2::take-redefinition)
-                                               (take acl2::take-of-too-many))
+                :hints(("Goal" :in-theory (e/d (acl2::take)
+                                               (acl2::take-of-too-many))
                         :induct t)))
   :prepwork ((local (defthm v2i-of-singleton
                       (equal (gl::v2i (list x))
@@ -4015,7 +4015,7 @@ obviously 2-vectors.</p>"
                     (if (zp n)
                         (list x y)
                       (ind (1- n) (cdr x) (cdr y)))))
-           
+
            (defthm svex-eval-same-on-envs-of-nth-when-svexlist-eval-same-on-envs
              (implies (and (svexlist-eval-same-on-envs x y envs)
                            (< (nfix n) (len x)))
@@ -4082,7 +4082,7 @@ obviously 2-vectors.</p>"
                      :induct (ind x y envs1))))))
 
 
-  
+
   (local (defthm svexlist-eval-equiv-of-maybe-svexlist-rewrite-fixpoint
            (svexlist-eval-equiv (maybe-svexlist-rewrite-fixpoint x do-it) x)
            :hints(("Goal" :in-theory (enable svexlist-eval-equiv)))))
@@ -4168,7 +4168,7 @@ obviously 2-vectors.</p>"
                            (envs1 envs)))
              :in-theory (disable svexlist/env-list-eval-when-svexlistlist-eval-same-on-envs)
              :do-not-induct t))))
-  
+
 
 
 
@@ -4265,7 +4265,7 @@ bound in all environments.</p>"
                                   (x svexes) (symbolic-params params)))
                     :in-theory (disable svexlist/env-list-vars-for-symbolic-eval-sufficient))
                    (set-reasoning))))
-                                  
+
 
   (defthm svexlist/env-list-eval-gl-correct
     (equal (svexlist/env-list-eval-gl x envs symbolic-params)
@@ -4275,6 +4275,3 @@ bound in all environments.</p>"
   (gl::def-gl-rewrite svexlist/env-list-eval-for-symbolic-redef
     (equal (svexlist/env-list-eval x envs)
            (svexlist/env-list-eval-gl x envs nil))))
-
-
-

@@ -138,7 +138,7 @@
 (define svtv-parse-path/select-aux ((dotted-parts string-listp)
                                     (orig-x stringp))
   :prepwork ((local (in-theory (disable (tau-system)
-                                        ;; acl2::take-redefinition
+                                        ;; acl2::take
                                         ;; acl2::take-of-len-free
                                         acl2::take-of-too-many
                                         subseq-list)))
@@ -428,6 +428,3 @@
                :entries xf.entries)
               svtv-ovs)
         (cons ov lhs-ovs))))
-
-
-

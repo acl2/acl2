@@ -113,7 +113,7 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
     (implies (alistp x)
              (equal (alistp (take n x))
                     (<= (nfix n) (len x))))
-    :hints(("Goal" :in-theory (enable take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
   (defthm alistp-of-nthcdr
     (implies (alistp x)

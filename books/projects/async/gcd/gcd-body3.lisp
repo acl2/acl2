@@ -721,7 +721,7 @@
                                acl2::simplify-products-gather-exponents-<
                                acl2::len-when-prefixp
                                acl2::take-when-prefixp
-                               take-redefinition
+                               take
                                not
                                default-car
                                default-cdr
@@ -885,6 +885,3 @@
              :in-theory (enable gcd-body3$valid-st=>st-format
                                 gcd-body3$de-n))))
   )
-
-
-

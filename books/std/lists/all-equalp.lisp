@@ -129,10 +129,9 @@ consing.</p>
              (equal (all-equalp a (take n x))
                     (or (not a)
                         (<= (nfix n) (len x)))))
-    :hints(("Goal" :in-theory (enable take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
   (defthm all-equalp-of-nthcdr
     (implies (all-equalp a x)
              (all-equalp a (nthcdr n x)))
     :hints(("Goal" :in-theory (enable nthcdr)))))
-

@@ -468,7 +468,7 @@ re-integrate it.</p>"
                          (<= n (len x)))
                     (all-equalp 1 (vl-exprlist->finalwidths (take n x))))
            :hints(("goal"
-                   :in-theory (e/d (acl2::take-redefinition)
+                   :in-theory (e/d (acl2::take)
                                    (all-equalp))))))
 
   (local (defthm c1
@@ -1271,4 +1271,3 @@ then we try to split it into a list of @('nil')-ranged, simple instances.  If
        (mods (vl-modulelist-replicate x.mods ss)))
     (vl-scopestacks-free)
     (change-vl-design x :mods mods)))
-

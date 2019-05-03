@@ -127,7 +127,7 @@
                                           (acl2::update-nth-when-atom
                                            acl2::update-nth-when-zp
                                            (aignet::bits-to-bools)))))))
-  
+
   (local (std::defret aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-gen
            (implies (equal (len vars1) (nfix n))
                     (equal (aignet::aignet-bitarr-to-aig-env (append vars1 vars) (aig-env-to-bitarr n vars env bitarr))
@@ -141,7 +141,7 @@
                                             acl2::take-of-too-many
                                             acl2::take-of-zero
                                             acl2::car-of-take
-                                            acl2::take-redefinition))
+                                            acl2::take))
                    :induct (aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-ind n vars vars1 env bitarr)
                    :expand ((aig-env-to-bitarr n vars env bitarr)))
                   (and stable-under-simplificationp
@@ -153,7 +153,7 @@
     :hints (("goal" :use ((:instance aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-gen
                            (vars1 nil) (n 0)))
              :in-theory (disable aignet-bitarr-to-aig-env-of-aig-env-to-bitarr-gen)))))
-    
+
 (local (defthm aig-var-listp-of-keys-when-bfr-updates-p
          (implies (and (bfr-updates-p x)
                        (bfr-mode))
@@ -184,7 +184,7 @@
            :in-theory (enable aignet::aig-fsm-frame-nextst))))
 
 
-                  
+
 (define aig-mcheck-to-aignet (prop
                               (updates bfr-updates-p)
                               init-st
@@ -244,7 +244,7 @@
 
 
 
-  
+
 (defthm bfr-updates-p-of-fast-alist-clean
   (implies (bfr-updates-p x)
            (bfr-updates-p (fast-alist-clean x)))
@@ -441,7 +441,7 @@
                                    (bfr-eval-updates alist env)))
            :hints(("Goal" :in-theory (enable bfr-env-equiv bfr-lookup bfr-eval)))))
 
-  (local (defthmd aig-env-extract-when-bfr-env-equiv         
+  (local (defthmd aig-env-extract-when-bfr-env-equiv
            (implies (and (bfr-mode)
                          (bfr-env-equiv a b)
                          (acl2::aig-var-listp keys))
@@ -491,7 +491,7 @@
            :hints (("goal" :use ((:instance aig-fsm-run-when-bfr-env-equiv
                                   (a (bfr-eval-updates (fast-alist-clean alist) env))
                                   (b (bfr-eval-updates alist env))))))))
-  
+
 
 
   (define bfr-mcrun-fail-cycle (prop (updates bfr-updates-p) curr-st ins)
@@ -671,12 +671,10 @@
     :hints (("goal" :cases ((consp ins))
              :use bfrmc-set-initst-pred-vars-bounded
              :in-theory (disable bfrmc-set-initst-pred-vars-bounded)))))
-             
+
 
 
 (local (defattach bfr-mcheck bfr-mcheck-abc-simple))
 
 (defmacro bfr-mcheck-use-abc-simple ()
   '(defattach bfr-mcheck bfr-mcheck-abc-simple))
-
-

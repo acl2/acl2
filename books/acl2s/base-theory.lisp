@@ -64,7 +64,7 @@
 (sig acl2::rev ((alistof :a :b)) => (alistof :a :b)
      :suffix alistof)
 
-(sig nth (nat (listof :a)) => :a 
+(sig nth (nat (listof :a)) => :a
      :satisfies (< x1 (len x2)))
 ; PETE: I added and removed the sig below because it caused the
 ; theorem prover to get super slow.
@@ -100,6 +100,7 @@
 (sig first-n-ac (nat (alistof :a :b) (alistof :a :b)) => (alistof :a :b)
      :satisfies (< x1 (len x2))
      :suffix alistof)
+(local (in-theory (enable take)))
 (sig take (nat (listof :a)) => (listof :a)
      :satisfies (<= x1 (len x2))
      :hints (("Goal" :cases ((equal x1 (len x2))))))
@@ -107,6 +108,7 @@
      :satisfies (<= x1 (len x2))
      :suffix alistof
      :hints (("Goal" :cases ((equal x1 (len x2))))))
+(local (in-theory (disable take)))
 (sig subseq-list ((listof :a) nat nat) => (listof :a)
      :satisfies (and (<= x3 (len x1)) (<= x2 x3)))
 (sig subseq-list ((alistof :a :b) nat nat) => (alistof :a :b)
@@ -137,15 +139,15 @@ Decided to leave out for now because
   "rtl/rel11/lib/top" :dir :system)
 (in-theory
  (disable
-  acl2::|(mod (+ x y) z) where (<= 0 z)| acl2::|(mod (+ x (- (mod a b))) y)| 
+  acl2::|(mod (+ x y) z) where (<= 0 z)| acl2::|(mod (+ x (- (mod a b))) y)|
   acl2::|(mod (mod x y) z)| acl2::|(mod (+ x (mod a b)) y)| acl2::cancel-mod-+
-  acl2::mod-cancel-*-const acl2::simplify-products-gather-exponents-equal 
+  acl2::mod-cancel-*-const acl2::simplify-products-gather-exponents-equal
   acl2::simplify-products-gather-exponents-<
   acl2::cancel-mod-+ acl2::reduce-additive-constant-< acl2::|(floor x 2)|
   acl2::|(equal x (if a b c))| acl2::|(equal (if a b c) x)|))
 |#
 
-#| 
+#|
 
 PETE: See if there is a way to get rid of these rules.
 
@@ -153,7 +155,7 @@ PETE: See if there is a way to get rid of these rules.
 
 #|
 
-Experimenting with arithmetic. 
+Experimenting with arithmetic.
 Here is what we had before experimentation.
 
 (defthm natp-implies-acl2-numberp
@@ -206,7 +208,7 @@ neg: non-pos-integer, neg-rational
 pos: nat, pos-rational
 non-neg-integer (rewrites to nat)
 nat: integer
-non-pos-integer: integer 
+non-pos-integer: integer
 odd:     (not recognizer)
 even:    (not recognizer)
 z:       (not recognizer)
@@ -226,7 +228,7 @@ acl2-number
 
 We also want disjoint theorems
 
-neg: nat, 
+neg: nat,
 pos: non-pos-integer
 odd: even (don't need as it follows from definition of odd)
 integer: ratio
@@ -244,7 +246,7 @@ subtype and disjoint forms, so see base.lisp in defdata.
 
 #|
 
-These rules cause problems. Better to 
+These rules cause problems. Better to
 use the rules below.
 
 (defthm negp-expand-+
@@ -405,13 +407,13 @@ End of new version.
 |#
 
 (defthm numerator-1-decreases
-  (implies (rationalp n) 
+  (implies (rationalp n)
            (< (numerator (- n 1))
               (numerator n)))
-  :hints (("goal" 
-           :use ((:instance ACL2::|(* r (denominator r))| 
+  :hints (("goal"
+           :use ((:instance ACL2::|(* r (denominator r))|
                             (acl2::r n))
-                 (:instance ACL2::|(* r (denominator r))| 
+                 (:instance ACL2::|(* r (denominator r))|
                             (acl2::r (- n 1)))
                  )
            :in-theory (disable ACL2::|(* r (denominator r))|)))
@@ -430,8 +432,8 @@ End of new version.
            (< (numerator (+ (- n) r))
               (numerator r)))
   :hints (("goal" :induct (posp-ind n))
-          ("subgoal *1/2.2" 
-           :use ((:instance numerator-1-decreases 
+          ("subgoal *1/2.2"
+           :use ((:instance numerator-1-decreases
                             (n (+ r (- n) 1))))))
   :rule-classes ((:linear) (:rewrite)))
 
