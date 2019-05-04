@@ -5695,7 +5695,7 @@
          state)
         ((cdr names)
          (pprogn
-          (fms "The Non-simple Signatures" nil (proofs-co state) state nil)
+          (fms "The Non-simple Signatures:" nil (proofs-co state) state nil)
           (print-defun-msg/signatures1 names wrld state)
           (newline (proofs-co state) state)))
         (t (pprogn

@@ -94,11 +94,11 @@ set-compile-fns.lisp
 # bin -- under source control but not distributed
 
 doc:
-# The following is distributed but is not under source control:
+# The following distributed file is generated and also under source control:
 acl2-code-size.txt
 create-acl2-code-size
 create-doc
-# The following is distributed but is not under source control
+# The following distributed file is generated and also under source control:
 home-page.html
 home-page.lisp
 # The following is distributed but is not under source control
