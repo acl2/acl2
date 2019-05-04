@@ -479,7 +479,7 @@
    (xdoc::p
     "This easily follows from the analogous property for byte arrays."))
 
-  (defrule rlp-encode-scalar-no-prefix
+  (defrule rlp-encode-scalar-unamb-prefix
     (implies (and (not (mv-nth 0 (rlp-encode-scalar x)))
                   (not (mv-nth 0 (rlp-encode-scalar y))))
              (equal (prefixp (mv-nth 1 (rlp-encode-scalar x))
