@@ -1021,7 +1021,38 @@
     (mv nil new-tree))
   :no-function t
   :guard-hints (("Goal" :in-theory (enable bip32-path-in-tree-p)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-key-tree->root-key-of-bip32-extend-tree
+    (equal (bip32-key-tree->root-key
+            (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
+           (bip32-key-tree->root-key tree)))
+
+  (defrule bip32-key-tree->root-depth-of-bip32-extend-tree
+    (equal (bip32-key-tree->root-depth
+            (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
+           (bip32-key-tree->root-depth tree)))
+
+  (defrule bip32-key-tree->root-index-of-bip32-extend-tree
+    (equal (bip32-key-tree->root-index
+            (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
+           (bip32-key-tree->root-index tree)))
+
+  (defrule bip32-key-tree->root-parent-of-bip32-extend-tree
+    (equal (bip32-key-tree->root-parent
+            (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
+           (bip32-key-tree->root-parent tree)))
+
+  (defrule bip32-key-tree->index-tree-of-bip32-extend-tree
+    (b* (((mv error? tree1) (bip32-extend-tree tree parent-path child-index)))
+      (equal (bip32-key-tree->index-tree tree1)
+             (if error?
+                 (bip32-key-tree->index-tree tree)
+               (set::insert (rcons (ubyte32-fix child-index)
+                                   (ubyte32-list-fix parent-path))
+                            (bip32-key-tree->index-tree tree)))))
+    :enable bip32-path-in-tree-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1619,7 +1650,29 @@
                              '(nil))))
     (mv error? tree))
   :no-function t
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule bip32-key-tree->root-key-of-bip32-master-tree
+    (equal (bip32-key-tree->root-key (mv-nth 1 (bip32-master-tree seed)))
+           (bip32-ext-key-priv
+            (mv-nth 1 (bip32-master-key seed)))))
+
+  (defrule bip32-key-tree->root-depth-of-bip32-master-tree
+    (equal (bip32-key-tree->root-depth (mv-nth 1 (bip32-master-tree seed)))
+           0))
+
+  (defrule bip32-key-tree->root-index-of-bip32-master-tree
+    (equal (bip32-key-tree->root-index (mv-nth 1 (bip32-master-tree seed)))
+           0))
+
+  (defrule bip32-key-tree->root-parent-of-bip32-master-tree
+    (equal (bip32-key-tree->root-parent (mv-nth 1 (bip32-master-tree seed)))
+           (list 0 0 0 0)))
+
+  (defrule bip32-key-tree->index-tree-of-bip32-master-tree
+    (equal (bip32-key-tree->index-tree (mv-nth 1 (bip32-master-tree seed)))
+           (list nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
