@@ -1,5 +1,5 @@
-; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2018, Regents of the University of Texas
+; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2019, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -41,7 +41,7 @@
   "manual/")
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/")
+  "http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/")
 
 (defconst *bleeding-edge-manual*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/")
@@ -53,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-8-1                            ;;; g   ; current release notes
+    note-8-2                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -277,7 +277,7 @@ alt=\"FTP icon\" border=0></a>
 <a href=\"~sg\"><img src=\"HTML/note02.gif\" alt=\"paper note icon\" border=0></a>
 </td>
 <td>
-<a href=\"~sg\">Differences from Version 8.0</a><a href=\"~sq\"> <img
+<a href=\"~sg\">Differences from Version 8.1</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td align=center valign=MIDDLE>
@@ -404,12 +404,12 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 
 <ul>
 
-<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.1)</li>
+<li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.2)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
 \"<a href=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</a>\" distributions)</li>
 
-<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.1)</li>
+<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.2)</li>
 
 </ul>
 
