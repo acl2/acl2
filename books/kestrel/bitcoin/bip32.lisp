@@ -1052,7 +1052,13 @@
                (set::insert (rcons (ubyte32-fix child-index)
                                    (ubyte32-list-fix parent-path))
                             (bip32-key-tree->index-tree tree)))))
-    :enable bip32-path-in-tree-p))
+    :enable bip32-path-in-tree-p)
+
+  (defrule bip32-key-tree-priv-p-of-bip32-extend-tree
+    (equal (bip32-key-tree-priv-p
+            (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
+           (bip32-key-tree-priv-p tree))
+    :enable bip32-key-tree-priv-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1672,7 +1678,11 @@
 
   (defrule bip32-key-tree->index-tree-of-bip32-master-tree
     (equal (bip32-key-tree->index-tree (mv-nth 1 (bip32-master-tree seed)))
-           (list nil))))
+           (list nil)))
+
+  (defrule bip32-key-tree-priv-p-of-bip32-master-tree
+    (bip32-key-tree-priv-p (mv-nth 1 (bip32-master-tree seed)))
+    :enable bip32-key-tree-priv-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
