@@ -43,6 +43,10 @@
     (synp 'nil ',form ',form)
     ,dummy-var))
 
+;; For lack of a better place to put this.
+(defun abort-rewrite (x)
+  x)
+
 (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y)) :namedp t)
 
 (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))

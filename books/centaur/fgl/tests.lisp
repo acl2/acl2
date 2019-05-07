@@ -119,28 +119,30 @@
     :g-concrete (or (zip x.val) (eql x.val -1))
     :otherwise nil))
 
-(define check-int-endp-fn (x xsyn)
+(define check-int-endp (x xsyn)
   :verify-guards nil
   (and (gl-int-endp xsyn)
        (int-endp x))
   ///
-  (defthm check-int-endp-fn-open
-    (iff (check-int-endp-fn x xsyn)
+  (defthm check-int-endp-open
+    (iff (check-int-endp x xsyn)
          (and* (gl-int-endp xsyn)
                (int-endp x)))))
 
-(defmacro check-int-endp (x dummy-var)
-  `(let* ((x ,x)
-          (xsyn (syntax-bind ,dummy-var (g-concrete x))))
-     (check-int-endp-fn x xsyn)))
+;; (defmacro check-int-endp (x xsyn)
+;;   `(let* ((x ,x)
+;;           (xsyn (syntax-bind ,dummy-var (g-concrete x))))
+;;      (check-int-endp-fn x xsyn)))
 
 
 (def-gl-rewrite fgl-logand
   (equal (logand x y)
          (b* ((x (int x))
               (y (int y))
-              ((when (and (check-int-endp x xendp)
-                          (check-int-endp y yendp)))
+              (xsyn (syntax-bind xsyn (g-concrete x)))
+              (ysyn (syntax-bind ysyn (g-concrete y)))
+              ((when (and (check-int-endp x xsyn)
+                          (check-int-endp y ysyn)))
                (endint (and (intcar x)
                             (intcar y)))))
            (intcons (and (intcar x)
@@ -163,7 +165,7 @@
 
 (defmacro syntactically-t (x dummy-var)
   `(let ((x ,x))
-     (and (equal (syntax-bind ,dummy-var x) t)
+     (and (equal (syntax-bind ,dummy-var (g-concrete x)) t)
           (equal x t))))
 
 
@@ -190,29 +192,150 @@
 ;;   (equal (equal (endint x) (endint y))
 ;;          (iff x y)))
 
-(def-gl-rewrite fgl-equal-ints
-  (equal (equal (int x) (int y))
-         (if (and (check-int-endp x xend)
-                  (check-int-endp y yend))
-             (iff (intcar x) (intcar y))
-           (and (iff (intcar x) (intcar y))
-                (equal (intcdr x) (intcdr y)))))
-  :hints (("Goal" :use ((:instance acl2::logcar-logcdr-elim
-                         (i (ifix x)))
-                        (:instance acl2::logcar-logcdr-elim
-                         (i (ifix y))))
-           :in-theory (e/d (int-endp)
-                           (acl2::logcar-logcdr-elim
-                            bitops::logcons-destruct)))))
 
-(def-gl-rewrite fgl-equal-conses
-  (equal (equal (cons x1 y1) (cons x2 y2))
-         (and (equal x1 x2)
-              (equal y1 y2))))
 
-(def-gl-rewrite fgl-equal-bools
-  (equal (equal (bool x) (bool y))
-         (iff x y)))
+(define check-integerp (x xsyn)
+  :verify-guards nil
+  (and (gobj-syntactic-integerp xsyn)
+       (integerp x))
+  ///
+  (defthm check-integerp-open
+    (iff (check-integerp x xsyn)
+         (and* (gobj-syntactic-integerp xsyn)
+               (integerp x)))))
+
+(define check-consp (x xsyn)
+  :verify-guards nil
+  (and (gobj-syntactic-consp xsyn)
+       (consp x))
+  ///
+  (defthm check-consp-open
+    (iff (check-consp x xsyn)
+         (and* (gobj-syntactic-consp xsyn)
+               (consp x)))))
+
+(define check-booleanp (x xsyn)
+  :verify-guards nil
+  (and (gobj-syntactic-booleanp xsyn)
+       (booleanp x))
+  ///
+  (defthm check-booleanp-open
+    (iff (check-booleanp x xsyn)
+         (and* (gobj-syntactic-booleanp xsyn)
+               (booleanp x)))))
+
+(define gobj-non-integerp ((x gl-object-p))
+  (gl-object-case x
+    :g-boolean t
+    :g-concrete (not (integerp x.val))
+    :g-cons t
+    :otherwise nil))
+
+(define check-non-integerp (x xsyn)
+  :verify-guards nil
+  (and (gobj-non-integerp xsyn)
+       (not (integerp x)))
+  ///
+  (defthm check-non-integerp-open
+    (iff (check-non-integerp x xsyn)
+         (and* (gobj-non-integerp xsyn)
+               (not (integerp x))))))
+
+
+(define gobj-non-booleanp ((x gl-object-p))
+  (gl-object-case x
+    :g-integer t
+    :g-concrete (not (booleanp x.val))
+    :g-cons t
+    :otherwise nil))
+
+(define check-non-booleanp (x xsyn)
+  :verify-guards nil
+  (and (gobj-non-booleanp xsyn)
+       (not (booleanp x)))
+  ///
+  (defthm check-non-booleanp-open
+    (iff (check-non-booleanp x xsyn)
+         (and* (gobj-non-booleanp xsyn)
+               (not (booleanp x))))))
+
+(define gobj-non-consp ((x gl-object-p))
+  (gl-object-case x
+    :g-integer t
+    :g-concrete (not (consp x.val))
+    :g-boolean t
+    :otherwise nil))
+
+(define check-non-consp (x xsyn)
+  :verify-guards nil
+  (and (gobj-non-consp xsyn)
+       (not (consp x)))
+  ///
+  (defthm check-non-consp-open
+    (iff (check-non-consp x xsyn)
+         (and* (gobj-non-consp xsyn)
+               (not (consp x))))))
+
+
+
+(def-gl-rewrite fgl-equal
+  (equal (equal x y)
+         (let ((xsyn (syntax-bind xsyn (g-concrete x)))
+               (ysyn (syntax-bind ysyn (g-concrete y))))
+           (cond ((check-integerp x xsyn)
+                  (cond ((check-integerp y ysyn)
+                         (and (iff (intcar x) (intcar y))
+                              (or (and (check-int-endp x xsyn)
+                                       (check-int-endp y ysyn))
+                                  (equal (intcdr x) (intcdr y)))))
+                        ((check-non-integerp y ysyn) nil)
+                        (t (abort-rewrite (equal x y)))))
+                 ((check-booleanp x xsyn)
+                  (cond ((check-booleanp y ysyn)
+                         (iff x y))
+                        ((check-non-booleanp y ysyn) nil)
+                        (t (abort-rewrite (equal x y)))))
+                 ((check-consp x xsyn)
+                  (cond ((check-consp y ysyn)
+                         (and (equal (car x) (car y))
+                              (equal (cdr x) (cdr y))))
+                        ((check-non-consp y ysyn) nil)
+                        (t (abort-rewrite (equal x y)))))
+                 ((and (check-integerp y ysyn)
+                       (check-non-integerp x xsyn)) nil)
+                 ((and (check-booleanp y ysyn)
+                       (check-non-booleanp x xsyn)) nil)
+                 ((and (check-consp y ysyn)
+                       (check-non-consp x xsyn)) nil)
+                 (t (abort-rewrite (equal x y))))))
+  :hints(("Goal" :in-theory (enable int-endp))))
+               
+                     
+                     
+
+;; (def-gl-rewrite fgl-equal-ints
+;;   (equal (equal (int x) (int y))
+;;          (if (and (check-int-endp x xend)
+;;                   (check-int-endp y yend))
+;;              (iff (intcar x) (intcar y))
+;;            (and (iff (intcar x) (intcar y))
+;;                 (equal (intcdr x) (intcdr y)))))
+;;   :hints (("Goal" :use ((:instance acl2::logcar-logcdr-elim
+;;                          (i (ifix x)))
+;;                         (:instance acl2::logcar-logcdr-elim
+;;                          (i (ifix y))))
+;;            :in-theory (e/d (int-endp)
+;;                            (acl2::logcar-logcdr-elim
+;;                             bitops::logcons-destruct)))))
+
+;; (def-gl-rewrite fgl-equal-conses
+;;   (equal (equal (cons x1 y1) (cons x2 y2))
+;;          (and (equal x1 x2)
+;;               (equal y1 y2))))
+
+;; (def-gl-rewrite fgl-equal-bools
+;;   (equal (equal (bool x) (bool y))
+;;          (iff x y)))
 
 
 (thm

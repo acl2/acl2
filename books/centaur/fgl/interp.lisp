@@ -1306,6 +1306,11 @@
                              (eql (len x.args) 2)))
                 (gl-interp-syntax-bind (first x.args) (second x.args) interp-st state))
 
+               ((when (and** (eq x.fn 'abort-rewrite)
+                             (eql (len x.args) 1)))
+                (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
+                  (mv nil interp-st)))
+
                ((when (and** (eq x.fn 'fgl-sat-check) (eql (len x.args) 2)))
                 (gl-interp-sat-check (first x.args)
                                      (second x.args)
@@ -1548,7 +1553,10 @@
               ((mv val interp-st)
                (gl-interp-term-equivs rule.rhs interp-st state)))
 
-             (interp-st (interp-st-pop-frame interp-st)))
+             (interp-st (interp-st-pop-frame interp-st))
+             ((when (interp-st->errmsg interp-st))
+              (b* ((interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
+                (mv nil nil interp-st))))
 
           (mv t val interp-st)))
       

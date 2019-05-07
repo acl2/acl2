@@ -2484,7 +2484,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
    numerator rationalp realpart
    stringp symbol-name symbol-package-name
    symbolp
-   syntax-bind-fn
+   syntax-bind-fn abort-rewrite
 
    equal not if iff int bool
    concrete return-last synp cons car cdr
