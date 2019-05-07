@@ -286,7 +286,7 @@
 (assert! ; may be able to use assert-event after a bug fix is in place
  (equal
   (prettyify-clause-lst
-   (cadr (cadr (mv-list 2 (guard-obligation 'f2 nil nil 'top-level state))))
+   (cadr (cadr (mv-list 2 (guard-obligation 'f2 nil nil t 'top-level state))))
    nil
    (w state))
   '((IMPLIES (AND (INTEGERP LOWER)

@@ -8888,7 +8888,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug)
+(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug
+                                (guard-simplify 't))
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8902,6 +8903,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (list 'quote hints)
        (list 'quote otf-flg)
        (list 'quote guard-debug)
+       (list 'quote guard-simplify)
        (list 'quote event-form)))
 
 (defmacro verify-guards+ (name &rest rest)

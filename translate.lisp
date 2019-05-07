@@ -8371,6 +8371,7 @@
 
 ; :GUARD-DEBUG - proof time (see below)
 ; :GUARD-HINTS - proof time
+; :GUARD-SIMPLIFY - proof time
 ; :HINTS - recursion (see below)
 ; :MEASURE - recursion
 ; :MEASURE-DEBUG - recursion
@@ -8388,7 +8389,7 @@
 
 ; Proof time: The keywords marked ``proof time'' are only relevant when we're
 ; doing guard verification.  Lambda objects can occur in four contexts: in
-; DEFUN, DEFTHM, and VERIFY-GUARD events, or in top-level evaluations.  Guard
+; DEFUN, DEFTHM, and VERIFY-GUARDS events, or in top-level evaluations.  Guard
 ; verification of DEFUN and DEFTHM events allow the provision of goal-specific
 ; hints, which can be used to guide the proofs of obligations stemming from
 ; lambda objects being guard verified.  Top-level evaluation is not intended to

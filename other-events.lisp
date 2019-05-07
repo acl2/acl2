@@ -1002,13 +1002,16 @@
             'state
             (list 'quote event-form)))
     (defmacro verify-guards (&whole event-form name
-                                    &key hints otf-flg guard-debug)
+                                    &key
+                                    hints otf-flg guard-debug
+                                    (guard-simplify 't))
       (list 'verify-guards-fn
             (list 'quote name)
             'state
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote guard-debug)
+            (list 'quote guard-simplify)
             (list 'quote event-form)))
     (defmacro defmacro (&whole event-form &rest mdef)
       (list 'defmacro-fn
