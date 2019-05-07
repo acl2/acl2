@@ -384,6 +384,55 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
     (equal (ipasir$a->assumption new-ipasir)
            (ipasir$a->assumption ipasir))))
 
+(define ipasir-add-list-ordered-aux (ipasir (clause lit-listp))
+  :guard (not (eq (ipasir-get-status ipasir) :undef))
+  :returns (new-ipasir)
+  (if (atom clause)
+      (ipasir-input ipasir)
+    (b* ((ipasir (ipasir-add-list-ordered-aux ipasir (cdr clause))))
+      (ipasir-add-lit ipasir (car clause))))
+  ///
+  (defret ipasir-add-list-ordered-aux-status
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-add-list-ordered-aux-formula
+    (equal (ipasir$a->formula new-ipasir)
+           (ipasir$a->formula ipasir)))
+
+  (defret ipasir-add-list-ordered-aux-new-clause
+    (equal (ipasir$a->new-clause new-ipasir)
+           (append (lit-list-fix clause) (ipasir$a->new-clause ipasir))))
+
+  (defret ipasir-add-list-ordered-aux-assumption
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir))))
+
+(define ipasir-add-list-ordered (ipasir (clause lit-listp))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
+  :returns (new-ipasir)
+  :parents (ipasir-formula)
+  :short "Add a clause (given as a list of literals) to the formula"
+  (b* ((ipasir (ipasir-cancel-new-clause ipasir))
+       (ipasir (ipasir-add-list-ordered-aux ipasir clause)))
+    (ipasir-finalize-clause ipasir))
+  ///
+  (defret ipasir-add-list-ordered-status
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defretd ipasir-add-list-ordered-formula
+    (equal (ipasir$a->formula new-ipasir)
+           (cons (lit-list-fix clause)
+                 (ipasir$a->formula ipasir)))
+    :hints(("Goal" :in-theory (enable ipasir-add-list-ordered-aux-formula))))
+
+  (defret ipasir-add-list-ordered-new-clause
+    (not (ipasir$a->new-clause new-ipasir)))
+
+  (defret ipasir-add-list-ordered-assumption
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir))))
+
 (define rev-each (x)
   (if (atom x)
       nil
@@ -422,6 +471,35 @@ at the beginning of @('ipasir-add-binary'), then we'd need a hypothesis of
     (not (ipasir$a->new-clause new-ipasir)))
 
   (defret ipasir-add-clauses-assumption
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir))))
+
+(define ipasir-add-clauses-ordered (ipasir (clauses lit-list-listp))
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
+  :returns (new-ipasir)
+  :parents (ipasir-formula)
+  :short "Add a list of clauses to the formula"
+  (if (atom clauses)
+      (b* ((ipasir (ipasir-cancel-new-clause ipasir)))
+        (ipasir-input ipasir))
+    (b* ((ipasir (ipasir-add-clauses-ordered ipasir (cdr clauses))))
+      (ipasir-add-list-ordered ipasir (car clauses))))
+  ///
+  (defret ipasir-add-clauses-ordered-status
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defretd ipasir-add-clauses-ordered-formula
+    (equal (ipasir$a->formula new-ipasir)
+           (append (lit-list-list-fix clauses)
+                   (ipasir$a->formula ipasir)))
+    :hints(("Goal" :in-theory (enable lit-list-list-fix
+                                      ipasir-add-list-ordered-formula))))
+
+  (defret ipasir-add-clauses-ordered-new-clause
+    (not (ipasir$a->new-clause new-ipasir)))
+
+  (defret ipasir-add-clauses-ordered-assumption
     (equal (ipasir$a->assumption new-ipasir)
            (ipasir$a->assumption ipasir))))
 

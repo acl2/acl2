@@ -74,6 +74,232 @@
   :short "Using the @(see ipasir::ipasir) interface to run SAT checks on aignet nodes") 
 
 
+#!ipasir
+(define mux-add-clauses-ipasir ((res-id natp)
+                                (c litp)
+                                (tb litp)
+                                (fb litp)
+                                aignet::sat-lits
+                                ipasir)
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
+  :returns (new-ipasir)
+  :hooks nil ;; mux-add-clauses doesn't currently satisfy fixtype convention
+  (b* ((rl (aignet::aignet-id->sat-lit res-id aignet::sat-lits))
+       (cl (aignet::aignet-lit->sat-lit c aignet::sat-lits))
+       (tl (aignet::aignet-lit->sat-lit tb aignet::sat-lits))
+       (fl (aignet::aignet-lit->sat-lit fb aignet::sat-lits))
+       (rlb (satlink::lit-negate rl))
+       (clb (satlink::lit-negate cl))
+       (tlb (satlink::lit-negate tl))
+       (flb (satlink::lit-negate fl))
+       (ipasir (ipasir-cancel-new-clause ipasir)))
+    (if (int= tb fb)          ;; fanins are equal
+        ;; (list* (list tl rlb)  ;;  tb <-> res
+        ;;        (list tlb rl)
+        ;;        cnf-acc)
+        (b* ((ipasir (ipasir-add-binary ipasir rl tlb)))
+          (ipasir-add-binary ipasir rlb tl))
+      ;; (list* (list clb tlb rl)     ;;   c &  tb ->  res
+      ;;        (list cl  flb rl)     ;;  ~c &  fb ->  res
+      ;;        (list clb tl  rlb)    ;;   c & ~tb -> ~res
+      ;;        (list cl  fl  rlb)    ;;  ~c & ~fb -> ~res
+      ;;        (if (int= tb (lit-negate fb))
+      ;;            ;; xor, omit last two since they are always satisfied
+      ;;            cnf-acc
+      ;;          (list* (list tlb flb rl)  ;;  tb &  fb ->  res
+      ;;                 (list tl  fl  rlb) ;; ~tb & ~fb -> ~res
+      ;;                 cnf-acc)))
+      (b* ((ipasir (if (int= tb (lit-negate fb))
+                       ipasir
+                     (b* ((ipasir (ipasir-add-ternary ipasir rlb fl tl)))
+                       (ipasir-add-ternary ipasir rl flb tlb))))
+           (ipasir (ipasir-add-ternary ipasir rlb fl cl))
+           (ipasir (ipasir-add-ternary ipasir rlb tl clb))
+           (ipasir (ipasir-add-ternary ipasir rl flb cl)))
+        (ipasir-add-ternary ipasir rl tlb clb))))
+  ///
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-<fn>
+    (equal (ipasir$a->new-clause new-ipasir) nil))
+
+  (defret ipasir-assumption-of-<fn>
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir)))
+
+  (defret ipasir-formula-of-<fn>
+    (equal (ipasir$a->formula new-ipasir)
+           (aignet::mux-add-clauses res-id c tb fb aignet::sat-lits (ipasir$a->formula ipasir)))
+    :hints(("Goal" :in-theory (enable aignet::mux-add-clauses
+                                      ipasir-add-ternary
+                                      ipasir-add-binary)))))
+
+
+#!ipasir
+(define supergate-add-clauses1-ipasir ((lit litp)
+                                       (supergate lit-listp)
+                                       aignet::sat-lits
+                                       ipasir)
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
+  :returns new-ipasir
+  (if (atom supergate)
+      (b* ((ipasir (ipasir-cancel-new-clause ipasir)))
+        (ipasir-input ipasir))
+    (b* ((ipasir (ipasir-add-binary ipasir
+                                    (lit-negate (aignet::aignet-lit->sat-lit lit aignet::sat-lits))
+                                    (aignet::aignet-lit->sat-lit (car supergate) aignet::sat-lits))))
+      (supergate-add-clauses1-ipasir lit (cdr supergate) aignet::sat-lits ipasir)))
+  ///
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-<fn>
+    (equal (ipasir$a->new-clause new-ipasir) nil))
+
+  (defret ipasir-assumption-of-<fn>
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir)))
+
+  (defret ipasir-formula-of-<fn>
+    (equal (ipasir$a->formula new-ipasir)
+           (aignet::supergate-add-clauses1 lit (rev supergate) aignet::sat-lits (ipasir$a->formula ipasir)))
+    :hints(("Goal" :in-theory (enable aignet::supergate-add-clauses1
+                                      ipasir-add-binary)))))
+
+#!ipasir
+(define supergate-add-neg-fanins-ipasir ((supergate lit-listp)
+                                         aignet::sat-lits
+                                         ipasir)
+  :guard (not (eq (ipasir-get-status ipasir) :undef))
+  :returns new-ipasir
+  (if (atom supergate)
+      (ipasir-input ipasir)
+    (b* ((ipasir (ipasir-add-lit ipasir
+                                 (lit-negate
+                                  (aignet::aignet-lit->sat-lit (car supergate) aignet::sat-lits)))))
+      (supergate-add-neg-fanins-ipasir (cdr supergate) aignet::sat-lits ipasir)))
+  ///
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-<fn>
+    (equal (ipasir$a->new-clause new-ipasir)
+           (append (rev (aignet::supergate-collect-neg-fanins supergate aignet::sat-lits))
+                   (ipasir$a->new-clause ipasir)))
+    :hints(("Goal" :in-theory (enable aignet::supergate-collect-neg-fanins))))
+
+  (defret ipasir-assumption-of-<fn>
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir)))
+
+  (defret ipasir-formula-of-<fn>
+    (equal (ipasir$a->formula new-ipasir)
+           (ipasir$a->formula ipasir))))
+
+#!ipasir
+(define supergate-add-clauses-ipasir ((res litp)
+                                      (supergate lit-listp)
+                                      aignet::sat-lits
+                                      ipasir)
+  :guard (and (not (eq (ipasir-get-status ipasir) :undef))
+              (ipasir-empty-new-clause ipasir))
+  :prepwork ((local (defthm lit-listp-of-rev
+                      (implies (lit-listp x)
+                               (lit-listp (rev x)))
+                      :hints(("Goal" :in-theory (enable rev)))))
+             (local (fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (rev x) x
+                      :hints(("Goal" :in-theory (enable rev))))))
+  :returns new-ipasir
+  (b* ((supergate (rev supergate))
+       (ipasir (supergate-add-clauses1-ipasir res supergate aignet::sat-lits ipasir))
+       (ipasir (supergate-add-neg-fanins-ipasir supergate aignet::sat-lits ipasir))
+       (ipasir (ipasir-add-lit ipasir (aignet::aignet-lit->sat-lit res aignet::sat-lits))))
+    (ipasir-finalize-clause ipasir))
+  ///
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-<fn>
+    (equal (ipasir$a->new-clause new-ipasir) nil))
+
+  (defret ipasir-assumption-of-<fn>
+    (equal (ipasir$a->assumption new-ipasir)
+           (ipasir$a->assumption ipasir)))
+
+  (local (defthm append-of-supergate-collect-neg-fanins
+           (equal (aignet::supergate-collect-neg-fanins (append x y) sat-lits)
+                  (append (aignet::supergate-collect-neg-fanins x sat-lits)
+                          (aignet::supergate-collect-neg-fanins y sat-lits)))
+           :hints(("Goal" :in-theory (enable aignet::supergate-collect-neg-fanins)))))
+
+  (local (defthm rev-of-supergate-collect-neg-fanins
+           (equal (rev (aignet::supergate-collect-neg-fanins x sat-lits))
+                  (aignet::supergate-collect-neg-fanins (rev x) sat-lits))
+           :hints(("Goal" :in-theory (enable aignet::supergate-collect-neg-fanins)))))
+
+  (local (defthm supergate-collect-neg-fanins-of-true-list-fix
+           (equal (aignet::supergate-collect-neg-fanins (true-list-fix x) sat-lits)
+                  (aignet::supergate-collect-neg-fanins x sat-lits))
+           :hints(("Goal" :in-theory (enable aignet::supergate-collect-neg-fanins)))))
+
+  (local (defthm supergate-add-clauses1-of-true-list-fix
+           (equal (aignet::supergate-add-clauses1 lit (true-list-fix x) sat-lits cnf)
+                  (aignet::supergate-add-clauses1 lit x sat-lits cnf))
+           :hints(("Goal" :in-theory (enable aignet::supergate-add-clauses1)))))
+
+  (defret ipasir-formula-of-<fn>
+    (equal (ipasir$a->formula new-ipasir)
+           (aignet::supergate-add-clauses res supergate aignet::sat-lits (ipasir$a->formula ipasir)))
+    :hints(("Goal" :in-theory (enable aignet::supergate-add-clauses)))))
+  
+
+
+(defsection eval-formula-equiv-of-aignet-lit->cnf
+  (local (defthm eval-formula-equiv-of-ipasir-add-unary
+           (eval-formula-equiv (ipasir::ipasir$a->formula (ipasir::ipasir-add-unary ipasir lit))
+                               (cons (list lit) (ipasir::ipasir$a->formula ipasir)))
+           :hints(("Goal" :in-theory (enable eval-formula-equiv)))))
+
+  (local (defthm eval-formula-equiv-of-ipasir-add-clauses
+           (eval-formula-equiv (ipasir::ipasir$a->formula (ipasir::ipasir-add-clauses ipasir clauses))
+                               (append clauses (ipasir::ipasir$a->formula ipasir)))
+           :hints(("Goal" :in-theory (enable eval-formula-equiv)))))
+
+  (defthm eval-formula-equiv-congruence-on-aignet-lit->cnf
+    (implies (eval-formula-equiv cnf1 cnf2)
+             (eval-formula-equiv (mv-nth 1 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf1))
+                                 (mv-nth 1 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf2))))
+    :hints(("Goal" :in-theory (enable aignet-lit->cnf-normalize-cnf)))
+    :rule-classes :congruence)
+
+  (defthm eval-formula-equiv-congruence-on-aignet-lit-list->cnf
+    (implies (eval-formula-equiv cnf1 cnf2)
+             (eval-formula-equiv (mv-nth 1 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf1))
+                                 (mv-nth 1 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf2))))
+    :hints(("Goal" :in-theory (enable aignet-lit-list->cnf-normalize-cnf)))
+    :rule-classes :congruence)
+
+  
+  (defcong eval-formula-equiv equal (cnf-for-aignet aignet cnf sat-lits) 2
+    :hints (("goal" :cases ((cnf-for-aignet aignet cnf sat-lits)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'cnf-for-aignet clause))
+                      (other-cnf (if (eq (third lit) 'cnf) 'cnf-equiv 'cnf)))
+                   `(:expand (,lit)
+                     :use ((:instance cnf-for-aignet-necc
+                            (cnf ,other-cnf)
+                            (invals (mv-nth 0 (cnf-for-aignet-witness . ,(cdr lit))))
+                            (regvals (mv-nth 1 (cnf-for-aignet-witness . ,(cdr lit))))
+                            (cnf-vals (mv-nth 2 (cnf-for-aignet-witness . ,(cdr lit))))))
+                     :in-theory (disable cnf-for-aignet-necc)))))
+    :otf-flg t))
+
+
+
+
 (defines aignet-lit->ipasir
   (define aignet-lit->ipasir ((x litp           "Literal to encode in the CNF")
                               (use-muxes        "Flag saying whether to recognize muxes and encode them specially")
@@ -132,8 +358,7 @@
                ((mv sat-lits ipasir)
                 (aignet-lit->ipasir fb use-muxes aignet-refcounts sat-lits aignet ipasir))
                (sat-lits (sat-add-aignet-lit (mk-lit id 0) sat-lits aignet))
-               (new-clauses (mux-add-clauses id c tb fb sat-lits nil))
-               (ipasir (ipasir::ipasir-add-clauses ipasir new-clauses)))
+               (ipasir (ipasir::mux-add-clauses-ipasir id c tb fb sat-lits ipasir)))
             (mv sat-lits ipasir)))
          (lit (mk-lit id 0))
          ((mv supergate &)
@@ -150,9 +375,8 @@
          ((mv sat-lits ipasir)
           (aignet-lit-list->ipasir supergate use-muxes aignet-refcounts sat-lits aignet ipasir))
          (sat-lits (sat-add-aignet-lit lit sat-lits aignet))
-         (new-clauses (supergate-add-clauses
-                       lit supergate sat-lits nil))
-         (ipasir (ipasir::ipasir-add-clauses ipasir new-clauses)))
+         (ipasir (ipasir::supergate-add-clauses-ipasir
+                  lit supergate sat-lits ipasir)))
       (mv sat-lits ipasir)))
 
   (define aignet-lit-list->ipasir ((x lit-listp)
@@ -221,6 +445,21 @@
 
   (verify-guards aignet-lit->ipasir)
 
+  
+
+  (local (defthm supergate-add-clauses1-normalize
+           (implies (syntaxp (not (equal cnf ''nil)))
+                    (equal (supergate-add-clauses1 lit supergate sat-lits cnf)
+                           (append (supergate-add-clauses1 lit supergate sat-lits nil)
+                                   cnf)))
+           :hints(("Goal" :in-theory (enable supergate-add-clauses1)))))
+
+  (local (defthm mux-add-clauses-normalize
+           (implies (syntaxp (not (equal cnf ''nil)))
+                    (equal (mux-add-clauses res-id c tb fb sat-lits cnf)
+                           (append (mux-add-clauses res-id c tb fb sat-lits nil)
+                                   cnf)))
+           :hints(("Goal" :in-theory (enable mux-add-clauses)))))
 
   (encapsulate nil
     (local (defun concl-formula (fn)
@@ -259,7 +498,7 @@
                       `(:expand (,(car (last clause))
                                  (:free (use-muxes ipasir) <call>))
                         :in-theory (enable ipasir::ipasir-add-unary-formula
-                                           ipasir::ipasir-add-clauses-formula)
+                                           ipasir::ipasir-add-clauses-ordered-formula)
                         ;; :in-theory (enable supergate-add-clauses-normalize-cnf-acc
                         ;;                    mux-add-clauses-normalize-cnf-acc)
                         )))
@@ -308,57 +547,31 @@
                                    aignet-lit-list->cnf-normalize-cnf)))
       :fn aignet-lit-list->ipasir))
 
-  (local (defthm eval-formula-equiv-of-ipasir-add-unary
-           (eval-formula-equiv (ipasir::ipasir$a->formula (ipasir::ipasir-add-unary ipasir lit))
-                               (cons (list lit) (ipasir::ipasir$a->formula ipasir)))
-           :hints(("Goal" :in-theory (enable eval-formula-equiv)))))
-
-  (local (defthm eval-formula-equiv-of-ipasir-add-clauses
-           (eval-formula-equiv (ipasir::ipasir$a->formula (ipasir::ipasir-add-clauses ipasir clauses))
-                               (append clauses (ipasir::ipasir$a->formula ipasir)))
-           :hints(("Goal" :in-theory (enable eval-formula-equiv)))))
-
-  (defthm eval-formula-equiv-congruence-on-aignet-lit->cnf
-    (implies (eval-formula-equiv cnf1 cnf2)
-             (eval-formula-equiv (mv-nth 1 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf1))
-                                 (mv-nth 1 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf2))))
-    :hints(("Goal" :in-theory (enable aignet-lit->cnf-normalize-cnf)))
-    :rule-classes :congruence)
-
-  (defthm eval-formula-equiv-congruence-on-aignet-lit-list->cnf
-    (implies (eval-formula-equiv cnf1 cnf2)
-             (eval-formula-equiv (mv-nth 1 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf1))
-                                 (mv-nth 1 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf2))))
-    :hints(("Goal" :in-theory (enable aignet-lit-list->cnf-normalize-cnf)))
-    :rule-classes :congruence)
-
-  (local (in-theory (disable supergate-add-clauses)))
-
   (std::defret-mutual formula-of-aignet-lit->ipasir-reduce-to-aignet-lit->cnf
     (defret formula-of-aignet-lit->ipasir-reduce-to-aignet-lit->cnf
       (b* (((mv ?new-sat-lits ?new-ipasir)
-            (aignet-lit->ipasir x use-muxes aignet-refcounts sat-lits aignet ipasir))
-           (cnf (ipasir::ipasir$a->formula ipasir))
-           ((mv ?new-sat-lits-spec ?new-cnf)
-            (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
-        (eval-formula-equiv (ipasir::ipasir$a->formula new-ipasir) new-cnf))
+            (aignet-lit->ipasir x use-muxes aignet-refcounts sat-lits aignet nil))
+           ((mv ?new-sat-lits-spec new-cnf-spec)
+            (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet nil)))
+        (equal (ipasir$a->formula new-ipasir)
+               new-cnf-spec))
       :hints (`(:expand ((:free (use-muxes ipasir) <call>)
                          (:free (use-muxes ipasir) (aignet-lit->cnf . ,(cdr '<call>))))
                 :in-theory (enable aignet-lit->ipasir-normalize
                                    aignet-lit-list->ipasir-normalize
                                    aignet-lit->cnf-normalize-cnf
                                    aignet-lit-list->cnf-normalize-cnf
-                                   supergate-add-clauses-normalize-cnf-acc
-                                   mux-add-clauses-normalize-cnf-acc)))
+                                   ipasir::ipasir-add-clauses-ordered-formula
+                                   IPASIR::IPASIR-ADD-UNARY-FORMULA)))
       :fn aignet-lit->ipasir)
 
     (defret formula-of-aignet-lit-list->ipasir-reduce-to-aignet-lit-list->cnf
       (b* (((mv ?new-sat-lits ?new-ipasir)
-            (aignet-lit-list->ipasir x use-muxes aignet-refcounts sat-lits aignet ipasir))
-           (cnf (ipasir::ipasir$a->formula ipasir))
-           ((mv ?new-sat-lits-spec ?new-cnf)
-            (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
-        (eval-formula-equiv (ipasir::ipasir$a->formula new-ipasir) new-cnf))
+            (aignet-lit-list->ipasir x use-muxes aignet-refcounts sat-lits aignet nil))
+           ((mv ?new-sat-lits-spec ?new-cnf-spec)
+            (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet nil)))
+        (equal (ipasir$a->formula new-ipasir)
+               new-cnf-spec))
       :hints (`(:expand ((:free (use-muxes ipasir) <call>)
                          (:free (use-muxes ipasir) (aignet-lit-list->cnf . ,(cdr '<call>))))
                 :in-theory (enable aignet-lit->ipasir-normalize
@@ -368,91 +581,78 @@
       :fn aignet-lit-list->ipasir))
 
   
-  (local (DEFTHM SAT-LITS-WFP-IMPLIES-LOOKUP-AIGNET-ID-bind-free
-           (IMPLIES (AND (bind-free '((aignet . aignet)))
-                         (SAT-LITS-WFP SAT-LITS AIGNET)
-                         (AIGNET-IDP N AIGNET)
-                         (AIGNET-ID-HAS-SAT-VAR N SAT-LITS))
-                    (AND
-                     (EQUAL (SAT-VAR->AIGNET-LIT
-                             (satlink::lit->var (AIGNET-ID->SAT-LIT N SAT-LITS))
-                             SAT-LITS)
-                            (MK-LIT
-                             N
-                             (satlink::LIT->NEG (AIGNET-ID->SAT-LIT N SAT-LITS))))
-                     (SAT-VARP (satlink::lit->var (AIGNET-ID->SAT-LIT N SAT-LITS))
-                               SAT-LITS)))))
+  ;; (local (DEFTHM SAT-LITS-WFP-IMPLIES-LOOKUP-AIGNET-ID-bind-free
+  ;;          (IMPLIES (AND (bind-free '((aignet . aignet)))
+  ;;                        (SAT-LITS-WFP SAT-LITS AIGNET)
+  ;;                        (AIGNET-IDP N AIGNET)
+  ;;                        (AIGNET-ID-HAS-SAT-VAR N SAT-LITS))
+  ;;                   (AND
+  ;;                    (EQUAL (SAT-VAR->AIGNET-LIT
+  ;;                            (satlink::lit->var (AIGNET-ID->SAT-LIT N SAT-LITS))
+  ;;                            SAT-LITS)
+  ;;                           (MK-LIT
+  ;;                            N
+  ;;                            (satlink::LIT->NEG (AIGNET-ID->SAT-LIT N SAT-LITS))))
+  ;;                    (SAT-VARP (satlink::lit->var (AIGNET-ID->SAT-LIT N SAT-LITS))
+  ;;                              SAT-LITS)))))
 
-  (local (in-theory (enable AIGNET-ID-HAS-SAT-VAR-PRESERVED-SPLIT-OF-SAT-ADD-AIGNET-LIT)))
+  ;; (local (in-theory (enable AIGNET-ID-HAS-SAT-VAR-PRESERVED-SPLIT-OF-SAT-ADD-AIGNET-LIT)))
 
 
-  (defthm sat-lit-list-listp-of-rev
-    (implies (sat-lit-list-listp x sat-lits)
-             (sat-lit-list-listp (acl2::rev x) sat-lits))
-    :hints(("Goal" :in-theory (enable acl2::rev))))
+  ;; (defthm sat-lit-list-listp-of-rev
+  ;;   (implies (sat-lit-list-listp x sat-lits)
+  ;;            (sat-lit-list-listp (acl2::rev x) sat-lits))
+  ;;   :hints(("Goal" :in-theory (enable acl2::rev))))
 
-  (defthm sat-lit-listp-of-rev
-    (implies (sat-lit-listp x sat-lits)
-             (sat-lit-listp (acl2::rev x) sat-lits))
-    :hints(("Goal" :in-theory (enable acl2::rev))))
+  ;; (defthm sat-lit-listp-of-rev
+  ;;   (implies (sat-lit-listp x sat-lits)
+  ;;            (sat-lit-listp (acl2::rev x) sat-lits))
+  ;;   :hints(("Goal" :in-theory (enable acl2::rev))))
 
-  (defthm sat-lit-list-listp-of-rev-each
-    (implies (sat-lit-list-listp x sat-lits)
-             (sat-lit-list-listp (ipasir::rev-each x) sat-lits))
-    :hints(("Goal" :in-theory (enable ipasir::rev-each))))
+  ;; (defthm sat-lit-list-listp-of-rev-each
+  ;;   (implies (sat-lit-list-listp x sat-lits)
+  ;;            (sat-lit-list-listp (ipasir::rev-each x) sat-lits))
+  ;;   :hints(("Goal" :in-theory (enable ipasir::rev-each))))
 
-  (defthm sat-lit-list-litp-of-cons
-    (equal (sat-lit-list-listp (cons a b) sat-lits)
-           (and (sat-lit-listp a sat-lits)
-                (sat-lit-list-listp b sat-lits))))
+  ;; (defthm sat-lit-list-litp-of-cons
+  ;;   (equal (sat-lit-list-listp (cons a b) sat-lits)
+  ;;          (and (sat-lit-listp a sat-lits)
+  ;;               (sat-lit-list-listp b sat-lits))))
 
-  (defthm sat-lit-litp-of-cons
-    (equal (sat-lit-listp (cons a b) sat-lits)
-           (and (sat-litp a sat-lits)
-                (sat-lit-listp b sat-lits))))
+  ;; (defthm sat-lit-litp-of-cons
+  ;;   (equal (sat-lit-listp (cons a b) sat-lits)
+  ;;          (and (sat-litp a sat-lits)
+  ;;               (sat-lit-listp b sat-lits))))
 
-  (defthm sat-lit-listp-of-nil
-    (sat-lit-listp nil sat-lits))
+  ;; (defthm sat-lit-listp-of-nil
+  ;;   (sat-lit-listp nil sat-lits))
 
-  (local (in-theory (disable sat-lit-list-listp sat-lit-listp)))
+  ;; (local (in-theory (disable sat-lit-list-listp sat-lit-listp)))
 
-  (std::defret-mutual good-cnf-of-aignet-lit->ipasir
-    (defret good-cnf-of-aignet-lit->ipasir
-      (b* ((new-sat-lits (mv-nth 0 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet nil))))
-        (implies (and (sat-lits-wfp sat-lits aignet)
-                      (aignet-litp x aignet))
-                 (implies (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
-                          (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits))))
-      :hints (`(:expand ((:free (use-muxes ipasir) <call>)
-                         (:free (use-muxes ipasir) (aignet-lit->cnf . ,(cdr '<call>))))
-                :in-theory (enable ipasir::ipasir-add-unary-formula
-                                   ipasir::ipasir-add-clauses-formula)))
-      :fn aignet-lit->ipasir)
-    (defret good-cnf-of-aignet-lit-list->ipasir
-      (b* ((new-sat-lits (mv-nth 0 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet nil))))
-        (implies (and (sat-lits-wfp sat-lits aignet)
-                      (aignet-lit-listp x aignet))
-                 (implies (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
-                          (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits))))
-      :hints (`(:expand ((:free (use-muxes ipasir) <call>)
-                         (:free (use-muxes ipasir) (aignet-lit-list->cnf . ,(cdr '<call>))))))
-      :fn aignet-lit-list->ipasir))
+  ;; (std::defret-mutual good-cnf-of-aignet-lit->ipasir
+  ;;   (defret good-cnf-of-aignet-lit->ipasir
+  ;;     (b* ((new-sat-lits (mv-nth 0 (aignet-lit->cnf x use-muxes aignet-refcounts sat-lits aignet nil))))
+  ;;       (implies (and (sat-lits-wfp sat-lits aignet)
+  ;;                     (aignet-litp x aignet))
+  ;;                (implies (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
+  ;;                         (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits))))
+  ;;     :hints (`(:expand ((:free (use-muxes ipasir) <call>)
+  ;;                        (:free (use-muxes ipasir) (aignet-lit->cnf . ,(cdr '<call>))))
+  ;;               :in-theory (enable ipasir::ipasir-add-unary-formula
+  ;;                                  ipasir::ipasir-add-clauses-formula)))
+  ;;     :fn aignet-lit->ipasir)
+  ;;   (defret good-cnf-of-aignet-lit-list->ipasir
+  ;;     (b* ((new-sat-lits (mv-nth 0 (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet nil))))
+  ;;       (implies (and (sat-lits-wfp sat-lits aignet)
+  ;;                     (aignet-lit-listp x aignet))
+  ;;                (implies (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits)
+  ;;                         (sat-lit-list-listp (ipasir::ipasir$a->formula new-ipasir) new-sat-lits))))
+  ;;     :hints (`(:expand ((:free (use-muxes ipasir) <call>)
+  ;;                        (:free (use-muxes ipasir) (aignet-lit-list->cnf . ,(cdr '<call>))))))
+  ;;     :fn aignet-lit-list->ipasir))
 
   (fty::deffixequiv-mutual aignet-lit->ipasir))
 
-(defcong eval-formula-equiv equal (cnf-for-aignet aignet cnf sat-lits) 2
-  :hints (("goal" :cases ((cnf-for-aignet aignet cnf sat-lits)))
-          (and stable-under-simplificationp
-               (b* ((lit (assoc 'cnf-for-aignet clause))
-                    (other-cnf (if (eq (third lit) 'cnf) 'cnf-equiv 'cnf)))
-               `(:expand (,lit)
-                 :use ((:instance cnf-for-aignet-necc
-                        (cnf ,other-cnf)
-                        (invals (mv-nth 0 (cnf-for-aignet-witness . ,(cdr lit))))
-                        (regvals (mv-nth 1 (cnf-for-aignet-witness . ,(cdr lit))))
-                        (cnf-vals (mv-nth 2 (cnf-for-aignet-witness . ,(cdr lit))))))
-                 :in-theory (disable cnf-for-aignet-necc)))))
-  :otf-flg t)
 
 
 
