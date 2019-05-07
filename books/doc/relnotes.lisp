@@ -80,6 +80,43 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-3-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  <h4>Your Library Title</h4>
+;  <p>Details go here.</p>
+
+; If you are stuck, see comments in previous (defxdoc note-xxx-books ...).
+
+  :parents (note-8-3 release-notes-books)
+  :short "Release notes for the ACL2 Community Books for ACL2 8.3"
+
+  :long "<p>The following is a brief summary of changes made to the @(see
+ community-books) between the releases of ACL2 8.2 and 8.3.</p>
+
+ <p>See also @(see note-8-3) for the changes made to ACL2 itself.  For
+ additional details, you may also see the raw <a
+ href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+
+ <h3>New Libraries</h3>
+
+ <h3>Changes to Existing Libraries</h3>
+
+ <h3>Licensing Changes</h3>
+
+ <h3>Build System Updates</h3>
+
+ <h3>Testing</h3>
+
+ <h3>Miscellaneous</h3>
+
+ ")
+
 (defxdoc note-8-2-books
 
 ; Please add information about your library in the appropriate
