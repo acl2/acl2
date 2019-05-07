@@ -37,6 +37,7 @@
 ;; (include-book "bvar-db")
 (include-book "bfr")
 (include-book "arith-base")
+(include-book "syntax-bind")
 ;; (include-book "pathcond-stobj")
 (include-book "defapply")
 (include-book "std/stobjs/nicestobj" :dir :system)
@@ -1074,7 +1075,12 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                (and val t)
              (bfr-lookup n env)))
     :hints(("Goal" :in-theory (e/d (bfr-lookup bfr-set-var)
-                                   (update-nth nth))))))
+                                   (update-nth nth)))))
+
+  (defthm bfr-set-var-of-logicman-extension
+    (implies (bind-logicman-extension new old)
+             (equal (bfr-set-var n val env new)
+                    (bfr-set-var n val env old)))))
 
 
 ;; (defsection bfr-semantic-depends-on
@@ -2478,10 +2484,11 @@ logicman stobj.  If no logicman argument is supplied, the variable named
    numerator rationalp realpart
    stringp symbol-name symbol-package-name
    symbolp
+   syntax-bind-fn
 
    equal not if iff int bool
    concrete return-last synp cons car cdr
-   intcons intcons* endint intcar intcdr
+   intcons intcons* endint intcar intcdr int-endp
    typespec-check implies fgl-sat-check))
 
 (acl2::def-ev-pseudo-term-fty-support fgl-ev fgl-ev-list)
@@ -2702,3 +2709,235 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   (defret logicman-equiv-of-<fn>
     (logicman-equiv new-logicman logicman)
     :hints(("Goal" :in-theory (enable logicman-equiv)))))
+
+
+(defsection bfr-boundedp
+  ;; Recognizes a BFR that uses only variables less than N.
+  (defun-sk bfr-boundedp (x n logicman)
+    (forall (var env)
+            (implies (and (natp var)
+                          (<= (nfix n) var))
+                     (equal (bfr-eval x (bfr-set-var var t env))
+                            (bfr-eval x env))))
+    :rewrite :direct)
+
+  (local
+   (encapsulate nil
+     (local (defun ind (x n env)
+              (if (zp n)
+                  (list x env)
+                (if (car env)
+                    (ind (car x) (1- n) (cdr env))
+                  (ind (cdr x) (1- n) (cdr env))))))
+     (local
+      (defthm eval-bdd-of-update-past-max-depth
+        (implies (<= (max-depth x) (nfix n))
+                 (equal (acl2::eval-bdd x (update-nth n val env))
+                        (acl2::eval-bdd x env)))
+        :hints (("goal" :induct (ind x n env)
+                 :expand ((update-nth n val env)
+                          (max-depth x)
+                          (:free (env) (acl2::eval-bdd x env)))))))
+
+     (defthm eval-bdd-of-ubdd-fix-update-past
+       (implies (<= (nfix m) (nfix n))
+                (equal (acl2::eval-bdd (ubdd-fix x m) (update-nth n val env))
+                       (acl2::eval-bdd (ubdd-fix x m) env)))
+       :hints(("Goal" :in-theory (enable ubdd-fix))))))
+
+  (local
+   (encapsulate nil
+     (local
+      (defthm aig-eval-of-update-past-max-vars
+        (implies (and (aig-p x m)
+                      (<= (nfix m) n))
+                 (equal (acl2::aig-eval x (cons (cons n val) env))
+                        (acl2::aig-eval x env)))
+        :hints (("goal" :induct (acl2::aig-eval x env)
+                 :expand ((aig-p x m)
+                          (aig-p n m)
+                          (:free (env) (acl2::aig-eval x env)))))))
+
+     (defthm aig-eval-of-aig-fix-update-past
+       (implies (<= (nfix m) n)
+                (equal (acl2::aig-eval (aig-fix x m) (cons (cons n val) env))
+                       (acl2::aig-eval (aig-fix x m) env)))
+       :hints (("goal" :use ((:instance aig-eval-of-update-past-max-vars
+                              (x (aig-fix x m))))
+                :in-theory (disable aig-eval-of-update-past-max-vars))))))
+
+
+  (local
+   (defthm alist-to-bitarr-aux-of-update-past
+     (implies (<= (len bitarr) n)
+              (equal (alist-to-bitarr-aux k (cons (cons n val) env) bitarr)
+                     (alist-to-bitarr-aux k env bitarr)))
+     :hints(("Goal" :induct (alist-to-bitarr-aux k env bitarr)
+             :in-theory (enable (:i alist-to-bitarr-aux))
+             :expand ((:free (env) (alist-to-bitarr-aux k env bitarr)))))))
+  (local
+   (defthm alist-to-bitarr-of-update-past
+     (implies (<= (nfix m) n)
+              (equal (alist-to-bitarr m (cons (cons n val) env) bitarr)
+                     (alist-to-bitarr m env bitarr)))
+     :hints(("Goal" :in-theory (enable alist-to-bitarr)))))
+
+  (defthm bfr-boundedp-of-current-num-vars
+    (bfr-boundedp x (bfr-nvars logicman) logicman)
+    :hints(("Goal" :in-theory (enable bfr-boundedp
+                                      bfr-set-var
+                                      bfr-eval
+                                      bfr-nvars
+                                      bfr-fix
+                                      bfr->aignet-lit
+                                      aignet-lit->bfr
+                                      bounded-lit-fix))))
+
+
+  (in-theory (disable bfr-boundedp bfr-boundedp-necc))
+
+  (fty::deffixcong acl2::nat-equiv equal (bfr-boundedp x n logicman) n
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (assoc 'bfr-boundedp clause))
+                        (other (if (eq (third lit) 'n) '(nfix n) 'n)))
+                   `(:expand (,lit)
+                     :use ((:instance bfr-boundedp-necc
+                            (var (mv-nth 0 (bfr-boundedp-witness . ,(cdr lit))))
+                            (env (mv-nth 1 (bfr-boundedp-witness . ,(cdr lit))))
+                            (n ,other))))))))
+
+  (defthm bfr-boundedp-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-p x old)
+                  (bfr-boundedp x n old))
+             (bfr-boundedp x n new))
+    :hints (("goal" :expand ((bfr-boundedp x n new))
+             :use ((:instance bfr-boundedp-necc
+                    (logicman old)
+                    (var (mv-nth 0 (bfr-boundedp-witness x n new)))
+                    (env (mv-nth 1 (bfr-boundedp-witness x n new)))))))))
+
+
+(encapsulate nil
+           
+  (local
+   (encapsulate nil
+     (local (defun ind (x n env)
+              (if (zp n)
+                  (list x env)
+                (if (car env)
+                    (ind (car x) (1- n) (cdr env))
+                  (ind (cdr x) (1- n) (cdr env))))))
+
+     (defthm eval-bdd-of-update-same
+       (implies (iff (nth n env) val)
+                (equal (acl2::eval-bdd x (update-nth n val env))
+                       (acl2::eval-bdd x env)))
+       :hints (("goal" :induct (ind x n env)
+                :expand ((:free (val) (update-nth n val env))
+                         (:free (val) (update-nth 0 val env))
+                         (nth n env)
+                         (nth 0 env)
+                         (:free (env) (acl2::eval-bdd x env))))))))
+
+  (local (defthm alist-to-bitarr-aux-of-cons-same
+           (implies (iff (cdr (hons-assoc-equal var env)) val)
+                    (equal (alist-to-bitarr-aux n (cons (cons var val) env) bitarr)
+                           (alist-to-bitarr-aux n env bitarr)))
+           :hints(("Goal" :in-theory (enable (:i alist-to-bitarr-aux))
+                   :induct (alist-to-bitarr-aux n env bitarr)
+                   :expand ((:free (env) (alist-to-bitarr-aux n env bitarr)))))))
+
+  (local (defthm alist-to-bitarr-of-cons-same
+           (implies (iff (cdr (hons-assoc-equal var env)) val)
+                    (equal (alist-to-bitarr max (cons (cons var val) env) bitarr)
+                           (alist-to-bitarr max env bitarr)))
+           :hints(("Goal" :in-theory (enable alist-to-bitarr)))))
+
+  (local (defthm aig-eval-of-cons-same
+           (implies (iff (acl2::aig-env-lookup var env) val)
+                    (equal (acl2::aig-eval x (cons (cons var val) env))
+                           (acl2::aig-eval x env)))
+           :hints(("Goal" :in-theory (enable acl2::aig-eval)))))
+
+  (local (defthm bfr-eval-of-bfr-set-var-same
+           (implies (iff (bfr-lookup var env) val)
+                    (equal (bfr-eval x (bfr-set-var var val env))
+                           (bfr-eval x env)))
+           :hints(("Goal" :in-theory (enable bfr-eval bfr-lookup bfr-set-var)))))
+
+  (local (defthm update-nth-redundant
+           (equal (update-nth n val (update-nth n val2 x))
+                  (update-nth n val x))
+           :hints(("Goal" :in-theory (enable update-nth)))))
+
+  (local (defthm alist-to-bitarr-aux-of-cons-redundant
+           (equal (alist-to-bitarr-aux n (list* (cons var val)
+                                                (cons var val2)
+                                                env)
+                                       bitarr)
+                  (alist-to-bitarr-aux n (cons (cons var val) env) bitarr))
+           :hints(("Goal" :in-theory (enable (:i alist-to-bitarr-aux))
+                   :induct (alist-to-bitarr-aux n (cons (cons var val) env) bitarr)
+                   :expand ((:free (env) (alist-to-bitarr-aux n (cons (cons var val) env) bitarr)))))))
+
+  (local (defthm alist-to-bitarr-of-cons-redundant
+           (equal (alist-to-bitarr max (list* (cons var val)
+                                              (cons var val2)
+                                              env)
+                                   bitarr)
+                  (alist-to-bitarr max (cons (cons var val) env) bitarr))
+           :hints(("Goal" :in-theory (enable alist-to-bitarr)))))
+
+  (local (defthm aig-eval-of-cons-redundant
+           (equal (acl2::aig-eval x (cons (cons var val) (cons (cons var val2) env)))
+                  (acl2::aig-eval x (cons (cons var val) env)))
+           :hints(("Goal" :in-theory (enable acl2::aig-eval acl2::aig-env-lookup)))))
+
+  (local (defthm bfr-eval-of-bfr-set-var-redundant
+           (equal (bfr-eval x (bfr-set-var var val (bfr-set-var var val2 env)))
+                  (bfr-eval x (bfr-set-var var val env)))
+           :hints(("Goal" :in-theory (enable bfr-eval bfr-lookup bfr-set-var)))))
+
+  (defthm bfr-eval-of-bfr-set-var-when-bfr-boundedp
+    (implies (and (bfr-boundedp x n logicman)
+                  (<= (nfix n) (nfix var)))
+             (equal (bfr-eval x (bfr-set-var var val env))
+                    (bfr-eval x env)))
+    :hints (("goal" :use ((:instance bfr-boundedp-necc (var (nfix var))
+                           (env (bfr-set-var var val env)))
+                          (:instance bfr-boundedp-necc (var (nfix var))
+                           (env (bfr-set-var var nil env))))
+             :cases ((bfr-lookup var env))))))
+                 
+
+(define bfrlist-boundedp (x (n natp) logicman)
+  :verify-guards nil
+  (if (atom x)
+      t
+    (and (bfr-boundedp (car x) n logicman)
+         (bfrlist-boundedp (cdr x) n logicman)))
+  ///
+  (defthm bfrlist-boundedp-of-current-num-vars
+    (bfrlist-boundedp x (bfr-nvars logicman) logicman))
+
+  (defthm bfrlist-boundedp-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (lbfr-listp x old)
+                  (bfrlist-boundedp x n old))
+             (bfrlist-boundedp x n new))
+    :hints(("Goal" :in-theory (enable bfr-listp$)
+            :induct (bfrlist-boundedp x n new))))
+
+  (defthm bfrlist-boundedp-of-append
+    (iff (bfrlist-boundedp (append x y) n logicman)
+         (and (bfrlist-boundedp x n logicman)
+              (bfrlist-boundedp y n logicman))))
+
+  (defthm bfrlist-boundedp-of-cons
+    (iff (bfrlist-boundedp (cons x y) n logicman)
+         (and (bfr-boundedp x n logicman)
+              (bfrlist-boundedp y n logicman))))
+
+  (defthm bfrlist-boundedp-of-nil
+    (bfrlist-boundedp nil n logicman)))

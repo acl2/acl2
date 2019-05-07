@@ -33,6 +33,21 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 
+(include-book "centaur/fty/bitstruct" :dir :system)
+
+(fty::defbitstruct gl-function-mode
+  ((dont-concrete-exec booleanp)
+   (dont-expand-def booleanp)
+   (dont-rewrite booleanp)
+   (dont-rewrite-under-if-test booleanp)
+   (dont-primitive-exec booleanp)))
+
+(fty::defmap gl-function-mode-alist :key-type symbolp :val-type gl-function-mode :true-listp t)
+
+(define gl-function-mode-lookup ((fn symbolp)
+                                 (alist gl-function-mode-alist-p))
+  :returns (mode gl-function-mode-p)
+  (or (cdr (hons-get fn (make-fast-alist (gl-function-mode-alist-fix alist)))) 0))
 
 (defprod glcp-config
   ((abort-indeterminate booleanp :default t)
@@ -61,6 +76,7 @@
    (rewrite-rule-table :default nil)
    (definition-table :default nil)
    (branch-merge-rules :default nil)
+   (function-modes :default nil gl-function-mode-alist)
    )
   :layout :tree)
 

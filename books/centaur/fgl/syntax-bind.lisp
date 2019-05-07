@@ -32,13 +32,18 @@
 
 (include-book "centaur/meta/unify" :dir :system)
 
+(defun syntax-bind-fn (synp-form dummy-var)
+  (declare (ignorable synp-form)
+           (xargs :guard t))
+  dummy-var)
+
 ;; note: probably need to put this somewhere else
 (defmacro syntax-bind (dummy-var form)
-  `(return-last '(syntax-bind)
-                (synp 'nil ',form ',form)
-                ,dummy-var))
+  `(syntax-bind-fn
+    (synp 'nil ',form ',form)
+    ,dummy-var))
 
-(defevaluator synbind-ev synbind-ev-list ((return-last x y z)) :namedp t)
+(defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y)) :namedp t)
 
 (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))
 
@@ -53,9 +58,9 @@
                           :rule-classes :type-prescription)
                (form pseudo-termp))
   (b* (((mv ok alist)
-        (cmr::pseudo-term-unify '(return-last '(syntax-bind)
-                                         (synp 'nil untrans-form trans-form)
-                                         dummy-var)
+        (cmr::pseudo-term-unify '(syntax-bind-fn
+                                  (synp 'nil untrans-form trans-form)
+                                  dummy-var)
                            x nil))
        ((unless ok) (mv nil nil))
        (untrans-form (cdr (assoc 'untrans-form alist)))

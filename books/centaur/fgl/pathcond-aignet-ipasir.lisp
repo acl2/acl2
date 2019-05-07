@@ -184,51 +184,92 @@
                     (nbalist-to-cube nbalist sat-lits1)))
     :hints(("Goal" :in-theory (enable nbalist-has-sat-lits)))))
                                       
-       
 
-(define nbalist-to-ipasir ((nbalist nbalistp)
+(Defthm lit-list-listp-of-append
+  (implies (and (lit-list-listp x)
+                (lit-list-listp y))
+           (lit-list-listp (append x y))))
+
+(Defthm lit-listp-of-append
+  (implies (and (lit-listp x)
+                (lit-listp y))
+           (lit-listp (append x y))))
+
+       
+(defthm sat-lit-listp-implies-lit-listp-fwd
+  (implies (sat-lit-listp x sat-lits)
+           (lit-listp x))
+  :rule-classes :forward-chaining)
+
+(defthm sat-lit-list-listp-implies-lit-listp-fwd
+  (implies (sat-lit-list-listp x sat-lits)
+           (lit-list-listp x))
+  :rule-classes :forward-chaining)
+
+(fty::deffixcong satlink::lit-list-list-equiv iff (cnf-for-aignet aignet cnf sat-lits) cnf
+  :hints ((and stable-under-simplificationp
+               (let* ((lit (assoc 'cnf-for-aignet clause))
+                      (other (if (eq (third lit) 'cnf)
+                                 '(lit-list-list-fix cnf)
+                               'cnf)))
+                 `(:expand (,lit)
+                   :use ((:instance cnf-for-aignet-necc
+                          (invals (mv-nth 0 (cnf-for-aignet-witness . ,(cdr lit))))
+                          (regvals (mv-nth 1 (cnf-for-aignet-witness . ,(cdr lit))))
+                          (cnf-vals (mv-nth 2 (cnf-for-aignet-witness . ,(cdr lit))))
+                          (cnf ,other)))
+                   :in-theory (disable cnf-for-aignet-necc))))))
+
+(fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (append x y) x)
+(fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (append x y) y)
+
+(fty::deffixcong satlink::lit-list-list-equiv satlink::lit-list-list-equiv (append x y) x)
+(fty::deffixcong satlink::lit-list-list-equiv satlink::lit-list-list-equiv (append x y) y)
+
+
+(define nbalist-to-cnf ((nbalist nbalistp)
                            (aignet)
                            (sat-lits)
-                           (ipasir)
+                           (cnf satlink::lit-list-listp)
+                           (cube satlink::lit-listp)
                            (aignet-refcounts))
   :guard (and (ec-call (aignet-pathcond-p nbalist aignet))
               (<= (num-fanins aignet) (u32-length aignet-refcounts))
-              (sat-lits-wfp sat-lits aignet)
-              (not (eq (ipasir::ipasir-get-status ipasir) :undef))
-              (ipasir::ipasir-empty-new-clause ipasir))
+              (sat-lits-wfp sat-lits aignet))
   :guard-hints (("goal" :use ((:instance aignet-pathcond-p-necc
                                (id (caar (nbalist-fix nbalist)))))
                  :in-theory (e/d (aignet-idp)
                                  (aignet-pathcond-p-necc))))
   :measure (len (nbalist-fix nbalist))
   :returns (mv new-sat-lits
-               new-ipasir)
+               (new-cnf satlink::lit-list-listp)
+               (new-cube satlink::lit-listp))
   (b* ((nbalist (nbalist-fix nbalist))
        ((when (atom nbalist))
-        (b* ((ipasir (ipasir::ipasir-cancel-new-clause ipasir))
-             (ipasir (ipasir::ipasir-input ipasir)))
-          (mv sat-lits ipasir)))
+        (mv sat-lits
+            (satlink::lit-list-list-fix cnf)
+            (satlink::lit-list-fix cube)))
        ((cons id bit) (car nbalist))
        ;; For a pathcond to eval to true, each ID has to evaluate to its
        ;; corresponding bit from the nbalist.  For the corresponding lit to
        ;; eval to true, we need to NOT negate it if the resulting evaluation is
        ;; 1.  So we negate the bit.
        (lit (make-lit id (b-not bit)))
-       ((mv sat-lits ipasir)
-        (aignet-lit->ipasir lit t aignet-refcounts sat-lits aignet ipasir))
+       ((mv sat-lits cnf)
+        (aignet-lit->cnf lit t aignet-refcounts sat-lits aignet cnf))
        (sat-lit (aignet-lit->sat-lit lit sat-lits))
-       (ipasir (ipasir::ipasir-assume ipasir sat-lit)))
-    (nbalist-to-ipasir (cdr nbalist) aignet sat-lits ipasir aignet-refcounts))
+       (cube (cons sat-lit (satlink::lit-list-fix cube))))
+    (nbalist-to-cnf (cdr nbalist) aignet sat-lits cnf cube aignet-refcounts))
   ///
   (defret sat-lits-wfp-of-<fn>
     (implies (sat-lits-wfp sat-lits aignet)
              (sat-lits-wfp new-sat-lits aignet)))
 
-  (defret sat-lit-list-listp-formula-of-<fn>
-    (implies (and (sat-lit-list-listp (ipasir$a->formula ipasir) sat-lits)
+  (defret sat-lit-list-listp-cnf-of-<fn>
+    (implies (and (sat-lit-list-listp cnf sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet))
-             (sat-lit-list-listp (ipasir$a->formula new-ipasir) new-sat-lits)))
+             (sat-lit-list-listp new-cnf new-sat-lits)))
 
   (defret aignet-id-has-sat-var-of-<fn>
     (implies (aignet-id-has-sat-var id sat-lits)
@@ -281,32 +322,32 @@
                         sat-lits))))
 
 
-  (defret sat-lit-listp-assumption-of-<fn>
-    (implies (and (sat-lit-listp (ipasir$a->assumption ipasir) sat-lits)
+  (defret sat-lit-listp-cube-of-<fn>
+    (implies (and (sat-lit-listp cube sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet))
-             (sat-lit-listp (ipasir$a->assumption new-ipasir) new-sat-lits)))
+             (sat-lit-listp new-cube new-sat-lits)))
 
   (defret cnf-for-aignet-of-<fn>
-    (implies (and (cnf-for-aignet aignet (ipasir$a->formula ipasir) sat-lits)
+    (implies (and (cnf-for-aignet aignet cnf sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet)
-                  (sat-lit-list-listp (ipasir$a->formula ipasir) sat-lits))
-             (cnf-for-aignet aignet (ipasir$a->formula new-ipasir) new-sat-lits)))
+                  (sat-lit-list-listp cnf sat-lits))
+             (cnf-for-aignet aignet new-cnf new-sat-lits)))
 
 
-  (defret ipasir-new-clause-of-<fn>
-    (equal (ipasir::ipasir$a->new-clause new-ipasir) nil))
+  ;; (defret ipasir-new-clause-of-<fn>
+  ;;   (equal (ipasir::ipasir$a->new-clause new-ipasir) nil))
 
-  (defret ipasir-status-of-<fn>
-    (equal (ipasir::ipasir$a->status new-ipasir) :input))
+  ;; (defret ipasir-status-of-<fn>
+  ;;   (equal (ipasir::ipasir$a->status new-ipasir) :input))
 
-  (defret consp-ipasir-history-of-<fn>
-    (implies (consp (ipasir::ipasir$a->history ipasir))
-             (consp (ipasir::ipasir$a->history new-ipasir)))
-    :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a
-                                      ipasir-cancel-new-clause
-                                      ipasir::ipasir-assume$a))))
+  ;; (defret consp-ipasir-history-of-<fn>
+  ;;   (implies (consp (ipasir::ipasir$a->history ipasir))
+  ;;            (consp (ipasir::ipasir$a->history new-ipasir)))
+  ;;   :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a
+  ;;                                     ipasir-cancel-new-clause
+  ;;                                     ipasir::ipasir-assume$a))))
 
 
   (local (defthm cnf-for-aignet-implies-id-eval
@@ -332,86 +373,83 @@
                          (eval-formula b env)))
            :hints(("Goal" :in-theory (enable eval-formula)))))
 
-  ;; (defund-nx nbalist-to-ipasir-formula-ok (nbalist
+  ;; (defund-nx nbalist-to-cnf-formula-ok (nbalist
   ;;                                          aignet
   ;;                                          sat-lits
   ;;                                          ipasir
   ;;                                          aignet-refcounts
   ;;                                          env)
-  ;;   (b* (((mv ?new-sat-lits new-ipasir) (nbalist-to-ipasir nbalist aignet sat-lits ipasir aignet-refcounts)))
+  ;;   (b* (((mv ?new-sat-lits new-ipasir) (nbalist-to-cnf nbalist aignet sat-lits ipasir aignet-refcounts)))
   ;;     (equal (eval-formula (ipasir$a->formula new-ipasir) env) 1)))
 
-  ;; (defret nbalist-to-ipasir-formula-extended
+  ;; (defret nbalist-to-cnf-formula-extended
   ;;   (iff (equal (eval-formula (ipasir$a->formula new-ipasir) env) 1)
   ;;        (and (equal (eval-formula (ipasir$a->formula ipasir) env) 1)
-  ;;             (nbalist-to-ipasir-formula-ok nbalist aignet sat-lits ipasir aignet-refcounts env)))
-  ;;   :hints(("Goal" :in-theory (enable nbalist-to-ipasir-formula-ok))))
+  ;;             (nbalist-to-cnf-formula-ok nbalist aignet sat-lits ipasir aignet-refcounts env)))
+  ;;   :hints(("Goal" :in-theory (enable nbalist-to-cnf-formula-ok))))
 
 
-  (local (defun-sk nbalist-to-ipasir-normalize-ipasir-forall (nbalist aignet sat-lits aignet-refcounts)
-           (forall ipasir
-                   (b* (((mv new-sat-lits1 new-ipasir1)
-                         (nbalist-to-ipasir nbalist aignet sat-lits ipasir aignet-refcounts))
-                        ((mv new-sat-lits2 new-ipasir2)
-                         (nbalist-to-ipasir nbalist aignet sat-lits nil aignet-refcounts)))
-                     (implies (syntaxp (not (equal ipasir ''nil)))
-                              (and (equal (ipasir$a->formula new-ipasir1)
-                                          (append (ipasir$a->formula new-ipasir2)
-                                                  (ipasir$a->formula ipasir)))
-                                   (equal (ipasir$a->assumption new-ipasir1)
-                                          (append (ipasir$a->assumption new-ipasir2)
-                                                  (ipasir$a->assumption ipasir)))
+  (local (defun-sk nbalist-to-cnf-normalize-cnf-forall (nbalist aignet sat-lits aignet-refcounts)
+           (forall (cnf cube)
+                   (b* (((mv new-sat-lits1 new-cnf1 new-cube1)
+                         (nbalist-to-cnf nbalist aignet sat-lits cnf cube aignet-refcounts))
+                        ((mv new-sat-lits2 new-cnf2 new-cube2)
+                         (nbalist-to-cnf nbalist aignet sat-lits nil nil aignet-refcounts)))
+                     (implies (syntaxp (not (and (equal cnf ''nil)
+                                                 (equal cube ''nil))))
+                              (and (equal new-cnf1
+                                          (append new-cnf2 (lit-list-list-fix cnf)))
+                                   (equal new-cube1
+                                          (append new-cube2 (lit-list-fix cube)))
                                    (equal new-sat-lits1 new-sat-lits2)))))
            :rewrite :direct))
-  (local (in-theory (disable nbalist-to-ipasir-normalize-ipasir-forall)))
+  (local (in-theory (disable nbalist-to-cnf-normalize-cnf-forall)))
 
   (local
-   (defthm nbalist-to-ipasir-normalize-ipasir-lemma
-     (nbalist-to-ipasir-normalize-ipasir-forall nbalist aignet sat-lits aignet-refcounts)
-     :hints (("goal" :induct (nbalist-to-ipasir nbalist aignet sat-lits ipasir aignet-refcounts))
+   (defthm nbalist-to-cnf-normalize-cnf-lemma
+     (nbalist-to-cnf-normalize-cnf-forall nbalist aignet sat-lits aignet-refcounts)
+     :hints (("goal" :induct (nbalist-to-cnf nbalist aignet sat-lits cnf cube aignet-refcounts))
              (and stable-under-simplificationp
                   `(:expand (,(car (last clause))
-                             (:free (ipasir)
-                              (nbalist-to-ipasir nbalist aignet sat-lits ipasir aignet-refcounts))))))))
+                             (:free (cnf cube)
+                              (nbalist-to-cnf nbalist aignet sat-lits cnf cube aignet-refcounts))))))))
 
-  (defthm nbalist-to-ipasir-normalize-ipasir
-    (b* (((mv new-sat-lits1 new-ipasir1)
-          (nbalist-to-ipasir nbalist aignet sat-lits ipasir aignet-refcounts))
-         ((mv new-sat-lits2 new-ipasir2)
-          (nbalist-to-ipasir nbalist aignet sat-lits nil aignet-refcounts)))
-      (implies (syntaxp (not (equal ipasir ''nil)))
-               (and (equal (ipasir$a->formula new-ipasir1)
-                           (append (ipasir$a->formula new-ipasir2)
-                                   (ipasir$a->formula ipasir)))
-                    (equal (ipasir$a->assumption new-ipasir1)
-                           (append (ipasir$a->assumption new-ipasir2)
-                                   (ipasir$a->assumption ipasir)))
+  (defthm nbalist-to-cnf-normalize-cnf
+    (b* (((mv new-sat-lits1 new-cnf1 new-cube1)
+          (nbalist-to-cnf nbalist aignet sat-lits cnf cube aignet-refcounts))
+         ((mv new-sat-lits2 new-cnf2 new-cube2)
+          (nbalist-to-cnf nbalist aignet sat-lits nil nil aignet-refcounts)))
+      (implies (syntaxp (not (and (equal cnf ''nil)
+                                  (equal cube ''nil))))
+               (and (equal new-cnf1
+                           (append new-cnf2 (lit-list-list-fix cnf)))
+                    (equal new-cube1
+                           (append new-cube2 (lit-list-fix cube)))
                     (equal new-sat-lits1 new-sat-lits2)))))
 
   (defret cnf-for-aignet-of-<fn>-norm
-    :pre-bind ((orig-ipasir ipasir)
-               (ipasir nil))
-    (implies (and (cnf-for-aignet aignet (ipasir$a->formula orig-ipasir) sat-lits)
+    :pre-bind ((orig-cnf cnf)
+               (cnf nil))
+    (implies (and (cnf-for-aignet aignet orig-cnf sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet)
-                  (sat-lit-list-listp (ipasir$a->formula orig-ipasir) sat-lits))
-             (cnf-for-aignet aignet (append (ipasir$a->formula new-ipasir)
-                                            (ipasir$a->formula orig-ipasir))
+                  (sat-lit-list-listp orig-cnf sat-lits))
+             (cnf-for-aignet aignet (append new-cnf orig-cnf)
                              new-sat-lits))
-    :hints (("goal" :use cnf-for-aignet-of-nbalist-to-ipasir
-             :in-theory (disable cnf-for-aignet-of-nbalist-to-ipasir))))
+    :hints (("goal" :use cnf-for-aignet-of-nbalist-to-cnf
+             :in-theory (disable cnf-for-aignet-of-nbalist-to-cnf))))
 
   (defret sat-lits-extension-p-of-<fn>
     (sat-lit-extension-p new-sat-lits sat-lits))
 
-  (defret nbalist-to-ipasir-correct
-    (implies (and (equal (eval-formula (ipasir$a->formula new-ipasir) env$) 1)
-                  (cnf-for-aignet aignet (ipasir$a->formula ipasir) sat-lits)
+  (defret nbalist-to-cnf-correct
+    (implies (and (equal (eval-formula new-cnf env$) 1)
+                  (cnf-for-aignet aignet cnf sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet)
-                  (sat-lit-list-listp (ipasir$a->formula ipasir) sat-lits))
-             (equal (eval-cube (ipasir$a->assumption new-ipasir) env$)
-                    (b-and (eval-cube (ipasir$a->assumption ipasir) env$)
+                  (sat-lit-list-listp cnf sat-lits))
+             (equal (eval-cube new-cube env$)
+                    (b-and (eval-cube cube env$)
                            (bool->bit (aignet-pathcond-eval aignet nbalist
                                                             (cnf->aignet-invals
                                                              nil env$ new-sat-lits aignet)
@@ -421,8 +459,8 @@
              :expand (<call>
                       (:free (a b) (eval-cube (cons a b) env$))))
             (and stable-under-simplificationp
-                 '(:use ((:instance cnf-for-aignet-of-nbalist-to-ipasir))
-                   :in-theory (disable cnf-for-aignet-of-nbalist-to-ipasir)))))
+                 '(:use ((:instance cnf-for-aignet-of-nbalist-to-cnf))
+                   :in-theory (disable cnf-for-aignet-of-nbalist-to-cnf)))))
 
   (local (defthm eval-cube-of-append
            (equal (satlink::eval-cube (append x y) env)
@@ -436,24 +474,26 @@
   ;;                        (satlink::eval-formula y env)))
   ;;          :hints(("Goal" :in-theory (enable satlink::eval-formula)))))
 
-  (defret nbalist-to-ipasir-correct-norm
-    :pre-bind ((orig-ipasir ipasir)
-               (ipasir nil))
-    (implies (and (equal (eval-formula (ipasir$a->formula new-ipasir) env$) 1)
-                  (equal (eval-formula (ipasir$a->formula orig-ipasir) env$) 1)
-                  (cnf-for-aignet aignet (ipasir$a->formula orig-ipasir) sat-lits)
+  (defret nbalist-to-cnf-correct-norm
+    :pre-bind ((orig-cnf cnf)
+               (cnf nil)
+               (orig-cube cube)
+               (cube nil))
+    (implies (and (equal (eval-formula new-cnf env$) 1)
+                  (equal (eval-formula orig-cnf env$) 1)
+                  (cnf-for-aignet aignet orig-cnf sat-lits)
                   (sat-lits-wfp sat-lits aignet)
                   (aignet-pathcond-p nbalist aignet)
-                  (sat-lit-list-listp (ipasir$a->formula orig-ipasir) sat-lits)
-                  (equal (eval-cube (ipasir$a->assumption orig-ipasir) env$) 1))
-             (equal (eval-cube (ipasir$a->assumption new-ipasir) env$)
+                  (sat-lit-list-listp orig-cnf sat-lits)
+                  (equal (eval-cube orig-cube env$) 1))
+             (equal (eval-cube new-cube env$)
                     (bool->bit (aignet-pathcond-eval aignet nbalist
                                                      (cnf->aignet-invals
                                                       nil env$ new-sat-lits aignet)
                                                      (cnf->aignet-regvals
                                                       nil env$ new-sat-lits aignet)))))
-    :hints (("goal" :use nbalist-to-ipasir-correct
-             :in-theory (disable nbalist-to-ipasir-correct)))))
+    :hints (("goal" :use nbalist-to-cnf-correct
+             :in-theory (disable nbalist-to-cnf-correct)))))
 
 (defthm sat-lit-listp-of-append
   (implies (and (sat-lit-listp x sat-lits)
@@ -535,6 +575,56 @@
                 (nthcdr n (cdr x)))))
 
 
+(define aignet-pathcond-to-cnf-aux ((n natp)
+                                       (aignet-pathcond)
+                                       (aignet)
+                                       (sat-lits)
+                                       (cnf lit-list-listp)
+                                       (cube lit-listp)
+                                       (aignet-refcounts))
+  :guard (and (<= n (aignet-pathcond-len aignet-pathcond))
+              (ec-call (aignet-pathcond-p aignet-pathcond aignet))
+              (<= (num-fanins aignet) (u32-length aignet-refcounts))
+              (sat-lits-wfp sat-lits aignet))
+  :guard-hints (("goal" :use ((:instance aignet-pathcond-p-necc
+                               (id (car (nth n aignet-pathcond)))
+                               (nbalist aignet-pathcond)))
+                 :in-theory (e/d (aignet-idp)
+                                 (aignet-pathcond-p-necc))
+                 :do-not-induct t))
+  :measure (nfix (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+  :returns (mv new-sat-lits
+               (new-cnf lit-list-listp)
+               (new-cube lit-listp))
+  (b* (((when (mbe :logic (zp (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+                   :exec (eql n (aignet-pathcond-len aignet-pathcond))))
+        (mv sat-lits
+            (lit-list-list-fix cnf)
+            (lit-list-fix cube)))
+       (id (aignet-pathcond-nthkey n aignet-pathcond))
+       (bit (aignet-pathcond-lookup id aignet-pathcond))
+       ;; For a pathcond to eval to true, each ID has to evaluate to its
+       ;; corresponding bit from the nbalist.  For the corresponding lit to
+       ;; eval to true, we need to NOT negate it if the resulting evaluation is
+       ;; 1.  So we negate the bit.
+       (lit (make-lit id (b-not bit)))
+       ((mv sat-lits cnf)
+        (aignet-lit->cnf lit t aignet-refcounts sat-lits aignet cnf))
+       (sat-lit (aignet-lit->sat-lit lit sat-lits))
+       (cube (cons sat-lit (lit-list-fix cube))))
+    (aignet-pathcond-to-cnf-aux
+     (1+ (lnfix n)) aignet-pathcond aignet sat-lits cnf cube aignet-refcounts))
+  ///
+  (defthm aignet-pathcond-to-cnf-aux-elim
+    (equal (aignet-pathcond-to-cnf-aux n aignet-pathcond aignet sat-lits cnf cube aignet-refcounts)
+           (nbalist-to-cnf (nthcdr n (nbalist-fix aignet-pathcond))
+                               aignet sat-lits cnf cube aignet-refcounts))
+    :hints(("Goal" :induct (aignet-pathcond-to-cnf-aux n aignet-pathcond aignet sat-lits cnf cube aignet-refcounts)
+            :expand ((:free (cnf cube)
+                      (nbalist-to-cnf (nthcdr n (nbalist-fix aignet-pathcond))
+                                         aignet sat-lits cnf cube aignet-refcounts)))))))
+
+
 (define aignet-pathcond-to-ipasir-aux ((n natp)
                                        (aignet-pathcond)
                                        (aignet)
@@ -575,14 +665,37 @@
     (aignet-pathcond-to-ipasir-aux
      (1+ (lnfix n)) aignet-pathcond aignet sat-lits ipasir aignet-refcounts))
   ///
-  (defthm aignet-pathcond-to-ipasir-aux-elim
-    (equal (aignet-pathcond-to-ipasir-aux n aignet-pathcond aignet sat-lits ipasir aignet-refcounts)
-           (nbalist-to-ipasir (nthcdr n (nbalist-fix aignet-pathcond))
-                               aignet sat-lits ipasir aignet-refcounts))
+  (defret aignet-pathcond-to-ipasir-aux-status
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret aignet-pathcond-to-ipasir-aux-new-clause
+    (equal (ipasir$a->new-clause new-ipasir) nil))
+
+  (defret aignet-pathcond-to-ipasir-aux-formula/assumption
+    (b* (((mv sat-lits-spec cnf cube)
+          (nbalist-to-cnf (nthcdr n (nbalist-fix aignet-pathcond))
+                          aignet sat-lits
+                          (ipasir::ipasir$a->formula ipasir)
+                          (ipasir::ipasir$a->assumption ipasir)
+                          aignet-refcounts)))
+      (and (equal (ipasir$a->assumption new-ipasir)
+                  cube)
+           (equal (ipasir$a->formula new-ipasir)
+                  cnf)
+           (equal new-sat-lits sat-lits-spec)))
     :hints(("Goal" :induct (aignet-pathcond-to-ipasir-aux n aignet-pathcond aignet sat-lits ipasir aignet-refcounts)
-            :expand ((:free (ipasir)
-                      (nbalist-to-ipasir (nthcdr n (nbalist-fix aignet-pathcond))
-                                         aignet sat-lits ipasir aignet-refcounts)))))))
+            :expand ((:free (cnf cube)
+                      (nbalist-to-cnf (nthcdr n (nbalist-fix aignet-pathcond))
+                                         aignet sat-lits cnf cube aignet-refcounts))))))
+
+  (defret aignet-pathcond-to-ipasir-aux-history
+    (implies (consp (ipasir::ipasir$a->history ipasir))
+             (consp (ipasir::ipasir$a->history new-ipasir)))
+    :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a
+                                      ipasir-cancel-new-clause
+                                      ipasir::ipasir-assume$a))))
+
+  (fty::deffixequiv aignet-pathcond-to-ipasir-aux :args ((aignet-pathcond nbalist))))
                               
 
 (define aignet-pathcond-to-ipasir ((aignet-pathcond)
@@ -595,13 +708,49 @@
               (sat-lits-wfp sat-lits aignet)
               (not (eq (ipasir::ipasir-get-status ipasir) :undef))
               (ipasir::ipasir-empty-new-clause ipasir))
+  :returns (mv new-sat-lits new-ipasir)
+  (aignet-pathcond-to-ipasir-aux 0 aignet-pathcond aignet sat-lits ipasir aignet-refcounts)
+  ///
+  (defret aignet-pathcond-to-ipasir-status
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret aignet-pathcond-to-ipasir-new-clause
+    (equal (ipasir$a->new-clause new-ipasir) nil))
+
+  (defret aignet-pathcond-to-ipasir-formula/assumption
+    (b* (((mv sat-lits-spec cnf cube)
+          (nbalist-to-cnf (nbalist-fix aignet-pathcond)
+                          aignet sat-lits
+                          (ipasir::ipasir$a->formula ipasir)
+                          (ipasir::ipasir$a->assumption ipasir)
+                          aignet-refcounts)))
+      (and (equal (ipasir$a->assumption new-ipasir)
+                  cube)
+           (equal (ipasir$a->formula new-ipasir)
+                  cnf)
+           (equal new-sat-lits sat-lits-spec))))
+
+  (defret aignet-pathcond-to-ipasir-history
+    (implies (consp (ipasir::ipasir$a->history ipasir))
+             (consp (ipasir::ipasir$a->history new-ipasir)))
+    :hints(("Goal" :in-theory (enable ipasir::ipasir-input$a
+                                      ipasir-cancel-new-clause
+                                      ipasir::ipasir-assume$a))))
+
+  (fty::deffixequiv aignet-pathcond-to-ipasir :args ((aignet-pathcond nbalist))))
+
+
+(define aignet-pathcond-to-cnf ((aignet-pathcond)
+                                (aignet)
+                                (sat-lits)
+                                (cnf lit-list-listp)
+                                (cube lit-listp)
+                                (aignet-refcounts))
+  :guard (and (ec-call (aignet-pathcond-p aignet-pathcond aignet))
+              (<= (num-fanins aignet) (u32-length aignet-refcounts))
+              (sat-lits-wfp sat-lits aignet))
   :enabled t
-  (mbe :logic (non-exec (nbalist-to-ipasir aignet-pathcond aignet sat-lits ipasir aignet-refcounts))
-       :exec (aignet-pathcond-to-ipasir-aux 0 aignet-pathcond aignet sat-lits ipasir aignet-refcounts)))
-
-
-       
-
-
-
+  :returns (mv new-sat-lits new-cnf new-cube)
+  (mbe :logic (non-exec (nbalist-to-cnf aignet-pathcond aignet sat-lits cnf cube aignet-refcounts))
+       :exec (aignet-pathcond-to-cnf-aux 0 aignet-pathcond aignet sat-lits cnf cube aignet-refcounts)))
 

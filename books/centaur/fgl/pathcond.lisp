@@ -1031,3 +1031,155 @@
               (logicman->sat-lits new-logicman)))
     :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
 
+
+(define logicman-pathcond-to-cnf (pathcond logicman
+                                           sat-lits
+                                           (cnf satlink::lit-list-listp)
+                                           (cube satlink::lit-listp))
+  :guard (and (ec-call (logicman-pathcond-p-fn pathcond logicman))
+              (lbfr-mode-is :aignet)
+              (stobj-let ((aignet (logicman->aignet logicman)))
+                         (ok)
+                         (aignet::sat-lits-wfp sat-lits aignet)
+                         ok))
+  :guard-hints (("goal" :in-theory (enable logicman-pathcond-p
+                                           logicman-invar)))
+  :returns (mv new-logicman
+               new-sat-lits
+               (new-cnf satlink::lit-list-listp)
+               (new-cube satlink::lit-listp))
+  (b* (((unless (mbt (lbfr-mode-is :aignet)))
+        (mv logicman
+            sat-lits
+            (satlink::lit-list-list-fix cnf)
+            (satlink::lit-list-fix cube)))
+       (logicman (logicman-update-refcounts logicman)))
+    (stobj-let ((aignet (logicman->aignet logicman))
+                (u32arr (logicman->aignet-refcounts logicman)))
+               (sat-lits cnf cube)
+               (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                          (sat-lits cnf cube)
+                          (aignet::aignet-pathcond-to-cnf
+                           aignet-pathcond aignet sat-lits cnf cube u32arr)
+                          (mv sat-lits cnf cube))
+               (mv logicman sat-lits cnf cube)))
+  ///
+  (defret sat-lit-listp-of-<fn>
+    (implies (and (aignet::sat-lits-wfp sat-lits (logicman->aignet logicman))
+                  (logicman-pathcond-p pathcond logicman))
+             (and (implies (aignet::sat-lit-list-listp cnf sat-lits)
+                           (aignet::sat-lit-list-listp new-cnf new-sat-lits))
+                  (implies (aignet::sat-lit-listp cube sat-lits)
+                           (aignet::sat-lit-listp new-cube new-sat-lits))))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-p))))
+
+  (defret cnf-for-aignet-of-<fn>
+    (implies (and (equal aignet (logicman->aignet logicman))
+                  (aignet::cnf-for-aignet aignet cnf sat-lits)
+                  (aignet::sat-lits-wfp sat-lits (logicman->aignet logicman))
+                  (logicman-pathcond-p pathcond logicman)
+                  (aignet::sat-lit-list-listp cnf sat-lits))
+             (aignet::cnf-for-aignet aignet new-cnf new-sat-lits))
+    :hints(("Goal" :in-theory (e/d (logicman-pathcond-p)
+                                   (aignet::nbalist-to-cnf-normalize-cnf)))))
+
+  (local (defthm eval-cube-of-append
+           (equal (satlink::eval-cube (append x y) env)
+                  (b-and (satlink::eval-cube x env)
+                         (satlink::eval-cube y env)))
+           :hints(("Goal" :in-theory (enable satlink::eval-cube)))))
+
+  (local (defthm eval-formula-of-append
+           (equal (satlink::eval-formula (append x y) env)
+                  (b-and (satlink::eval-formula x env)
+                         (satlink::eval-formula y env)))
+           :hints(("Goal" :in-theory (enable satlink::eval-formula)))))
+
+  (defret eval-cube-of-<fn>
+    (implies (and (aignet::sat-lit-list-listp cnf sat-lits)
+                  (aignet::sat-lit-listp cube sat-lits)
+                  (aignet::sat-lits-wfp sat-lits (logicman->aignet logicman))
+                  (aignet::cnf-for-aignet (logicman->aignet logicman) cnf sat-lits)
+                  (logicman-pathcond-p pathcond)
+                  (equal (satlink::eval-formula new-cnf env) 1)
+                  (lbfr-mode-is :aignet)
+                  (equal (aignet::stype-count :reg (logicman->aignet logicman)) 0)
+                  (nth *pathcond-enabledp* pathcond))
+             (equal (satlink::eval-cube new-cube env)
+                    (b-and (satlink::eval-cube cube env)
+                           (b* ((vals (aignet::cnf->aignet-invals
+                                       nil env new-sat-lits
+                                       (logicman->aignet logicman))))
+                             (bool->bit (logicman-pathcond-eval (pairlis$
+                                                                 (acl2::numlist 0 1
+                                                                                (aignet::num-ins (logicman->aignet logicman)))
+                                                                 (bits->bools vals))
+                                                                pathcond logicman))))))
+    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p
+                                      logicman-pathcond-eval))))
+
+  ;; (defret ipasir-formula-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (ipasir::ipasir$a->formula (logicman->ipasir new-logicman))
+  ;;             (append (ipasir::ipasir$a->formula (logicman->ipasir
+  ;;                                                 (logicman-pathcond-to-ipasir
+  ;;                                                  pathcond (logicman-delete-ipasir logicman))))
+  ;;                     (ipasir::ipasir$a->formula ipasir))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+  ;; (defret ipasir-assumption-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (ipasir::ipasir$a->assumption (logicman->ipasir new-logicman))
+  ;;             (append (ipasir::ipasir$a->assumption (logicman->ipasir
+  ;;                                                    (logicman-pathcond-to-ipasir
+  ;;                                                     pathcond (logicman-delete-ipasir logicman))))
+  ;;                     (ipasir::ipasir$a->assumption ipasir))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+
+  ;; (defret sat-lits-norm-of-<fn>
+  ;;   (implies (and (equal ipasir (logicman->ipasir logicman))
+  ;;                 (syntaxp (and (quotep ipasir)
+  ;;                               (equal (unquote ipasir) *logicman-empty-ipasir*))))
+  ;;            (equal
+  ;;             (logicman->sat-lits new-logicman)
+  ;;             (logicman->sat-lits
+  ;;              (logicman-pathcond-to-ipasir
+  ;;               pathcond (logicman-delete-ipasir logicman)))))
+  ;;   :hints(("Goal" :in-theory (enable logicman-delete-ipasir
+  ;;                                     logicman-update-refcounts))))
+
+  
+  (defret logicman-equiv-of-<fn>
+    (logicman-equiv new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-equiv))))
+
+  (defret logicman-get-of-<fn>
+    (implies (and (not (equal (logicman-field-fix key) :refcounts-index))
+                  (not (equal (logicman-field-fix key) :aignet-refcounts)))
+             (equal (logicman-get key new-logicman)
+                    (logicman-get key logicman))))
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p new-logicman logicman)
+    :hints(("Goal" :in-theory (enable logicman-extension-p))))
+
+  (defret sat-lit-extension-p-of-<fn>
+    (aignet::sat-lit-extension-p new-sat-lits sat-lits))
+
+
+  (defret nbalist-has-sat-lits-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (logicman-pathcond-p pathcond logicman)
+                  (aignet::sat-lits-wfp sat-lits (logicman->aignet logicman)))
+             (aignet::nbalist-has-sat-lits
+              (nth *pathcond-aignet* pathcond)
+              new-sat-lits))
+    :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
+

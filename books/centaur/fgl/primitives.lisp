@@ -247,7 +247,7 @@
                           (intcdr x.val)
                         0)
                     interp-st)
-    :g-integer (mv t (g-integer (scdr x.bits)) interp-st)
+    :g-integer (mv t (mk-g-integer (scdr x.bits)) interp-st)
     :g-boolean (mv t 0 interp-st)
     :g-cons (mv t 0 interp-st)
     :otherwise (mv nil nil interp-st)))

@@ -953,3 +953,63 @@
                 (equal (logicman->aignet-refcounts new-logicman)
                        (logicman->aignet-refcounts old-logicman)))
            (logicman-invar (interp-st->logicman new))))
+
+
+
+
+
+
+;; Trace this!
+(define glcp-interp-error-message ((str stringp)
+                                   (arglist))
+  :returns (error-message (or (consp error-message)
+                              (stringp error-message))
+                          :rule-classes :type-prescription)
+  (if arglist
+      (cons (str-fix str) arglist)
+    (str-fix str)))
+
+(defmacro gl-msg (str &rest args)
+  `(glcp-interp-error-message ,str ,(make-fmt-bindings acl2::*base-10-chars* args)))
+
+
+(define gl-interp-store-debug-info (msg obj interp-st)
+  :returns new-interp-st
+  (b* (((when (interp-st->errmsg interp-st))
+        interp-st)
+       (interp-st (update-interp-st->errmsg msg interp-st))
+       (stack-obj (stobj-let ((stack (interp-st->stack interp-st)))
+                             (obj)
+                             (stack-extract stack)
+                             obj))
+       (interp-st (update-interp-st->debug-info (list obj stack-obj) interp-st)))
+    interp-st)
+  ///
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-of-<fn>
+    (implies msg
+             (interp-st->errmsg new-interp-st)))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (and (not (equal msg x))
+                  (not (equal (interp-st->errmsg interp-st) x)))
+             (not (equal (interp-st->errmsg new-interp-st) x)))))
+
+(defmacro gl-interp-error (&key msg debug-obj (nvals '1))
+  `(b* ((msg ,msg)
+        (debug-obj ,debug-obj)
+        (interp-st (gl-interp-store-debug-info msg debug-obj interp-st)))
+     ,(if (eql nvals 0)
+          'interp-st
+        `(mv ,@(acl2::repeat nvals nil) interp-st))))

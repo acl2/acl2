@@ -68,7 +68,8 @@
                       (bfr-listp (constraint-db-bfrlist constraint-db))
                       (ec-call (logicman-pathcond-p-fn pathcond logicman))
                       (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
-                      (not (consp (bvar-db-bfrlist bvar-db)))
+                      (bfr-listp (bvar-db-bfrlist bvar-db))
+                      (ec-call (bvar-db-boundedp bvar-db logicman))
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
                       (logicman-invar logicman)
                       (stobj-let ((ipasir (logicman->ipasir logicman)))
@@ -85,7 +86,8 @@
                     (bfr-listp (constraint-db-bfrlist (interp-st->constraint-db interp-st)))
                     (logicman-pathcond-p (interp-st->pathcond interp-st))
                     (logicman-pathcond-p (interp-st->constraint interp-st))
-                    (not (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
+                    (bfr-listp (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
+                    (bvar-db-boundedp (interp-st->bvar-db interp-st) logicman)
                     (interp-st-nvars-ok interp-st)
                     (equal (next-bvar$a (interp-st->bvar-db interp-st))
                            (bfr-nvars (interp-st->logicman interp-st)))
@@ -146,23 +148,20 @@
 
   (defthm interp-st-bfrs-ok-of-update-bvar-db
     (implies (And (interp-st-bfrs-ok interp-st)
-                  (not (bvar-db-bfrlist new-bvar-db))
+                  (interp-st-bfr-listp (bvar-db-bfrlist new-bvar-db))
+                  (bvar-db-boundedp new-bvar-db (interp-st->logicman interp-st))
                   (equal (next-bvar new-bvar-db) (bfr-nvars (interp-st->logicman interp-st))))
              (interp-st-bfrs-ok (update-interp-st->bvar-db new-bvar-db interp-st))))
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar
     (implies (and (interp-st-bfrs-ok interp-st)
-                  (not (consp (gl-object-bfrlist x))))
+                  (interp-st-bfr-listp (gl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar x interp-st state))))
-    ;; :hints (("goal" :use ((:instance logicman-extension-p-of-interp-st-add-term-bvar))
-    ;;          :in-theory (disable logicman-extension-p-of-interp-st-add-term-bvar)))
-    )
+    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar))))
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar-unique
     (implies (and (interp-st-bfrs-ok interp-st)
-                  (not (consp (gl-object-bfrlist x))))
+                  (interp-st-bfr-listp (gl-object-bfrlist x)))
              (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar-unique x interp-st state))))
-    ;; :hints (("goal" :use ((:instance logicman-extension-p-of-interp-st-add-term-bvar-unique))
-    ;;          :in-theory (disable logicman-extension-p-of-interp-st-add-term-bvar-unique)))
-    ))
+    :hints(("Goal" :in-theory (enable interp-st-add-term-bvar-unique)))))
 

@@ -99,6 +99,51 @@
              :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
                     (m (get-term->bvar$a obj bvar-db))))))))
 
+
+(defsection bvar-db-boundedp
+  (defun-sk bvar-db-boundedp (bvar-db logicman)
+    (forall var
+            (implies (and (natp var)
+                          (<= (base-bvar$a bvar-db) var)
+                          (< var (next-bvar$a bvar-db)))
+                     (bfrlist-boundedp (gl-object-bfrlist (get-bvar->term$a var bvar-db))
+                                       var logicman)))
+    :rewrite :direct)
+
+  (defthm bvar-db-boundedp-of-empty
+    (bvar-db-boundedp (init-bvar-db$a base bvar-db) logicman))
+
+  (in-theory (disable bvar-db-boundedp
+                      bvar-db-boundedp-necc))
+
+  (defthm bvar-db-boundedp-of-add
+    (implies (and (equal (next-bvar$a bvar-db) (bfr-nvars logicman))
+                  (bvar-db-boundedp bvar-db logicman))
+             (bvar-db-boundedp (add-term-bvar$a x bvar-db) logicman))
+    :hints (("goal" :expand ((bvar-db-boundedp (add-term-bvar$a x bvar-db) logicman))
+             :use ((:instance bvar-db-boundedp-necc
+                    (var (bvar-db-boundedp-witness (add-term-bvar$a x bvar-db) logicman)))))))
+
+  (defthm bvar-db-boundedp-of-update-term-equivs
+    (implies (bvar-db-boundedp bvar-db logicman)
+             (bvar-db-boundedp (update-term-equivs$a equivs bvar-db) logicman))
+    :hints (("goal" :expand ((bvar-db-boundedp (update-term-equivs$a equivs bvar-db) logicman))
+             :use ((:instance bvar-db-boundedp-necc
+                    (var (bvar-db-boundedp-witness (update-term-equivs$a equivs bvar-db) logicman)))))))
+
+  (defthm bvar-db-boundedp-of-logicman-extension
+    (implies (and (bind-logicman-extension new old)
+                  (bvar-db-boundedp bvar-db old)
+                  (lbfr-listp (bvar-db-bfrlist bvar-db) old))
+             (bvar-db-boundedp bvar-db new))
+    :hints (("goal" :expand ((bvar-db-boundedp bvar-db new))
+             :use ((:instance bvar-db-boundedp-necc
+                    (var (bvar-db-boundedp-witness bvar-db new))
+                    (logicman old)))))))
+
+
+
+
 ;; (local (include-book "std/lists/take" :dir :system))
 ;; (local (in-theory (disable acl2::take-redefinition acl2::take-of-1)))
 
@@ -264,6 +309,15 @@
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term
                                       bvar-db-bfrlist
                                       add-term-equiv))))
+
+  (defthm bvar-db-boundedp-of-maybe-add-equiv-term
+    (implies (bvar-db-boundedp bvar-db logicman)
+             (bvar-db-boundedp (maybe-add-equiv-term obj bvar bvar-db state) logicman))
+    :hints (("goal" :expand ((bvar-db-boundedp (maybe-add-equiv-term obj bvar bvar-db state) logicman))
+             :use ((:instance bvar-db-boundedp-necc
+                    (var (bvar-db-boundedp-witness
+                          (maybe-add-equiv-term obj bvar bvar-db state) logicman))))
+             :in-theory (enable add-term-equiv))))
 
   (defthm next-bvar$a-of-maybe-add-equiv-term
     (equal (next-bvar$a (maybe-add-equiv-term x bvar bvar-db state))
