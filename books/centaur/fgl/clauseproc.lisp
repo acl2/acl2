@@ -34,15 +34,15 @@
 ;; (include-book "primitives")
 
 (define variable-g-bindings ((vars pseudo-var-list-p))
-  :returns (bindings gl-object-alist-p)
+  :returns (bindings gl-object-bindings-p)
   (if (atom vars)
       nil
     (cons (cons (pseudo-var-fix (car vars))
                 (g-var (car vars)))
           (variable-g-bindings (cdr vars))))
   ///
-  (defret gl-object-alist-bfrlist-of-<fn>
-    (equal (gl-object-alist-bfrlist bindings) nil))
+  (defret gl-object-bindings-bfrlist-of-<fn>
+    (equal (gl-object-bindings-bfrlist bindings) nil))
 
   (defret alist-keys-of-<fn>
     (equal (alist-keys bindings)
@@ -440,7 +440,7 @@
 (local
  (defthm major-stack-bfrlist-of-stack$a-set-bindings
    (implies (and (not (member v (major-stack-bfrlist stack)))
-                 (not (member v (gl-object-alist-bfrlist bindings))))
+                 (not (member v (gl-object-bindings-bfrlist bindings))))
             (not (member v (major-stack-bfrlist (stack$a-set-bindings bindings stack)))))
    :hints(("Goal" :in-theory (enable stack$a-set-bindings
                                      major-stack-bfrlist
@@ -517,23 +517,23 @@
 
 
   (local (in-theory (e/d (acl2::subsetp-append1
-                          lookup-in-fgl-object-alist-eval)
+                          lookup-in-fgl-object-bindings-eval)
                          ;; (FGL-OBJECT-EVAL-OF-ALIST-LOOKUP)
                          )))
   (local
    (cmr::defthm-term-vars-flag
-     (defthm fgl-ev-of-object-alist-eval-of-variable-g-bindings
+     (defthm fgl-ev-of-object-bindings-eval-of-variable-g-bindings
        (implies (subsetp (term-vars x) (pseudo-var-list-fix vars))
-                (equal (fgl-ev x (fgl-object-alist-eval (variable-g-bindings vars) env logicman))
+                (equal (fgl-ev x (fgl-object-bindings-eval (variable-g-bindings vars) env logicman))
                        (fgl-ev x (gl-env->obj-alist env))))
        :hints('(:expand ((term-vars x))
                 :in-theory (enable fgl-ev-when-pseudo-term-call
                                    gobj-var-lookup
                                    subsetp-equal)))
        :flag cmr::term-vars)
-     (defthm fgl-ev-list-of-object-alist-eval-of-variable-g-bindings
+     (defthm fgl-ev-list-of-object-bindings-eval-of-variable-g-bindings
        (implies (subsetp (termlist-vars x) (pseudo-var-list-fix vars))
-                (equal (fgl-ev-list x (fgl-object-alist-eval (variable-g-bindings vars) env logicman))
+                (equal (fgl-ev-list x (fgl-object-bindings-eval (variable-g-bindings vars) env logicman))
                        (fgl-ev-list x (gl-env->obj-alist env))))
        :hints('(:expand ((termlist-vars x))))
        :flag cmr::termlist-vars)))
@@ -557,24 +557,24 @@
   ;;         (defthm gl-primitive-formula-checks-wrap-true
   ;;           (gl-primitive-formula-checks-wrap state))))
 
-  (local (defthm fgl-object-alist-eval-rewrite-with-fgl-object-alist-ev
-           (implies (and (equal ev (double-rewrite (gl-object-alist-ev x env)))
+  (local (defthm fgl-object-bindings-eval-rewrite-with-fgl-object-bindings-ev
+           (implies (and (equal ev (double-rewrite (gl-object-bindings-ev x env)))
                          (syntaxp (and (not (equal ev x))
                                        (case-match ev
-                                         (('gl-object-alist-ev-fn xans & &)
+                                         (('gl-object-bindings-ev-fn xans & &)
                                           (not (equal xans x)))
                                          (& t))))
-                         (equal eval (fgl-object-alist-eval ev nil nil))
+                         (equal eval (fgl-object-bindings-eval ev nil nil))
                          (syntaxp (case-match eval
-                                    (('fgl-object-alist-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
+                                    (('fgl-object-bindings-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
                                      (not (equal xans x)))
-                                    (('fgl-object-alist-eval-fn xans & &)
+                                    (('fgl-object-bindings-eval-fn xans & &)
                                      (not (equal xans x)))
                                     (& t))))
-                    (equal (fgl-object-alist-eval x env) eval))))
+                    (equal (fgl-object-bindings-eval x env) eval))))
 
-  (local (defthm gl-object-alist-ev-of-stack$a-bindings
-           (equal (gl-object-alist-ev (stack$a-bindings stack) env)
+  (local (defthm gl-object-bindings-ev-of-stack$a-bindings
+           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
                   (double-rewrite (stack$a-bindings (major-stack-ev stack env))))
            :hints(("Goal" :in-theory (enable major-frame-ev
                                              stack$a-bindings)
@@ -608,12 +608,12 @@
                    (env (gl-env a nil))
                    (env (fix-env-for-bvar-db env new-bvar-db new-logicman))
                    (ans-eval (gobj-bfr-eval ans-interp env new-logicman))
-                   (orig-alist (fgl-object-alist-eval (stack$a-bindings stack) env logicman))
+                   (orig-alist (fgl-object-bindings-eval (stack$a-bindings stack) env logicman))
                    (MAJOR-ALIST
-                    (FGL-OBJECT-ALIST-EVAL (STACK$A-BINDINGS NEW-STACK)
+                    (FGL-OBJECT-BINDINGS-EVAL (STACK$A-BINDINGS NEW-STACK)
                                            ENV NEW-LOGICMAN))
                    (MINOR-ALIST
-                    (FGL-OBJECT-ALIST-EVAL (STACK$A-MINOR-BINDINGS STACK)
+                    (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
                                            ENV LOGICMAN))
                    (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
                 `(:use ((:instance eval-of-interp-st-monolithic-validity-check

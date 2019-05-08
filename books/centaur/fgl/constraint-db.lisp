@@ -179,8 +179,8 @@
   :layout :fulltree)
 
 ;;(fty::deflist pseudo-term-substlist :elt-type pseudo-term-subst :true-listp t)
-(fty::deflist gl-object-alistlist :elt-type gl-object-alist :true-listp t)
-(fty::defmap sig-table :key-type gl-objectlist :val-type gl-object-alistlist :true-listp t)
+(fty::deflist gl-object-bindingslist :elt-type gl-object-bindings :true-listp t)
+(fty::defmap sig-table :key-type gl-objectlist :val-type gl-object-bindingslist :true-listp t)
 
 
 
@@ -234,24 +234,24 @@
 (fty::defmap constraint-db :key-type pseudo-fnsym-p :val-type constraint-tuplelist :true-listp t)
 
 
-(defthm gl-object-alist-bfrlist-of-append
-  (equal (gl-object-alist-bfrlist (append a b))
-         (append (gl-object-alist-bfrlist a)
-                 (gl-object-alist-bfrlist b)))
-  :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist))))
+(defthm gl-object-bindings-bfrlist-of-append
+  (equal (gl-object-bindings-bfrlist (append a b))
+         (append (gl-object-bindings-bfrlist a)
+                 (gl-object-bindings-bfrlist b)))
+  :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist))))
 
-(define gl-object-alistlist-bfrlist ((x gl-object-alistlist-p))
+(define gl-object-bindingslist-bfrlist ((x gl-object-bindingslist-p))
   :returns (bfrs)
   (if (atom x)
       nil
-    (append (gl-object-alist-bfrlist (car x))
-            (gl-object-alistlist-bfrlist (cdr x))))
+    (append (gl-object-bindings-bfrlist (car x))
+            (gl-object-bindingslist-bfrlist (cdr x))))
   ///
-  (defthm gl-object-alistlist-bfrlist-of-append
-    (equal (gl-object-alistlist-bfrlist (append a b))
-           (append (gl-object-alistlist-bfrlist a)
-                   (gl-object-alistlist-bfrlist b)))
-    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist)))))
+  (defthm gl-object-bindingslist-bfrlist-of-append
+    (equal (gl-object-bindingslist-bfrlist (append a b))
+           (append (gl-object-bindingslist-bfrlist a)
+                   (gl-object-bindingslist-bfrlist b)))
+    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist)))))
 
 (define sig-table-bfrlist ((x sig-table-p))
   :returns (bfrs)
@@ -260,7 +260,7 @@
     (if (mbt (and (consp (car x))
                   (gl-objectlist-p (caar x))))
         (append (gl-objectlist-bfrlist (caar x))
-                (gl-object-alistlist-bfrlist (cdar x))
+                (gl-object-bindingslist-bfrlist (cdar x))
                 (sig-table-bfrlist (cdr x)))
       (sig-table-bfrlist (cdr x))))
   ///
@@ -273,7 +273,7 @@
   (defthm member-bfrlist-of-sig-table-lookup
     (implies (and (gl-objectlist-p pat)
                   (not (member v (sig-table-bfrlist x))))
-             (not (member v (gl-object-alistlist-bfrlist
+             (not (member v (gl-object-bindingslist-bfrlist
                              (cdr (hons-assoc-equal pat x)))))))
 
   (local (in-theory (enable sig-table-fix))))
@@ -576,57 +576,57 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (equal (assoc k x)
                          (hons-assoc-equal k x)))))
 
-(defthm member-bfrlist-of-lookup-in-gl-object-alist
-  (implies (and (not (member v (gl-object-alist-bfrlist x)))
+(defthm member-bfrlist-of-lookup-in-gl-object-bindings
+  (implies (and (not (member v (gl-object-bindings-bfrlist x)))
                 (pseudo-var-p k))
            (not (member v (gl-object-bfrlist (cdr (hons-assoc-equal k x))))))
-  :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist hons-assoc-equal))))
+  :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist hons-assoc-equal))))
 
 (define gbc-signature ((common-vars pseudo-var-list-p)
-                       (subst gl-object-alist-p))
+                       (subst gl-object-bindings-p))
   :returns (sig gl-objectlist-p)
   (if (atom common-vars)
       nil
     (hons (cdr (assoc (pseudo-var-fix (car common-vars))
-                      (gl-object-alist-fix subst)))
+                      (gl-object-bindings-fix subst)))
           (gbc-signature (cdr common-vars) subst)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (not (member v (gl-object-alist-bfrlist subst)))
+    (implies (not (member v (gl-object-bindings-bfrlist subst)))
              (not (member v (gl-objectlist-bfrlist sig))))))
 
-(define gbc-extend-substs ((lit-subst gl-object-alist-p)
-                           (partial-substs gl-object-alistlist-p))
-  :returns (new-substs gl-object-alistlist-p)
+(define gbc-extend-substs ((lit-subst gl-object-bindings-p)
+                           (partial-substs gl-object-bindingslist-p))
+  :returns (new-substs gl-object-bindingslist-p)
   (if (atom partial-substs)
       nil
     ;; is append good enough? I think so
-    (cons (append (gl-object-alist-fix lit-subst)
-                  (gl-object-alist-fix (car partial-substs)))
+    (cons (append (gl-object-bindings-fix lit-subst)
+                  (gl-object-bindings-fix (car partial-substs)))
           (gbc-extend-substs lit-subst (cdr partial-substs))))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-alist-bfrlist lit-subst)))
-                  (not (member v (gl-object-alistlist-bfrlist partial-substs))))
-             (not (member v (gl-object-alistlist-bfrlist new-substs))))
-    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist)))))
+    (implies (and (not (member v (gl-object-bindings-bfrlist lit-subst)))
+                  (not (member v (gl-object-bindingslist-bfrlist partial-substs))))
+             (not (member v (gl-object-bindingslist-bfrlist new-substs))))
+    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist)))))
 
-(local (defthm symbol-alistp-when-gl-object-alist-p
-         (implies (gl-object-alist-p x)
+(local (defthm symbol-alistp-when-gl-object-bindings-p
+         (implies (gl-object-bindings-p x)
                   (symbol-alistp x))
-         :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
+         :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
 
 (local (in-theory (disable symbol-alistp)))
 
 
 
-(define gbc-substs-check-syntaxp ((substs gl-object-alistlist-p)
+(define gbc-substs-check-syntaxp ((substs gl-object-bindingslist-p)
                                   (thmname symbolp)
                                   (syntaxp pseudo-termp)
                                   state)
   :returns (insts constraint-instancelist-p)
   (b* (((when (atom substs)) nil)
-       (subst (gl-object-alist-fix (car substs)))
+       (subst (gl-object-bindings-fix (car substs)))
        ((mv err ok) (acl2::magic-ev (pseudo-term-fix syntaxp) subst state t t))
        ((when (or err (not ok)))
         (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
@@ -634,30 +634,30 @@ prior to introducing the constraint rule above, but succeed after:</p>
           (gbc-substs-check-syntaxp (cdr substs) thmname syntaxp state)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (not (member v (gl-object-alistlist-bfrlist substs)))
+    (implies (not (member v (gl-object-bindingslist-bfrlist substs)))
              (not (member v (constraint-instancelist-bfrlist insts))))
-    :hints(("Goal" :in-theory (enable gl-object-alistlist-bfrlist
+    :hints(("Goal" :in-theory (enable gl-object-bindingslist-bfrlist
                                       constraint-instancelist-bfrlist
                                       constraint-instance-bfrlist)))))
 
 
-(define gbc-sort-substs-into-sigtable ((substs gl-object-alistlist-p)
+(define gbc-sort-substs-into-sigtable ((substs gl-object-bindingslist-p)
                                        (common-vars pseudo-var-list-p)
                                        (sigtable sig-table-p))
   :returns (new-sigtable sig-table-p)
   (b* (((when (atom substs)) (sig-table-fix sigtable))
-       (subst (gl-object-alist-fix (car substs)))
+       (subst (gl-object-bindings-fix (car substs)))
        (sig (gbc-signature common-vars subst))
        (sig-substs (cdr (hons-get sig (sig-table-fix sigtable))))
        (sigtable (hons-acons sig (cons subst sig-substs) sigtable)))
     (gbc-sort-substs-into-sigtable (cdr substs) common-vars sigtable))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
                   (not (member v (sig-table-bfrlist sigtable))))
              (not (member v (sig-table-bfrlist new-sigtable))))
     :hints(("Goal" :in-theory (enable sig-table-bfrlist
-                                      gl-object-alistlist-bfrlist)))))
+                                      gl-object-bindingslist-bfrlist)))))
 
 
 ;; Invariant: for a given rule, existing lit set, and matching lit, there is at
@@ -671,7 +671,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
 (define gbc-add-substs-to-existing-tuple ((rule constraint-rule-p)
                                           (existing-lits pseudo-var-set-p)
                                           (lit pseudo-var-p)
-                                          (substs gl-object-alistlist-p)
+                                          (substs gl-object-bindingslist-p)
                                           (tuples constraint-tuplelist-p))
   :returns (mv found
                (new-tuples constraint-tuplelist-p))
@@ -695,7 +695,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
               (cdr tuples))))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-tuplelist-bfrlist tuples))))
              (not (member v (constraint-tuplelist-bfrlist new-tuples))))
     :hints(("Goal" :in-theory (e/d (constraint-tuplelist-bfrlist
@@ -709,7 +709,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                               (rule constraint-rule-p)
                                               (existing-lits pseudo-var-set-p)
                                               (existing-vars pseudo-var-set-p)
-                                              (substs gl-object-alistlist-p)
+                                              (substs gl-object-bindingslist-p)
                                               (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (b* ((ccat (constraint-db-fix ccat))
@@ -736,7 +736,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
     (hons-acons fnsym (cons new-tuple tuples) ccat))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-db-bfrlist ccat))))
              (not (member v (constraint-db-bfrlist new-ccat))))
     :hints(("Goal" :in-theory (enable constraint-db-bfrlist
@@ -747,7 +747,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                                                (rule constraint-rule-p)
                                                (existing-lits pseudo-var-set-p)
                                                (existing-vars pseudo-var-set-p)
-                                               (substs gl-object-alistlist-p)
+                                               (substs gl-object-bindingslist-p)
                                                (ccat constraint-db-p))
   :returns (new-ccat constraint-db-p)
   (if (atom unmatched-litvars)
@@ -758,21 +758,21 @@ prior to introducing the constraint rule above, but succeed after:</p>
       (car unmatched-litvars) rule existing-lits existing-vars substs ccat)))
   ///
   (defret bfrlist-of-<fn>
-    (implies (and (not (member v (gl-object-alistlist-bfrlist substs)))
+    (implies (and (not (member v (gl-object-bindingslist-bfrlist substs)))
                   (not (member v (constraint-db-bfrlist ccat))))
              (not (member v (constraint-db-bfrlist new-ccat))))))
 
-(local (defthm pseudo-var-list-p-strip-cars-of-gl-object-alist
-         (implies (gl-object-alist-p x)
+(local (defthm pseudo-var-list-p-strip-cars-of-gl-object-bindings
+         (implies (gl-object-bindings-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           gl-object-alist-p)))))
+                                           gl-object-bindings-p)))))
 
 (local (defthm pseudo-var-list-p-strip-cars-of-pseudo-term-subst
          (implies (pseudo-term-subst-p x)
                   (pseudo-var-list-p (strip-cars x)))
          :hints(("Goal" :in-theory (enable strip-cars
-                                           gl-object-alist-p)))))
+                                           gl-object-bindings-p)))))
 
 (local (defthm symbol-listp-when-pseudo-var-list-p
          (implies (pseudo-var-list-p x)

@@ -88,43 +88,43 @@
 
 
 (ifndef "DEFS_ONLY"
-  (defsection fgl-object-alist-eval
-    (local (in-theory (enable gl-object-alist-fix
-                              fgl-object-alist-eval)))
+  (defsection fgl-object-bindings-eval
+    (local (in-theory (enable gl-object-bindings-fix
+                              fgl-object-bindings-eval)))
 
-    (defthm lookup-in-fgl-object-alist-eval
-      (equal (hons-assoc-equal k (fgl-object-alist-eval x env))
-             (b* ((look (hons-assoc-equal k (gl-object-alist-fix x))))
+    (defthm lookup-in-fgl-object-bindings-eval
+      (equal (hons-assoc-equal k (fgl-object-bindings-eval x env))
+             (b* ((look (hons-assoc-equal k (gl-object-bindings-fix x))))
                (and look
                     (cons k (fgl-object-eval (cdr look) env)))))
       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
 
     
 
-    (local (defthm alistp-when-gl-object-alist-p-rw
-             (implies (gl-object-alist-p x)
+    (local (defthm alistp-when-gl-object-bindings-p-rw
+             (implies (gl-object-bindings-p x)
                       (alistp x))
-             :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
+             :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
 
     (local (defthm alistp-when-symbol-alistp
              (implies (symbol-alistp x)
                       (alistp x))
              :hints(("Goal" :in-theory (enable symbol-alistp)))))
     
-    (defthm alist-keys-of-fgl-object-alist-eval
-      (equal (alist-keys (fgl-object-alist-eval x env))
-             (alist-keys (gl-object-alist-fix x)))))
+    (defthm alist-keys-of-fgl-object-bindings-eval
+      (equal (alist-keys (fgl-object-bindings-eval x env))
+             (alist-keys (gl-object-bindings-fix x)))))
   :endif)
 
 (acl2::process-ifdefs
  (define glcp-unify-concrete ((pat pseudo-termp)
                               (x) ;; value
-                              (alist gl-object-alist-p))
+                              (alist gl-object-bindings-p))
    :returns (mv flag
-                (new-alist gl-object-alist-p))
+                (new-alist gl-object-bindings-p))
    :verify-guards nil
    :measure (pseudo-term-count pat)
-   (b* ((alist (gl-object-alist-fix alist)))
+   (b* ((alist (gl-object-bindings-fix alist)))
      (pseudo-term-case pat
        :null (if (eq x nil)
                  (mv t alist)
@@ -192,7 +192,7 @@
                               equal-of-booleans-rewrite
                               acl2::consp-when-member-equal-of-atom-listp
                               acl2::symbolp-of-car-when-symbol-listp
-                              gl-object-alist-bfrlist
+                              gl-object-bindings-bfrlist
                               member-equal
                               acl2::consp-of-car-when-alistp)))
 
@@ -203,12 +203,12 @@
    (verify-guards glcp-unify-concrete)
 
    (defret bfrlist-of-<fn>
-     (implies (not (member b (gl-object-alist-bfrlist alist)))
-              (not (member b (gl-object-alist-bfrlist new-alist))))
+     (implies (not (member b (gl-object-bindings-bfrlist alist)))
+              (not (member b (gl-object-bindings-bfrlist new-alist))))
      :hints(("Goal" :induct <call>)
             (acl2::use-termhint
              `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                        (gl-object-alist-bfrlist ,(acl2::hq new-alist)))))))
+                        (gl-object-bindings-bfrlist ,(acl2::hq new-alist)))))))
 
    (ifndef "DEFS_ONLY"
      (local (defthm equal-of-len
@@ -221,16 +221,16 @@
               :hints(("Goal" :in-theory (enable len)))))
 
      (defret <fn>-alist-lookup-when-present
-       (implies (and (hons-assoc-equal k (gl-object-alist-fix alist))
+       (implies (and (hons-assoc-equal k (gl-object-bindings-fix alist))
                      flag)
                 (equal (hons-assoc-equal k new-alist)
-                       (hons-assoc-equal k (gl-object-alist-fix alist))))
+                       (hons-assoc-equal k (gl-object-bindings-fix alist))))
        :hints (("goal" :induct <call>)
                (acl2::use-termhint
                 `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
      (defret <fn>-preserves-all-keys-bound
-       (implies (and (subsetp keys (alist-keys (gl-object-alist-fix alist)))
+       (implies (and (subsetp keys (alist-keys (gl-object-bindings-fix alist)))
                      flag)
                 (subsetp keys (alist-keys new-alist)))
        :hints (("goal" :induct <call>)
@@ -266,25 +266,25 @@
      (defret <fn>-preserves-eval-when-all-keys-bound
        (implies (and flag
                      (subsetp (term-vars term)
-                              (alist-keys (gl-object-alist-fix alist))))
-                (equal (fgl-ev term (fgl-object-alist-eval new-alist env))
-                       (fgl-ev term (fgl-object-alist-eval alist env))))
+                              (alist-keys (gl-object-bindings-fix alist))))
+                (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                       (fgl-ev term (fgl-object-bindings-eval alist env))))
        :hints (("goal" :induct <call>)
                (acl2::use-termhint
                 `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                           (:free (a b) (fgl-object-alist-eval (cons a b) env)))))))
+                           (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))))
 
      (defret <fn>-correct
        (implies flag
-                (equal (fgl-ev pat (fgl-object-alist-eval new-alist env))
+                (equal (fgl-ev pat (fgl-object-bindings-eval new-alist env))
                        x))
        :hints (("Goal" :induct <call>)
                (acl2::use-termhint
                 `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
-     (defret gl-object-alist-bfrlist-of-<fn>
-       (equal (gl-object-alist-bfrlist new-alist)
-              (and flag (gl-object-alist-bfrlist alist)))
+     (defret gl-object-bindings-bfrlist-of-<fn>
+       (equal (gl-object-bindings-bfrlist new-alist)
+              (and flag (gl-object-bindings-bfrlist alist)))
        :hints (("Goal" :induct <call>)
                (acl2::use-termhint
                 `(:expand ((glcp-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
@@ -338,12 +338,12 @@
         :endif))
      (define glcp-unify-term/gobj ((pat pseudo-termp)
                                    (x gl-object-p)
-                                   (alist gl-object-alist-p))
+                                   (alist gl-object-bindings-p))
        :returns (mv flag
-                    (new-alist gl-object-alist-p))
+                    (new-alist gl-object-bindings-p))
        :measure (pseudo-term-count pat)
        :verify-guards nil
-       (b* ((alist (gl-object-alist-fix alist))
+       (b* ((alist (gl-object-bindings-fix alist))
             (x (gl-object-fix x))
             (x.kind (gl-object-kind x))
             ((when (gl-object-kind-eq x.kind :g-concrete))
@@ -422,13 +422,13 @@
 
      (define glcp-unify-term/gobj-list ((pat pseudo-term-listp)
                                         (x gl-objectlist-p)
-                                        (alist gl-object-alist-p))
+                                        (alist gl-object-bindings-p))
        :returns (mv flag
-                    (new-alist gl-object-alist-p))
+                    (new-alist gl-object-bindings-p))
        :measure (pseudo-term-list-count pat)
        (b* (((when (atom pat))
              (if (mbe :logic (atom x) :exec (eq x nil))
-                 (mv t (gl-object-alist-fix alist))
+                 (mv t (gl-object-bindings-fix alist))
                (mv nil nil)))
             ((when (atom x)) (mv nil nil))
             ((mv ok alist)
@@ -451,22 +451,22 @@
 
      (defret-mutual bfrlist-of-<fn>
        (defret bfrlist-of-<fn>
-         (implies (and (not (member b (gl-object-alist-bfrlist alist)))
+         (implies (and (not (member b (gl-object-bindings-bfrlist alist)))
                        (not (member b (gl-object-bfrlist x)))
                        ;; (not (equal b nil))
                        )
-                  (not (member b (gl-object-alist-bfrlist new-alist))))
+                  (not (member b (gl-object-bindings-bfrlist new-alist))))
          :hints ('(:expand ((:free (x) <call>)
                             (glcp-unify-term/gobj nil x alist)))
                  (and stable-under-simplificationp
                       '(:expand ((gl-object-bfrlist x)))))
          :fn glcp-unify-term/gobj)
        (defret bfrlist-of-<fn>
-         (implies (and (not (member b (gl-object-alist-bfrlist alist)))
+         (implies (and (not (member b (gl-object-bindings-bfrlist alist)))
                        (not (member b (gl-objectlist-bfrlist x)))
                        ;; (not (equal b nil))
                        )
-                  (not (member b (gl-object-alist-bfrlist new-alist))))
+                  (not (member b (gl-object-bindings-bfrlist new-alist))))
          :hints ('(:expand ((:free (x) <call>)
                             (gl-objectlist-bfrlist x))))
          :fn glcp-unify-term/gobj-list))
@@ -486,31 +486,31 @@
 
        (defret-mutual <fn>-alist-lookup-when-present
          (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (gl-object-alist-fix alist))
+           (implies (and (hons-assoc-equal k (gl-object-bindings-fix alist))
                          flag)
                     (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (gl-object-alist-fix alist))))
+                           (hons-assoc-equal k (gl-object-bindings-fix alist))))
            :hints ('(:expand (<call>
                               (glcp-unify-term/gobj nil x alist))))
            :fn glcp-unify-term/gobj)
          (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (gl-object-alist-fix alist))
+           (implies (and (hons-assoc-equal k (gl-object-bindings-fix alist))
                          flag)
                     (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (gl-object-alist-fix alist))))
+                           (hons-assoc-equal k (gl-object-bindings-fix alist))))
            :hints ('(:expand ((:free (x) <call>))))
            :fn glcp-unify-term/gobj-list))
 
        (defret-mutual <fn>-preserves-all-keys-bound
          (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (gl-object-alist-fix alist)))
+           (implies (and (subsetp keys (alist-keys (gl-object-bindings-fix alist)))
                          flag)
                     (subsetp keys (alist-keys new-alist)))
            :hints ('(:expand (<call>
                               (glcp-unify-term/gobj nil x alist))))
            :fn glcp-unify-term/gobj)
          (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (gl-object-alist-fix alist)))
+           (implies (and (subsetp keys (alist-keys (gl-object-bindings-fix alist)))
                          flag)
                     (subsetp keys (alist-keys new-alist)))
            :hints ('(:expand ((:free (x) <call>))))
@@ -544,19 +544,19 @@
          (defret <fn>-preserves-eval-when-all-keys-bound
            (implies (and flag
                          (subsetp (term-vars term)
-                                  (alist-keys (gl-object-alist-fix alist))))
-                    (equal (fgl-ev term (fgl-object-alist-eval new-alist env))
-                           (fgl-ev term (fgl-object-alist-eval alist env))))
+                                  (alist-keys (gl-object-bindings-fix alist))))
+                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev term (fgl-object-bindings-eval alist env))))
            :hints ('(:expand (<call>
                               (glcp-unify-term/gobj nil x alist)
-                              (:free (a b) (fgl-object-alist-eval (cons a b) env)))))
+                              (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))
            :fn glcp-unify-term/gobj)
          (defret <fn>-preserves-eval-when-all-keys-bound
            (implies (and flag
                          (subsetp (term-vars term)
-                                  (alist-keys (gl-object-alist-fix alist))))
-                    (equal (fgl-ev term (fgl-object-alist-eval new-alist env))
-                           (fgl-ev term (fgl-object-alist-eval alist env))))
+                                  (alist-keys (gl-object-bindings-fix alist))))
+                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev term (fgl-object-bindings-eval alist env))))
            :hints ('(:expand ((:free (x) <call>))))
            :fn glcp-unify-term/gobj-list))
 
@@ -593,7 +593,7 @@
        (defret-mutual <fn>-correct
          (defret <fn>-correct
            (implies flag
-                    (equal (fgl-ev pat (fgl-object-alist-eval new-alist env))
+                    (equal (fgl-ev pat (fgl-object-bindings-eval new-alist env))
                            (fgl-object-eval x env)))
            :hints ('(:expand (<call>
                               (glcp-unify-term/gobj nil x alist))
@@ -648,7 +648,7 @@
            :fn glcp-unify-term/gobj)
          (defret <fn>-correct
            (implies flag
-                    (equal (fgl-ev-list pat (fgl-object-alist-eval new-alist env))
+                    (equal (fgl-ev-list pat (fgl-object-bindings-eval new-alist env))
                            (fgl-objectlist-eval x env)))
            :hints ('(:expand ((:free (x) <call>)
                               (fgl-objectlist-eval x env)
@@ -657,9 +657,9 @@
 
        ;; (defret-mutual depends-on-of-<fn>
        ;;   (defret depends-on-of-<fn> 
-       ;;     (implies (and (not (bfr-list-depends-on v (gl-object-alist-bfrlist alist)))
+       ;;     (implies (and (not (bfr-list-depends-on v (gl-object-bindings-bfrlist alist)))
        ;;                   (not (bfr-list-depends-on v (gl-object-bfrlist x))))
-       ;;              (not (bfr-list-depends-on v (gl-object-alist-bfrlist new-alist))))
+       ;;              (not (bfr-list-depends-on v (gl-object-bindings-bfrlist new-alist))))
        ;;     :hints ((acl2::use-termhint
        ;;              (acl2::termhint-seq
        ;;               `(:expand ((glcp-unify-term/gobj ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))
@@ -678,9 +678,9 @@
        ;;                 nil))))
        ;;     :fn glcp-unify-term/gobj)
        ;;   (defret depends-on-of-<fn> 
-       ;;     (implies (and (not (bfr-list-depends-on v (gl-object-alist-bfrlist alist)))
+       ;;     (implies (and (not (bfr-list-depends-on v (gl-object-bindings-bfrlist alist)))
        ;;                   (not (bfr-list-depends-on v (gl-objectlist-bfrlist x))))
-       ;;              (not (bfr-list-depends-on v (gl-object-alist-bfrlist new-alist))))
+       ;;              (not (bfr-list-depends-on v (gl-object-bindings-bfrlist new-alist))))
        ;;     :hints ('(:expand (:free (x) <call>)))
        ;;     :fn glcp-unify-term/gobj-list))
 

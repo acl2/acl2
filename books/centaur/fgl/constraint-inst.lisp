@@ -36,14 +36,14 @@
 
 (defprod constraint-instance
   ((thmname symbolp)
-   (subst gl-object-alist-p))
+   (subst gl-object-bindings-p))
   :layout :tree)
 
 (fty::deflist constraint-instancelist :elt-type constraint-instance :true-listp t)
 
 
 (define constraint-instance-bfrlist ((x constraint-instance-p))
-  (gl-object-alist-bfrlist (constraint-instance->subst x)))
+  (gl-object-bindings-bfrlist (constraint-instance->subst x)))
 
 (define constraint-instancelist-bfrlist ((x constraint-instancelist-p))
   (if (atom x)

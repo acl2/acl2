@@ -116,7 +116,7 @@
 (fty::deflist scratchlist :elt-type scratchobj :true-listp t)
 
 (fty::defprod minor-frame
-  ((bindings gl-object-alist-p)
+  ((bindings gl-object-bindings-p)
    (scratch scratchlist-p)
    (debug)))
 
@@ -130,7 +130,7 @@
 
 (make-event
  `(fty::defprod major-frame
-    ((bindings gl-object-alist-p)
+    ((bindings gl-object-bindings-p)
      (debug)
      (minor-stack minor-stack-p :default ',(list (make-minor-frame))))))
 
@@ -163,7 +163,7 @@
                                (cons (make-minor-frame) jframe.minor-stack))
            (cdr x)))))
 
-(define stack$a-set-bindings ((bindings gl-object-alist-p)
+(define stack$a-set-bindings ((bindings gl-object-bindings-p)
                               (x major-stack-p))
   :returns (stack major-stack-p)  
   (major-stack-fix (cons (change-major-frame (car x) :bindings bindings)
@@ -186,12 +186,12 @@
                          (cdr x))))
 
 
-(local (defthm gl-object-alist-p-of-append
-           (implies (and (gl-object-alist-p x)
-                         (gl-object-alist-p y))
-                    (gl-object-alist-p (append x y)))))
+(local (defthm gl-object-bindings-p-of-append
+           (implies (and (gl-object-bindings-p x)
+                         (gl-object-bindings-p y))
+                    (gl-object-bindings-p (append x y)))))
 
-(define stack$a-set-minor-bindings ((bindings gl-object-alist-p)
+(define stack$a-set-minor-bindings ((bindings gl-object-bindings-p)
                                     (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x))
@@ -201,7 +201,7 @@
                                                      (cdr jframe.minor-stack)))
                            (cdr x)))))
 
-(define stack$a-add-minor-bindings ((bindings gl-object-alist-p)
+(define stack$a-add-minor-bindings ((bindings gl-object-bindings-p)
                                     (x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x))
@@ -224,12 +224,12 @@
                            (cdr x)))))
 
 (define stack$a-bindings ((x major-stack-p))
-  :returns (binings gl-object-alist-p)
+  :returns (binings gl-object-bindings-p)
   (major-frame->bindings (car x)))
 
 
 (define stack$a-minor-bindings ((x major-stack-p))
-  :returns (binings gl-object-alist-p)
+  :returns (binings gl-object-bindings-p)
   (minor-frame->bindings (car (major-frame->minor-stack (car x)))))
 
 
@@ -494,17 +494,17 @@
 (define minor-frame-bfrlist ((x minor-frame-p))
   :returns (bfrs)
   (b* (((minor-frame x)))
-    (append (gl-object-alist-bfrlist x.bindings)
+    (append (gl-object-bindings-bfrlist x.bindings)
             (scratchlist-bfrlist x.scratch)))
   ///
   (defthm minor-frame-bfrlist-of-minor-frame
     (equal (minor-frame-bfrlist (minor-frame bindings scratch debug))
-           (append (gl-object-alist-bfrlist bindings)
+           (append (gl-object-bindings-bfrlist bindings)
                    (scratchlist-bfrlist scratch))))
 
   (defthm bfrlist-of-minor-frame->bindings
     (implies (not (member v (minor-frame-bfrlist x)))
-             (not (member v (gl-object-alist-bfrlist (minor-frame->bindings x))))))
+             (not (member v (gl-object-bindings-bfrlist (minor-frame->bindings x))))))
 
   (defthm bfrlist-of-minor-frame->scratch
     (implies (not (member v (minor-frame-bfrlist x)))
@@ -533,17 +533,17 @@
 (define major-frame-bfrlist ((x major-frame-p))
   :returns (bfrs)
   (b* (((major-frame x)))
-    (append (gl-object-alist-bfrlist x.bindings)
+    (append (gl-object-bindings-bfrlist x.bindings)
             (minor-stack-bfrlist x.minor-stack)))
   ///
   (defthm major-frame-bfrlist-of-major-frame
     (equal (major-frame-bfrlist (major-frame bindings debug minor-stack))
-           (append (gl-object-alist-bfrlist bindings)
+           (append (gl-object-bindings-bfrlist bindings)
                    (minor-stack-bfrlist minor-stack))))
 
   (defthm bfrlist-of-major-frame->bindings
     (implies (not (member v (major-frame-bfrlist x)))
-             (not (member v (gl-object-alist-bfrlist (major-frame->bindings x))))))
+             (not (member v (gl-object-bindings-bfrlist (major-frame->bindings x))))))
 
   (defthm bfrlist-of-major-frame->minor-stack
     (implies (not (member v (major-frame-bfrlist x)))

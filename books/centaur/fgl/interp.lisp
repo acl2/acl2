@@ -295,10 +295,10 @@
                                state)
   :returns (mv (ans gl-object-p)
                new-interp-st)
-  :prepwork ((local (defthm symbol-alistp-when-gl-object-alist-p
-                      (implies (gl-object-alist-p x)
+  :prepwork ((local (defthm symbol-alistp-when-gl-object-bindings-p
+                      (implies (gl-object-bindings-p x)
                                (symbol-alistp x))
-                      :hints(("Goal" :in-theory (enable gl-object-alist-p))))))
+                      :hints(("Goal" :in-theory (enable gl-object-bindings-p))))))
   (b* (((mv synp-ok synp-term untrans) (match-syntax-bind-synp synp-arg))
        ((unless (and synp-ok (pseudo-term-case x :var)))
         ;; We could go ahead and simulate x anyway but this does seem like an error.
@@ -534,20 +534,20 @@
                                      state)
   :returns (mv successp
                new-interp-st)
-  :prepwork ((local (defthm alist-keys-of-gl-object-alist
-                      (implies (gl-object-alist-p x)
+  :prepwork ((local (defthm alist-keys-of-gl-object-bindings
+                      (implies (gl-object-bindings-p x)
                                (and (pseudo-var-list-p (alist-keys x))
                                     (symbol-listp (alist-keys x))))
                       :hints(("Goal" :in-theory (enable alist-keys)))))
-             (local (defthm symbol-alistp-when-gl-object-alist-p
-                      (implies (gl-object-alist-p x)
+             (local (defthm symbol-alistp-when-gl-object-bindings-p
+                      (implies (gl-object-bindings-p x)
                                (symbol-alistp x))))
              
-             (local (Defthm gl-bfr-object-alist-p-is-gl-object-alist-p-and-bfr-listp
-                      (equal (gl-bfr-object-alist-p x)
-                             (and (gl-object-alist-p x)
-                                  (bfr-listp (gl-object-alist-bfrlist x))))
-                      :hints(("Goal" :in-theory (enable gl-bfr-object-alist-p-implies-gl-object-alist-p)))))
+             (local (Defthm gl-bfr-object-bindings-p-is-gl-object-bindings-p-and-bfr-listp
+                      (equal (gl-bfr-object-bindings-p x)
+                             (and (gl-object-bindings-p x)
+                                  (bfr-listp (gl-object-bindings-bfrlist x))))
+                      :hints(("Goal" :in-theory (enable gl-bfr-object-bindings-p-implies-gl-object-bindings-p)))))
 
              (local (defthm symbol-listp-when-pseudo-var-list-p
                       (implies (pseudo-var-list-p x)
@@ -567,7 +567,7 @@
        ((unless val)
         ;; No error -- bind-free evaluated to NIL which means just don't do the rewrite.
         (mv nil interp-st))
-       ((unless (gl-bfr-object-alist-p val (interp-st-bfr-state)))
+       ((unless (gl-bfr-object-bindings-p val (interp-st-bfr-state)))
         (gl-interp-error
          :msg (gl-msg "Bind-free error: ~x0 evaluated to a non-GL object alist: ~x1" untrans-form val)))
        (newly-bound-vars (alist-keys val))
@@ -593,7 +593,7 @@
   (local
    (defthm major-stack-bfrlist-of-stack$a-set-bindings
      (implies (and (not (member v (major-stack-bfrlist stack)))
-                   (not (member v (gl-object-alist-bfrlist bindings))))
+                   (not (member v (gl-object-bindings-bfrlist bindings))))
               (not (member v (major-stack-bfrlist (stack$a-set-bindings bindings stack)))))
      :hints(("Goal" :in-theory (enable stack$a-set-bindings
                                        major-stack-bfrlist
@@ -603,9 +603,9 @@
              :do-not-induct t))))
 
   (local
-   (defthm gl-object-alist-bfrlist-of-stack$a-bindings-bindings
+   (defthm gl-object-bindings-bfrlist-of-stack$a-bindings-bindings
      (implies (not (member v (major-stack-bfrlist stack)))
-              (not (member v (gl-object-alist-bfrlist (stack$a-bindings stack)))))
+              (not (member v (gl-object-bindings-bfrlist (stack$a-bindings stack)))))
      :hints(("Goal" :in-theory (enable stack$a-bindings
                                        major-stack-bfrlist
                                        major-frame-bfrlist)
@@ -1003,10 +1003,10 @@
 
 ;; (define glcp-unify-term/gobj-list-prefix ((pat pseudo-term-listp)
 ;;                                         (x gl-objectlist-p)
-;;                                         (alist gl-object-alist-p))
+;;                                         (alist gl-object-bindings-p))
 ;;   ;; Same as glcp-unify-term/gobj-list but doesn't complain about extra or missing elements of x.
 ;;   ;; Equivalent to (glcp-unify-term/gobj-list pat (take (len pat) x) alist).
-;;   (b* (((when (atom pat)) (mv t (gl-object-alist-fix alist)))
+;;   (b* (((when (atom pat)) (mv t (gl-object-bindings-fix alist)))
 ;;        ((mv ok alist) (glcp-unify-term/gobj (car pat) (car x) alist))
 ;;        ((unless ok) (mv nil nil)))
 ;;     (glcp-unify-term/gobj-list-prefix (cdr pat) (cdr x) alist))
@@ -1221,7 +1221,7 @@
         :well-founded-relation acl2::nat-list-<
         :verify-guards nil
         :measure-debug t
-        ;; :guard (bfr-listp (gl-object-alist-bfrlist alist) (interp-st->bfrstate interp-st))
+        ;; :guard (bfr-listp (gl-object-bindings-bfrlist alist) (interp-st->bfrstate interp-st))
         :returns (mv xbfr
                      new-interp-st)
         (b* (((interp-st-bind
@@ -2751,7 +2751,7 @@
 (local
  (defthm major-stack-bfrlist-of-stack$a-set-bindings
    (implies (and (not (member v (major-stack-bfrlist stack)))
-                 (not (member v (gl-object-alist-bfrlist bindings))))
+                 (not (member v (gl-object-bindings-bfrlist bindings))))
             (not (member v (major-stack-bfrlist (stack$a-set-bindings bindings stack)))))
    :hints(("Goal" :in-theory (enable stack$a-set-bindings
                                      major-stack-bfrlist
@@ -2763,7 +2763,7 @@
 (local
  (defthm major-stack-bfrlist-of-stack$a-set-minor-bindings
    (implies (and (not (member v (major-stack-bfrlist stack)))
-                 (not (member v (gl-object-alist-bfrlist bindings))))
+                 (not (member v (gl-object-bindings-bfrlist bindings))))
             (not (member v (major-stack-bfrlist (stack$a-set-minor-bindings bindings stack)))))
    :hints(("Goal" :in-theory (enable stack$a-set-minor-bindings
                                      major-stack-bfrlist
@@ -2777,7 +2777,7 @@
 (local
  (defthm major-stack-bfrlist-of-stack$a-add-minor-bindings
    (set-equiv (major-stack-bfrlist (stack$a-add-minor-bindings bindings stack))
-              (append (gl-object-alist-bfrlist bindings)
+              (append (gl-object-bindings-bfrlist bindings)
                       (major-stack-bfrlist stack)))
    :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings
                                      major-stack-bfrlist
@@ -2833,18 +2833,18 @@
            :do-not-induct t))))
 
 (local
-   (defthm gl-object-alist-bfrlist-of-stack$a-bindings
+   (defthm gl-object-bindings-bfrlist-of-stack$a-bindings
      (implies (not (member v (major-stack-bfrlist stack)))
-              (not (member v (gl-object-alist-bfrlist (stack$a-bindings stack)))))
+              (not (member v (gl-object-bindings-bfrlist (stack$a-bindings stack)))))
      :hints(("Goal" :in-theory (enable stack$a-bindings
                                        major-frame-bfrlist)
              :expand ((major-stack-bfrlist stack))
              :do-not-induct t))))
 
 (local
- (defthm gl-object-alist-bfrlist-of-stack$a-minor-bindings
+ (defthm gl-object-bindings-bfrlist-of-stack$a-minor-bindings
    (implies (not (member v (major-stack-bfrlist stack)))
-            (not (member v (gl-object-alist-bfrlist (stack$a-minor-bindings stack)))))
+            (not (member v (gl-object-bindings-bfrlist (stack$a-minor-bindings stack)))))
    :hints(("Goal" :in-theory (enable stack$a-minor-bindings
                                      major-stack-bfrlist
                                      major-frame-bfrlist
@@ -2925,8 +2925,8 @@
          :hints(("Goal" :expand ((constraint-instancelist-bfrlist x))
                  :in-theory (enable default-car)))))
 
-(local (defthm gl-object-alist-bfrlist-of-constraint-instance->subst
-         (equal (gl-object-alist-bfrlist (constraint-instance->subst x))
+(local (defthm gl-object-bindings-bfrlist-of-constraint-instance->subst
+         (equal (gl-object-bindings-bfrlist (constraint-instance->subst x))
                 (constraint-instance-bfrlist x))
          :hints(("Goal" :expand ((constraint-instance-bfrlist x))))))
 
@@ -2973,12 +2973,12 @@
     (pseudo-var-list-p (mv-nth 1 (acl2::fn-get-def fn state)))
     :hints(("Goal" :in-theory (enable acl2::fn-get-def)))))
 
-(defthm gl-object-alist-bfrlist-of-pairlis$
+(defthm gl-object-bindings-bfrlist-of-pairlis$
   (implies (and (pseudo-var-list-p vars)
                 (equal (len vars) (len vals)))
-           (equal (gl-object-alist-bfrlist (pairlis$ vars vals))
+           (equal (gl-object-bindings-bfrlist (pairlis$ vars vals))
                   (gl-objectlist-bfrlist vals)))
-  :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist gl-object-alist-bfrlist pairlis$
+  :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist gl-object-bindings-bfrlist pairlis$
                                     pseudo-var-list-p len))))
 
 
@@ -3658,10 +3658,10 @@
 ;;                                            redundant-update-nth)
 ;;                                         (equal-len-hyp))))))
 
-(local (defthm alistp-when-gl-object-alist-p-rw
-         (implies (gl-object-alist-p x)
+(local (defthm alistp-when-gl-object-bindings-p-rw
+         (implies (gl-object-bindings-p x)
                   (alistp x))
-         :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
+         :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
 
 
 (local (Defthm stack$a-scratch-len-of-set-minor-debug
@@ -3737,12 +3737,12 @@
                   (pathcond-rewind-ok bfr-mode pathcond))
          :hints(("Goal" :in-theory (enable pathcond-rewind-ok maybe-incr)))))
 
-(defthm gl-object-alist-p-of-pairlis$
+(defthm gl-object-bindings-p-of-pairlis$
   (implies (and (gl-objectlist-p vals)
                 (pseudo-var-list-p vars)
                 (equal (len vars) (len vals)))
-           (gl-object-alist-p (pairlis$ vars vals)))
-  :hints(("Goal" :in-theory (enable pairlis$ gl-object-alist-p))))
+           (gl-object-bindings-p (pairlis$ vars vals)))
+  :hints(("Goal" :in-theory (enable pairlis$ gl-object-bindings-p))))
 
 
 
@@ -4178,9 +4178,9 @@
       :mutual-recursion gl-interp)))
 
 (defsection stack-bindings-extension-p
-  (define gl-bindings-extension-p ((x gl-object-alist-p)
-                                   (y gl-object-alist-p))
-    (or (gl-object-alist-equiv x y)
+  (define gl-bindings-extension-p ((x gl-object-bindings-p)
+                                   (y gl-object-bindings-p))
+    (or (gl-object-bindings-equiv x y)
         (and (consp x)
              (if (mbt (and (consp (car x))
                            (pseudo-var-p (caar x))))
@@ -4190,7 +4190,7 @@
     ///
 
     (deffixequiv gl-bindings-extension-p
-      :hints(("Goal" :in-theory (enable gl-object-alist-fix))))
+      :hints(("Goal" :in-theory (enable gl-object-bindings-fix))))
 
     (defthm gl-bindings-extension-p-transitive
       (implies (and (gl-bindings-extension-p x y)
@@ -4207,7 +4207,7 @@
                                 (y major-stack-p))
     (b* (((major-frame x1) (car x))
          ((major-frame y1) (car y)))
-      (gl-object-alist-equiv x1.bindings y1.bindings))
+      (gl-object-bindings-equiv x1.bindings y1.bindings))
     ///
     (defequiv stack-bindings-equiv)
 
@@ -4215,14 +4215,14 @@
 
     ;; (defthm stack-bindings-equiv-major-frame->bindings-congruence
     ;;   (implies (stack-bindings-equiv x y)
-    ;;            (gl-object-alist-equiv (major-frame->bindings (car x))
+    ;;            (gl-object-bindings-equiv (major-frame->bindings (car x))
     ;;                                   (major-frame->bindings (car y))))
     ;;   :rule-classes :congruence)
 
     (defcong stack-bindings-equiv equal (stack$a-bindings x) 1
       :hints(("Goal" :in-theory (enable stack$a-bindings))))
 
-    (defcong gl-object-alist-equiv stack-bindings-equiv (stack$a-set-bindings bindings x) 1
+    (defcong gl-object-bindings-equiv stack-bindings-equiv (stack$a-set-bindings bindings x) 1
       :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
 
     (local (defun def-stack-bindings-equiv-identity-fn (op)
@@ -4301,7 +4301,7 @@
                                         stack$a-bindings
                                         major-stack-ev
                                         major-frame-ev
-                                        gl-object-alist-ev
+                                        gl-object-bindings-ev
                                         gl-bindings-extension-p)))
       :fn gl-interp-syntax-bind)
 
@@ -4325,24 +4325,24 @@
              :hints(("Goal" :induct (equal-of-appends-ind a1 a2)
                      :in-theory (enable len append)))))
 
-    (local (defthm len-of-gl-object-alist-ev
-             (equal (len (gl-object-alist-ev x env))
-                    (len (gl-object-alist-fix x)))
-             :hints(("Goal" :in-theory (enable gl-object-alist-ev
-                                               gl-object-alist-fix
+    (local (defthm len-of-gl-object-bindings-ev
+             (equal (len (gl-object-bindings-ev x env))
+                    (len (gl-object-bindings-fix x)))
+             :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+                                               gl-object-bindings-fix
                                                len)))))
 
-    (local (defthm alist-keys-of-gl-object-alist-ev
-             (equal (alist-keys (gl-object-alist-ev x env))
-                    (alist-keys (gl-object-alist-fix x)))
-             :hints(("Goal" :in-theory (enable gl-object-alist-ev
-                                               gl-object-alist-fix
+    (local (defthm alist-keys-of-gl-object-bindings-ev
+             (equal (alist-keys (gl-object-bindings-ev x env))
+                    (alist-keys (gl-object-bindings-fix x)))
+             :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+                                               gl-object-bindings-fix
                                                alist-keys)))))
 
-    (local (defthm gl-object-alist-p-when-gl-bfr-object-alist-p
-             (implies (gl-bfr-object-alist-p x)
-                      (gl-object-alist-p x))
-             :hints(("Goal" :in-theory (enable gl-bfr-object-alist-p)))
+    (local (defthm gl-object-bindings-p-when-gl-bfr-object-bindings-p
+             (implies (gl-bfr-object-bindings-p x)
+                      (gl-object-bindings-p x))
+             :hints(("Goal" :in-theory (enable gl-bfr-object-bindings-p)))
              :rule-classes :forward-chaining))
 
     (defret stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp
@@ -4624,17 +4624,17 @@
   :hints(("Goal" :in-theory (enable gl-objectlist-ev
                                     fgl-objectlist-eval))))
 
-(defthm fgl-object-alist-eval-of-gl-object-ev
-  (equal (fgl-object-alist-eval (gl-object-alist-ev x env) env2 logicman2)
-         (fgl-object-alist-eval x env))
-  :hints(("Goal" :in-theory (enable gl-object-alist-ev
-                                    fgl-object-alist-eval))))
+(defthm fgl-object-bindings-eval-of-gl-object-ev
+  (equal (fgl-object-bindings-eval (gl-object-bindings-ev x env) env2 logicman2)
+         (fgl-object-bindings-eval x env))
+  :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+                                    fgl-object-bindings-eval))))
 
-(defthm hons-assoc-equal-of-fgl-object-alist-eval-under-iff
-  (iff (hons-assoc-equal k (fgl-object-alist-eval x env))
-       (hons-assoc-equal k (gl-object-alist-fix x)))
-  :hints(("Goal" :in-theory (enable fgl-object-alist-eval
-                                    gl-object-alist-fix))))
+(defthm hons-assoc-equal-of-fgl-object-bindings-eval-under-iff
+  (iff (hons-assoc-equal k (fgl-object-bindings-eval x env))
+       (hons-assoc-equal k (gl-object-bindings-fix x)))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-eval
+                                    gl-object-bindings-fix))))
 
 (defsection eval-alist-extension-p
   (defmacro eval-alist-extension-p (x y)
@@ -4650,17 +4650,17 @@
            :hints(("Goal" :in-theory (enable gl-bindings-extension-p)
                    :induct t)
                   (and stable-under-simplificationp
-                       '(:use ((:instance hons-assoc-equal-of-gl-object-alist-fix)
-                               (:instance hons-assoc-equal-of-gl-object-alist-fix (x y)))
-                         :in-theory (disable hons-assoc-equal-of-gl-object-alist-fix))))))
+                       '(:use ((:instance hons-assoc-equal-of-gl-object-bindings-fix)
+                               (:instance hons-assoc-equal-of-gl-object-bindings-fix (x y)))
+                         :in-theory (disable hons-assoc-equal-of-gl-object-bindings-fix))))))
 
   (defthm eval-alist-extension-p-of-eval-when-gl-bindings-extension-p
     (implies (gl-bindings-extension-p x y)
              (eval-alist-extension-p
-              (fgl-object-alist-eval x env)
-              (fgl-object-alist-eval y env)))
+              (fgl-object-bindings-eval x env)
+              (fgl-object-bindings-eval y env)))
     :hints(("Goal" :use ((:instance acl2::sub-alistp-when-witness
-                          (a (fgl-object-alist-eval y env)) (b (fgl-object-alist-eval x env)))))))
+                          (a (fgl-object-bindings-eval y env)) (b (fgl-object-bindings-eval x env)))))))
 
   (defthm eval-alist-extension-p-self
     (eval-alist-extension-p x x))
@@ -4688,9 +4688,9 @@
 ;;   (defthm eval-alist-extension-p-of-eval-when-gl-bindings-extension-p
 ;;     (implies (gl-bindings-extension-p x y)
 ;;              (eval-alist-extension-p
-;;               (fgl-object-alist-eval x env)
-;;               (fgl-object-alist-eval y env)))
-;;     :hints(("Goal" :in-theory (enable fgl-object-alist-eval gl-bindings-extension-p))))
+;;               (fgl-object-bindings-eval x env)
+;;               (fgl-object-bindings-eval y env)))
+;;     :hints(("Goal" :in-theory (enable fgl-object-bindings-eval gl-bindings-extension-p))))
 
 ;;   (defthm eval-alist-extension-p-self
 ;;     (eval-alist-extension-p x x))
@@ -4699,8 +4699,8 @@
 ;;   (defthm eval-alist-extension-p-of-eval-stack-bindings
 ;;     (implies (stack-bindings-extension-p stack1 stack0)
 ;;              (eval-alist-extension-p
-;;               (fgl-object-alist-eval (stack$a-bindings stack1) env)
-;;               (fgl-object-alist-eval (stack$a-bindings stack0) env)))
+;;               (fgl-object-bindings-eval (stack$a-bindings stack1) env)
+;;               (fgl-object-bindings-eval (stack$a-bindings stack0) env)))
 ;;     :hints(("Goal" :in-theory (enable stack-bindings-extension-p
 ;;                                       stack$a-bindings)))))
 
@@ -5112,11 +5112,11 @@
                 contexts obj x alist)))
     :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
-  (local (defthm lookup-in-gl-object-alist-ev
-           (iff (hons-assoc-equal k (gl-object-alist-ev x env))
-                (hons-assoc-equal k (gl-object-alist-fix x)))
-           :hints(("Goal" :in-theory (enable gl-object-alist-ev
-                                             gl-object-alist-fix)))))
+  (local (defthm lookup-in-gl-object-bindings-ev
+           (iff (hons-assoc-equal k (gl-object-bindings-ev x env))
+                (hons-assoc-equal k (gl-object-bindings-fix x)))
+           :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+                                             gl-object-bindings-fix)))))
 
   (local (defthm lookup-in-minor-stack-of-stack-ev
            (iff (hons-assoc-equal var (stack$a-minor-bindings
@@ -5136,7 +5136,7 @@
                                 (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-add-binding
                                       major-stack-ev
-                                      gl-object-alist-ev
+                                      gl-object-bindings-ev
                                       major-frame-ev))))
 
   (defthm stack$a-bindings-of-stack$a-add-binding
@@ -5155,12 +5155,12 @@
                 contexts
                 (fgl-object-eval ans env (interp-st->logicman interp-st))
                 x
-                (append (fgl-object-alist-eval
+                (append (fgl-object-bindings-eval
                          (stack$a-minor-bindings
                           (major-stack-ev (interp-st->stack interp-st)
                                           env (interp-st->logicman interp-st)))
                          nil nil)
-                        (fgl-object-alist-eval
+                        (fgl-object-bindings-eval
                          (stack$a-bindings
                           (major-stack-ev (interp-st->stack new-interp-st)
                                           env (interp-st->logicman interp-st)))
@@ -5373,7 +5373,7 @@
                   (not (equal (acl2::rewrite-rule->subclass rule) 'acl2::meta))
                   (eval-alist-extension-p
                    major-bindings2
-                   (fgl-object-alist-eval
+                   (fgl-object-bindings-eval
                     (mv-nth 1 (glcp-unify-term/gobj-list
                                (pseudo-term-call->args (acl2::rewrite-rule->lhs rule))
                                args nil))
@@ -5392,7 +5392,7 @@
                   (a major-bindings2))
                  (:instance fgl-ev-list-of-extension-when-term-vars-bound
                   (x (pseudo-term-call->args (acl2::rewrite-rule->lhs rule)))
-                  (a (fgl-object-alist-eval
+                  (a (fgl-object-bindings-eval
                       (mv-nth 1 (glcp-unify-term/gobj-list
                                  (pseudo-term-call->args (acl2::rewrite-rule->lhs rule))
                                  args nil))
@@ -5438,7 +5438,7 @@
                   (not (equal (acl2::rewrite-rule->subclass rule) 'acl2::meta))
                   (eval-alist-extension-p
                    major-bindings2
-                   (fgl-object-alist-eval
+                   (fgl-object-bindings-eval
                     (mv-nth 1 (glcp-unify-term/gobj-list
                                (pseudo-term-call->args (acl2::rewrite-rule->lhs rule))
                                args nil))
@@ -5457,7 +5457,7 @@
                   (a major-bindings2))
                  (:instance fgl-ev-list-of-extension-when-term-vars-bound
                   (x (pseudo-term-call->args (acl2::rewrite-rule->lhs rule)))
-                  (a (fgl-object-alist-eval
+                  (a (fgl-object-bindings-eval
                       (mv-nth 1 (glcp-unify-term/gobj-list
                                  (pseudo-term-call->args (acl2::rewrite-rule->lhs rule))
                                  args nil))
@@ -6331,12 +6331,12 @@
 
 (defthm stack$a-minor-bindings-of-stack$a-set-minor-bindings
   (equal (stack$a-minor-bindings (stack$a-set-minor-bindings bindings stack))
-         (gl-object-alist-fix bindings))
+         (gl-object-bindings-fix bindings))
   :hints(("Goal" :in-theory (enable stack$a-minor-bindings stack$a-set-minor-bindings))))
 
 (defthm stack$a-minor-bindings-of-stack$a-add-minor-bindings
   (equal (stack$a-minor-bindings (stack$a-add-minor-bindings bindings stack))
-         (append (gl-object-alist-fix bindings) (stack$a-minor-bindings stack)))
+         (append (gl-object-bindings-fix bindings) (stack$a-minor-bindings stack)))
   :hints(("Goal" :in-theory (enable stack$a-minor-bindings stack$a-add-minor-bindings))))
 
 (defthm stack$a-bindings-of-stack$a-add-minor-bindings
@@ -6346,25 +6346,25 @@
 
 (defthm stack$a-bindings-of-stack$a-set-bindings
   (equal (stack$a-bindings (stack$a-set-bindings bindings stack))
-         (gl-object-alist-fix bindings))
+         (gl-object-bindings-fix bindings))
   :hints(("Goal" :in-theory (enable stack$a-bindings stack$a-set-bindings))))
 
-(defthm fgl-object-alist-eval-of-append
-  (equal (fgl-object-alist-eval (append a b) env)
-         (append (fgl-object-alist-eval a env)
-                 (fgl-object-alist-eval b env)))
-  :hints(("Goal" :in-theory (enable fgl-object-alist-eval))))
+(defthm fgl-object-bindings-eval-of-append
+  (equal (fgl-object-bindings-eval (append a b) env)
+         (append (fgl-object-bindings-eval a env)
+                 (fgl-object-bindings-eval b env)))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-eval))))
 
-(defthm fgl-object-alist-eval-of-pairlis$
+(defthm fgl-object-bindings-eval-of-pairlis$
   (implies (pseudo-var-list-p keys)
-           (equal (fgl-object-alist-eval (pairlis$ keys vals) env)
+           (equal (fgl-object-bindings-eval (pairlis$ keys vals) env)
                   (pairlis$ keys (fgl-objectlist-eval vals env))))
-  :hints(("Goal" :in-theory (enable fgl-object-alist-eval pairlis$ fgl-objectlist-eval default-car))))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-eval pairlis$ fgl-objectlist-eval default-car))))
 
 
-(defthm fgl-object-alist-eval-of-nil
-  (equal (fgl-object-alist-eval nil env) nil)
-  :hints(("Goal" :in-theory (enable fgl-object-alist-eval))))
+(defthm fgl-object-bindings-eval-of-nil
+  (equal (fgl-object-bindings-eval nil env) nil)
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-eval))))
 
 
 
@@ -6430,14 +6430,14 @@
                  (major-stack-ev (interp-st->stack new) env (interp-st->logicman new))
                  (major-stack-ev (interp-st->stack old) env (interp-st->logicman old)))
                 (eval-alist-extension-p
-                 (fgl-object-alist-eval
+                 (fgl-object-bindings-eval
                   (stack$a-bindings
                    (major-stack-ev
                     (interp-st->stack old) env (interp-st->logicman old)))
                   nil nil)
                  other))
            (eval-alist-extension-p
-            (fgl-object-alist-eval
+            (fgl-object-bindings-eval
              (stack$a-bindings
               (major-stack-ev
                (interp-st->stack new) env (interp-st->logicman new)))
@@ -6454,7 +6454,7 @@
 ;;                   (interp-st->stack new) env (interp-st->logicman new))
 ;;                  other))
 ;;            (eval-alist-extension-p
-;;             (fgl-object-alist-eval
+;;             (fgl-object-bindings-eval
 ;;              (stack$a-bindings
 ;;               (major-stack-ev
 ;;                (interp-st->stack new) env (interp-st->logicman new)))
@@ -6565,11 +6565,11 @@
              (equal (fgl-objectlist-eval x env (interp-st->logicman new))
                     (fgl-objectlist-eval x env (interp-st->logicman old)))))
 
-  (def-updater-independence-thm fgl-object-alist-eval-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-object-bindings-eval-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (lbfr-listp (gl-object-alist-bfrlist x) (interp-st->logicman old)))
-             (equal (fgl-object-alist-eval x env (interp-st->logicman new))
-                    (fgl-object-alist-eval x env (interp-st->logicman old)))))
+                  (lbfr-listp (gl-object-bindings-bfrlist x) (interp-st->logicman old)))
+             (equal (fgl-object-bindings-eval x env (interp-st->logicman new))
+                    (fgl-object-bindings-eval x env (interp-st->logicman old)))))
   
 
 
@@ -6609,21 +6609,21 @@
                                     (& t))))
                     (equal (fgl-objectlist-eval x env) eval))))
 
-  (local (defthm fgl-object-alist-eval-rewrite-with-fgl-object-alist-ev
-           (implies (and (equal ev (double-rewrite (gl-object-alist-ev x env)))
+  (local (defthm fgl-object-bindings-eval-rewrite-with-fgl-object-bindings-ev
+           (implies (and (equal ev (double-rewrite (gl-object-bindings-ev x env)))
                          (syntaxp (and (not (equal ev x))
                                        (case-match ev
-                                         (('gl-object-alist-ev-fn xans & &)
+                                         (('gl-object-bindings-ev-fn xans & &)
                                           (not (equal xans x)))
                                          (& t))))
-                         (equal eval (fgl-object-alist-eval ev nil nil))
+                         (equal eval (fgl-object-bindings-eval ev nil nil))
                          (syntaxp (case-match eval
-                                    (('fgl-object-alist-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
+                                    (('fgl-object-bindings-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
                                      (not (equal xans x)))
-                                    (('fgl-object-alist-eval-fn xans & &)
+                                    (('fgl-object-bindings-eval-fn xans & &)
                                      (not (equal xans x)))
                                     (& t))))
-                    (equal (fgl-object-alist-eval x env) eval))))
+                    (equal (fgl-object-bindings-eval x env) eval))))
 
   (local (defthm fgl-objectlist-eval-of-atom
            (implies (not (Consp x))
@@ -6690,13 +6690,13 @@
            (implies (pseudo-var-p x)
                     (equal (fgl-object-eval
                             (cdr (hons-assoc-equal x alist)) env)
-                           (cdr (hons-assoc-equal x (fgl-object-alist-eval alist env)))))
-           :hints(("Goal" :in-theory (enable fgl-object-alist-eval)))))
+                           (cdr (hons-assoc-equal x (fgl-object-bindings-eval alist env)))))
+           :hints(("Goal" :in-theory (enable fgl-object-bindings-eval)))))
 
-  (local (in-theory (disable lookup-in-fgl-object-alist-eval)))
+  (local (in-theory (disable lookup-in-fgl-object-bindings-eval)))
 
-  (local (defthm fgl-object-alist-ev-of-stack$a-minor-bindings
-           (equal (gl-object-alist-ev (stack$a-minor-bindings stack) env)
+  (local (defthm fgl-object-bindings-ev-of-stack$a-minor-bindings
+           (equal (gl-object-bindings-ev (stack$a-minor-bindings stack) env)
                   (stack$a-minor-bindings (major-stack-ev stack env)))
            :hints(("Goal" :in-theory (enable major-frame-ev
                                              minor-frame-ev
@@ -6704,8 +6704,8 @@
                    :expand ((major-stack-ev stack env)
                             (minor-stack-ev (major-frame->minor-stack (car stack)) env))))))
 
-  (local (defthm fgl-object-alist-ev-of-stack$a-bindings
-           (equal (gl-object-alist-ev (stack$a-bindings stack) env)
+  (local (defthm fgl-object-bindings-ev-of-stack$a-bindings
+           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
                   (stack$a-bindings (major-stack-ev stack env)))
            :hints(("Goal" :in-theory (enable major-frame-ev
                                              stack$a-bindings)
@@ -6727,8 +6727,8 @@
                             (scratchobj-ev '(:gl-obj) env)
                             (gl-object-ev nil env))))))
 
-  (local (defthm gl-object-alist-ev-of-stack$a-minor-bindings
-           (equal (gl-object-alist-ev (stack$a-minor-bindings stack) env)
+  (local (defthm gl-object-bindings-ev-of-stack$a-minor-bindings
+           (equal (gl-object-bindings-ev (stack$a-minor-bindings stack) env)
                   (double-rewrite (stack$a-minor-bindings (major-stack-ev stack env))))
            :hints(("Goal" :in-theory (enable major-frame-ev
                                              minor-frame-ev
@@ -6738,10 +6738,10 @@
                              (major-frame->minor-stack (Car stack)) env))
                    :do-not-induct t))))
 
-  (local (defthm lookup-present-of-gl-object-alist-ev
-           (iff (hons-assoc-equal k (gl-object-alist-ev x env))
-                (hons-assoc-equal k (gl-object-alist-fix x)))
-           :hints(("Goal" :in-theory (enable gl-object-alist-fix gl-object-alist-ev)))))
+  (local (defthm lookup-present-of-gl-object-bindings-ev
+           (iff (hons-assoc-equal k (gl-object-bindings-ev x env))
+                (hons-assoc-equal k (gl-object-bindings-fix x)))
+           :hints(("Goal" :in-theory (enable gl-object-bindings-fix gl-object-bindings-ev)))))
 
   (local (defthm lookup-present-of-stack$a-minor-bindings-of-major-stack-ev
            (iff (hons-assoc-equal k (stack$a-minor-bindings (major-stack-ev stack env)))
@@ -6760,8 +6760,8 @@
                                              major-frame-ev)
                    :expand ((major-stack-ev stack env))))))
 
-  (local (defthm gl-object-alist-ev-of-stack$a-bindings
-           (equal (gl-object-alist-ev (stack$a-bindings stack) env)
+  (local (defthm gl-object-bindings-ev-of-stack$a-bindings
+           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
                   (double-rewrite (stack$a-bindings (major-stack-ev stack env))))
            :hints(("Goal" :in-theory (enable major-frame-ev
                                              stack$a-bindings)
@@ -6893,8 +6893,8 @@
                     (logicman (interp-st->logicman interp-st))
                     (new-stack (interp-st->stack new-interp-st))
                     (stack (interp-st->stack interp-st))
-                    (major-alist (fgl-object-alist-eval (stack$a-bindings new-stack) env new-logicman))
-                    (minor-alist (fgl-object-alist-eval (stack$a-minor-bindings stack) env logicman))
+                    (major-alist (fgl-object-bindings-eval (stack$a-bindings new-stack) env new-logicman))
+                    (minor-alist (fgl-object-bindings-eval (stack$a-minor-bindings stack) env logicman))
                     (?eval-alist (append minor-alist major-alist)))))
 
                ((:fnname gl-rewrite-try-rules)
@@ -6963,13 +6963,13 @@
                            args eval-alist))))
                ((:fnname gl-interp-bindinglist)
                 (:add-concl
-                 ;; (equal (fgl-object-alist-eval (stack$a-minor-bindings new-stack) env new-logicman)
+                 ;; (equal (fgl-object-bindings-eval (stack$a-minor-bindings new-stack) env new-logicman)
                  ;;        (fgl-ev-bindinglist-minmaj bindings
                  ;;                                   minor-alist
                  ;;                                   major-alist))
                  (implies (equal (interp-st->equiv-contexts interp-st) nil)
                           (equal-bindinglist-forall-extensions
-                           (fgl-object-alist-eval (stack$a-minor-bindings new-stack) env new-logicman)
+                           (fgl-object-bindings-eval (stack$a-minor-bindings new-stack) env new-logicman)
                            bindings minor-alist major-alist))))
                ((:fnname gl-interp-fncall)
                 (:add-concl

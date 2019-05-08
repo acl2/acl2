@@ -562,7 +562,7 @@
              (stack-add-binding var val stack)
              interp-st))
 
-(define interp-st-set-bindings ((bindings gl-object-alist-p)
+(define interp-st-set-bindings ((bindings gl-object-bindings-p)
                                 interp-st)
   :enabled t :hooks nil
   :inline t
@@ -571,7 +571,7 @@
              (stack-set-bindings bindings stack)
              interp-st))
 
-(define interp-st-add-minor-bindings ((bindings gl-object-alist-p)
+(define interp-st-add-minor-bindings ((bindings gl-object-bindings-p)
                                       interp-st)
   :enabled t :hooks nil
   :inline t
@@ -580,7 +580,7 @@
              (stack-add-minor-bindings bindings stack)
              interp-st))
 
-(define interp-st-set-minor-bindings ((bindings gl-object-alist-p)
+(define interp-st-set-minor-bindings ((bindings gl-object-bindings-p)
                                       interp-st)
   :enabled t :hooks nil
   :inline t
@@ -589,7 +589,7 @@
              (stack-set-minor-bindings bindings stack)
              interp-st))
 
-(define interp-st-push-frame ((bindings gl-object-alist-p)
+(define interp-st-push-frame ((bindings gl-object-bindings-p)
                               interp-st)
   :enabled t :hooks nil
   :inline t

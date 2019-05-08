@@ -58,11 +58,11 @@
 
 
 
-  (def-updater-independence-thm gl-object-alist-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm gl-object-bindings-ev-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (lbfr-listp (gl-object-alist-bfrlist x) (interp-st->logicman old)))
-             (equal (gl-object-alist-ev x env (interp-st->logicman new))
-                    (gl-object-alist-ev x env (interp-st->logicman old)))))
+                  (lbfr-listp (gl-object-bindings-bfrlist x) (interp-st->logicman old)))
+             (equal (gl-object-bindings-ev x env (interp-st->logicman new))
+                    (gl-object-bindings-ev x env (interp-st->logicman old)))))
 
 
 

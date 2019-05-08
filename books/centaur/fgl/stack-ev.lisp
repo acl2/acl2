@@ -74,42 +74,42 @@
 
 
 
-(define gl-object-alist-ev ((x gl-object-alist-p)
+(define gl-object-bindings-ev ((x gl-object-bindings-p)
                                    (env gl-env-p)
                                    &optional (logicman 'logicman))
-  :guard (lbfr-listp (gl-object-alist-bfrlist x))
-  :guard-hints (("goal" :in-theory (enable gl-object-alist-bfrlist)))
-  :returns (ans gl-object-alist-p)
+  :guard (lbfr-listp (gl-object-bindings-bfrlist x))
+  :guard-hints (("goal" :in-theory (enable gl-object-bindings-bfrlist)))
+  :returns (ans gl-object-bindings-p)
   (if (atom x)
       nil
     (if (mbt (and (consp (car x))
                   (pseudo-var-p (caar x))))
         (cons (cons (caar x)
                     (gl-object-ev (cdar x) env))
-              (gl-object-alist-ev (cdr x) env))
-      (gl-object-alist-ev (cdr x) env)))
+              (gl-object-bindings-ev (cdr x) env))
+      (gl-object-bindings-ev (cdr x) env)))
   ///
-  (local (in-theory (enable gl-object-alist-fix)))
+  (local (in-theory (enable gl-object-bindings-fix)))
 
-  (defthm gl-object-alist-ev-of-logicman-extension
+  (defthm gl-object-bindings-ev-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
-                  (lbfr-listp (gl-object-alist-bfrlist x) old))
-             (equal (gl-object-alist-ev x env new)
-                    (gl-object-alist-ev x env old)))
-    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist))))
+                  (lbfr-listp (gl-object-bindings-bfrlist x) old))
+             (equal (gl-object-bindings-ev x env new)
+                    (gl-object-bindings-ev x env old)))
+    :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist))))
 
-  (defret lookup-under-iff-of-gl-object-alist-ev
+  (defret lookup-under-iff-of-gl-object-bindings-ev
     (implies (pseudo-var-p k)
              (iff (hons-assoc-equal k ans)
                   (hons-assoc-equal k x))))
 
-  (defret lookup-of-gl-object-alist-ev
+  (defret lookup-of-gl-object-bindings-ev
     (implies (and (pseudo-var-p k)
                   (hons-assoc-equal k x))
              (equal (hons-assoc-equal k ans)
                     (cons k (gl-object-ev (cdr (hons-assoc-equal k x)) env)))))
 
-  (defcong logicman-equiv equal (gl-object-alist-ev x env logicman) 3))
+  (defcong logicman-equiv equal (gl-object-bindings-ev x env logicman) 3))
 
 (define constraint-instance-ev ((x constraint-instance-p)
                                        (env gl-env-p)
@@ -120,7 +120,7 @@
   (b* (((constraint-instance x)))
     (make-constraint-instance
      :thmname x.thmname
-     :subst (gl-object-alist-ev x.subst env)))
+     :subst (gl-object-bindings-ev x.subst env)))
   ///
   (defthm constraint-instance-of-logicman-extension
     (implies (and (bind-logicman-extension new old)
@@ -220,7 +220,7 @@
   :returns (ev minor-frame-p)
   (b* (((minor-frame x)))
     (make-minor-frame
-     :bindings (gl-object-alist-ev x.bindings env)
+     :bindings (gl-object-bindings-ev x.bindings env)
      :debug x.debug
      :scratch (scratchlist-ev x.scratch env)))
   ///
@@ -261,7 +261,7 @@
   :returns (ev major-frame-p)
   (b* (((major-frame x)))
     (make-major-frame
-     :bindings (gl-object-alist-ev x.bindings env)
+     :bindings (gl-object-bindings-ev x.bindings env)
      :debug x.debug
      :minor-stack (minor-stack-ev x.minor-stack env)))
   ///
@@ -315,9 +315,9 @@
     (equal (scratchlist-ev nil env) nil)
     :hints(("Goal" :in-theory (enable scratchlist-ev))))
 
-  (defthm gl-object-alist-ev-of-nil
-    (equal (gl-object-alist-ev nil env) nil)
-    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+  (defthm gl-object-bindings-ev-of-nil
+    (equal (gl-object-bindings-ev nil env) nil)
+    :hints(("Goal" :in-theory (enable gl-object-bindings-ev))))
 
   (defthm major-stack-ev-of-stack$a-pop-scratch
     (equal (major-stack-ev (stack$a-pop-scratch stack) env)
@@ -338,7 +338,7 @@
 
   (defthm major-stack-ev-of-stack$a-set-bindings
     (equal (major-stack-ev (stack$a-set-bindings bindings stack) env)
-           (stack$a-set-bindings (gl-object-alist-ev bindings env)
+           (stack$a-set-bindings (gl-object-bindings-ev bindings env)
                                  (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
 
@@ -352,16 +352,16 @@
            (stack$a-set-debug obj (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-set-debug))))
 
-  (defthm gl-object-alist-ev-of-append
-    (equal (gl-object-alist-ev (append a b) env)
-           (append (gl-object-alist-ev a env)
-                   (gl-object-alist-ev b env)))
-    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+  (defthm gl-object-bindings-ev-of-append
+    (equal (gl-object-bindings-ev (append a b) env)
+           (append (gl-object-bindings-ev a env)
+                   (gl-object-bindings-ev b env)))
+    :hints(("Goal" :in-theory (enable gl-object-bindings-ev))))
 
   (defthm major-stack-ev-of-stack$a-add-minor-bindings
     (equal (major-stack-ev (stack$a-add-minor-bindings bindings stack) env)
            (stack$a-add-minor-bindings
-            (gl-object-alist-ev bindings env)
+            (gl-object-bindings-ev bindings env)
             (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings))))
 
@@ -378,7 +378,7 @@
   (defthm major-stack-ev-of-stack$a-set-minor-bindings
     (equal (major-stack-ev (stack$a-set-minor-bindings bindings stack) env)
            (stack$a-set-minor-bindings
-            (gl-object-alist-ev bindings env)
+            (gl-object-bindings-ev bindings env)
             (major-stack-ev stack env)))
     :hints(("Goal" :in-theory (enable stack$a-set-minor-bindings))))
 
@@ -416,10 +416,10 @@
            (gobj-bfr-list-eval x env))
     :hints(("Goal" :in-theory (e/d (gobj-bfr-list-eval)))))
 
-  (defthm gl-object-alist-ev-identity
-    (equal (gl-object-alist-ev (gl-object-alist-ev x env) env2 logicman2)
-           (gl-object-alist-ev x env))
-    :hints(("Goal" :in-theory (enable gl-object-alist-ev))))
+  (defthm gl-object-bindings-ev-identity
+    (equal (gl-object-bindings-ev (gl-object-bindings-ev x env) env2 logicman2)
+           (gl-object-bindings-ev x env))
+    :hints(("Goal" :in-theory (enable gl-object-bindings-ev))))
 
   (defthm constraint-instance-ev-identity
     (equal (constraint-instance-ev (constraint-instance-ev x env) env2 logicman2)

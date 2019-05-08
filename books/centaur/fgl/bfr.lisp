@@ -732,18 +732,18 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :flag gl-bfr-objectlist-p)
     :hints (("goal" :induct (gl-bfr-object-p-flag flag x old)))))
 
-(define gl-bfr-object-alist-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
+(define gl-bfr-object-bindings-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
   (if (atom x)
       (eq x nil)
     (and (consp (car x))
          (pseudo-var-p (caar x))
          (gl-bfr-object-p (cdar x))
-         (gl-bfr-object-alist-p (cdr x))))
+         (gl-bfr-object-bindings-p (cdr x))))
   ///
-  (defthmd gl-bfr-object-alist-p-implies-gl-object-alist-p
-    (implies (gl-bfr-object-alist-p x)
-             (gl-object-alist-p x))
-    :hints(("Goal" :in-theory (enable gl-object-alist-p)))))
+  (defthmd gl-bfr-object-bindings-p-implies-gl-object-bindings-p
+    (implies (gl-bfr-object-bindings-p x)
+             (gl-object-bindings-p x))
+    :hints(("Goal" :in-theory (enable gl-object-bindings-p)))))
 
 
 
@@ -1002,30 +1002,30 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                          (gl-objectlist-symbolic-boolean-free x))))
       :flag gl-objectlist-bfrlist)))
 
-(define gl-object-alist-bfrlist ((x gl-object-alist-p))
+(define gl-object-bindings-bfrlist ((x gl-object-bindings-p))
   :returns (bfrlist)
   (if (atom x)
       nil
     (append (and (mbt (and (consp (car x))
                            (pseudo-var-p (caar x))))
                  (gl-object-bfrlist (cdar x)))
-            (gl-object-alist-bfrlist (cdr x))))
+            (gl-object-bindings-bfrlist (cdr x))))
   ///
-  (defthm gl-object-alist-bfrlist-of-cons
+  (defthm gl-object-bindings-bfrlist-of-cons
     (implies (pseudo-var-p var)
-             (equal (gl-object-alist-bfrlist (cons (cons var val) rest))
+             (equal (gl-object-bindings-bfrlist (cons (cons var val) rest))
                     (append (gl-object-bfrlist val)
-                            (gl-object-alist-bfrlist rest)))))
+                            (gl-object-bindings-bfrlist rest)))))
 
-  (defthm bfr-listp-of-gl-object-alist-bfrlist
-    (implies (gl-object-alist-p x)
-             (equal (gl-bfr-object-alist-p x)
-                    (bfr-listp (gl-object-alist-bfrlist x))))
-    :hints(("Goal" :in-theory (enable gl-bfr-object-alist-p
-                                      gl-object-alist-p))))
+  (defthm bfr-listp-of-gl-object-bindings-bfrlist
+    (implies (gl-object-bindings-p x)
+             (equal (gl-bfr-object-bindings-p x)
+                    (bfr-listp (gl-object-bindings-bfrlist x))))
+    :hints(("Goal" :in-theory (enable gl-bfr-object-bindings-p
+                                      gl-object-bindings-p))))
     
 
-  (local (in-theory (enable gl-object-alist-fix))))
+  (local (in-theory (enable gl-object-bindings-fix))))
 
 
 

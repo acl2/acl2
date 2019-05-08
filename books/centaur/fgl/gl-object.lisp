@@ -130,12 +130,12 @@ auto-bindings).</p>"
     (g-integer (numlist start by n))))
 
 
-(fty::defmap gl-object-alist :key-type pseudo-var-p :val-type gl-object :true-listp t
+(fty::defmap gl-object-bindings :key-type pseudo-var-p :val-type gl-object :true-listp t
   ///
-  (defthm gl-object-alist-p-of-append
-    (implies (and (gl-object-alist-p x)
-                  (gl-object-alist-p y))
-             (gl-object-alist-p (append x y)))))
+  (defthm gl-object-bindings-p-of-append
+    (implies (and (gl-object-bindings-p x)
+                  (gl-object-bindings-p y))
+             (gl-object-bindings-p (append x y)))))
 
 
 (define mk-g-boolean (x)
