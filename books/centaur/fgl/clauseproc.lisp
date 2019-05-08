@@ -326,6 +326,20 @@
               ;;                           gobj-bfr-list-eval)))
               )
       :fn fgl-objectlist-eval)
+
+    (defret fgl-object-alist-eval-of-bvar-db-to-bfr-env-aux-when-bounded
+      (implies (and (bfrlist-boundedp (gl-object-alist-bfrlist x) m logicman)
+                    (<= (nfix m) (nfix n)))
+               (equal (fgl-object-alist-eval x (bvar-db-to-bfr-env-aux n env bvar-db logicman) logicman)
+                      (fgl-object-alist-eval x env logicman)))
+      :hints ('(:expand ((:free (env logicman) (fgl-object-alist-eval x env logicman))
+                         (gl-object-alist-bfrlist x)))
+              ;; (and stable-under-simplificationp
+              ;;      '(:in-theory (enable if*
+              ;;                           gobj-var-lookup
+              ;;                           gobj-bfr-list-eval)))
+              )
+      :fn fgl-object-alist-eval)
     :mutual-recursion fgl-object-eval)
 
   (defret-mutual fgl-object-eval-of-bfr-set-var-when-bounded
@@ -350,6 +364,17 @@
       :hints ('(:expand ((:free (env logicman) (fgl-objectlist-eval x env logicman))
                          (gl-objectlist-bfrlist x))))
       :fn fgl-objectlist-eval)
+
+    (defret fgl-object-alist-eval-of-bfr-set-var-when-bounded
+      (implies (and (bfrlist-boundedp (gl-object-alist-bfrlist x) m logicman)
+                    (<= (nfix m) (nfix n)))
+               (equal (fgl-object-alist-eval x (gl-env (gl-env->obj-alist env)
+                                                     (bfr-set-var n v (gl-env->bfr-vals env)))
+                                       logicman)
+                      (fgl-object-alist-eval x env logicman)))
+      :hints ('(:expand ((:free (env logicman) (fgl-object-alist-eval x env logicman))
+                         (gl-object-alist-bfrlist x))))
+      :fn fgl-object-alist-eval)
     :mutual-recursion fgl-object-eval)
 
 

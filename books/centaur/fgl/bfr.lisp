@@ -34,6 +34,7 @@
 (include-book "ubdd")
 (include-book "centaur/satlink/litp" :dir :system)
 (include-book "gl-object")
+(include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -528,7 +529,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 (defines gl-bfr-object-p-aux
   (define gl-bfr-object-p-aux ((x gl-object-p)
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-object-count x)
+    :measure (acl2::two-nats-measure (gl-object-count x) 0)
     (gl-object-case x
       :g-concrete t
       :g-boolean (bfr-p x.bool)
@@ -539,26 +540,42 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :g-apply (gl-bfr-objectlist-p-aux x.args)
       :g-var t
       :g-cons (and (gl-bfr-object-p-aux x.car)
-                   (gl-bfr-object-p-aux x.cdr))))
+                   (gl-bfr-object-p-aux x.cdr))
+      :g-map (gl-bfr-object-alist-p-aux x.alist)))
   (define gl-bfr-objectlist-p-aux ((x gl-objectlist-p)
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-objectlist-count x)
+                                   &optional ((bfrstate bfrstate-p) 'bfrstate))
+    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
     (if (atom x)
         t
       (and (gl-bfr-object-p-aux (car x))
            (gl-bfr-objectlist-p-aux (cdr x)))))
+
+  (define gl-bfr-object-alist-p-aux ((x gl-object-alist-p)
+                                     &optional ((bfrstate bfrstate-p) 'bfrstate))
+    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+      (if (atom x)
+          t
+        (if (mbt (consp (car x)))
+            (and (gl-bfr-object-p-aux (cdar x))
+                 (gl-bfr-object-alist-p-aux (cdr x)))
+          (gl-bfr-object-alist-p-aux (cdr x)))))
   ///
   (local (in-theory (disable (:d gl-bfr-object-p-aux)
-                             (:d gl-bfr-objectlist-p-aux))))
+                             (:d gl-bfr-objectlist-p-aux)
+                             (:d gl-bfr-object-alist-p-aux))))
 
   (fty::deffixequiv-mutual gl-bfr-object-p-aux
-    :hints ((acl2::use-termhint
+    :hints (("goal" :expand ((gl-object-alist-fix x)))
+            (acl2::use-termhint
              `(:expand ((gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
                         (gl-bfr-object-p-aux ,(acl2::hq (gl-object-fix x)) ,(acl2::hq bfrstate))
                         (gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
                         (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
                         (gl-bfr-objectlist-p-aux ,(acl2::hq (gl-objectlist-fix x)) ,(acl2::hq bfrstate))
-                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))))))))
+                        (gl-bfr-objectlist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))
+                        (gl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
+                        (gl-bfr-object-alist-p-aux ,(acl2::hq (gl-object-alist-fix x)) ,(acl2::hq bfrstate))
+                        (gl-bfr-object-alist-p-aux ,(acl2::hq x) ,(acl2::hq (bfrstate-fix bfrstate)))))))))
 
 
 (defines gl-bfr-object-p
@@ -576,7 +593,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                        :g-apply (gl-bfr-objectlist-p x.args)
                        :g-var t
                        :g-cons (and (gl-bfr-object-p x.car)
-                                    (gl-bfr-object-p x.cdr))))
+                                    (gl-bfr-object-p x.cdr))
+                       :g-map (gl-bfr-object-alist-p x.alist)))
          :exec (and (gl-object-p x)
                     (gl-bfr-object-p-aux x))))
   (define gl-bfr-objectlist-p (x
@@ -589,6 +607,16 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                             (gl-bfr-objectlist-p (cdr x)))))
          :exec (and (gl-objectlist-p x)
                     (gl-bfr-objectlist-p-aux x))))
+  (define gl-bfr-object-alist-p (x
+                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+    :measure (gl-object-alist-count x)
+    (mbe :logic (and (gl-object-alist-p x)
+                     (if (atom x)
+                         t
+                       (and (gl-bfr-object-p (cdar x))
+                            (gl-bfr-object-alist-p (cdr x)))))
+         :exec (and (gl-object-alist-p x)
+                    (gl-bfr-object-alist-p-aux x))))
   ///
   (local
    (defthm-gl-bfr-object-p-flag
@@ -607,7 +635,17 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                           (gl-bfr-objectlist-p-aux nil)
                           (gl-bfr-objectlist-p x)
                           (gl-bfr-objectlist-p nil))))
-       :flag gl-bfr-objectlist-p)))
+       :flag gl-bfr-objectlist-p)
+     
+     (defthm gl-bfr-object-alist-p-aux-elim
+       (implies (gl-object-alist-p x)
+                (equal (gl-bfr-object-alist-p-aux x)
+                       (gl-bfr-object-alist-p x)))
+       :hints ('(:expand ((gl-bfr-object-alist-p-aux x)
+                          (gl-bfr-object-alist-p-aux nil)
+                          (gl-bfr-object-alist-p x)
+                          (gl-bfr-object-alist-p nil))))
+       :flag gl-bfr-object-alist-p)))
   
   (verify-guards gl-bfr-object-p-fn)
 
@@ -654,6 +692,12 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                   (gl-bfr-object-p (g-cons->cdr x))))
     :hints (("goal" :expand ((gl-bfr-object-p x)))))
 
+  (defthm gl-bfr-object-p-when-g-map
+    (implies (and (gl-object-case x :g-map)
+                  (gl-bfr-object-p x))
+             (gl-bfr-object-alist-p (g-map->alist x)))
+    :hints (("goal" :expand ((gl-bfr-object-p x)))))
+
   (defthm gl-bfr-objectlist-p-implies-car/cdr
     (implies (gl-bfr-objectlist-p x)
              (and (gl-bfr-object-p (car x))
@@ -661,6 +705,14 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     :hints (("goal" :expand ((gl-bfr-objectlist-p x)
                              (gl-bfr-object-p nil)
                              (gl-bfr-objectlist-p nil)))))
+
+  (defthm gl-bfr-object-alist-p-implies-cdar/cdr
+    (implies (gl-bfr-object-alist-p x)
+             (and (gl-bfr-object-p (cdar x))
+                  (gl-bfr-object-alist-p (cdr x))))
+    :hints (("goal" :expand ((gl-bfr-object-alist-p x)
+                             (gl-bfr-object-p nil)
+                             (gl-bfr-object-alist-p nil)))))
 
   (defthm gl-bfr-objectlist-p-of-cons
     (implies (and (gl-bfr-object-p x)
@@ -708,6 +760,13 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
              (gl-bfr-object-p (g-cons car cdr)))
     :hints (("goal" :expand ((gl-bfr-object-p (g-cons car cdr))))))
 
+  (defthm gl-bfr-object-p-of-g-map
+    (implies (gl-bfr-object-alist-p alist)
+             (gl-bfr-object-p (g-map tag alist)))
+    :hints (("goal" :expand ((gl-bfr-object-p (g-map tag alist))
+                             (gl-bfr-object-alist-p alist)
+                             (gl-bfr-object-alist-p (gl-object-alist-fix alist))))))
+
   (fty::deffixequiv-mutual gl-bfr-object-p
     :hints ((acl2::use-termhint
              `(:expand ((gl-bfr-object-p-aux ,(acl2::hq x) ,(acl2::hq bfrstate))
@@ -730,6 +789,12 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                (gl-bfr-objectlist-p x new))
       :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x)))))
       :flag gl-bfr-objectlist-p)
+    (defthm gl-bfr-object-alist-p-when-bfrstate>=
+      (implies (and (bfrstate>= new old)
+                    (gl-bfr-object-alist-p x old))
+               (gl-bfr-object-alist-p x new))
+      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-alist-p x)))))
+      :flag gl-bfr-object-alist-p)
     :hints (("goal" :induct (gl-bfr-object-p-flag flag x old)))))
 
 (define gl-bfr-object-bindings-p (x &optional ((bfrstate bfrstate-p) 'bfrstate))
@@ -751,7 +816,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   :flag-local nil
   (define gl-bfr-object-fix ((x gl-bfr-object-p)
                              &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-object-count x)
+    :measure (acl2::two-nats-measure (gl-object-count x) 0)
     :returns (new-x gl-bfr-object-p
                     :hints ('(:in-theory (enable gl-bfr-object-p))))
     :verify-guards nil
@@ -766,17 +831,33 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
            :g-apply (g-apply x.fn (gl-bfr-objectlist-fix x.args))
            :g-var (g-var x.name)
            :g-cons (g-cons (gl-bfr-object-fix x.car)
-                           (gl-bfr-object-fix x.cdr)))
+                           (gl-bfr-object-fix x.cdr))
+           :g-map (g-map x.tag (gl-bfr-object-alist-fix x.alist)))
          :exec x))
   (define gl-bfr-objectlist-fix ((x gl-bfr-objectlist-p)
                                &optional ((bfrstate bfrstate-p) 'bfrstate))
-    :measure (gl-objectlist-count x)
+    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
     :returns (new-x gl-bfr-objectlist-p
                     :hints ('(:in-theory (enable gl-bfr-objectlist-p))))
-    (if (atom x)
-        nil
-      (cons (gl-bfr-object-fix (car x))
-            (gl-bfr-objectlist-fix (cdr x)))))
+    (mbe :logic (if (atom x)
+                    nil
+                  (cons (gl-bfr-object-fix (car x))
+                        (gl-bfr-objectlist-fix (cdr x))))
+         :exec x))
+  
+  (define gl-bfr-object-alist-fix ((x gl-bfr-object-alist-p)
+                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :returns (new-x gl-bfr-object-alist-p
+                    :hints ('(:in-theory (enable gl-bfr-object-alist-p))))
+    (mbe :logic
+         (if (atom x)
+             x
+           (if (consp (car x))
+               (cons (cons (caar x) (gl-bfr-object-fix (cdar x)))
+                     (gl-bfr-object-alist-fix (cdr x)))
+             (gl-bfr-object-alist-fix (cdr x))))
+         :exec x))
   ///
   (defthm-gl-bfr-object-fix-flag gl-bfr-object-fix-when-gl-bfr-object-p
     (defthm gl-bfr-object-fix-when-gl-bfr-object-p
@@ -790,7 +871,13 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                (equal (gl-bfr-objectlist-fix x) x))
       :hints ('(:expand ((gl-bfr-objectlist-p x)
                          (gl-bfr-objectlist-fix x))))
-      :flag gl-bfr-objectlist-fix))
+      :flag gl-bfr-objectlist-fix)
+    (defthm gl-bfr-object-alist-fix-when-gl-bfr-object-alist-p
+      (implies (gl-bfr-object-alist-p x)
+               (equal (gl-bfr-object-alist-fix x) x))
+      :hints ('(:expand ((gl-bfr-object-alist-p x)
+                         (gl-bfr-object-alist-fix x))))
+      :flag gl-bfr-object-alist-fix))
 
   (defret-mutual gl-object-p-of-gl-bfr-object-fix
     (defret gl-object-p-of-gl-bfr-object-fix
@@ -798,7 +885,10 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :fn gl-bfr-object-fix)
     (defret gl-objectlist-p-of-gl-bfr-objectlist-fix
       (gl-objectlist-p new-x)
-      :fn gl-bfr-objectlist-fix))
+      :fn gl-bfr-objectlist-fix)
+    (defret gl-object-alist-p-of-gl-bfr-object-alist-fix
+      (gl-object-alist-p new-x)
+      :fn gl-bfr-object-alist-fix))
 
   (defthm-gl-bfr-object-fix-flag gl-bfr-object-fix-of-gl-object-fix
     (defthm gl-bfr-object-fix-of-gl-object-fix
@@ -814,11 +904,19 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :hints ('(:expand ((gl-objectlist-fix x)
                          (gl-bfr-objectlist-fix x)
                          (:free (a b) (gl-bfr-objectlist-fix (cons a b))))))
-      :flag gl-bfr-objectlist-fix))
+      :flag gl-bfr-objectlist-fix)
+    (defthm gl-bfr-object-alist-fix-of-gl-object-alist-fix
+      (equal (gl-bfr-object-alist-fix (gl-object-alist-fix x))
+             (gl-bfr-object-alist-fix x))
+      :hints ('(:expand ((gl-object-alist-fix x)
+                         (gl-bfr-object-alist-fix x)
+                         (:free (a b) (gl-bfr-object-alist-fix (cons a b))))))
+      :flag gl-bfr-object-alist-fix))
 
   (verify-guards gl-bfr-object-fix-fn
     :hints('(:expand ((gl-bfr-object-p x)
-                      (gl-bfr-objectlist-p x))))))
+                      (gl-bfr-objectlist-p x)
+                      (gl-bfr-object-alist-p x))))))
 
 
 
@@ -826,7 +924,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 (defines gl-object-bfrlist
   (define gl-object-bfrlist ((x gl-object-p))
-    :measure (gl-object-count x)
+    :measure (acl2::two-nats-measure (gl-object-count x) 0)
     :verify-guards nil
     :returns (bfrlist true-listp :rule-classes :type-prescription)
     (gl-object-case x
@@ -839,19 +937,31 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :g-apply (gl-objectlist-bfrlist x.args)
       :g-var nil
       :g-cons (append (gl-object-bfrlist x.car)
-                      (gl-object-bfrlist x.cdr))))
+                      (gl-object-bfrlist x.cdr))
+      :g-map (gl-object-alist-bfrlist x.alist)))
   (define gl-objectlist-bfrlist ((x gl-objectlist-p))
-    :measure (gl-objectlist-count x)
+    :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
     :returns (bfrlist true-listp :rule-classes :type-prescription)
     (if (atom x)
         nil
       (append (gl-object-bfrlist (car x))
               (gl-objectlist-bfrlist (cdr x)))))
+  (define gl-object-alist-bfrlist ((x gl-object-alist-p))
+    :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
+    :returns (bfrlist true-listp :rule-classes :type-prescription)
+    (if (atom x)
+        nil
+      (if (mbt (consp (car x)))
+          (append (gl-object-bfrlist (cdar x))
+                  (gl-object-alist-bfrlist (cdr x)))
+        (gl-object-alist-bfrlist (cdr x)))))
   ///
   
   (verify-guards gl-object-bfrlist)
 
-  (fty::deffixequiv-mutual gl-object-bfrlist)
+  (fty::deffixequiv-mutual gl-object-bfrlist
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((gl-object-alist-fix x))))))
 
   (defthm gl-object-bfrlist-when-g-concrete
     (implies (gl-object-case x :g-concrete)
@@ -896,6 +1006,12 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                             (gl-object-bfrlist (g-cons->cdr x)))))
     :hints (("goal" :expand ((gl-object-bfrlist x)))))
 
+  (defthm gl-object-bfrlist-when-g-map
+    (implies (gl-object-case x :g-map)
+             (equal (gl-object-bfrlist x)
+                    (gl-object-alist-bfrlist (g-map->alist x))))
+    :hints (("goal" :expand ((gl-object-bfrlist x)))))
+
   (defthm gl-objectlist-bfrlist-when-consp
     (implies (consp x)
              (equal (gl-objectlist-bfrlist x)
@@ -908,6 +1024,16 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
              (equal (gl-objectlist-bfrlist x) nil))
     :hints (("goal" :expand ((gl-objectlist-bfrlist x)))))
 
+  (defthm gl-object-alist-bfrlist-when-consp
+    (implies (consp (car x))
+             (equal (gl-object-alist-bfrlist x)
+                    (append (gl-object-bfrlist (cdar x))
+                            (gl-object-alist-bfrlist (cdr x))))))
+
+  (defthm gl-object-alist-bfrlist-when-atom
+    (implies (not (consp x))
+             (equal (gl-object-alist-bfrlist x) nil)))
+
   (def-ruleset! gl-object-bfrlist-when-thms
     '(gl-object-bfrlist-when-g-concrete
       gl-object-bfrlist-when-g-boolean
@@ -915,8 +1041,11 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       gl-object-bfrlist-when-g-ite
       gl-object-bfrlist-when-g-apply
       gl-object-bfrlist-when-g-cons
+      gl-object-bfrlist-when-g-map
       gl-objectlist-bfrlist-when-consp
-      gl-objectlist-bfrlist-when-atom))
+      gl-objectlist-bfrlist-when-atom
+      gl-object-alist-bfrlist-when-consp
+      gl-object-alist-bfrlist-when-atom))
 
   (defthm gl-objectlist-bfrlist-of-cons
     (equal (gl-objectlist-bfrlist (cons x y))
@@ -924,9 +1053,15 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                    (gl-objectlist-bfrlist y)))
     :hints (("goal" :expand ((gl-objectlist-bfrlist (cons x y))))))
 
-  (defthm gl-objectlist-bfrlist-of-nil
-    (equal (gl-objectlist-bfrlist nil) nil)
-    :hints (("goal" :expand ((gl-objectlist-bfrlist nil)))))
+  ;; (defthm gl-objectlist-bfrlist-of-nil
+  ;;   (equal (gl-objectlist-bfrlist nil) nil)
+  ;;   :hints (("goal" :expand ((gl-objectlist-bfrlist nil)))))
+
+  (defthm gl-object-alist-bfrlist-of-cons
+    (equal (gl-object-alist-bfrlist (cons (cons key val) x))
+           (append (gl-object-bfrlist val)
+                   (gl-object-alist-bfrlist x)))
+    :hints (("Goal" :expand ((gl-object-alist-bfrlist (cons (cons key val) x))))))
 
   (defthm gl-object-bfrlist-of-g-concrete
     (equal (gl-object-bfrlist (g-concrete val)) nil))
@@ -957,6 +1092,10 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
            (append (gl-object-bfrlist car)
                    (gl-object-bfrlist cdr))))
 
+  (defthm gl-object-bfrlist-of-g-map
+    (equal (gl-object-bfrlist (g-map tag alist))
+           (gl-object-alist-bfrlist alist)))
+
   (in-theory (disable* gl-object-bfrlist-when-thms))
 
   (def-ruleset! gl-object-bfrlist-of-thms
@@ -967,8 +1106,11 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       gl-object-bfrlist-of-g-apply
       gl-object-bfrlist-of-g-var
       gl-object-bfrlist-of-g-cons
+      gl-object-bfrlist-of-g-map
       gl-objectlist-bfrlist-of-cons
-      gl-objectlist-bfrlist-of-nil))
+      gl-object-alist-bfrlist-of-cons
+      ;; gl-objectlist-bfrlist-of-nil
+      ))
 
   (defthm-gl-object-bfrlist-flag
     (defthm gl-bfr-object-p-when-gl-object-p
@@ -986,21 +1128,36 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
       :hints ('(:expand ((:free (bfrstate) (gl-bfr-objectlist-p x))
                          (gl-objectlist-p x)
                          (gl-objectlist-bfrlist x))))
-      :flag gl-objectlist-bfrlist))
+      :flag gl-objectlist-bfrlist)
+    (defthm gl-bfr-object-alist-p-when-gl-object-alist-p
+      (implies (gl-object-alist-p x)
+               (equal (gl-bfr-object-alist-p x)
+                      (bfr-listp (gl-object-alist-bfrlist x))))
+      :hints ('(:expand ((:free (bfrstate) (gl-bfr-object-alist-p x))
+                         (gl-object-alist-p x)
+                         (gl-object-alist-bfrlist x))))
+      :flag gl-object-alist-bfrlist))
 
-  (defthm-gl-object-bfrlist-flag
-    (defthm gl-object-bfrlist-when-symbolic-boolean-free
-      (equal (gl-object-symbolic-boolean-free x)
-             (equal (gl-object-bfrlist x) nil))
-      :hints ('(:expand ((gl-object-bfrlist x)
-                         (gl-object-symbolic-boolean-free x))))
-      :flag gl-object-bfrlist)
-    (defthm gl-objectlist-bfrlist-when-symbolic-boolean-free
-      (equal (gl-objectlist-symbolic-boolean-free x)
-             (equal (gl-objectlist-bfrlist x) nil))
-      :hints ('(:expand ((gl-objectlist-bfrlist x)
-                         (gl-objectlist-symbolic-boolean-free x))))
-      :flag gl-objectlist-bfrlist)))
+  ;; (defthm-gl-object-bfrlist-flag
+  ;;   (defthm gl-object-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (gl-object-symbolic-boolean-free x)
+  ;;            (equal (gl-object-bfrlist x) nil))
+  ;;     :hints ('(:expand ((gl-object-bfrlist x)
+  ;;                        (gl-object-symbolic-boolean-free x))))
+  ;;     :flag gl-object-bfrlist)
+  ;;   (defthm gl-objectlist-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (gl-objectlist-symbolic-boolean-free x)
+  ;;            (equal (gl-objectlist-bfrlist x) nil))
+  ;;     :hints ('(:expand ((gl-objectlist-bfrlist x)
+  ;;                        (gl-objectlist-symbolic-boolean-free x))))
+  ;;     :flag gl-objectlist-bfrlist)
+  ;;   (defthm gl-object-alist-bfrlist-when-symbolic-boolean-free
+  ;;     (equal (gl-object-alist-symbolic-boolean-free x)
+  ;;            (equal (gl-object-alist-bfrlist x) nil))
+  ;;     :hints ('(:expand ((gl-object-alist-bfrlist x)
+  ;;                        (gl-object-alist-symbolic-boolean-free x))))
+  ;;     :flag gl-object-alist-bfrlist))
+  )
 
 (define gl-object-bindings-bfrlist ((x gl-object-bindings-p))
   :returns (bfrlist)
@@ -1098,6 +1255,12 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                (and (not (member v (gl-object-bfrlist x.car)))
                     (not (member v (gl-object-bfrlist x.cdr)))))))
 
+  (defthm bfrlist-of-g-map-accessor
+    (implies (and (gl-object-case x :g-map)
+                  (not (member v (gl-object-bfrlist x))))
+             (b* (((g-map x)))
+               (not (member v (gl-object-alist-bfrlist x.alist))))))
+
   (defthm member-gl-objectlist-bfrlist-of-cdr
     (implies (not (member v (gl-objectlist-bfrlist x)))
              (not (member v (gl-objectlist-bfrlist (cdr x)))))
@@ -1106,4 +1269,17 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
   (defthm member-gl-object-bfrlist-of-car
     (implies (not (member v (gl-objectlist-bfrlist x)))
              (not (member v (gl-object-bfrlist (car x)))))
-    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist)))))
+    :hints(("Goal" :in-theory (enable gl-objectlist-bfrlist))))
+
+  (defthm member-gl-object-alist-bfrlist-of-cdr
+    (implies (not (member v (gl-object-alist-bfrlist x)))
+             (not (member v (gl-object-alist-bfrlist (cdr x)))))
+    :hints(("Goal" :expand ((gl-object-alist-bfrlist x)
+                            (gl-object-alist-bfrlist (cdr x))
+                            (gl-object-alist-fix x)))))
+
+  (defthm member-gl-object-bfrlist-of-cdar
+    (implies (not (member v (gl-object-alist-bfrlist x)))
+             (not (member v (gl-object-bfrlist (cdar x)))))
+    :hints(("Goal" :in-theory (enable gl-object-alist-bfrlist)))))
+

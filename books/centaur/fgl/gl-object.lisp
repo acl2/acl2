@@ -36,36 +36,39 @@
 (include-book "arith-base")
 (local (std::add-default-post-define-hook :fix))
 
+(defprod g-map-tag
+  ((index acl2::maybe-natp :rule-classes :type-prescription))
+  :layout :tree
+  :tag :g-map
+  ///
+  (defthm car-of-g-map-tag-fix
+    (equal (car (g-map-tag-fix x)) :g-map)
+    :hints(("Goal" :in-theory (enable g-map-tag-fix)))))
+
+
+(defmacro gl-object-keys ()
+  ''(:g-concrete
+     :g-boolean
+     :g-integer
+     :g-ite
+     :g-apply
+     :g-var
+     :g-map))
+
 (fty::deftypes gl-object
   (fty::defflexsum gl-object
     (:g-concrete
      :cond (or (atom x)
                (eq (car x) :g-concrete))
-     :shape (and (not (member x '(:g-concrete
-                                  :g-boolean
-                                  :g-integer
-                                  :g-ite
-                                  :g-apply
-                                  :g-var)))
+     :shape (and (not (member x (gl-object-keys)))
                  (or (atom x)
                      (consp (cdr x))
-                     (member (cdr x)
-                             '(:g-concrete
-                               :g-boolean
-                               :g-integer
-                               :g-ite
-                               :g-apply
-                               :g-var))))
+                     (member (cdr x) (gl-object-keys))))
      :fields ((val :acc-body
                    (if (consp x) (cdr x) x)))
      :ctor-body (if (and (atom val)
                          (not (and (symbolp val) ;; optimization
-                                   (member-eq val '(:g-concrete
-                                                    :g-boolean
-                                                    :g-integer
-                                                    :g-ite
-                                                    :g-apply
-                                                    :g-var)))))
+                                   (member-eq val (gl-object-keys)))))
                     val
                   (cons :g-concrete val))
      :type-name g-concrete)
@@ -100,6 +103,14 @@
      :fields ((name :type pseudo-var :acc-body (cdr x)))
      :ctor-body (cons :g-var name)
      :type-name g-var)
+    (:g-map
+     :cond (and (consp (car x))
+                (eq (caar x) :g-map))
+     :fields ((tag :type g-map-tag :acc-body (car x))
+              (alist :type gl-object-alist :acc-body (cdr x)))
+     :ctor-body (cons tag alist)
+     :type-name g-map)
+
     (:g-cons
      :fields ((car :type gl-object :acc-body (car x))
               (cdr :type gl-object :acc-body (cdr x)))
@@ -112,8 +123,14 @@
                             (gl-object-p y))
                        (gl-object-p (cons x y)))
               :hints (("goal" :expand ((gl-object-p x)
-                                       (gl-object-p (cons x y)))))))))
-  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t))
+                                       (gl-object-p (cons x y)))))))
+     (local (defthm car-not-g-map-when-gl-object-p
+              (implies (gl-object-p x)
+                       (not (equal (car x) :g-map)))
+              :hints (("goal" :expand ((gl-object-p x)
+                                       (gl-object-p (car x)))))))))
+  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t)
+  (fty::defmap gl-object-alist :val-type gl-object :true-listp nil))
      
 
 (defsection g-int
@@ -159,29 +176,29 @@ auto-bindings).</p>"
                         (g-concrete->val y)))
     (g-cons x y)))
 
-(defines gl-object-symbolic-boolean-free
-  (define gl-object-symbolic-boolean-free ((x gl-object-p))
-    :measure (gl-object-count x)
-    (gl-object-case x
-      :g-integer (not x.bits)
-      :g-boolean nil
-      :g-concrete t
-      :g-ite (and (gl-object-symbolic-boolean-free x.test)
-                  (gl-object-symbolic-boolean-free x.then)
-                  (gl-object-symbolic-boolean-free x.else))
-      :g-var t
-      :g-cons (and (gl-object-symbolic-boolean-free x.car)
-                   (gl-object-symbolic-boolean-free x.cdr))
-      :g-apply (gl-objectlist-symbolic-boolean-free x.args)))
-  (define gl-objectlist-symbolic-boolean-free ((x gl-objectlist-p))
-    :measure (gl-objectlist-count x)
-    (if (atom x)
-        t
-      (and (gl-object-symbolic-boolean-free (car x))
-           (gl-objectlist-symbolic-boolean-free (cdr x)))))
-  ///
-  (fty::deffixequiv-mutual gl-object-symbolic-boolean-free
-    :hints (("goal" :expand ((gl-objectlist-fix x))))))
+;; (defines gl-object-symbolic-boolean-free
+;;   (define gl-object-symbolic-boolean-free ((x gl-object-p))
+;;     :measure (gl-object-count x)
+;;     (gl-object-case x
+;;       :g-integer (not x.bits)
+;;       :g-boolean nil
+;;       :g-concrete t
+;;       :g-ite (and (gl-object-symbolic-boolean-free x.test)
+;;                   (gl-object-symbolic-boolean-free x.then)
+;;                   (gl-object-symbolic-boolean-free x.else))
+;;       :g-var t
+;;       :g-cons (and (gl-object-symbolic-boolean-free x.car)
+;;                    (gl-object-symbolic-boolean-free x.cdr))
+;;       :g-apply (gl-objectlist-symbolic-boolean-free x.args)))
+;;   (define gl-objectlist-symbolic-boolean-free ((x gl-objectlist-p))
+;;     :measure (gl-objectlist-count x)
+;;     (if (atom x)
+;;         t
+;;       (and (gl-object-symbolic-boolean-free (car x))
+;;            (gl-objectlist-symbolic-boolean-free (cdr x)))))
+;;   ///
+;;   (fty::deffixequiv-mutual gl-object-symbolic-boolean-free
+;;     :hints (("goal" :expand ((gl-objectlist-fix x))))))
 
 
 (define gobj-syntactic-booleanp ((x gl-object-p))

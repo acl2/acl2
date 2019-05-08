@@ -792,7 +792,15 @@
                                (gl-objectlist-count x))
                         :hints ('(:in-theory (enable gl-objectlist-count)
                                   :expand ((gl-bfr-objectlist-fix x))))
-                        :flag gl-bfr-objectlist-fix)))
+                        :flag gl-bfr-objectlist-fix)
+                      (defthm gl-object-alist-count-of-gl-bfr-object-alist-fix
+                        (equal (gl-object-alist-count (gl-bfr-object-alist-fix x))
+                               (gl-object-alist-count x))
+                        :hints ('(:in-theory (enable gl-object-alist-count)
+                                  :expand ((gl-bfr-object-alist-fix x)
+                                           (gl-object-alist-count x)
+                                           (gl-object-alist-fix x))))
+                        :flag gl-bfr-object-alist-fix)))
 
              (local (defthm g-concrete->val-of-gl-bfr-object-fix
                       (implies (gl-object-case x :g-concrete)
@@ -1859,7 +1867,8 @@
           :g-cons (mv t interp-st)
           :g-var (interp-st-add-term-bvar-unique xobj interp-st state)
           :g-ite (gl-interp-simplify-if-test-ite xobj interp-st state)
-          :g-apply (gl-interp-simplify-if-test-fncall xobj interp-st state)))
+          :g-apply (gl-interp-simplify-if-test-fncall xobj interp-st state)
+          :g-map (mv (bool-fix xobj.alist) interp-st)))
 
       ;; BOZO should we have a version of this for OR?
       (define gl-interp-simplify-if-test-ite ((xobj gl-object-p)
@@ -6625,17 +6634,25 @@
                                     (& t))))
                     (equal (fgl-object-bindings-eval x env) eval))))
 
+  (local (defthm fgl-object-alist-eval-under-iff
+           (iff (fgl-object-alist-eval x env)
+                (gl-object-alist-fix x))
+           :hints(("Goal" :induct (len x)
+                   :in-theory (enable (:i len))
+                   :expand  ((fgl-object-alist-eval x env)
+                             (gl-object-alist-fix x))))))
+
   (local (defthm fgl-objectlist-eval-of-atom
            (implies (not (Consp x))
                     (equal (fgl-objectlist-eval x env logicman) nil))
            :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
            :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-  (local (defthm fgl-objectlist-eval-of-cons
-           (Equal (fgl-objectlist-eval (cons a b) env)
-                  (cons (fgl-object-eval a env)
-                        (fgl-objectlist-eval b env)))
-           :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
+  ;; (local (defthm fgl-objectlist-eval-of-cons
+  ;;          (Equal (fgl-objectlist-eval (cons a b) env)
+  ;;                 (cons (fgl-object-eval a env)
+  ;;                       (fgl-objectlist-eval b env)))
+  ;;          :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
 
   (local (defthm fgl-objectlist-eval-when-consp
            (implies (consp x)
