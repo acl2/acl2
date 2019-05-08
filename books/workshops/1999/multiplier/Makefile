@@ -10,6 +10,16 @@ include ../../../Makefile-generic
 # because there are generated .lisp files.
 override ACL2_PCERT =
 
+# Note: this ensures that all books here will get rebuilt when either
+# of these two universal dependencies is updated.
+UNIVERSAL_DEPS := \
+  ../../../build/universal-dependency.certdep \
+  ../../../build/acl2-version.certdep
+
+compiler.cert: $(UNIVERSAL_DEPS)
+rtl.cert: $(UNIVERSAL_DEPS)
+proof.cert: $(UNIVERSAL_DEPS)
+
 compiler.cert: compiler.lisp
 
 proof.cert: proof.lisp
