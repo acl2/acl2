@@ -192,6 +192,32 @@
 ;;   (equal (equal (endint x) (endint y))
 ;;          (iff x y)))
 
+(def-gl-rewrite integerp-int
+  (integerp (int x)))
+
+(def-gl-rewrite integerp-bool
+  (not (integerp (bool x))))
+
+(def-gl-rewrite integerp-cons
+  (not (integerp (cons x y))))
+
+(def-gl-rewrite consp-cons
+  (consp (cons x y)))
+
+(def-gl-rewrite consp-int
+  (not (consp (int x))))
+
+(def-gl-rewrite consp-bool
+  (not (consp (bool x))))
+
+(def-gl-rewrite booleanp-bool
+  (booleanp (bool x)))
+
+(def-gl-rewrite booleanp-int
+  (not (booleanp (int x))))
+
+(def-gl-rewrite booleanp-cons
+  (not (booleanp (cons x y))))
 
 
 (define check-integerp (x xsyn)
@@ -204,6 +230,8 @@
          (and* (gobj-syntactic-integerp xsyn)
                (integerp x)))))
 
+
+
 (define check-consp (x xsyn)
   :verify-guards nil
   (and (gobj-syntactic-consp xsyn)
@@ -213,6 +241,8 @@
     (iff (check-consp x xsyn)
          (and* (gobj-syntactic-consp xsyn)
                (consp x)))))
+
+
 
 (define check-booleanp (x xsyn)
   :verify-guards nil
@@ -374,5 +404,169 @@
 ;; (trace$ (top-gl-rewrite-try-rule
 ;;          :cond (equal (acl2::rewrite-rule->rune rule)
 ;;                       '(:rewrite fgl-equal-ints))))
+
+
+
+(def-gl-rewrite fgl-ash
+  (implies (syntaxp (integerp shift))
+           (equal (ash x shift)
+                  (b* ((x (int x))
+                       (shift (int shift)))
+                    (cond ((eql shift 0) x)
+                          ((< shift 0) (ash (intcdr x) (+ 1 shift)))
+                          (t (intcons nil (ash x (+ -1 shift))))))))
+  :hints(("Goal" :in-theory (enable bitops::ash**
+                                    bitops::logtail**))))
+
+(define +carry ((c booleanp)
+                (x integerp)
+                (y integerp))
+  (+ (bool->bit c)
+     (lifix x)
+     (lifix y)))
+
+(def-gl-rewrite fgl-+carry
+  (equal (+carry c x y)
+         (intcons (xor c (xor (intcar x) (intcar y)))
+                  (if (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                           (check-int-endp y (syntax-bind ysyn (g-concrete y))))
+                      (endint (if c
+                                  (and (intcar x) (intcar y))
+                                (or (intcar x) (intcar y))))
+                    (+carry (if c
+                                (or (intcar x) (intcar y))
+                              (and (intcar x) (intcar y)))
+                            (intcdr x)
+                            (intcdr y)))))
+  :hints(("Goal" :in-theory (enable +carry int-endp
+                                    bitops::equal-logcons-strong
+                                    bitops::logxor** b-not))))
+
+(def-gl-rewrite fgl-+
+  (implies (and (integerp x) (integerp y))
+           (equal (+ x y)
+                  (+carry nil x y)))
+  :hints(("Goal" :in-theory (enable +carry))))
+
+(def-gl-rewrite fgl-unary-minus
+  (implies (integerp x)
+           (equal (- x)
+                  (+carry t 0 (lognot x))))
+  :hints(("Goal" :in-theory (enable lognot +carry))))
+
+(encapsulate nil
+  (local (defthm replace-mult
+           (implies (equal (+ 1 z) x)
+                    (equal (* x y)
+                           (+ y (* z y))))))
+  (local (defthm commute-*-2
+           (equal (* y x z) (* x y z))
+           :hints (("goal" :use ((:instance associativity-of-*)
+                                 (:instance associativity-of-*
+                                  (x y) (y x)))
+                    :in-theory (disable associativity-of-*)))))
+
+  (def-gl-rewrite fgl-*
+    (implies (and (integerp x) (integerp y))
+             (equal (* x y)
+                    (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                        (if (intcar x) (- y) 0)
+                      (+ (if (intcar x) y 0)
+                         (intcons nil
+                                  (* (intcdr x) y))))))
+    :hints(("Goal" :in-theory (e/d (int-endp logcons)
+                                   (acl2::logcar-logcdr-elim
+                                    bitops::logcons-destruct))
+            :use ((:instance acl2::logcar-logcdr-elim
+                   (i x)))))))
+
+(def-gl-rewrite fgl-lognot
+  (equal (lognot x)
+         (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+             (endint (not (intcar x)))
+           (intcons (not (intcar x))
+                    (lognot (intcdr x)))))
+  :hints(("Goal" :in-theory (enable bitops::lognot** int-endp))))
+
+(def-gl-rewrite fgl-negp
+  (implies (integerp x)
+           (equal (acl2::negp x)
+                  (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                      (intcar x)
+                    (acl2::negp (intcdr x)))))
+  :hints(("Goal" :in-theory (enable int-endp))))
+
+;; (define count-nat-bits ((x natp))
+;;   :measure (integer-length x)
+;;   :hints(("Goal" :in-theory (enable bitops::integer-length**)))
+;;   (if (zp x)
+;;       0
+;;     (+ (logcar x)
+;;        (count-nat-bits (intcdr x))))
+;;   ///
+;;   (def-gl-rewrite fgl-count-nat-bits
+;;     (equal (count-nat-bits x)
+;;            (cond ((check-int-endp x xendp)
+;;                   0)
+;;                  ((eql x 0) 0)
+;;                  (t (+ (bool->bit (intcar x))
+;;                        (count-nat-bits (intcdr x))))))
+;;     :hints(("Goal" :in-theory (enable int-endp)))))
+
+;; (define count-int-bits ((sign booleanp)
+;;                         (x integerp))
+;;   :measure (integer-length x)
+;;   :hints(("Goal" :in-theory (enable bitops::integer-length** int-endp)))
+;;   (if (int-endp x)
+;;       0
+;;     (+ (bool->bit (xor (intcar x) sign))
+;;        (count-int-bits sign (intcdr x))))
+;;   ///
+;;   (def-gl-rewrite fgl-count-int-bits
+;;     (equal (count-int-bits val x)
+;;            (if (check-int-endp x xendp)
+;;                0
+;;              (+ (bool->bit (iff (intcar x) val))
+;;                 (count-int-bits val (intcdr x)))))
+;;     :hints(("Goal" :in-theory (enable int-endp)))))
+
+(def-gl-rewrite fgl-logcount
+  (equal (logcount x)
+         (b* ((x (int x)))
+           (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+               0
+             (if (acl2::negp x)
+                 (if (eql x -1)
+                     0
+                   (+ (bool->bit (not (intcar x)))
+                      (logcount (intcdr x))))
+               (if (eql x 0)
+                   0
+                 (+ (bool->bit (intcar x))
+                    (logcount (intcdr x))))))))
+  :hints(("Goal" :in-theory (enable int-endp
+                                    bitops::logcount**))))
+                  
+
+(defun 32* (x y)
+  (logand (* x y) (1- (expt 2 32))))
+
+(defun fast-logcount-32 (v)
+  (let* ((v (- v (logand (ash v -1) #x55555555)))
+         (v (+ (logand v #x33333333)
+               (logand (ash v -2) #x33333333))))
+    (ash (32* (logand (+ v (ash v -4))
+                      #xF0F0F0F)
+              #x1010101)
+         -24)))
+
+(thm
+ (if (unsigned-byte-p 32 x)
+     (equal (fast-logcount-32 x)
+            (logcount x))
+   t)
+ :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+          :in-theory nil)))
+  
 
 

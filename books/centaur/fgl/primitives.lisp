@@ -231,6 +231,31 @@
     :g-cons (mv t nil interp-st)
     :otherwise (mv nil nil interp-st)))
 
+(local (in-theory (enable int-endp
+                          gl-object-bfrlist-when-g-concrete)))
+(local (defthm gl-object-kind-when-booleanp
+         (implies (booleanp x)
+                  (equal (gl-object-kind x) :g-concrete))
+         :hints(("Goal" :in-theory (enable gl-object-kind)))))
+(local (defthm gobj-bfr-list-eval-when-atom-cdr
+         (implies (not (consp (cdr bits)))
+                  (equal (gobj-bfr-list-eval bits env)
+                         (and (consp bits)
+                              (list (gobj-bfr-eval (car bits) env)))))
+         :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
+                           
+(def-gl-primitive int-endp (x)
+  (gl-object-case x
+    :g-concrete (mv t (or (not (integerp x.val))
+                          (int-endp x.val))
+                    interp-st)
+    :g-integer (mv (atom (cdr x.bits))
+                   (atom (cdr x.bits))
+                   interp-st)
+    :g-boolean (mv t t interp-st)
+    :g-cons (mv t t interp-st)
+    :otherwise (mv nil nil interp-st)))
+
 (local (defthm logcdr-when-not-integerp
          (implies (not (integerp x))
                   (equal (logcdr x) 0))
