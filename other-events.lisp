@@ -26371,7 +26371,13 @@
 ; Args is known to be a true-listp.
 
   (cond ((endp args)
-         (value (list erasures explicit-erasures attachment-alist
+         (value (list erasures explicit-erasures
+
+; We sort the attachment-alist so that chk-acceptable-defattach gets a sorted
+; alist that can ultimately lead to avoidance of proof obligations via
+; event-responsible-for-proved-constraint.
+
+                      (merge-sort-symbol-alistp attachment-alist)
                       helper-alist-lst)))
         (t
          (let ((arg (car args))
