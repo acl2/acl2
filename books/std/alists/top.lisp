@@ -57,6 +57,8 @@
 (include-book "pairlis")
 (include-book "remove-assocs")
 (include-book "remove-assoc-equal")
+(include-book "alist-map-keys")
+(include-book "alist-map-vals")
 
 (include-book "alist-defuns")
 
