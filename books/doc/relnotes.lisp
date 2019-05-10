@@ -92,8 +92,8 @@
 ;  (xdoc::h4 "Your Library Title")
 ;  (xdoc::p "Details go here.")
 
-; Please put the h4's in alphabetical order, separated by lines of semicolons.
-; If you are stuck, see comments in previous (defxdoc note-xxx-books ...).
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; If you are stuck, see the entries about other libraries.
 
   :parents (note-8-3 release-notes-books)
 
@@ -123,6 +123,15 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "@(csee std/alists)")
+
+   (xdoc::p
+    "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
+     have been moved to @('[books]/std/alists/')
+     from @('[books]/kestrel/utilities/alists/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
