@@ -37,96 +37,94 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-(acl2::def-meta-extract fgl-ev fgl-ev-list)
-
 ;; BOZO maybe doesn't belong here
-(defsection major-stack-ev-of-interp-st-logicman-extension
+(defsection fgl-major-stack-concretize-of-interp-st-logicman-extension
 
-  (def-updater-independence-thm gl-object-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-object-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (gl-object-bfrlist x) (interp-st->logicman old)))
-             (equal (gl-object-ev x env (interp-st->logicman new))
-                    (gl-object-ev x env (interp-st->logicman old)))))
+             (equal (fgl-object-concretize x env (interp-st->logicman new))
+                    (fgl-object-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm gl-objectlist-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-objectlist-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (gl-objectlist-bfrlist x) (interp-st->logicman old)))
-             (equal (gl-objectlist-ev x env (interp-st->logicman new))
-                    (gl-objectlist-ev x env (interp-st->logicman old)))))
+             (equal (fgl-objectlist-concretize x env (interp-st->logicman new))
+                    (fgl-objectlist-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm gl-object-bindings-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-object-bindings-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (gl-object-bindings-bfrlist x) (interp-st->logicman old)))
-             (equal (gl-object-bindings-ev x env (interp-st->logicman new))
-                    (gl-object-bindings-ev x env (interp-st->logicman old)))))
+             (equal (fgl-object-bindings-concretize x env (interp-st->logicman new))
+                    (fgl-object-bindings-concretize x env (interp-st->logicman old)))))
 
 
 
   (def-updater-independence-thm constraint-instance-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (constraint-instance-bfrlist x) (interp-st->logicman old)))
-             (equal (constraint-instance-ev x env (interp-st->logicman new))
-                    (constraint-instance-ev x env (interp-st->logicman old)))))
+             (equal (fgl-constraint-instance-concretize x env (interp-st->logicman new))
+                    (fgl-constraint-instance-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm constraint-instancelist-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-constraint-instancelist-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman old)))
-             (equal (constraint-instancelist-ev x env (interp-st->logicman new))
-                    (constraint-instancelist-ev x env (interp-st->logicman old)))))
+             (equal (fgl-constraint-instancelist-concretize x env (interp-st->logicman new))
+                    (fgl-constraint-instancelist-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm scratchobj-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-scratchobj-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (scratchobj->bfrlist x) (interp-st->logicman old)))
-             (equal (scratchobj-ev x env (interp-st->logicman new))
-                    (scratchobj-ev x env (interp-st->logicman old)))))
+             (equal (fgl-scratchobj-concretize x env (interp-st->logicman new))
+                    (fgl-scratchobj-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm scratchlist-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-scratchlist-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (scratchlist-bfrlist x) (interp-st->logicman old)))
-             (equal (scratchlist-ev x env (interp-st->logicman new))
-                    (scratchlist-ev x env (interp-st->logicman old)))))
+             (equal (fgl-scratchlist-concretize x env (interp-st->logicman new))
+                    (fgl-scratchlist-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm minor-frame-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-minor-frame-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (minor-frame-bfrlist x) (interp-st->logicman old)))
-             (equal (minor-frame-ev x env (interp-st->logicman new))
-                    (minor-frame-ev x env (interp-st->logicman old)))))
+             (equal (fgl-minor-frame-concretize x env (interp-st->logicman new))
+                    (fgl-minor-frame-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm minor-stack-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-minor-stack-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (minor-stack-bfrlist x) (interp-st->logicman old)))
-             (equal (minor-stack-ev x env (interp-st->logicman new))
-                    (minor-stack-ev x env (interp-st->logicman old)))))
+             (equal (fgl-minor-stack-concretize x env (interp-st->logicman new))
+                    (fgl-minor-stack-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm major-frame-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-major-frame-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (major-frame-bfrlist x) (interp-st->logicman old)))
-             (equal (major-frame-ev x env (interp-st->logicman new))
-                    (major-frame-ev x env (interp-st->logicman old)))))
+             (equal (fgl-major-frame-concretize x env (interp-st->logicman new))
+                    (fgl-major-frame-concretize x env (interp-st->logicman old)))))
 
 
 
-  (def-updater-independence-thm major-stack-ev-of-interp-st-logicman-extension
+  (def-updater-independence-thm fgl-major-stack-concretize-of-interp-st-logicman-extension
     (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
                   (lbfr-listp (major-stack-bfrlist x) (interp-st->logicman old)))
-             (equal (major-stack-ev x env (interp-st->logicman new))
-                    (major-stack-ev x env (interp-st->logicman old))))))
+             (equal (fgl-major-stack-concretize x env (interp-st->logicman new))
+                    (fgl-major-stack-concretize x env (interp-st->logicman old))))))
 
 ;; BOZO maybe doesn't belong here
 (define interp-st-scratch-isomorphic (x y)
@@ -189,11 +187,6 @@
                (equal (interp-st-get key new-interp-st)
                       (interp-st-get key interp-st))))
 
-    (defret major-stack-ev-of-<fn>
-      (implies (interp-st-bfrs-ok interp-st)
-               (equal (major-stack-ev (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
-                      (major-stack-ev (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))
-
     (defret scratch-isomorphic-of-<fn>
       (interp-st-scratch-isomorphic new-interp-st (double-rewrite interp-st)))
 
@@ -240,18 +233,6 @@
                        env
                        (interp-st->constraint interp-st)
                        (interp-st->logicman interp-st)))))
-    
-    (defret get-bvar->term-eval-of-<fn>
-      (b* ((bvar-db (interp-st->bvar-db interp-st)))
-        (implies (and (interp-st-bfrs-ok interp-st)
-                      (<= (base-bvar$a bvar-db) (nfix n))
-                      (< (nfix n) (next-bvar$a bvar-db)))
-                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
-                                       env
-                                       (interp-st->logicman new-interp-st))
-                      (fgl-object-eval (get-bvar->term$a n bvar-db)
-                                       env
-                                       (interp-st->logicman interp-st))))))
 
     (defret next-bvar-of-<fn>
       (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
@@ -271,16 +252,16 @@
                   (gl-objectlist-p args)
                   (interp-st-bfrs-ok interp-st)
                   (interp-st-bfr-listp (gl-objectlist-bfrlist args))))
-     ;; ((gl-primitive-formula-checks-stub state) => *
-     ;;  :formals (state))
+     ((gl-primitive-formula-checks-stub state) => *
+      :formals (state))
      )
                                               
 
-    ;; (local (define gl-primitive-formula-checks-stub (state)
-    ;;          :ignore-ok t
-    ;;          :irrelevant-formals-ok t
-    ;;          :returns (okp)
-    ;;          t))
+    (local (define gl-primitive-formula-checks-stub (state)
+             :ignore-ok t
+             :irrelevant-formals-ok t
+             :returns (okp)
+             t))
 
 
     (local (define gl-primitive-fncall-stub ((fn pseudo-fnsym-p)
@@ -297,10 +278,27 @@
 
     ,@*gl-primitive-thms*
 
+    (defret get-bvar->term-eval-of-<fn>
+      (b* ((bvar-db (interp-st->bvar-db interp-st)))
+        (implies (and (interp-st-bfrs-ok interp-st)
+                      (<= (base-bvar$a bvar-db) (nfix n))
+                      (< (nfix n) (next-bvar$a bvar-db)))
+                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                                       env
+                                       (interp-st->logicman new-interp-st))
+                      (fgl-object-eval (get-bvar->term$a n bvar-db)
+                                       env
+                                       (interp-st->logicman interp-st))))))
+
+    (defret major-stack-concretize-of-<fn>
+      (implies (interp-st-bfrs-ok interp-st)
+               (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
+                      (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))
+
     (defret eval-of-<fn>
       (implies (and successp
                     (fgl-ev-meta-extract-global-facts :state st)
-                    ;; (gl-primitive-formula-checks-stub st)
+                    (gl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
                     (interp-st-bfr-listp (gl-objectlist-bfrlist args)))
@@ -328,10 +326,27 @@
       (gl-primitive-fncall-stub fn args interp-st state))
     ///
     ,@*gl-primitive-thms*
+    (defret get-bvar->term-eval-of-<fn>
+      (b* ((bvar-db (interp-st->bvar-db interp-st)))
+        (implies (and (interp-st-bfrs-ok interp-st)
+                      (<= (base-bvar$a bvar-db) (nfix n))
+                      (< (nfix n) (next-bvar$a bvar-db)))
+                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                                       env
+                                       (interp-st->logicman new-interp-st))
+                      (fgl-object-eval (get-bvar->term$a n bvar-db)
+                                       env
+                                       (interp-st->logicman interp-st))))))
+
+    (defret major-stack-concretize-of-<fn>
+      (implies (interp-st-bfrs-ok interp-st)
+               (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))
+                      (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st)))))
+
     (defret eval-of-<fn>
       (implies (and successp
                     (fgl-ev-meta-extract-global-facts :state st)
-                    ;; (gl-primitive-formula-checks-stub st)
+                    (gl-primitive-formula-checks-stub st)
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st)
                     (interp-st-bfr-listp (gl-objectlist-bfrlist args)))

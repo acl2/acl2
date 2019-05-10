@@ -4013,8 +4013,8 @@
 
   (defcong stack-equiv-except-top-bindings
     stack-equiv-except-top-bindings
-    (major-stack-ev stack env logicman) 1
-    :hints(("Goal" :in-theory (enable major-stack-ev major-frame-ev))))
+    (fgl-major-stack-concretize stack env logicman) 1
+    :hints(("Goal" :in-theory (enable fgl-major-stack-concretize fgl-major-frame-concretize))))
 
   (defcong stack-equiv-except-top-bindings
     stack-equiv-except-top-bindings
@@ -4035,31 +4035,31 @@
   (defret stack-equiv-except-top-bindings-of-gl-interp-syntax-bind
     (implies (equal logicman (interp-st->logicman new-interp-st))
              (stack-equiv-except-top-bindings
-              (major-stack-ev
+              (fgl-major-stack-concretize
                (interp-st->stack new-interp-st)
                env logicman)
-              (major-stack-ev
+              (fgl-major-stack-concretize
                (interp-st->stack interp-st)
                env (interp-st->logicman interp-st))))
     :hints(("Goal" :in-theory (enable gl-interp-syntax-bind
                                       stack$a-add-binding
-                                      major-stack-ev
-                                      major-frame-ev)))
+                                      fgl-major-stack-concretize
+                                      fgl-major-frame-concretize)))
     :fn gl-interp-syntax-bind)
 
   (defret stack-equiv-except-top-bindings-of-gl-rewrite-relieve-hyp-synp
     (implies (equal logicman (interp-st->logicman new-interp-st))
              (stack-equiv-except-top-bindings
-              (major-stack-ev
+              (fgl-major-stack-concretize
                (interp-st->stack new-interp-st)
                env logicman)
-              (major-stack-ev
+              (fgl-major-stack-concretize
                (interp-st->stack interp-st)
                env (interp-st->logicman interp-st))))
     :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
                                       stack$a-set-bindings
-                                      major-stack-ev
-                                      major-frame-ev)))
+                                      fgl-major-stack-concretize
+                                      fgl-major-frame-concretize)))
     :fn gl-rewrite-relieve-hyp-synp))
 
 
@@ -4114,8 +4114,8 @@
 
   (defcong stack-equiv-except-top-major/minor-bindings
     stack-equiv-except-top-major/minor-bindings
-    (major-stack-ev stack env logicman) 1
-    :hints(("Goal" :in-theory (enable major-stack-ev major-frame-ev minor-stack-ev minor-frame-ev))))
+    (fgl-major-stack-concretize stack env logicman) 1
+    :hints(("Goal" :in-theory (enable fgl-major-stack-concretize fgl-major-frame-concretize fgl-minor-stack-concretize fgl-minor-frame-concretize))))
 
   (defcong stack-equiv-except-top-major/minor-bindings
     stack-equiv-except-top-major/minor-bindings
@@ -4167,18 +4167,18 @@
                                                       '(:no-op t)))))))
               ((not (:fnname gl-interp-bindinglist))
                (:add-concl (stack-equiv-except-top-bindings
-                            (major-stack-ev (interp-st->stack new-interp-st)
+                            (fgl-major-stack-concretize (interp-st->stack new-interp-st)
                                             env
                                             (interp-st->logicman new-interp-st))
-                            (major-stack-ev (interp-st->stack interp-st)
+                            (fgl-major-stack-concretize (interp-st->stack interp-st)
                                             env
                                             (interp-st->logicman interp-st)))))
               ((:fnname gl-interp-bindinglist)
                (:add-concl (stack-equiv-except-top-major/minor-bindings
-                            (major-stack-ev (interp-st->stack new-interp-st)
+                            (fgl-major-stack-concretize (interp-st->stack new-interp-st)
                                             env
                                             (interp-st->logicman new-interp-st))
-                            (major-stack-ev (interp-st->stack interp-st)
+                            (fgl-major-stack-concretize (interp-st->stack interp-st)
                                             env
                                             (interp-st->logicman interp-st)))))
               ((:fnname gl-rewrite-try-rules)
@@ -4299,18 +4299,18 @@
       :hints(("Goal" :in-theory (enable stack-bindings-equiv))))
 
     (defret stack-bindings-extension-p-of-gl-interp-syntax-bind
-      (implies (equal (major-stack-ev (interp-st->stack new-interp-st) env logicman)
-                      (major-stack-ev (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+      (implies (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
+                      (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
                (stack-bindings-extension-p
-                (major-stack-ev (interp-st->stack new-interp-st) env logicman)
-                (major-stack-ev (interp-st->stack interp-st) env
+                (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
+                (fgl-major-stack-concretize (interp-st->stack interp-st) env
                                 (interp-st->logicman interp-st))))
       :hints(("Goal" :in-theory (enable gl-interp-syntax-bind
                                         stack$a-add-binding
                                         stack$a-bindings
-                                        major-stack-ev
-                                        major-frame-ev
-                                        gl-object-bindings-ev
+                                        fgl-major-stack-concretize
+                                        fgl-major-frame-concretize
+                                        fgl-object-bindings-concretize
                                         gl-bindings-extension-p)))
       :fn gl-interp-syntax-bind)
 
@@ -4335,16 +4335,16 @@
                      :in-theory (enable len append)))))
 
     (local (defthm len-of-gl-object-bindings-ev
-             (equal (len (gl-object-bindings-ev x env))
+             (equal (len (fgl-object-bindings-concretize x env))
                     (len (gl-object-bindings-fix x)))
-             :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+             :hints(("Goal" :in-theory (enable fgl-object-bindings-concretize
                                                gl-object-bindings-fix
                                                len)))))
 
     (local (defthm alist-keys-of-gl-object-bindings-ev
-             (equal (alist-keys (gl-object-bindings-ev x env))
+             (equal (alist-keys (fgl-object-bindings-concretize x env))
                     (alist-keys (gl-object-bindings-fix x)))
-             :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+             :hints(("Goal" :in-theory (enable fgl-object-bindings-concretize
                                                gl-object-bindings-fix
                                                alist-keys)))))
 
@@ -4355,32 +4355,32 @@
              :rule-classes :forward-chaining))
 
     (defret stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp
-      (implies (equal (major-stack-ev (interp-st->stack new-interp-st) env logicman)
-                      (major-stack-ev (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+      (implies (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
+                      (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
                (stack-bindings-extension-p
-                (major-stack-ev (interp-st->stack new-interp-st) env
+                (fgl-major-stack-concretize (interp-st->stack new-interp-st) env
                                 logicman)
-                (major-stack-ev (interp-st->stack interp-st) env
+                (fgl-major-stack-concretize (interp-st->stack interp-st) env
                                 (interp-st->logicman interp-st))))
       :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
                                         stack$a-set-bindings
                                         stack$a-bindings
-                                        major-stack-ev
-                                        major-frame-ev)))
+                                        fgl-major-stack-concretize
+                                        fgl-major-frame-concretize)))
       :fn gl-rewrite-relieve-hyp-synp)
 
     (def-updater-independence-thm ev-interp-st-stack-bindings-extension-p-trans-rw
       (implies (and (syntaxp (not (equal old older)))
                     (stack-bindings-extension-p
-                     (major-stack-ev (interp-st->stack new) env logicman)
-                     (major-stack-ev (interp-st->stack old) env
+                     (fgl-major-stack-concretize (interp-st->stack new) env logicman)
+                     (fgl-major-stack-concretize (interp-st->stack old) env
                                      (interp-st->logicman old)))
                     (stack-bindings-extension-p
-                     (major-stack-ev (interp-st->stack old) env
+                     (fgl-major-stack-concretize (interp-st->stack old) env
                                      (interp-st->logicman old))
                      older))
                (stack-bindings-extension-p
-                (major-stack-ev (interp-st->stack new) env logicman) older))
+                (fgl-major-stack-concretize (interp-st->stack new) env logicman) older))
       :hints(("Goal" :in-theory (enable stack-bindings-extension-p-transitive))))))
                         
 
@@ -4400,10 +4400,10 @@
                     (interp-st                     (interp-st-bfrs-ok interp-st))
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
       :rules ((t (:add-concl (stack-bindings-extension-p
-                              (major-stack-ev (interp-st->stack new-interp-st)
+                              (fgl-major-stack-concretize (interp-st->stack new-interp-st)
                                               env
                                               (interp-st->logicman new-interp-st))
-                              (major-stack-ev (interp-st->stack interp-st)
+                              (fgl-major-stack-concretize (interp-st->stack interp-st)
                                               env
                                               (interp-st->logicman interp-st))))
                  (:add-keyword :hints ('(:do-not-induct t)
@@ -4418,12 +4418,12 @@
 
   ;; (local (defthm stack-bindings-extension-p-when-equal-bindings
   ;;          (implies (and (equal (stack$a-bindings y) (stack$A-bindings z))
-  ;;                        (stack-bindings-extension-p x (major-stack-ev y env)))
-  ;;                   (stack-bindings-extension-p x (major-stack-ev z env)))
+  ;;                        (stack-bindings-extension-p x (fgl-major-stack-concretize y env)))
+  ;;                   (stack-bindings-extension-p x (fgl-major-stack-concretize z env)))
   ;;          :hints(("Goal" :in-theory (enable stack$a-bindings stack-bindings-extension-p
-  ;;                                            major-frame-ev)
-  ;;                  :expand ((major-stack-ev y env)
-  ;;                           (major-stack-ev z env))))))
+  ;;                                            fgl-major-frame-concretize)
+  ;;                  :expand ((fgl-major-stack-concretize y env)
+  ;;                           (fgl-major-stack-concretize z env))))))
                     
 
 
@@ -4449,12 +4449,12 @@
                     (interp-st                     (interp-st-bfrs-ok interp-st))
                     ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x))))
       :rules ((t (:add-concl (implies (and (equal (stack$a-bindings old-stack-ev)
-                                                  (stack$a-bindings (major-stack-ev
+                                                  (stack$a-bindings (fgl-major-stack-concretize
                                                                      (interp-st->stack interp-st)
                                                                      env
                                                                      (interp-st->logicman interp-st)))))
                                       (stack-bindings-extension-p
-                                       (major-stack-ev (interp-st->stack new-interp-st)
+                                       (fgl-major-stack-concretize (interp-st->stack new-interp-st)
                                                        env
                                                        (interp-st->logicman new-interp-st))
                                        old-stack-ev))))
@@ -4623,20 +4623,20 @@
 
 
 (defthm fgl-object-eval-of-gl-object-ev
-  (equal (fgl-object-eval (gl-object-ev x env) env2 logicman2)
+  (equal (fgl-object-eval (fgl-object-concretize x env) env2 logicman2)
          (fgl-object-eval x env))
-  :hints(("Goal" :in-theory (enable gl-object-ev))))
+  :hints(("Goal" :in-theory (enable fgl-object-concretize))))
 
 (defthm fgl-objectlist-eval-of-gl-objectlist-ev
-  (equal (fgl-objectlist-eval (gl-objectlist-ev x env) env2 logicman2)
+  (equal (fgl-objectlist-eval (fgl-objectlist-concretize x env) env2 logicman2)
          (fgl-objectlist-eval x env))
-  :hints(("Goal" :in-theory (enable gl-objectlist-ev
+  :hints(("Goal" :in-theory (enable fgl-objectlist-concretize
                                     fgl-objectlist-eval))))
 
 (defthm fgl-object-bindings-eval-of-gl-object-ev
-  (equal (fgl-object-bindings-eval (gl-object-bindings-ev x env) env2 logicman2)
+  (equal (fgl-object-bindings-eval (fgl-object-bindings-concretize x env) env2 logicman2)
          (fgl-object-bindings-eval x env))
-  :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-concretize
                                     fgl-object-bindings-eval))))
 
 (defthm hons-assoc-equal-of-fgl-object-bindings-eval-under-iff
@@ -5122,31 +5122,31 @@
     :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
   (local (defthm lookup-in-gl-object-bindings-ev
-           (iff (hons-assoc-equal k (gl-object-bindings-ev x env))
+           (iff (hons-assoc-equal k (fgl-object-bindings-concretize x env))
                 (hons-assoc-equal k (gl-object-bindings-fix x)))
-           :hints(("Goal" :in-theory (enable gl-object-bindings-ev
+           :hints(("Goal" :in-theory (enable fgl-object-bindings-concretize
                                              gl-object-bindings-fix)))))
 
   (local (defthm lookup-in-minor-stack-of-stack-ev
            (iff (hons-assoc-equal var (stack$a-minor-bindings
-                                       (major-stack-ev stack env)))
+                                       (fgl-major-stack-concretize stack env)))
                 (hons-assoc-equal var (stack$a-minor-bindings stack)))
            :hints(("Goal" :in-theory (enable stack$a-minor-bindings
-                                             major-frame-ev
-                                             minor-frame-ev)
-                   :expand ((major-stack-ev stack env)
-                            (minor-stack-ev
+                                             fgl-major-frame-concretize
+                                             fgl-minor-frame-concretize)
+                   :expand ((fgl-major-stack-concretize stack env)
+                            (fgl-minor-stack-concretize
                              (major-frame->minor-stack (car stack))
                              env))))))
 
-  (defthm major-stack-ev-of-stack$a-add-binding
-    (equal (major-stack-ev (stack$a-add-binding var val stack) env)
-           (stack$a-add-binding var (gl-object-ev val env)
-                                (major-stack-ev stack env)))
+  (defthm fgl-major-stack-concretize-of-stack$a-add-binding
+    (equal (fgl-major-stack-concretize (stack$a-add-binding var val stack) env)
+           (stack$a-add-binding var (fgl-object-concretize val env)
+                                (fgl-major-stack-concretize stack env)))
     :hints(("Goal" :in-theory (enable stack$a-add-binding
-                                      major-stack-ev
-                                      gl-object-bindings-ev
-                                      major-frame-ev))))
+                                      fgl-major-stack-concretize
+                                      fgl-object-bindings-concretize
+                                      fgl-major-frame-concretize))))
 
   (defthm stack$a-bindings-of-stack$a-add-binding
     (equal (stack$a-bindings (stack$a-add-binding var val stack))
@@ -5166,12 +5166,12 @@
                 x
                 (append (fgl-object-bindings-eval
                          (stack$a-minor-bindings
-                          (major-stack-ev (interp-st->stack interp-st)
+                          (fgl-major-stack-concretize (interp-st->stack interp-st)
                                           env (interp-st->logicman interp-st)))
                          nil nil)
                         (fgl-object-bindings-eval
                          (stack$a-bindings
-                          (major-stack-ev (interp-st->stack new-interp-st)
+                          (fgl-major-stack-concretize (interp-st->stack new-interp-st)
                                           env (interp-st->logicman interp-st)))
                          nil nil)))))
     :hints(("Goal" :in-theory (enable gl-interp-syntax-bind fgl-ev-context-equiv-forall-extensions))))
@@ -6436,19 +6436,19 @@
 
 (def-updater-independence-thm eval-alist-extension-p-of-interp-st-update
   (implies (and (stack-bindings-extension-p
-                 (major-stack-ev (interp-st->stack new) env (interp-st->logicman new))
-                 (major-stack-ev (interp-st->stack old) env (interp-st->logicman old)))
+                 (fgl-major-stack-concretize (interp-st->stack new) env (interp-st->logicman new))
+                 (fgl-major-stack-concretize (interp-st->stack old) env (interp-st->logicman old)))
                 (eval-alist-extension-p
                  (fgl-object-bindings-eval
                   (stack$a-bindings
-                   (major-stack-ev
+                   (fgl-major-stack-concretize
                     (interp-st->stack old) env (interp-st->logicman old)))
                   nil nil)
                  other))
            (eval-alist-extension-p
             (fgl-object-bindings-eval
              (stack$a-bindings
-              (major-stack-ev
+              (fgl-major-stack-concretize
                (interp-st->stack new) env (interp-st->logicman new)))
              nil nil)
             other))
@@ -6459,13 +6459,13 @@
 
 ;; (def-updater-independence-thm eval-alist-extension-p-of-interp-st-alist-eval
 ;;   (implies (and (stack-bindings-extension-p
-;;                  (major-stack-ev
+;;                  (fgl-major-stack-concretize
 ;;                   (interp-st->stack new) env (interp-st->logicman new))
 ;;                  other))
 ;;            (eval-alist-extension-p
 ;;             (fgl-object-bindings-eval
 ;;              (stack$a-bindings
-;;               (major-stack-ev
+;;               (fgl-major-stack-concretize
 ;;                (interp-st->stack new) env (interp-st->logicman new)))
 ;;              nil nil)
 ;;             other))
@@ -6579,68 +6579,75 @@
                   (lbfr-listp (gl-object-bindings-bfrlist x) (interp-st->logicman old)))
              (equal (fgl-object-bindings-eval x env (interp-st->logicman new))
                     (fgl-object-bindings-eval x env (interp-st->logicman old)))))
-  
 
-
-  (local (defthm fgl-object-eval-rewrite-with-fgl-object-ev
-           (implies (and (equal ev (double-rewrite (gl-object-ev x env)))
+  (local (defthm fgl-object-eval-rewrite-with-fgl-object-concretize
+           (implies (and (equal ev (double-rewrite (fgl-object-concretize x env)))
                          (syntaxp ;; (prog2$ (cw "~x0~%ev: ~x1~%"
                           ;;             'fgl-object-eval-rewrite-with-fgl-object-ev
                           ;;             ev)
                           (and (not (equal ev x))
                                (case-match ev
-                                 (('gl-object-ev-fn xans & &)
+                                 (('fgl-object-concretize-fn xans & &)
                                   (not (equal xans x)))
                                  (& t))))
                          (equal eval (fgl-object-eval ev nil nil))
                          (syntaxp ;; (prog2$ (cw "eval: ~x0~%" eval)
                           (case-match eval
-                            (('fgl-object-eval-fn ('gl-object-ev-fn xans & &) & &)
+                            (('fgl-object-eval-fn ('fgl-object-concretize-fn xans & &) & &)
                              (not (equal xans x)))
                             (('fgl-object-eval-fn xans & &)
                              (not (equal xans x)))
                             (& t))))
                     (equal (fgl-object-eval x env) eval))))
 
-  (local (defthm fgl-objectlist-eval-rewrite-with-fgl-objectlist-ev
-           (implies (and (equal ev (double-rewrite (gl-objectlist-ev x env)))
+  (local (defthm fgl-objectlist-eval-rewrite-with-fgl-objectlist-concretize
+           (implies (and (equal ev (double-rewrite (fgl-objectlist-concretize x env)))
                          (syntaxp (and (not (equal ev x))
                                        (case-match ev
-                                         (('gl-objectlist-ev-fn xans & &)
+                                         (('fgl-objectlist-concretize-fn xans & &)
                                           (not (equal xans x)))
                                          (& t))))
                          (equal eval (fgl-objectlist-eval ev nil nil))
                          (syntaxp (case-match eval
-                                    (('fgl-objectlist-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
+                                    (('fgl-objectlist-eval-fn ('fgl-objectlist-concretize-fn xans & &) & &)
                                      (not (equal xans x)))
                                     (('fgl-objectlist-eval-fn xans & &)
                                      (not (equal xans x)))
                                     (& t))))
                     (equal (fgl-objectlist-eval x env) eval))))
 
-  (local (defthm fgl-object-bindings-eval-rewrite-with-fgl-object-bindings-ev
-           (implies (and (equal ev (double-rewrite (gl-object-bindings-ev x env)))
+  (local (defthm fgl-object-bindings-eval-rewrite-with-fgl-object-bindings-concretize
+           (implies (and (equal ev (double-rewrite (fgl-object-bindings-concretize x env)))
                          (syntaxp (and (not (equal ev x))
                                        (case-match ev
-                                         (('gl-object-bindings-ev-fn xans & &)
+                                         (('fgl-object-bindings-concretize-fn xans & &)
                                           (not (equal xans x)))
                                          (& t))))
                          (equal eval (fgl-object-bindings-eval ev nil nil))
                          (syntaxp (case-match eval
-                                    (('fgl-object-bindings-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
+                                    (('fgl-object-bindings-eval-fn ('fgl-object-bindings-concretize-fn xans & &) & &)
                                      (not (equal xans x)))
                                     (('fgl-object-bindings-eval-fn xans & &)
                                      (not (equal xans x)))
                                     (& t))))
                     (equal (fgl-object-bindings-eval x env) eval))))
 
+  (local (defthm fgl-objectlist-eval-when-consp
+           (implies (consp x)
+                    (Equal (fgl-objectlist-eval x env)
+                           (cons (fgl-object-eval (car x) env)
+                                 (fgl-objectlist-eval (cdr x) env))))
+           :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
+           :rule-classes ((:rewrite :backchain-limit-lst 0))))
+  
   (local (defthm fgl-object-alist-eval-under-iff
            (iff (fgl-object-alist-eval x env)
                 (gl-object-alist-fix x))
            :hints(("Goal" :induct (len x)
                    :in-theory (enable (:i len))
                    :expand  ((fgl-object-alist-eval x env)
-                             (gl-object-alist-fix x))))))
+                             (gl-object-alist-fix x)))
+                  '(:do-not '(preprocess)))))
 
   (local (defthm fgl-objectlist-eval-of-atom
            (implies (not (Consp x))
@@ -6654,13 +6661,6 @@
   ;;                       (fgl-objectlist-eval b env)))
   ;;          :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
 
-  (local (defthm fgl-objectlist-eval-when-consp
-           (implies (consp x)
-                    (Equal (fgl-objectlist-eval x env)
-                           (cons (fgl-object-eval (car x) env)
-                                 (fgl-objectlist-eval (cdr x) env))))
-           :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
-           :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
   (local (defthm len-when-not-consp
            (implies (not (consp x))
@@ -6692,15 +6692,15 @@
 
   (local (defthm fgl-object-ev-of-scratchobj-gl-obj->val
            (implies (double-rewrite (scratchobj-case x :gl-obj))
-                    (equal (gl-object-ev (scratchobj-gl-obj->val x) env)
-                           (scratchobj-gl-obj->val (scratchobj-ev x env))))
-           :hints(("Goal" :in-theory (enable scratchobj-ev)))))
+                    (equal (fgl-object-concretize (scratchobj-gl-obj->val x) env)
+                           (scratchobj-gl-obj->val (fgl-scratchobj-concretize x env))))
+           :hints(("Goal" :in-theory (enable fgl-scratchobj-concretize)))))
 
   (local (defthm fgl-objectlist-ev-of-scratchobj-gl-objlist->val
            (implies (double-rewrite (scratchobj-case x :gl-objlist))
-                    (equal (gl-objectlist-ev (scratchobj-gl-objlist->val x) env)
-                           (scratchobj-gl-objlist->val (scratchobj-ev x env))))
-           :hints(("Goal" :in-theory (enable scratchobj-ev)))))
+                    (equal (fgl-objectlist-concretize (scratchobj-gl-objlist->val x) env)
+                           (scratchobj-gl-objlist->val (fgl-scratchobj-concretize x env))))
+           :hints(("Goal" :in-theory (enable fgl-scratchobj-concretize)))))
 
 
   (local (defthm fgl-object-eval-of-alist-lookup
@@ -6713,76 +6713,76 @@
   (local (in-theory (disable lookup-in-fgl-object-bindings-eval)))
 
   (local (defthm fgl-object-bindings-ev-of-stack$a-minor-bindings
-           (equal (gl-object-bindings-ev (stack$a-minor-bindings stack) env)
-                  (stack$a-minor-bindings (major-stack-ev stack env)))
-           :hints(("Goal" :in-theory (enable major-frame-ev
-                                             minor-frame-ev
+           (equal (fgl-object-bindings-concretize (stack$a-minor-bindings stack) env)
+                  (stack$a-minor-bindings (fgl-major-stack-concretize stack env)))
+           :hints(("Goal" :in-theory (enable fgl-major-frame-concretize
+                                             fgl-minor-frame-concretize
                                              stack$a-minor-bindings)
-                   :expand ((major-stack-ev stack env)
-                            (minor-stack-ev (major-frame->minor-stack (car stack)) env))))))
+                   :expand ((fgl-major-stack-concretize stack env)
+                            (fgl-minor-stack-concretize (major-frame->minor-stack (car stack)) env))))))
 
   (local (defthm fgl-object-bindings-ev-of-stack$a-bindings
-           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
-                  (stack$a-bindings (major-stack-ev stack env)))
-           :hints(("Goal" :in-theory (enable major-frame-ev
+           (equal (fgl-object-bindings-concretize (stack$a-bindings stack) env)
+                  (stack$a-bindings (fgl-major-stack-concretize stack env)))
+           :hints(("Goal" :in-theory (enable fgl-major-frame-concretize
                                              stack$a-bindings)
-                   :expand ((major-stack-ev stack env))))))
+                   :expand ((fgl-major-stack-concretize stack env))))))
 
-  (local (defthm scratchobj-ev-of-stack$a-top-scratch
-           (equal (scratchobj-ev (stack$a-top-scratch stack) env)
-                  (double-rewrite (stack$a-top-scratch (major-stack-ev stack env))))
+  (local (defthm fgl-scratchobj-concretize-of-stack$a-top-scratch
+           (equal (fgl-scratchobj-concretize (stack$a-top-scratch stack) env)
+                  (double-rewrite (stack$a-top-scratch (fgl-major-stack-concretize stack env))))
            :hints(("Goal" :in-theory (enable stack$a-top-scratch
-                                             major-frame-ev
-                                             minor-frame-ev)
-                   :expand ((major-stack-ev stack env)
-                            (minor-stack-ev
+                                             fgl-major-frame-concretize
+                                             fgl-minor-frame-concretize)
+                   :expand ((fgl-major-stack-concretize stack env)
+                            (fgl-minor-stack-concretize
                              (major-frame->minor-stack (Car stack)) env)
-                            (scratchlist-ev
+                            (fgl-scratchlist-concretize
                              (minor-frame->scratch
                               (car (major-frame->minor-stack (Car stack))))
                              env)
-                            (scratchobj-ev '(:gl-obj) env)
-                            (gl-object-ev nil env))))))
+                            (fgl-scratchobj-concretize '(:gl-obj) env)
+                            (fgl-object-concretize nil env))))))
 
-  (local (defthm gl-object-bindings-ev-of-stack$a-minor-bindings
-           (equal (gl-object-bindings-ev (stack$a-minor-bindings stack) env)
-                  (double-rewrite (stack$a-minor-bindings (major-stack-ev stack env))))
-           :hints(("Goal" :in-theory (enable major-frame-ev
-                                             minor-frame-ev
+  (local (defthm fgl-object-bindings-concretize-of-stack$a-minor-bindings
+           (equal (fgl-object-bindings-concretize (stack$a-minor-bindings stack) env)
+                  (double-rewrite (stack$a-minor-bindings (fgl-major-stack-concretize stack env))))
+           :hints(("Goal" :in-theory (enable fgl-major-frame-concretize
+                                             fgl-minor-frame-concretize
                                              stack$a-minor-bindings)
-                   :expand ((major-stack-ev stack env)
-                            (minor-stack-ev
+                   :expand ((fgl-major-stack-concretize stack env)
+                            (fgl-minor-stack-concretize
                              (major-frame->minor-stack (Car stack)) env))
                    :do-not-induct t))))
 
   (local (defthm lookup-present-of-gl-object-bindings-ev
-           (iff (hons-assoc-equal k (gl-object-bindings-ev x env))
+           (iff (hons-assoc-equal k (fgl-object-bindings-concretize x env))
                 (hons-assoc-equal k (gl-object-bindings-fix x)))
-           :hints(("Goal" :in-theory (enable gl-object-bindings-fix gl-object-bindings-ev)))))
+           :hints(("Goal" :in-theory (enable gl-object-bindings-fix fgl-object-bindings-concretize)))))
 
   (local (defthm lookup-present-of-stack$a-minor-bindings-of-major-stack-ev
-           (iff (hons-assoc-equal k (stack$a-minor-bindings (major-stack-ev stack env)))
+           (iff (hons-assoc-equal k (stack$a-minor-bindings (fgl-major-stack-concretize stack env)))
                 (hons-assoc-equal k (stack$a-minor-bindings stack)))
            :hints(("Goal" :in-theory (enable stack$a-minor-bindings
-                                             major-frame-ev
-                                             minor-frame-ev)
-                   :expand ((major-stack-ev stack env)
-                            (minor-stack-ev
+                                             fgl-major-frame-concretize
+                                             fgl-minor-frame-concretize)
+                   :expand ((fgl-major-stack-concretize stack env)
+                            (fgl-minor-stack-concretize
                              (major-frame->minor-stack (Car stack)) env))))))
 
   (local (defthm lookup-present-of-stack$a-bindings-of-major-stack-ev
-           (iff (hons-assoc-equal k (stack$a-bindings (major-stack-ev stack env)))
+           (iff (hons-assoc-equal k (stack$a-bindings (fgl-major-stack-concretize stack env)))
                 (hons-assoc-equal k (stack$a-bindings stack)))
            :hints(("Goal" :in-theory (enable stack$a-bindings
-                                             major-frame-ev)
-                   :expand ((major-stack-ev stack env))))))
+                                             fgl-major-frame-concretize)
+                   :expand ((fgl-major-stack-concretize stack env))))))
 
-  (local (defthm gl-object-bindings-ev-of-stack$a-bindings
-           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
-                  (double-rewrite (stack$a-bindings (major-stack-ev stack env))))
-           :hints(("Goal" :in-theory (enable major-frame-ev
+  (local (defthm fgl-object-bindings-concretize-of-stack$a-bindings
+           (equal (fgl-object-bindings-concretize (stack$a-bindings stack) env)
+                  (double-rewrite (stack$a-bindings (fgl-major-stack-concretize stack env))))
+           :hints(("Goal" :in-theory (enable fgl-major-frame-concretize
                                              stack$a-bindings)
-                   :expand ((major-stack-ev stack env))
+                   :expand ((fgl-major-stack-concretize stack env))
                    :do-not-induct t))))
 
   (defcong stack-equiv-except-top-bindings equal (stack$a-top-scratch stack) 1
@@ -6797,14 +6797,14 @@
   (local (Defthm gobj-bfr-eval-of-scratchobj-bfr->val
            (implies (double-rewrite (scratchobj-case obj :bfr))
                     (equal (gobj-bfr-eval (scratchobj-bfr->val obj) env)
-                           (scratchobj-bfr->val (scratchobj-ev obj env))))
-           :hints(("Goal" :in-theory (enable scratchobj-ev)))))
+                           (scratchobj-bfr->val (fgl-scratchobj-concretize obj env))))
+           :hints(("Goal" :in-theory (enable fgl-scratchobj-concretize)))))
 
   (local (Defthm bfr-eval-of-scratchobj-bfr->val
            (implies (double-rewrite (scratchobj-case obj :bfr))
                     (equal (bfr-eval (scratchobj-bfr->val obj) (gl-env->bfr-vals env))
-                           (scratchobj-bfr->val (scratchobj-ev obj env))))
-           :hints(("Goal" :in-theory (enable scratchobj-ev gobj-bfr-eval)))))
+                           (scratchobj-bfr->val (fgl-scratchobj-concretize obj env))))
+           :hints(("Goal" :in-theory (enable fgl-scratchobj-concretize gobj-bfr-eval)))))
 
   
 
@@ -6868,11 +6868,11 @@
 
 
   (def-updater-independence-thm stack-bindings-extension-p-of-interp-st-updater-independence
-    (implies (and (stack-bindings-extension-p (major-stack-ev (interp-st->stack new) env (interp-st->logicman new))
-                                              (major-stack-ev (interp-st->stack old) env (interp-st->logicman old)))
-                  (stack-bindings-extension-p (major-stack-ev (interp-st->stack old) env (interp-st->logicman old))
+    (implies (and (stack-bindings-extension-p (fgl-major-stack-concretize (interp-st->stack new) env (interp-st->logicman new))
+                                              (fgl-major-stack-concretize (interp-st->stack old) env (interp-st->logicman old)))
+                  (stack-bindings-extension-p (fgl-major-stack-concretize (interp-st->stack old) env (interp-st->logicman old))
                                               other))
-             (stack-bindings-extension-p (major-stack-ev (interp-st->stack new) env
+             (stack-bindings-extension-p (fgl-major-stack-concretize (interp-st->stack new) env
                                                          (interp-st->logicman new))
                                          other))
     :hints(("Goal" :in-theory (enable stack-bindings-extension-p-transitive))))
@@ -6898,7 +6898,7 @@
                      ((constraint-instancelist-p x) (interp-st-bfr-listp (constraint-instancelist-bfrlist x)))
                      (state                         (and (fgl-ev-meta-extract-global-facts :state st)
                                                          (equal (w st) (w state))
-                                                         ;; (gl-primitive-formula-checks-stub st)
+                                                         (gl-primitive-formula-checks-stub st)
                                                          )))
        :rules ((t (:add-hyp (and (logicman-pathcond-eval (gl-env->bfr-vals env)
                                                          (interp-st->constraint interp-st)

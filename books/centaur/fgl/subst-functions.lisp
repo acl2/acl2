@@ -51,8 +51,10 @@
 
 (include-book "std/osets/sort" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "std/util/define" :dir :system)
+(include-book "std/util/defines" :dir :system)
 (include-book "clause-processors/join-thms" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "centaur/misc/starlogic" :dir :system)
 ;; (include-book "interp")
 
 (program)
@@ -202,8 +204,25 @@
            (xargs
             `(:hints (("Goal" :by (:functional-instance (:termination-theorem ,(car fns))
                                    . ,new-instance-subst)
-                       ;; :do-not '(preprocess simplify)
-                       ))
+                       :do-not '(preprocess simplify)
+                       :in-theory nil
+                       :do-not-induct t
+                       )
+                      '(:clause-processor dumb-clausify-cp)
+                      (let ((term (car (last clause))))
+                        (case-match term
+                          (('equal (fn . args) . &)
+                           (if (and (symbol-listp args)
+                                    (member fn ',(acl2::strip-cadrs new-instance-subst)))
+                               `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
+                                 ;; :do-not nil :in-theory (enable)
+                                 )
+                             '(;; :do-not nil :in-theory (enable)
+                               )))
+                          (& '(;; :do-not nil :in-theory (enable)
+                               ))))
+                      ;; :do-not '(preprocess simplify)
+                      )
               :verify-guards t
               :guard-simplify nil
               :guard-hints (("Goal" :by (:functional-instance (:guard-theorem ,(car fns) t)
@@ -219,10 +238,16 @@
                             '(:clause-processor dumb-clausify-cp)
                             (let ((term (car (last clause))))
                               (case-match term
-                                (('equal (fn . &) . &)
-                                 (and (member fn ',(acl2::strip-cadrs new-instance-subst))
-                                      `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
-                                        :do-not nil)))))
+                                (('equal (fn . args) . &)
+                                 (if (and (symbol-listp args)
+                                          (member fn ',(acl2::strip-cadrs new-instance-subst)))
+                                     `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
+                                       ;; :do-not nil :in-theory (enable)
+                                       )
+                                   '(;; :do-not nil :in-theory (enable)
+                                     )))
+                                (& '(;; :do-not nil :in-theory (enable)
+                                     ))))
                             ;; '(:expand ,expands
                             ;;   :do-not-induct t)
                             ;; '(:in-theory (enable))
@@ -251,15 +276,30 @@
                                       '(:clause-processor dumb-clausify-cp)
                                       (let ((term (car (last clause))))
                                         (case-match term
-                                          (('equal (fn . &) . &)
-                                           (and (member fn ',(acl2::strip-cadrs new-instance-subst))
-                                                `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
-                                                  :do-not nil))))))))
+                                          (('equal (fn . args) . &)
+                                           (if (and (symbol-listp args)
+                                                    (member fn ',(acl2::strip-cadrs new-instance-subst)))
+                                               `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
+                                                 :do-not nil)
+                                             '(:do-not nil)))
+                                          (& '(:do-not nil)))))))
          (xargs (if (recursivep (car fns) nil wrld)
                     `(:hints (("Goal" :by (:functional-instance (:termination-theorem ,(car fns))
                                            . ,new-instance-subst)
-                               ;; :do-not '(preprocess simplify)
-                               ))
+                               :do-not '(preprocess simplify)
+                               :in-theory nil
+                               :do-not-induct t
+                               )
+                              '(:clause-processor dumb-clausify-cp)
+                              (let ((term (car (last clause))))
+                                (case-match term
+                                  (('equal (fn . args) . &)
+                                   (if (and (symbol-listp args)
+                                            (member fn ',(acl2::strip-cadrs new-instance-subst)))
+                                       `(:clause-processor (beta-reduce-by-hint-cp clause ',fn state)
+                                         :do-not nil)
+                                     '(:do-not nil)))
+                                  (& '(:do-not nil)))))
                       . ,guard-xargs)
                   guard-xargs))
          (full (add-xargs-to-defun
@@ -341,16 +381,51 @@
 (include-book "centaur/misc/beta-reduce-full" :dir :System)
 (include-book "clause-processors/sublis-var-meaning" :dir :system)
 
-(defthm beta-reduce-full-correct-for-cterm-ev
-  (implies (pseudo-termp x)
-           (equal (acl2::cterm-ev (acl2::beta-reduce-full x) a)
-                  (acl2::cterm-ev x a)))
-  :hints (("goal" :use ((:functional-instance acl2::beta-reduce-full-correct
-                         (acl2::beta-eval acl2::cterm-ev)
-                         (acl2::beta-eval-list acl2::cterm-ev-lst)))
-           :in-theory (enable acl2::cterm-ev-of-fncall-args
-                              acl2::cterm-ev-of-nonsymbol-atom
-                              acl2::cterm-ev-of-bad-fncall))))
+(defevaluator subst-ev subst-ev-list
+  ((acl2-numberp x)
+   (binary-* x y)
+   (binary-+ x y)
+   (unary-- x)
+   (unary-/ x)
+   (< x y)
+   (car x)
+   (cdr x)
+   (char-code x)
+   (characterp x)
+   (code-char x)
+   (complex x y)
+   (complex-rationalp x)
+   (coerce x y)
+   (cons x y)
+   (consp x)
+   (denominator x)
+   (equal x y)
+   (imagpart x)
+   (integerp x)
+   (intern-in-package-of-symbol x y)
+   (numerator x)
+   (rationalp x)
+   (realpart x)
+   (stringp x)
+   (symbol-name x)
+   (symbol-package-name x)
+   (symbolp x)
+   (if x y z)
+   (not x)
+
+   (return-last x y z))
+  :namedp t)
+
+(include-book "tools/def-functional-instance" :dir :system)
+
+(acl2::def-functional-instance
+  beta-reduce-full-correct-for-subst-ev
+  acl2::beta-reduce-full-correct
+  ((acl2::beta-eval subst-ev)
+   (acl2::beta-eval-list subst-ev-list))
+  :hints ('(:in-theory (enable subst-ev-of-fncall-args
+                               subst-ev-of-nonsymbol-atom
+                               subst-ev-of-bad-fncall))))
 
 #!acl2
 (mutual-recursion
@@ -399,12 +474,127 @@
                        (sublis-var1-lst nil x))))
     :flag list))
 
+(acl2::def-functional-instance sublis-var1-is-term-subst-for-subst-ev
+  acl2::sublis-var1-is-term-subst
+  ((acl2::cterm-ev subst-ev)
+   (acl2::cterm-ev-lst subst-ev-list))
+  :hints ('(:in-theory (enable subst-ev-of-fncall-args
+                               subst-ev-of-nonsymbol-atom
+                               subst-ev-of-bad-fncall))))
+
+(defun subst-ev-alist (x a)
+  (if (atom x)
+      nil
+    (cons (cons (caar x) (subst-ev (cdar x) a))
+          (subst-ev-alist (cdr x) a))))
+
+(acl2::def-functional-instance eval-of-term-subst-for-subst-ev
+  acl2::eval-of-term-subst
+  ((acl2::cterm-ev subst-ev)
+   (acl2::cterm-ev-lst subst-ev-list)
+   (acl2::cterm-ev-alist subst-ev-alist)))
+
 (verify-guards acl2::my-quote-normal-form1
   :hints(("Goal" :expand ((pseudo-termp acl2::form)))))
 
 (memoize 'acl2::my-quote-normal-form1)
 
-(acl2::def-join-thms acl2::cterm-ev)
+(acl2::def-join-thms subst-ev)
+
+(acl2::def-ev-pseudo-term-fty-support subst-ev subst-ev-list)
+
+(defines remove-return-last-calls
+  (define remove-return-last-calls ((x pseudo-termp))
+    :returns (new-x pseudo-termp)
+    :measure (pseudo-term-count x)
+    :verify-guards nil
+    (pseudo-term-case x
+      :fncall (if (and** (eq x.fn 'return-last)
+                         (eql (len x.args) 3))
+                  (remove-return-last-calls (third x.args))
+                (pseudo-term-fncall x.fn (remove-return-last-calls-list x.args)))
+      :lambda (pseudo-term-lambda
+               x.formals
+               (remove-return-last-calls x.body)
+               (remove-return-last-calls-list x.args))
+      :otherwise (pseudo-term-fix x)))
+  (define remove-return-last-calls-list ((x pseudo-term-listp))
+    :measure (pseudo-term-list-count x)
+    :returns (new-x pseudo-term-listp)
+    (if (atom x)
+        nil
+      (cons (remove-return-last-calls (car x))
+            (remove-return-last-calls-list (cdr x)))))
+  ///
+  (defret-mutual len-of-remove-return-last-calls-list
+    (defret len-of-remove-return-last-calls-list
+      (equal (len new-x) (len x))
+      :fn remove-return-last-calls-list)
+    :skip-others t)
+  (verify-guards remove-return-last-calls)
+  (local (defun-sk remove-return-last-calls-correct-cond (x new-x)
+           (forall a
+                   (equal (subst-ev new-x a)
+                          (subst-ev x a)))
+           :rewrite :direct))
+
+  (local (defun-sk remove-return-last-calls-list-correct-cond (x new-x)
+           (forall a
+                   (equal (subst-ev-list new-x a)
+                          (subst-ev-list x a)))
+           :rewrite :direct))
+  (local (in-theory (disable remove-return-last-calls-list-correct-cond
+                             remove-return-last-calls-correct-cond)))
+
+  (local (defret-mutual remove-return-last-calls-correct
+           (defret remove-return-last-calls-correct-lemma
+             (remove-return-last-calls-correct-cond x new-x)
+             :hints ((and stable-under-simplificationp
+                          `(:expand (,(car (last clause))
+                                     <call>)
+                            :in-theory (enable subst-ev-of-fncall-args))))
+             :fn remove-return-last-calls)
+           (defret remove-return-last-calls-list-correct-lemma
+             (remove-return-last-calls-list-correct-cond x new-x)
+             :hints ((and stable-under-simplificationp
+                          `(:expand (,(car (last clause))
+                                     <call>))))
+             :fn remove-return-last-calls-list)))
+
+  (defret remove-return-last-calls-correct
+    (equal (subst-ev new-x a)
+           (subst-ev x a))
+    :hints (("goal" :use remove-return-last-calls-correct-lemma
+             :in-theory (disable remove-return-last-calls-correct-lemma)))
+    :fn remove-return-last-calls)
+
+  (defret remove-return-last-calls-list-correct
+    (equal (subst-ev-list new-x a)
+           (subst-ev-list x a))
+    :hints (("goal" :use remove-return-last-calls-list-correct-lemma
+             :in-theory (disable remove-return-last-calls-list-correct-lemma)))
+    :fn remove-return-last-calls-list)
+
+  (defret disjoin-of-remove-return-last-calls-list
+    (iff (subst-ev (disjoin new-x) a)
+         (subst-ev (disjoin x) a))
+    :hints (("goal" :induct (len x)
+             :in-theory (enable (:i len))
+             :expand (<call>)))
+    :fn remove-return-last-calls-list)
+
+  (memoize 'remove-return-last-calls))
+
+;; (define remove-return-last-cp ((x pseudo-term-listp))
+;;   :hooks nil
+;;   (list (remove-return-last-calls-list x))
+;;   ///
+;;   (defthm remove-return-last-cp-correct
+;;     (implies (and (pseudo-term-listp x)
+;;                   (alistp a)
+;;                   (subst-ev (conjoin-clauses (remove-return-last-cp x)) a))
+;;              (subst-ev (disjoin x) a))
+;;     :rule-classes :clause-processor))
 
 (define beta-reduce-by-hint-cp ((clause pseudo-term-listp)
                            (thm)
@@ -416,9 +606,11 @@
        (formula (meta-extract-formula thm state))
        ((unless (pseudo-termp formula))
         (value (list clause)))
-       (formula-beta (acl2::beta-reduce-full formula))
+       (formula-rl (remove-return-last-calls formula))
+       (formula-beta (acl2::beta-reduce-full formula-rl))
        ((mv & formula-norm) (acl2::my-quote-normal-form1 formula-beta))
-       (term-beta (acl2::beta-reduce-full (car clause)))
+       (term-rl (remove-return-last-calls (car clause)))
+       (term-beta (acl2::beta-reduce-full term-rl))
        ((mv & term-norm) (acl2::my-quote-normal-form1 term-beta)))
     (value (if (equal term-norm formula-norm)
                nil
@@ -433,26 +625,26 @@
   (defthm beta-reduce-by-hint-cp-correct
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
-                  (acl2::cterm-ev (meta-extract-global-fact `(:formula ,thm) state) a)
-                  (acl2::cterm-ev (conjoin-clauses
+                  (subst-ev (meta-extract-global-fact `(:formula ,thm) state) a)
+                  (subst-ev (conjoin-clauses
                                     (acl2::clauses-result
                                      (beta-reduce-by-hint-cp clause thm state)))
                                    a))
-             (acl2::cterm-ev (disjoin clause) a))
+             (subst-ev (disjoin clause) a))
     :hints(("Goal" :in-theory (e/d (meta-extract-global-fact+)
-                                   (;; beta-reduce-full-correct-for-cterm-ev
-                                    acl2::sublis-var1-is-term-subst))
+                                   (;; beta-reduce-full-correct-for-subst-ev
+                                    sublis-var1-is-term-subst-for-subst-ev))
             :expand ((pseudo-term-listp clause))
-            :use (;; (:instance beta-reduce-full-correct-for-cterm-ev
+            :use (;; (:instance beta-reduce-full-correct-for-subst-ev
                   ;;  (x (car clause)))
-                  ;; (:instance beta-reduce-full-correct-for-cterm-ev
+                  ;; (:instance beta-reduce-full-correct-for-subst-ev
                   ;;  (x (meta-extract-formula thm state)))
-                  (:instance acl2::sublis-var1-is-term-subst
-                   (x (acl2::beta-reduce-full (meta-extract-formula thm state)))
+                  (:instance sublis-var1-is-term-subst-for-subst-ev
+                   (x (acl2::beta-reduce-full (remove-return-last-calls (meta-extract-formula thm state))))
                    (alist nil)
                    (a a))
-                  (:instance acl2::sublis-var1-is-term-subst
-                   (x (acl2::beta-reduce-full (car clause)))
+                  (:instance sublis-var1-is-term-subst-for-subst-ev
+                   (x (acl2::beta-reduce-full (remove-return-last-calls (car clause))))
                    (alist nil)
                    (a a))
                   )))

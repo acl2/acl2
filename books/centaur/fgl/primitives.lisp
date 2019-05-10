@@ -30,168 +30,68 @@
 
 (in-package "FGL")
 
+(include-book "add-primitives")
 (include-book "primitives-stub")
 (include-book "bfr-arithmetic")
+(include-book "subst-functions")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
+;; (def-gl-object-eval fgl-prim
+;;   (acl2-numberp
+;;    binary-* binary-+
+;;    unary-- unary-/ < char-code characterp
+;;    code-char complex complex-rationalp
+;;    coerce consp denominator imagpart
+;;    integerp intern-in-package-of-symbol
+;;    numerator rationalp realpart
+;;    stringp symbol-name symbol-package-name
+;;    symbolp
+;;    syntax-bind-fn abort-rewrite
 
-     
-(defun gl-primitive-formula-checks (formulas state)
-  (declare (xargs :stobjs state :mode :program))
-  (if (atom formulas)
-      nil
-    (cons `(equal (meta-extract-formula ',(car formulas) state)
-                  ',(meta-extract-formula (car formulas) state))
-          (gl-primitive-formula-checks (cdr formulas) state))))
-
-(defun def-gl-formula-checks-fn (name formulas state)
-  (declare (xargs :stobjs state :mode :program))
-  `(define ,name (state)
-     :returns (ok)
-     (and . ,(gl-primitive-formula-checks formulas state))
-     ///
-     (table gl-formula-checks ',name ',formulas)))
-
-(defmacro def-gl-formula-checks (name formulas)
-  `(make-event
-    (def-gl-formula-checks-fn ',name ',formulas state)))
+;;    equal not if iff int bool
+;;    concrete return-last synp cons car cdr
+;;    intcons intcons* endint intcar intcdr int-endp
+;;    typespec-check implies fgl-sat-check))
 
 
-(defun def-gl-primitive-fn (fn formals body name-override formula-check-fn prepwork)
-  (declare (Xargs :mode :program))
-  (b* ((primfn (or name-override
-                   (intern-in-package-of-symbol
-                    (concatenate 'string "GL-" (symbol-name fn) "-PRIMITIVE")
-                    'gl-package))))
-    `(define ,primfn ((args gl-objectlist-p)
-                      (interp-st interp-st-bfrs-ok)
-                      state)
-       :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
-       :returns (mv successp
-                    ans
-                    new-interp-st)
-       :prepwork ,prepwork
-       (if (eql (len args) ,(len formals))
-           (b* (((list . ,formals) (gl-objectlist-fix args)))
-             ,body)
-         (mv nil nil interp-st))
-       ///
-       ,@*gl-primitive-thms*
-
-       (defret eval-of-<fn>
-         (implies (and successp
-                       (fgl-ev-meta-extract-global-facts :state st)
-                       ,@(and formula-check-fn
-                              `((,formula-check-fn st)))
-                       (equal (w st) (w state))
-                       (interp-st-bfrs-ok interp-st)
-                       (interp-st-bfr-listp (gl-objectlist-bfrlist args)))
-                  (equal (fgl-object-eval ans env (interp-st->logicman new-interp-st))
-                         (fgl-ev (cons ',fn
-                                       (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                                 nil))))
-       (table gl-primitives ',fn ',primfn))))
 
 
-(defmacro def-gl-primitive (fn formals body &key (fnname) (formula-check) (prepwork))
-  (def-gl-primitive-fn fn formals body fnname formula-check prepwork))
-
-
-(defun gl-primitive-fncall-entries (table)
-  (if (atom table)
-      `((otherwise (mv nil nil interp-st)))
-    (b* (((cons fn prim) (car table)))
-      (cons `(,fn (,prim args interp-st state))
-            (gl-primitive-fncall-entries (cdr table))))))
-
-(defun append-alist-vals (x)
-  (if (atom x)
-      nil
-    (append (cdar x)
-            (append-alist-vals (cdr x)))))
-
-(defun formula-check-thms (name table)
-  (if (atom table)
-      nil
-    (b* ((check-name (caar table))
-         (thmname (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name check-name) "-WHEN-" (symbol-name name))
-                   name)))
-      (cons `(defthm ,thmname
-               (implies (,name st)
-                        (,check-name st))
-               :hints (("Goal" :in-theory '(,name ,check-name))))
-            (formula-check-thms name (cdr table))))))
+(def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-integer-fix)
+(def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-integerp)
+(def-gl-object-eval-inst fgl-object-eval-of-gobj-syntactic-boolean-fix)
+(def-gl-object-eval-inst fgl-object-eval-when-gobj-syntactic-booleanp)
 
 (set-state-ok t)
-
-(defun install-gl-primitives-fn (name state)
-  (declare (xargs :mode :program))
-  (b* ((wrld (w state))
-       (name-formula-checks (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name name) "-FORMULA-CHECKS")
-                             name))
-       (formula-checks-table (table-alist 'gl-formula-checks wrld))
-       (all-formulas (gl-primitive-formula-checks
-                      (acl2::hons-remove-dups (append-alist-vals formula-checks-table))
-                      state))
-       (formula-check-thms (formula-check-thms name-formula-checks formula-checks-table)))
-    
-    `(progn
-       (define ,name-formula-checks (state)
-         :ignore-ok t
-         :irrelevant-formals-ok t
-         (and . ,all-formulas)
-         ///
-         . ,formula-check-thms)
-       (define ,name ((fn pseudo-fnsym-p)
-                      (args gl-objectlist-p)
-                      (interp-st interp-st-bfrs-ok)
-                      state)
-         :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
-         :returns (mv successp ans new-interp-st)
-         (case (pseudo-fnsym-fix fn)
-           . ,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld)))
-         ///
-         ,@*gl-primitive-thms*
-         (defret eval-of-<fn>
-           (implies (and successp
-                         (fgl-ev-meta-extract-global-facts :state st)
-                         ;; (,name-formula-checks st)
-                         (equal (w st) (w state))
-                         (interp-st-bfrs-ok interp-st)
-                         (interp-st-bfr-listp (gl-objectlist-bfrlist args)))
-                    (equal (fgl-object-eval ans env (interp-st->logicman new-interp-st))
-                           (fgl-ev (cons (pseudo-fnsym-fix fn)
-                                         (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st))))
-                                   nil)))))
-
-       ;; bozo, dumb theorem needed to prove fixequiv hook
-       (local (defthm pseudo-fnsym-fix-equal-forward
-                (implies (equal (pseudo-fnsym-fix x) (pseudo-fnsym-fix y))
-                         (pseudo-fnsym-equiv x y))
-                :rule-classes :forward-chaining))
-
-       (defattach
-         (gl-primitive-fncall-stub ,name)
-         ;; (gl-primitive-formula-checks-stub ,name-formula-checks)
-         ))))
-
-(defmacro install-gl-primitives (name)
-  `(make-event
-    (install-gl-primitives-fn ',name state)))
-
-
 (set-ignore-ok t)
+
+(local (defthm fgl-objectlist-eval-when-consp
+         (implies (consp x)
+                  (equal (fgl-objectlist-eval x env)
+                         (cons (fgl-object-eval (car x) env)
+                               (fgl-objectlist-eval (cdr x) env))))))
+
+(local (in-theory (enable kwote-lst
+                          fgl-objectlist-eval)))
+
 
 (def-gl-primitive int (x)
   (b* (((mv ok fix) (gobj-syntactic-integer-fix x))
        ((unless ok) (mv nil nil interp-st)))
     (mv t fix interp-st)))
+
+
+(local (defthm fgl-object-alist-eval-under-iff
+         (iff (fgl-object-alist-eval x env)
+              (gl-object-alist-fix x))
+         :hints(("Goal" :induct (len x)
+                 :in-theory (enable (:i len))
+                 :expand ((fgl-object-alist-eval x env)
+                          (gl-object-alist-fix x))))))
+
 
 
 (def-gl-primitive endint (x)
@@ -200,6 +100,7 @@
     :g-boolean (mv t (mk-g-integer (list x.bool)) interp-st)
     :g-cons (mv t -1 interp-st)
     :g-integer (mv t -1 interp-st)
+    :g-map (mv t (endint (and x.alist t)) interp-st)
     :otherwise (mv nil nil interp-st)))
 
 
@@ -214,12 +115,35 @@
                                (gobj-syntactic-integer->bits cdr-fix)))
         interp-st)))
 
-(table gl-primitives 'intcons* 'gl-intcons-primitive)
-
 (local (defthm logcar-when-not-integerp
          (implies (not (integerp x))
                   (equal (logcar x) 0))
          :hints(("Goal" :in-theory (enable logcar)))))
+
+(local (defthm fgl-object-alist-eval-when-atom
+         (implies (atom (gl-object-alist-fix x))
+                  (equal (fgl-object-alist-eval x env)
+                         (gl-object-alist-fix x)))
+         :hints(("Goal" :induct (len x)
+                 :in-theory (enable (:i len))
+                 :expand ((fgl-object-alist-eval x env)
+                          (gl-object-alist-fix x))))))
+
+(local (defthm consp-of-fgl-object-alist-eval
+         (iff (consp (fgl-object-alist-eval x env))
+              (consp (gl-object-alist-fix x)))
+         :hints(("Goal" :induct (len x)
+                 :in-theory (enable (:i len))
+                 :expand ((fgl-object-alist-eval x env)
+                          (gl-object-alist-fix x))))))
+
+(local (defthm integerp-of-fgl-object-alist-eval
+         (iff (integerp (fgl-object-alist-eval x env))
+              (integerp (gl-object-alist-fix x)))
+         :hints (("goal" :use (fgl-object-alist-eval-when-atom
+                               consp-of-fgl-object-alist-eval)
+                  :in-theory (disable fgl-object-alist-eval-when-atom
+                                      consp-of-fgl-object-alist-eval)))))
 
 (def-gl-primitive intcar (x)
   (gl-object-case x
@@ -229,6 +153,9 @@
     :g-integer (mv t (mk-g-boolean (car x.bits)) interp-st)
     :g-boolean (mv t nil interp-st)
     :g-cons (mv t nil interp-st)
+    :g-map (mv t (and (integerp x.alist)
+                      (intcar x.alist))
+               interp-st)
     :otherwise (mv nil nil interp-st)))
 
 (local (in-theory (enable int-endp
@@ -237,6 +164,7 @@
          (implies (booleanp x)
                   (equal (gl-object-kind x) :g-concrete))
          :hints(("Goal" :in-theory (enable gl-object-kind)))))
+
 (local (defthm gobj-bfr-list-eval-when-atom-cdr
          (implies (not (consp (cdr bits)))
                   (equal (gobj-bfr-list-eval bits env)
@@ -254,6 +182,9 @@
                    interp-st)
     :g-boolean (mv t t interp-st)
     :g-cons (mv t t interp-st)
+    :g-map (mv t (or (not (integerp x.alist))
+                     (int-endp x.alist))
+               interp-st)
     :otherwise (mv nil nil interp-st)))
 
 (local (defthm logcdr-when-not-integerp
@@ -275,6 +206,10 @@
     :g-integer (mv t (mk-g-integer (scdr x.bits)) interp-st)
     :g-boolean (mv t 0 interp-st)
     :g-cons (mv t 0 interp-st)
+    :g-map (mv t (if (integerp x.alist)
+                     (intcdr x.alist)
+                   0)
+               interp-st)
     :otherwise (mv nil nil interp-st)))
 
 (local (in-theory (enable bool-fix)))
@@ -285,6 +220,7 @@
     :g-boolean (mv t (gl-object-fix x) interp-st)
     :g-integer (mv t t interp-st)
     :g-cons (mv t t interp-st)
+    :g-map (mv t (bool-fix x.alist) interp-st)
     :otherwise (mv nil nil interp-st)))
 
 (def-gl-primitive cons (car cdr)
@@ -296,6 +232,18 @@
         (g-cons car cdr))
       interp-st))
 
+(local (defthm consp-car-when-gl-object-alist-p
+         (implies (and (gl-object-alist-p x)
+                       (consp x))
+                  (consp (car x)))))
+
+(local (defthm fgl-object-alist-eval-when-consp
+         (implies (and (consp x)
+                       (consp (car x)))
+                  (equal (fgl-object-alist-eval x env)
+                         (cons (cons (caar x) (fgl-object-eval (cdar x) env))
+                               (fgl-object-alist-eval (cdr x) env))))))
+
 (def-gl-primitive car (x)
   (gl-object-case x
     :g-concrete (mv t (g-concrete (mbe :logic (car x.val)
@@ -304,6 +252,10 @@
     :g-boolean (mv t nil interp-st)
     :g-integer (mv t nil interp-st)
     :g-cons (mv t x.car interp-st)
+    :g-map (mv t (and (consp x.alist)
+                      (g-cons (g-concrete (caar x.alist))
+                              (cdar x.alist)))
+               interp-st)
     :otherwise (mv nil nil interp-st)))
 
 (def-gl-primitive cdr (x)
@@ -314,107 +266,110 @@
     :g-boolean (mv t nil interp-st)
     :g-integer (mv t nil interp-st)
     :g-cons (mv t x.cdr interp-st)
+    :g-map (mv t (and (consp x.alist)
+                      (g-map '(:g-map) (cdr x.alist)))
+               interp-st)
     :otherwise (mv nil nil interp-st)))
     
 
-(defthm integerp-in-terms-of-int
-  (equal (integerp x)
-         (equal (int x) x))
-  :rule-classes nil)
+;; (defthm integerp-in-terms-of-int
+;;   (equal (integerp x)
+;;          (equal (int x) x))
+;;   :rule-classes nil)
 
 
 
 
 
-  (local (defthmd gl-object-bfrlist-of-get-bvar->term$a-aux
-           (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
-                         (< (nfix n) (nfix m))
-                         (<= (base-bvar$a bvar-db) (nfix n)))
-                    (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
-           :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
+;;   (local (defthmd gl-object-bfrlist-of-get-bvar->term$a-aux
+;;            (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
+;;                          (< (nfix n) (nfix m))
+;;                          (<= (base-bvar$a bvar-db) (nfix n)))
+;;                     (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;            :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
 
-  (local (defthm gl-object-bfrlist-of-get-bvar->term$a
-           (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                         (<= (base-bvar$a bvar-db) (nfix n))
-                         (< (nfix n) (next-bvar$a bvar-db)))
-                    (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
-           :hints (("goal" :in-theory (enable bvar-db-bfrlist)
-                    :use ((:instance gl-object-bfrlist-of-get-bvar->term$a-aux
-                           (m (next-bvar$a bvar-db))))))))
+;;   (local (defthm gl-object-bfrlist-of-get-bvar->term$a
+;;            (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+;;                          (<= (base-bvar$a bvar-db) (nfix n))
+;;                          (< (nfix n) (next-bvar$a bvar-db)))
+;;                     (not (member v (gl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;            :hints (("goal" :in-theory (enable bvar-db-bfrlist)
+;;                     :use ((:instance gl-object-bfrlist-of-get-bvar->term$a-aux
+;;                            (m (next-bvar$a bvar-db))))))))
 
 ;;(local (in-theory (enable gobj-bfr-list-eval-is-bfr-list-eval)))
 
-(define int+ (x y)
-  (+ (ifix x) (ifix y)))
+;; (define int+ (x y)
+;;   (+ (ifix x) (ifix y)))
 
 
 
-(def-gl-formula-checks int+-formula-checks (int+ ifix))
+;; (def-gl-formula-checks int+-formula-checks (int+ ifix))
 
-(define w-equiv (x y)
-  :non-executable t
-  :no-function t
-  :verify-guards nil
-  (equal (w x) (w y))
-  ///
-  (defequiv w-equiv)
-  (defcong w-equiv equal (w x) 1)
-  (defcong w-equiv equal (meta-extract-formula name state) 2
-    :hints(("Goal" :in-theory (enable meta-extract-formula))))
+;; (define w-equiv (x y)
+;;   :non-executable t
+;;   :no-function t
+;;   :verify-guards nil
+;;   (equal (w x) (w y))
+;;   ///
+;;   (defequiv w-equiv)
+;;   (defcong w-equiv equal (w x) 1)
+;;   (defcong w-equiv equal (meta-extract-formula name state) 2
+;;     :hints(("Goal" :in-theory (enable meta-extract-formula))))
 
-  (defthm ws-equal-forward
-    (implies (equal (w st) (w state))
-             (w-equiv st state))
-    :rule-classes :forward-chaining))
+;;   (defthm ws-equal-forward
+;;     (implies (equal (w st) (w state))
+;;              (w-equiv st state))
+;;     :rule-classes :forward-chaining))
 
-(local (in-theory (disable w)))
+;; (local (in-theory (disable w)))
 
-(defthm fgl-ev-of-ifix-call
-  (implies (and (fgl-ev-meta-extract-global-facts :state st)
-                (int+-formula-checks st)
-                (equal (w st) (w state)))
-           (equal (fgl-ev (list 'ifix x) a)
-                  (ifix (fgl-ev x a))))
-  :hints(("Goal" :in-theory (e/d (int+
-                                  int+-formula-checks
-                                  fgl-ev-of-fncall-args)
-                                 (fgl-ev-meta-extract-formula))
-          :use ((:instance fgl-ev-meta-extract-formula
-                 (st state) (state st)
-                 (name 'ifix)
-                 (a (list (cons 'x (fgl-ev x a)))))))))
+;; (defthm fgl-ev-of-ifix-call
+;;   (implies (and (fgl-ev-meta-extract-global-facts :state st)
+;;                 (int+-formula-checks st)
+;;                 (equal (w st) (w state)))
+;;            (equal (fgl-ev (list 'ifix x) a)
+;;                   (ifix (fgl-ev x a))))
+;;   :hints(("Goal" :in-theory (e/d (int+
+;;                                   int+-formula-checks
+;;                                   fgl-ev-of-fncall-args)
+;;                                  (fgl-ev-meta-extract-formula))
+;;           :use ((:instance fgl-ev-meta-extract-formula
+;;                  (st state) (state st)
+;;                  (name 'ifix)
+;;                  (a (list (cons 'x (fgl-ev x a)))))))))
 
-(defthm fgl-ev-of-int+-call
-  (implies (and (fgl-ev-meta-extract-global-facts :state st)
-                (int+-formula-checks st)
-                (equal (w st) (w state)))
-           (equal (fgl-ev (list 'int+ x y) a)
-                  (int+ (fgl-ev x a)
-                        (fgl-ev y a))))
-  :hints(("Goal" :in-theory (e/d (int+
-                                  int+-formula-checks
-                                  fgl-ev-of-fncall-args)
-                                 (fgl-ev-meta-extract-formula))
-          :use ((:instance fgl-ev-meta-extract-formula
-                 (st state) (state st)
-                 (name 'int+)
-                 (a (list (cons 'x (fgl-ev x a))
-                          (cons 'y (fgl-ev y a)))))))))
+;; (defthm fgl-ev-of-int+-call
+;;   (implies (and (fgl-ev-meta-extract-global-facts :state st)
+;;                 (int+-formula-checks st)
+;;                 (equal (w st) (w state)))
+;;            (equal (fgl-ev (list 'int+ x y) a)
+;;                   (int+ (fgl-ev x a)
+;;                         (fgl-ev y a))))
+;;   :hints(("Goal" :in-theory (e/d (int+
+;;                                   int+-formula-checks
+;;                                   fgl-ev-of-fncall-args)
+;;                                  (fgl-ev-meta-extract-formula))
+;;           :use ((:instance fgl-ev-meta-extract-formula
+;;                  (st state) (state st)
+;;                  (name 'int+)
+;;                  (a (list (cons 'x (fgl-ev x a))
+;;                           (cons 'y (fgl-ev y a)))))))))
 
-(local (defthm fgl-objectlist-eval-of-atom
-         (implies (not (consp x))
-                  (equal (fgl-objectlist-eval x env) nil))
-         :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
-         :rule-classes ((:rewrite :backchain-limit-lst 0))))
+;; (local (defthm fgl-objectlist-eval-of-atom
+;;          (implies (not (consp x))
+;;                   (equal (fgl-objectlist-eval x env) nil))
+;;          :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))
+;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-(local (defthm bools->int-of-eval-syntactic-integer-bits
-         (b* (((mv ok xfix) (gobj-syntactic-integer-fix x)))
-           (implies ok
-                    (equal (bools->int (gobj-bfr-list-eval (gobj-syntactic-integer->bits xfix)
-                                                           env))
-                           (ifix (fgl-object-eval x env)))))
-         :hints(("Goal" :in-theory (enable gobj-syntactic-integer->bits
-                                           gobj-syntactic-integer-fix)))))
+;; (local (defthm bools->int-of-eval-syntactic-integer-bits
+;;          (b* (((mv ok xfix) (gobj-syntactic-integer-fix x)))
+;;            (implies ok
+;;                     (equal (bools->int (gobj-bfr-list-eval (gobj-syntactic-integer->bits xfix)
+;;                                                            env))
+;;                            (ifix (fgl-object-eval x env)))))
+;;          :hints(("Goal" :in-theory (enable gobj-syntactic-integer->bits
+;;                                            gobj-syntactic-integer-fix)))))
 
 
 ;; (def-gl-primitive int+ (x y)
@@ -433,5 +388,9 @@
 
 
 
-(install-gl-primitives gl-primitive-fncall-base)
+
+(local (install-gl-primitives baseprims))
+
+
+
 

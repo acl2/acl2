@@ -503,7 +503,10 @@
   (b* (((acl2::local-stobjs interp-st)
         (mv erp result state interp-st))
        ((unless (glcp-config-p hint))
-        (mv "Bad hint object -- must satisfy glcp-config-p" hint state interp-st))
+        (mv "Bad hint object -- must satisfy glcp-config-p" nil state interp-st))
+       ((unless (gl-primitive-formula-checks-stub state))
+        (mv "Failed formula checks! Some assumed definitions needed for primitives are not installed."
+            nil state interp-st))
        (config hint)
        (disj (disjoin clause))
        (vars (term-vars disj))
@@ -583,15 +586,15 @@
   ;;           (gl-primitive-formula-checks-wrap state))))
 
   (local (defthm fgl-object-bindings-eval-rewrite-with-fgl-object-bindings-ev
-           (implies (and (equal ev (double-rewrite (gl-object-bindings-ev x env)))
+           (implies (and (equal ev (double-rewrite (fgl-object-bindings-concretize x env)))
                          (syntaxp (and (not (equal ev x))
                                        (case-match ev
-                                         (('gl-object-bindings-ev-fn xans & &)
+                                         (('fgl-object-bindings-concretize-fn xans & &)
                                           (not (equal xans x)))
                                          (& t))))
                          (equal eval (fgl-object-bindings-eval ev nil nil))
                          (syntaxp (case-match eval
-                                    (('fgl-object-bindings-eval-fn ('gl-objectlist-ev-fn xans & &) & &)
+                                    (('fgl-object-bindings-eval-fn ('fgl-object-bindings-concretize-fn xans & &) & &)
                                      (not (equal xans x)))
                                     (('fgl-object-bindings-eval-fn xans & &)
                                      (not (equal xans x)))
@@ -599,17 +602,17 @@
                     (equal (fgl-object-bindings-eval x env) eval))))
 
   (local (defthm gl-object-bindings-ev-of-stack$a-bindings
-           (equal (gl-object-bindings-ev (stack$a-bindings stack) env)
-                  (double-rewrite (stack$a-bindings (major-stack-ev stack env))))
-           :hints(("Goal" :in-theory (enable major-frame-ev
+           (equal (fgl-object-bindings-concretize (stack$a-bindings stack) env)
+                  (double-rewrite (stack$a-bindings (fgl-major-stack-concretize stack env))))
+           :hints(("Goal" :in-theory (enable fgl-major-frame-concretize
                                              stack$a-bindings)
-                   :expand ((major-stack-ev stack env))
+                   :expand ((fgl-major-stack-concretize stack env))
                    :do-not-induct t))))
 
-  (local (defthm major-stack-ev-identity
-           (equal (major-stack-ev (major-stack-ev x env) env2 logicman2)
-                  (major-stack-ev x env))
-           :hints(("Goal" :in-theory (enable major-stack-ev)))))
+  (local (defthm fgl-major-stack-concretize-identity
+           (equal (fgl-major-stack-concretize (fgl-major-stack-concretize x env) env2 logicman2)
+                  (fgl-major-stack-concretize x env))
+           :hints(("Goal" :in-theory (enable fgl-major-stack-concretize)))))
 
 
   (local (in-theory (disable gl-interp-test-bvar-db-ok-implies-previous-ok)))
