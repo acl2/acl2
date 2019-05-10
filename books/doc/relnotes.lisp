@@ -27,9 +27,10 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;; These books aren't really necessary, but are harmless enough and are useful
 ;; when debugging the release note markup.
@@ -88,34 +89,58 @@
 ; ensure consistency with the style of previous book release doc
 ; topics, please follow the following convention:
 
-;  <h4>Your Library Title</h4>
-;  <p>Details go here.</p>
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
 
+; Please put the h4's in alphabetical order, separated by lines of semicolons.
 ; If you are stuck, see comments in previous (defxdoc note-xxx-books ...).
 
   :parents (note-8-3 release-notes-books)
+
   :short "Release notes for the ACL2 Community Books for ACL2 8.3"
 
-  :long "<p>The following is a brief summary of changes made to the @(see
- community-books) between the releases of ACL2 8.2 and 8.3.</p>
+  :long
 
- <p>See also @(see note-8-3) for the changes made to ACL2 itself.  For
- additional details, you may also see the raw <a
- href='https://github.com/acl2/acl2/commits/master'>commit log</a>.</p>
+  (xdoc::topstring
 
- <h3>New Libraries</h3>
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.2 and 8.3.")
 
- <h3>Changes to Existing Libraries</h3>
+   (xdoc::p
+    "See also @(see note-8-3) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::a :href "https://github.com/acl2/acl2/commits/master"
+      "commit log")
+    ".")
 
- <h3>Licensing Changes</h3>
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- <h3>Build System Updates</h3>
+   (xdoc::h3 "New Libraries")
 
- <h3>Testing</h3>
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- <h3>Miscellaneous</h3>
+   (xdoc::h3 "Changes to Existing Libraries")
 
- ")
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
 
 (defxdoc note-8-2-books
 
