@@ -66,12 +66,13 @@ hints given should either be computed hints or reference later subgoals.</p>")
     (or (and (consp (car hints))
              (stringp (caar hints))
              (standard-char-listp (coerce (caar hints) 'list))
-             (equal (string-upcase (caar hints)) "GOAL"))
+             (equal (string-upcase (caar hints)) "GOAL")
+             (car hints))
         (look-for-goal-hint (cdr hints)))))
 
 (defun def-functional-instance-fn
   (newname oldname subst hints rule-classes rule-classesp
-           translate macro-subst state)
+           translate macro-subst by-hint-p state)
   (declare (xargs :stobjs state :mode :program))
   (b* ((world (w state))
        (body (if translate
@@ -93,19 +94,24 @@ hints given should either be computed hints or reference later subgoals.</p>")
                        new-body))
        (form `(defthm ,newname
                 ,untrans-body
-                :hints (("goal" :use ((:functional-instance ,oldname . ,subst)))
+                :hints (("goal"
+                         ,@(if by-hint-p
+                               `(:by (:functional-instance ,oldname . ,subst))
+                             `(:use ((:functional-instance ,oldname . ,subst))))
+                         . ,(cdr (look-for-goal-hint hints)))
                         . ,hints)
                 :rule-classes ,rule-classes)))
-    (and (look-for-goal-hint hints)
-         (cw "WARNING:  In DEF-FUNCTIONAL-INSTANCE, any user-provided hint ~
-keyed on subgoal \"GOAL\" will be ignored.  If your proof fails, please try ~
-again with a computed hint or a subgoal specifier other than \"GOAL\". "))
+;;     (and (look-for-goal-hint hints)
+;;          (cw "WARNING:  In DEF-FUNCTIONAL-INSTANCE, any user-provided hint ~
+;; keyed on subgoal \"GOAL\" will be ignored.  If your proof fails, please try ~
+;; again with a computed hint or a subgoal specifier other than \"GOAL\". "))
     (value form)))
 
 (defmacro def-functional-instance
   (newname oldname subst &key hints (rule-classes 'nil rule-classesp)
            (translate 't)
+           (by-hint-p 'nil)
            macro-subst)
   `(make-event
     (def-functional-instance-fn
-      ',newname ',oldname ',subst ',hints ',rule-classes ',rule-classesp ',translate ',macro-subst state)))
+      ',newname ',oldname ',subst ',hints ',rule-classes ',rule-classesp ',translate ',macro-subst ',by-hint-p state)))
