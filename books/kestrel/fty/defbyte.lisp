@@ -41,12 +41,16 @@
     "This macro introduces unary recognizers, and associated fixtypes,
      of unsigned or signed bytes of specified sizes.
      It also generates various theorems that relate
-     the unary recognizers to the binary predicates.")
+     the unary recognizers to the binary predicates,
+     as well as "
+    (xdoc::seeurl "acl2::compound-recognizers" "compound recognizer rules")
+    ".")
 
    (xdoc::p
     "Besides their use in fixtypes,
-     the unary recognizers introduced by this macro support
-     <see topic='@(url acl2::tau-system)'>tau system</see> reasoning.")
+     the unary recognizers introduced by this macro support "
+    (xdoc::seeurl "acl2::tau-system" "tau system")
+    " reasoning.")
 
    (xdoc::h3 "General Form")
 
@@ -156,6 +160,13 @@
       Since this is the converse of the definition of the unary recognizer,
       a theory invariant is also generated preventing the enabling of
       both this rule and the definition of the unary recognizer."))
+
+   (xdoc::desc
+    "@('pred-compound-recognizer')"
+    (xdoc::p
+     "A compound recognizer rule from @('pred')
+      to @(tsee natp) (if the @(':signed') input is @('nil')
+      or @(tsee integerp) (if the @(':signed') input is @('t')."))
 
    (xdoc::desc
     "@('fix')"
@@ -365,6 +376,11 @@
                                               pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
                                               pkg-witness))
+       (pred-compound-recognizer (acl2::packn-pos (list (if signed
+                                                            'integerp-when-
+                                                          'natp-when-)
+                                                        pred)
+                                                  pkg-witness))
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix)
                                      pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred)
@@ -429,7 +445,17 @@
                  :in-theory '(,pred))
                (theory-invariant
                 (incompatible (:rewrite ,binpred-rewrite-pred)
-                              (:definition ,pred))))
+                              (:definition ,pred)))
+               (defrule ,pred-compound-recognizer
+                 (implies (,pred ,x)
+                          (,(if signed 'integerp 'natp) ,x))
+                 :rule-classes :compound-recognizer
+                 :in-theory
+                 '(,pred-forward-binpred
+                   acl2::unsigned-byte-p-forward-to-nonnegative-integerp
+                   acl2::signed-byte-p-forward-to-integerp
+                   integerp
+                   natp)))
           `(define ,pred (,x)
              :returns (,yes/no booleanp
                                :name ,booleanp-of-pred
@@ -463,7 +489,17 @@
                :in-theory '(,pred))
              (theory-invariant
               (incompatible (:rewrite ,binpred-rewrite-pred)
-                            (:definition ,pred))))))
+                            (:definition ,pred)))
+             (defrule ,pred-compound-recognizer
+               (implies (,pred ,x)
+                        (,(if signed 'integerp 'natp) ,x))
+               :rule-classes :compound-recognizer
+               :in-theory
+               '(,pred-forward-binpred
+                 acl2::unsigned-byte-p-forward-to-nonnegative-integerp
+                 acl2::signed-byte-p-forward-to-integerp
+                 integerp
+                 natp)))))
        (fix-event
         `(define ,fix ((,x ,pred))
            :returns (,fixed-x ,pred

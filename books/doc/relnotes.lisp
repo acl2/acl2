@@ -129,7 +129,12 @@
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
 
    (xdoc::p
-    "Improved @(tsee fty::defset) to generate additional theorems.")
+    "The @(tsee fty::defbyte) macro has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
+    "The @(tsee fty::defset) macro has been improved
+     to generate additional theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
