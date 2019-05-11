@@ -599,20 +599,6 @@
   :pred bip44-coin-type-setp
   :short "Osets of coin types.")
 
-(defsection bip44-coin-type-set-ext
-  :extension bip44-coin-type-set
-
-  (defrule bip44-coin-type-setp-of-tail
-    (implies (bip44-coin-type-setp x)
-             (bip44-coin-type-setp (set::tail x)))
-    :enable (bip44-coin-type-setp set::tail))
-
-  (defrule bip44-coin-type-p-when-in-bip44-coin-type-setp
-    (implies (and (bip44-coin-type-setp x)
-                  (set::in a x))
-             (bip44-coin-type-p a))
-    :enable (bip44-coin-type-setp set::in set::head)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk bip44-compliant-coins-for-set-p ((tree bip32-key-treep)
