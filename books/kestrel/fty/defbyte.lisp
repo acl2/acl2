@@ -40,11 +40,9 @@
    (xdoc::p
     "This macro introduces unary recognizers, and associated fixtypes,
      of unsigned or signed bytes of specified sizes.
-     It also generates various theorems that relate
-     the unary recognizers to the binary predicates,
-     as well as "
-    (xdoc::seeurl "acl2::compound-recognizers" "compound recognizer rules")
-    ".")
+     It also generates various theorems,
+     including some that relate
+     the unary recognizers to the binary predicates.")
 
    (xdoc::p
     "Besides their use in fixtypes,
