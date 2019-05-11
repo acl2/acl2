@@ -34,9 +34,4 @@
   :long
   (xdoc::topstring-p
    "[YP:C] describes @($\\mathbb{Y}$) as the set of sequences of nibbles.
-    We use the library type @(see nibble-list) to model nibble arrays.")
-
-  (defrule nibble-list-fix-of-rcons
-    (equal (nibble-list-fix (rcons nibble nibbles))
-           (rcons (nibble-fix nibble) (nibble-list-fix nibbles)))
-    :enable rcons))
+    We use the library type @(see nibble-list) to model nibble arrays."))
