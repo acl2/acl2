@@ -375,3 +375,91 @@
            (cond ((secp256k1-infinityp point) 1)
                  (compressp 33)
                  (t 65)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection secp256k1-sign
+  :short "Signature operation (ECDSA)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we assume that this signing operation
+     is deterministic (according to RFC 6979),
+     operates on a hash (of a message),
+     and returns a boolean to recover the public key.
+     Other variants exist,
+     but this is just a placeholder.")
+   (xdoc::p
+    "This constrained function takes as inputs
+     a hash (a list of bytes) and a private key,
+     as formalized by the guard.
+     Since there are no additional inputs,
+     the signature operation has to be deterministic.")
+   (xdoc::p
+    "The function returns as outputs:
+     an error flag, constrained to be a boolean;
+     a public key recovery flag, constrained to be a boolean;
+     the signature value @($r$), constrained to be a field element;
+     and the signature value @($s$), constrained to be a field element.
+     The error flag is motivated by the fact that,
+     given a deterministic choice of the ephemeral private key @($k$),
+     the calculation of the signature may fail:
+     the flag is @('t') if the operation fails, otherwise @('nil');
+     in the former case, the other results have irrelevant values.
+     The public key recovery flag is assumed to describe
+     the parity of the @($y$) coordinate of the @($R$) point:
+     @('t') if even, @('nil') if odd.
+     The other two results are always
+     non-zero natural numbers below the order @($n$) of the curve,
+     but they also happen to be field elements,
+     which is adequate for the purpose of this placeholder.")
+   (xdoc::p
+    "We constrain this function
+     to return results of the types described above unconditionally.
+     We also constrain it to fix its arguments to the guard types."))
+
+  (encapsulate
+
+    (((secp256k1-sign * *) => (mv * * * *)
+      :formals (hash priv)
+      :guard (and (byte-listp hash)
+                  (secp256k1-priv-key-p priv))))
+
+    (local
+     (defun secp256k1-sign (hash priv)
+       (declare (ignore hash priv))
+       (mv nil t 1 1)))
+
+    (defrule booleanp-of-mv-nth-0-secp256k1-sign
+      (booleanp (mv-nth 0 (secp256k1-sign hash priv))))
+
+    (defrule booleanp-of-mv-nth-1-secp256k1-sign
+      (booleanp (mv-nth 1 (secp256k1-sign hash priv))))
+
+    (defrule secp256k1-fieldp-of-mv-nth-2-secp256k1-sign
+      (secp256k1-fieldp (mv-nth 2 (secp256k1-sign hash priv))))
+
+    (defrule secp256k1-fieldp-of-mv-nth-3-secp256k1-sign
+      (secp256k1-fieldp (mv-nth 3 (secp256k1-sign hash priv))))
+
+    (defrule secp256k1-sign-fixes-input-hash
+      (equal (secp256k1-sign (byte-list-fix hash) priv)
+             (secp256k1-sign hash priv)))
+
+    (defrule secp256k1-sign-fixes-input-priv
+      (equal (secp256k1-sign hash (secp256k1-priv-key-fix priv))
+             (secp256k1-sign hash priv))))
+
+  (defcong byte-list-equiv equal (secp256k1-sign hash priv) 1
+    :hints (("Goal"
+             :use (secp256k1-sign-fixes-input-hash
+                   (:instance secp256k1-sign-fixes-input-hash
+                    (hash acl2::hash-equiv)))
+             :in-theory (disable secp256k1-sign-fixes-input-hash))))
+
+  (defcong secp256k1-priv-key-equiv equal (secp256k1-sign hash priv) 2
+    :hints (("Goal"
+             :use (secp256k1-sign-fixes-input-priv
+                   (:instance secp256k1-sign-fixes-input-priv
+                    (priv priv-equiv)))
+             :in-theory (disable secp256k1-sign-fixes-input-priv)))))

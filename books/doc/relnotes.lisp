@@ -126,6 +126,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "The "
+    (xdoc::seeurl "crypto::secp256k1-placeholder"
+                  "placeholder for elliptic curve secp256k1")
+    " has been extended with an (abstract) signing operation.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
 
    (xdoc::p
