@@ -45,10 +45,10 @@
      of true lists of values
      of fixtypes previously introduced via @(tsee defbyte).
      This macro uses @(tsee fty::deflist) to introduce the list fixtype,
-     but it also generates various theorems that relate
+     but it also generates various theorems,
+     including some that relate
      the unary recognizers for lists of bytes
-     to the aforementioned binary predicates for lists of bytes,
-     and to other built-in predicates.")
+     to the aforementioned binary predicates for lists of bytes.")
 
    (xdoc::p
     "Besides their use in fixtypes,
@@ -141,10 +141,15 @@
 
    (xdoc::desc
     "@('true-listp-when-pred')"
-    (xdoc::li
+    (xdoc::p
      "A rule to prove @(tsee true-listp) from @('pred').
       Since @(tsee true-listp) is relatively common,
       this rule is disabled by default for efficiency."))
+
+   (xdoc::desc
+    "@('fix-of-rcons')"
+    (xdoc::p
+     "A rule to rewrite @('fix') applied to @('rcons')."))
 
    (xdoc::p
     "The above items are generated with XDOC documentation.")))
@@ -191,10 +196,11 @@
        (defbyte-info (cdr defbyte-pair))
        (size (defbyte-info->size defbyte-info))
        (signed (defbyte-info->signed defbyte-info))
-       ;; retrieve element type recognizer from the fixtype table:
+       ;; retrieve element type recognizer and fixer from the fixtype table:
        (fty-table (get-fixtypes-alist wrld))
        (fty-info (find-fixtype elt-type fty-table))
        (bytep (fixtype->pred fty-info))
+       (byte-fix (fixtype->fix fty-info))
        ;; validate the :PRED input:
        ((unless (symbolp pred))
         (raise "The :PRED input must be a symbol, ~
@@ -228,8 +234,10 @@
                                                             pred
                                                             '-rewrite)
                                                       pkg-witness))
-       ;; variable to use in the generated functions and theorems:
+       (fix-of-rcons (acl2::packn-pos (list fix '-of-rcons) pkg-witness))
+       ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
+       (a (intern-in-package-of-symbol "A" pkg-witness))
        ;; XDOC topic for the generated theorems:
        (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS"))
        ;; generated events:
@@ -265,7 +273,15 @@
            (defruled ,true-listp-when-pred-rewrite
              (implies (,pred ,x)
                       (true-listp ,x))
-             :in-theory '(,pred true-listp)))))
+             :in-theory '(,pred true-listp))
+           (defrule ,fix-of-rcons
+             (equal (,fix (rcons ,a ,x))
+                    (rcons (,byte-fix ,a) (,fix ,x)))
+             :in-theory '(,fix
+                          ,(acl2::add-suffix-to-fn fix "-OF-CONS")
+                          ,(acl2::add-suffix-to-fn fix "-OF-APPEND")
+                          acl2::binary-append-without-guard
+                          rcons)))))
     ;; top-level event:
     `(encapsulate
        ()

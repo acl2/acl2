@@ -133,6 +133,10 @@
      to generate additional theorems.")
 
    (xdoc::p
+    "The @(tsee fty::defbytelist) macro has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
     "The @(tsee fty::defset) macro has been improved
      to generate additional theorems.")
 
