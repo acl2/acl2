@@ -126,6 +126,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "fty" "FTY"))
+
+   (xdoc::p
+    "Improved @(tsee fty::defset) to generate additional theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "@(csee std/alists)")
 
    (xdoc::p
