@@ -126,14 +126,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "fty" "FTY"))
+   (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
 
    (xdoc::p
     "Improved @(tsee fty::defset) to generate additional theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "@(csee std/alists)")
+   (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
     "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
