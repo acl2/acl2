@@ -37,11 +37,11 @@
   "<p>
    The @($\\mathbf{to}$) field of a transaction [YP:4.2] is
    either a 20-byte (i.e. 160-bit) address
-   or the empty array (i.e. the only element of @($\\mathbb{B}_0$) [YP:(18)].
+   or the empty array (i.e. the only element of @($\\mathbb{B}_0$)) [YP:(18)].
    Both [YP:4.2] and [YP:(18)] mention @($\\varnothing$) as
    the (only) element of @($\\mathbb{B}_0$);
    however, according to the definition of @($\\mathbb{B}$) [YP:(178)],
-   the empty array should probably be denoted as @($()$).
+   the empty array should be denoted as @($()$).
    </p>
    <p>
    Regardless, in our model the empty byte array is @('nil'),
@@ -76,7 +76,7 @@
    </p>
    <p>
    The sixth component of the tuple is always a byte array,
-   whether it is initialization code (when the recipient is @('nil')
+   whether it is initialization code (when the recipient is @('nil'))
    or it is data (when the recipient is an address).
    </p>
    <p>
@@ -87,10 +87,10 @@
    but it is denoted as @($T_{\\mathrm{w}}$) in [YP:(15)] and [YP:(16)]
    (presumably to avoid a conflict with
    the @($T_{\\mathrm{v}}$) value component).
-   we pick @('sign-v') (instead of @('sign-w'))
+   We pick @('sign-v') (instead of @('sign-w'))
    for the corresponding field name in our product fixtype.
    However, there is an issue with the type of this component:
-   [YP:(16)] says that it is a number below 32,
+   [YP:(16)] says that it is a natural number below 32,
    but [YP:F] says that @($T_{\\mathrm{w}}$) may be
    a chain identifier doubled plus 35 or 36,
    in which case it is above 32.
