@@ -94,11 +94,11 @@
    but [YP:F] says that @($T_{\\mathrm{w}}$) may be
    a chain identifier doubled plus 35 or 36,
    in which case it is above 32.
-   It looks like [YP:F] was updated according to EIP 155,
+   It looks like [YP:F] was updated according to [EIP155],
    while [YP:4.2] was not;
    this EIP describes an improved signature scheme
    that involves chain identifiers.
-   EIP 155 lists some chain identifiers, one of which is larger than a byte.
+   [EIP155] lists some chain identifiers, one of which is larger than a byte.
    So we use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
    for this component of a transaction.
    </p>"
