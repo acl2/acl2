@@ -379,10 +379,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This actually subsumes the injectivity property,
-     because every enconding is a prefix of itself.
-     We do a case split on whether the two encodings have the same length
-     (in which case the injectivity theorem applies),
+    "This is expressed by saying that
+     if a valid encoding is a prefix of another one,
+     the two encodings must be equal.
+     Thus, it is not possible for a valid encoding
+     to be a strict prefix of another valid encoding.")
+   (xdoc::p
+    "We do a case split on whether the two encodings have the same length
+     (in which case the prefix relationship implies equality),
      or not.
      In the latter case,
      we show that in fact the two encodings must have the same length
