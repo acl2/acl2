@@ -66,12 +66,14 @@
 (defconst *nicestobj-field-userkeys*
   '(:key :type :pred :fix :rule-classes :initially :resizable
     ;; function names
+    :fieldname
     :access
     :base-access
     :update
     :base-update
     :resize
     :length
+    :recognizer
 
     ;; only applicable to add-ons/hash-stobjs.lisp hash table fields
     :boundp
@@ -79,10 +81,11 @@
     :remove
     :count
     :clear
-    :init))
+    :init
+    :elementp-of-nil))
 
 (defconst *nicestobj-field-keys*
-  (append '(:name :arrayp :hashp :rename-update :stobjp) *nicestobj-field-userkeys*))
+  (append '(:name :arrayp :hashp :elt-type :renaming :stobjp) *nicestobj-field-userkeys*))
 
 
 
@@ -116,6 +119,15 @@
   (b* ((stobj (or (fgetprop x 'acl2::congruent-stobj-rep nil wrld) x)))
     (nth 1 (fgetprop stobj 'acl2::stobj nil wrld))))
 
+
+(defun remove-redundant-pairs (x)
+  (if (atom x)
+      nil
+    (if (eq (caar x) (cdar x))
+        (remove-redundant-pairs (cdr x))
+      (cons (car x) (remove-redundant-pairs (cdr x))))))
+
+
 (defun parse-nicestobj-field (stobjname field wrld)
   (b* ((std::__function__ 'parse-nicestobj-field)
        ((unless (and (consp field)
@@ -131,13 +143,19 @@
        (kwd-alist (cons (cons :name name) kwd-alist))
        (kwd-alist (kwd-alist-add-default :type t kwd-alist))
        (type (cdr (assoc :type kwd-alist)))
-       ((when (and (consp type) (member-eq (car type) '(array acl2::hash-table))))
-        (raise "Nicestobj doesn't support array or hash-table fields yet~%"))
-       (type-pred (acl2::translate-declaration-to-guard type name nil))
+       ((when (and (consp type) (member-eq (car type) '(acl2::hash-table))))
+        (raise "Nicestobj doesn't support hash-table fields yet~%"))
+       (arrayp (and (consp type)
+                    (eq (car type) 'array)))
+       (elt-type (if (and (consp type)
+                           (member-eq (car type) '(array acl2::hash-table)))
+                      (cadr type)
+                    type))
+       (type-pred (acl2::translate-declaration-to-guard elt-type name nil))
        ;; (typep (and type-pred (not (member-eq-tree 'satisfies type))))
        (stobj-pred (and (not type-pred)
-                        (symbolp type)
-                        (congruent-stobj-pred type wrld)))
+                        (symbolp elt-type)
+                        (congruent-stobj-pred elt-type wrld)))
        (type-pred-expr (or type-pred 
                            (and stobj-pred
                                 `(,stobj-pred ,name))))
@@ -145,21 +163,33 @@
                           ;; special case for when the type is T
                           (member-eq-tree name type-pred-expr)
                           `(lambda (,name) ,type-pred-expr)))
+       (kwd-alist (cons (cons :elt-type elt-type) kwd-alist))
        (kwd-alist (cons (cons :stobjp stobj-pred) kwd-alist))
+       (kwd-alist (cons (cons :arrayp arrayp) kwd-alist))
        (kwd-alist (kwd-alist-add-default :key (intern-in-package-of-symbol (symbol-name name) :foo) kwd-alist))
-       (kwd-alist (kwd-alist-add-default :pred type-pred-fn kwd-alist)) 
+       (kwd-alist (kwd-alist-add-default :pred type-pred-fn kwd-alist))
        (kwd-alist (kwd-alist-add-default :rule-classes :rewrite kwd-alist))
-       (kwd-alist (kwd-alist-add-default :access
+       (kwd-alist (kwd-alist-add-default :fieldname
                                          (intern-in-package-of-symbol
                                           (concatenate 'string (symbol-name stobjname) "->"
                                                        (symbol-name name))
+                                          stobjname)
+                                         kwd-alist))
+       (fieldname (cdr (assoc :fieldname kwd-alist)))
+       (kwd-alist (kwd-alist-add-default :access
+                                         (intern-in-package-of-symbol
+                                          (concatenate 'string (symbol-name stobjname) "->"
+                                                       (symbol-name name)
+                                                       (if arrayp "I" ""))
                                           stobjname)
                                          kwd-alist))
        (kwd-alist (kwd-alist-add-default :base-access
                                          (if (cdr (assoc :fix kwd-alist))
                                              (intern-in-package-of-symbol
                                               (concatenate 'string (symbol-name stobjname) "->"
-                                                           (symbol-name name) "^")
+                                                           (symbol-name name)
+                                                           (if arrayp "I" "")
+                                                           "^")
                                               stobjname)
                                            (cdr (assoc :access kwd-alist)))
                                          kwd-alist))
@@ -167,7 +197,8 @@
                                          (intern-in-package-of-symbol
                                           (concatenate 'string "UPDATE-"
                                                        (symbol-name stobjname) "->"
-                                                       (symbol-name name))
+                                                       (symbol-name name)
+                                                       (if arrayp "I" ""))
                                           stobjname)
                                          kwd-alist))
        (kwd-alist (kwd-alist-add-default :base-update
@@ -177,18 +208,51 @@
                                               (concatenate 'string "UPDATE-"
                                                            (symbol-name stobjname) "->"
                                                            (symbol-name name)
+                                                           (if arrayp "I" "")
                                                            "^")
                                               stobjname)
                                            (cdr (assoc :update kwd-alist)))
                                          kwd-alist))
-       (kwd-alist (cons (cons :rename-update
-                              (not (eq (cdr (assoc :base-update kwd-alist))
-                                       ;; from ACL2 source function
-                                       ;; defstobj-fnname, this is the name of
-                                       ;; the updater for the given field
-                                       (acl2::packn-pos (list "UPDATE-"
-                                                              (cdr (assoc :base-access kwd-alist)))
-                                                        (cdr (assoc :base-access kwd-alist))))))
+       (kwd-alist (if arrayp
+                      (kwd-alist-add-default :length
+                                             (intern-in-package-of-symbol
+                                              (concatenate 'string (symbol-name stobjname) "->"
+                                                           (symbol-name name)
+                                                           "-LENGTH")
+                                              stobjname)
+                                             kwd-alist)
+                    kwd-alist))
+       (kwd-alist (if arrayp
+                      (kwd-alist-add-default :resize
+                                             (intern-in-package-of-symbol
+                                              (concatenate 'string
+                                                           "RESIZE-"
+                                                           (symbol-name stobjname) "->"
+                                                           (symbol-name name))
+                                              stobjname)
+                                             kwd-alist)
+                    kwd-alist))
+       (kwd-alist (kwd-alist-add-default :recognizer
+                                         (intern-in-package-of-symbol
+                                          (concatenate 'string
+                                                       (symbol-name stobjname) "->"
+                                                       (symbol-name name) "P")
+                                          stobjname)
+                                         kwd-alist))
+       (array-key (if arrayp :array :non-array))
+       (kwd-alist (cons (cons :renaming
+                              (remove-redundant-pairs
+                               (append (and arrayp
+                                            (list (cons (acl2::defstobj-fnname fieldname :length :array nil)
+                                                        (cdr (assoc :length kwd-alist)))
+                                                  (cons (acl2::defstobj-fnname fieldname :resize :array nil)
+                                                        (cdr (assoc :resize kwd-alist)))))
+                                       (list (cons (acl2::defstobj-fnname fieldname :accessor array-key nil)
+                                                   (cdr (assoc :base-access kwd-alist)))
+                                             (cons (acl2::defstobj-fnname fieldname :updater array-key nil)
+                                                   (cdr (assoc :base-update kwd-alist)))
+                                             (cons (acl2::defstobj-fnname fieldname :recognizer array-key nil)
+                                                   (cdr (assoc :recognizer kwd-alist)))))))
                         kwd-alist)))
     kwd-alist))
 
@@ -204,24 +268,41 @@
     (acl2::make-tmplsubst
      :features (append (if field.fix '(:fix) '(:no-fix))
                        (if field.pred '(:pred) '(:no-pred))
-                       (if field.rename-update '(:rename-updater) '(:no-rename-updater))
-                       (if field.stobjp '(:stobjp) '(:not-stobjp)))
+                       ;; (if field.rename-update '(:rename-updater) '(:no-rename-updater))
+                       (if field.stobjp '(:stobjp) '(:not-stobjp))
+                       (if field.arrayp '(:arrayp) '(:not-arrayp))
+                       (if field.resizable '(:resizable) '(:not-resizable))
+                       (if field.elementp-of-nil '(:elementp-of-nil) '(:not-elementp-of-nil)))
      :atoms `((<field> . ,field.name)
+              (<fieldname> . ,field.fieldname)
               (<stobjname> . ,stobjname)
               (:<field> . ,field.key)
               (:<fieldcase> . ,(if lastp t field.key))
               (<type> . ,field.type)
+              (<elt-type> . ,field.elt-type)
               (<initially> . ,field.initially)
               (<pred> . ,field.pred)
               (<fix> . ,field.fix)
               (<access> . ,field.access)
               (<update> . ,field.update)
+              (<length> . ,field.length)
+              (<resize> . ,field.resize)
+              (<recognizer> . ,field.recognizer)
               (<base-access> . ,field.base-access)
               (<base-update> . ,field.base-update)
-              (<rule-classes> . ,field.rule-classes))
+              (<rule-classes> . ,field.rule-classes)
+              (<resizable> . ,field.resizable))
+     :splices `((<renaming> . ,(pairlis$ (strip-cars field.renaming)
+                                         (pairlis$ (strip-cdrs field.renaming) nil))))
      :strs `(("<FIELD>" . ,(symbol-name field.name))
+             ("<FIELDNAME>" . ,(symbol-name field.fieldname))
              ("<ACCESS>" . ,(symbol-name field.access))
-             ("<UPDATE>" . ,(symbol-name field.update)))
+             ("<BASE-ACCESS>" . ,(symbol-name field.base-access))
+             ("<UPDATE>" . ,(symbol-name field.update))
+             ("<RECOGNIZER>" . ,(symbol-name field.recognizer))
+             ,@(and field.arrayp
+                    `(("<LENGTH>" . ,(symbol-name field.length))
+                      ("<RESIZE>" . ,(symbol-name field.resize)))))
      :pkg-sym stobjname)))
 
 (defun nicestobj-field-templates (fields stobjname)
@@ -317,24 +398,30 @@
   '(progn
      (defstobj <stobjname>
        (:@proj :fields
-        (<base-access> :type <type> (:@ :not-stobjp :initially <initially>)))
+        (<fieldname> :type <type>
+                     (:@ :not-stobjp :initially <initially>)
+                     (:@ :arrayp :resizable <resizable>)))
+       :renaming ((:@append :fields <renaming>))
        :inline <inline> :non-memoizable <non-memoizable>)
 
      (:@append :fields
       (:@ :fix
-       (define <access> (<stobjname>)
+       (define <access> ((:@ :arrayp (i natp)) <stobjname>)
+         (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
          :inline t
          :returns (<field> (<pred> <field>) :rule-classes <rule-classes>)
-         (the <type>
-              (mbe :logic (non-exec (<fix> (<base-access> <stobjname>)))
-                   :exec (<base-access> <stobjname>))))
+         (the <elt-type>
+              (mbe :logic (non-exec (<fix> (<base-access> (:@ :arrayp i) <stobjname>)))
+                   :exec (<base-access> (:@ :arrayp i) <stobjname>))))
        (:@ :not-stobjp
-        (define <update> ((<field> (<pred> <field>) :type <type>)
+        (define <update> ((:@ :arrayp (i natp))
+                          (<field> (<pred> <field>) :type <elt-type>)
                           <stobjname>)
+          (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
           :inline t
           :split-types t
-          (mbe :logic (<base-update> (<fix> <field>) <stobjname>)
-               :exec (<base-update> <field> <stobjname>))))))
+          (mbe :logic (<base-update> (:@ :arrayp i) (<fix> <field>) <stobjname>)
+               :exec (<base-update> (:@ :arrayp i) <field> <stobjname>))))))
 
      (std::defenum <fieldp> ((:@proj :fields :<field>)))
 
@@ -343,7 +430,9 @@
        :hooks ((:fix :hints (("goal" :in-theory (enable <field-fix>)))))
        (case key
          (:@proj :fields
-          (:<fieldcase> (<access> <stobjname>)))))
+          (:<fieldcase>
+           (:@ :not-arrayp (<access> <stobjname>))
+           (:@ :arrayp (nth *<base-access>* <stobjname>))))))
 
      (defsection <stobjname>-field-basics
        (local (in-theory (enable <get>
@@ -358,36 +447,84 @@
         (def-updater-independence-thm <access>-of-update
           (implies (equal (<get> :<field> new)
                           (<get> :<field> old))
-                   (equal (<access> new)
-                          (<access> old))))
+                   (equal (<access> (:@ :arrayp i) new)
+                          (<access> (:@ :arrayp i) old))))
 
         (defthm <update>-preserves-others
           (implies (not (equal (<field-fix> key) :<field>))
-                   (equal (<get> key (<update> <field> <stobjname>))
+                   (equal (<get> key (<update> (:@ :arrayp i) <field> <stobjname>))
                           (<get> key <stobjname>))))
 
         
         (defthm <update>-self-identity
-          (implies (<stobjpred> <stobjname>)
-                   (equal (<update> (<access> <stobjname>) <stobjname>)
+          (implies (and (<stobjpred> <stobjname>)
+                        (:@ :arrayp (< (nfix i) (<length> <stobjname>))))
+                   (equal (<update> (:@ :arrayp i) (<access> (:@ :arrayp i) <stobjname>) <stobjname>)
                           <stobjname>))
           :hints(("Goal" :in-theory (enable redundant-update-nth))))
 
         (defthm <access>-of-<update>
-          (equal (<access> (<update> <field> <stobjname>))
+          (equal (<access> (:@ :arrayp i) (<update> (:@ :arrayp i) <field> <stobjname>))
                  (:@ :fix (<fix> <field>))
                  (:@ :no-fix <field>)))
 
+        (:@ :arrayp
+         (defthm <access>-of-<update>-diff
+           (implies (not (equal (nfix i) (nfix j)))
+                    (equal (<access> i (<update> j <field> <stobjname>))
+                           (<access> i <stobjname>))))
+
+         (defthmd <access>-of-<update>-split
+           (equal (<access> i (<update> j <field> <stobjname>))
+                  (if (equal (nfix i) (nfix j))
+                      (:@ :fix (<fix> <field>))
+                    (:@ :no-fix <field>)
+                    (<access> i <stobjname>))))
+
+         (def-updater-independence-thm <length>-of-update
+           (implies (equal (<get> :<field> new)
+                           (<get> :<field> old))
+                    (equal (<length> new)
+                           (<length> old))))
+
+         (defthm <length>-of-<update>
+           (implies (< (nfix i) (<length> <stobjname>))
+                    (equal (<length> (<update> i <field> <stobjname>))
+                           (<length> <stobjname>))))
+
+
+         (local (defthm nth-when-<recognizer>
+                  (implies (and (<recognizer> x)
+                                (:@ :not-elementp-of-nil (< (nfix i) (len x))))
+                           (<pred> (nth i x)))
+                  :hints(("Goal" :in-theory (enable nth)))))
+                           
+
+         (:@ :resizable
+          (defthm <resize>-preserves-others
+            (implies (not (equal (<field-fix> key) :<field>))
+                     (equal (<get> key (<resize> size <stobjname>))
+                            (<get> key <stobjname>))))
+          
+          (defthm <length>-of-<resize>
+            (equal (<length> (<resize> size <stobjname>))
+                   (nfix size)))))
+
         (:@ (and :no-fix :pred)
          (defthm <access>-type
-           (implies (<stobjpred> <stobjname>)
-                    (<pred> (<access> <stobjname>)))
+           (implies (and (<stobjpred> <stobjname>)
+                         (:@ (and :arrayp :not-elementp-of-nil)
+                          (< (nfix i) (<length> <stobjname>))))
+                    (<pred> (<access> (:@ :arrayp i) <stobjname>)))
            :hints(("Goal" :in-theory (enable <access>)))
            :rule-classes <rule-classes>)))
 
        (in-theory (disable
                    <stobjpred>
-                   (:@append :fields <base-access> <base-update>))))))
+                   (:@append :fields
+                    <base-access> <base-update>
+                    (:@ :arrayp
+                     <length> <resize>)))))))
 
 
 (defun defnicestobj-fn (name args state)
@@ -408,17 +545,28 @@
                   x))
   :hints(("Goal" :in-theory (enable update-nth nth))))
 
+(local (defthm len-of-resize-list
+         (equal (len (Resize-list x size default))
+                (nfix size))))
+
+(local (in-theory (disable update-nth nth)))
+
+
 (local (defnicestobj foo
          (nat :type (integer 0 *) :pred natp :fix nfix :initially 0 :rule-classes :type-prescription)
          (str :type string :fix acl2::str-fix :initially "")
          (grumble :type (integer 5 *) :initially 5)
-         (any :initially buz)))
+         (any :initially buz)
+         (fa :type (array (integer 0 *) (0)) :pred natp :fix nfix :initially 1 :rule-classes :type-prescription)
+         (fb :type (array string (0)) :initially "hi" :rule-classes :type-prescription
+             :resizable t)))
 
 (local (defnicestobj bar
          (nat :type (integer 0 *) :pred natp :fix nfix :initially 0 :rule-classes :type-prescription)
          (str :type string :fix acl2::str-fix :initially "")
          (foo :type foo)
          (grumble :type (integer 5 *) :initially 5)
+         (foos :type (array foo (0)) :resizable t)
          (any :initially buz)))
 
         
