@@ -174,6 +174,11 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+    "The `@('basic')' target in @('GNUmakefile') now certifies
+     @('projects/apply/top.lisp'), as is necessary for using @(tsee defun$) or
+     @(tsee defwarrant).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")

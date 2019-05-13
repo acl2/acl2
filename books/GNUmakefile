@@ -1168,13 +1168,16 @@ critpath.txt: $(OK_CERTS)
 
 # basic is the default set of books to build:
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc tools misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
 
 .PHONY: add-ons
 add-ons: $(filter add-ons/%, $(OK_CERTS))
+
+.PHONY: apply
+apply: projects/apply/top.cert
 
 .PHONY: arithmetic
 arithmetic: $(filter arithmetic/%, $(OK_CERTS))
