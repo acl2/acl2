@@ -34,7 +34,7 @@
 (include-book "def-gl-rewrite")
 (include-book "subst-functions")
 (include-book "primitives")
-(include-book "fast-alists")
+(include-book "fgarrays")
 (include-book "sat")
 
 

@@ -183,7 +183,9 @@
                     (not (equal (interp-st-field-fix key) :stack))
                     (not (equal (interp-st-field-fix key) :pathcond))
                     (not (equal (interp-st-field-fix key) :constraint))
-                    (not (equal (interp-st-field-fix key) :bvar-db)))
+                    (not (equal (interp-st-field-fix key) :bvar-db))
+                    (not (equal (interp-st-field-fix key) :fgarrays))
+                    (not (equal (interp-st-field-fix key) :next-fgarray)))
                (equal (interp-st-get key new-interp-st)
                       (interp-st-get key interp-st))))
 

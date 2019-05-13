@@ -82,6 +82,69 @@
     (def-gl-formula-checks-lemmas-fn ',name state)))
 
 
+(defun formals-subsubsts (formals)
+  (declare (xargs :mode :program))
+  (if (atom formals)
+      nil
+    (cons (acl2::make-tmplsubst :atoms `((<formal> . ,(car formals))))
+          (formals-subsubsts (cdr formals)))))
+
+(defun def-formula-check-definition-thm-fn (name formula-check wrld)
+  (declare (xargs :mode :program))
+  (b* ((recursivep (fgetprop name 'recursivep nil wrld))
+       (formals (formals name wrld)))
+    (acl2::template-subst
+     (if recursivep
+         '(encapsulate nil
+            (local (defthmd fgl-ev-of-<name>-lemma
+                     (implies (and (<formula-check> state)
+                                   (fgl-ev-meta-extract-global-facts))
+                              (equal (fgl-ev '(<name> . <formals>)
+                                             (list (:@proj <formals> (cons '<formal> <formal>))))
+                                     (<name> . <formals>)))
+                     :hints(("Goal" :in-theory (enable <name>)
+                             :induct (<name> . <formals>))
+                            '(:use ((:instance fgl-ev-meta-extract-formula
+                                     (name '<name>)
+                                     (a (list (:@proj <formals> (cons '<formal> <formal>))))
+                                     (st state)))
+                              :in-theory (enable fgl-ev-of-fncall-args <name>)))))
+            
+            (defthm fgl-ev-of-<name>-when-<formula-check>
+              (implies (and (<formula-check> state)
+                            (fgl-ev-meta-extract-global-facts))
+                       (equal (fgl-ev (list '<name> . <formals>) env)
+                              (<name> (:@proj <formals>
+                                       (fgl-ev <formal> env)))))
+              :hints(("Goal" :use ((:instance fgl-ev-of-<name>-lemma
+                                    (:@proj <formals> (<formal> (fgl-ev <formal> env)))))
+                      :in-theory (enable fgl-ev-of-fncall-args)))))
+       '(defthm fgl-ev-of-<name>-when-<formula-check>
+          (implies (and (<formula-check> state)
+                        (fgl-ev-meta-extract-global-facts))
+                   (equal (fgl-ev (list '<name> . <formals>) env)
+                          (<name> (:@proj <formals>
+                                     (fgl-ev <formal> env)))))
+          :hints(("Goal" :in-theory (enable fgl-ev-of-fncall-args <name>)
+                  :use ((:instance fgl-ev-meta-extract-formula
+                         (name '<name>)
+                         (a (list (:@proj <formals>
+                                   (CONS '<formal> (FGL-EV <formal> env)))))
+                         (st state)))))))
+     :str-alist `(("<NAME>" . ,(symbol-name name))
+                  ("<FORMULA-CHECK>" . ,(symbol-name formula-check)))
+     :atom-alist `((<name> . ,name)
+                   (<formula-check> . ,formula-check)
+                   (<formals> . ,formals))
+     :subsubsts `((<formals> . ,(formals-subsubsts formals)))
+     :pkg-sym formula-check)))
+
+(defmacro def-formula-check-definition-thm (name formula-check)
+  `(make-event
+    (def-formula-check-definition-thm-fn ',name ',formula-check (w state))))
+
+
+
 (defun def-gl-primitive-fn (fn formals body name-override formula-check-fn prepwork wrld)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
@@ -358,9 +421,10 @@
                   :clause-processor dumb-clausify-cp)
                  (let ((term (car (last clause))))
                    (case-match term
-                     (('equal (fn . &) . &)
-                      (cond ((member fn '(<prefix>-ev
-                                          <prefix>-ev-list))
+                     (('equal (fn . args) . &)
+                      (cond ((or (member fn '(<prefix>-ev
+                                              <prefix>-ev-list))
+                                 (not (symbol-listp args)))
                              '(:do-not nil))
                             ;; ((member fn '(<prefix>-ev-falsify
                             ;;               <prefix>-meta-extract-global-badguy))

@@ -38,7 +38,10 @@
 (include-book "stack")
 (include-book "centaur/fty/bitstruct" :dir :system)
 (include-book "prof")
-
+(include-book "array-alist")
+(local (include-book "std/lists/resize-list" :dir :System))
+(local (in-theory (disable nth update-nth resize-list
+                           acl2::resize-list-when-atom)))
 (local (in-theory (disable unsigned-byte-p)))
 
 (local (std::add-default-post-define-hook :fix))
@@ -74,6 +77,8 @@
                       (satisfies interp-flags-p))
            :initially ,(make-interp-flags)
            :fix interp-flags-fix :pred interp-flags-p)
+    (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
+    (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
     (errmsg :type t)
     (debug-info :type t)))
 
