@@ -1058,7 +1058,13 @@
     (equal (bip32-key-tree-priv-p
             (mv-nth 1 (bip32-extend-tree tree parent-path child-index)))
            (bip32-key-tree-priv-p tree))
-    :enable bip32-key-tree-priv-p))
+    :enable bip32-key-tree-priv-p)
+
+  (defrule bip32-path-in-tree-p-of-bip32-extend-tree
+    (b* (((mv error? new-key-tree) (bip32-extend-tree key-tree path index)))
+      (implies (not error?)
+               (bip32-path-in-tree-p (rcons index path) new-key-tree)))
+    :enable bip32-path-in-tree-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

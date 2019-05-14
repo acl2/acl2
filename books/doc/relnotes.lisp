@@ -126,6 +126,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
+
+   (xdoc::p
+    "A theorem has been added to the BIP 32 formalization.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
