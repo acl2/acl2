@@ -19,6 +19,7 @@
 (include-book "hex-prefix")
 (include-book "mmp-trees")
 (include-book "transactions")
+(include-book "addresses")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

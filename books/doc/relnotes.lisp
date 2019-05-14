@@ -141,6 +141,11 @@
    (xdoc::p
     "A function to construct signed transactions has been added.")
 
+   (xdoc::p
+    "Functions to calculate an account address
+     from a public key and from a private key (via its public key)
+     have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
