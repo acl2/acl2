@@ -53,10 +53,13 @@
 #   formerloll    Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
 #                 books, the jvm models, etc.  Usually, committers to
-#                 acl2-books should run "make formerloll" first.
+#                 acl2-books should run "make formerloll" first.  To be removed.
 #
 #   almost-all
-#                 An alias for "formerloll"
+#                 An alias for "formerloll".  To be removed.
+#
+#   regression    Committers should run "make regression" before creating a
+#                 pull request or pushing their changes.
 #
 #   all           A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
