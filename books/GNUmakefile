@@ -50,13 +50,13 @@
 #                 and other miscellaneous tools and macros.  Many users may
 #                 find "basic" to be a convenient starting place.
 #
-#   all           Certifies most books that are not horribly slow, including,
+#   formerloll           Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
 #                 books, the jvm models, etc.  Usually, committers to
-#                 acl2-books should run "make all" first.
+#                 acl2-books should run "make formerloll" first.
 #
 #   almost-everything
-#                 An alias for "all"
+#                 An alias for "formerloll"
 #
 #   certify-books [DEPRECATED!] Includes a substantial collection of books that may
 #                 suffice for many purposes, omitting some specialized
@@ -189,7 +189,7 @@ export ACL2
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: default basic all
+.PHONY: default basic formerloll
 
 # Keep this before any other target so that default will be the default target
 default: basic
@@ -417,9 +417,9 @@ ifneq ($(ACL2_HAS_REALS), )
 $(info Excluding non-ACL2(r) books: [$(CERT_PL_NON_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2R), $(OK_CERTS))
 
-all: nonstd/workshops/1999/calculus/book/proof-outline.cert
-all: nonstd/workshops/1999/calculus/book/tree.cert
-all: nonstd/workshops/1999/calculus/book/tree/proof-outline
+formerloll: nonstd/workshops/1999/calculus/book/proof-outline.cert
+formerloll: nonstd/workshops/1999/calculus/book/tree.cert
+formerloll: nonstd/workshops/1999/calculus/book/tree/proof-outline
 
 # Some additional special instructions for generated ACL2(r)-only books.
 nonstd/workshops/1999/calculus/book/proof-outline.cert: nonstd/workshops/1999/calculus/book/tree.cert
@@ -518,7 +518,7 @@ endif
 
 # Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
 # that we want to add back in when using target "everything" instead
-# of the default target, "all".
+# of the default target, "formerloll".
 
 ADDED_BOOKS := \
   books/misc/check-acl2-exports.cert \
@@ -550,14 +550,14 @@ endif
 
 # Now SLOW_BOOKS is defined as the list above, except that below, we
 # also include in SLOW_BOOKS some books that are too slow for both an
-# ordinary regression (target "all") and an "everything" regression.
+# ordinary regression (target "formerloll") and an "everything" regression.
 # Then we remove SLOW_BOOKS from regressions, restoring its subset,
 # ADDED_BOOKS, for the "everything" target.
 
 SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The models/y86 books are a special case.  We prefer to include them
-# only with the "everything" target, not the "all" target, since they
+# only with the "everything" target, not the "formerloll" target, since they
 # have large memory requirements -- and then, only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
@@ -734,7 +734,7 @@ ifeq ($(ACL2_HAS_REALS), )
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
 # conflicts if -j is other than 1.  Also: Do not include any targets
-# that we don't always want built with "all".
+# that we don't always want built with "formerloll".
 
 ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
@@ -1095,9 +1095,9 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
-# Warning: ACL2's GNUmakefile uses the "all" target of this Makefile
+# Warning: ACL2's GNUmakefile uses the "formerloll" target of this Makefile
 # to implement its target, "regression".  So please be careful about
-# making major changes to "all" in this Makefile.
+# making major changes to "formerloll" in this Makefile.
 
 # First, we let the user filter the books by specifying the roots of
 # the forest of books to be certified.  Our implementation reduces
@@ -1137,10 +1137,10 @@ ifeq ($(shell ls workshops 2> /dev/null), )
 OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
-all: $(OK_CERTS)
+formerloll: $(OK_CERTS)
 
 .PHONY: almost-everything
-almost-everything: all
+almost-everything: formerloll
 
 # Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
 # even in the HONS case.  In particular, "make everything" no longer makes
@@ -1148,12 +1148,12 @@ almost-everything: all
 .PHONY: everything
 
 #everything:
-#	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+#	$(MAKE) formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # [Jared] I think this is how everything should work.  All of this
 # ADDED_BOOKS stuff seems really complicated. :(
 
-everything: all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+everything: formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -1587,7 +1587,7 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
 	@ls -l centaur/getopt/demo2-test.ok
 
-all: centaur/getopt/demo2-test.ok
+formerloll: centaur/getopt/demo2-test.ok
 
 
 
