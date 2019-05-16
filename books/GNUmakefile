@@ -50,22 +50,22 @@
 #                 and other miscellaneous tools and macros.  Many users may
 #                 find "basic" to be a convenient starting place.
 #
-#   formerloll           Certifies most books that are not horribly slow, including,
+#   formerloll    Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
 #                 books, the jvm models, etc.  Usually, committers to
 #                 acl2-books should run "make formerloll" first.
 #
-#   almost-everything
+#   almost-all
 #                 An alias for "formerloll"
 #
 #   certify-books [DEPRECATED!] Includes a substantial collection of books that may
 #                 suffice for many purposes, omitting some specialized
 #                 directories including all workshops/ directories.
 #
-#   everything    A very full build, including very slow books.  Most users
+#   all           A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.  Note that
-#                 EXCLUDED_PREFIXES may not work with the `everything' target.
+#                 EXCLUDED_PREFIXES may not work with the `all' target.
 #
 #   <dirname>     There are targets for many top-level directories, e.g., you
 #                 may run "make coi" to build everything in coi/ directory,
@@ -517,7 +517,7 @@ endif
 # ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
 
 # Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
-# that we want to add back in when using target "everything" instead
+# that we want to add back in when using target "all" instead
 # of the default target, "formerloll".
 
 ADDED_BOOKS := \
@@ -550,14 +550,14 @@ endif
 
 # Now SLOW_BOOKS is defined as the list above, except that below, we
 # also include in SLOW_BOOKS some books that are too slow for both an
-# ordinary regression (target "formerloll") and an "everything" regression.
+# ordinary regression (target "formerloll") and an "all" regression.
 # Then we remove SLOW_BOOKS from regressions, restoring its subset,
-# ADDED_BOOKS, for the "everything" target.
+# ADDED_BOOKS, for the "all" target.
 
 SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The models/y86 books are a special case.  We prefer to include them
-# only with the "everything" target, not the "formerloll" target, since they
+# only with the "all" target, not the "formerloll" target, since they
 # have large memory requirements -- and then, only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
@@ -571,7 +571,7 @@ ifneq ($(ACL2_HAS_HONS), )
 ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books, even for the "everything" target.  In
+# skip the models/y86/ books, even for the "all" target.  In
 # particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
 # certification runs were still proceeding after more than 10 hours
 # for each of four books under models/y86/
@@ -1139,21 +1139,21 @@ endif # ifeq ($(realpath workshops), )
 
 formerloll: $(OK_CERTS)
 
-.PHONY: almost-everything
-almost-everything: formerloll
+.PHONY: almost-all
+almost-all: formerloll
 
-# Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
-# even in the HONS case.  In particular, "make everything" no longer makes
+# Starting 8/15/2014, all does not automatically set USE_QUICKLISP=1,
+# even in the HONS case.  In particular, "make all" no longer makes
 # doc/manual/; for that, specify USE_QUICKLISP=1.
-.PHONY: everything
+.PHONY: all
 
-#everything:
+#all:
 #	$(MAKE) formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
-# [Jared] I think this is how everything should work.  All of this
+# [Jared] I think this is how all should work.  All of this
 # ADDED_BOOKS stuff seems really complicated. :(
 
-everything: formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+all: formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
