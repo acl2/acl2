@@ -26,16 +26,16 @@ fi
 LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET   = $TARGET"
-echo "Using STARTJOB = `which startjob`"
+echo "Using STARTJOB = $STARTJOB"
 
 echo "Making ACL2"
-startjob -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
+$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
   --name "J_CCL_ACL2" \
   --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 
 echo "Building the books."
 cd books
-startjob -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
+$STARTJOB -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 
 echo "Build was successful."
 
