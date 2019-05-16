@@ -8346,8 +8346,26 @@
 ; expand-hint created by the system, say because some non-controller argument
 ; in the pattern had simplified to 0 or nil.
 
-                           (cons :constants
-                                 (controller-unify-subst name term def-body))
+                           (let ((alist
+                                  (controller-unify-subst name term def-body)))
+
+; Once upon a time we had a bug here.  We simply consed :constants onto alist.
+; That could produce an :alist of the form (:constants . :none).  But this is
+; silly because :none means we do an exact match and produce no substitution
+; whereas the :constants means each var is bound to itself or a quoted evg.
+; If (:constants . :none) means anything it would be the same as :none, so we
+; no longer produce (:constants . :none).  The bug arose because in the code
+; that interprets :alist, namely in the function expand-permission-result1, we
+; expect :alist to be :none, unify-subst, or (:constant . unify-subst) and
+; made no provision for the silly case, which meant we ended up calling
+; one-way-unify1 with a partial alist of :NONE.  This bug was further obscured
+; by an out-of-date comment defrec expand-hint which indicated that :alist
+; was either :none or a substitution.
+
+                             (if (eq alist :none)
+                                 :none
+                                 (cons :constants
+                                       alist)))
                            :rune (access def-body def-body :rune)
                            :equiv (access def-body def-body :equiv)
                            :hyp (access def-body def-body :hyp)

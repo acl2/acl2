@@ -9444,7 +9444,12 @@
 (defrec expand-hint
   ((equiv
     .
-    alist) ; :none, or a partial unify-subst for matching term against actual
+    alist) ; :none, a unify-subst or (:constants . unify-subst)
+           ; where unify-subst is a partial substitution that must be
+           ; extended by the match of pattern against the term being
+           ; considered for expansion.  :None means an exact match
+           ; is required. :Constants means the successful match must
+           ; bind variables to themselves or to quoted evgs.
    .
    (pattern
     .
@@ -12822,7 +12827,7 @@
                                     (dumb-negate-lit rewritten-test)
                                     ttree))
                                ((or (quotep rewritten-concl) ; not *nil*
-				    (equal rewritten-test rewritten-concl))
+                                    (equal rewritten-test rewritten-concl))
                                 (mv step-limit *t* ttree))
                                ((quotep rewritten-test) ; not *nil*
 
