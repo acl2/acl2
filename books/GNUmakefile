@@ -58,10 +58,6 @@
 #   almost-all
 #                 An alias for "formerloll"
 #
-#   certify-books [DEPRECATED!] Includes a substantial collection of books that may
-#                 suffice for many purposes, omitting some specialized
-#                 directories including all workshops/ directories.
-#
 #   all           A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.  Note that
@@ -1389,12 +1385,6 @@ milawa-clean:
 	fi
 
 clean: milawa-clean
-
-# This "certify-books" target is DEPRECATED.
-.PHONY: certify-books
-certify-books: $(filter-out centaur/vl/% centaur/vl2014/% doc/% \
-		xdoc/% centaur/4v-sexpr/% centaur/regression/% \
-		centaur/esim/% \ workshops/%, $(OK_CERTS))
 
 # The following dummy target does nothing, e.g., so that you can test
 # the dependency scanning stuff without actually building anything.
