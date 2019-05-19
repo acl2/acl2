@@ -4514,7 +4514,6 @@
       (let* ((ev-lst (ev-lst-from-ev ev wrld))
              (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
              (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
-             (ev-fns (list ev ev-lst))
              (meta-fn-lst (if hyp-fn
                               (list meta-fn hyp-fn)
                             (list meta-fn)))
@@ -4526,8 +4525,8 @@
                (or (getpropc ev 'predefined nil wrld)
                    (getpropc ev-lst 'predefined nil wrld)))
 
-; See the comment below about this case in the comment in a case below, where
-; we point out that extra-fns are defined in the boot-strap world.
+; Note that since extra-fns are defined in the boot-strap world, this check
+; guarantees that ev is not ancestral in extra-fns.
 
           (er soft ctx
               "The proposed evaluator function, ~x0, was defined in the ~
@@ -4547,26 +4546,6 @@
               name
               (if ev-prop ev ev-lst)
               (or ev-prop ev-lst-prop)))
-         ((intersectp-eq ev-fns meta-anc)
-
-; As explained in defaxiom-supporters, we might expect also to check here that
-; ev and ev-lst are not ancestral in extra-fns.  But extra-fns are defined in
-; the boot-strap world while ev and ev-lst, as we check above, are not.
-
-; It would be nice to improve the following error message by finding the
-; particular function symbol in the meta or clause-processor rule for which ev
-; is ancestral.
-
-          (er soft ctx ; see comment in defaxiom-supporters
-              "The proposed ~x0 rule, ~x1, is illegal because its ~
-               evaluator~#2~[~/ (list)~] function symbol, ~x3, supports the ~
-               definition of the rule's metafunction~#4~[~/s~], ~&4.  See ~
-               :DOC evaluator-restrictions."
-              rule-type
-              name
-              (if (member-eq ev meta-anc) 0 1)
-              (if (member-eq ev meta-anc) ev ev-lst)
-              meta-fn-lst))
          (t
 
 ; We would like to be able to use attachments where possible.  However, the
@@ -11098,23 +11077,21 @@
 ;       OR
 ;      (ii) term is the body of a defaxiom.
 
- ; Then when we (conceptually at least) functionally instantiate a :meta or
-; :clause-processor rule using a functional substitution of the form ((evl
-; evl') (evl-list evl'-list)), we need to know that the above proof obligations
-; are met.
+; Then when we (conceptually at least) functionally instantiate a theorem
+; using a functional substitution of the form fs = ((evl evl') (evl-list
+; evl'-list)), we need to know that the above proof obligations are met.
 
-; ACL2 insists (in function chk-evaluator-use-in-rule) that the evaluator of a
-; proposed :meta or :clause-processor rule is not ancestral in any defaxiom or
-; in the definition of, or constraint on, the rule's metafunctions, nor is the
-; evaluator ancestral in meta-extract-global-fact+ and
+; ACL2 insists (in function chk-evaluator-use-in-rule) that the evaluator evl
+; of a proposed :meta or :clause-processor rule is not ancestral in any
+; defaxiom, nor is it ancestral in meta-extract-global-fact+ and
 ; meta-extract-contextual-fact if they are used in the rule.  Thus, when we
-; imagine functionally instantiating the rule as discussed above, at the point
-; of its application, the only relevant theorems for (i) above are the
-; constraints on the evaluator, and there are no relevant theorems for (ii)
-; above.  We can use our usual computation of "ancestral", which does not
-; explore below functions that are not instantiablep, since (presumably!)
-; non-instantiablep functions are primitives in which no evaluator functions is
-; ancestral.
+; functionally instantiate formula (2) in the Essay on Correctness of Meta
+; Reasoning, which has calls of only those meta-extract function symbols and
+; evl, the only relevant theorems for (i) above are the constraints on evl, and
+; there are no relevant theorems for (ii) above.  We can use our usual
+; computation of "ancestral", which does not explore below functions that are
+; not instantiablep, since (presumably!) non-instantiablep functions are
+; primitives in which no evaluator function is ancestral.
 
 ; But there is a subtlety not fully addressed above.  Consider the following
 ; case: a legitimate :meta (or :clause-processor) rule, with evaluator evl, is
