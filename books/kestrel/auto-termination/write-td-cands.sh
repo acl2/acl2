@@ -19,7 +19,8 @@ if [ $# -gt 1 ] ; then \
 elif [ $# -eq 1 ] ; then \
     export ACL2=$1 ; \
 elif [ "$ACL2" = "" ] ; then \
-    echo 'Error: Need to define ACL2' ; \
+    echo 'Error: Need to define ACL2 or add an argument specifying' ; \
+    echo '       a path to an ACL2 executable.' ; \
     exit 1 ; \
 fi
 

@@ -1994,8 +1994,7 @@
                                    member
                                    append
                                    prepend-rec
-                                   take-of-too-many
-                                   take-redefinition)))))
+                                   take-of-too-many)))))
 
 (defthmd comp-interl$functionally-correct
   (b* ((extracted0-st (comp-interl$extract0 st))
@@ -2049,8 +2048,3 @@
            :use comp-interl$dataflow-correct
            :in-theory (enable comp-interl$valid-st=>st-format
                               comp-interl$de-n))))
-
-
-
-
-

@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "CRYPTO" (append *std-pkg-symbols*
-                         '(byte-list-fix
+                         '(byte-list-equiv
+                           byte-list-fix
                            byte-listp
                            byte-list20p
                            byte-list32p

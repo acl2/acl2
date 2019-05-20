@@ -12,6 +12,7 @@
 
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "pow2")
+(include-book "defthm-dab-return-types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

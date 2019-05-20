@@ -777,7 +777,7 @@
    interprets a symbol as a function or theorem name, not as a variable.
    </p>"
   (b* (((when (symbolp term)) *t*)
-       ((mv erp val) (guard-obligation term nil nil __function__ state))
+       ((mv erp val) (guard-obligation term nil nil t __function__ state))
        ((when erp)
         (raise "Error ~x0 when computing the guard obligation of ~x1."
                erp term))

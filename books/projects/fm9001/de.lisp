@@ -262,7 +262,7 @@
     (vdd                    (list T))
     (vdd-parametric         (list T))
     (vss                    (list NIL))
-    
+
     (otherwise   nil)))
 
 (defun de-primp-apply (fn ins sts)
@@ -1555,7 +1555,6 @@
 
 (deftheory tv-disabled-rules
   '(take
-    take-redefinition
     take-of-take-split
     take-of-too-many
     take-of-len-free
@@ -1567,5 +1566,3 @@
     str::iprefixp-of-cons-left
     str::istrprefixp$inline
     str::iprefixp-when-prefixp))
-
-

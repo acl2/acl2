@@ -1,5 +1,5 @@
-; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2018, Regents of the University of Texas
+; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2019, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7096,7 +7096,7 @@
 ; loop expects the lobody to return a number and will cause a hard error
 ; if it doesn't.  The root problem is that sum$ uses fix and loop doesn't.
 
-; There is a third special conjecture.  Consider
+; There is also a Special Conjecture (c).  Consider
 
 ; (loop for v of type type-spec on lst collect ...)
 
@@ -7314,7 +7314,7 @@
 ; 500000
 
 ; -----------------------------------------------------------------
-; Section 3:  Our Solution to Special Conjectures (a) and (b)
+; Section 3:  Our Solution to the Special Conjectures
 
 ; The approach we advocate is to leave the guard of sum$ as is, with the fix in
 ; the sum$, but we change guard generation so that in certain special cases we
@@ -8371,6 +8371,7 @@
 
 ; :GUARD-DEBUG - proof time (see below)
 ; :GUARD-HINTS - proof time
+; :GUARD-SIMPLIFY - proof time
 ; :HINTS - recursion (see below)
 ; :MEASURE - recursion
 ; :MEASURE-DEBUG - recursion
@@ -8388,7 +8389,7 @@
 
 ; Proof time: The keywords marked ``proof time'' are only relevant when we're
 ; doing guard verification.  Lambda objects can occur in four contexts: in
-; DEFUN, DEFTHM, and VERIFY-GUARD events, or in top-level evaluations.  Guard
+; DEFUN, DEFTHM, and VERIFY-GUARDS events, or in top-level evaluations.  Guard
 ; verification of DEFUN and DEFTHM events allow the provision of goal-specific
 ; hints, which can be used to guide the proofs of obligations stemming from
 ; lambda objects being guard verified.  Top-level evaluation is not intended to

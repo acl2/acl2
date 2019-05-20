@@ -316,7 +316,7 @@ than to use this in a loop.</p>"
                      (nfix line)))
            :hints(("Goal" :in-theory (enable line-after-nthcdr
                                              count-newlines
-                                             acl2::take-redefinition)))))
+                                             acl2::take)))))
 
   (local (defthmd l0
            (implies (equal new-line (line-after-nthcdr n x line))
@@ -548,4 +548,3 @@ the implementation.</p>"
                       :exec  sin$c-find)
 
             ))
-

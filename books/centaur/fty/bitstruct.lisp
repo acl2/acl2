@@ -508,6 +508,9 @@
   (b* (((bitstruct x))
        (fieldnames (bitstruct-primary-fields->names x.fields)))
     `(define ,x.name ,(bitstruct-fields->ctor-formals x.fields)
+       ;; The parent is nil here to avoid xdoc topic name clash with the
+       ;; defsection introduced by the defbitstruct event.
+       :parents nil
        :returns (,x.name ,x.pred
 			 ,@(and (not x.fullp)
 				`(:hints (("goal" :in-theory

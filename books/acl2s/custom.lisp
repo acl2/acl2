@@ -206,9 +206,7 @@
                         :nonlinearp nil))
            nil))
         (t
-         nil)))#|ACL2s-ToDo-Line|#
-
-
+         nil)))
 
 ; Common books to all modes.
 (include-book "cgen/top" :ttags :all)
@@ -219,44 +217,61 @@
 #!ACL2
 (defmacro acl2s-common-settings ()
 `(progn
-   (make-event
-    (er-progn
-     (assign checkpoint-processors
-             (set-difference-eq (@ checkpoint-processors)
-                                '(ELIMINATE-DESTRUCTORS-CLAUSE)))
+  (make-event
+   (er-progn
+    (assign checkpoint-processors
+            (set-difference-eq (@ checkpoint-processors)
+                               '(ELIMINATE-DESTRUCTORS-CLAUSE)))
      
-     ;;CCG settings
-     (set-ccg-print-proofs nil)     
-     (set-ccg-inhibit-output-lst
-      '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
+    ;;CCG settings
+    (set-ccg-print-proofs nil)     
+    (set-ccg-inhibit-output-lst
+     '(QUERY BASICS PERFORMANCE BUILD/REFINE SIZE-CHANGE))
 
-     ;;Misc
-     (set-guard-checking :nowarn)
+    ;;Misc
+    (set-guard-checking :nowarn)
+    (value '(value-triple :invisible))))
+   
+  (make-event
+   (er-progn (assign acl2::splitter-output nil)
+             (value '(value-triple nil))))
+   
+  (set-default-hints
+   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
+     (acl2s::stage acl2s::negp)
+     (acl2s::stage acl2s::posp)
+     (acl2s::stage acl2s::natp)
+     (acl2s::stage acl2s::non-pos-integerp)
+     (acl2s::stage acl2s::neg-ratiop)
+     (acl2s::stage acl2s::pos-ratiop)
+     (acl2s::stage acl2s::non-neg-ratiop)
+     (acl2s::stage acl2s::non-pos-ratiop)
+     (acl2s::stage acl2s::ratiop)
+     (acl2s::stage acl2s::neg-rationalp)
+     (acl2s::stage acl2s::pos-rationalp)
+     (acl2s::stage acl2s::non-neg-rationalp)
+     (acl2s::stage acl2s::non-pos-rationalp)))
+
+  ;; Other events:
+  (set-well-founded-relation l<)
+  (make-event ; use ruler-extenders if available
+   (if (member-eq 'ruler-extenders-lst
+                  (getprop 'put-induction-info 'formals nil
+                           'current-acl2-world (w state)))
+       (value '(set-ruler-extenders :all))
      (value '(value-triple :invisible))))
+
+  ;;CCG events
+  (set-termination-method :ccg)
+  (set-ccg-time-limit nil)
+
+  (dont-print-thanks-message-override-hint)
    
-   (set-default-hints '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)))
+  ;;Cgen settings
+  (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
+  (acl2s::acl2s-defaults :set acl2s::num-trials 500)
 
-     ;; Other events:
-   (set-well-founded-relation l<)
-   (make-event ; use ruler-extenders if available
-    (if (member-eq 'ruler-extenders-lst
-                   (getprop 'put-induction-info 'formals nil
-                            'current-acl2-world (w state)))
-        (value '(set-ruler-extenders :all))
-      (value '(value-triple :invisible))))
-
-   ;;CCG events
-   (set-termination-method :ccg)
-   (set-ccg-time-limit nil)
-
-   (dont-print-thanks-message-override-hint)
-   
-   ;;Cgen settings
-   (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
-   (acl2s::acl2s-defaults :set acl2s::num-trials 500)
-
-))
-
+  ))
 
 #!ACL2
 (defmacro acl2s-beginner-settings ()

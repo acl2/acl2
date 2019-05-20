@@ -12,7 +12,7 @@
 
 (include-book "kestrel/fty/defbyte" :dir :system)
 
-; ensure that the generated NIBBLEP is identical to the one in Std:
+; to use the NIBBLEP recognizer in Std:
 (include-book "std/basic/nibblep" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,6 +1,6 @@
-; ABNF Library -- Parser and Abstractor Validation
+; ABNF -- Parser and Abstractor Validation
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,7 +42,7 @@
    The file @('core-rules.txt') contains
    the definition of the core rules of ABNF
    using the concrete syntax of ABNF itself,
-   copied and pasted from RFC 5234.
+   copied and pasted from [RFC].
    Calling @(tsee parse-grammar-from-file) on that file yields a parse tree.
    This shows that the executable grammar parser
    parses the core rules of ABNF without errors.
@@ -69,7 +69,7 @@
    The file @('concrete-syntax-rules.txt') contains
    the definition of the concrete syntax of ABNF
    using the concrete syntax of ABNF itself,
-   copied and pasted from RFCs 5234 and 7405.
+   copied and pasted from [RFC].
    Calling @(tsee parse-grammar-from-file) on that file yields a parse tree.
    This shows that the executable grammar parser
    parses the definition of the concrete syntax of ABNF without errors.

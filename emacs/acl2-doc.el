@@ -1,5 +1,5 @@
-; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2018, Regents of the University of Texas
+; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2019, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -26,6 +26,11 @@
 ; sync with the definitions there.
 
 (defvar *acl2-sources-dir*)
+
+(defvar *acl2-doc-show-extra*
+; WARNING: Don't use defv (below) for this.  We don't want to
+; reinitialize it after downloading an updated manual.
+  "\nNOTE: Type D to download the latest version.")
 
 ; Attempt to set *acl2-sources-dir*.
 ; WARNING: If you change this form, then also change the same form in
@@ -149,6 +154,8 @@
      (defv *acl2-doc-topics-ht* nil)
      (defv *acl2-doc-children-ht* nil)
      (defv *acl2-doc-show-help-message* nil)
+; Warning: Do not set *acl2-doc-show-extra* here (see comment in its
+; introduction using defvar, above).
      (defv *acl2-doc-last-tags-file-name* nil)))
 
 (acl2-doc-init-vars)
@@ -232,15 +239,14 @@
     (error "File %s is missing!" rendered-pathname))
   (let* ((large-file-warning-threshold
 
-; As of December 2016, file books/system/doc/rendered-doc-combined.lsp
-; is nearly 64M, but just over 70,000,000 bytes according to emacs.
-; We take a guess here that modern platforms can handle somewhat more
-; than the current size, so we rather arbitrarily bump up the
-; threshold for a warning, to provide a modest cushion for avoiding
-; the warning.
+; As of April 2019, file books/system/doc/rendered-doc-combined.lsp is
+; a bit over 100M bytes.  We take a guess here that modern platforms
+; can handle somewhat more than this size, so we rather arbitrarily
+; bump up the threshold for a warning, to provide a modest cushion for
+; avoiding the warning.
 
           (max (or large-file-warning-threshold 0)
-	       80000000))
+	       120000000))
          (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
@@ -503,8 +509,11 @@ then restart the ACL2-Doc browser to view that manual."
         (help-msg (if *acl2-doc-show-help-message*
                       "; type h for help"
                     ""))
-        (extra (or extra "")))
+        (extra (or extra
+		   *acl2-doc-show-extra*
+		   "")))
     (setq *acl2-doc-show-help-message* nil)
+    (setq *acl2-doc-show-extra* nil)
     (if (eq (acl2-doc-state-top-name) name)
         (message "At the top node of the %s%s%s"
                  manual-name help-msg extra)

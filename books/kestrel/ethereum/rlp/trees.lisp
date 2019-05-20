@@ -41,8 +41,7 @@
      we prefer the term `tree', because it seems clearer.
      The byte sequences at the leaves are called
      `byte arrays' in [YP:B] and [Wiki:RLP], and also `strings' in [Wiki:RLP];
-     we use the former term in preference to the latter,
-     because it seems clearer.
+     we prefer the former term, because it seems clearer.
      </p>"
     (:leaf ((bytes byte-list)))
     (:nonleaf ((subtrees rlp-tree-list)))

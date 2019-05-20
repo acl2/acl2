@@ -1,9 +1,7 @@
 manual/
 HTML/
-acl2-code-size.txt
 acl2-wc.txt
 home-page.cert
-home-page.html
 home-page.out
 home-page.port
 write-acl2-code-size.cert

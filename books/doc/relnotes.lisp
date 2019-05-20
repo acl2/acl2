@@ -27,9 +27,10 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;; These books aren't really necessary, but are harmless enough and are useful
 ;; when debugging the release note markup.
@@ -79,6 +80,126 @@
 
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
+
+(defxdoc note-8-3-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in <h3>..</h3>
+; tags (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-3 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.3"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.2 and 8.3.")
+
+   (xdoc::p
+    "See also @(see note-8-3) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::a :href "https://github.com/acl2/acl2/commits/master"
+      "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
+
+   (xdoc::p
+    "A theorem has been added to the BIP 32 formalization.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "The "
+    (xdoc::seeurl "crypto::secp256k1-placeholder"
+                  "placeholder for elliptic curve secp256k1")
+    " has been extended with an (abstract) signing operation.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
+
+   (xdoc::p
+    "A function to construct signed transactions has been added.")
+
+   (xdoc::p
+    "Functions to calculate an account address
+     from a public key and from a private key (via its public key)
+     have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "fty" "Fixtype Definition Library"))
+
+   (xdoc::p
+    "The @(tsee fty::defbyte) macro has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
+    "The @(tsee fty::defbytelist) macro has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
+    "The @(tsee fty::defset) macro has been improved
+     to generate additional theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
+
+   (xdoc::p
+    "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
+     have been moved to @('[books]/std/alists/')
+     from @('[books]/kestrel/utilities/alists/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "The `@('basic')' target in @('GNUmakefile') now certifies
+     @('projects/apply/top.lisp'), as is necessary for using @(tsee defun$) or
+     @(tsee defwarrant).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
 
 (defxdoc note-8-2-books
 
@@ -199,8 +320,8 @@
  <p>Moved the previous placeholders for cryptographic functions into <see
  topic='@(url crypto::cryptography)'>a new library</see>.</p>
 
- <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 43, and 44
- for hierarchical deterministic wallets.</p>
+ <p>Added a formalization of BIPs (Bitcoin Improvement Proposal) 32, 39, 43,
+ and 44 for hierarchical deterministic wallets.</p>
 
  <p>Improved the existing documentation.</p>
 
@@ -230,6 +351,9 @@
 
  <p>Some theorems have been added.</p>
 
+ <p>Added operations to group digits in a smaller base into digits in a larger
+ base, and vice versa, in both big-endian and little-endian.</p>
+
  <p>The macro to generate additional return types for conversions from natural
  numbers to digits has been generalized and renamed.</p>
 
@@ -238,6 +362,12 @@
  and specific recognizers and fixers of (lists of) digits.  Used this macro for
  some library fixtypes (e.g. bits and bytes as digits in base 2 and 256
  respectively).</p>
+
+ <p>A macro @(tsee defdigit-grouping) has been added, to generate specialized
+ versions of the digit grouping functions, and some theorems about them, for
+ specific pair of bases such that the larger base is a positive power, greater
+ than 1, of the smaller base.  Used this macro for some library fixtypes
+ (e.g. to convert between bits and bytes).</p>
 
  <h4><see topic='@(url error-checking)'>Error-Checking Utilities</see></h4>
 
@@ -411,6 +541,9 @@
  <p>Added a function @(tsee remove-assocs), moved from
  @('[books]/kestrel/utilities/').</p>
 
+ <p>Added some theorems about @(tsee remove-assoc-equal), moved from
+ @('[books]/kestrel/utilities/').</p>
+
  <h4>@(csee std/basic)</h4>
 
  <p>Added a recognizer @(tsee bytep) for ``standard'' (i.e. unsigned 8-bit)
@@ -436,10 +569,9 @@
  note-8-2) for details.</p>
 
  <p>The built-in function @(tsee take) has been redefined exactly along the
- lines suggested by the theorem @('take-redefinition') from
- @('\"books/std/lists/take.lisp\"').  @('Take-redefinition) itself has been
- left in place in order to minimize changes to existing books.  See @(see
- note-8-2) for details.</p>
+ lines suggested by the theorem @('take-redefinition') that was previously
+ introduced in @('\"books/std/lists/take.lisp\"').  This theorem has been now
+ removed.  See @(see note-8-2) for details.</p>
 
  <h4>@(csee std/util)</h4>
 

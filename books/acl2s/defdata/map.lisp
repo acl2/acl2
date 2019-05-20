@@ -123,9 +123,9 @@ data last modified: [2014-08-06]
 
 (defun map-attach-constraint-rules-ev (p wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types) A)) ;what about pdef?
+       ((acl2::assocs pdef new-types) A)) ;what about pdef?
        
-    (case-match odef
+    (case-match pdef
       (('MAP keybody valbody)
        (b* ((M (append new-types (type-metadata-table wrld)))
             (pred (predicate-name name M))
@@ -195,10 +195,10 @@ data last modified: [2014-08-06]
 
 (defun map-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
-       ((acl2::assocs odef new-types kwd-alist) A) ;what about pdef?
+       ((acl2::assocs pdef new-types kwd-alist) A) ;what about pdef?
        (kwd-alist (append kwd-alist top-kwd-alist)))
        
-    (case-match odef
+    (case-match pdef
       (('MAP key-body val-body) (map-theory-events name key-body val-body new-types kwd-alist wrld))
       (& '()))))
              

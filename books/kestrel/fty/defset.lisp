@@ -180,6 +180,8 @@
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix) pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred) pkg-witness))
        (setp-when-pred (acl2::packn-pos (list 'setp-when- pred) pkg-witness))
+       (elt-pred-of-head (acl2::packn-pos (list elt-pred
+                                                '-of-head) pkg-witness))
        (pred-of-tail (acl2::packn-pos (list pred '-of-tail) pkg-witness))
        (pred-of-insert (acl2::packn-pos (list pred '-of-insert) pkg-witness))
        (elt-pred-when-in-pred (acl2::packn-pos (list elt-pred
@@ -215,6 +217,11 @@
              (implies (,pred ,x)
                       (set::setp ,x))
              :enable set::setp)
+           (defrule ,elt-pred-of-head
+             (implies (and (,pred ,x)
+                           (not (empty ,x)))
+                      (,elt-pred (head ,x)))
+             :enable set::head)
            (defrule ,pred-of-tail
              (implies (,pred ,x)
                       (,pred (set::tail ,x)))

@@ -99,7 +99,7 @@
 (must-eval-to-t
  (mv-let
   (erp val)
-  (guard-obligation 'f2-guard-debug t t 'top-level state)
+  (guard-obligation 'f2-guard-debug t t t 'top-level state)
   (value
    (and
     (not erp)

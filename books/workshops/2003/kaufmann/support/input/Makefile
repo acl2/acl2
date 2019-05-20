@@ -29,6 +29,14 @@ clean: clean-more
 clean-more:
 	rm -f defs-out.lisp defs-eq.lisp lemmas-out.lisp check.txt
 
+# make sure all these books get recertified if either certdep is updated
+UNIVERSAL_DEPS := \
+  ../../../../../build/acl2-version.certdep \
+  ../../../../../build/universal-dependency.certdep
+
+inputs.cert: $(UNIVERSAL_DEPS)
+
+
 # Created with make dependencies after a successful run:
 
 defs-in.cert: defs-in.lisp

@@ -24,7 +24,7 @@
                         (< a ,,max))))
         `(progn
            (defdata ,',name (range integer (,,min <= _ < ,,max)))
-           (defdata-subtype ,',name ,type)
+           (defdata-subtype ,',name ,type :strictp t)
            (defthm ,',th1
              (implies (,',namep a) ,rng)
              :rule-classes ((:forward-chaining)))

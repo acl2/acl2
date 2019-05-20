@@ -2,7 +2,7 @@ ACL2 Books Jenkins Build Scripts
 
 Authors: Jared Davis <jared@centtech.com>, David Rager <ragerdl@defthm.com>
 
-##Introduction
+## Introduction
 
 Jenkins is a popular tool for implementing continuous integration servers.  Its
 homepage is here:
@@ -33,7 +33,7 @@ it generally takes care of mundane issues like:
     - keeping recent logs so you can review them later
     - (optional) emails/irc notifications whenever things fail
 
-##Instructions
+## Instructions
 
 To make it possible to use these scripts in other environments, each
 script starts with:
@@ -62,6 +62,4 @@ The scripts use `startjob`, a which in its simplest form is just a
 wrapper for `bash`.  In more complicated scenarios, `startjob` can be
 used to build the books using a cluster.
 
-Please contact Jared or David with any questions or feedback.
-
-
+Please contact David or Jared with any questions or feedback.

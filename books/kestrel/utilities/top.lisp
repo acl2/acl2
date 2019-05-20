@@ -17,6 +17,8 @@
 (include-book "auto-instance")
 (include-book "auto-termination")
 (include-book "bits-as-digits")
+(include-book "bits-and-bytes-as-digits")
+(include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
 (include-book "define-sk")

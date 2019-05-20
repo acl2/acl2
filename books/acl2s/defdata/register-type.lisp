@@ -150,10 +150,9 @@ data last modified: [2014-08-06]
        (ctx 'register-type)
        ((unless (and (member :predicate keys) (member :enumerator keys)))
         (er hard ctx "~| Keyword args predicate, enumerator are mandatory.~%")))
-    `(with-output ,@(if verbosep '(:on :all) '(:on error)) :stack :push
+    `(encapsulate
+      nil
+      (with-output
+       ,@(if verbosep '(:on :all) '(:on error)) :stack :push
        (make-event
-        (register-type-fn ',name ',keys ',ctx (current-package state) (w state))))))
-
-
-
-
+        (register-type-fn ',name ',keys ',ctx (current-package state) (w state)))))))

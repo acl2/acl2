@@ -68,6 +68,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                    ,(make-show-failure-msg-ev ...))))))
 ||#
 
+(defdata-alias bool boolean)
+(defdata-alias int integer)
+(defdata-alias tl true-list)
 
 #!ACL2
 (defun function-guard-obligation (fun-name state)
@@ -170,17 +173,37 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (caar tbl))
         (t (type-of-pred-aux pred (cdr tbl)))))
 
+#|
 (defun type-of-pred (pred tbl)
   (cond ((equal pred 'intp) 'integer)
         ((equal pred 'boolp) 'boolean)
         ((equal pred 'tlp) 'true-list)
         (t (type-of-pred-aux pred tbl))))
+|#
 
-; (type-of-pred 'boolp (table-alist 'defdata::type-metadata-table (w state)))
-; (type-of-pred 'tlp (table-alist 'defdata::type-metadata-table (w state)))
-; (type-of-pred 'intp (table-alist 'defdata::type-metadata-table (w state)))
-; (type-of-pred 'integerp (table-alist 'defdata::type-metadata-table (w state)))
-; (type-of-pred nil (table-alist 'defdata::type-metadata-table (w state)))
+(defun type-of-pred (pred tbl ptbl)
+  (let ((apred (assoc-equal :type (get-alist pred ptbl))))
+    (if apred
+        (cdr apred) 
+    (type-of-pred-aux pred tbl))))
+
+#|
+(type-of-pred 'bool
+              (table-alist 'defdata::type-metadata-table (w state))
+              (table-alist 'defdata::pred-alias-table (w state)))
+(type-of-pred 'tlp
+              (table-alist 'defdata::type-metadata-table (w state))
+              (table-alist 'defdata::pred-alias-table (w state)))
+(type-of-pred 'intp
+              (table-alist 'defdata::type-metadata-table (w state))
+              (table-alist 'defdata::pred-alias-table (w state)))
+(type-of-pred 'integerp
+              (table-alist 'defdata::type-metadata-table (w state))
+              (table-alist 'defdata::pred-alias-table (w state)))
+(type-of-pred nil
+              (table-alist 'defdata::type-metadata-table (w state))
+              (table-alist 'defdata::pred-alias-table (w state)))
+|#
 
 (defun enum-of-type (type tbl)
   (get-alist :enumerator (get-alist type tbl)))
@@ -192,10 +215,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 ; (base-val-of-type 'integer (table-alist 'defdata::type-metadata-table (w state)))
 
-(defun pred-of-oc (name formals oc)
+(defun unalias-pred (pred ptbl)
+  (let ((apred (assoc-equal :predicate (get-alist pred ptbl))))
+    (if apred
+        (cdr apred)
+      pred)))
+
+(defun pred-of-oc (name formals oc ptbl)
   (and (consp oc) 
        (equal (cdr oc) `((,name ,@formals)))
-       (car oc)))
+       (unalias-pred (car oc) ptbl)))
 
 (defun map-force-list (l)
   (if (endp l)
@@ -230,26 +259,28 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
              "**Output contract violation**: ~x0 with argument list ~x1 returned ~x2.~%"
              ',fun-name (list ,@fun-args) ,return-var)))))
 
-(defun get-undef-name (pred d? w)
+(defun get-undef-name (pred d? pkg w)
   (declare (xargs :mode :program :guard (symbolp pred)))
   (b* ((tbl (table-alist 'defdata::type-metadata-table w))
-       (type (type-of-pred pred tbl))
+       (ptbl (table-alist 'defdata::pred-alias-table w))
+       (type (type-of-pred pred tbl ptbl))
        (undef-name (if type
-                       (make-symbl `(acl2s::acl2s - ,type ,(if d? '-d- '-) undefined))
+                       (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
                      (if d? 'acl2s::acl2s-d-undefined 'acl2s::acl2s-undefined))))
     (if (acl2::arity undef-name w)
         undef-name
       'acl2s::acl2s-undefined)))
 
-(defun make-defun-body/logic (name formals ic oc body wrld make-staticp d?)
-  (b* ((with-ic-body
+(defun make-defun-body/logic (name formals ic oc body wrld make-staticp d? pkg)
+  (b* ((ptbl (table-alist 'defdata::pred-alias-table wrld))
+       (with-ic-body
         (if (c-is-t ic)
             body
           `(if ,ic
                ,body
              ,(if d?
-                  `(,(get-undef-name (pred-of-oc name formals oc) d? wrld))
-                `(,(get-undef-name (pred-of-oc name formals oc) d? wrld)
+                  `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? pkg wrld))
+                `(,(get-undef-name (pred-of-oc name formals oc ptbl) d? pkg wrld)
                   (quote ,name)
                   (list ,@formals)))))))
     (if make-staticp
@@ -305,7 +336,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (and (member-equal f (fun-syms-in-term term)) t))
 
 (defun make-generic-typed-defunc-events
-    (name formals ic oc decls body kwd-alist wrld make-staticp d?)
+    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
   "Generate events which simulate a typed ACL2s language."
   (b* ((recursivep (defdata::get1 :recursivep kwd-alist))
        (force-ic-hyps-in-definitionp 
@@ -313,10 +344,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (skip-admissibilityp 
         (defdata::get1 :skip-admissibilityp kwd-alist))
        (ic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
-       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d?))
+       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? pkg))
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
-       (fun-ind-name (make-sym name 'induction-scheme-from-definition))
-       (ind-scheme-name (make-sym name 'induction-scheme))
+       (fun-ind-name (make-sym name 'induction-scheme-from-definition pkg))
+       (ind-scheme-name (make-sym name 'induction-scheme pkg))
        (defun `(defun-no-test ,fun-ind-name ,formals
                  ,@decls
                  ,(subst-fun-sym fun-ind-name name lbody)))
@@ -341,7 +372,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (let ((controller-alist (acl2::controller-alist ',name (w state))))
               `(with-output
                 :stack :pop 
-                (,',defthmnotest ,(make-sym ',name 'definition-rule)
+                (,',defthmnotest ,(make-sym ',name 'definition-rule ',pkg)
                   ,',def-rule-body
                   :hints (("Goal" :use ,',name :in-theory nil))
                   :rule-classes ((:definition
@@ -362,7 +393,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      ;; as the main defun, I should investigate how to make
      ;; it go throuh automatically (as we do with many of
      ;; the other forms).
-
 
 ; Induction scheme
      (and recursivep
@@ -390,10 +420,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (logic)
 
-(defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? w)
+(defun make-contract-body (name ic oc formals d? rem-hyps? f-c-thm? pkg w)
   (declare (xargs :mode :program))
-  (b* ((pred (pred-of-oc name formals oc))
-       (undef-name (get-undef-name pred d? w)))
+  (b* ((ptbl (table-alist 'defdata::pred-alias-table w))
+       (pred (pred-of-oc name formals oc ptbl))
+       (undef-name (get-undef-name pred d? pkg w)))
     (if (or (c-is-t ic)
             (and rem-hyps?
                  (not (member undef-name '(acl2s::acl2s-undefined
@@ -404,7 +435,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun wrap-test-skip (skip? x)
   (if skip? `(test-then-skip-proofs ,x) x))
 
-(defun make-contract-defthm (name ic oc kwd-alist formals d? w)
+(defun make-contract-defthm (name ic oc kwd-alist formals d? pkg w)
   (declare (xargs :mode :program))
   (b* ((instructions (defdata::get1 :instructions kwd-alist))
        (otf-flg (defdata::get1 :otf-flg kwd-alist))
@@ -412,11 +443,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (rule-classes (defdata::get1 :rule-classes kwd-alist))
        (f-c-thm?
         (defdata::get1 :force-ic-hyps-in-contract-thmp kwd-alist))
-       ((mv body &) (make-contract-body name ic oc formals d? nil f-c-thm? w))
+       ((mv body &) (make-contract-body name ic oc formals d? nil f-c-thm? pkg w))
        (skip-function-contractp
         (defdata::get1 :skip-function-contractp kwd-alist))
        (defthm
-         `(defthm ,(make-sym name 'CONTRACT)
+         `(defthm ,(make-sym name 'CONTRACT pkg)
             ,body
             ,@(and hints `(:HINTS ,hints))
             ,@(and rule-classes `(:RULE-CLASSES ,rule-classes))
@@ -427,7 +458,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defmacro wrap-skip-fun (x)
   `(wrap-test-skip skip-function-contractp ,x))
 
-(defun make-contract-ev (name formals ic oc kwd-alist make-staticp d? w)
+(defun make-contract-ev (name formals ic oc kwd-alist make-staticp d? pkg w)
   (declare (xargs :mode :program))
   (b* (((when (c-is-t oc)) nil) ;trivially satisfied
        (function-contract-strictp
@@ -441,11 +472,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (skip-function-contractp
         (defdata::get1 :skip-function-contractp kwd-alist))
        ((mv body-rm-hyps no-hyps?-rm-hyps)
-        (make-contract-body name ic oc formals d? t f-c-thm? w))
+        (make-contract-body name ic oc formals d? t f-c-thm? pkg w))
        ((mv body-hyps no-hyps?-hyps)
-        (make-contract-body name ic oc formals d? nil f-c-thm? w))
-       (contract-name (make-sym name 'CONTRACT))
-       (contract-tpname (make-sym name 'CONTRACT-TP))
+        (make-contract-body name ic oc formals d? nil f-c-thm? pkg w))
+       (contract-name (make-sym name 'CONTRACT pkg))
+       (contract-tpname (make-sym name 'CONTRACT-TP pkg))
        (recursivep (defdata::get1 :recursivep kwd-alist))
        (ihints `(:hints ;; add induction hint, so user-provided
                  ;; hints are treated as extra
@@ -651,11 +682,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;them in a context where decls, guard are actual values, then you need
 ;to quote them.
 
-(defun print-summary-ev (name oc kwd-alist)
+(defun print-summary-ev (name oc kwd-alist pkg)
   `(with-output :stack :push :off :all
      (make-event
       (b* ((symbol-class (acl2::symbol-class ',name (w state)))
-           (contract-name (make-sym ',name 'contract))
+           (contract-name (make-sym ',name 'contract ',pkg))
            (function-contract-proven-p
             (or (c-is-t ',oc) (acl2::logical-namep contract-name (w state))))
            (print (defdata::get1 :print-summary ',kwd-alist))
@@ -676,9 +707,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (if b "*" " "))
 
 (defun make-defun-no-guard-ev
-    (name formals ic oc decls body kwd-alist wrld make-staticp d?)
+    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
   (declare (xargs :mode :program))
-  (b* ((lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d?))
+  (b* ((lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? pkg))
        (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
        (skip-admissibilityp 
         (defdata::get1 :skip-admissibilityp kwd-alist))
@@ -715,16 +746,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   (timeout-abort-fn ,start-time ,timeout-secs ,debug state)))))
 
 (defun defunc-events-with-staticp-flag
-    (name formals ic oc decls body kwd-alist wrld make-staticp d?)
+    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
   "Depending on flag make-staticp, we generate either events with static contract or with dynamic contract (run-time checking)."
   (declare (xargs :mode :program))
   (if (defdata::get1 :program-mode-p kwd-alist)
       '(mv t nil state) ;skip/abort
     (b* ((defun/ng
            (make-defun-no-guard-ev
-            name formals ic oc decls body kwd-alist wrld make-staticp d?))
+            name formals ic oc decls body kwd-alist wrld make-staticp d? pkg))
          (contract-defthm
-          (make-contract-ev name formals ic oc kwd-alist make-staticp d? wrld))
+          (make-contract-ev name formals ic oc kwd-alist make-staticp d? pkg wrld))
          (verify-guards-ev (make-verify-guards-ev name kwd-alist))
          (timeout-secs (defdata::get1 :timeout kwd-alist))
          (test-subgoals-p (eq t (defdata::get1 :testing-enabled kwd-alist))))
@@ -774,32 +805,27 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                         :generic-ev)
                                 (value '(value-triple :invisible)))))
          ,@(make-generic-typed-defunc-events
-            name formals ic oc decls body kwd-alist wrld make-staticp d?)
+            name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
 
          (with-output
           :off :all
           (make-event (er-progn (assign defunc-failure-reason :none)
                                 (value '(value-triple :invisible)))))
 
-         ,(print-summary-ev name oc kwd-alist))))))
+         ,(print-summary-ev name oc kwd-alist pkg))))))
 
 
-(defun program-mode-defunc-events (name formals ic oc decls body kwd-alist d? wrld)
+(defun program-mode-defunc-events (name formals ic oc decls body kwd-alist d? wrld pkg)
   (declare (xargs :mode :program))
-  (b* ((dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d?))
-       (decls (update-xargs-decls decls :guard ic :mode :program))
-
-       )
-
+  (b* ((dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? pkg))
+       (decls (update-xargs-decls decls :guard ic :mode :program)))
     `(with-output
        :on (summary) :summary (acl2::form)
        (PROGN
         (defun ,name ,formals
           ,@decls
           ,dynamic-body)
-        ,(print-summary-ev name oc kwd-alist)))))
-
-
+        ,(print-summary-ev name oc kwd-alist pkg)))))
 
 (defun print-guard-extra-info-hyps (hyps yesp)
   (if (endp hyps)
@@ -892,12 +918,16 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (acl2::trans-eval
          `(make-event
            (er-progn
-            (with-output :on (error) (skip-proofs ,defun))
+            (with-output 
+             :off (warning warning! observation prove proof-builder event history
+                           summary proof-tree)
+             (skip-proofs ,defun))
             (b* (((er guard-ob) (acl2::function-guard-obligation ',name state))
                  (- (defdata::cw? ,debug "~| guard-obligation: ~x0~%" guard-ob))
                  (- (cw "~|Query: Testing body contracts ... ~%"))
                  ((er &) (with-output
-                          :on (error)
+                          :off (warning warning! observation prove
+                                proof-builder event history summary proof-tree)
                           (with-prover-time-limit
                            ,testing-timeout
                            (test-guards guard-ob
@@ -912,9 +942,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (acl2::trans-eval
          `(make-event
            (er-progn
-            (with-output :on (error) (skip-proofs ,defun))
             (with-output
-             :on (error)
+             :off (warning warning! observation prove proof-builder event history
+                           summary proof-tree)
+             (skip-proofs ,defun))
+            (with-output
+             :off (warning warning! observation prove proof-builder event history
+                           summary proof-tree)
              (with-prover-time-limit
               ,testing-timeout
               (test? (implies ,ic ,oc) :print-cgen-summary nil :num-witnesses 0)))
@@ -972,13 +1006,13 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   "~|Submit the events shown above to replicate the failure.")))))))))
 
 
-(defun events-seen-list (parsed wrld make-staticp d?)
+(defun events-seen-list (parsed wrld make-staticp d? pkg)
   (declare (xargs :mode :program))
   (b* (((list name formals ic oc decls body kwd-alist) parsed)
        (defun/ng
          (make-defun-no-guard-ev name formals ic oc decls body
-                                 kwd-alist wrld make-staticp d?))
-       (contract-defthm (make-contract-defthm name ic oc kwd-alist formals d? wrld))
+                                 kwd-alist wrld make-staticp d? pkg))
+       (contract-defthm (make-contract-defthm name ic oc kwd-alist formals d? pkg wrld))
        (verify-guards-ev (make-verify-guards-ev name kwd-alist))
        (function-contract-strictp (defdata::get1 :function-contract-strictp kwd-alist))
        (body-contracts-strictp (defdata::get1 :body-contracts-strictp kwd-alist)))
@@ -1112,18 +1146,19 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
     (list name formals input-contract output-contract decls body kwd-alist)))
 
-(defun make-undefined-aux (parsed w d? do-it)
+(defun make-undefined-aux (parsed w d? do-it pkg)
   (declare (xargs :mode :program))
   (b* (((list name formals & oc & & kwd-alist) parsed)
-       (pred (pred-of-oc name formals oc))
        (tbl (table-alist 'defdata::type-metadata-table w))
-       (type (type-of-pred pred tbl))
+       (ptbl (table-alist 'defdata::pred-alias-table w))
+       (pred (pred-of-oc name formals oc ptbl))
+       (type (type-of-pred pred tbl ptbl))
        (undef-name (if type
-                       (make-symbl `(acl2s::acl2s - ,type ,(if d? '-d- '-) undefined))
+                       (make-symbl `(acl2s - ,type ,(if d? '-d- '-) undefined) pkg)
                      (if d? 'acl2s::acl2s-d-undefined 'acl2s::acl2s-undefined)))
-       (attch-name (make-symbl `(,undef-name ,(if d? '-d- '-) attached)))
-       (attch-base-name (make-symbl `(,attch-name ,(if d? '-d- '-) base)))
-       (thm-name (make-symbl `(,undef-name ,(if d? '-d- '-) ,pred)))
+       (attch-name (make-symbl `(,undef-name ,(if d? '-d- '-) attached) pkg))
+       (attch-base-name (make-symbl `(,attch-name ,(if d? '-d- '-) base) pkg))
+       (thm-name (make-symbl `(,undef-name ,(if d? '-d- '-) ,pred) pkg))
        (base-val (and type (base-val-of-type type tbl))))
     (cond
      ((and (not do-it)
@@ -1169,9 +1204,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                `(defattach ,undef-name ,attch-name)
              `(defattach ,undef-name ,attch-base-name)))))))
 
-(defun make-undefined (name args d? w)
+(defun make-undefined (name args d? pkg w)
   (declare (xargs :mode :program :guard (symbolp name)))
-  (make-undefined-aux (parse-defunc name args w) w d? nil))
+  (make-undefined-aux (parse-defunc name args w) w d? nil pkg))
 
 ; (make-event (make-undefined 'foo '((x) :input-contract (natp x) :output-contract (booleanp (foo x)) nil)  (w state)))
 ; (make-event (make-undefined 'booleanp (w state)))
@@ -1180,6 +1215,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun defunc-events (parsed d? state)
   (declare (xargs :mode :program :stobjs (state)))
   (b* (((list name formals ic oc decls body kwd-alist) parsed)
+       (pkg (current-package state))
        (wrld (w state))
        ;;some initialization
        ((mv start state) (acl2::read-run-time state))
@@ -1187,22 +1223,22 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        ((er &) (assign defunc-failure-reason :none))
        (static-defunc-ev
         (defunc-events-with-staticp-flag
-          name formals ic oc decls body kwd-alist wrld t d?))
+          name formals ic oc decls body kwd-alist wrld t d? pkg))
        (dynamic-defunc-ev
         (defunc-events-with-staticp-flag
-          name formals ic oc decls body kwd-alist wrld nil d?))
+          name formals ic oc decls body kwd-alist wrld nil d? pkg))
        (program-mode-defunc-ev
         (program-mode-defunc-events
-         name formals ic oc decls body kwd-alist d? wrld))
+         name formals ic oc decls body kwd-alist d? wrld pkg))
        (termination-strictp
         (and (defdata::get1 :termination-strictp kwd-alist)
              (not (defdata::get1 :program-mode-p kwd-alist))))
        ;;program-mode overrides termination-strictp
        (function-contract-strictp
         (defdata::get1 :function-contract-strictp kwd-alist))
-       (make-undef (make-undefined-aux parsed wrld d? t))
-       (events-seen-t   (cons make-undef (events-seen-list parsed wrld t d?)))
-       (events-seen-nil (cons make-undef (events-seen-list parsed wrld nil d?))))
+       (make-undef (make-undefined-aux parsed wrld d? t pkg))
+       (events-seen-t   (cons make-undef (events-seen-list parsed wrld t d? pkg)))
+       (events-seen-nil (cons make-undef (events-seen-list parsed wrld nil d? pkg))))
     (value
      (cond
       ((and termination-strictp function-contract-strictp)
@@ -1218,7 +1254,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                ,(make-show-failure-msg-ev
                  start kwd-alist
                  (list (make-defun-no-guard-ev
-                        name formals ic oc decls body kwd-alist wrld t d?)))))))))
+                        name formals ic oc decls body kwd-alist wrld t d? pkg)))))))))
 
 (defmacro defunc (name &rest args)
   (b* ((verbosep (let ((lst (member :verbose args)))
@@ -1228,7 +1264,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                        (and lst (cadr lst))))))
     `(encapsulate
       nil
-      (make-event (make-undefined ',name ',args nil (w state)))
+      (make-event (make-undefined ',name ',args nil (current-package state) (w state)))
       (with-output
        ,@(and (not verbosep) '(:off :all))
        :gag-mode ,(not verbosep)
@@ -1249,7 +1285,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                        (and lst (cadr lst))))))
     `(encapsulate
       nil
-      (make-event (make-undefined ',name ',args t (w state)))
+      (make-event (make-undefined ',name ',args t (current-package state) (w state)))
       (with-output
        ,@(and (not verbosep) '(:off :all))
        :gag-mode ,(not verbosep)
@@ -1459,8 +1495,6 @@ To debug a failed defunc form, you can proceed in multiple ways:
 (defmacro set-defunc-skip-body-contractsp (b)
   `(table defunc-defaults-table :skip-body-contractsp ,b :put))
 
-
-
 (defmacro get-defunc-termination-strictp ()
   `(table defunc-defaults-table :termination-strictp))
 (defmacro get-defunc-function-contract-strictp ()
@@ -1559,10 +1593,13 @@ To debug a failed defunc form, you can proceed in multiple ways:
    ")
 
 (defmacro defuncd (name &rest args)
-  (let* ((defname (make-symbl `(,name -DEFINITION-RULE))))
-    `(progn
-      (defunc ,name ,@args)
-      (in-theory (disable ,defname)))))
+  `(encapsulate
+    nil
+    (defunc ,name ,@args)
+    (make-event 
+     `(in-theory
+       (disable
+        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro set-defunc-skip-tests (r)
   `(table defunc-defaults-table :skip-tests ,r :put))
@@ -1577,12 +1614,14 @@ To debug a failed defunc form, you can proceed in multiple ways:
     (local (acl2s-defaults :set testing-enabled nil))
     (defuncd ,name ,@args)))
 
-
 (defmacro defundcd (name &rest args)
-  (let* ((defname (make-symbl `(,name -DEFINITION-RULE))))
-    `(progn
-      (defundc ,name ,@args)
-      (in-theory (disable ,defname)))))
+  `(encapsulate
+    nil
+    (defundc ,name ,@args)
+    (make-event 
+     `(in-theory
+       (disable
+        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro defundc-no-test (name &rest args)
   `(acl2::with-outer-locals
@@ -1593,4 +1632,3 @@ To debug a failed defunc form, you can proceed in multiple ways:
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
     (defundcd ,name ,@args)))
-

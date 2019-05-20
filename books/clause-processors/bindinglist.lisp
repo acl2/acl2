@@ -224,7 +224,7 @@
                                            (cons (car formals) deleted-formals)))
         ((member (car formals) deleted-formals)
          (lambda-remove-redundant-bindings (cdr formals) (cdr actuals) deleted-formals))
-        (t 
+        (t
          (b* (((mv rest-f rest-a)
                (lambda-remove-redundant-bindings (cdr formals) (cdr actuals) deleted-formals)))
            (mv (cons (car formals) rest-f)
@@ -406,7 +406,7 @@
            (not (intersectp (set-difference-eq a b) b))
            :hints(("Goal" :in-theory (enable intersectp)))))
 
-  
+
   (local (defun lambda-nest-to-bindinglist-correct-ind (x a)
            (b* (((when (or (atom x)
                            (eq (car x) 'quote)
@@ -436,7 +436,7 @@
 
 
 (local (include-book "std/lists/take" :dir :system))
-(local (in-theory (disable take-redefinition)))
+(local (in-theory (disable take)))
 
 (define bindinglist-free-vars ((x bindinglist-p))
   :verify-guards nil
@@ -490,7 +490,7 @@
                   (unify-ev-lst x a2)))
   :hints (("goal" :use ((:functional-instance base-ev-list-when-eval-alists-agree
                          (base-ev unify-ev) (base-ev-list unify-ev-lst))))))
-  
+
 
 
 
@@ -527,7 +527,7 @@
                   (equal (pairlis$ vars (unify-ev-lst vals a))
                          (pairlis$ vars (unify-ev-lst vals b))))
          :hints(("Goal" :induct (pairlis$ vars vals)
-                 :in-theory (enable pairlis$ acl2::take-redefinition simple-term-vars-lst)))))
+                 :in-theory (enable pairlis$ acl2::take simple-term-vars-lst)))))
 
 
 (defthm unify-ev-bindinglist-when-eval-alists-agree-on-free-vars
@@ -666,7 +666,7 @@
   (local (defthm pairlis$-of-unify-ev-lst-take
            (equal (pairlis$ vars (unify-ev-lst (take (len vars) vals) a))
                   (pairlis$ vars (unify-ev-lst vals a)))
-           :hints(("Goal" :in-theory (enable pairlis$ acl2::take-redefinition)
+           :hints(("Goal" :in-theory (enable pairlis$ acl2::take)
                    :induct (pairlis$ vars vals)))))
 
   (defret bindinglist-to-lambda-nest-correct
@@ -693,7 +693,7 @@
                          (vars (simple-term-vars ,(hq rest-body)))
                          (a1 ,(hq impl-alist))
                          (a2  ,(hq spec-alist))))))))))
-    
+
 
 (define bindinglist-to-lambda-nest-aux ((x bindinglist-p)
                                         (body pseudo-termp))
@@ -817,11 +817,3 @@
        '(value-triple :ok)
      (er hard? 'check-b*-binderst-to-bindinglist
          "Check failed!~%"))))
-
-
-
-                       
-                       
-       
-
-         

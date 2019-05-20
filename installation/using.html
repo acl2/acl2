@@ -1,9 +1,9 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 8.1 Installation Guide: Using ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 8.2 Installation Guide: Using ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
-<H1>Using <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/index.html">ACL2</a></A></H1>
+<H1>Using <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-2/index.html">ACL2</a></A></H1>
 
 <b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
 
@@ -27,7 +27,7 @@
 Here we begin with a discussion of how to <A HREF="#Invoking">invoke ACL2</A>
 interactively.  We then discuss <A HREF="#Testing">testing</A> as well as the
 <A HREF="#Certifying">certification</A> of
-ACL2 <i><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+ACL2 <i><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
 books</a></i>.  We conclude with a discussion of
 the <A HREF="#Documentation">documentation</A>.
 
@@ -35,7 +35,7 @@ the <A HREF="#Documentation">documentation</A>.
 <H3><A NAME="Invoking">Invoking ACL2</A></H3>
 
 We assume that you have followed the installation instructions to
-install, under some directory <I>dir</I>, a subdirectory <code>acl2-8.1</code>.
+install, under some directory <I>dir</I>, a subdirectory <code>acl2-8.2</code>.
 The sources and perhaps an executable image are located on that subdirectory.
 However, if you have not saved an image but instead use the directions
 for <A HREF="obtaining-and-installing.html#Running">Running Without Building an Executable Image</A>, skip
@@ -43,11 +43,11 @@ to <A HREF="#Starting">When ACL2 Starts Up</A> below.
 
 <P>
 
-The executable image is called <code>acl2-8.1/saved_acl2</code>.  You can
+The executable image is called <code>acl2-8.2/saved_acl2</code>.  You can
 invoke ACL2 by running that image, e.g.,
 
 <BR><BR>
-<CODE>mycomputer% </CODE><I>dir</I><CODE>/acl2-8.1/saved_acl2</CODE>
+<CODE>mycomputer% </CODE><I>dir</I><CODE>/acl2-8.2/saved_acl2</CODE>
 <BR><BR>
 
 If you on a Unix-like system, then to make it easy to invoke ACL2 by
@@ -62,7 +62,7 @@ you may want to install an executable file on your path, e.g.,
 
 <BR><BR>
 <CODE>#!/bin/csh -f</CODE><BR>
-<I>dir</I><CODE>/acl2-8.1/saved_acl2</CODE><BR>
+<I>dir</I><CODE>/acl2-8.2/saved_acl2</CODE><BR>
 <BR><BR>
 
 Note: A carriage return in the file after the last line above may be important!
@@ -129,24 +129,24 @@ text, generally a proof of some conjecture.  None should fail.
 
 <P>
 A more elaborate test is to <A NAME="#Certifying">certify
-    the <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+    the <a href="http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
 books</a>, which is a good idea anyhow; this is our next
     topic.  On a Unix-like system, you can also certify just a
     small but useful subset of the books in a few minutes by
     executing, in directory
-<i>dir</i>/<code>acl2-8.1</code>:
+<i>dir</i>/<code>acl2-8.2</code>:
 <pre>
-make certify-books-short
+make basic
 </pre>
 
 <BR><HR>
 <H3><A NAME="Certifying">Certifying ACL2 Books</A></H3>
 
-The <i><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
+The <i><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/?topic=ACL2____COMMUNITY-BOOKS">community
 books</a></i>, which reside in subdirectory <code>books/</code>, have
 been contributed mainly by users.  The general topic of books is
 discussed thoroughly in the ACL2
-<A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/index.html?topic=ACL2____BOOKS">books
+<A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/index.html?topic=ACL2____BOOKS">books
 documentation</A>.
 
 <P>
@@ -159,7 +159,7 @@ installation page
 contains <A HREF="installation.html#certify-books">simple
 instructions</A> for how to perform this certification.  For
 additional explanation and further options, see the documentation
-for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-1/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v8-2/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
 
 <P>
 Next proceed to the section on <A HREF="#Documentation">Documentation</A>.
@@ -175,7 +175,7 @@ the ACL2 home page.
 <H3><A NAME="Emacs">Emacs</A></H3>
 
 Emacs users may find it helpful to load into emacs the file
-</CODE><I>dir</I><CODE>/acl2-8.1/emacs/emacs-acl2.el</CODE>.
+</CODE><I>dir</I><CODE>/acl2-8.2/emacs/emacs-acl2.el</CODE>.
 Utilities
 offered by this file are documented near the top of the file.  In
 particular, this file automatically loads the

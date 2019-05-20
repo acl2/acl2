@@ -1,6 +1,6 @@
-; ABNF Library -- Concrete Syntax
+; ABNF -- Concrete Syntax
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,7 +25,7 @@
   :short "Concrete syntax of ABNF."
   :long
   "<p>
-   The concrete syntax of ABNF is specified, in RFC:4,
+   The concrete syntax of ABNF is specified, in [RFC:4],
    using ABNF concrete syntax.
    We break the circularity by formalizing the concrete syntax of ABNF
    using the abstract syntax of ABNF.
@@ -37,7 +37,7 @@
   :short "Rules that specify the concrete syntax of ABNF."
   :long
   "<p>
-   These are the rules in RFC:4.
+   These are the rules in [RFC:4].
    </p>"
   :order-subtopics t)
 
@@ -316,7 +316,7 @@
    </p>
    <p>
    This function may return more than one parse tree,
-   because the @('rulelist') rule in RFC:4 is ambiguous.
+   because the @('rulelist') rule in [RFC:4] is ambiguous.
    For example, the string
    `@('rulename defined-as alternation c-nl WSP c-nl')'
    can be parsed in two different ways (see the theorem below):

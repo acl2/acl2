@@ -17,14 +17,21 @@
      fquotep ffn-symb flambdap fargs
      template-subst
 
+     error warning warning! observation prove
+     proof-builder event history summary proof-tree
+
      ;more acl2 exports
      aconsp
      
      mget mset wf-keyp good-map
      => ;sig
      _ ;range
-     defdata-subtype defdata-disjoint defdata defdata-attach ;long names -- just put them as ACL2 symbols.
+     defdata-subtype defdata-disjoint
+     defdata-alias
+     defdata-subtype-strict defdata-disjoint-strict
+     defdata defdata-attach ;long names -- just put them as ACL2 symbols.
 
+     stage
      ;community books
      u::defloop def-ruleset
      )
@@ -49,9 +56,12 @@
     register-data-constructor 
     register-combinator
     register-type
+    defdata-subtype-strict defdata-disjoint-strict
     defdata-subtype defdata-disjoint defdata defdata-attach
     sig =>
     
+    defdata-alias
+    stage
     defdata-defaults-table
     ))
 
@@ -68,6 +78,9 @@
      defrec 
      variablep fquotep ffn-symb flambdap fargs
 
+     error warning warning! observation prove
+     proof-builder event history summary proof-tree
+
      test? ;for acl2s-hooks query categorization
      
      acl2s-defaults acl2s-defaults-table
@@ -76,6 +89,8 @@
      ; from community books
      u::defloop template-subst
      mget mset
+
+     stage
 
 ;; ;verbosity control 
 ;;      system-debug-flag inhibit-output-flag normal-output-flag
@@ -133,6 +148,10 @@
       must-prove
       must-not-prove
       symbol-package-name-safe
+
+      error warning warning! observation prove
+      proof-builder event history summary proof-tree
+      stage
       
       )
    (union-eq
@@ -155,7 +174,9 @@
     cgen::*cgen-exports*
     '(acl2s-defaults
       acl2s-defaults-table
-     
+
+      stage
+      
      ;defunc defaults
       defunc
       definec
@@ -205,11 +226,17 @@
               must-succeed
               must-prove
               must-not-prove
+              symbol-package-name-safe
+
+              stage
               
               trace* trace$
 
               defthm thm defconst in-package defun table
 
+
+              error warning warning! observation prove
+              proof-builder event history summary proof-tree
               )
             (union-eq
              #!ACL2S
@@ -245,8 +272,12 @@
               ;stringp
               ;charp
 
+              error warning warning! observation prove
+              proof-builder event history summary proof-tree
+
               acl2s::check=
               
+              stage
               trace*
               )
             '()))
@@ -278,6 +309,9 @@
               stringp
               charp
 
+              error warning warning! observation prove
+              proof-builder event history summary proof-tree
+
               acl2s::check=
 
               and or iff implies not booleanp 
@@ -289,6 +323,7 @@
               caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
               cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
               
+              stage
               trace* trace$
 
               defthm thm defconst in-package defun table

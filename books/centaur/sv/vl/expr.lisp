@@ -44,7 +44,7 @@
 (local (include-book "std/lists/len" :dir :system))
 
 (defxdoc vl-expr-svex-translation
-  :parents (vl-design->svex-design)
+  :parents (vl-design->sv-design)
   :short "Compilation from (sized) @(see vl::vl) expressions into @(see
 sv::svex) expressions."
 
@@ -896,7 +896,7 @@ ignored.</p>"
     (implies (and (not err)
                   (not (member v (sv::svex-vars idx))))
              (not (member v (sv::svex-vars shift))))))
-               
+
 
 
 ;; #!sv
@@ -1331,7 +1331,7 @@ the way.</li>
                                       sv::svex-select->indices
                                       sv::svex-select-inner-var
                                       acl2::member-of-cons)))))
-                  
+
 
 
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -1394,7 +1394,7 @@ the way.</li>
              (local (in-theory (disable len-of-cdr
                                         acl2::take-of-len-free
                                         acl2::len-when-atom
-                                        acl2::take-redefinition
+                                        acl2::take
                                         acl2::nthcdr-when-zp
                                         acl2::subsetp-when-atom-left
                                         nthcdr)))
@@ -1425,7 +1425,7 @@ the way.</li>
        (decl-scopes (vl-elabscopes-traverse (rev decl.elabpath) scopes))
        (info (vl-elabscopes-item-info x.declname decl-scopes))
        (item (or info decl.item))
-       
+
        ((mv err paramval)
         (b* (((when (eq (tag item) :vl-vardecl))
               (b* (((vl-vardecl item)))
@@ -1500,7 +1500,7 @@ the way.</li>
   ;;          #!sv
   ;;          (implies (not (member v (svexlist-vars x)))
   ;;                   (not (member v (svexlist-vars (take n x)))))
-  ;;          :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+  ;;          :hints(("Goal" :in-theory (enable acl2::take)))))
 
   ;; (local (defthm svexlist-vars-of-nthcdr
   ;;          #!sv
@@ -1944,7 +1944,7 @@ the way.</li>
           ;; Shift amounts need to be zero-extended -- right arg is always
           ;; treated as unsigned per SV spec 11.4.10.
           (:vl-binary-shr     (sv::svcall sv::rsh
-                                          ;; Weird case: 
+                                          ;; Weird case:
                                           (sv::svex-zerox right-size right)
                                           (sv::svex-zerox left-size left)))
           (:vl-binary-shl     (sv::svcall sv::lsh
@@ -2763,7 +2763,7 @@ the way.</li>
                     (equal (vl-funcall-args-to-ordered ports plainargs namedargs)
                            (vl-funcall-args-to-ordered ports nil namedargs)))
            :hints(("Goal" :in-theory (enable vl-funcall-args-to-ordered)))))
-                         
+
 
   (local (defthm funcall-args-to-ordered-is-args-to-ordered-alt
            (implies (and (no-duplicatesp (vl-portdecllist->names ports)))
@@ -2771,7 +2771,7 @@ the way.</li>
                            (args-to-ordered-alt ports namedargs)))
            :hints(("Goal" :in-theory (enable vl-portdecllist->names)
                    :induct (args-to-ordered-alt ports namedargs)))))
-           
+
   (local (defthm count-of-args-to-ordered
            (b* (((mv err args) (args-to-ordered-alt ports namedargs)))
              (implies (and (no-duplicatesp (vl-portdecllist->names ports))
@@ -3028,7 +3028,7 @@ a cons of two vttrees.</p>"
                   (vttree->warnings x.right)))
        :exec (rev (vttree->warnings-acc x nil nil)))
   ///
-  
+
 
   (local (defthm vl-warninglist-add-ctx-of-vl-warninglist-add-ctx
            (implies (case-split ctx1)
@@ -3075,7 +3075,7 @@ a cons of two vttrees.</p>"
            (list-fix (sv::constraintlist-fix constraints)))
     :hints(("Goal" :in-theory (enable constraintlist-add-ctx sv::constraintlist-fix
                                       sv::constraint-fix-redef)))))
-  
+
 
 (define vttree->constraints-acc ((x vttree-p)
                                  (context)
@@ -3240,10 +3240,10 @@ a cons of two vttrees.</p>"
              `((mv . ,(subst '__tmp__warnings 'vttree args)) . ,acl2::forms))
           (vttree (vttree-add-warnings __tmp__warnings vttree :ctx ,ctx)))
        ,acl2::rest-expr)))
-  
 
 
-  
+
+
 
 
 (defmacro vfatal (&rest args)
@@ -3278,7 +3278,7 @@ a cons of two vttrees.</p>"
   (defret constraints-of-vl-err->vfatal
     (equal (vttree->constraints new-vttree)
            (vttree->constraints vttree))))
-  
+
 
 (defines vl-expr-to-svex
   :ruler-extenders :all
@@ -3332,7 +3332,7 @@ a cons of two vttrees.</p>"
                              (append (sv::constraintlist-vars a)
                                      (sv::constraintlist-vars b)))
                       :hints(("Goal" :in-theory (enable sv::constraintlist-vars)))))
-             
+
              ;; (local (defthm and*-lhs
              ;;          (implies (and* x y)
              ;;                   x)
@@ -3441,7 +3441,7 @@ vector.</p>"
              ((wvmv vttree size) (vl-datatype-size-warn ftype x nil)))
           (mv vttree
               svex ftype size))
-        
+
         :vl-stream
         (b* (((mv vttree svex size)
               (vl-streaming-concat-to-svex x ss scopes)))
@@ -4381,7 +4381,7 @@ functions can assume all bits of it are good.</p>"
          (vttree nil)
          (opacity (vl-expr-opacity x))
          (packedp (vl-datatype-packedp type))
-         ((when (and packedp 
+         ((when (and packedp
                      (not (eq opacity :special))
                      (not (vl-expr-case x :vl-pattern))
                      ;; note: qmark might have a pattern inside it
@@ -4399,7 +4399,7 @@ functions can assume all bits of it are good.</p>"
                     nil
                     (svex-x)))
                ((vmv vttree svex ?rhs-size) (vl-expr-to-svex-selfdet x size ss scopes))
-               
+
                ;; ((vmv vttree) (vl-maybe-warn-about-implicit-truncation lhs size x rhs-size ss))
                ((mv & x-selfsize) (vl-expr-selfsize x ss scopes))
                ((unless x-selfsize)
@@ -4934,7 +4934,7 @@ functions can assume all bits of it are good.</p>"
       (mv vttree (cons first rest)
           (cons size1 rest-sizes))))
   ///
-  
+
   (local
    (make-event
     `(in-theory (disable . ,(flag::get-clique-members 'vl-expr-to-svex-vector (w state))))))

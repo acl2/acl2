@@ -5,12 +5,10 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Authors:
-;   Sol Swords <sswords@centtech.com>
-;   Alessandro Coglio <coglio@kestrel.edu>
-; Contributing Authors:
-;   Jared Davis <jared@centtech.com>
-;   David Rager <ragerdl@gmail.com>
+; Main Authors: Sol Swords <sswords@centtech.com>
+;               Alessandro Coglio <coglio@kestrel.edu>
+; Contributing Authors: Jared Davis <jared@centtech.com>
+;                       David Rager <ragerdl@gmail.com>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

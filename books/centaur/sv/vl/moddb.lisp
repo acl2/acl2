@@ -1195,7 +1195,7 @@ constructed separately.)</p>"
              ((when (or err (not (vl-datatype-resolved-p (vl-structmember->type y-memb)))))
               (fail (vfatal :type :Vl-plainarg->svex-fail
                            :msg "Couldn't get mocktype for interfaceport ~a0: ~@1"
-                           :args (list y err))))
+                           :args (list y (or err "not resolved")))))
              (y-type (vl-structmember->type y-memb))
 
              ((unless (vl-expr-case x.expr :vl-index))

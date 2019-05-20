@@ -367,7 +367,7 @@ formerly the \"location directive\" and printed a location.</p>")
               (<= (acl2-count (take n x))
                   (acl2-count x)))
      :hints (("goal" :induct (nth n x)
-              :in-theory (enable acl2::take-redefinition)))
+              :in-theory (enable acl2::take)))
      :rule-classes :linear))
   (defthm acl2-count-of-vl-fmt-pair-args
     (<= (acl2-count (strip-cdrs (vl-fmt-pair-args args)))

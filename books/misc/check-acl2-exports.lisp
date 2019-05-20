@@ -200,19 +200,14 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    BRR-EVISC-TUPLE
-    SET-BRR-EVISC-TUPLE
-    SHOW-BRR-EVISC-TUPLE
-    MAKE-SUMMARY-DATA
-    LOOP$
-
   ))
 
 (defconst *special-ops*
 
 ; This list includes the operators that get special treatment when their calls
 ; are translated (in translate11).  Our expectation is that these are are all
-; in *acl2-exports*.
+; in *acl2-exports*.  (This list might be incomplete; e.g., probably loop$
+; should be included.)
 
   '(quote
     lambda

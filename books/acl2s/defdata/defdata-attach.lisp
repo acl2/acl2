@@ -15,9 +15,6 @@ data last modified: [2015-06-09 Tue]
 
 (include-book "defdata-util")
 
-
-
-
 (defun well-formed-metadata-entry-p (key val wrld)
   (case key
     (:predicate  (allows-arity val 1 wrld))
@@ -68,12 +65,8 @@ data last modified: [2015-06-09 Tue]
 
 
 (defloop well-formed-type-metadata-p (al wrld)
-  (for ((p in al)) (always (well-formed-metadata-entry-p (car p) (cdr p) wrld))))
-
-; TYPE METADATA TABLE
-
-(table type-metadata-table nil nil :clear)
-
+  (for ((p in al))
+       (always (well-formed-metadata-entry-p (car p) (cdr p) wrld))))
 
 (program)
 (defun ill-formed-metadata-entry-msg (key val wrld)

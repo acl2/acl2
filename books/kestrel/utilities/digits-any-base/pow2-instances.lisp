@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The files includes by this file use DEFTHM-DAB-RETURN-TYPES
+; The files included by this file use DEFTHM-DAB-RETURN-TYPES
 ; to generate return type theorems for
 ; the conversions from natural numbers to digits in base 2^N
 ; for several common values of N.

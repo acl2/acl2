@@ -1236,7 +1236,7 @@ index of @('|reset|') is @('nil').</p>"
                  :hints(("Goal"
                          :induct (my-induct n x)
                          :in-theory (enable vl-emodwire-encoding-valid-p
-                                            acl2::take-redefinition)))))
+                                            acl2::take)))))
 
         (defthm f2
           (implies (vl-emodwire-p x)

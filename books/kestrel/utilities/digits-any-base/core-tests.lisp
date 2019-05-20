@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Digits in Arbitrary Bases -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -207,77 +207,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; test DEFTHM-DAB-RETURN-TYPES:
+(assert-equal (group-bendian 2 8 '(1 1 1 1 0 0 0 0 1 1 0 0 0 0 0 0)) '(240 192))
 
-(defun hexdigitp (x) ; = (DAB-DIGITP 16 X)
-  (declare (xargs :guard t))
-  (integer-range-p 0 16 x))
+(assert-equal (group-bendian 10 2 '(1 2 3 4 5 6)) '(12 34 56))
 
-(std::deflist hexdigit-listp (x) ; = (DAB-DIGIT-LISTP 16 X) -- see below
-  (hexdigitp x)
-  :true-listp t
-  :elementp-of-nil nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd equality ; equality theorem
-  (equal (dab-digit-listp 16 x)
-         (hexdigit-listp x))
-  :hints (("Goal" :in-theory (enable dab-digit-listp dab-digitp))))
+(assert-equal (group-lendian 2 8 '(1 1 1 1 0 0 0 0 1 1 0 0 0 0 0 0)) '(15 3))
 
-(defmacro check-redundant-theorems () ; check generated theorems
-  '(must-be-redundant
-    (progn
-      (defthm hexdigit-listp-of-nat=>bendian*
-        (hexdigit-listp (nat=>bendian* 16 nat)))
-      (defthm hexdigit-listp-of-nat=>bendian+
-        (hexdigit-listp (nat=>bendian+ 16 nat)))
-      (defthm hexdigit-listp-of-nat=>bendian
-        (hexdigit-listp (nat=>bendian 16 width nat)))
-      (defthm hexdigit-listp-of-nat=>lendian*
-        (hexdigit-listp (nat=>lendian* 16 nat)))
-      (defthm hexdigit-listp-of-nat=>lendian+
-        (hexdigit-listp (nat=>lendian+ 16 nat)))
-      (defthm hexdigit-listp-of-nat=>lendian
-        (hexdigit-listp (nat=>lendian 16 width nat))))))
+(assert-equal (group-lendian 10 2 '(1 2 3 4 5 6)) '(21 43 65))
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of)
- (check-redundant-theorems))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types)
- (check-redundant-theorems))
+(assert-equal (ungroup-bendian 2 8 '(254 1)) '(1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 1))
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types
-   :parents (digits-any-base))
- (check-redundant-theorems))
+(assert-equal (ungroup-bendian 10 2 '(98 8 0)) '(9 8 0 8 0 0))
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types
-   :parents (digits-any-base)
-   :short "Additional return type theorems.")
- (check-redundant-theorems))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types
-   :short "Additional return type theorems.")
- (check-redundant-theorems))
+(assert-equal (ungroup-lendian 2 8 '(254 1)) '(0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0))
 
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types
-   :parents (digits-any-base)
-   :short "Additional return type theorems."
-   :long "<p>These are for hexadecimal digits.</p>")
- (check-redundant-theorems))
-
-(must-succeed*
- (defthm-dab-return-types equality hexdigit-listp-of
-   :topic nat-hexdigits-return-types
-   :short "Additional return type theorems."
-   :long "<p>These are for hexadecimal digits.</p>")
- (check-redundant-theorems))
+(assert-equal (ungroup-lendian 10 2 '(98 8 0)) '(8 9 8 0 0 0))

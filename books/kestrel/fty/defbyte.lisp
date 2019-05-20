@@ -40,13 +40,15 @@
    (xdoc::p
     "This macro introduces unary recognizers, and associated fixtypes,
      of unsigned or signed bytes of specified sizes.
-     It also generates various theorems that relate
+     It also generates various theorems,
+     including some that relate
      the unary recognizers to the binary predicates.")
 
    (xdoc::p
     "Besides their use in fixtypes,
-     the unary recognizers introduced by this macro support
-     <see topic='@(url acl2::tau-system)'>tau system</see> reasoning.")
+     the unary recognizers introduced by this macro support "
+    (xdoc::seeurl "acl2::tau-system" "tau system")
+    " reasoning.")
 
    (xdoc::h3 "General Form")
 
@@ -122,12 +124,22 @@
    (xdoc::desc
     "@('pred')"
     (xdoc::p
-     "The recognizer for the fixtype, guard-verified."))
+     "The recognizer for the fixtype, guard-verified.")
+    (xdoc::p
+     "As a special case, if a function with this name already exists,
+      it is not (re-)generated.
+      This is mainly to accomodate the existing recognizers
+      @(tsee acl2::bytep) and @(tsee acl2::nibblep),
+      but it is a more general mechanism."))
 
    (xdoc::desc
     "@('booleanp-of-pred')"
     (xdoc::p
-     "A rewrite rule saying that @('pred') is boolean-valued."))
+     "A rewrite rule saying that @('pred') is boolean-valued.")
+    (xdoc::p
+     "If @('pred') already exists (see above),
+      it is assumed that a theorem like this already exists as well:
+      thus, this theorem is not (re-)generated."))
 
    (xdoc::desc
     "@('pred-forward-binpred')"
@@ -146,6 +158,13 @@
       Since this is the converse of the definition of the unary recognizer,
       a theory invariant is also generated preventing the enabling of
       both this rule and the definition of the unary recognizer."))
+
+   (xdoc::desc
+    "@('pred-compound-recognizer')"
+    (xdoc::p
+     "A compound recognizer rule from @('pred')
+      to @(tsee natp) (if the @(':signed') input is @('nil')
+      or @(tsee integerp) (if the @(':signed') input is @('t')."))
 
    (xdoc::desc
     "@('fix')"
@@ -182,26 +201,12 @@
       the unary function call satisfies @(tsee posp)."))
 
    (xdoc::p
-    "The above items are generated with XDOC documentation.")
-
-   (xdoc::h3 "Note about Packages")
-
-   (xdoc::p
-    "When using @('defbyte') to define 8-bit bytes
-     (the most common size of bytes in modern contexts)
-     `@('byte')' could be a reasonable name for the fixtype.
-     However, note that the @('\"ACL2\"') package
-     imports a symbol with that name from the @('\"COMMON-LISP\"') package;
-     that symbol may be then implicitly imported
-     in a user-defined package @('\"P\"') where @('defbyte') is used.
-     This means that @('p::byte') is actually @('common-lisp::byte'),
-     and that function and theorem names derived from it by @('defbyte')
-     will end up in the @('\"ACL2\"') package
-     rather than in the @('\"P\"') package,
-     e.g. @('acl2::byte-fix') instead of @('p::byte-fix').
-     Thus, it is recommended to arrange for @('\"P\"')
-     to exclude the symbol @('common-lisp::byte'),
-     so that @('p::byte') is a different symbol.")))
+    "The above items are generated with XDOC documentation.
+     If @('pred') already exists (see above),
+     it is assumed that an XDOC topic with the same name exists as well:
+     thus, a subtopic of it is generated,
+     named @('pred-additional-theorems')
+     and containing the theorems associated to @('pred').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,6 +374,11 @@
                                               pkg-witness))
        (binpred-rewrite-pred (acl2::packn-pos (list binpred '-rewrite- pred)
                                               pkg-witness))
+       (pred-compound-recognizer (acl2::packn-pos (list (if signed
+                                                            'integerp-when-
+                                                          'natp-when-)
+                                                        pred)
+                                                  pkg-witness))
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix)
                                      pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred)
@@ -377,12 +387,22 @@
                               nil
                             (acl2::packn-pos (list type '-is-posp)
                                              pkg-witness)))
+       ;; name of the XDOC topic to generate if the recognizer already exists:
+       (pred-additional-theorems (acl2::add-suffix-to-fn
+                                  pred "-ADDITIONAL-THEOREMS"))
        ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
        (yes/no (intern-in-package-of-symbol "YES/NO" pkg-witness))
        (fixed-x (intern-in-package-of-symbol "FIXED-X" pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
+                              "@(tsee "
+                              (acl2::string-downcase (symbol-package-name type))
+                              "::"
+                              (acl2::string-downcase (symbol-name type))
+                              ")"))
+       ;; reference to the recognizer for the generated XDOC documentation:
+       (pred-ref (concatenate 'string
                               "@(tsee "
                               (acl2::string-downcase (symbol-package-name type))
                               "::"
@@ -407,40 +427,77 @@
                  (posp ,size)
                  :rule-classes (:rewrite :type-prescription)))))
        (pred-event
-        `(define ,pred (,x)
-           :returns (,yes/no booleanp
-                             :name ,booleanp-of-pred
-                             :hints (("Goal"
-                                      :in-theory
-                                      '(,pred
-                                        (:t ,binpred)
-                                        acl2::booleanp-compound-recognizer))))
-           :parents (,type)
-           :short ,(concatenate 'string "Recognizer for " type-ref ".")
-           (mbe :logic (,binpred ,size ,x)
-                :exec (and (integerp ,x)
-                           (<= ,lower-bound ,x)
-                           (< ,x ,upper-bound)))
-           :guard-hints (("Goal"
-                          :in-theory '(,binpred
-                                       integer-range-p
-                                       (:e expt)
-                                       ,@(and type-size-is-posp
-                                              (list type-size-is-posp)))))
-           :no-function t
-           ///
-           (defrule ,pred-forward-binpred
-             (implies (,pred ,x)
-                      (,binpred ,size ,x))
-             :rule-classes :forward-chaining
-             :in-theory '(,pred))
-           (defruled ,binpred-rewrite-pred
-             (equal (,binpred ,size ,x)
-                    (,pred ,x))
-             :in-theory '(,pred))
-           (theory-invariant
-            (incompatible (:rewrite ,binpred-rewrite-pred)
-                          (:definition ,pred)))))
+        (if (function-symbolp pred wrld)
+            `(defsection ,pred-additional-theorems
+               :parents (,pred ,type)
+               :short ,(concatenate 'string
+                                    "Additional theorems about " pred-ref ".")
+               (defrule ,pred-forward-binpred
+                 (implies (,pred ,x)
+                          (,binpred ,size ,x))
+                 :rule-classes :forward-chaining
+                 :in-theory '(,pred))
+               (defruled ,binpred-rewrite-pred
+                 (equal (,binpred ,size ,x)
+                        (,pred ,x))
+                 :in-theory '(,pred))
+               (theory-invariant
+                (incompatible (:rewrite ,binpred-rewrite-pred)
+                              (:definition ,pred)))
+               (defrule ,pred-compound-recognizer
+                 (implies (,pred ,x)
+                          (,(if signed 'integerp 'natp) ,x))
+                 :rule-classes :compound-recognizer
+                 :in-theory
+                 '(,pred-forward-binpred
+                   acl2::unsigned-byte-p-forward-to-nonnegative-integerp
+                   acl2::signed-byte-p-forward-to-integerp
+                   integerp
+                   natp)))
+          `(define ,pred (,x)
+             :returns (,yes/no booleanp
+                               :name ,booleanp-of-pred
+                               :hints (("Goal"
+                                        :in-theory
+                                        '(,pred
+                                          (:t ,binpred)
+                                          acl2::booleanp-compound-recognizer))))
+             :parents (,type)
+             :short ,(concatenate 'string "Recognizer for " type-ref ".")
+             (mbe :logic (,binpred ,size ,x)
+                  :exec (and (integerp ,x)
+                             (<= ,lower-bound ,x)
+                             (< ,x ,upper-bound)))
+             :guard-hints (("Goal"
+                            :in-theory '(,binpred
+                                         integer-range-p
+                                         (:e expt)
+                                         ,@(and type-size-is-posp
+                                                (list type-size-is-posp)))))
+             :no-function t
+             ///
+             (defrule ,pred-forward-binpred
+               (implies (,pred ,x)
+                        (,binpred ,size ,x))
+               :rule-classes :forward-chaining
+               :in-theory '(,pred))
+             (defruled ,binpred-rewrite-pred
+               (equal (,binpred ,size ,x)
+                      (,pred ,x))
+               :in-theory '(,pred))
+             (theory-invariant
+              (incompatible (:rewrite ,binpred-rewrite-pred)
+                            (:definition ,pred)))
+             (defrule ,pred-compound-recognizer
+               (implies (,pred ,x)
+                        (,(if signed 'integerp 'natp) ,x))
+               :rule-classes :compound-recognizer
+               :in-theory
+               '(,pred-forward-binpred
+                 acl2::unsigned-byte-p-forward-to-nonnegative-integerp
+                 acl2::signed-byte-p-forward-to-integerp
+                 integerp
+                 natp)))))
        (fix-event
         `(define ,fix ((,x ,pred))
            :returns (,fixed-x ,pred

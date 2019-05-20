@@ -27,9 +27,9 @@
      from byte arrays, trees, and scalars
      to byte arrays.
      These functions closely correspond to the ones in [YP:B].
-     They are both executable and high-level.")
+     They are high-level, yet executable.")
    (xdoc::p
-    "We also define valid RLP encodings as images of the encoding functions.
+    "We also define valid RLP encodings, as images of the encoding functions.
      These are declaratively defined, non-executable predicates."))
   :order-subtopics t)
 
@@ -65,7 +65,7 @@
      see theorem @('len-of-rlp-encode-bytes-from-prefix').
      This rewrite rule is disabled by default,
      because it turns the left-hand side into a more complex right-hand side;
-     however, it can be usefully enabled for certain proofs.")
+     however, it is usefully enabled in certain proofs.")
    (xdoc::p
     "The total length of an encoding that uses a ``long'' length field
      (i.e. when the initial byte is followed by the length of the length,
@@ -137,8 +137,10 @@
      corresponds to @($R_{\\mathrm{l}}$),
      and @(tsee rlp-encode-tree-list) corresponds to @($s$).")
    (xdoc::p
-    "The first result of this function is an error flag,
-     which is @('t') if the argument tree cannot be encoded;
+    "The first result of
+     @(tsee rlp-encode-tree) and @(tsee rlp-encode-tree-list)
+     is an error flag,
+     which is @('t') if the argument tree or list of trees cannot be encoded;
      in this case, @('nil') is returned as the (irrelevant) second result.")
    (xdoc::p
     "Encodings are never empty,
@@ -157,7 +159,7 @@
      see theorem @('len-of-rlp-encode-tree-from-prefix').
      This rewrite rule is disabled by default,
      because it turns the left-hand side into a more complex right-hand side;
-     however, it can be usefully enabled for certain proofs.")
+     however, it is usefully enabled in certain proofs.")
    (xdoc::p
     "The total length of an encoding that uses a ``long'' length field
      (i.e. when the initial byte is followed by the length of the length,
@@ -167,9 +169,10 @@
      and @('len-of-rlp-encode-tree-lower-bound-when-len-len-2').")
    (xdoc::p
     "Once @(tsee rlp-encode-tree) is defined,
-     @(tsee rlp-encode-bytes) can be alternatively ``defined''
+     @(tsee rlp-encode-bytes) could be alternatively ``defined''
      by wrapping the byte array in a tree and encoding the tree.
-     This rule is disabled by default, but is sometimes useful.
+     This alternative definition rule is disabled by default,
+     but may be useful sometimes.
      It should not be enabled
      if the definition of @(tsee rlp-encode-tree) is enabled
      (since the latter is defined in terems of @(tsee rlp-encode-bytes),
@@ -328,7 +331,7 @@
    (xdoc::p
     "The first result of this function is an error flag,
      which is @('t') if the argument scalar is so large that
-     its big-endian representation exceeds @($2^{64}$) in length."))
+     its big-endian representation reaches @($2^{64}$) in length."))
   (rlp-encode-bytes (nat=>bebytes* (nfix scalar)))
   :no-function t
   :hooks (:fix))
@@ -454,7 +457,7 @@
           (tree (rlp-tree-leaf (rlp-bytes-encoding-witness encoding))))
     :enable rlp-encode-bytes-alt-def)
 
-  (defruled rlp-bytes-encoding-p-when-rlp-bytes-encoding-p-and-leaf
+  (defruled rlp-bytes-encoding-p-when-rlp-tree-encoding-p-and-leaf
     (implies (and (rlp-tree-encoding-p encoding)
                   (rlp-tree-case (rlp-tree-encoding-witness encoding) :leaf))
              (rlp-bytes-encoding-p encoding))

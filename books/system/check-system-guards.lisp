@@ -24,10 +24,26 @@
 
 ; Finally, to see that guards were indeed being checked:
 
+; :q
 ; (report-guard-checks)
 
 ; This book does some of that automatically, as a bit of a check during
 ; regression on guards of guard-verified system functions.
+
+; One can do more, for example as follows.
+
+#||
+(lp)
+(set-rewrite-stack-limit nil)
+; This may cause a stack overflow, but that's OK.
+(ld ; linebreak to avoid warning during regression
+ "../workshops/2004/legato/support/proof-by-generalization-mult.lisp") ; ;
+:ubt 1
+(ld ; linebreak to avoid warning during regression
+ "../projects/hexnet/hexnet-model.lisp")
+:q
+(report-guard-checks) ; should show lots of checking
+||#
 
 (in-package "ACL2")
 

@@ -320,7 +320,7 @@ literal:</p>
               (fanin-count aignet)
               (len (aignet-invals->vals invals vals aignet))))
     :rule-classes :linear)
-  
+
   (fty::deffixequiv aignet-invals->vals-iter :args ((aignet aignet)))
   (fty::deffixequiv aignet-invals->vals$inline :args ((aignet aignet)))
 
@@ -746,7 +746,7 @@ literal:</p>
              :expand ((:free (invals regvals)
                        (id-eval id invals regvals orig))))))
 
-  ;; (local (in-theory (disable acl2::take-redefinition)))
+  ;; (local (in-theory (disable acl2::take)))
 
   (defun set-prefix (n first second)
     (declare (xargs :guard (and (true-listp first)
@@ -905,7 +905,7 @@ literal:</p>
     (implies (< (nfix n) (num-fanins aignet))
              (equal (nth n new-vals)
                     (id-eval n invals regvals aignet)))))
-  
+
 
 
 
@@ -977,12 +977,12 @@ literal:</p>
              (bit-list-fix bitarr))
       :hints (("goal" :do-not-induct t)
               (acl2::equal-by-nths-hint)))))
-         
+
 
 
 (defsection aignet-sim-frames
 
-  
+
 
   (local (defthm bit-listp-of-update-nth
            (implies (and (bit-listp x)
@@ -1111,7 +1111,7 @@ literal:</p>
     :index n
     :last (num-regs aignet))
 
-  
+
   (defthm aignet-vals->nxstvals-iter-preserves-size
     (implies (and (<= (num-regs aignet) (len regvals))
                   (<= (nfix n) (num-regs aignet)))
@@ -1189,9 +1189,3 @@ literal:</p>
     (defthm len-of-aignet-sim-frames
       (equal (len (aignet-sim-frames vals frames initsts aignet))
              (num-fanins aignet)))))
-
-
-
-         
-
-

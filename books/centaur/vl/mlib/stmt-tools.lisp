@@ -470,7 +470,8 @@ directly part of the statement.</p>"
   (local (defthmd c3
            (implies (<= (nfix n) (len x))
                     (equal (append (take n x) (nthcdr n (list-fix x)))
-                           (list-fix x)))))
+                           (list-fix x)))
+           :hints (("Goal" :in-theory (enable take)))))
 
   (local (defthm c4
            (implies (<= (nfix n) (len x))
@@ -630,7 +631,8 @@ directly part of the statement.</p>"
   (defthm vl-stmtlist-fix-of-take
     (implies (<= (nfix n) (len x))
              (equal (vl-stmtlist-fix (take n x))
-                    (take n (vl-stmtlist-fix x)))))
+                    (take n (vl-stmtlist-fix x))))
+    :hints (("Goal" :in-theory (enable take))))
 
   (defthm vl-stmtlist-fix-of-nthcdr
     (equal (vl-stmtlist-fix (nthcdr n x))
@@ -933,6 +935,3 @@ process them.</p>"
   :inline t
   :enabled t
   (vl-stmt-case x :vl-timingstmt))
-
-
-

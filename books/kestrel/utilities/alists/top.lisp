@@ -12,7 +12,6 @@
 
 (include-book "alist-map-keys")
 (include-book "alist-map-vals")
-(include-book "remove-assoc-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

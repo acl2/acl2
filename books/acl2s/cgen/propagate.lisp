@@ -154,8 +154,9 @@
 (include-book "../defdata/defdata-util")
 (defun type-hyp-p (hyp wrld)
   (and (consp hyp)
-       (defdata::is-type-predicate (car hyp) wrld)
-       (proper-symbolp (cadr hyp))))
+       (let ((hyp (defdata::expand-lambda hyp)))
+         (and (defdata::is-type-predicate (car hyp) wrld)
+              (proper-symbolp (cadr hyp))))))
 
 (def simplify-hyps1 (rem-hyps init-hyps hints ans. vl state)
   (decl :sig ((pseudo-term-list pseudo-term-list true-list pseudo-term-list bool state)

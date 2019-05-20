@@ -29,7 +29,7 @@
      acl2::simplify-products-gather-exponents-<
      acl2::len-when-prefixp
      acl2::take-when-prefixp
-     take-redefinition
+     take
      not
      default-car
      default-cdr
@@ -1106,4 +1106,3 @@
              :in-theory (enable serial-sub$valid-st=>st-format
                                 serial-sub$de-n))))
   )
-

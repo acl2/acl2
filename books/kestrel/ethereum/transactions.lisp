@@ -10,6 +10,8 @@
 
 (in-package "ETHEREUM")
 
+(include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
+(include-book "kestrel/crypto/keccak-256-placeholder" :dir :system)
 (include-book "bytes")
 (include-book "words")
 (include-book "rlp/encoding")
@@ -37,11 +39,11 @@
   "<p>
    The @($\\mathbf{to}$) field of a transaction [YP:4.2] is
    either a 20-byte (i.e. 160-bit) address
-   or the empty array (i.e. the only element of @($\\mathbb{B}_0$) [YP:(18)].
+   or the empty array (i.e. the only element of @($\\mathbb{B}_0$)) [YP:(18)].
    Both [YP:4.2] and [YP:(18)] mention @($\\varnothing$) as
    the (only) element of @($\\mathbb{B}_0$);
    however, according to the definition of @($\\mathbb{B}$) [YP:(178)],
-   the empty array should probably be denoted as @($()$).
+   the empty array should be denoted as @($()$).
    </p>
    <p>
    Regardless, in our model the empty byte array is @('nil'),
@@ -76,7 +78,7 @@
    </p>
    <p>
    The sixth component of the tuple is always a byte array,
-   whether it is initialization code (when the recipient is @('nil')
+   whether it is initialization code (when the recipient is @('nil'))
    or it is data (when the recipient is an address).
    </p>
    <p>
@@ -87,18 +89,18 @@
    but it is denoted as @($T_{\\mathrm{w}}$) in [YP:(15)] and [YP:(16)]
    (presumably to avoid a conflict with
    the @($T_{\\mathrm{v}}$) value component).
-   we pick @('sign-v') (instead of @('sign-w'))
+   We pick @('sign-v') (instead of @('sign-w'))
    for the corresponding field name in our product fixtype.
    However, there is an issue with the type of this component:
-   [YP:(16)] says that it is a number below 32,
+   [YP:(16)] says that it is a natural number below 32,
    but [YP:F] says that @($T_{\\mathrm{w}}$) may be
    a chain identifier doubled plus 35 or 36,
    in which case it is above 32.
-   It looks like [YP:F] was updated according to EIP 155,
+   It looks like [YP:F] was updated according to [EIP155],
    while [YP:4.2] was not;
    this EIP describes an improved signature scheme
    that involves chain identifiers.
-   EIP 155 lists some chain identifiers, one of which is larger than a byte.
+   [EIP155] lists some chain identifiers, one of which is larger than a byte.
    So we use the library type <see topic='@(url fty::basetypes)'>@('nat')</see>
    for this component of a transaction.
    </p>"
@@ -271,3 +273,153 @@
                     (not e-error?)
                     (equal encoding1
                            (byte-list-fix encoding)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-signed-transaction ((nonce wordp)
+                                 (gas-price wordp)
+                                 (gas-limit wordp)
+                                 (to maybe-byte-list20p)
+                                 (value wordp)
+                                 (init/data byte-listp)
+                                 (chain-id natp)
+                                 (key secp256k1-priv-key-p))
+  :returns (mv (error? (member error? '(nil :rlp :ecdsa)))
+               (transaction transactionp))
+  :parents (transactions)
+  :short "Construction of a signed transaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This operation is described in [YP:F].
+     Two flavors exist, corresponding to the two cases in [YP:(285)]:
+     one before and one after the `Spurious Dragon' hard fork [EIP155].")
+   (xdoc::p
+    "In both flavors,
+     one starts with the first six components of a @(see transaction):
+     nonce,
+     gas price,
+     gas limit,
+     recipient,
+     value,
+     and initialization or data byte array;
+     these are all inputs of this function.
+     A tuple is then formed,
+     which differs slightly depending on the flavor [YP:(285)]:
+     in the ``old'' flavor, the tuple just consists of these six components;
+     in the ``new'' flavor, a 9-tuple is formed consisting of
+     these six components, a chain id, and two empty byte arrays.
+     The 6-tuple is like a partial transaction,
+     whose last three components are missing.
+     The 9-tuple is like a pre-transaction
+     whose last three components contain preliminary values.")
+   (xdoc::p
+    "The chain id is another input of this function.
+     [EIP155] suggests that the chain id is never zero;
+     at least, it list only non-zero chain ids.
+     Thus, we use 0 as input to this function to select the old flavor,
+     and any non-zero value to select the new flavor;
+     we do not constrain the non-zero value
+     to be among the ones listed in [EIP155].")
+   (xdoc::p
+    "[YP:(285)] uses the @($v$) result of the ECDSA signature [YP:(279)]
+     to distinguish between old and new flavor.
+     This is a bit confusing, because the ECDSA signature is calculated
+     after forming the tuple, not before.
+     The choice of flavor should be determined by external means,
+     such as the chain id input of this function.
+     (Since we are past the Spurious Dragon hard fork,
+     new transactions should always use the new flavor;
+     however, this function models the construction of transactions
+     before that hard fork as well.)")
+   (xdoc::p
+    "The tuple notation in [YP:(285)],
+     and the fact that the tuples must be hashed,
+     suggests that the tuples are in fact RLP trees.
+     In the new flavor, the @($()$) in the last two components
+     could denote the non-leaf tree with no subtrees,
+     but it is more reasonable that it denotes the empty byte array instead.
+     This is also consistent with the fact that, in a transaction,
+     the last two components are words,
+     and that the scalar 0 (which is a reasonable value for the pre-transaction)
+     is encoded in the same way as the empty byte array.")
+   (xdoc::p
+    "The RLP-encoded tuple is hashed with Keccak-256 [YP:F].
+     The hash @($e = h(T)$)
+     (using the notation in [YP:F], where @($h$) is Keccak-256)
+     is passed to the ECDSA signature operation,
+     along with a private key that is also an input of this function.
+     If the ECDSA signature operation fails,
+     the construction of the signed transaction fails;
+     this is not explicit in [YP:F].")
+   (xdoc::p
+    "If the ECDSA signature operation succeeds,
+     the resulting @($v$), @($r$), and @($s$) are used
+     to construct the last three components of the final signed transaction,
+     whose first six components are the same as the starting ones
+     (in the 6-tuple or 9-tuple).
+     @($r$) and @($s$) are used directly as the last two components,
+     i.e. @($T_\\mathrm{r}$) and @($T_\\mathrm{s}$) [YP:(15)].
+     The component @($T_\\mathrm{w}$) depends on the flavor
+     (before or after the Spurious Dragon hard fork) [YP:F]:
+     in the old flavor, that component is
+     27 if @($v$) indicates odd, 28 if @($v$) indicates even;
+     in the new flavor, that conponent is
+     the chain identifier doubled plus
+     35 if @($v$) indicates odd, 35 if @($v$) indicates even.
+     The formulation in [YP:F] suggests that the ECDSA signature operation
+     already returns these values as the @($v$) result,
+     but these are Ethereum-specific:
+     our Ethereum-independent library function for ECDSA signatures
+     returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
+   (xdoc::p
+    "This function returns the signed transaction as a high-level structure.
+     This would have to be RLP-encoded (via @(tsee rlp-encode-transaction))
+     to obtain something that can be sent to the Ethereum network.")
+   (xdoc::p
+    "This function returns @(':rlp') as error result if
+     the RLP encoding of the 6-tuple or 9-tuple fails.
+     If the ECDSA signature operation fails, the error result is @(':ecdsa').
+     In both cases, the second result is an irrelevant transaction value."))
+  (b* ((nonce (word-fix nonce))
+       (gas-price (word-fix gas-price))
+       (gas-limit (word-fix gas-limit))
+       (to (maybe-byte-list20-fix to))
+       (value (word-fix value))
+       (6/9-tuple (if (zp chain-id)
+                      (rlp-tree-nonleaf
+                       (list (rlp-tree-leaf (nat=>bebytes* nonce))
+                             (rlp-tree-leaf (nat=>bebytes* gas-price))
+                             (rlp-tree-leaf (nat=>bebytes* gas-limit))
+                             (rlp-tree-leaf to)
+                             (rlp-tree-leaf (nat=>bebytes* value))
+                             (rlp-tree-leaf init/data)))
+                    (rlp-tree-nonleaf
+                     (list (rlp-tree-leaf (nat=>bebytes* nonce))
+                           (rlp-tree-leaf (nat=>bebytes* gas-price))
+                           (rlp-tree-leaf (nat=>bebytes* gas-limit))
+                           (rlp-tree-leaf to)
+                           (rlp-tree-leaf (nat=>bebytes* value))
+                           (rlp-tree-leaf init/data)
+                           (rlp-tree-leaf (nat=>bebytes* chain-id))
+                           (rlp-tree-leaf nil)
+                           (rlp-tree-leaf nil)))))
+       ((mv error? message) (rlp-encode-tree 6/9-tuple))
+       ((when error?) (mv :rlp (transaction 0 0 0 nil 0 nil 0 0 0)))
+       (hash (keccak-256 message))
+       ((mv error? even? sign-r sign-s) (secp256k1-sign hash key))
+       ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
+       (sign-v (if (zp chain-id)
+                   (if even? 28 27)
+                 (+ (* 2 chain-id) (if even? 36 35)))))
+    (mv nil (make-transaction :nonce nonce
+                              :gas-price gas-price
+                              :gas-limit gas-limit
+                              :to to
+                              :value value
+                              :init/data init/data
+                              :sign-v sign-v
+                              :sign-r sign-r
+                              :sign-s sign-s)))
+  :guard-hints (("Goal" :in-theory (enable wordp)))
+  :hooks (:fix))

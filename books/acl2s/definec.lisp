@@ -6,19 +6,20 @@
 (in-package "ACL2S")
 (include-book "defunc" :ttags :all)
 
-(defun pred-of-type (type tbl)
-  (cond ((equal type 'tl) 'acl2::true-listp)
-        ((equal type 'int) 'acl2::integerp)
-        ((equal type 'bool) 'acl2::booleanp)
-        (t (let ((res (get-alist :predicate (get-alist type tbl))))
-             (or res
-                 (er hard 'Definec "~%**Unknown type in definec**: ~x0 is not a known type name.~%" type ))))))
+(defun pred-of-type (type tbl atbl)
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        (or res
+            (er hard 'Definec
+ "~%**Unknown type in definec**: ~x0 is not a known type name.~%" type ))))))
 
-(defun map-preds (types pkg tbl)
+(defun map-preds (types pkg tbl atbl)
   (if (endp types)
       nil
-    (cons (pred-of-type (intern$ (symbol-name (car types)) pkg) tbl)
-          (map-preds (rest types) pkg tbl))))
+    (cons (pred-of-type (intern$ (symbol-name (car types)) pkg) tbl atbl)
+          (map-preds (rest types) pkg tbl atbl))))
 
 (defun make-input-contract-aux (args types)
   (cond ((endp args) nil)
@@ -83,13 +84,14 @@ both expand into
     :stack :push :off :all
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+          (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
-          (d-arg-preds (map-preds d-arg-types pkg tbl))
-          (f-type-pred (pred-of-type f-type tbl))
+          (d-arg-preds (map-preds d-arg-types pkg tbl atbl))
+          (f-type-pred (pred-of-type f-type tbl atbl))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
           (defunc `(defunc ,',name ,d-args
@@ -103,13 +105,14 @@ both expand into
     :stack :push :off :all
     (make-event
      (b* ((tbl (table-alist 'defdata::type-metadata-table (w state)))
+          (atbl (table-alist 'defdata::type-alias-table (w state)))
           (pkg (current-package state))
           (f-args ',(car args))
           (f-type (intern$ ,(symbol-name (second args)) pkg))
           (d-args (evens f-args))
           (d-arg-types (odds f-args))
-          (d-arg-preds (map-preds d-arg-types pkg tbl))
-          (f-type-pred (pred-of-type f-type tbl))
+          (d-arg-preds (map-preds d-arg-types pkg tbl atbl))
+          (f-type-pred (pred-of-type f-type tbl atbl))
           (ic (make-input-contract d-args d-arg-preds))
           (oc (make-output-contract ',name d-args f-type-pred))
           (defunc `(defundc ,',name ,d-args
@@ -244,10 +247,13 @@ bells and whistles of @('acl2s::defunc').
   )
 
 (defmacro definecd (name &rest args)
-  (let ((defname (make-symbl `(,name -DEFINITION-RULE))))
-    `(progn
-       (definec ,name ,@args)
-       (in-theory (disable ,defname)))))
+  `(encapsulate
+    nil
+    (definec ,name ,@args)
+    (make-event 
+     `(in-theory
+       (disable
+        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro definec-no-test (name &rest args)
   `(acl2::with-outer-locals
@@ -260,10 +266,13 @@ bells and whistles of @('acl2s::defunc').
     (definecd ,name ,@args)))
 
 (defmacro definedcd (name &rest args)
-  (let ((defname (make-symbl `(,name -DEFINITION-RULE))))
-    `(progn
-       (definedc ,name ,@args)
-       (in-theory (disable ,defname)))))
+  `(encapsulate
+    nil
+    (definedc ,name ,@args)
+    (make-event 
+     `(in-theory
+       (disable
+        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
 
 (defmacro definedc-no-test (name &rest args)
   `(acl2::with-outer-locals

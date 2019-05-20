@@ -19,6 +19,7 @@
 (include-book "hex-prefix")
 (include-book "mmp-trees")
 (include-book "transactions")
+(include-book "addresses")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,28 +29,35 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently this library contains a formal model of some aspects of
-     the <a href=\"https://ethereum.org\">Ethereum</a> ``world computer''.
+    "Currently this library contains a formal model of some aspects of the "
+    (xdoc::a :href "https://ethereum.org" "Ethereum")
+    " ``world computer''.
      It is expected that this library will be extended with more
      Ethereum-related formalizations and tools.")
    (xdoc::p
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
-     "The <a href=\"https://github.com/ethereum/wiki/wiki\">Ethereum Wiki</a>,
-      referenced as `[Wiki]' in the documentation of this library.")
+     "The "
+     (xdoc::a :href "https://github.com/ethereum/wiki/wiki" "Ethereum Wiki")
+     ", referenced as `[Wiki]' in the documentation of this library.")
     (xdoc::li
-     "The BYZANTIUM VERSION 78d7b9a of
-      the <a href=\"https://github.com/ethereum/yellowpaper\">Ethereum
-      Yellow Paper</a>,
-      referenced as `[YP]' in the documentation of this library.
+     "The BYZANTIUM VERSION db5942f of the "
+     (xdoc::a :href "https://github.com/ethereum/yellowpaper"
+       "Ethereum Yellow Paper")
+     ", referenced as `[YP]' in the documentation of this library.
       Sections, appendices, and equations are referenced
       by appending their designations separated by colon,
       e.g.
       `[YP:3]' references Section 3,
       `[YP:6.1]' references Section 6.1,
       `[YP:B]' references Appendix B, and
-      `[YP:(4)]' references Equation (4)."))
+      `[YP:(4)]' references Equation (4).")
+    (xdoc::li
+     "The "
+     (xdoc::a :href "http://eips.ethereum.org/EIPS/eip-155"
+       "Ethereum Improvement Proposal (EIP) 155")
+     ", referenced as `[EIP155]' in the documentation of this library."))
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))

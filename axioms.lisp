@@ -1,5 +1,5 @@
-; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2018, Regents of the University of Texas
+; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2019, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -8888,7 +8888,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug)
+(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug
+                                (guard-simplify 't))
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -8902,6 +8903,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (list 'quote hints)
        (list 'quote otf-flg)
        (list 'quote guard-debug)
+       (list 'quote guard-simplify)
        (list 'quote event-form)))
 
 (defmacro verify-guards+ (name &rest rest)
@@ -13933,7 +13935,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 8.1
+; ACL2 Version 8.2
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed in .cert files.
@@ -13958,7 +13960,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 8.1"
+                                "ACL2 Version 8.2"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -24676,24 +24678,51 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro our-with-terminal-input (x)
 
+; The comments below were developed with David Rager.
+
 ; This identity macro was intended to have the side effect of permitting a
 ; thread to read from the terminal when another thread already has the lock on
-; that.  See for example this page.
+; that.  However, that didn't work out, so it is now truly the identity macro,
+; without side effect.
+
+; Consider this CCL page:
 
 ; https://ccl.clozure.com/manual/chapter7.5.html#Background-Terminal-Input
 
-; A danger in using ccl::with-terminal-input is that the thread will keep
-; control of a lock that prevents other threads from reading terminal input.
-; In particular it could be a problem if in ACL2(p), a call of wormhole (which
-; uses this macro, in wormhole1) by other than the main thread runs
-; indefinitely by repeatedly expecting user input.
+; That page notes in particular:
 
-; Perhaps that's why this didn't work!  Specifically, ACL2(p) attempts to
-; certify community book books/std/osets/under-set-equiv.lisp hung when
-; defining this macro with ccl::with-terminal-input.
+;   This scheme is certainly not bulletproof: imaginative use of
+;   PROCESS-INTERRUPT and similar functions might be able to defeat it and
+;   deadlock the lisp, and any scenario where several background processes are
+;   clamoring for access to the shared terminal input stream at the same time
+;   is likely to be confusing and chaotic.
 
-; So for now, we simply make this the identity macro, in case some clearer
-; thinking about all this in the future finds a suitable way to invoke
+; Perhaps our use of PROCESS-INTERRUPT and THROW to abort subgoal proofs
+; qualifies as "imaginative use"; if not, then we may have exposed a heretofore
+; unknown CCL bug.  Specifically, if we define this macro to call
+; ccl::with-terminal-input, then we reliably see a hang when attempting to
+; certify community book books/std/osets/under-set-equiv.lisp.  When we look at
+; backtraces, we see that the main thread is waiting either for a future to
+; finish or for the wormhole lock, while the worker thread (which we have seen
+; can be holding the wormhole lock) is waiting on *terminal-io*.  Rager
+; believes that wormhole locks are managed correctly, and the problem is likely
+; that some other worker thread is still holding onto the *terminal-io*
+; resource.  Consider this recursive lock wait for the worker thread.
+
+; (7FA42D62C318) : 8 (%ACQUIRE-SHARED-RESOURCE #S(CCL::SHARED-RESOURCE :NAME
+; "Shared Terminal Input" :LOCK #<RECURSIVE-LOCK [ptr @ #x18FB2C0]
+; #x30200437983D> ...) T) 1421
+
+; Rager believes that the underlying CCL issue is present even without the use
+; of ccl::with-terminal-input; its use simply slows down execution sufficiently
+; to make a hang much more likely.
+
+; If we ever restore the use of ccl::with-terminal-input, then beware that
+; other threads that need the *terminal-io* resource will be blocked until the
+; caller of our-with-terminal-input completes.
+
+; But for now, we simply make this the identity macro, in case clearer thinking
+; on our part or CCL improvements provide a suitable way to invoke
 ; ccl::with-terminal-input.
 
 ; #+(and ccl acl2-par (not acl2-loop-only))

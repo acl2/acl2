@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps)
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc omaps
-  :parents (acl2::kestrel-utilities std::std/osets acl2::alists)
+  :parents (acl2::kestrel-utilities set::std/osets acl2::alists)
   :short "A library of omaps (ordered maps),
           i.e. finite maps represented as strictly ordered alists."
   :long

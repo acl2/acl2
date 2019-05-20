@@ -36,7 +36,7 @@
 (include-book "abstract")
 (local (include-book "take"))
 
-(local (in-theory (enable take-redefinition)))
+(local (in-theory (enable take)))
 
 (defsection std/lists/butlast
   :parents (std/lists butlast)
@@ -73,4 +73,3 @@
   (def-listp-rule element-list-p-of-butlast
     (implies (element-list-p (double-rewrite x))
              (element-list-p (butlast x n)))))
-

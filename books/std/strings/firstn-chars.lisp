@@ -33,7 +33,7 @@
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/equiv" :dir :system))
-(local (in-theory (disable acl2::take-redefinition)))
+(local (in-theory (disable acl2::take)))
 
 (defsection firstn-chars
   :parents (substrings)

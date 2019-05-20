@@ -4357,7 +4357,7 @@
   :hints (("Goal" :in-theory (e/d* ()
                                    (word-state
                                     subset-p
-                                    (:definition acl2::take-redefinition)
+                                    (:definition acl2::take)
                                     (:rewrite acl2::car-nthcdr)
                                     (:definition nth)
                                     (:type-prescription file-descriptor-fieldp-implies-natp-offset)
@@ -5114,7 +5114,7 @@
                                     get-prefixes-opener-lemma-group-2-prefix
                                     get-prefixes-opener-lemma-group-3-prefix
                                     get-prefixes-opener-lemma-group-4-prefix
-                                    (:definition acl2::take-redefinition)
+                                    (:definition acl2::take)
                                     (:definition nth)
                                     (:type-prescription file-descriptor-fieldp-implies-natp-offset)
                                     (:rewrite acl2::take-of-too-many)

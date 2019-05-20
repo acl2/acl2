@@ -1471,8 +1471,6 @@
     str::istrprefixp$inline
     str::iprefixp-when-prefixp
     take
-    take-redefinition
     take-of-take-split
     take-of-too-many
     v-threefix))
-

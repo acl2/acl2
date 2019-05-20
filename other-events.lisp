@@ -1,5 +1,5 @@
-; ACL2 Version 8.1 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2018, Regents of the University of Texas
+; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2019, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1002,13 +1002,16 @@
             'state
             (list 'quote event-form)))
     (defmacro verify-guards (&whole event-form name
-                                    &key hints otf-flg guard-debug)
+                                    &key
+                                    hints otf-flg guard-debug
+                                    (guard-simplify 't))
       (list 'verify-guards-fn
             (list 'quote name)
             'state
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote guard-debug)
+            (list 'quote guard-simplify)
             (list 'quote event-form)))
     (defmacro defmacro (&whole event-form &rest mdef)
       (list 'defmacro-fn
@@ -26368,7 +26371,13 @@
 ; Args is known to be a true-listp.
 
   (cond ((endp args)
-         (value (list erasures explicit-erasures attachment-alist
+         (value (list erasures explicit-erasures
+
+; We sort the attachment-alist so that chk-acceptable-defattach gets a sorted
+; alist that can ultimately lead to avoidance of proof obligations via
+; event-responsible-for-proved-constraint.
+
+                      (merge-sort-symbol-alistp attachment-alist)
                       helper-alist-lst)))
         (t
          (let ((arg (car args))

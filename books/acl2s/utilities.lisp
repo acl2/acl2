@@ -99,7 +99,7 @@ and so on.
      (add-macro-fn ,macro ,bin-fun ,right-associate-p)))
 
 (defxdoc test-then-skip-proofs
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "The ACL2s version of @('skip-proofs')."
   :long"<p>
 A macro that is similar to @('skip-proofs'), except that we first perform
@@ -134,7 +134,7 @@ testing. The macro supports testing for @(see thm),
    (t `(skip-proofs ,thm))))
 
 (defxdoc thm-no-test
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('thm') with testing disabled."
   :long"<p>
 A macro that uses @('with-outer-locals') to locally turn off
@@ -152,7 +152,7 @@ A macro that uses @('with-outer-locals') to locally turn off
                               (t (value `(value-triple :passed))))))))
 
 (defxdoc defthm-no-test
-  :parents (acl2s-utilities cgen)
+  :parents (acl2s-utilities acl2::cgen)
   :short "A version of @('defthm') with testing disabled."
   :long"<p>
 A macro that uses @('with-outer-locals') to locally turn off
@@ -166,9 +166,7 @@ A macro that uses @('with-outer-locals') to locally turn off
     (defthm ,name ,@args)))
 
 #|
-(defunc symbol-string-app (l)
-  :input-contract (symbol-listp l)
-  :output-contract (stringp (symbol-string-app l))
+(definec symbol-string-app (l :symbol-list) :string
   (if (endp l)
       ""
     (concatenate 'string (symbol-name (car l))
@@ -189,16 +187,56 @@ A macro that uses @('with-outer-locals') to locally turn off
     (concatenate 'string (symbol-name (car l))
                  (symbol-string-app (cdr l)))))
 
+(defun best-package (x y)
+  (declare (xargs :guard (and (stringp x) (stringp y))))
+  (let* ((p '("" "ACL2-INPUT-CHANNEL" "ACL2-OUTPUT-CHANNEL"
+              "COMMON-LISP" "LISP" "KEYWORD" "CGEN"
+              "DEFDATA" "ACL2" "ACL2S"))
+         (ly (len (member-equal y p)))
+         (lx (len (member-equal x p))))
+    (if (< lx ly) x y)))
+    
+(defun best-package-symbl-list (l s)
+  (declare (xargs :guard (and (symbol-listp l) (stringp s))))
+  (if (endp l)
+      s
+    (best-package-symbl-list
+     (cdr l)
+     (best-package (symbol-package-name (car l)) s))))
+
+(defthm best-package-symbl-list-stringp
+  (implies (and (symbol-listp l) (stringp s))
+           (stringp (best-package-symbl-list l s))))
+
+(defthm best-package-symbl-list-not-empty
+  (implies (and (symbol-listp l) (stringp s) (not (equal s "")))
+           (not (equal (best-package-symbl-list l s) ""))))
+
+(defun make-symbl-fun (l pkg)
+  (declare (xargs :guard (and l
+                              (symbol-listp l)
+                              (or (null pkg) (stringp pkg))
+                              (not (equal pkg "")))))
+  (intern$
+   (symbol-string-app l)
+   (if pkg pkg (best-package-symbl-list l "ACL2"))))
+
+(defmacro make-symbl (l &optional pkg)
+  (declare (xargs :guard t))
+  `(make-symbl-fun ,l ,pkg))
+
+#|
 (defun make-symbl (l)
-  (declare (xargs :guard (symbol-listp l)))
+  (declare (xargs :guard (and l (symbol-listp l))))
   (intern-in-package-of-symbol
    (symbol-string-app l)
-   (car l)))
+   'acl2-pkg-witness))
+|#
 
-(defun make-sym (s suf)
+(defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
-  (declare (xargs :guard (and (symbolp s) (symbolp suf))))
-  (make-symbl (list s '- suf)))
+  (declare (xargs :guard t))
+  `(make-symbl (list ,s '- ,suf) ,pkg))
 
 (defun get-alist (key alist)
   (declare (xargs :guard (alistp alist)))

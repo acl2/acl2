@@ -26,11 +26,13 @@
     
     (b* (((cons hyp rst) ts))
     (case-match hyp
-      ((P t1)     (if (and (symbolp t1)
-                           (defdata::is-type-predicate P wrld))
-                      (separate-const/simple-hyps. rst wrld 
-                                                   Hc. (cons hyp Hs.) Ho.)
-                    (add-others-and-recurse...)))
+      ((P t1)  (declare (ignore P t1))
+       (b* (((list P t1) (defdata::expand-lambda hyp)))
+         (if (and (symbolp t1)
+                  (defdata::is-type-predicate P wrld))
+             (separate-const/simple-hyps. rst wrld 
+                                          Hc. (cons hyp Hs.) Ho.)
+           (add-others-and-recurse...))))
                           
       ((R t1 t2)  (if (acl2::equivalence-relationp R wrld)
                       (cond ((and (symbolp t1) (quotep t2))
