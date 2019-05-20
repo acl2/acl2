@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "nat-var-aig")
-
+(include-book "centaur/misc/fast-alist-pop" :dir :system)
 
 
 (fty::defalist calist :pred calistp :val-type bit :true-listp t :unique-keys t)

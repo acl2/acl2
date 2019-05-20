@@ -34,7 +34,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/aig/aig-vars" :dir :system)
-(include-book "centaur/misc/fast-alist-pop" :dir :system)
+;; (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "std/stobjs/absstobjs" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 

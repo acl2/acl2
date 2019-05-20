@@ -1993,6 +1993,7 @@
                      (gl-interp-simplify-if-test ans interp-st state))))
                 (mv ans interp-st)))
 
+             (xobj (hons-copy xobj))
              (look (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
                               (look)
                               (get-term->bvar xobj bvar-db)
