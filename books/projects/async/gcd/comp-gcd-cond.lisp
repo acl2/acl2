@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -37,7 +37,6 @@
                                     *queue2$go-num*
                                     *queue3$go-num*
                                     *gcd-cond$go-num*))
-(defconst *comp-gcd-cond$st-len* 6)
 
 (defun comp-gcd-cond$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -601,10 +600,6 @@
        (queue2$step q2-inputs q2 data-size)
        ;; Joint Q3
        (queue3$step q3-inputs q3 data-size))))
-
-  (defthm len-of-comp-gcd-cond$step
-    (equal (len (comp-gcd-cond$step inputs st data-size))
-           *comp-gcd-cond$st-len*))
 
   ;; The state lemma for COMP-GCD-COND
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -34,7 +34,6 @@
 ;; for this module generator.
 
 (defconst *piso-sreg$go-num* 2)
-(defconst *piso-sreg$st-len* 4)
 
 (defun piso-sreg$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -465,10 +464,6 @@
      (link$step w-data-inputs w-data data-size)
      ;; W-CNT
      (link$step w-cnt-inputs w-cnt cnt-size))))
-
-(defthm len-of-piso-sreg$step
-  (equal (len (piso-sreg$step inputs st data-size cnt-size))
-         *piso-sreg$st-len*))
 
 (local
  (defthm len-cdr

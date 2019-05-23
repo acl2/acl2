@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -19,7 +19,6 @@
 ;; state lemmas for this module generator.
 
 (defconst *telescope$go-num* 1)
-(defconst *telescope$st-len* 1)
 
 (defun telescope$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -220,10 +219,6 @@
 
        (x (get-field *telescope$x* st)))
     (list (list (f-sr out-act in-act (car x))))))
-
-(defthm len-of-telescope$step
-  (equal (len (telescope$step inputs st data-size))
-         *telescope$st-len*))
 
 ;; The state lemma for Telescope
 

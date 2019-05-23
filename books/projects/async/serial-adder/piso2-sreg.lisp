@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -51,7 +51,6 @@
 ;; Prove the value and state lemmas for this module generator.
 
 (defconst *piso2-sreg$go-num* 5)
-(defconst *piso2-sreg$st-len* 8)
 
 (defun piso2-sreg$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -737,10 +736,6 @@
      (link$step w-data1-inputs w-data1 data-size)
      ;; W-CNT1
      (link$step w-cnt1-inputs w-cnt1 cnt-size))))
-
-(defthm len-of-piso2-sreg$step
-  (equal (len (piso2-sreg$step inputs st data-size cnt-size))
-         *piso2-sreg$st-len*))
 
 (local
  (defthm len-cdr

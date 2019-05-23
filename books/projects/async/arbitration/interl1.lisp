@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -39,7 +39,6 @@
 (defconst *interl$go-num* (+ *interl$prim-go-num*
                              (* 2 *queue40-l$go-num*)
                              *arb-merge$go-num*))
-(defconst *interl$st-len* 2)
 
 (defun interl$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -458,10 +457,6 @@
      (queue40-l$step q40-l0-inputs q40-l0 data-size)
      ;; Q40-L1
      (queue40-l$step q40-l1-inputs q40-l1 data-size))))
-
-(defthm len-of-interl$step
-  (equal (len (interl$step inputs st data-size))
-         *interl$st-len*))
 
 ;; The state lemma for INTERL
 

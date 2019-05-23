@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -37,7 +37,6 @@
 (defconst *gcd3$go-num* (+ *merge$go-num*
                            *gcd-cond$go-num*
                            *gcd-body3$go-num*))
-(defconst *gcd3$st-len* 5)
 
 (defun gcd3$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -461,10 +460,6 @@
      (link$step l2-inputs l2 (* 2 data-size))
      ;; Joint BODY
      (gcd-body3$step body-inputs body data-size cnt-size))))
-
-(defthm len-of-gcd3$step
-  (equal (len (gcd3$step inputs st data-size cnt-size))
-         *gcd3$st-len*))
 
 ;; The state lemma for GCD3
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -56,7 +56,6 @@
 (defconst *serial-sub$go-num* (+ *serial-sub$prim-go-num*
                                  *piso2-sreg$go-num*
                                  *sipo-sreg$go-num*))
-(defconst *serial-sub$st-len* 8)
 
 (defun serial-sub$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -500,10 +499,6 @@
      (piso2-sreg$step piso2-inputs piso2 data-size cnt-size)
      ;; Joint SIPO
      (sipo-sreg$step sipo-inputs sipo data-size cnt-size))))
-
-(defthm len-of-serial-sub$step
-  (equal (len (serial-sub$step inputs st data-size cnt-size))
-         *serial-sub$st-len*))
 
 ;; The state lemma for SERIAL-SUB
 

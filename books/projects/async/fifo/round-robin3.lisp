@@ -38,7 +38,6 @@
                                    *queue10-l$go-num*
                                    *alt-branch$go-num*
                                    *alt-merge$go-num*))
-(defconst *round-robin3$st-len* 4)
 
 (defconst *round-robin3$go-branch-offset*
   (+ 2 *queue8-l$go-num* *queue10-l$go-num*))
@@ -433,10 +432,6 @@
      (alt-branch$step br-inputs br data-size)
      ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-size))))
-
-(defthm len-of-round-robin3$step
-  (equal (len (round-robin3$step inputs st data-size))
-         *round-robin3$st-len*))
 
 ;; The state lemma for RR3
 

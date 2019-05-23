@@ -37,7 +37,6 @@
 (defconst *gcd1$go-num* (+ *merge$go-num*
                           *gcd-cond$go-num*
                           *gcd-body1$go-num*))
-(defconst *gcd1$st-len* 4)
 
 (defun gcd1$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -444,10 +443,6 @@
      (link$step l1-inputs l1 (* 2 data-size))
      ;; L2
      (link$step l2-inputs l2 (* 2 data-size)))))
-
-(defthm len-of-gcd1$step
-  (equal (len (gcd1$step inputs st data-size))
-         *gcd1$st-len*))
 
 ;; The state lemma for GCD1
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -39,10 +39,9 @@
 (defconst *interl-ll$select-num* *arb-merge$select-num*)
 (defconst *interl-ll$prim-go-num* 2)
 (defconst *interl-ll$go-num* (+ *interl-ll$prim-go-num*
-                              *queue9-l$go-num*
-                              *queue11-l$go-num*
-                              *arb-merge$go-num*))
-(defconst *interl-ll$st-len* 3)
+                                *queue9-l$go-num*
+                                *queue11-l$go-num*
+                                *arb-merge$go-num*))
 
 (defun interl-ll$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -458,10 +457,6 @@
      (queue11-l$step q11-l-inputs q11-l data-size)
      ;; Joint arb-merge
      (arb-merge$step arb-merge-inputs arb-merge data-size))))
-
-(defthm len-of-interl-ll$step
-  (equal (len (interl-ll$step inputs st data-size))
-         *interl-ll$st-len*))
 
 ;; The state lemma for INTERL-LL
 

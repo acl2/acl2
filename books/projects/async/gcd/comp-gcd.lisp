@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -37,7 +37,6 @@
 (defconst *comp-gcd$go-num* (+ *merge$go-num*
                                 *comp-gcd-cond$go-num*
                                 *gcd-body1$go-num*))
-(defconst *comp-gcd$st-len* 5)
 
 (defun comp-gcd$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -439,10 +438,6 @@
 
      ;; COMP-GCD-COND
      (comp-gcd-cond$step br-inputs br data-size))))
-
-(defthm len-of-comp-gcd$step
-  (equal (len (comp-gcd$step inputs st data-size))
-         *comp-gcd$st-len*))
 
 ;; The state lemma for COMP-GCD
 

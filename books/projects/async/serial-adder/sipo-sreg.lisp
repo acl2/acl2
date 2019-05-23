@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -36,7 +36,6 @@
 ;; lemmas for this module generator.
 
 (defconst *sipo-sreg$go-num* 2)
-(defconst *sipo-sreg$st-len* 4)
 
 (defconst *sipo-sreg$data-ins-len* 3)
 
@@ -523,10 +522,6 @@
      (link$step w-data-inputs w-data data-size)
      ;; W-CNT
      (link$step w-cnt-inputs w-cnt cnt-size))))
-
-(defthm len-of-sipo-sreg$step
-  (equal (len (sipo-sreg$step inputs st data-size cnt-size))
-         *sipo-sreg$st-len*))
 
 ;; The state lemma for SIPO-SREG
 

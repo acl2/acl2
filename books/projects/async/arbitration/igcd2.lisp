@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -37,7 +37,6 @@
 (defconst *igcd$select-num* *interl$select-num*)
 (defconst *igcd$go-num* (+ *interl$go-num*
                            *gcd1$go-num*))
-(defconst *igcd$st-len* 3)
 
 (defun igcd$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -402,10 +401,6 @@
        (interl$step interl-inputs interl (* 2 data-size))
        ;; Joint GCD1
        (gcd1$step gcd1-inputs gcd1 data-size))))
-
-  (defthm len-of-igcd$step
-    (equal (len (igcd$step inputs st data-size))
-           *igcd$st-len*))
 
   ;; The state lemma for IGCD
 

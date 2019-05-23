@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -44,7 +44,6 @@
 
 (defconst *arb-merge$select-num* 1)
 (defconst *arb-merge$go-num* 2)
-(defconst *arb-merge$st-len* 2)
 
 (defun arb-merge$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -447,10 +446,6 @@
      (link$step arb-inputs arb 2)
      ;; Arb-buf
      (link$step arb-buf-inputs arb-buf 2))))
-
-(defthm len-of-arb-merge$step
-  (equal (len (arb-merge$step inputs st data-size))
-         *arb-merge$st-len*))
 
 ;; The state lemma for ARB-MERGE
 

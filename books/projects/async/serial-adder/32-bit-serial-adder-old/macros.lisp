@@ -7,7 +7,7 @@
 ;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -835,8 +835,8 @@
        (open-st-trans-n (strings-to-symbol "OPEN-"
                                            (symbol-name name)
                                            "$ST-TRANS-N"))
-       (st-trans-m+n (strings-to-symbol (symbol-name name)
-                                        "$ST-TRANS-M+N"))
+       (st-trans-plus (strings-to-symbol (symbol-name name)
+                                        "$ST-TRANS-PLUS"))
        (st-trans->numsteps (strings-to-symbol (symbol-name name)
                                               "$ST-TRANS->NUMSTEPS"))
        (st-trans-n->numsteps (strings-to-symbol (symbol-name name)
@@ -928,7 +928,7 @@
                   :in-theory (theory 'minimal-theory)
                   :expand (,st-trans-n->numsteps ,inputs-seq n))))
 
-       (defthm ,st-trans-m+n
+       (defthm ,st-trans-plus
          (implies (and (natp m)
                        (natp n))
                   (equal (,st-trans-n ,inputs-seq (+ m n))

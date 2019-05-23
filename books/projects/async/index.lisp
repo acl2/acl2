@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; May 2019
 
 ;; Utility functions for indices
 
@@ -306,9 +306,9 @@
   :hints (("Goal" :in-theory (enable disjoint-commutative))))
 
 (defthm si-member-sis
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
                 (<= m i)
                 (< i (+ m n)))
            (member (si s i) (sis s m n)))
@@ -318,18 +318,18 @@
                     (sis s i n)))))
 
 (defthm sis-subset-sis
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
                 (<= m i)
                 (<= (+ i j) (+ m n)))
            (subsetp (sis s i j)
                     (sis s m n))))
 
 (defthmd si-is-nth-of-sis
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
                 (<= m i)
                 (< i (+ m n)))
            (equal (si s i)
@@ -340,19 +340,29 @@
                     (sis s i n)))))
 
 (defthmd nth-of-sis-is-si
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
                 (<= m i)
                 (< i (+ m n)))
            (equal (nth (- i m) (sis s m n))
                   (si s i)))
   :hints (("Goal" :use si-is-nth-of-sis)))
 
-(defthmd sis-of-subset
-  (implies (and (natp m)
+(defthm position1-si-sis
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
+                (<= m i)
+                (< i (+ m n)))
+           (equal (position1 (si s i) (sis s m n))
+                  (- i m)))
+  :hints (("Goal" :in-theory (enable position1))))
+
+(defthmd sis-of-subset
+  (implies (and (natp i)
+                (natp m)
+                (natp n)
                 (<= m i)
                 (<= (+ i j) (+ m n)))
            (equal (sis s i j)

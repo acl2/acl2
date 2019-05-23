@@ -34,7 +34,6 @@
 
 (defconst *wig-wag$go-num* (+ *alt-branch$go-num*
                               *alt-merge$go-num*))
-(defconst *wig-wag$st-len* 4)
 
 (defun wig-wag$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -359,10 +358,6 @@
      (alt-branch$step br-inputs br data-size)
      ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-size))))
-
-(defthm len-of-wig-wag$step
-  (equal (len (wig-wag$step inputs st data-size))
-         *wig-wag$st-len*))
 
 ;; The state lemma for WW
 

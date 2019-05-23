@@ -7,7 +7,7 @@
 ;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -137,6 +137,60 @@
 
 ;; ======================================================================
 
+(define value/state-lemma (state name
+                                 &key
+                                 (type ''value)
+                                 (hyps 't))
+  :mode :program
+  (b* ((fn-name (strings-to-symbol (symbol-name name)
+                                   (if (equal type 'value)
+                                       "$OUTPUTS"
+                                     "$STEP")))
+       (lemma-name (strings-to-symbol (symbol-name name)
+                                      (if (equal type 'value)
+                                          "$VALUE"
+                                        "$STATE")))
+       (recognizer (strings-to-symbol (symbol-name name)
+                                      "&"))
+       (destructure (strings-to-symbol (symbol-name name)
+                                       "*$DESTRUCTURE"))
+       (st-format (strings-to-symbol (symbol-name name)
+                                     "$ST-FORMAT"))
+       (eval (if (equal type 'value) 'se 'de))
+       (hints
+        `(("Goal"
+           :do-not-induct t
+           :expand (:free (inputs data-size)
+                          (,eval (si ',name data-size) inputs st netlist))
+           :in-theory (e/d (de-rules
+                            ,recognizer
+                            ,destructure
+                            ,st-format)
+                           (de-module-disabled-rules)))))
+       ((mv & lemma state)
+        (bash-fn `(implies ,hyps
+                           (equal (,eval (si ',name data-size)
+                                         inputs st netlist)
+                                  ?))
+                 hints nil 'bash state))
+       (fn-body (cadr (caddar lemma))))
+    (mv nil
+        `(progn
+           (defun ,fn-name (inputs st data-size)
+             (declare (ignorable data-size))
+             ,fn-body)
+
+           (defthm ,lemma-name
+             (implies ,hyps
+                      (equal (,eval (si ',name data-size)
+                                    inputs st netlist)
+                             (,fn-name inputs st data-size)))
+             :hints ,hints)
+
+           (in-theory (disable ,fn-name))
+           )
+        state)))
+
 (defmacro run-gen (name &rest sizes)
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp sizes))))
@@ -144,20 +198,14 @@
                                 "$STEP"))
        (run (strings-to-symbol (symbol-name name)
                                "$RUN"))
-       (len-of-run (strings-to-symbol "LEN-OF-"
-                                      (symbol-name name)
-                                      "$RUN"))
-       (st-len-const (strings-to-symbol "*"
-                                        (symbol-name name)
-                                        "$ST-LEN*"))
        (open-run-zp (strings-to-symbol "OPEN-"
                                        (symbol-name name)
                                        "$RUN-ZP"))
        (open-run (strings-to-symbol "OPEN-"
                                     (symbol-name name)
                                     "$RUN"))
-       (run-m+n (strings-to-symbol (symbol-name name)
-                                   "$RUN-M+N"))
+       (run-plus (strings-to-symbol (symbol-name name)
+                                   "$RUN-PLUS"))
        (inputs-seq 'inputs-seq))
     (if sizes
         `(progn
@@ -169,12 +217,6 @@
                      (,step (car ,inputs-seq) st ,@sizes)
                      ,@sizes
                      (1- n))))
-
-           (defthm ,len-of-run
-             (implies
-              (equal (len st) ,st-len-const)
-              (equal (len (,run ,inputs-seq st ,@sizes n))
-                     ,st-len-const)))
 
            (defopener ,open-run-zp
              (,run ,inputs-seq st ,@sizes n)
@@ -190,7 +232,7 @@
                       :in-theory (theory 'minimal-theory)
                       :expand (,run ,inputs-seq st ,@sizes n))))
 
-           (defthm ,run-m+n
+           (defthm ,run-plus
              (implies
               (and (natp m)
                    (natp n))
@@ -214,11 +256,6 @@
                    (,step (car ,inputs-seq) st)
                    (1- n))))
 
-         (defthm ,len-of-run
-           (implies (equal (len st) ,st-len-const)
-                    (equal (len (,run ,inputs-seq st n))
-                           ,st-len-const)))
-
          (defopener ,open-run-zp
            (,run ,inputs-seq st n)
            :hyp (zp n)
@@ -233,7 +270,7 @@
                     :in-theory (theory 'minimal-theory)
                     :expand (,run ,inputs-seq st n))))
 
-         (defthm ,run-m+n
+         (defthm ,run-plus
            (implies (and (natp m)
                          (natp n))
                     (equal (,run ,inputs-seq st (+ m n))
@@ -259,8 +296,8 @@
        (open-input-format-n (strings-to-symbol "OPEN-"
                                                (symbol-name name)
                                                "$INPUT-FORMAT-N"))
-       (input-format-m+n (strings-to-symbol (symbol-name name)
-                                            "$INPUT-FORMAT-M+N"))
+       (input-format-plus (strings-to-symbol (symbol-name name)
+                                            "$INPUT-FORMAT-PLUS"))
        (inputs-seq 'inputs-seq))
     (if data-size
         `(progn
@@ -291,7 +328,7 @@
                       :in-theory (theory 'minimal-theory)
                       :expand (,input-format-n ,inputs-seq ,data-size n))))
 
-           (defthm ,input-format-m+n
+           (defthm ,input-format-plus
              (implies
               (and (natp m)
                    (natp n))
@@ -329,7 +366,7 @@
                     :in-theory (theory 'minimal-theory)
                     :expand (,input-format-n ,inputs-seq n))))
 
-         (defthm ,input-format-m+n
+         (defthm ,input-format-plus
            (implies (and (natp m)
                          (natp n))
                     (equal (,input-format-n ,inputs-seq (+ m n))
@@ -342,17 +379,17 @@
 (defmacro input-format-n-with-state-gen (name &optional data-size)
   (declare (xargs :guard (symbolp name)))
   (b* ((input-format (strings-to-symbol (symbol-name name)
-                                        "$INPUT-FORMAT"))
+                                            "$INPUT-FORMAT"))
        (input-format-n (strings-to-symbol (symbol-name name)
-                                          "$INPUT-FORMAT-N"))
+                                              "$INPUT-FORMAT-N"))
        (open-input-format-n-zp (strings-to-symbol "OPEN-"
-                                                  (symbol-name name)
-                                                  "$INPUT-FORMAT-N-ZP"))
+                                                      (symbol-name name)
+                                                      "$INPUT-FORMAT-N-ZP"))
        (open-input-format-n (strings-to-symbol "OPEN-"
-                                               (symbol-name name)
-                                               "$INPUT-FORMAT-N"))
-       (input-format-m+n (strings-to-symbol (symbol-name name)
-                                            "$INPUT-FORMAT-M+N"))
+                                                   (symbol-name name)
+                                                   "$INPUT-FORMAT-N"))
+       (input-format-plus (strings-to-symbol (symbol-name name)
+                                                 "$INPUT-FORMAT-PLUS"))
        (step (strings-to-symbol (symbol-name name)
                                 "$STEP"))
        (run (strings-to-symbol (symbol-name name)
@@ -386,7 +423,7 @@
                       :in-theory (theory 'minimal-theory)
                       :expand (,input-format-n ,inputs-seq st ,data-size n))))
 
-           (defthm ,input-format-m+n
+           (defthm ,input-format-plus
              (implies
               (and (natp m)
                    (natp n))
@@ -411,8 +448,8 @@
                t
              (and (,input-format (car ,inputs-seq) st)
                   (,input-format-n (cdr ,inputs-seq)
-                                   (,step (car ,inputs-seq) st)
-                                   (1- n)))))
+                                       (,step (car ,inputs-seq) st)
+                                       (1- n)))))
 
          (defopener ,open-input-format-n-zp
            (,input-format-n ,inputs-seq st n)
@@ -428,7 +465,7 @@
                     :in-theory (theory 'minimal-theory)
                     :expand (,input-format-n ,inputs-seq st n))))
 
-         (defthm ,input-format-m+n
+         (defthm ,input-format-plus
            (implies (and (natp m)
                          (natp n))
                     (equal (,input-format-n ,inputs-seq st (+ m n))
@@ -481,6 +518,7 @@
                               ,@sizes))
          :hints (("Goal"
                   :in-theory (enable get-field
+                                     link$step
                                      ,step
                                      ,st-format))))
 
@@ -640,7 +678,7 @@
        (de-n-lemma (strings-to-symbol (symbol-name name)
                                       "$DE-N"))
        (input-format-n (strings-to-symbol (symbol-name name)
-                                          "$INPUT-FORMAT-N"))
+                                              "$INPUT-FORMAT-N"))
        (valid-st (strings-to-symbol (symbol-name name)
                                     "$VALID-ST"))
        (valid-st=>st-format (strings-to-symbol (symbol-name name)

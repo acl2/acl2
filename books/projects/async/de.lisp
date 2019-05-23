@@ -5,7 +5,7 @@
 
 ;; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2019
+;; May 2019
 
 ; (ld "de.lisp" :ld-pre-eval-print t)
 
@@ -1275,7 +1275,7 @@
           netlist
           (1- n))))
 
-(defthm de-m+n
+(defthm de-plus
   (implies (and (natp m)
                 (natp n))
            (equal (de-n fn inputs-seq st netlist (+ m n))
@@ -1344,6 +1344,7 @@
     no-duplicatesp-eq
     nth
     nthcdr
+    nthcdr-of-nthcdr
     prefixp-of-cons-left
     prefixp-when-equal-lengths
     str::iprefixp-of-cons-left
@@ -1353,3 +1354,4 @@
     take-of-take-split
     take-of-too-many
     v-threefix))
+

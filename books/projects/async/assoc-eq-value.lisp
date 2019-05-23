@@ -7,7 +7,7 @@
 ;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; January 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -70,6 +70,24 @@
   (implies (not (member name names))
            (not (assoc-eq-value name (pairlis$ names values)))))
 
+(defthm assoc-eq-value-pairlis$-append-member
+  (implies (member a x)
+           (equal (assoc-eq-value a (pairlis$ (append x y) l))
+                  (assoc-eq-value a (pairlis$ x l)))))
+
+(local
+ (defun assoc-eq-value-pairlis$-append-not-member-induct (x l)
+   (if (atom x)
+       l
+     (assoc-eq-value-pairlis$-append-not-member-induct (cdr x) (cdr l)))))
+
+(defthm assoc-eq-value-pairlis$-append-not-member
+  (implies (not (member a x))
+           (equal (assoc-eq-value a (pairlis$ (append x y) l))
+                  (assoc-eq-value a (pairlis$ y (nthcdr (len x) l)))))
+  :hints (("Goal"
+           :induct (assoc-eq-value-pairlis$-append-not-member-induct x l))))
+
 (defthm assoc-eq-value-update-alist-1
   (implies (and (equal occ-name1 occ-name2)
                 (consp (assoc-eq occ-name2 st-alist)))
@@ -96,9 +114,9 @@
                   (nth n vals))))
 
 (defthm assoc-eq-value-of-si-pairlis$-sis
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (posp n)
-                (natp i)
                 (<= m i)
                 (< i (+ m n))
                 (<= n (len vals)))
@@ -179,6 +197,21 @@
            (equal (assoc-eq-values args1 (append (pairlis$ args2 a)
                                                  b))
                   (assoc-eq-values args1 b))))
+
+(defthm assoc-eq-values-pairlis$-append-when-subset
+  (implies (subsetp x y)
+           (equal (assoc-eq-values x (pairlis$ (append y z) l))
+                  (assoc-eq-values x (pairlis$ y (take (len y) l)))))
+  :hints (("Goal" :in-theory (enable pairlis$-of-take))))
+
+(defthm assoc-eq-values-pairlis$-append-when-disjoint
+  (implies
+   (or (disjoint x y)
+       (disjoint y x))
+   (equal (assoc-eq-values x (pairlis$ (append y z) l))
+          (assoc-eq-values x (pairlis$ z (take (len z)
+                                               (nthcdr (len y) l))))))
+  :hints (("Goal" :in-theory (enable disjoint pairlis$-of-take))))
 
 (defthm assoc-eq-values-take-1
   (implies (and (no-duplicatesp l)
@@ -309,9 +342,9 @@
 (in-theory (disable assoc-eq-values))
 
 (defthm assoc-eq-values-of-sis-pairlis$-sis
-  (implies (and (natp m)
+  (implies (and (natp i)
+                (natp m)
                 (natp n)
-                (natp i)
                 (<= m i)
                 (<= (+ i j) (+ m n))
                 (true-listp vals)

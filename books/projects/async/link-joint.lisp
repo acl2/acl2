@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -273,8 +273,6 @@
 
 ;; DE module of LINK1
 
-(defconst *link1$st-len* 2)
-
 (module-generator
  link1* ()
  'link1
@@ -354,10 +352,6 @@
      (list (f-sr fill$ drain (car s)))
      (list (f-if fill$ bit-in (car d))))))
 
-(defthm len-of-link1$step
-  (equal (len (link1$step inputs st))
-         *link1$st-len*))
-
 ;; The state lemma for LINK1
 
 (defthm link1$state
@@ -372,13 +366,11 @@
                            ((link1*)
                             de-module-disabled-rules)))))
 
-;;(in-theory (disable link1$step))
+;; (in-theory (disable link1$step))
 
 ;; ======================================================================
 
 ;; DE module generator of LINK
-
-(defconst *link$st-len* 2)
 
 (defun link$ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -507,10 +499,6 @@
      (pairlis$ (fv-if fill$ data-in (strip-cars d))
                nil))))
 
-(defthm len-of-link$step
-  (equal (len (link$step inputs st data-size))
-         *link$st-len*))
-
 ;; The state lemma for LINK
 
 (defthm link$state
@@ -528,8 +516,6 @@
                             link*$destructure)
                            (de-module-disabled-rules)))))
 
-;;(in-theory (disable link$step))
-
 (defthm link$valid-st-preserved
   (implies (and (booleanp (nth 0 inputs))
                 (booleanp (nth 1 inputs))
@@ -540,6 +526,8 @@
            (link$valid-st (link$step inputs st data-size)
                           data-size))
   :hints (("Goal" :in-theory (enable get-field f-sr))))
+
+;; (in-theory (disable link$step))
 
 
 
