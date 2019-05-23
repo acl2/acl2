@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -45,7 +45,6 @@
                                        *interl-ll$select-num*))
 (defconst *comp-interl2$go-num* (+ (* 2 *interl$go-num*)
                                    *interl-ll$go-num*))
-(defconst *comp-interl2$st-len* 3)
 
 (defun comp-interl2$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -596,10 +595,6 @@
      (interl$step interl1-inputs interl1 data-size)
      ;; Joint INTERL-LL
      (interl-ll$step interl-ll-inputs interl-ll data-size))))
-
-(defthm len-of-comp-interl2$step
-  (equal (len (comp-interl2$step inputs st data-size))
-         *comp-interl2$st-len*))
 
 ;; The state lemma for COMP-INTERL2
 

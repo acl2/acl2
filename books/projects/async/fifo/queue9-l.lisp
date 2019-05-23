@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -37,7 +37,6 @@
 (defconst *queue9-l$go-num* (+ *queue9-l$prim-go-num*
                                *queue4-l$go-num*
                                *queue5-l$go-num*))
-(defconst *queue9-l$st-len* 2)
 
 (defun queue9-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -337,10 +336,6 @@
      ;; Q5-L
      (queue5-l$step q5-l-inputs q5-l data-size))))
 
-(defthm len-of-queue9-l$step
-  (equal (len (queue9-l$step inputs st data-size))
-         *queue9-l$st-len*))
-
 (defthm queue9-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -460,14 +455,14 @@
                             ())))))
 
 (defthm booleanp-queue9-l$in-act
-  (implies (queue9-l$input-format inputs st data-wisth)
+  (implies (queue9-l$input-format inputs st data-size)
            (booleanp (queue9-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue9-l$input-format
                                      queue9-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue9-l$out-act
-  (implies (queue9-l$input-format inputs st data-wisth)
+  (implies (queue9-l$input-format inputs st data-size)
            (booleanp (queue9-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue9-l$input-format
                                      queue9-l$out-act)))

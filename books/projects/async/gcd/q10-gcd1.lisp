@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -33,7 +33,6 @@
 
 (defconst *q10-gcd1$go-num* (+ *queue10$go-num*
                               *gcd1$go-num*))
-(defconst *q10-gcd1$st-len* 3)
 
 (defun q10-gcd1$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -329,10 +328,6 @@
      (queue10$step q10-inputs q10 (* 2 data-size))
      ;; Joint GCD1
      (gcd1$step gcd1-inputs gcd1 data-size))))
-
-(defthm len-of-q10-gcd1$step
-  (equal (len (q10-gcd1$step inputs st data-size))
-         *q10-gcd1$st-len*))
 
 ;; The state lemma for Q10-GCD1
 

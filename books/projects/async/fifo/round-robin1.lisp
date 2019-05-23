@@ -62,7 +62,6 @@
                                    *queue3$go-num*
                                    *alt-branch$go-num*
                                    *alt-merge$go-num*))
-(defconst *round-robin1$st-len* 8)
 
 (defun round-robin1$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -517,10 +516,6 @@
      (alt-branch$step br-inputs br data-size)
      ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-size))))
-
-(defthm len-of-round-robin1$step
-  (equal (len (round-robin1$step inputs st data-size))
-         *round-robin1$st-len*))
 
 ;; The state lemma for RR1
 

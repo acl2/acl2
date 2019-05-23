@@ -36,7 +36,6 @@
 (defconst *round-robin4$go-num* (+ (* 2 *queue40-l$go-num*)
                                    *alt-branch$go-num*
                                    *alt-merge$go-num*))
-(defconst *round-robin4$st-len* 4)
 
 (defconst *round-robin4$go-branch-offset*
   (+ 2 (* 2 *queue40-l$go-num*)))
@@ -424,10 +423,6 @@
      (alt-branch$step br-inputs br data-size)
      ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-size))))
-
-(defthm len-of-round-robin4$step
-  (equal (len (round-robin4$step inputs st data-size))
-         *round-robin4$st-len*))
 
 ;; The state lemma for RR4
 

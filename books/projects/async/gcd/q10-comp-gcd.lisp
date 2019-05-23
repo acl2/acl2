@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -32,8 +32,7 @@
 ;; link.  Prove the value and state lemmas for this module generator.
 
 (defconst *q10-comp-gcd$go-num* (+ *queue10$go-num*
-                                    *comp-gcd$go-num*))
-(defconst *q10-comp-gcd$st-len* 3)
+                                   *comp-gcd$go-num*))
 
 (defun q10-comp-gcd$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -336,10 +335,6 @@
      (queue10$step q10-inputs q10 (* 2 data-size))
      ;; Joint COMP-GCD
      (comp-gcd$step comp-gcd-inputs comp-gcd data-size))))
-
-(defthm len-of-q10-comp-gcd$step
-  (equal (len (q10-comp-gcd$step inputs st data-size))
-         *q10-comp-gcd$st-len*))
 
 ;; The state lemma for Q10-COMP-GCD
 

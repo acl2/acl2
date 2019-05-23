@@ -36,7 +36,6 @@
 (defconst *comp-v-or$go-num* (+ *comp-v-or$prim-go-num*
                                 *queue2$go-num*
                                 *queue3$go-num*))
-(defconst *comp-v-or$st-len* 6)
 
 (defun comp-v-or$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -453,10 +452,6 @@
      (queue2$step q2-inputs q2 data-size)
      ;; Joint Q3
      (queue3$step q3-inputs q3 data-size))))
-
-(defthm len-of-comp-v-or$step
-  (equal (len (comp-v-or$step inputs st data-size))
-         *comp-v-or$st-len*))
 
 ;; The state lemma for COMP-V-OR
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -35,7 +35,6 @@
 (defconst *queue20-l$prim-go-num* 1)
 (defconst *queue20-l$go-num* (+ *queue20-l$prim-go-num*
                                 (* 2 *queue10-l$go-num*)))
-(defconst *queue20-l$st-len* 2)
 
 (defun queue20-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -332,10 +331,6 @@
      ;; Q10-L1
      (queue10-l$step q10-l1-inputs q10-l1 data-size))))
 
-(defthm len-of-queue20-l$step
-  (equal (len (queue20-l$step inputs st data-size))
-         *queue20-l$st-len*))
-
 (defthm queue20-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -455,14 +450,14 @@
                             ())))))
 
 (defthm booleanp-queue20-l$in-act
-  (implies (queue20-l$input-format inputs st data-wisth)
+  (implies (queue20-l$input-format inputs st data-size)
            (booleanp (queue20-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue20-l$input-format
                                      queue20-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue20-l$out-act
-  (implies (queue20-l$input-format inputs st data-wisth)
+  (implies (queue20-l$input-format inputs st data-size)
            (booleanp (queue20-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue20-l$input-format
                                      queue20-l$out-act)))

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -21,7 +21,6 @@
 ;; One-Bit Full-Adder
 
 (defconst *1-bit-adder$go-num* 2)
-(defconst *1-bit-adder$st-len* 10)
 
 (module-generator
  1-bit-adder* ()
@@ -206,10 +205,6 @@
                                    (car ci)))
                       (car co))))))
 
-(defthm len-of-1-bit-adder$step
-  (equal (len (1-bit-adder$step inputs st))
-         *1-bit-adder$st-len*))
-
 (local
  (defthmd car-and-cdr-of-atom
    (implies (atom x)
@@ -245,7 +240,6 @@
 (defconst *serial-adder$prim-go-num* 3)
 (defconst *serial-adder$go-num* (+ *serial-adder$prim-go-num*
                                    *1-bit-adder$go-num*))
-(defconst *serial-adder$st-len* 7)
 
 (module-generator
  serial-adder* ()
@@ -430,10 +424,6 @@
           (list (write-shift-reg s-act (car s) (car reg2)))
 
           (1-bit-adder$step 1-bit-adder$inputs bit-add))))
-
-(defthm len-of-serial-adder$step
-  (equal (len (serial-adder$step inputs st))
-         *serial-adder$st-len*))
 
 (defthm serial-adder$state
   (b* ((inputs (list* cntl-act bit-in result-act go-signals))
@@ -706,10 +696,6 @@
                nil)
 
      (serial-adder$step serial-adder$inputs serial-add))))
-
-(defthm len-of-async-adder$step
-  (equal (len (async-adder$step inputs st))
-         *async-adder$st-len*))
 
 (defthm async-adder$state
   (b* ((inputs (list* dr-lresult go-signals))
@@ -1017,7 +1003,7 @@
                         (async-adder$step (car inputs-seq) st)
                         (1- n))))))
 
-(defthm async-adder$result-emptyp-m+n
+(defthm async-adder$result-emptyp-plus
   (implies (and (natp m)
                 (natp n))
            (equal (async-adder$result-empty-n inputs-seq st (+ m n))
@@ -1836,13 +1822,13 @@
             )))
   :hints (("Goal"
            :use ((:instance
-                  async-adder$input-format-m+n
+                  async-adder$input-format-plus
                   (m (async-adder-last-round$st-trans->numsteps inputs-seq))
                   (n (- n
                         (async-adder-last-round$st-trans->numsteps
                          inputs-seq))))
                  (:instance
-                  async-adder$run-m+n
+                  async-adder$run-plus
                   (m (async-adder-last-round$st-trans->numsteps inputs-seq))
                   (n (- n
                         (async-adder-last-round$st-trans->numsteps
@@ -1851,8 +1837,8 @@
                             async-adder$state-fixpoint
                             last-round-st)
                            (open-async-adder$run
-                            async-adder$input-format-m+n
-                            async-adder$run-m+n
+                            async-adder$input-format-plus
+                            async-adder$run-plus
                             car-cdr-elim)))))
 
 ;; ======================================================================
@@ -2609,7 +2595,7 @@
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance
-                  async-adder$run-m+n
+                  async-adder$run-plus
                   (m (async-adder$st-trans-n->numsteps
                       inputs-seq
                       (1- operand-size)))
@@ -2617,7 +2603,7 @@
                            inputs-seq
                            (1- operand-size)))))
                  (:instance
-                  async-adder$input-format-m+n
+                  async-adder$input-format-plus
                   (m (async-adder$st-trans-n->numsteps
                       inputs-seq
                       (1- operand-size)))
@@ -2632,8 +2618,8 @@
                             async-adder-numsteps
                             fv-serial-adder
                             pos-len=>consp)
-                           (async-adder$run-m+n
-                            async-adder$input-format-m+n
+                           (async-adder$run-plus
+                            async-adder$input-format-plus
                             open-async-adder$run
                             open-async-adder$input-format-n
                             open-async-adder$st-trans-n

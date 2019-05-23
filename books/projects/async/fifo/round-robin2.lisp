@@ -38,7 +38,6 @@
                                    *queue5-l$go-num*
                                    *alt-branch$go-num*
                                    *alt-merge$go-num*))
-(defconst *round-robin2$st-len* 4)
 
 (defconst *round-robin2$go-branch-offset*
   (+ 2 *queue4-l$go-num* *queue5-l$go-num*))
@@ -433,10 +432,6 @@
      (alt-branch$step br-inputs br data-size)
      ;; Joint ALT-MERGE
      (alt-merge$step me-inputs me data-size))))
-
-(defthm len-of-round-robin2$step
-  (equal (len (round-robin2$step inputs st data-size))
-         *round-robin2$st-len*))
 
 ;; The state lemma for RR2
 

@@ -29,7 +29,6 @@
 ;; generator.
 
 (defconst *alt-branch$go-num* 2)
-(defconst *alt-branch$st-len* 2)
 
 (defun alt-branch$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -275,10 +274,6 @@
      (link1$step select-inputs select)
      ;; Select-buf
      (link1$step select-buf-inputs select-buf))))
-
-(defthm len-of-alt-branch$step
-  (equal (len (alt-branch$step inputs st data-size))
-         *alt-branch$st-len*))
 
 ;; The state lemma for ALT-BRANCH
 

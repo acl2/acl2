@@ -31,7 +31,6 @@
 ;; generator.
 
 (defconst *queue5$go-num* 6)
-(defconst *queue5$st-len* 5)
 
 (defun queue5$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -384,10 +383,6 @@
      (link$step l3-inputs l3 data-size)
      ;; L4
      (link$step l4-inputs l4 data-size))))
-
-(defthm len-of-queue5$step
-  (equal (len (queue5$step inputs st data-size))
-         *queue5$st-len*))
 
 ;; The state lemma for Q5
 

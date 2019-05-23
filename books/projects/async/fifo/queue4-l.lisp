@@ -31,7 +31,6 @@
 ;; generator.  Note that QUEUE4-L is a complex link.
 
 (defconst *queue4-l$go-num* 3)
-(defconst *queue4-l$st-len* 4)
 
 (defun queue4-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -361,10 +360,6 @@
      ;; L3
      (link$step l3-inputs l3 data-size))))
 
-(defthm len-of-queue4-l$step
-  (equal (len (queue4-l$step inputs st data-size))
-         *queue4-l$st-len*))
-
 (defthm queue4-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -437,14 +432,14 @@
             (list* in-act out-act (append data-in go-signals))))))
 
 (defthm booleanp-queue4-l$in-act
-  (implies (queue4-l$input-format inputs st data-wisth)
+  (implies (queue4-l$input-format inputs st data-size)
            (booleanp (queue4-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue4-l$out-act
-  (implies (queue4-l$input-format inputs st data-wisth)
+  (implies (queue4-l$input-format inputs st data-size)
            (booleanp (queue4-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue4-l$input-format
                                      queue4-l$out-act)))

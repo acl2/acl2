@@ -35,7 +35,6 @@
 (defconst *queue40-l$prim-go-num* 1)
 (defconst *queue40-l$go-num* (+ *queue40-l$prim-go-num*
                                 (* 2 *queue20-l$go-num*)))
-(defconst *queue40-l$st-len* 2)
 
 (defun queue40-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -332,10 +331,6 @@
      ;; Q20-L1
      (queue20-l$step q20-l1-inputs q20-l1 data-size))))
 
-(defthm len-of-queue40-l$step
-  (equal (len (queue40-l$step inputs st data-size))
-         *queue40-l$st-len*))
-
 (defthm queue40-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -455,14 +450,14 @@
                             ())))))
 
 (defthm booleanp-queue40-l$in-act
-  (implies (queue40-l$input-format inputs st data-wisth)
+  (implies (queue40-l$input-format inputs st data-size)
            (booleanp (queue40-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue40-l$input-format
                                      queue40-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue40-l$out-act
-  (implies (queue40-l$input-format inputs st data-wisth)
+  (implies (queue40-l$input-format inputs st data-size)
            (booleanp (queue40-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue40-l$input-format
                                      queue40-l$out-act)))

@@ -31,7 +31,6 @@
 ;; generator.
 
 (defconst *alt-merge$go-num* 2)
-(defconst *alt-merge$st-len* 2)
 
 (defun alt-merge$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -299,10 +298,6 @@
      (link1$step select-inputs select)
      ;; Select-buf
      (link1$step select-buf-inputs select-buf))))
-
-(defthm len-of-alt-merge$step
-  (equal (len (alt-merge$step inputs st data-size))
-         *alt-merge$st-len*))
 
 ;; The state lemma for ALT-MERGE
 

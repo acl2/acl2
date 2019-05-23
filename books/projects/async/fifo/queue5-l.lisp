@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -32,7 +32,6 @@
 ;; generator.  Note that QUEUE5-L is a complex link.
 
 (defconst *queue5-l$go-num* 4)
-(defconst *queue5-l$st-len* 5)
 
 (defun queue5-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -390,10 +389,6 @@
      ;; L4
      (link$step l4-inputs l4 data-size))))
 
-(defthm len-of-queue5-l$step
-  (equal (len (queue5-l$step inputs st data-size))
-         *queue5-l$st-len*))
-
 (defthm queue5-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -466,14 +461,14 @@
             (list* in-act out-act (append data-in go-signals))))))
 
 (defthm booleanp-queue5-l$in-act
-  (implies (queue5-l$input-format inputs st data-wisth)
+  (implies (queue5-l$input-format inputs st data-size)
            (booleanp (queue5-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue5-l$input-format
                                      queue5-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue5-l$out-act
-  (implies (queue5-l$input-format inputs st data-wisth)
+  (implies (queue5-l$input-format inputs st data-size)
            (booleanp (queue5-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue5-l$input-format
                                      queue5-l$out-act)))

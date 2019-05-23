@@ -34,7 +34,6 @@
 
 (defconst *queue10$go-num* (+ *queue4$go-num*
                               *queue5$go-num*))
-(defconst *queue10$st-len* 3)
 
 (defun queue10$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -315,10 +314,6 @@
      (queue4$step q4-inputs q4 data-size)
      ;; Joint Q5
      (queue5$step q5-inputs q5 data-size))))
-
-(defthm len-of-queue10$step
-  (equal (len (queue10$step inputs st data-size))
-         *queue10$st-len*))
 
 ;; The state lemma for Q10
 

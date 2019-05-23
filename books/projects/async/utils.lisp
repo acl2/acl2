@@ -7,7 +7,7 @@
 ;; https://github.com/acl2/acl2/tree/master/books/projects/fm9001.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -138,6 +138,11 @@
            (true-listp (union-equal l1 l2)))
   :rule-classes :type-prescription)
 
+(defthm member-append
+  (implies (or (member a x)
+               (member a y))
+           (member a (append x y))))
+
 (defthm not-member-append
   (implies (and (not (member e x))
                 (not (member e y)))
@@ -178,6 +183,11 @@
   (implies (equal (len x) (len a))
            (equal (pairlis$ (append x y) (append a b))
                   (append (pairlis$ x a) (pairlis$ y b)))))
+
+(defthmd pairlis$-of-take
+  (implies (equal (len x) n)
+           (equal (pairlis$ x (take n y))
+                  (pairlis$ x y))))
 
 (defthm alistp-append
   (implies (and (alistp x)
@@ -326,6 +336,10 @@
            (equal (nthcdr i (cons x y))
                   (nthcdr (1- i) y))))
 
+(defthmd nthcdr-cdr
+  (equal (nthcdr n (cdr l))
+         (cdr (nthcdr n l))))
+
 (defthm append-take-nthcdr
   (implies (<= n (len l))
            (equal (append (take n l) (nthcdr n l))
@@ -355,6 +369,12 @@
 (defthm nthcdr-of-nthcdr
   (equal (nthcdr m (nthcdr n l))
          (nthcdr (+ (nfix m) (nfix n)) l)))
+
+(defthmd nthcdr-plus
+  (implies (and (natp m)
+                (natp n))
+           (equal (nthcdr (+ m n) l)
+                  (nthcdr m (nthcdr n l)))))
 
 (encapsulate
   ()
@@ -750,6 +770,13 @@
 (defthm member==>position1
   (implies (member x l)
            (position1 x l)))
+
+(defthm position1-of-append
+  (implies (and (not (member a x))
+                (member a y))
+           (equal (position1 a (append x y))
+                  (+ (len x)
+                     (position1 a y)))))
 
 (in-theory (disable position1))
 

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -31,7 +31,6 @@
 ;; generator.  Note that QUEUE3-L is a complex link.
 
 (defconst *queue3-l$go-num* 2)
-(defconst *queue3-l$st-len* 3)
 
 (defun queue3-l$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -333,10 +332,6 @@
      ;; L2
      (link$step l2-inputs l2 data-size))))
 
-(defthm len-of-queue3-l$step
-  (equal (len (queue3-l$step inputs st data-size))
-         *queue3-l$st-len*))
-
 (defthm queue3-l$step-v-threefix-of-data-in-canceled
   (implies
    (and (true-listp data-in)
@@ -409,14 +404,14 @@
             (list* in-act out-act (append data-in go-signals))))))
 
 (defthm booleanp-queue3-l$in-act
-  (implies (queue3-l$input-format inputs st data-wisth)
+  (implies (queue3-l$input-format inputs st data-size)
            (booleanp (queue3-l$in-act inputs)))
   :hints (("Goal" :in-theory (enable queue3-l$input-format
                                      queue3-l$in-act)))
   :rule-classes (:rewrite :type-prescription))
 
 (defthm booleanp-queue3-l$out-act
-  (implies (queue3-l$input-format inputs st data-wisth)
+  (implies (queue3-l$input-format inputs st data-size)
            (booleanp (queue3-l$out-act inputs)))
   :hints (("Goal" :in-theory (enable queue3-l$input-format
                                      queue3-l$out-act)))

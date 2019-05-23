@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -35,7 +35,6 @@
 (defconst *gcd-body3$prim-go-num* 2)
 (defconst *gcd-body3$go-num* (+ *gcd-body3$prim-go-num*
                                 *serial-sub$go-num*))
-(defconst *gcd-body3$st-len* 4)
 
 (defun gcd-body3$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -413,10 +412,6 @@
      (link$step l2-inputs l2 data-size)
      ;; Joint SUB
      (serial-sub$step sub-inputs sub data-size cnt-size))))
-
-(defthm len-of-gcd-body3$step
-  (equal (len (gcd-body3$step inputs st data-size cnt-size))
-         *gcd-body3$st-len*))
 
 ;; The state lemma for GCD-BODY3
 

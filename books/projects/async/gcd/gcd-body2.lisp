@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -35,7 +35,6 @@
 ;; using the ripple-carry subtractor RIPPLE-SUB.
 
 (defconst *gcd-body2$go-num* 3)
-(defconst *gcd-body2$st-len* 3)
 
 (defun gcd-body2$data-ins-len (data-size)
   (declare (xargs :guard (natp data-size)))
@@ -391,10 +390,6 @@
      (link$step l1-inputs l1 data-size)
      ;; L2
      (link$step l2-inputs l2 data-size))))
-
-(defthm len-of-gcd-body2$step
-  (equal (len (gcd-body2$step inputs st data-size))
-         *gcd-body2$st-len*))
 
 ;; The state lemma for GCD-BODY2
 
