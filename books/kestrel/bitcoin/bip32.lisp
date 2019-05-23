@@ -517,6 +517,7 @@
 (fty::defset bip32-path-set
   :elt-type ubyte32-list
   :pred bip32-path-setp
+  :fix bip32-path-sfix
   :short "Osets of paths in key trees."
   :long
   (xdoc::topstring
@@ -560,7 +561,7 @@
      is also a prefix of the existing path,
      and therefore already in the set by hypothesis."))
   (forall (path prefix)
-          (b* ((paths (bip32-path-set-fix paths)))
+          (b* ((paths (bip32-path-sfix paths)))
             (implies (and (set::in path paths)
                           (true-listp prefix)
                           (prefixp prefix path))
@@ -573,14 +574,14 @@
     :hints (("Goal"
              :in-theory (disable bip32-path-set-closedp-necc)
              :use ((:instance bip32-path-set-closedp-necc
-                    (paths (bip32-path-set-fix paths))
+                    (paths (bip32-path-sfix paths))
                     (path (mv-nth 0 (bip32-path-set-closedp-witness paths)))
                     (prefix (mv-nth 1 (bip32-path-set-closedp-witness paths))))
                    (:instance bip32-path-set-closedp-necc
                     (path (mv-nth 0 (bip32-path-set-closedp-witness
-                                     (bip32-path-set-fix paths))))
+                                     (bip32-path-sfix paths))))
                     (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                                       (bip32-path-set-fix paths)))))))))
+                                       (bip32-path-sfix paths)))))))))
 
   (defrule empty-path-in-closed-nonempty-bip32-path-set
     (implies (and (bip32-path-setp paths)
@@ -707,7 +708,7 @@
      preserves the validity of the keys,
      provided that the key at the end of the new extended path is valid."))
   (forall (path)
-          (implies (set::in path (bip32-path-set-fix paths))
+          (implies (set::in path (bip32-path-sfix paths))
                    (not (mv-nth 0 (bip32-ckd* root path)))))
   ///
 
@@ -725,11 +726,11 @@
                            (bip32-ext-key-fix root) paths)))
                    ;; for PATHS:
                    (:instance bip32-valid-keys-p-necc
-                    (paths (bip32-path-set-fix paths))
+                    (paths (bip32-path-sfix paths))
                     (path (bip32-valid-keys-p-witness root paths)))
                    (:instance bip32-valid-keys-p-necc
                     (path (bip32-valid-keys-p-witness
-                           root (bip32-path-set-fix paths))))))))
+                           root (bip32-path-sfix paths))))))))
 
   (defrule bip32-valid-keys-p-of-singleton-empty-path
     (bip32-valid-keys-p root '(nil))
@@ -791,7 +792,7 @@
      preserves the validity of the key depths,
      provided that the depth of the path being extended is below 255."))
   (forall (path)
-          (implies (set::in path (bip32-path-set-fix paths))
+          (implies (set::in path (bip32-path-sfix paths))
                    (bytep (+ (byte-fix init) (len path)))))
   ///
 
@@ -808,11 +809,11 @@
                     (path (bip32-valid-depths-p-witness (byte-fix init) paths)))
                    ;; for PATHS:
                    (:instance bip32-valid-depths-p-necc
-                    (paths (bip32-path-set-fix paths))
+                    (paths (bip32-path-sfix paths))
                     (path (bip32-valid-depths-p-witness init paths)))
                    (:instance bip32-valid-depths-p-necc
                     (path (bip32-valid-depths-p-witness
-                           init (bip32-path-set-fix paths))))))))
+                           init (bip32-path-sfix paths))))))))
 
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
