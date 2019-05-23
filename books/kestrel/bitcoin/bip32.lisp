@@ -684,9 +684,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk bip32-valid-keys-p ((root bip32-ext-key-p) (tree bip32-index-treep))
+(define-sk bip32-valid-keys-p ((root bip32-ext-key-p) (paths bip32-path-setp))
   :returns (yes/no booleanp)
-  :short "Check if all the derived keys in a tree are valid."
+  :short "Check if all the derived keys in a (tree's) set of paths are valid."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -696,6 +696,9 @@
     "This function checks this condition.
      This function is used to define key trees later.")
    (xdoc::p
+    "Even though this function is applied to index trees,
+     it can be defined on general sets of paths.")
+   (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path)
      trivially satisfies this key validity condition.")
@@ -704,30 +707,29 @@
      preserves the validity of the keys,
      provided that the key at the end of the new extended path is valid."))
   (forall (path)
-          (b* ((tree (bip32-index-tree-fix tree)))
-            (implies (set::in path tree)
-                     (not (mv-nth 0 (bip32-ckd* root path))))))
+          (implies (set::in path (bip32-path-set-fix paths))
+                   (not (mv-nth 0 (bip32-ckd* root path)))))
   ///
 
   ;; boilerplate:
   (fty::deffixequiv bip32-valid-keys-p
-    :args ((root bip32-ext-key-p) (tree bip32-index-treep))
+    :args ((root bip32-ext-key-p) (paths bip32-path-setp))
     :hints (("Goal"
              :in-theory (disable bip32-valid-keys-p-necc)
              :use (;; for ROOT:
                    (:instance bip32-valid-keys-p-necc
                     (root (bip32-ext-key-fix root))
-                    (path (bip32-valid-keys-p-witness root tree)))
+                    (path (bip32-valid-keys-p-witness root paths)))
                    (:instance bip32-valid-keys-p-necc
                     (path (bip32-valid-keys-p-witness
-                           (bip32-ext-key-fix root) tree)))
-                   ;; for TREE:
+                           (bip32-ext-key-fix root) paths)))
+                   ;; for PATHS:
                    (:instance bip32-valid-keys-p-necc
-                    (tree (bip32-index-tree-fix tree))
-                    (path (bip32-valid-keys-p-witness root tree)))
+                    (paths (bip32-path-set-fix paths))
+                    (path (bip32-valid-keys-p-witness root paths)))
                    (:instance bip32-valid-keys-p-necc
                     (path (bip32-valid-keys-p-witness
-                           root (bip32-index-tree-fix tree))))))))
+                           root (bip32-path-set-fix paths))))))))
 
   (defrule bip32-valid-keys-p-of-singleton-empty-path
     (bip32-valid-keys-p root '(nil))
@@ -738,24 +740,24 @@
              bip32-ckd-pub*))
 
   (defrule bip32-valid-keys-p-of-insert-of-rcons
-    (implies (and (bip32-index-treep tree)
-                  (bip32-valid-keys-p root tree)
-                  (set::in path tree)
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-keys-p root paths)
+                  (set::in path paths)
                   (ubyte32p index)
                   (not (mv-nth 0 (bip32-ckd* root (rcons index path)))))
-             (bip32-valid-keys-p root (set::insert (rcons index path) tree)))
+             (bip32-valid-keys-p root (set::insert (rcons index path) paths)))
     :enable bip32-valid-keys-p
     :use (:instance bip32-valid-keys-p-necc
           (path (bip32-valid-keys-p-witness
-                 root (insert (rcons index path) tree)))))
+                 root (insert (rcons index path) paths)))))
 
   (in-theory (disable (:e bip32-valid-keys-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk bip32-valid-depths-p ((init bytep) (tree bip32-index-treep))
+(define-sk bip32-valid-depths-p ((init bytep) (paths bip32-path-setp))
   :returns (yes/no booleanp)
-  :short "Check if all the key depths in a tree are valid."
+  :short "Check if all the key depths in a (tree's) set of paths are valid."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -778,6 +780,9 @@
      does not exceed 255.
      If the subtree coincides with the supertree, then @('init') is 0.")
    (xdoc::p
+    "Even though this function is applied to index trees,
+     it can be defined on general sets of paths.")
+   (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path),
      trivially satisfies this depth validity condition.")
@@ -786,45 +791,44 @@
      preserves the validity of the key depths,
      provided that the depth of the path being extended is below 255."))
   (forall (path)
-          (b* ((tree (bip32-index-tree-fix tree)))
-            (implies (set::in path tree)
-                     (bytep (+ (byte-fix init) (len path))))))
+          (implies (set::in path (bip32-path-set-fix paths))
+                   (bytep (+ (byte-fix init) (len path)))))
   ///
 
   ;; boilerplate:
   (fty::deffixequiv bip32-valid-depths-p
-    :args ((init bytep) (tree bip32-index-treep))
+    :args ((init bytep) (paths bip32-path-setp))
     :hints (("Goal"
              :in-theory (disable bip32-valid-depths-p-necc)
              :use (;; for INIT:
                    (:instance bip32-valid-depths-p-necc
                     (init (byte-fix init))
-                    (path (bip32-valid-depths-p-witness init tree)))
+                    (path (bip32-valid-depths-p-witness init paths)))
                    (:instance bip32-valid-depths-p-necc
-                    (path (bip32-valid-depths-p-witness (byte-fix init) tree)))
-                   ;; for TREE:
+                    (path (bip32-valid-depths-p-witness (byte-fix init) paths)))
+                   ;; for PATHS:
                    (:instance bip32-valid-depths-p-necc
-                    (tree (bip32-index-tree-fix tree))
-                    (path (bip32-valid-depths-p-witness init tree)))
+                    (paths (bip32-path-set-fix paths))
+                    (path (bip32-valid-depths-p-witness init paths)))
                    (:instance bip32-valid-depths-p-necc
                     (path (bip32-valid-depths-p-witness
-                           init (bip32-index-tree-fix tree))))))))
+                           init (bip32-path-set-fix paths))))))))
 
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
     :enable (bip32-valid-depths-p set::in))
 
   (defrule bip32-valid-depths-p-of-insert-of-rcons
-    (implies (and (bip32-index-treep tree)
-                  (bip32-valid-depths-p init tree)
-                  (set::in path tree)
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-depths-p init paths)
+                  (set::in path paths)
                   (< (+ (byte-fix init) (len path)) 255)
                   (ubyte32p index))
-             (bip32-valid-depths-p init (set::insert (rcons index path) tree)))
+             (bip32-valid-depths-p init (set::insert (rcons index path) paths)))
     :enable (bip32-valid-depths-p bytep)
     :use ((:instance bip32-valid-depths-p-necc
            (path (bip32-valid-depths-p-witness
-                  init (insert (rcons index path) tree))))))
+                  init (insert (rcons index path) paths))))))
 
   (in-theory (disable (:e bip32-valid-depths-p))))
 
@@ -961,7 +965,7 @@
              (not (mv-nth 0 (bip32-ckd* (bip32-key-tree->root-key tree) path))))
     :use (:instance bip32-valid-keys-p-necc
           (root (bip32-key-tree->root-key tree))
-          (tree (bip32-key-tree->index-tree tree))
+          (paths (bip32-key-tree->index-tree tree))
           (path (ubyte32-list-fix path))))
 
   (defrule valid-depth-when-bip32-path-in-tree-p
@@ -971,7 +975,7 @@
                        (len path))))
     :use (:instance bip32-valid-depths-p-necc
           (init (bip32-key-tree->root-depth tree))
-          (tree (bip32-key-tree->index-tree tree))
+          (paths (bip32-key-tree->index-tree tree))
           (path (ubyte32-list-fix path)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
