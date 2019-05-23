@@ -32,22 +32,21 @@
 
 (include-book "centaur/meta/unify" :dir :system)
 
-(defun syntax-bind-fn (synp-form dummy-var)
-  (declare (ignorable synp-form)
+(defun syntax-bind-fn (form untrans-form dummy-var)
+  (declare (ignorable form untrans-form)
            (xargs :guard t))
   dummy-var)
 
 ;; note: probably need to put this somewhere else
 (defmacro syntax-bind (dummy-var form)
   `(syntax-bind-fn
-    (synp 'nil ',form ',form)
-    ,dummy-var))
+    ,form ',form ,dummy-var))
 
 ;; For lack of a better place to put this.
 (defun abort-rewrite (x)
   x)
 
-(defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y)) :namedp t)
+(defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 
 (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))
 
@@ -62,22 +61,16 @@
                           :rule-classes :type-prescription)
                (form pseudo-termp))
   (b* (((mv ok alist)
-        (cmr::pseudo-term-unify '(syntax-bind-fn
-                                  (synp 'nil untrans-form trans-form)
-                                  dummy-var)
+        (cmr::pseudo-term-unify '(syntax-bind-fn trans-form untrans-form dummy-var)
                            x nil))
        ((unless ok) (mv nil nil))
        (untrans-form (cdr (assoc 'untrans-form alist)))
        (trans-form (cdr (assoc 'trans-form alist)))
        (dummy-var (cdr (assoc 'dummy-var alist)))
        ((unless (And (pseudo-term-case dummy-var :var)
-                     (pseudo-term-case untrans-form :quote)
-                     (pseudo-term-case trans-form
-                       :quote (pseudo-termp trans-form.val)
-                       :otherwise nil)))
+                     (pseudo-term-case untrans-form :quote)))
         (mv nil nil)))
-    (mv (acl2::pseudo-term-var->name dummy-var)
-        (acl2::pseudo-term-quote->val trans-form)))
+    (mv (acl2::pseudo-term-var->name dummy-var) trans-form))
   ///
   (std::defretd eval-when-<fn>
     (implies dummy-var
@@ -97,3 +90,4 @@
                 (b* (((mv dummy-var form) (match-syntax-bind ',val)))
                   (and (equal dummy-var 'foo)
                        (equal form '(if x (if y z 'nil) 'nil))))))))))
+

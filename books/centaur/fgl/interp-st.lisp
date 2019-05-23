@@ -58,6 +58,31 @@
 
 (acl2::defstobj-clone constraint-pathcond pathcond :prefix "CONSTRAINT-")
 
+;; CGRAPH type -- see ctrex-utils.lisp
+
+(defenum ctrex-ruletype-p (:elim :property nil))
+
+(defprod ctrex-rule
+  ((name symbolp :rule-classes :type-prescription)
+   (match pseudo-term-subst-p)
+   (assign pseudo-termp)
+   (assigned-var pseudo-var-p :rule-classes :type-prescription)
+   (hyp pseudo-termp)
+   (equiv pseudo-fnsym-p)
+   (ruletype ctrex-ruletype-p))
+  :layout :tree)
+
+(defprod cgraph-edge
+  ((match-vars pseudo-var-list-p :rule-classes :type-prescription)
+   (rule ctrex-rule-p)
+   (subst gl-object-bindings))
+  :layout :tree)
+
+(fty::deflist cgraph-edgelist :elt-type cgraph-edge :true-listp t)
+
+(fty::defmap cgraph :key-type gl-object :val-type cgraph-edgelist :true-listp t)
+
+
 
 (make-event
  `(stobjs::defnicestobj interp-st
@@ -79,6 +104,8 @@
            :fix interp-flags-fix :pred interp-flags-p)
     (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
     (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
+    (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
     (errmsg :type t)
     (debug-info :type t)))
 

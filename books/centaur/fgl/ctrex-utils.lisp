@@ -85,7 +85,11 @@
       :aignet (stobj-let ((bitarr (env$->bitarr env$)))
                          (ok)
                          (< (bfrstate->bound bfrstate) (bits-length bitarr))
-                         ok))))
+                         ok)))
+  ///
+  (defthm bfr-env$-p-of-update-obj-alist
+    (equal (bfr-env$-p (update-env$->obj-alist obj-alist env$) logicman)
+           (bfr-env$-p env$ logicman))))
                    
 
 (define eval-bdd-fast ((x acl2::ubddp) (level natp) bitarr)
@@ -159,7 +163,6 @@
       nil
     (cons (bfr-eval-fast (car x) env$)
           (bfr-list-eval-fast (cdr x) env$))))
-
 
 
 
@@ -400,19 +403,6 @@
 ;;    resolve first will determine the value of the other, provided the
 ;;    equivalence is assigned T.
 
-(defenum ctrex-ruletype-p (:elim :property nil))
-
-(defprod ctrex-rule
-  ((name symbolp :rule-classes :type-prescription)
-   (match pseudo-term-subst-p)
-   (assign pseudo-termp)
-   (assigned-var pseudo-var-p :rule-classes :type-prescription)
-   (hyp pseudo-termp)
-   (equiv pseudo-fnsym-p)
-   (ruletype ctrex-ruletype-p))
-  :layout :tree)
-
-
 
 (fty::deflist ctrex-rulelist :elt-type ctrex-rule :true-listp t)
 
@@ -554,17 +544,7 @@
 
 
 
-(defprod cgraph-edge
-  ((match-vars pseudo-var-list-p :rule-classes :type-prescription)
-   (rule ctrex-rule-p)
-   (subst gl-object-bindings))
-  :layout :tree)
 
-(fty::deflist cgraph-edgelist :elt-type cgraph-edge :true-listp t)
-
-
-
-(fty::defmap cgraph :key-type gl-object :val-type cgraph-edgelist :true-listp t)
 
 
 (define cgraph-edge-bfrlist ((x cgraph-edge-p))
@@ -1039,6 +1019,20 @@
   (defret cgraph-bfrlist-of-<fn>
     (implies (not (member v (bvar-db-bfrlist bvar-db)))
              (not (member v (cgraph-bfrlist cgraph))))))
+
+(define bvar-db-update-cgraph ((cgraph cgraph-p)
+                               (cgraph-index natp)
+                               bvar-db
+                               (ruletable ctrex-ruletable-p)
+                               (wrld plist-worldp))
+  :returns (new-cgraph cgraph-p)
+  ;; BOZO this never shrinks the cgraph -- probably not necessary
+  (b* (((when (<= (next-bvar bvar-db) (lnfix cgraph-index)))
+        (cgraph-fix cgraph)))
+    (bvar-db-add-to-cgraph-aux (max (lnfix cgraph-index)
+                                    (base-bvar bvar-db))
+                               bvar-db cgraph ruletable wrld)))
+
 
 (fty::defmap cgraph-alist :key-type gl-object :true-listp t)
 
@@ -1811,7 +1805,9 @@
       :hints ('(:expand (<call>)))
       :fn pseudo-term-list-subst-gl-objects))
 
-  (verify-guards pseudo-term-subst-gl-objects))
+  (verify-guards pseudo-term-subst-gl-objects)
+
+  (fty::deffixequiv-mutual pseudo-term-subst-gl-objects))
 
 
 
@@ -2369,7 +2365,12 @@
       :fn cgraph-derive-assignments-match))
 
   (verify-guards cgraph-derive-assignments-obj-fn
-    :hints (("goal" :Expand ((cgraph-edgelist-bfrlist x))))))
+    :hints (("goal" :Expand ((cgraph-edgelist-bfrlist x)))))
+
+  (local (in-theory (disable cons-equal)))
+
+
+  (fty::deffixequiv-mutual cgraph-derive-assignments))
 
 
 (defines gl-object-vars
@@ -2411,4 +2412,207 @@
            :hints(("Goal" :in-theory (enable gl-object-alist-fix)))))
 
   (fty::deffixequiv-mutual gl-object-vars))
+
+(define cgraph-derive-assignments-for-vars ((x pseudo-var-list-p)
+                                            (vals obj-alist-p)
+                                            (assigns cgraph-alist-p)
+                                            (sts cgraph-derivstates-p)
+                                            (env$)
+                                            (cgraph cgraph-p)
+                                            (replimit posp)
+                                            &optional
+                                            (logicman 'logicman)
+                                            (bvar-db 'bvar-db)
+                                            (state 'state))
+  :returns (mv (new-vals obj-alist-p)
+               (new-assigns cgraph-alist-p)
+               (new-sts cgraph-derivstates-p))
+  :guard (and (bfr-env$-p env$ logicman)
+              (equal (bfr-nvars) (next-bvar bvar-db))
+              (lbfr-listp (cgraph-bfrlist cgraph)))
+  (b* (((when (atom x))
+        (mv (obj-alist-fix vals)
+            (cgraph-alist-fix assigns)
+            (cgraph-derivstates-fix sts)))
+       (obj (g-var (car x)))
+       ((mv assigns sts)
+        (cgraph-derive-assignments-obj
+         (g-var (car x)) assigns sts env$ cgraph replimit))
+       (pair (hons-get obj assigns))
+       (vals (if pair
+                 (cons (cons (pseudo-var-fix (car x)) (cdr pair)) vals)
+               vals)))
+    (cgraph-derive-assignments-for-vars
+     (cdr x) vals assigns sts env$ cgraph replimit)))
+      
+(define cgraph-derivstates-summarize-errors ((x cgraph-derivstates-p))
+  :returns (errmsg-or-nil)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (and (consp (car x))
+                          (gl-object-p (caar x)))))
+        (cgraph-derivstates-summarize-errors (cdr x)))
+       (err1 (cgraph-derivstate->result-msg (cdar x)))
+       (rest (cgraph-derivstates-summarize-errors (cdr x))))
+    (if err1
+        (if rest
+            (msg "~x0: ~@1~%~@2" (caar x) err1 rest)
+          (msg "~x0: ~@1~%" (caar x) err1))
+      rest))
+  ///
+  (local (in-theory (enable cgraph-derivstates-fix))))
+       
+
+(define ctrex-summarize-errors ((vars pseudo-var-list-p)
+                                (vals obj-alist-p)
+                                (errors))
+  (b* ((diff (set-difference-eq (pseudo-var-list-fix vars)
+                                (alist-keys (obj-alist-fix vals)))))
+    (if diff
+        (if errors
+            (msg "Some variables were left unbound: ~x0.  Errors: ~@1"
+                 diff
+                 errors)
+          (msg "Some variables were left unbound: ~x0. But there were no ~
+                errors to help explain this!~%"
+               diff))
+      (if errors
+          (msg "All variables were bound, but some errors occurred in the ~
+                process: ~@0"
+               errors)
+        nil))))
+
+(include-book "interp-st-bfrs-ok")
+
+(local (in-theory (disable w)))
+
+(define ctrex-eval-summarize-errors ((eval-error)
+                                     (deriv-errors))
+  (if eval-error
+      (if deriv-errors
+          (msg "Error evaluating the bindings: ~@0~%Additionally, there were ~
+                errors deriving the variable assignments:~@1"
+               eval-error
+               deriv-errors)
+        eval-error)
+    deriv-errors))
+
+
+(local (defthm gl-objectlist-p-alist-vals-of-gl-object-bindings
+         (implies (gl-object-bindings-p x)
+                  (gl-objectlist-p (alist-vals x)))
+         :hints(("Goal" :in-theory (enable alist-vals)))))
+         
+(local (defthm gl-objectlist-bfrlist-alist-vals-of-gl-object-bindings
+         (implies (gl-object-bindings-p x)
+                  (equal (gl-objectlist-bfrlist (alist-vals x))
+                         (gl-object-bindings-bfrlist x)))
+         :hints(("Goal" :in-theory (enable gl-object-bindings-bfrlist
+                                           alist-vals)))))
+                
+(local (defthm symbol-listp-keys-of-gl-object-bindings
+         (implies (gl-object-bindings-p x)
+                  (symbol-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
+
+(define interp-st-ipasir-counterex-bindings ((x gl-object-bindings-p)
+                                             (interp-st)
+                                             (state))
+  :returns (mv (errmsg)
+               (bindings-vals symbol-alistp)
+               (var-vals obj-alist-p))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable interp-st-bfrs-ok
+                                          bfr-listp-when-not-member-witness))))
+  (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode interp-st)))
+        (mv "bfr-mode must be :aignet"
+            nil nil))
+       ((acl2::local-stobjs env$)
+        (mv errmsg binding-vals var-vals env$))
+       (x (gl-object-bindings-fix x))
+       ;; (cgraph (interp-st->cgraph interp-st))
+       ;; (cgraph-index (interp-st->cgraph-index interp-st))
+       )
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (bvar-db (interp-st->bvar-db interp-st)))
+               (errmsg binding-vals var-vals env$)
+               (b* (((unless (stobj-let ((ipasir (logicman->ipasir logicman)))
+                                        (ok)
+                                        (eq (ipasir::ipasir-get-status ipasir) :sat)
+                                        ok))
+                     (mv "ipasir status wasn't :sat~%" nil nil env$))
+                    (env$ (logicman-ipasir->env$ logicman env$))
+                    (vars (gl-objectlist-vars (alist-vals (gl-object-bindings-fix x)) nil))
+                    (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
+                    ((unless (ctrex-ruletable-p ruletable))
+                     (mv "bad ctrex-ruletable~%" nil nil env$))
+                    (cgraph ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
+                     (bvar-db-create-cgraph bvar-db ruletable (w state)))
+                    ((mv var-vals assigns sts)
+                     (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
+                    (- (fast-alist-free assigns))
+                    (sts (fast-alist-free (fast-alist-clean sts)))
+                    (deriv-errors (cgraph-derivstates-summarize-errors sts))
+                    (env$ (update-env$->obj-alist var-vals env$))
+                    (full-deriv-errors (ctrex-summarize-errors vars var-vals deriv-errors))
+                    ((mv eval-err objs) (magic-gl-objectlist-eval (alist-vals x) env$))
+                    (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
+                    (binding-vals (pairlis$ (alist-keys x) objs)))
+                 (mv errmsg binding-vals var-vals env$))
+               (mv errmsg binding-vals var-vals env$))))
+
+
+(define interp-st-ipasir-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
+                                                   (state))
+  :returns (mv errmsg
+               (bindings-vals symbol-alistp)
+               (var-vals obj-alist-p))
+  :guard-hints ('(:in-theory (enable interp-st-bfrs-ok
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist
+                                     stack$a-bindings
+                                     stack$a-minor-bindings
+                                     bfr-listp-when-not-member-witness)
+                  :expand ((major-stack-bfrlist (interp-st->stack interp-st))
+                           (minor-stack-bfrlist (major-frame->minor-stack (car (interp-st->stack interp-st)))))))
+  (b* ((bindings (append (interp-st-minor-bindings interp-st)
+                         (interp-st-bindings interp-st))))
+    (interp-st-ipasir-counterex-bindings bindings interp-st state)))
+
+
+(verify-termination evisc-tuple)
+(verify-guards evisc-tuple)
+
+(define interp-st-ipasir-counterex-stack-bindings/print-errors ((interp-st interp-st-bfrs-ok)
+                                                               (state))
+  :returns (mv (bindings-vals symbol-alistp)
+               (var-vals obj-alist-p))
+  (b* (((mv errmsg bindings-vals var-vals)
+        (interp-st-ipasir-counterex-stack-bindings interp-st state)))
+    (and errmsg
+         (acl2::fmt-to-comment-window
+          "~@0" `((#\0 . ,errmsg)) 0
+          (evisc-tuple 8 20 nil nil)
+          nil))
+    (mv bindings-vals var-vals)))
+
+(define interp-st-ipasir-counterex-bindings/print-errors ((x gl-object-bindings-p)
+                                                          (interp-st)
+                                                          (state))
+  :returns (mv (bindings-vals symbol-alistp)
+               (var-vals obj-alist-p))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
+  (b* (((mv errmsg bindings-vals var-vals)
+        (interp-st-ipasir-counterex-bindings x interp-st state)))
+    (and errmsg
+         (acl2::fmt-to-comment-window
+          "~@0" `((#\0 . ,errmsg)) 0
+          (evisc-tuple 8 20 nil nil)
+          nil))
+    (mv bindings-vals var-vals)))
+
+
+
 

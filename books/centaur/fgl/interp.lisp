@@ -42,6 +42,7 @@
 (include-book "tools/some-events" :dir :system)
 (include-book "primitives-stub")
 (include-book "sat-stub")
+(include-book "fancy-ev")
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
 (local (include-book "centaur/meta/urewrite" :dir :system))
@@ -272,26 +273,27 @@
 
 
 
-(define match-syntax-bind-synp ((synp pseudo-termp))
-  :returns (mv ok (form pseudo-termp) untrans)
-  (b* (((mv ok alist) (cmr::pseudo-term-unify '(synp nil untrans-form trans-form)
-                                              synp nil))
-       ((unless ok) (mv nil nil nil))
-       (untrans-form (cdr (assoc 'untrans-form alist)))
-       (trans-form   (cdr (assoc 'trans-form alist)))
-       ((unless (and (pseudo-term-case untrans-form :quote)
-                     (pseudo-term-case trans-form :quote)))
-        (mv nil nil nil))
-       (val (acl2::pseudo-term-quote->val trans-form)))
-    (if (pseudo-termp val)
-        (mv t val untrans-form)
-      (mv nil nil nil))))
+;; (define match-syntax-bind-synp ((synp pseudo-termp))
+;;   :returns (mv ok (form pseudo-termp) untrans)
+;;   (b* (((mv ok alist) (cmr::pseudo-term-unify '(synp nil untrans-form trans-form)
+;;                                               synp nil))
+;;        ((unless ok) (mv nil nil nil))
+;;        (untrans-form (cdr (assoc 'untrans-form alist)))
+;;        (trans-form   (cdr (assoc 'trans-form alist)))
+;;        ((unless (and (pseudo-term-case untrans-form :quote)
+;;                      (pseudo-term-case trans-form :quote)))
+;;         (mv nil nil nil))
+;;        (val (acl2::pseudo-term-quote->val trans-form)))
+;;     (if (pseudo-termp val)
+;;         (mv t val untrans-form)
+;;       (mv nil nil nil))))
 
 
 
-(define gl-interp-syntax-bind ((synp-arg pseudo-termp)
+(define gl-interp-syntax-bind ((synp-term pseudo-termp)
+                               (untrans pseudo-termp)
                                (x pseudo-termp)
-                               interp-st
+                               (interp-st interp-st-bfrs-ok)
                                state)
   :returns (mv (ans gl-object-p)
                new-interp-st)
@@ -299,12 +301,13 @@
                       (implies (gl-object-bindings-p x)
                                (symbol-alistp x))
                       :hints(("Goal" :in-theory (enable gl-object-bindings-p))))))
-  (b* (((mv synp-ok synp-term untrans) (match-syntax-bind-synp synp-arg))
-       ((unless (and synp-ok (pseudo-term-case x :var)))
+  (b* (((unless (and (pseudo-term-case untrans :quote)
+                     (pseudo-term-case x :var)))
         ;; We could go ahead and simulate x anyway but this does seem like an error.
-        (gl-interp-error :msg (gl-msg "Bad syntax-bind form: args ~x0, ~x1."
-                                      (pseudo-term-fix synp-arg)
-                                      (pseudo-term-fix x))))
+        (gl-interp-error :msg (gl-msg "Bad syntax-bind form: args ~x0."
+                                      (list (pseudo-term-fix synp-term)
+                                            (pseudo-term-fix untrans)
+                                            (pseudo-term-fix x)))))
        (varname (acl2::pseudo-term-var->name x))
        (bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
@@ -316,15 +319,16 @@
         (gl-interp-error
          :msg (gl-msg "Syntax-bind error: ~x0 was supposed to be bound in a ~
                        syntax-bind form but was already bound" varname)))
-       ((mv err val) (acl2::magic-ev synp-term bindings state t t))
+       ((mv err val) (fancy-ev synp-term bindings 100 interp-st state t t))
        ((when err)
         (gl-interp-error
-         :msg (gl-msg "Syntax-bind error evaluating ~x0 (translated: ~x1): ~x2"
-                      untrans synp-term (if (or (consp err) (stringp err)) err "(no message)"))))
+         :msg (gl-msg "Syntax-bind error evaluating ~x0: ~@1"
+                      (pseudo-term-quote->val untrans)
+                      (if (or (consp err) (stringp err)) err "(no message)"))))
        ((unless (gl-bfr-object-p val (interp-st-bfr-state)))
         (gl-interp-error
          :msg (gl-msg "Syntax-bind error: ~x0 evaluted to an illformed symbolic object, saved in ~x1."
-                      untrans '(@ gl-interp-error-debug-obj))
+                      (pseudo-term-quote->val untrans) '(@ gl-interp-error-debug-obj))
          :debug-obj val))
        ;; BOZO We might actually want to bind this to a non-concrete value
        (interp-st (interp-st-add-binding varname val interp-st)))
@@ -530,7 +534,7 @@
                                      (form pseudo-termp)
                                      (vars)
                                      (untrans-form)
-                                     interp-st
+                                     (interp-st interp-st-bfrs-ok)
                                      state)
   :returns (mv successp
                new-interp-st)
@@ -556,7 +560,7 @@
   (b* ((bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
        (form (pseudo-term-fix form))
-       ((mv err val) (acl2::magic-ev form bindings state t t))
+       ((mv err val) (fancy-ev form bindings 100 interp-st state t t))
        ((when err)
         (gl-interp-error
          :msg (gl-msg "Synp error evaluating ~x0 (translated: ~x1): ~x2"
@@ -1311,8 +1315,8 @@
                                        interp-st state))
 
                ((when (and** (eq x.fn 'syntax-bind-fn)
-                             (eql (len x.args) 2)))
-                (gl-interp-syntax-bind (first x.args) (second x.args) interp-st state))
+                             (eql (len x.args) 3)))
+                (gl-interp-syntax-bind (first x.args) (second x.args) (third x.args) interp-st state))
 
                ((when (and** (eq x.fn 'abort-rewrite)
                              (eql (len x.args) 1)))
@@ -5116,7 +5120,7 @@
       (implies (and (pseudo-term-case x :fncall)
                     (equal x.fn 'syntax-bind-fn)
                     (fgl-ev-context-equiv-forall-extensions
-                     contexts obj (cadr x.args)
+                     contexts obj (caddr x.args)
                      alist))
                (fgl-ev-context-equiv-forall-extensions
                 contexts obj x alist)))
@@ -5159,7 +5163,7 @@
   
 
   (defthm fgl-ev-context-equiv-forall-extensions-of-return-last-syntax-bind
-    (b* (((mv ans new-interp-st) (gl-interp-syntax-bind synp-arg x interp-st state)))
+    (b* (((mv ans new-interp-st) (gl-interp-syntax-bind synp-arg untrans x interp-st state)))
       (implies (and (not (interp-st->errmsg new-interp-st)))
                (fgl-ev-context-equiv-forall-extensions
                 contexts

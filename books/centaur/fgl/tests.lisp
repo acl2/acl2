@@ -34,6 +34,22 @@
 
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
 
+(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings/print-errors
+                        (and (gl-object-bindings-p x)
+                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
+(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings/print-errors t)
+
+(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings
+                        (and (gl-object-bindings-p x)
+                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
+(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings t)
+
+(fancy-ev-add-primitive get-global (and (symbolp x)
+                                         (boundp-global x state)))
+(def-fancy-ev-primitives counterex-primitives)
+
+
+
 
 
 (defstub a () nil)
@@ -567,6 +583,56 @@
    t)
  :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
+
+
   
 
 
+(defun fast-logcount-32* (v)
+  (let* ((v (- v (logand (ash v -1) #x55545555)))
+         (v (+ (logand v #x33333333)
+               (logand (ash v -2) #x33333333))))
+    (ash (32* (logand (+ v (ash v -4))
+                      #xF0F0F0F)
+              #x1010101)
+         -24)))
+
+
+
+
+(defun show-counterexample (x)
+  (declare (ignore x))
+  nil)
+
+(def-gl-rewrite show-counterexample-rw
+  (equal (show-counterexample x)
+         (b* (((list bindings vars)
+               (syntax-bind alists
+                            (mv-let (bindings-vals var-vals)
+                              (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
+                              (g-concrete (list bindings-vals var-vals))))))
+           (cw "Counterexample -- input obj: ~x0 variables: ~x1~%"
+               (cdr (assoc 'x bindings)) vars))))
+              
+                                   
+
+(thm
+ ;; (if (unsigned-byte-p 32 x)
+     (b* ((x (loghead 32 xx))
+          (impl (fast-logcount-32* x))
+          (spec (logcount x))
+          (eq (equal impl spec))
+          (uneq-sat (fgl-sat-check (make-fgl-sat-config) (not eq))))
+       (show-counterexample `((impl . ,impl)
+                              (spec . ,spec)
+                              (eq . ,eq)
+                              (uneq-sat . ,uneq-sat)
+                              (x . ,x)
+                              (xx . ,xx))))
+     ;;    (alists (syntax-bind alists1
+       ;;                         (mv-let (bindings-vals var-vals)
+       ;;                           (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
+       ;;                           (g-concrete (list bindings-vals var-vals))))))
+       ;; (cw "Counterexample!: alists: ~x0~%" alists))
+ :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+          :in-theory nil)))

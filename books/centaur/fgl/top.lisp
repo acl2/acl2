@@ -36,7 +36,7 @@
 (include-book "primitives")
 (include-book "fgarrays")
 (include-book "sat")
-
+(include-book "ctrex-utils")
 
 (program)
 
