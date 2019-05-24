@@ -630,7 +630,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
                             (nthcdr (+ (nfix n) (len x)) (aignet::bit-list-fix acl2::bitarr)))))
     :hints(("Goal" :in-theory (e/d (bools-to-bits)
                                    (acl2::append-of-cons
-                                    acl2::take-redefinition))
+                                    take))
             :induct (list-to-bits-aux n x acl2::bitarr)))))
 
 ;;(local (include-book "std/lists/resize-list" :dir :system))

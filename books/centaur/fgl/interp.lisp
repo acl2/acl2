@@ -1189,7 +1189,7 @@
                            acl2::nfix-when-not-natp
                            equal-of-booleans-rewrite
                            mv-nth-cons-meta
-                           acl2::take-redefinition
+                           take
                            acl2::take-of-too-many
                            acl2::take-of-len-free
                            acl2::take-when-atom
@@ -2920,7 +2920,7 @@
 (local (defthm bfr-listp-of-gl-objectlist-bfrlist-take
          (implies (bfr-listp (gl-objectlist-bfrlist x))
                   (bfr-listp (gl-objectlist-bfrlist (take n x))))
-         :hints(("Goal" :in-theory (enable acl2::take-redefinition)))))
+         :hints(("Goal" :in-theory (enable take)))))
 
 (local (defthm gl-objectlist-bfrlist-of-rev
          (set-equiv (gl-objectlist-bfrlist (rev x))
