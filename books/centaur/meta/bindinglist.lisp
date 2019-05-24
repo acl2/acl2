@@ -37,7 +37,7 @@
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "assoc-is-hons-assoc"))
-(local (in-theory (disable acl2::take-redefinition)))
+
 
 
 ;; This was motivated by a desired feature of the GLMC clause processor.  We'd
@@ -132,7 +132,7 @@
     (implies (pseudo-var-list-p x)
              (equal (remove-corresp-non-pseudo-vars x y)
                     (take (len x) y)))
-    :hints(("Goal" :in-theory (enable acl2::take-redefinition))))
+    :hints(("Goal" :in-theory (enable take))))
 
   (defthm lookup-in-remove-non-pseudo-vars-alist
     (implies (pseudo-var-p x)
@@ -742,7 +742,7 @@
                   (equal (pairlis$ vars (base-ev-list vals a))
                          (pairlis$ vars (base-ev-list vals b))))
          :hints(("Goal" :induct (pairlis$ vars vals)
-                 :in-theory (enable pairlis$ acl2::take-redefinition termlist-vars)))))
+                 :in-theory (enable pairlis$ take termlist-vars)))))
 
 
 (defthm base-ev-bindinglist-when-eval-alists-agree-on-free-vars
@@ -890,7 +890,7 @@
   (local (defthm pairlis$-of-base-ev-list-take
            (equal (pairlis$ vars (base-ev-list (take (len vars) vals) a))
                   (pairlis$ vars (base-ev-list vals a)))
-           :hints(("Goal" :in-theory (enable pairlis$ acl2::take-redefinition)
+           :hints(("Goal" :in-theory (enable pairlis$ take)
                    :induct (pairlis$ vars vals)))))
 
   (local (defthm base-ev-when-member-pseudo-var-list

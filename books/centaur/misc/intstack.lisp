@@ -125,7 +125,7 @@
               (member (nth n x) x))
      :hints(("Goal" :in-theory (enable nth))))
    
-   (in-theory (disable member take-redefinition))
+   (in-theory (disable member take))
 
    
    (defthm member-of-rev
@@ -349,12 +349,15 @@
             (implies (and (member k (take n x))
                           (natp m) (natp n))
                      (member k (take (+ m n) x)))
-            :hints (("goal" :induct (take n x)))))
+            :hints (("goal" :induct (take n x)
+                     :in-theory (enable (:i take))))))
+
    (local (defthm no-duplicatesp-of-take-more
             (implies (and (not (no-duplicatesp (take n x)))
                           (natp m) (natp n))
                      (not (no-duplicatesp (take (+ m n) x))))
             :hints (("goal" :induct (take n x)
+                     :in-theory (enable (:i take))
                      :expand ((take n x)
                               (take (+ m n) x)))
                     (and stable-under-simplificationp
@@ -404,6 +407,7 @@
                     (iff (member k (take (+ 1 (nfix n)) x))
                          (member k (take n x))))
            :hints (("goal" :induct (take n x)
+                    :in-theory (enable (:i take))
                     :expand ((nth n x)
                              (nth 0 x)
                              (take n x)
@@ -423,6 +427,7 @@
                          (< (nfix n) (len x)))
                     (not (member (nth n x) (take n x))))
            :hints (("goal" :induct (take n x)
+                    :in-theory (enable (:i take))
                     :expand ((nth n x)
                              (no-duplicatesp x))))))
 
