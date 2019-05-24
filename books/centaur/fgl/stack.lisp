@@ -1377,7 +1377,23 @@
   (defthm len-of-stack$c-build-minor-frames
     (equal (len (stack$c-build-minor-frames bottom top stack$c))
            (pos-fix (+ 1 (- (nfix top) (nfix bottom)))))
-    :hints(("Goal" :in-theory (enable len pos-fix)))))
+    :hints(("Goal" :in-theory (enable len pos-fix))))
+
+  (local (defun nth-ind (n top bottom)
+           (if (<= (lnfix top) (lnfix bottom))
+               n
+             (nth-ind (+ -1 (nfix n)) (+ -1 top) bottom))))
+
+  (defthm nth-of-stack$c-build-minor-frames
+    (implies (<= (nfix n) (- (nfix top) (nfix bottom)))
+             (equal (nth n (stack$c-build-minor-frames bottom top stack$c))
+                    (stack$c-build-minor-frame (- (nfix top) (nfix n))
+                                               (stack$c-frame-next-scratchi
+                                                (- (nfix top) (nfix n)) stack$c)
+                                               stack$c)))
+    :hints(("Goal" :induct (nth-ind n top bottom)
+            :expand ((:free (a b) (nth n (cons a b)))
+                     (stack$c-build-minor-frames bottom top stack$c))))))
 
 
 
@@ -1564,7 +1580,20 @@
   (defthm len-of-stack$c-build-major-frames
     (equal (len (stack$c-build-major-frames top stack$c))
            (+ 1 (nfix top)))
-    :hints(("Goal" :in-theory (enable len)))))
+    :hints(("Goal" :in-theory (enable len))))
+
+  (local (defun nth-ind (n top)
+           (if (zp top)
+               n
+             (nth-ind (+ -1 (nfix n)) (+ -1 top)))))
+
+  (defthm nth-of-stack$c-build-major-frames
+    (implies (<= (nfix n) (nfix top))
+             (equal (nth n (stack$c-build-major-frames top stack$c))
+                    (stack$c-build-major-frame (- (nfix top) (nfix n)) stack$c)))
+    :hints(("Goal" :induct (nth-ind n top)
+            :expand ((:free (a b) (nth n (cons a b)))
+                     (stack$c-build-major-frames top stack$c))))))
 
 
 (local
@@ -2651,6 +2680,71 @@
                                       stack$c-extract
                                       stack$c-build-top-major-frame)))))
 
+(define stack$c-nth-frame-bindings ((n natp)
+                              (stack$c stack$c-okp))
+  :guard (< n (stack$c-frames stack$c))
+  :guard-hints (("goal" :in-theory (e/d (stack$c-frames)
+                                        (stack$c-major-frames-welltyped-necc))
+                 :use ((:instance stack$c-major-frames-welltyped-necc
+                        (i (nfix (- (stack$c-top-frame stack$c) (nfix n))))))))
+  (gl-object-bindings-fix
+    (stack$c-majori (* 2 (mbe :logic (nfix (- (stack$c-top-frame stack$c) (nfix n)))
+                              :exec (- (stack$c-top-frame stack$c) n)))
+                    stack$c))
+  ///
+  (local (defthm diff-equal-0
+           (equal (equal (+ (- n) x) 0)
+                  (equal (fix n) (fix x)))))
+
+  (defthm stack$a-nth-frame-bindings-of-stack$c-extract
+    (equal (stack$a-nth-frame-bindings n (stack$c-extract stack$c))
+           (stack$c-nth-frame-bindings n stack$c))
+    :hints(("Goal" :in-theory (enable stack$a-nth-frame-bindings
+                                      stack$c-extract
+                                      stack$a-frames
+                                      stack$c-build-major-frame
+                                      stack$c-build-top-major-frame
+                                      max)
+            :expand ((:free (n a b) (nth n (cons a b)))
+                     (:free (a b) (len (cons a b))))))))
+
+(define stack$c-nth-frame-minor-frames ((n natp)
+                                        (stack$c stack$c-okp))
+  :guard (< n (stack$c-frames stack$c))
+  :guard-hints (("goal" :in-theory (e/d (stack$c-frames))))
+  :guard-debug t
+  (b* ((nframes (stack$c-frames stack$c))
+       (n (mbe :logic (min (nfix n) (1- nframes))
+               :exec n))
+       (top-minor (if (eql n 0)
+                      (stack$c-top-minor stack$c)
+                    (stack$c-frame-top-minori (- nframes (+ 1 n)) stack$c)))
+       (prev-minor (if (eql 0 (- nframes (+ 1 n)))
+                       -1
+                     (stack$c-frame-top-minori (- nframes (+ 2 n)) stack$c))))
+    (- top-minor prev-minor))
+  ///
+  (local (defthm diff-equal-0
+           (equal (equal (+ (- n) x) 0)
+                  (equal (fix n) (fix x)))))
+
+  (defthm stack$a-nth-frame-minor-frames-of-stack$c-extract
+    (implies (stack$c-okp stack$c)
+             (equal (stack$a-nth-frame-minor-frames n (stack$c-extract stack$c))
+                    (stack$c-nth-frame-minor-frames n stack$c)))
+    :hints(("Goal" :in-theory (enable stack$a-nth-frame-minor-frames
+                                      stack$c-extract
+                                      stack$a-frames
+                                      stack$c-frames
+                                      stack$c-build-major-frame
+                                      stack$c-build-top-major-frame
+                                      max)
+            :expand ((:free (n a b) (nth n (cons a b)))
+                     (:free (a b) (len (cons a b))))))))
+
+
+
+
 (define stack$c-minor-bindings ((stack$c stack$c-okp))
   (b* ((top-minor (stack$c-top-minor stack$c))
        (index (* 2 top-minor)))
@@ -2663,6 +2757,60 @@
                                       stack$c-extract
                                       stack$c-build-top-major-frame
                                       stack$c-build-minor-frame)))))
+
+(define stack$c-nth-frame-minor-bindings ((n natp)
+                                          (m natp)
+                                          (stack$c stack$c-okp))
+  :guard (and (< n (stack$c-frames stack$c))
+              (< m (stack$c-nth-frame-minor-frames n stack$c)))
+  :guard-hints (("goal" :in-theory (e/d (stack$c-frames
+                                         stack$c-nth-frame-minor-frames)
+                                        (stack$c-minor-frames-welltyped-necc))
+                 :use ((:instance stack$c-minor-frames-welltyped-necc
+                        (i (b* ((nframes (stack$c-frames stack$c))
+                                (n (mbe :logic (min (nfix n) (1- nframes))
+                                        :exec n))
+                                (top-minor (if (eql n 0)
+                                               (stack$c-top-minor stack$c)
+                                             (stack$c-frame-top-minori (- nframes (+ 1 n)) stack$c)))
+                                (m (mbe :logic (min (nfix m) (1- (stack$c-nth-frame-minor-frames n stack$c)))
+                                        :exec m)))
+                             (- top-minor m)))))
+                 :do-not-induct t))
+  :guard-debug t
+  (b* ((nframes (stack$c-frames stack$c))
+       (n (mbe :logic (min (nfix n) (1- nframes))
+               :exec n))
+       (top-minor (if (eql n 0)
+                      (stack$c-top-minor stack$c)
+                    (stack$c-frame-top-minori (- nframes (+ 1 n)) stack$c)))
+       (m (mbe :logic (min (nfix m) (1- (stack$c-nth-frame-minor-frames n stack$c)))
+               :exec m))
+       (index (* 2 (- top-minor m))))
+    (gl-object-bindings-fix (stack$c-minori index stack$c)))
+  ///
+  (local (defthm diff-equal-0
+           (equal (equal (+ (- n) x) 0)
+                  (equal (fix n) (fix x)))))
+
+  (defthm stack$a-nth-frame-minor-bindings-of-stack$c-extract
+    (implies (stack$c-okp stack$c)
+             (equal (stack$a-nth-frame-minor-bindings n m (stack$c-extract stack$c))
+                    (stack$c-nth-frame-minor-bindings n m stack$c)))
+    :hints(("Goal" :in-theory (e/d (stack$a-nth-frame-minor-bindings
+                                    stack$a-nth-frame-minor-frames
+                                    stack$c-nth-frame-minor-frames
+                                    stack$c-extract
+                                    stack$a-frames
+                                    stack$c-frames
+                                    stack$c-build-major-frame
+                                    stack$c-build-minor-frame
+                                    stack$c-build-top-major-frame
+                                    max)
+                                   (stack$c-minor-frames-welltyped-necc))
+            :expand ((:free (n a b) (nth n (cons a b)))
+                     (:free (a b) (len (cons a b))))))))
+
 
 (define stack$c-debug ((stack$c stack$c-okp))
   (stack$c-majori (+ 1 (* 2 (stack$c-top-frame stack$c))) stack$c)
@@ -3503,6 +3651,7 @@
     :exports ((stack-frames :logic stack$a-frames :exec stack$c-frames)
               (stack-push-frame :logic stack$a-push-frame :exec stack$c-push-frame :protect t)
               (stack-minor-frames :logic stack$a-minor-frames :exec stack$c-minor-frames)
+              (stack-nth-frame-minor-frames :logic stack$a-nth-frame-minor-frames :exec stack$c-nth-frame-minor-frames)
               (stack-push-minor-frame :logic stack$a-push-minor-frame :exec stack$c-push-minor-frame :protect t)
               (stack-set-bindings :logic stack$a-set-bindings :exec stack$c-set-bindings)
               (stack-add-binding :logic stack$a-add-binding :exec stack$c-add-binding)
@@ -3511,7 +3660,9 @@
               (stack-add-minor-bindings :logic stack$a-add-minor-bindings :exec stack$c-add-minor-bindings)
               (stack-set-minor-debug :logic stack$a-set-minor-debug :exec stack$c-set-minor-debug)
               (stack-bindings :logic stack$a-bindings :exec stack$c-bindings)
+              (stack-nth-frame-bindings :logic stack$a-nth-frame-bindings :exec stack$c-nth-frame-bindings)
               (stack-minor-bindings :logic stack$a-minor-bindings :exec stack$c-minor-bindings)
+              (stack-nth-frame-minor-bindings :logic stack$a-nth-frame-minor-bindings :exec stack$c-nth-frame-minor-bindings)
               (stack-debug :logic stack$a-debug :exec stack$c-debug)
               (stack-minor-debug :logic stack$a-minor-debug :exec stack$c-minor-debug)
               (stack-scratch-len :logic stack$a-scratch-len :exec stack$c-scratch-len)

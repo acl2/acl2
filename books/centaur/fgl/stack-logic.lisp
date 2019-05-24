@@ -155,6 +155,39 @@
 (define stack$a-minor-frames ((x major-stack-p))
   (len (major-frame->minor-stack (car x))))
 
+
+(local (defthm major-frame-p-of-nth
+         (implies (and (major-stack-p x)
+                       (< (nfix n) (len x)))
+                  (major-frame-p (nth n x)))
+         :hints(("Goal" :in-theory (enable nth major-stack-p len)))))
+
+(local (defthm len-when-major-stack-p
+         (implies (major-stack-p x)
+                  (< 0 (len x)))
+         :hints(("Goal" :in-theory (enable major-stack-p len)))
+         :rule-classes :linear))
+
+(local (defthm minor-frame-p-of-nth
+         (implies (and (minor-stack-p x)
+                       (< (nfix n) (len x)))
+                  (minor-frame-p (nth n x)))
+         :hints(("Goal" :in-theory (enable nth minor-stack-p len)))))
+
+(local (defthm len-when-minor-stack-p
+         (implies (minor-stack-p x)
+                  (< 0 (len x)))
+         :hints(("Goal" :in-theory (enable minor-stack-p len)))
+         :rule-classes :linear))
+
+(define stack$a-nth-frame-minor-frames ((n natp)
+                                        (x major-stack-p))
+  :guard (< n (stack$a-frames x))
+  :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
+  (len (major-frame->minor-stack (nth (mbe :logic (min (nfix n) (1- (stack$a-frames x)))
+                                           :exec n)
+                                      (major-stack-fix x)))))
+
 (define stack$a-push-minor-frame ((x major-stack-p))
   :returns (stack major-stack-p)
   (b* (((major-frame jframe) (car x)))
@@ -224,13 +257,41 @@
                            (cdr x)))))
 
 (define stack$a-bindings ((x major-stack-p))
-  :returns (binings gl-object-bindings-p)
+  :returns (bindings gl-object-bindings-p)
   (major-frame->bindings (car x)))
+
+                  
+
+(define stack$a-nth-frame-bindings ((n natp)
+                                    (x major-stack-p))
+  :guard (< n (stack$a-frames x))
+  :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
+  :returns (bindings gl-object-bindings-p)
+  (major-frame->bindings (nth (mbe :logic (min (1- (stack$a-frames x)) (nfix n))
+                                   :exec n)
+                              (major-stack-fix x))))
 
 
 (define stack$a-minor-bindings ((x major-stack-p))
   :returns (binings gl-object-bindings-p)
   (minor-frame->bindings (car (major-frame->minor-stack (car x)))))
+
+(define stack$a-nth-frame-minor-bindings ((n natp)
+                                          (m natp)
+                                          (x major-stack-p))
+  :guard (and (< n (stack$a-frames x))
+              (< m (stack$a-nth-frame-minor-frames n x)))
+  :guard-hints (("goal" :in-theory (enable stack$a-frames stack$a-nth-frame-minor-frames
+                                           max)))
+  :returns (bindings gl-object-bindings-p)
+  (minor-frame->bindings
+   (nth (mbe :logic (min (1- (stack$a-nth-frame-minor-frames n x)) (nfix m))
+             :exec m)
+        (major-frame->minor-stack (nth (mbe :logic (min (nfix n) (1- (stack$a-frames x)))
+                                            :exec n)
+                                       (major-stack-fix x))))))
+
+
 
 
 (define stack$a-debug ((x major-stack-p))
