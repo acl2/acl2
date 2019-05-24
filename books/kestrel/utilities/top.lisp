@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "acceptable-rewrite-rule-p")
-(include-book "alists/top")
 (include-book "apply-fn-if-known")
 (include-book "assert")
 (include-book "auto-instance")
