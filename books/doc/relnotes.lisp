@@ -131,6 +131,9 @@
    (xdoc::p
     "A new APT-specific XDOC constructor has been added.")
 
+   (xdoc::p
+    "Some APT-specific XDOC constructors have been extended and improved.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))

@@ -153,13 +153,13 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name nil)
+    (xdoc::desc-apt-input-thm-name :never)
 
-    (xdoc::desc-apt-input-thm-enable nil)
+    (xdoc::desc-apt-input-thm-enable :never)
 
-    (xdoc::desc-apt-input-non-executable nil)
+    (xdoc::desc-apt-input-non-executable :never)
 
-    (xdoc::desc-apt-input-verify-guards nil)
+    (xdoc::desc-apt-input-verify-guards :never)
 
     (xdoc::evmac-input-hints)
 

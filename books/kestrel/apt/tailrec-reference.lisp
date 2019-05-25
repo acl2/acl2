@@ -200,17 +200,17 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-wrapper-name)
+    (xdoc::desc-apt-input-wrapper-name :always)
 
-    (xdoc::desc-apt-input-wrapper-enable)
+    (xdoc::desc-apt-input-wrapper-enable :always)
 
-    (xdoc::desc-apt-input-thm-name t)
+    (xdoc::desc-apt-input-thm-name :always)
 
-    (xdoc::desc-apt-input-thm-enable t)
+    (xdoc::desc-apt-input-thm-enable :always)
 
-    (xdoc::desc-apt-input-non-executable t)
+    (xdoc::desc-apt-input-non-executable :always)
 
-    (xdoc::desc-apt-input-verify-guards t)
+    (xdoc::desc-apt-input-verify-guards :always)
 
     (xdoc::evmac-input-hints)
 

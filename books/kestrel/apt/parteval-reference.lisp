@@ -114,16 +114,16 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name nil)
+    (xdoc::desc-apt-input-thm-name :never)
 
     (xdoc::desc-apt-input-thm-enable
-     nil
+     :never
      (xdoc::p
       "If @('old') is recursive
        and @('new') is enabled (as determined by the @(':new-enable') input),
        then @(':thm-enable') cannot be @('t')."))
 
-    (xdoc::desc-apt-input-verify-guards nil)
+    (xdoc::desc-apt-input-verify-guards :never)
 
     (xdoc::evmac-input-print parteval)
 
