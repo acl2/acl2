@@ -566,3 +566,26 @@ Hi Matt, I understand. Adding it to the developer to-do list seems like a good i
 >> Thanks.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Retain the guard of a defun-sk with :constrain t.}}
+
+Currently a defun-sk with :constrain t has its guard set to t, regardless of
+whether a different guard is specified in the defun-sk; if specified, the guard
+is silently ignored. This is not a bug, because :doc defun-sk documents this
+behavior, but it is undesirable.
+
+
+> On May 24, 2019, at 7:57 PM, Matt Kaufmann <kaufmann@cs.utexas.edu> wrote:
+
+> (defun-sk f (x)
+>  (declare (xargs :guard (consp x)))
+>  (exists y (equal (cons y y) x))
+> ; Either include the following or not:
+>  :constrain t)
+
+> Then the command
+
+> :args f
+
+> shows that the guard is t if we use :constrain t, but the guard is
+> (consp x) if we don't.  That disparity seems goofy.
