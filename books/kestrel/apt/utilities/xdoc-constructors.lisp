@@ -101,6 +101,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::desc-apt-input-wrapper
+  :short "Build a description of the @(':wrapper') input
+          for the reference documentation of an APT transformation."
+  :long (xdoc::topstring-@def "xdoc::desc-apt-input-wrapper")
+  (defmacro xdoc::desc-apt-input-wrapper (&rest additional)
+    `(xdoc::desc
+      "@(':wrapper') &mdash; default @('nil')"
+      (xdoc::p
+       "Determines whether the wrapper function is generated:")
+      (xdoc::ul
+       (xdoc::li
+        "@('t'), to generate it.")
+       (xdoc::li
+        "@('nil'), to not generate it."))
+      ,@additional)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::desc-apt-input-wrapper-name
   :short "Build a description of the @(':wrapper-name') input
           for the reference documentation of an APT transformation."
