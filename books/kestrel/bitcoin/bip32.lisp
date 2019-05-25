@@ -341,8 +341,7 @@
 
   (defrule bip32-ext-key-kind-of-bip32-ckd
     (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd parent i)))
-           (bip32-ext-key-kind parent))
-    :enable bip32-ckd))
+           (bip32-ext-key-kind parent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -509,8 +508,7 @@
 
   (defrule bip32-ext-key-kind-of-bip32-ckd*
     (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd* root path)))
-           (bip32-ext-key-kind root))
-    :enable bip32-ckd*))
+           (bip32-ext-key-kind root))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,7 +600,7 @@
                   (set::in path paths)
                   (ubyte32p index))
              (bip32-path-set-closedp (set::insert (rcons index path) paths)))
-    :enable (list-equiv bip32-path-set-closedp)
+    :enable list-equiv
     :use ((:instance bip32-path-set-closedp-necc
            (path (mv-nth 0 (bip32-path-set-closedp-witness
                             (set::insert (rcons index path) paths))))
@@ -734,8 +732,7 @@
 
   (defrule bip32-valid-keys-p-of-singleton-empty-path
     (bip32-valid-keys-p root '(nil))
-    :enable (bip32-valid-keys-p
-             set::in
+    :enable (set::in
              bip32-ckd*
              bip32-ckd-priv*
              bip32-ckd-pub*))
@@ -747,7 +744,6 @@
                   (ubyte32p index)
                   (not (mv-nth 0 (bip32-ckd* root (rcons index path)))))
              (bip32-valid-keys-p root (set::insert (rcons index path) paths)))
-    :enable bip32-valid-keys-p
     :use (:instance bip32-valid-keys-p-necc
           (path (bip32-valid-keys-p-witness
                  root (insert (rcons index path) paths)))))
@@ -817,7 +813,7 @@
 
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
-    :enable (bip32-valid-depths-p set::in))
+    :enable set::in)
 
   (defrule bip32-valid-depths-p-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
@@ -826,7 +822,7 @@
                   (< (+ (byte-fix init) (len path)) 255)
                   (ubyte32p index))
              (bip32-valid-depths-p init (set::insert (rcons index path) paths)))
-    :enable (bip32-valid-depths-p bytep)
+    :enable bytep
     :use ((:instance bip32-valid-depths-p-necc
            (path (bip32-valid-depths-p-witness
                   init (insert (rcons index path) paths))))))
