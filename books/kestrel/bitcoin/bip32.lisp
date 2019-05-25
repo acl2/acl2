@@ -96,21 +96,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection bip32-library-extensions
-  :parents (bip32)
-  :short "Library extensions for BIP 32."
-  :long
-  (xdoc::topstring-p
-   "These will be moved to the appropriate libraries.")
-
-  (defrule ubyte32-list-fix-of-take
-    (implies (<= (nfix n) (len x))
-             (equal (ubyte32-list-fix (take n x))
-                    (take n (ubyte32-list-fix x))))
-    :enable ubyte32-list-fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ bip32-extended-keys
   :parents (bip32)
   :short "Extended keys."
