@@ -532,11 +532,11 @@
     "We introduce this function as a constrained function,
      so that we can make an executable attachment for it
      (in @('bip32-executable.lisp')).
-     Since currently
-     @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
      we use an @(tsee encapsulate) for now to introduce this function.
-     A @(tsee define-sk) is used to locally define the witness,
+     A @(tsee std::define-sk) is used to locally define the witness,
      which also guard-verifies the matrix of the function,
      as additional validation.")
    (xdoc::p
@@ -731,11 +731,11 @@
     "We introduce this function as a constrained function,
      so that we can make an executable attachment for it
      (in @('bip32-executable.lisp')).
-     Since currently
-     @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
      we use an @(tsee encapsulate) for now to introduce this function.
-     A @(tsee define-sk) is used to locally define the witness,
+     A @(tsee std::define-sk) is used to locally define the witness,
      which also guard-verifies the matrix of the function,
      as additional validation.")
    (xdoc::p
@@ -863,11 +863,11 @@
     "We introduce this function as a constrained function,
      so that we can make an executable attachment for it
      (in @('bip32-executable.lisp')).
-     Since currently
-     @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
      we use an @(tsee encapsulate) for now to introduce this function.
-     A @(tsee define-sk) is used to locally define the witness,
+     A @(tsee std::define-sk) is used to locally define the witness,
      which also guard-verifies the matrix of the function,
      as additional validation.")
    (xdoc::p

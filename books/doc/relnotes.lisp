@@ -192,7 +192,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "set::oset-theorems" "Kestrel Oset Theorems"))
+   (xdoc::h4 (xdoc::seeurl "set::theorems-about-osets" "Kestrel Oset Theorems"))
 
    (xdoc::p
     "A theorem has been added.")
