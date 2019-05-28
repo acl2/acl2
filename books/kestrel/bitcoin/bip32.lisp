@@ -743,7 +743,9 @@
    (xdoc::p
     "Extending a path of an index tree
      preserves the validity of the keys,
-     provided that the key at the end of the new extended path is valid."))
+     provided that the key at the end of the new extended path is valid.")
+   (xdoc::p
+    "The tail of a set of paths with valid keys also has all valid keys."))
 
   (encapsulate
     (((bip32-valid-keys-p * *) => *
@@ -818,7 +820,14 @@
     :enable bip32-valid-keys-p-definition
     :use (:instance bip32-valid-keys-p-necc
           (path (bip32-valid-keys-p-witness
-                 root (insert (rcons index path) paths))))))
+                 root (insert (rcons index path) paths)))))
+
+  (defrule bip32-valid-keys-p-of-tail
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-keys-p root paths))
+             (bip32-valid-keys-p root (tail paths)))
+    :expand (bip32-valid-keys-p root (tail paths))
+    :enable bip32-valid-keys-p-necc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -865,7 +874,9 @@
    (xdoc::p
     "Extending a path of an index tree
      preserves the validity of the key depths,
-     provided that the depth of the path being extended is below 255."))
+     provided that the depth of the path being extended is below 255.")
+   (xdoc::p
+    "The tail of a set of paths with valid depths also has all valid depths."))
 
   (encapsulate
     (((bip32-valid-depths-p * *) => *
@@ -935,7 +946,14 @@
     :enable (bytep bip32-valid-depths-p-definition)
     :use ((:instance bip32-valid-depths-p-necc
            (path (bip32-valid-depths-p-witness
-                  init (insert (rcons index path) paths)))))))
+                  init (insert (rcons index path) paths))))))
+
+  (defrule bip32-valid-depths-p-of-tail
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-depths-p init paths))
+             (bip32-valid-depths-p init (tail paths)))
+    :expand (bip32-valid-depths-p init (tail paths))
+    :enable bip32-valid-depths-p-necc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
