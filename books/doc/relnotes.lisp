@@ -141,6 +141,10 @@
    (xdoc::p
     "Some theorems have been added to the BIP 32 formalization.")
 
+   (xdoc::p
+    "Verified executable attachments have been added
+     for some of the non-executable functions in the BIP 32 formalization.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))

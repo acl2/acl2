@@ -530,7 +530,8 @@
      which would be impossible because the set's elements are all true lists.")
    (xdoc::p
     "We introduce this function as a constrained function,
-     so that we can make an executable attachment for it.
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
      Since currently
      @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
@@ -728,7 +729,8 @@
      it can be defined on general sets of paths.")
    (xdoc::p
     "We introduce this function as a constrained function,
-     so that we can make an executable attachment for it.
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
      Since currently
      @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
@@ -859,7 +861,8 @@
      it can be defined on general sets of paths.")
    (xdoc::p
     "We introduce this function as a constrained function,
-     so that we can make an executable attachment for it.
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
      Since currently
      @(tsee define-sk) does not support @(tsee defun-sk)'s @(':constrain') and
      @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
