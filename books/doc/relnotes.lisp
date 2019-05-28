@@ -188,6 +188,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "set::oset-theorems" "Kestrel Oset Theorems"))
+
+   (xdoc::p
+    "A theorem has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
