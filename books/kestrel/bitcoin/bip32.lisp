@@ -564,10 +564,10 @@
        :returns (yes/no booleanp :name bip32-path-set-closedp-return-type)
        (forall (path prefix)
                (b* ((paths (bip32-path-sfix paths)))
-                 (implies (and (set::in path paths)
+                 (implies (and (in path paths)
                                (true-listp prefix)
                                (prefixp prefix path))
-                          (set::in prefix paths))))
+                          (in prefix paths))))
        ///
        ;; boilerplate:
        (fty::deffixequiv bip32-path-set-closedp
@@ -615,36 +615,36 @@
 
   (defrule empty-path-in-closed-nonempty-bip32-path-set
     (implies (and (bip32-path-setp paths)
-                  (not (set::empty paths))
+                  (not (empty paths))
                   (bip32-path-set-closedp paths))
-             (set::in nil paths))
+             (in nil paths))
     :use (:instance bip32-path-set-closedp-necc
           (prefix nil)
-          (path (set::head paths))))
+          (path (head paths))))
 
   (defrule bip32-path-set-closedp-of-singleton-empty-path
     (bip32-path-set-closedp '(nil))
-    :enable (set::in bip32-path-set-closedp-definition))
+    :enable (in bip32-path-set-closedp-definition))
 
   (defrule bip32-path-set-closedp-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-path-set-closedp paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index))
-             (bip32-path-set-closedp (set::insert (rcons index path) paths)))
+             (bip32-path-set-closedp (insert (rcons index path) paths)))
     :enable (list-equiv bip32-path-set-closedp-definition)
     :use ((:instance bip32-path-set-closedp-necc
            (path (mv-nth 0 (bip32-path-set-closedp-witness
-                            (set::insert (rcons index path) paths))))
+                            (insert (rcons index path) paths))))
            (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths)))))
+                              (insert (rcons index path) paths)))))
           (:instance bip32-path-set-closedp-necc
            (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths))))))
+                              (insert (rcons index path) paths))))))
     :cases ((equal (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths)))
+                              (insert (rcons index path) paths)))
                    (mv-nth 0 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths)))))))
+                              (insert (rcons index path) paths)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,7 +665,7 @@
     :parents (bip32-index-tree)
     :short "Recognizer for @(tsee bip32-index-tree)."
     (and (bip32-path-setp x)
-         (not (set::empty x))
+         (not (empty x))
          (bip32-path-set-closedp x))
     :no-function t
     ///
@@ -706,9 +706,9 @@
 
   (defrule bip32-index-treep-of-insert-of-rcons
     (implies (and (bip32-index-treep paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index))
-             (bip32-index-treep (set::insert (rcons index path) paths)))
+             (bip32-index-treep (insert (rcons index path) paths)))
     :enable bip32-index-treep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -758,7 +758,7 @@
                                     (paths bip32-path-setp))
        :returns (yes/no booleanp :name bip32-valid-keys-p-return-type)
        (forall (path)
-               (implies (set::in path (bip32-path-sfix paths))
+               (implies (in path (bip32-path-sfix paths))
                         (not (mv-nth 0 (bip32-ckd* root path)))))
        ///
        ;; boilerplate:
@@ -784,7 +784,7 @@
     (defruled bip32-valid-keys-p-definition
       (equal (bip32-valid-keys-p root paths)
              (let ((path (bip32-valid-keys-p-witness root paths)))
-               (implies (set::in path (bip32-path-sfix paths))
+               (implies (in path (bip32-path-sfix paths))
                         (not (mv-nth 0 (bip32-ckd* root path))))))
       :rule-classes :definition
       :enable bip32-valid-keys-p)
@@ -795,7 +795,7 @@
 
     (defruled bip32-valid-keys-p-necc
       (implies (bip32-valid-keys-p root paths)
-               (implies (set::in path (bip32-path-sfix paths))
+               (implies (in path (bip32-path-sfix paths))
                         (not (mv-nth 0 (bip32-ckd* root path)))))
       :enable bip32-valid-keys-p-necc)
 
@@ -804,7 +804,7 @@
 
   (defrule bip32-valid-keys-p-of-singleton-empty-path
     (bip32-valid-keys-p root '(nil))
-    :enable (set::in
+    :enable (in
              bip32-valid-keys-p-definition
              bip32-ckd*
              bip32-ckd-priv*
@@ -813,10 +813,10 @@
   (defrule bip32-valid-keys-p-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-valid-keys-p root paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index)
                   (not (mv-nth 0 (bip32-ckd* root (rcons index path)))))
-             (bip32-valid-keys-p root (set::insert (rcons index path) paths)))
+             (bip32-valid-keys-p root (insert (rcons index path) paths)))
     :enable bip32-valid-keys-p-definition
     :use (:instance bip32-valid-keys-p-necc
           (path (bip32-valid-keys-p-witness
@@ -888,7 +888,7 @@
      (define-sk bip32-valid-depths-p ((init bytep) (paths bip32-path-setp))
        :returns (yes/no booleanp :name bip32-valid-depths-p-return-type)
        (forall (path)
-               (implies (set::in path (bip32-path-sfix paths))
+               (implies (in path (bip32-path-sfix paths))
                         (bytep (+ (byte-fix init) (len path)))))
        ///
        ;; boilerplate:
@@ -934,15 +934,15 @@
 
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
-    :enable (set::in bip32-valid-depths-p-definition))
+    :enable (in bip32-valid-depths-p-definition))
 
   (defrule bip32-valid-depths-p-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-valid-depths-p init paths)
-                  (set::in path paths)
+                  (in path paths)
                   (< (+ (byte-fix init) (len path)) 255)
                   (ubyte32p index))
-             (bip32-valid-depths-p init (set::insert (rcons index path) paths)))
+             (bip32-valid-depths-p init (insert (rcons index path) paths)))
     :enable (bytep bip32-valid-depths-p-definition)
     :use ((:instance bip32-valid-depths-p-necc
            (path (bip32-valid-depths-p-witness
@@ -1059,7 +1059,7 @@
      the total depth of that key (including the root's depth)
      does not exceed 255."))
   (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path)))
-    (set::in path (bip32-key-tree->index-tree tree)))
+    (in path (bip32-key-tree->index-tree tree)))
   :no-function t
   :hooks (:fix)
   ///
@@ -1143,7 +1143,7 @@
                  (< (+ tree.root-depth (len parent-path)) 255))) (mv t tree))
        ((mv error? &) (bip32-ckd* tree.root-key new-path))
        ((when error?) (mv error? tree))
-       (new-index-tree (set::insert new-path tree.index-tree))
+       (new-index-tree (insert new-path tree.index-tree))
        (new-tree (change-bip32-key-tree tree :index-tree new-index-tree)))
     (mv nil new-tree))
   :no-function t
@@ -1176,9 +1176,9 @@
       (equal (bip32-key-tree->index-tree tree1)
              (if error?
                  (bip32-key-tree->index-tree tree)
-               (set::insert (rcons (ubyte32-fix child-index)
-                                   (ubyte32-list-fix parent-path))
-                            (bip32-key-tree->index-tree tree)))))
+               (insert (rcons (ubyte32-fix child-index)
+                              (ubyte32-list-fix parent-path))
+                       (bip32-key-tree->index-tree tree)))))
     :enable bip32-path-in-tree-p)
 
   (defrule bip32-key-tree-priv-p-of-bip32-extend-tree
