@@ -323,3 +323,7 @@
       :flag termlist-free-vars))
 
   (deffixequiv-mutual term-free-vars :omit (bound-vars)))
+
+
+
+(fty::defmap pseudo-term-subst :key-type pseudo-var :val-type pseudo-term :true-listp t)
