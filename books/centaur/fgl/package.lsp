@@ -248,6 +248,9 @@
    '(term-vars termlist-vars
      term-free-vars termlist-free-vars
 
+     pseudo-term-subst-p
+     pseudo-term-subst-fix
+
      pseudo-rewrite-rule-p
      pseudo-rewrite-rule-listp
      mextract-good-rewrite-rulesp
@@ -259,6 +262,8 @@
      bindinglist-count
      lambda-nest-to-bindinglist)))
 
+
+;; bozo I don't think we need any of these
 (defpkg "FGL-SYM" nil)
 (defpkg "FGL-THM" nil)
 (defpkg "FGL-FACT" nil)

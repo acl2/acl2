@@ -163,9 +163,6 @@
 ;; partial unifying subst is stored under that signature.
 
 
-
-
-(fty::defmap pseudo-term-subst :key-type pseudo-var :val-type pseudo-term :true-listp t)
   
 
 ;; Heuristic info about a constraint rule.

@@ -39,6 +39,7 @@
 (include-book "centaur/fty/bitstruct" :dir :system)
 (include-book "prof")
 (include-book "array-alist")
+(include-book "cgraph")
 (local (include-book "std/lists/resize-list" :dir :System))
 (local (in-theory (disable nth update-nth resize-list
                            acl2::resize-list-when-atom)))
@@ -58,29 +59,17 @@
 
 (acl2::defstobj-clone constraint-pathcond pathcond :prefix "CONSTRAINT-")
 
-;; CGRAPH type -- see ctrex-utils.lisp
 
-(defenum ctrex-ruletype-p (:elim :property nil))
+(acl2::defstobj-clone bitarr acl2::bitarr :pkg fgl-pkg)
 
-(defprod ctrex-rule
-  ((name symbolp :rule-classes :type-prescription)
-   (match pseudo-term-subst-p)
-   (assign pseudo-termp)
-   (assigned-var pseudo-var-p :rule-classes :type-prescription)
-   (hyp pseudo-termp)
-   (equiv pseudo-fnsym-p)
-   (ruletype ctrex-ruletype-p))
-  :layout :tree)
+(stobjs::defnicestobj env$
+  (alist :initially nil)
+  (bitarr :type bitarr)
+  (obj-alist :type (satisfies obj-alist-p) :fix obj-alist-fix))
 
-(defprod cgraph-edge
-  ((match-vars pseudo-var-list-p :rule-classes :type-prescription)
-   (rule ctrex-rule-p)
-   (subst gl-object-bindings))
-  :layout :tree)
 
-(fty::deflist cgraph-edgelist :elt-type cgraph-edge :true-listp t)
 
-(fty::defmap cgraph :key-type gl-object :val-type cgraph-edgelist :true-listp t)
+
 
 
 
@@ -102,10 +91,19 @@
                       (satisfies interp-flags-p))
            :initially ,(make-interp-flags)
            :fix interp-flags-fix :pred interp-flags-p)
+
+    ;; backing arrays for fgarray primitives -- see fgarrays.lisp
     (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
     (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+
+    ;; no logical significance
     (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
+    (cgraph-memo :type (satisfies cgraph-alist-p) :initially nil :fix cgraph-alist-fix)
     (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    (sat-ctrex :type bitarr)
+
+    (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
+
     (errmsg :type t)
     (debug-info :type t)))
 

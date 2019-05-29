@@ -33,7 +33,7 @@
 (include-book "pathcond")
 (include-book "interp-st-bfrs-ok")
 (local (std::add-default-post-define-hook :fix))
-
+(local (include-book "std/lists/resize-list" :dir :system))
 
 (defconst *interp-st-sat-check-thms*
   '((defret interp-st-bfrs-ok-of-<fn>
@@ -273,3 +273,59 @@
 
     . ,*interp-st-sat-check-thms*))
 
+
+
+
+;; Interp-st-get-counterexample: attachable function that just returns an env$,
+;; which is the stobj we use in ctrex-utils to evaluate objects.
+
+
+(define bfr-env$-p (env$ (bfrstate bfrstate-p))
+  (bfrstate-case
+    :bdd (stobj-let ((bitarr (env$->bitarr env$)))
+                    (ok)
+                    (<= (bfrstate->bound bfrstate) (bits-length bitarr))
+                    ok)
+    :aig t
+    :aignet (stobj-let ((bitarr (env$->bitarr env$)))
+                       (ok)
+                       (< (bfrstate->bound bfrstate) (bits-length bitarr))
+                       ok))
+  ///
+  (defthm bfr-env$-p-of-update-obj-alist
+    (equal (bfr-env$-p (update-env$->obj-alist obj-alist env$) bfrstate)
+           (bfr-env$-p env$ bfrstate))))
+
+(encapsulate
+  (((interp-st-sat-counterexample env$ interp-st state) => (mv * env$)
+    :formals (env$ interp-st state)
+    :guard (interp-st-bfrs-ok interp-st)))
+  (local (defun interp-st-sat-counterexample (env$ interp-st state)
+           (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
+                           :stobjs (env$ interp-st state))
+                    (ignore interp-st state))
+           (mv t env$)))
+
+  (defthm bfr-env$-p-of-interp-st-sat-counterexample
+    (b* (((mv err new-env$) (interp-st-sat-counterexample env$ interp-st state)))
+      (implies (not err)
+               (bfr-env$-p new-env$
+                           (logicman->bfrstate (interp-st->logicman interp-st)))))
+    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
+
+(encapsulate
+  (((interp-st-monolithic-sat-counterexample env$ interp-st state) => (mv * env$)
+    :formals (env$ interp-st state)
+    :guard (interp-st-bfrs-ok interp-st)))
+  (local (defun interp-st-monolithic-sat-counterexample (env$ interp-st state)
+           (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
+                           :stobjs (env$ interp-st state))
+                    (ignore interp-st state))
+           (mv t env$)))
+
+  (defthm bfr-env$-p-of-interp-st-monolithic-sat-counterexample
+    (b* (((mv err new-env$) (interp-st-monolithic-sat-counterexample env$ interp-st state)))
+      (implies (not err)
+               (bfr-env$-p new-env$
+                           (logicman->bfrstate (interp-st->logicman interp-st)))))
+    :hints(("Goal" :in-theory (enable bfr-env$-p)))))

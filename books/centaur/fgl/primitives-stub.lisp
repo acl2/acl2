@@ -178,16 +178,27 @@
                (lbfr-listp (gl-object-bfrlist ans)
                            (interp-st->logicman new-interp-st))))
 
-    (defret interp-st-get-of-<fn>
-      (implies (and (not (equal (interp-st-field-fix key) :logicman))
-                    (not (equal (interp-st-field-fix key) :stack))
-                    (not (equal (interp-st-field-fix key) :pathcond))
-                    (not (equal (interp-st-field-fix key) :constraint))
-                    (not (equal (interp-st-field-fix key) :bvar-db))
-                    (not (equal (interp-st-field-fix key) :fgarrays))
-                    (not (equal (interp-st-field-fix key) :next-fgarray)))
-               (equal (interp-st-get key new-interp-st)
-                      (interp-st-get key interp-st))))
+    ;; (defret interp-st-get-of-<fn>
+    ;;   (implies (and (not (equal (interp-st-field-fix key) :logicman))
+    ;;                 (not (equal (interp-st-field-fix key) :stack))
+    ;;                 (not (equal (interp-st-field-fix key) :pathcond))
+    ;;                 (not (equal (interp-st-field-fix key) :constraint))
+    ;;                 (not (equal (interp-st-field-fix key) :bvar-db))
+    ;;                 (not (equal (interp-st-field-fix key) :fgarrays))
+    ;;                 (not (equal (interp-st-field-fix key) :next-fgarray)))
+    ;;            (equal (interp-st-get key new-interp-st)
+    ;;                   (interp-st-get key interp-st))))
+    (defret interp-st->reclimit-of-<fn>
+      (equal (interp-st->reclimit new-interp-st)
+             (interp-st->reclimit interp-st)))
+
+    (defret interp-st->errmsg-of-<fn>
+      (equal (interp-st->errmsg new-interp-st)
+             (interp-st->errmsg interp-st)))
+
+    (defret interp-st->equiv-contexts-of-<fn>
+      (equal (interp-st->equiv-contexts new-interp-st)
+             (interp-st->equiv-contexts interp-st)))
 
     (defret scratch-isomorphic-of-<fn>
       (interp-st-scratch-isomorphic new-interp-st (double-rewrite interp-st)))

@@ -146,14 +146,12 @@
 
 
 (define stack$a-frames ((x major-stack-p))
+  :returns (nframes posp :rule-classes :type-prescription)
   (len (major-stack-fix x)))
 
 (define stack$a-push-frame ((x major-stack-p))
   :returns (stack major-stack-p)
   (cons (make-major-frame) (major-stack-fix x)))
-
-(define stack$a-minor-frames ((x major-stack-p))
-  (len (major-frame->minor-stack (car x))))
 
 
 (local (defthm major-frame-p-of-nth
@@ -180,10 +178,15 @@
          :hints(("Goal" :in-theory (enable minor-stack-p len)))
          :rule-classes :linear))
 
+(define stack$a-minor-frames ((x major-stack-p))
+  :returns (nframes posp :rule-classes :type-prescription)
+  (len (major-frame->minor-stack (car x))))
+
 (define stack$a-nth-frame-minor-frames ((n natp)
                                         (x major-stack-p))
   :guard (< n (stack$a-frames x))
   :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
+  :returns (nframes posp :rule-classes :type-prescription)
   (len (major-frame->minor-stack (nth (mbe :logic (min (nfix n) (1- (stack$a-frames x)))
                                            :exec n)
                                       (major-stack-fix x)))))

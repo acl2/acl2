@@ -34,6 +34,7 @@
 (include-book "interp-st-bfrs-ok")
 (include-book "sat-stub")
 (local (std::add-default-post-define-hook :fix))
+(local (include-book "std/lists/resize-list" :dir :system))
 
 
 
@@ -760,3 +761,186 @@
 (defattach interp-st-sat-check interp-st-sat-check-impl)
 (defattach interp-st-monolithic-sat-check interp-st-sat-check-impl)
 
+
+
+
+;; NOTE: This preserves any values in bitarr that are not set in the ipasir's
+;; solution.  So if we wanted to add some randomization and the ipasir solver
+;; that we used ever produced a partial satisfying assignment, we could seed
+;; the bitarr with random values first.
+(define ipasir-assignment->cnf-vals ((n natp) ipasir bitarr)
+  :guard (and (<= n (bits-length bitarr))
+              (equal (ipasir-get-status ipasir) :sat))
+  :guard-debug t
+  :measure (nfix (- (bits-length bitarr) (nfix n)))
+  :returns (new-bitarr)
+  (b* (((when (mbe :logic (zp (- (bits-length bitarr) (nfix n)))
+                   :exec (eql n (bits-length bitarr))))
+        bitarr)
+       (val (ipasir-val ipasir (satlink::make-lit n 0)))
+       (bitarr (if val
+                   (set-bit n val bitarr)
+                 bitarr)))
+    (ipasir-assignment->cnf-vals (1+ (lnfix n)) ipasir bitarr))
+  ///
+  (defret len-of-<fn>
+    (equal (len new-bitarr) (len bitarr))))
+    
+
+#!aignet  
+(defsection cnf->aignet-vals
+  ;; BOZO this is probably a good logical definition for this but it might be
+  ;; nice to have an exec that iterates over the sat-lits/cnf-vals instead of
+  ;; having to skip all the IDs with no sat-vars in vals
+  (defiteration cnf->aignet-vals (vals cnf-vals sat-lits aignet)
+    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
+                    :guard (and (sat-lits-wfp sat-lits aignet)
+                                (<= (num-fanins aignet) (bits-length vals)))))
+    (b* ((id n)
+         ((unless (aignet-id-has-sat-var id sat-lits))
+          vals)
+         (lit (aignet-id->sat-lit id sat-lits))
+         (val (satlink::eval-lit lit cnf-vals)))
+      (set-bit n val vals))
+    :returns vals
+    :last (num-fanins aignet))
+
+  (in-theory (disable cnf->aignet-vals))
+  (local (in-theory (enable cnf->aignet-vals
+                            (:induction cnf->aignet-vals-iter))))
+
+  (defthm cnf->aignet-vals-iter-normalize-aignet
+    (implies (syntaxp (not (equal aignet ''nil)))
+             (equal (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
+                    (cnf->aignet-vals-iter n vals cnf-vals sat-lits nil)))
+    :hints((acl2::just-induct-and-expand
+            (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
+            :expand-others
+            ((:free (aignet)
+              (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet))))))
+
+  (defthm nth-of-cnf->aignet-vals-iter
+    (equal (nth n (cnf->aignet-vals-iter m vals cnf-vals sat-lits
+                                         aignet))
+           (if (and (< (nfix n) (nfix m))
+                    (aignet-id-has-sat-var n sat-lits))
+               (satlink::eval-lit
+                (aignet-id->sat-lit n sat-lits)
+                cnf-vals)
+             (nth n vals)))
+    :hints((acl2::just-induct-and-expand
+            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
+
+  (defthm nth-of-cnf->aignet-vals
+    (equal (nth n (cnf->aignet-vals vals cnf-vals sat-lits aignet))
+           (if (and (aignet-idp n aignet)
+                    (aignet-id-has-sat-var n sat-lits))
+               (satlink::eval-lit
+                (aignet-id->sat-lit n sat-lits)
+                cnf-vals)
+             (nth n vals)))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defthm len-of-cnf->aignet-vals-iter
+    (implies (and (<= (nfix (num-fanins aignet))
+                      (bits-length vals))
+                  (<= (nfix m) (bits-length vals)))
+             (equal (len (cnf->aignet-vals-iter m vals cnf-vals sat-lits
+                                                aignet))
+                    (len vals)))
+    :hints((acl2::just-induct-and-expand
+            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
+
+  (defthm len-of-cnf->aignet-vals
+    (implies (and (<= (nfix (num-fanins aignet))
+                      (bits-length vals)))
+             (equal (len (cnf->aignet-vals vals cnf-vals sat-lits
+                                           aignet))
+                    (len vals))))
+
+  (local (in-theory (disable cnf->aignet-vals)))
+
+  (defthmd cnf->aignet-vals-of-aignet-extension-lemma
+    (implies (and (aignet-extension-binding)
+                  (sat-lits-wfp sat-lits orig))
+             (bit-equiv (nth n (cnf->aignet-vals vals cnf-vals sat-lits new))
+                        (nth n (cnf->aignet-vals vals cnf-vals sat-lits orig))))
+    :hints (("goal" :in-theory (enable
+                                sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp))))
+
+  (local (in-theory (e/d (cnf->aignet-vals-of-aignet-extension-lemma))))
+
+  (defthm cnf->aignet-vals-of-aignet-extension
+    (implies (and (aignet-extension-binding)
+                  (sat-lits-wfp sat-lits orig))
+             (bits-equiv (cnf->aignet-vals vals cnf-vals sat-lits new)
+                         (cnf->aignet-vals vals cnf-vals sat-lits orig)))
+    :hints (("goal" :in-theory (enable bits-equiv))))
+
+
+  (defthm cnf->aignet-vals-of-sat-lit-extension-idempotent
+    (implies (and (sat-lit-extension-p sat-lits2 sat-lits1)
+                  (sat-lits-wfp sat-lits1 aignet)
+                  (sat-lits-wfp sat-lits2 aignet))
+             (let ((aignet-vals1 (cnf->aignet-vals
+                                  vals cnf-vals sat-lits2 aignet)))
+               (bits-equiv (cnf->aignet-vals
+                            aignet-vals1 cnf-vals sat-lits1 aignet)
+                           aignet-vals1)))
+    :hints(("Goal" :in-theory (enable bits-equiv)))))
+  
+
+(define logicman-ipasir->env$ (logicman env$)
+  :guard (logicman-invar logicman)
+  :returns (mv err new-env$)
+  (b* ((bfrstate (logicman->bfrstate)))
+    (stobj-let ((ipasir (logicman->ipasir logicman))
+                (aignet (logicman->aignet logicman))
+                (sat-lits (logicman->sat-lits logicman)))
+               (err env$)
+               (stobj-let ((bitarr (env$->bitarr env$)))
+                          (err bitarr)
+                          (bfrstate-case
+                            :aignet
+                            (b* (((unless (equal (ipasir::ipasir-get-status ipasir) :sat))
+                                  (b* ((bitarr (resize-bits (+ 1 (bfrstate->bound bfrstate)) bitarr)))
+                                    (mv "Error: expected ipasir status to be :sat" bitarr)))
+                                 ((acl2::local-stobjs aignet::cnf-vals)
+                                  (mv err bitarr aignet::cnf-vals))
+                                 (aignet::cnf-vals (resize-bits (aignet::sat-next-var sat-lits) aignet::cnf-vals))
+                                 (aignet::cnf-vals (ipasir-assignment->cnf-vals 0 ipasir aignet::cnf-vals))
+                                 (bitarr (resize-bits (aignet::num-fanins aignet) bitarr))
+                                 (bitarr (aignet::cnf->aignet-vals bitarr aignet::cnf-vals sat-lits aignet))
+                                 (bitarr (aignet::aignet-eval bitarr aignet)))
+                              (mv nil bitarr aignet::cnf-vals))
+                            :bdd
+                            (b* ((bitarr (resize-bits (bfrstate->bound bfrstate) bitarr)))
+                              (mv "Error: expected bfr mode to be :aignet"
+                                  bitarr))
+                            :aig 
+                            (mv "Error: expected bfr mode to be :aignet"
+                                bitarr))
+                          (mv err env$))
+               (mv err env$)))
+  ///
+  (defret bfr-env$-p-of-<fn>
+    (bfr-env$-p new-env$ (logicman->bfrstate))
+    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
+
+
+
+(define interp-st-ipasir->env$ (env$
+                                (interp-st interp-st-bfrs-ok)
+                                state)
+  :returns (mv err new-env$)
+  (declare (ignore state))
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (err env$)
+             (logicman-ipasir->env$ logicman env$)
+             (mv err env$))
+  ///
+  (defret bfr-env$-p-of-<fn>
+    (bfr-env$-p new-env$ (logicman->bfrstate (interp-st->logicman interp-st)))))
+
+(defattach interp-st-sat-counterexample interp-st-ipasir->env$)
+(defattach interp-st-monolithic-sat-counterexample interp-st-ipasir->env$)

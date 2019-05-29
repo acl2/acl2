@@ -319,7 +319,7 @@
         (gl-interp-error
          :msg (gl-msg "Syntax-bind error: ~x0 was supposed to be bound in a ~
                        syntax-bind form but was already bound" varname)))
-       ((mv err val) (fancy-ev synp-term bindings 100 interp-st state t t))
+       ((mv err val interp-st) (fancy-ev synp-term bindings 100 interp-st state t t))
        ((when err)
         (gl-interp-error
          :msg (gl-msg "Syntax-bind error evaluating ~x0: ~@1"
@@ -356,10 +356,11 @@
                   (lbfr-listp (gl-object-bfrlist ans)
                               (interp-st->logicman interp-st)))))
 
+  (local (acl2::use-trivial-ancestors-check))
+
   (defret interp-st-get-of-<fn>
-    (implies (And (not (equal (interp-st-field-fix key) :stack))
-                  (not (equal (interp-st-field-fix key) :errmsg))
-                  (not (equal (interp-st-field-fix key) :debug-info)))
+    (implies (member (interp-st-field-fix key)
+                     '(:logicman :bvar-db :pathcond :constraint :constraint-db :equiv-contexts :reclimit))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 
@@ -560,7 +561,7 @@
   (b* ((bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st)))
        (form (pseudo-term-fix form))
-       ((mv err val) (fancy-ev form bindings 100 interp-st state t t))
+       ((mv err val interp-st) (fancy-ev form bindings 100 interp-st state t t))
        ((when err)
         (gl-interp-error
          :msg (gl-msg "Synp error evaluating ~x0 (translated: ~x1): ~x2"
@@ -625,9 +626,8 @@
              (interp-st-bfrs-ok new-interp-st)))
   
   (defret interp-st-get-of-<fn>
-    (implies (and (not (equal (interp-st-field-fix key) :stack))
-                  (not (equal (interp-st-field-fix key) :errmsg))
-                  (not (equal (interp-st-field-fix key) :debug-info)))
+    (implies (member (interp-st-field-fix key)
+                     '(:logicman :bvar-db :pathcond :constraint :constraint-db :equiv-contexts :reclimit))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 
@@ -640,7 +640,7 @@
              (equal (interp-st->errmsg new-interp-st)
                     (interp-st->errmsg interp-st))))
 
-  
+  (local (acl2::use-trivial-ancestors-check))
 
   (defret interp-st->errmsg-equal-unreachable-of-<fn>
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
@@ -3730,16 +3730,6 @@
                 (+ 1 (stack$a-minor-frames stack)))
          :hints(("Goal" :in-theory (enable stack$a-minor-frames
                                            stack$a-push-minor-frame)))))
-
-(defthm posp-of-stack$a-minor-frames
-  (posp (stack$a-minor-frames stack$c))
-  :hints(("Goal" :in-theory (enable stack$a-minor-frames)))
-  :rule-classes :type-prescription)
-
-(defthm posp-of-stack$a-frames
-  (posp (stack$a-frames stack$c))
-  :hints(("Goal" :in-theory (enable stack$a-frames)))
-  :rule-classes :type-prescription)
 
 
 (local (defthm pathcond-rewind-ok-by-stack-len

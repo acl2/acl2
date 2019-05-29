@@ -29,20 +29,13 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
-(include-book "interp-st")
+(include-book "sat-stub")
+(include-book "interp-st-bfrs-ok")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable resize-list)))
 (local (std::add-default-post-define-hook :fix))
 (set-state-ok t)
-
-
-(acl2::defstobj-clone bitarr acl2::bitarr :pkg fgl-pkg)
-
-(stobjs::defnicestobj env$
-  (alist :initially nil)
-  (bitarr :type bitarr)
-  (obj-alist :type (satisfies obj-alist-p) :fix obj-alist-fix))
 
 (define env->env$ ((x gl-env-p) logicman)
   :guard (stobj-let ((aignet (logicman->aignet logicman)))
@@ -74,22 +67,7 @@
                                     env$)
                          (non-exec (mv env$ env$))))))
 
-(define bfr-env$-p (env$ logicman)
-  (b* ((bfrstate (logicman->bfrstate)))
-    (bfrstate-case
-      :bdd (stobj-let ((bitarr (env$->bitarr env$)))
-                      (ok)
-                      (<= (bfrstate->bound bfrstate) (bits-length bitarr))
-                      ok)
-      :aig t
-      :aignet (stobj-let ((bitarr (env$->bitarr env$)))
-                         (ok)
-                         (< (bfrstate->bound bfrstate) (bits-length bitarr))
-                         ok)))
-  ///
-  (defthm bfr-env$-p-of-update-obj-alist
-    (equal (bfr-env$-p (update-env$->obj-alist obj-alist env$) logicman)
-           (bfr-env$-p env$ logicman))))
+
                    
 
 (define eval-bdd-fast ((x acl2::ubddp) (level natp) bitarr)
@@ -126,7 +104,7 @@
 
 
 (define bfr-eval-fast ((x lbfr-p) env$ &optional (logicman 'logicman))
-  :guard (bfr-env$-p env$ logicman)
+  :guard (bfr-env$-p env$ (logicman->bfrstate))
   :guard-hints (("goal" :in-theory (enable bfr-env$-p))
                 (and stable-under-simplificationp
                      '(:in-theory (enable bfr-p bfr-fix ubddp))))
@@ -157,172 +135,12 @@
     :otf-flg t))
 
 (define bfr-list-eval-fast ((x lbfr-listp) env$ &optional (logicman 'logicman))
-  :guard (bfr-env$-p env$ logicman)
+  :guard (bfr-env$-p env$ (logicman->bfrstate))
   :returns (vals boolean-listp)
   (if (atom x)
       nil
     (cons (bfr-eval-fast (car x) env$)
           (bfr-list-eval-fast (cdr x) env$))))
-
-
-
-
-;; NOTE: This preserves any values in bitarr that are not set in the ipasir's
-;; solution.  So if we wanted to add some randomization and the ipasir solver
-;; that we used ever produced a partial satisfying assignment, we could seed
-;; the bitarr with random values first.
-(define ipasir-assignment->cnf-vals ((n natp) ipasir bitarr)
-  :guard (and (<= n (bits-length bitarr))
-              (equal (ipasir-get-status ipasir) :sat))
-  :guard-debug t
-  :measure (nfix (- (bits-length bitarr) (nfix n)))
-  :returns (new-bitarr)
-  (b* (((when (mbe :logic (zp (- (bits-length bitarr) (nfix n)))
-                   :exec (eql n (bits-length bitarr))))
-        bitarr)
-       (val (ipasir-val ipasir (satlink::make-lit n 0)))
-       (bitarr (if val
-                   (set-bit n val bitarr)
-                 bitarr)))
-    (ipasir-assignment->cnf-vals (1+ (lnfix n)) ipasir bitarr))
-  ///
-  (defret len-of-<fn>
-    (equal (len new-bitarr) (len bitarr))))
-    
-
-#!aignet  
-(defsection cnf->aignet-vals
-  ;; BOZO this is probably a good logical definition for this but it might be
-  ;; nice to have an exec that iterates over the sat-lits/cnf-vals instead of
-  ;; having to skip all the IDs with no sat-vars in vals
-  (defiteration cnf->aignet-vals (vals cnf-vals sat-lits aignet)
-    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
-                    :guard (and (sat-lits-wfp sat-lits aignet)
-                                (<= (num-fanins aignet) (bits-length vals)))))
-    (b* ((id n)
-         ((unless (aignet-id-has-sat-var id sat-lits))
-          vals)
-         (lit (aignet-id->sat-lit id sat-lits))
-         (val (satlink::eval-lit lit cnf-vals)))
-      (set-bit n val vals))
-    :returns vals
-    :last (num-fanins aignet))
-
-  (in-theory (disable cnf->aignet-vals))
-  (local (in-theory (enable cnf->aignet-vals
-                            (:induction cnf->aignet-vals-iter))))
-
-  (defthm cnf->aignet-vals-iter-normalize-aignet
-    (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
-                    (cnf->aignet-vals-iter n vals cnf-vals sat-lits nil)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
-            :expand-others
-            ((:free (aignet)
-              (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet))))))
-
-  (defthm nth-of-cnf->aignet-vals-iter
-    (equal (nth n (cnf->aignet-vals-iter m vals cnf-vals sat-lits
-                                         aignet))
-           (if (and (< (nfix n) (nfix m))
-                    (aignet-id-has-sat-var n sat-lits))
-               (satlink::eval-lit
-                (aignet-id->sat-lit n sat-lits)
-                cnf-vals)
-             (nth n vals)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
-
-  (defthm nth-of-cnf->aignet-vals
-    (equal (nth n (cnf->aignet-vals vals cnf-vals sat-lits aignet))
-           (if (and (aignet-idp n aignet)
-                    (aignet-id-has-sat-var n sat-lits))
-               (satlink::eval-lit
-                (aignet-id->sat-lit n sat-lits)
-                cnf-vals)
-             (nth n vals)))
-    :hints(("Goal" :in-theory (enable aignet-idp))))
-
-  (defthm len-of-cnf->aignet-vals-iter
-    (implies (and (<= (nfix (num-fanins aignet))
-                      (bits-length vals))
-                  (<= (nfix m) (bits-length vals)))
-             (equal (len (cnf->aignet-vals-iter m vals cnf-vals sat-lits
-                                                aignet))
-                    (len vals)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
-
-  (defthm len-of-cnf->aignet-vals
-    (implies (and (<= (nfix (num-fanins aignet))
-                      (bits-length vals)))
-             (equal (len (cnf->aignet-vals vals cnf-vals sat-lits
-                                           aignet))
-                    (len vals))))
-
-  (local (in-theory (disable cnf->aignet-vals)))
-
-  (defthmd cnf->aignet-vals-of-aignet-extension-lemma
-    (implies (and (aignet-extension-binding)
-                  (sat-lits-wfp sat-lits orig))
-             (bit-equiv (nth n (cnf->aignet-vals vals cnf-vals sat-lits new))
-                        (nth n (cnf->aignet-vals vals cnf-vals sat-lits orig))))
-    :hints (("goal" :in-theory (enable
-                                sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp))))
-
-  (local (in-theory (e/d (cnf->aignet-vals-of-aignet-extension-lemma))))
-
-  (defthm cnf->aignet-vals-of-aignet-extension
-    (implies (and (aignet-extension-binding)
-                  (sat-lits-wfp sat-lits orig))
-             (bits-equiv (cnf->aignet-vals vals cnf-vals sat-lits new)
-                         (cnf->aignet-vals vals cnf-vals sat-lits orig)))
-    :hints (("goal" :in-theory (enable bits-equiv))))
-
-
-  (defthm cnf->aignet-vals-of-sat-lit-extension-idempotent
-    (implies (and (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (sat-lits-wfp sat-lits1 aignet)
-                  (sat-lits-wfp sat-lits2 aignet))
-             (let ((aignet-vals1 (cnf->aignet-vals
-                                  vals cnf-vals sat-lits2 aignet)))
-               (bits-equiv (cnf->aignet-vals
-                            aignet-vals1 cnf-vals sat-lits1 aignet)
-                           aignet-vals1)))
-    :hints(("Goal" :in-theory (enable bits-equiv)))))
-  
-
-(define logicman-ipasir->env$ (logicman env$)
-  :guard (and (lbfr-mode-is :aignet)
-              (logicman-invar logicman)
-              (stobj-let ((ipasir (logicman->ipasir logicman)))
-                         (ok)
-                         (equal (ipasir::ipasir-get-status ipasir) :sat)
-                         ok))
-  :returns (new-env$)
-  (stobj-let ((ipasir (logicman->ipasir logicman))
-              (aignet (logicman->aignet logicman))
-              (sat-lits (logicman->sat-lits logicman)))
-             (env$)
-             (stobj-let ((bitarr (env$->bitarr env$)))
-                        (bitarr)
-                        (b* (((acl2::local-stobjs aignet::cnf-vals)
-                              (mv bitarr aignet::cnf-vals))
-                             (aignet::cnf-vals (resize-bits (aignet::sat-next-var sat-lits) aignet::cnf-vals))
-                             (aignet::cnf-vals (ipasir-assignment->cnf-vals 0 ipasir aignet::cnf-vals))
-                             (bitarr (resize-bits (aignet::num-fanins aignet) bitarr))
-                             (bitarr (aignet::cnf->aignet-vals bitarr aignet::cnf-vals sat-lits aignet))
-                             (bitarr (aignet::aignet-eval bitarr aignet)))
-                          (mv bitarr aignet::cnf-vals))
-                        env$)
-             env$)
-  ///
-  (defret bfr-env$-p-of-<fn>
-    (implies (lbfr-mode-is :aignet)
-             (bfr-env$-p new-env$ logicman))
-    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
-
 
 
 
@@ -546,42 +364,6 @@
 
 
 
-
-(define cgraph-edge-bfrlist ((x cgraph-edge-p))
-  :enabled t
-  (gl-object-bindings-bfrlist (cgraph-edge->subst x)))
-
-(define cgraph-edgelist-bfrlist ((x cgraph-edgelist-p))
-  (if (atom x)
-      nil
-    (append (cgraph-edge-bfrlist (car x))
-            (cgraph-edgelist-bfrlist (cdr x)))))
-
-(define cgraph-bfrlist ((x cgraph-p))
-  (if (atom x)
-      nil
-    (append (and (mbt (And (consp (car x))
-                           (gl-object-p (caar x))))
-                 (cgraph-edgelist-bfrlist (cdar x)))
-            (cgraph-bfrlist (cdr x))))
-  ///
-  (defthm lookup-in-cgraph-bfrlist
-    (implies (and (not (member v (cgraph-bfrlist x)))
-                  (gl-object-p k))
-             (not (member v (cgraph-edgelist-bfrlist (cdr (hons-assoc-equal k x))))))
-    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
-
-  (defthm cgraph-bfrlist-of-fast-alist-fork
-    (implies (and (not (member v (cgraph-bfrlist x)))
-                  (not (member v (cgraph-bfrlist y))))
-             (not (member v (cgraph-bfrlist (fast-alist-fork x y))))))
-
-  (local (defthm cgraph-fix-of-bad-car
-           (implies (not (And (consp (car x))
-                              (gl-object-p (caar x))))
-                    (equal (cgraph-fix x)
-                           (cgraph-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable cgraph-fix))))))
 
 
 (defconst *fake-ctrex-rule-for-equivs*
@@ -841,11 +623,12 @@
 (defines gl-object-add-to-cgraph
   (define gl-object-add-to-cgraph ((x gl-object-p)
                                    (cgraph cgraph-p)
+                                   (memo cgraph-alist-p)
                                    (ruletable ctrex-ruletable-p)
                                    (wrld plist-worldp))
     :well-founded-relation acl2::nat-list-<
     :measure (list (gl-object-count x) 10 0 0)
-    :returns (new-cgraph cgraph-p)
+    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     :verify-guards nil
     (b* ((fnsym (gl-object-case x
                   (:g-ite 'if)
@@ -853,86 +636,93 @@
                   (:g-apply x.fn)
                   (otherwise nil)))
          ((unless fnsym)
-          (cgraph-fix cgraph))
+          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
+         ((when (hons-get (gl-object-fix x) (cgraph-alist-fix memo)))
+          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
+         (memo (hons-acons (gl-object-fix x) t (cgraph-alist-fix memo)))
          ((when (and (gl-object-case x :g-apply)
                      (fgetprop fnsym 'acl2::coarsenings nil wrld)))
           ;; Equivalence relation.  Add edges between two args
           (b* (((g-apply x))
                ((unless (eql (len x.args) 2))
-                (cgraph-fix cgraph))
+                (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
                ((list arg1 arg2) x.args)
                (rule (change-ctrex-rule *fake-ctrex-rule-for-equivs* :equiv x.fn))
                (cgraph (add-cgraph-edge 'y `((x . ,arg2) (y . ,arg1)) rule cgraph))
                (cgraph (add-cgraph-edge 'y `((x . ,arg1) (y . ,arg2)) rule cgraph))
-               (cgraph (gl-object-add-to-cgraph arg1 cgraph ruletable wrld)))
-            (gl-object-add-to-cgraph arg2 cgraph ruletable wrld)))
+               ((mv cgraph memo) (gl-object-add-to-cgraph arg1 cgraph memo ruletable wrld)))
+            (gl-object-add-to-cgraph arg2 cgraph memo ruletable wrld)))
          (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
-      (gl-object-add-to-cgraph-rules x rules cgraph ruletable wrld)))
+      (gl-object-add-to-cgraph-rules x rules cgraph memo ruletable wrld)))
 
   (define gl-object-add-to-cgraph-rules ((x gl-object-p)
                                          (rules ctrex-rulelist-p)
                                          (cgraph cgraph-p)
+                                         (memo cgraph-alist-p)
                                          (ruletable ctrex-ruletable-p)
                                          (wrld plist-worldp))
     :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
     :measure (list (gl-object-count x) 7 (len rules) 0)
-    :returns (new-cgraph cgraph-p)
-    (b* (((when (atom rules)) (cgraph-fix cgraph))
-         (cgraph (gl-object-add-to-cgraph-rule x (car rules) cgraph ruletable wrld)))
-      (gl-object-add-to-cgraph-rules x (cdr rules) cgraph ruletable wrld)))
+    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
+    (b* (((when (atom rules)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
+         ((mv cgraph memo) (gl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable wrld)))
+      (gl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable wrld)))
 
   (define gl-object-add-to-cgraph-rule ((x gl-object-p)
                                         (rule ctrex-rule-p)
                                         (cgraph cgraph-p)
+                                        (memo cgraph-alist-p)
                                         (ruletable ctrex-ruletable-p)
                                         (wrld plist-worldp))
     :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
     :measure (list (gl-object-count x) 7 0 0)
-    :returns (new-cgraph cgraph-p)
+    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((ctrex-rule rule)))
-      (gl-object-add-to-cgraph-matches x rule.match rule cgraph ruletable wrld)))
+      (gl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable wrld)))
 
   (define gl-object-add-to-cgraph-matches ((x gl-object-p)
                                            (matches pseudo-term-subst-p)
                                            (rule ctrex-rule-p)
                                            (cgraph cgraph-p)
+                                           (memo cgraph-alist-p)
                                            (ruletable ctrex-ruletable-p)
                                            (wrld plist-worldp))
     :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
     :measure (list (gl-object-count x) 5 (len matches) 0)
-    :returns (new-cgraph cgraph-p)
-    (b* (((when (atom matches)) (cgraph-fix cgraph))
+    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
+    (b* (((when (atom matches)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((unless (mbt (and (consp (car matches))
                             (pseudo-var-p (caar matches)))))
-          (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph ruletable wrld))
-         (cgraph (gl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph ruletable wrld)))
-      (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph ruletable wrld)))
+          (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable wrld))
+         ((mv cgraph memo) (gl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable wrld)))
+      (gl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable wrld)))
 
   (define gl-object-add-to-cgraph-match ((x gl-object-p)
                                          (matchvar pseudo-var-p)
                                          (match pseudo-termp)
                                          (rule ctrex-rule-p)
                                          (cgraph cgraph-p)
+                                         (memo cgraph-alist-p)
                                          (ruletable ctrex-ruletable-p)
                                          (wrld plist-worldp))
     :guard (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))
     :measure (list (gl-object-count x) 5 0 0)
-    :returns (new-cgraph cgraph-p)
+    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (pseudo-term-case match :var))
           (cw "Bad ctrex rule? Match is a variable: ~x0" (ctrex-rule->name rule))
-          (cgraph-fix cgraph))
+          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((unless (mbt (not (gl-object-case x '(:g-concrete :g-boolean :g-integer)))))
-          (cgraph-fix cgraph))
+          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((mv ok subst) (glcp-unify-term/gobj match x nil))
-         ((unless ok) (cgraph-fix cgraph))
+         ((unless ok) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((ctrex-rule rule))
          (to-look (hons-assoc-equal rule.assigned-var subst))
          ((unless to-look)
           (cw "Bad ctrex rule? ASSIGNED-VAR wasn't bound by match: ~x0" rule.name)
-          (cgraph-fix cgraph))
+          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          (to (cdr to-look))
          (cgraph (add-cgraph-edge matchvar subst rule cgraph)))
-      (gl-object-add-to-cgraph to cgraph ruletable wrld)))
+      (gl-object-add-to-cgraph to cgraph memo ruletable wrld)))
   ///
   (verify-guards gl-object-add-to-cgraph)
   (local (in-theory (disable gl-object-add-to-cgraph
@@ -985,19 +775,20 @@
 (define bvar-db-add-to-cgraph-aux ((n natp)
                                    (bvar-db)
                                    (cgraph cgraph-p)
+                                   (memo cgraph-alist-p)
                                    (ruletable ctrex-ruletable-p)
                                    (wrld plist-worldp))
-  :returns (new-cgraph cgraph-p)
+  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
   :guard (and (<= n (next-bvar bvar-db))
               (<= (base-bvar bvar-db) n))
   :measure (nfix (- (next-bvar bvar-db) (nfix n)))
   (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
                    :exec (eql n (next-bvar bvar-db))))
-        (cgraph-fix cgraph))
-       (cgraph (gl-object-add-to-cgraph (get-bvar->term n bvar-db)
-                                        cgraph ruletable wrld)))
+        (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
+       ((mv cgraph memo) (gl-object-add-to-cgraph (get-bvar->term n bvar-db)
+                                                  cgraph memo ruletable wrld)))
     (bvar-db-add-to-cgraph-aux (1+ (lnfix n))
-                               bvar-db cgraph ruletable wrld))
+                               bvar-db cgraph memo ruletable wrld))
   ///
   (defret cgraph-bfrlist-of-<fn>
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
@@ -1009,8 +800,10 @@
                                (ruletable ctrex-ruletable-p)
                                (wrld plist-worldp))
   :returns (cgraph cgraph-p)
-  (fast-alist-clean
-   (bvar-db-add-to-cgraph-aux (base-bvar bvar-db) bvar-db nil ruletable wrld))
+  (b* (((mv cgraph memo)
+        (bvar-db-add-to-cgraph-aux (base-bvar bvar-db) bvar-db nil nil ruletable wrld)))
+    (fast-alist-free memo)
+    (fast-alist-clean cgraph))
   ///
   (local (defthm cgraph-bfrlist-of-cdr-last
            (equal (cgraph-bfrlist (cdr (last x))) nil)
@@ -1021,20 +814,27 @@
              (not (member v (cgraph-bfrlist cgraph))))))
 
 (define bvar-db-update-cgraph ((cgraph cgraph-p)
+                               (memo cgraph-alist-p)
                                (cgraph-index natp)
                                bvar-db
                                (ruletable ctrex-ruletable-p)
                                (wrld plist-worldp))
-  :returns (new-cgraph cgraph-p)
+  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
   ;; BOZO this never shrinks the cgraph -- probably not necessary
   (b* (((when (<= (next-bvar bvar-db) (lnfix cgraph-index)))
-        (cgraph-fix cgraph)))
+        (mv (cgraph-fix cgraph) (cgraph-alist-fix memo))))
     (bvar-db-add-to-cgraph-aux (max (lnfix cgraph-index)
                                     (base-bvar bvar-db))
-                               bvar-db cgraph ruletable wrld)))
+                               bvar-db cgraph memo ruletable wrld))
+  ///
+  
+  (defret cgraph-bfrlist-of-<fn>
+    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+                  (not (member v (cgraph-bfrlist cgraph))))
+             (not (member v (cgraph-bfrlist new-cgraph))))))
 
 
-(fty::defmap cgraph-alist :key-type gl-object :true-listp t)
+
 
 
 ;; (define cgraph-edges-invert ((from gl-object-p)
@@ -1668,7 +1468,7 @@
                                 &optional
                                 (logicman 'logicman)
                                 (state 'state))
-    :guard (and (bfr-env$-p env$ logicman)
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (gl-object-bfrlist x)))
     :returns (mv err val)
     :verify-guards nil
@@ -1698,7 +1498,7 @@
                                     &optional
                                     (logicman 'logicman)
                                     (state 'state))
-    :guard (and (bfr-env$-p env$ logicman)
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (gl-objectlist-bfrlist x)))
     :returns (mv err (val true-listp))
     :measure (acl2::two-nats-measure (gl-objectlist-count x) 0)
@@ -1714,7 +1514,7 @@
                                       &optional
                                       (logicman 'logicman)
                                       (state 'state))
-    :guard (and (bfr-env$-p env$ logicman)
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (gl-object-alist-bfrlist x)))
     :returns (mv err val)
     :measure (acl2::two-nats-measure (gl-object-alist-count x) (len x))
@@ -2126,7 +1926,7 @@
                                          (bvar-db 'bvar-db)
                                          (state 'state))
     :guard (and (lbfr-listp (gl-object-bfrlist x))
-                (bfr-env$-p env$ logicman)
+                (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     :returns (mv (new-assigns cgraph-alist-p)
@@ -2187,7 +1987,7 @@
                                            (bvar-db 'bvar-db)
                                            (state 'state))
     :guard (and (lbfr-listp (cgraph-edgelist-bfrlist x))
-                (bfr-env$-p env$ logicman)
+                (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
 
@@ -2234,7 +2034,7 @@
                    8
                    0)
     :guard (and (lbfr-listp (cgraph-edge-bfrlist x))
-                (bfr-env$-p env$ logicman)
+                (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     (b* (((cgraph-edge x))
@@ -2274,7 +2074,7 @@
                    7
                    (len x))
     :guard (and (lbfr-listp (gl-object-bindings-bfrlist subst))
-                (bfr-env$-p env$ logicman)
+                (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     (b* (((when (atom x))
@@ -2316,7 +2116,7 @@
                    6
                    0)
     :guard (and (lbfr-listp (gl-object-bindings-bfrlist subst))
-                (bfr-env$-p env$ logicman)
+                (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
                 (lbfr-listp (cgraph-bfrlist cgraph)))
     (b* (((ctrex-rule rule))
@@ -2427,7 +2227,7 @@
   :returns (mv (new-vals obj-alist-p)
                (new-assigns cgraph-alist-p)
                (new-sts cgraph-derivstates-p))
-  :guard (and (bfr-env$-p env$ logicman)
+  :guard (and (bfr-env$-p env$ (logicman->bfrstate))
               (equal (bfr-nvars) (next-bvar bvar-db))
               (lbfr-listp (cgraph-bfrlist cgraph)))
   (b* (((when (atom x))
@@ -2481,7 +2281,6 @@
                errors)
         nil))))
 
-(include-book "interp-st-bfrs-ok")
 
 (local (in-theory (disable w)))
 
@@ -2519,7 +2318,8 @@
                                              (state))
   :returns (mv (errmsg)
                (bindings-vals symbol-alistp)
-               (var-vals obj-alist-p))
+               (var-vals obj-alist-p)
+               (new-interp-st))
   :guard (and (interp-st-bfrs-ok interp-st)
               (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
   :guard-hints ((and stable-under-simplificationp
@@ -2527,28 +2327,25 @@
                                           bfr-listp-when-not-member-witness))))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode interp-st)))
         (mv "bfr-mode must be :aignet"
-            nil nil))
+            nil nil interp-st))
        ((acl2::local-stobjs env$)
-        (mv errmsg binding-vals var-vals env$))
+        (mv errmsg binding-vals var-vals interp-st env$))
        (x (gl-object-bindings-fix x))
-       ;; (cgraph (interp-st->cgraph interp-st))
-       ;; (cgraph-index (interp-st->cgraph-index interp-st))
-       )
+       ((mv err env$) (interp-st-sat-counterexample env$ interp-st state))
+       ((when err)
+        (mv (msg "Error getting SAT counterexample: ~@0" err) nil nil interp-st env$))
+       (cgraph (interp-st->cgraph interp-st))
+       (memo (interp-st->cgraph-memo interp-st))
+       (cgraph-index (interp-st->cgraph-index interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (bvar-db (interp-st->bvar-db interp-st)))
-               (errmsg binding-vals var-vals env$)
-               (b* (((unless (stobj-let ((ipasir (logicman->ipasir logicman)))
-                                        (ok)
-                                        (eq (ipasir::ipasir-get-status ipasir) :sat)
-                                        ok))
-                     (mv "ipasir status wasn't :sat~%" nil nil env$))
-                    (env$ (logicman-ipasir->env$ logicman env$))
-                    (vars (gl-objectlist-vars (alist-vals (gl-object-bindings-fix x)) nil))
+               (errmsg binding-vals var-vals cgraph memo cgraph-index env$)
+               (b* ((vars (gl-objectlist-vars (alist-vals (gl-object-bindings-fix x)) nil))
                     (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
                     ((unless (ctrex-ruletable-p ruletable))
-                     (mv "bad ctrex-ruletable~%" nil nil env$))
-                    (cgraph ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
-                     (bvar-db-create-cgraph bvar-db ruletable (w state)))
+                     (mv "bad ctrex-ruletable~%" nil nil cgraph memo cgraph-index env$))
+                    ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
+                     (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable (w state)))
                     ((mv var-vals assigns sts)
                      (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
                     (- (fast-alist-free assigns))
@@ -2559,15 +2356,31 @@
                     ((mv eval-err objs) (magic-gl-objectlist-eval (alist-vals x) env$))
                     (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
                     (binding-vals (pairlis$ (alist-keys x) objs)))
-                 (mv errmsg binding-vals var-vals env$))
-               (mv errmsg binding-vals var-vals env$))))
+                 (mv errmsg binding-vals var-vals cgraph memo (next-bvar bvar-db) env$))
+               (b* ((interp-st (update-interp-st->cgraph cgraph interp-st))
+                    (interp-st (update-interp-st->cgraph-memo memo interp-st))
+                    (interp-st (update-interp-st->cgraph-index cgraph-index interp-st)))
+                 (mv errmsg binding-vals var-vals interp-st env$))))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
 (define interp-st-ipasir-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
                                                    (state))
   :returns (mv errmsg
                (bindings-vals symbol-alistp)
-               (var-vals obj-alist-p))
+               (var-vals obj-alist-p)
+               (new-interp-st))
   :guard-hints ('(:in-theory (enable interp-st-bfrs-ok
                                      major-frame-bfrlist
                                      minor-frame-bfrlist
@@ -2578,41 +2391,126 @@
                            (minor-stack-bfrlist (major-frame->minor-stack (car (interp-st->stack interp-st)))))))
   (b* ((bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st))))
-    (interp-st-ipasir-counterex-bindings bindings interp-st state)))
+    (interp-st-ipasir-counterex-bindings bindings interp-st state))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
 (verify-termination evisc-tuple)
 (verify-guards evisc-tuple)
 
 (define interp-st-ipasir-counterex-stack-bindings/print-errors ((interp-st interp-st-bfrs-ok)
-                                                               (state))
+                                                                (state))
   :returns (mv (bindings-vals symbol-alistp)
-               (var-vals obj-alist-p))
-  (b* (((mv errmsg bindings-vals var-vals)
+               (var-vals obj-alist-p)
+               (new-interp-st))
+  (b* (((mv errmsg bindings-vals var-vals interp-st)
         (interp-st-ipasir-counterex-stack-bindings interp-st state)))
     (and errmsg
          (acl2::fmt-to-comment-window
           "~@0" `((#\0 . ,errmsg)) 0
           (evisc-tuple 8 20 nil nil)
           nil))
-    (mv bindings-vals var-vals)))
+    (mv bindings-vals var-vals interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 (define interp-st-ipasir-counterex-bindings/print-errors ((x gl-object-bindings-p)
                                                           (interp-st)
                                                           (state))
   :returns (mv (bindings-vals symbol-alistp)
-               (var-vals obj-alist-p))
+               (var-vals obj-alist-p)
+               (new-interp-st))
   :guard (and (interp-st-bfrs-ok interp-st)
               (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
-  (b* (((mv errmsg bindings-vals var-vals)
+  (b* (((mv errmsg bindings-vals var-vals interp-st)
         (interp-st-ipasir-counterex-bindings x interp-st state)))
     (and errmsg
          (acl2::fmt-to-comment-window
           "~@0" `((#\0 . ,errmsg)) 0
           (evisc-tuple 8 20 nil nil)
           nil))
-    (mv bindings-vals var-vals)))
+    (mv bindings-vals var-vals interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
 
+
+(define interp-st-prev-bindings ((interp-st))
+  :guard (< 1 (interp-st-stack-frames interp-st))
+  :guard-hints (("Goal" :in-theory (enable interp-st-stack-frames
+                                           stack$a-nth-frame-minor-frames)))
+  :returns (bindings gl-object-bindings-p)
+  :prepwork ((local (defthm len-when-minor-stack-p
+                      (implies (minor-stack-p x)
+                               (< 0 (len x)))
+                      :hints(("Goal" :in-theory (enable len minor-stack-p)))
+                      :rule-classes :linear)))
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (bindings)
+             (append (stack-nth-frame-minor-bindings 1 0 stack)
+                     (stack-nth-frame-bindings 1 stack))
+             bindings))
+
+(local (defthm major-frame-bfrlist-of-nth
+         (implies (not (member v (major-stack-bfrlist x)))
+                  (not (member v (major-frame-bfrlist (nth n x)))))
+         :hints(("Goal" :in-theory (enable major-stack-bfrlist nth)))))
+
+
+(define interp-st-ipasir-counterex-stack-prev-bindings/print-errors ((interp-st interp-st-bfrs-ok)
+                                                                state)
+  :guard (< 1 (interp-st-stack-frames interp-st))
+  :guard-hints (("goal" :in-theory (enable interp-st-prev-bindings
+                                           stack$a-nth-frame-bindings
+                                           stack$a-nth-frame-minor-bindings
+                                           BFR-LISTP-WHEN-NOT-MEMBER-WITNESS)))
+  :returns (mv (bindings-vals symbol-alistp)
+               (var-vals obj-alist-p)
+               (new-interp-st))
+  (b* ((bindings (interp-st-prev-bindings interp-st)))
+    (interp-st-ipasir-counterex-bindings/print-errors bindings interp-st state))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 

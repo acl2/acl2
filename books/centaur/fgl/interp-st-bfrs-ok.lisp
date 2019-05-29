@@ -56,7 +56,8 @@
 
 
 (define interp-st-bfrs-ok (interp-st)
-  (b* ((constraint-db (interp-st->constraint-db interp-st)))
+  (b* ((constraint-db (interp-st->constraint-db interp-st))
+       (cgraph (interp-st->cgraph interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (bvar-db (interp-st->bvar-db interp-st))
                 (stack (interp-st->stack interp-st))
@@ -66,12 +67,14 @@
                (b* ((bfrstate (logicman->bfrstate)))
                  (and (bfr-listp (major-stack-bfrlist (stack-extract stack)))
                       (bfr-listp (constraint-db-bfrlist constraint-db))
+                      (bfr-listp (cgraph-bfrlist cgraph))
                       (ec-call (logicman-pathcond-p-fn pathcond logicman))
                       (ec-call (logicman-pathcond-p-fn constraint-pathcond logicman))
                       (bfr-listp (bvar-db-bfrlist bvar-db))
                       (ec-call (bvar-db-boundedp bvar-db logicman))
                       (equal (next-bvar bvar-db) (bfr-nvars logicman))
                       (logicman-invar logicman)
+                      (bfr-listp (bvar-db-bfrlist bvar-db))
                       (stobj-let ((ipasir (logicman->ipasir logicman)))
                                  (ok)
                                  (equal (ipasir-get-assumption ipasir) nil)
@@ -84,6 +87,7 @@
                     (bfrstate (logicman->bfrstate)))
                (and (bfr-listp (major-stack-bfrlist (interp-st->stack interp-st)))
                     (bfr-listp (constraint-db-bfrlist (interp-st->constraint-db interp-st)))
+                    (bfr-listp (cgraph-bfrlist (interp-st->cgraph interp-st)))
                     (logicman-pathcond-p (interp-st->pathcond interp-st))
                     (logicman-pathcond-p (interp-st->constraint interp-st))
                     (bfr-listp (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
@@ -102,6 +106,8 @@
                          (interp-st-get :stack old))
                   (equal (interp-st-get :constraint-db new)
                          (interp-st-get :constraint-db old))
+                  (equal (interp-st-get :cgraph new)
+                         (interp-st-get :cgraph old))
                   (equal (interp-st-get :pathcond new)
                          (interp-st-get :pathcond old))
                   (equal (interp-st-get :constraint new)
@@ -135,6 +141,11 @@
     (implies (And (interp-st-bfrs-ok interp-st)
                   (bfr-listp (constraint-db-bfrlist new-constraint-db) (logicman->bfrstate (interp-st->logicman interp-st))))
              (interp-st-bfrs-ok (update-interp-st->constraint-db new-constraint-db interp-st))))
+
+  (defthm interp-st-bfrs-ok-of-update-cgraph
+    (implies (And (interp-st-bfrs-ok interp-st)
+                  (bfr-listp (cgraph-bfrlist new-cgraph) (logicman->bfrstate (interp-st->logicman interp-st))))
+             (interp-st-bfrs-ok (update-interp-st->cgraph new-cgraph interp-st))))
 
   (defthm interp-st-bfrs-ok-of-update-pathcond
     (implies (And (interp-st-bfrs-ok interp-st)

@@ -34,19 +34,9 @@
 
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings/print-errors
-                        (and (gl-object-bindings-p x)
-                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
-(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings/print-errors t)
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings
-                        (and (gl-object-bindings-p x)
-                             (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
-(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings t)
 
-(fancy-ev-add-primitive get-global (and (symbolp x)
-                                         (boundp-global x state)))
-(def-fancy-ev-primitives counterex-primitives)
+
 
 
 
@@ -66,7 +56,7 @@
             (or (not (a)) (b) (not (c)))
             (or (a) (not (b)) (not (c)))
             (or (not (a)) (not (b)) (not (c)))))
-  :hints (("goal" :clause-processor (top-gl-interp-cp clause
+  :hints (("goal" :clause-processor (gl-interp-cp clause
                                                       (default-glcp-config)
                                                       state))))
 
@@ -118,7 +108,7 @@
  (if (unsigned-byte-p 5 x)
      (equal (logtail 7 x) 0)
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 
@@ -389,7 +379,7 @@
           (unsigned-byte-p 5 y))
      (unsigned-byte-p 5 (logand x y))
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 (thm
@@ -397,7 +387,7 @@
           (unsigned-byte-p 10 y))
      (unsigned-byte-p 10 (logand x y))
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 (thm
@@ -405,7 +395,7 @@
           (unsigned-byte-p 50 y))
      (unsigned-byte-p 50 (logand x y))
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 (thm
@@ -413,11 +403,11 @@
           (unsigned-byte-p 90 y))
      (unsigned-byte-p 90 (logand x y))
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 
-;; (trace$ (top-gl-rewrite-try-rule
+;; (trace$ (gl-rewrite-try-rule
 ;;          :cond (equal (acl2::rewrite-rule->rune rule)
 ;;                       '(:rewrite fgl-equal-ints))))
 
@@ -581,7 +571,7 @@
      (equal (fast-logcount-32 x)
             (logcount x))
    t)
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
+ :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
           :in-theory nil)))
 
 
@@ -600,39 +590,47 @@
 
 
 
-(defun show-counterexample (x)
-  (declare (ignore x))
+(defun show-counterexample ()
   nil)
 
+(table gl-fn-modes 'show-counterexample
+       (make-gl-function-mode :dont-concrete-exec t))
+
 (def-gl-rewrite show-counterexample-rw
-  (equal (show-counterexample x)
+  (equal (show-counterexample)
          (b* (((list bindings vars)
                (syntax-bind alists
                             (mv-let (bindings-vals var-vals)
-                              (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
+                              (interp-st-ipasir-counterex-stack-prev-bindings/print-errors interp-st state)
                               (g-concrete (list bindings-vals var-vals))))))
-           (cw "Counterexample -- input obj: ~x0 variables: ~x1~%"
-               (cdr (assoc 'x bindings)) vars))))
+           (cw "Counterexample -- bindings: ~x0 variables: ~x1~%"
+               bindings vars))))
               
                                    
 
-(thm
- ;; (if (unsigned-byte-p 32 x)
-     (b* ((x (loghead 32 xx))
-          (impl (fast-logcount-32* x))
-          (spec (logcount x))
-          (eq (equal impl spec))
-          (uneq-sat (fgl-sat-check (make-fgl-sat-config) (not eq))))
-       (show-counterexample `((impl . ,impl)
-                              (spec . ,spec)
-                              (eq . ,eq)
-                              (uneq-sat . ,uneq-sat)
-                              (x . ,x)
-                              (xx . ,xx))))
-     ;;    (alists (syntax-bind alists1
-       ;;                         (mv-let (bindings-vals var-vals)
-       ;;                           (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
-       ;;                           (g-concrete (list bindings-vals var-vals))))))
-       ;; (cw "Counterexample!: alists: ~x0~%" alists))
- :hints (("goal" :clause-processor (top-gl-interp-cp clause (default-glcp-config) state)
-          :in-theory nil)))
+(make-event
+ ;; The must-fail doesn't really do it
+ '(:or (thm
+        ;; (if (unsigned-byte-p 32 x)
+        (b* ((x (loghead 32 xx))
+             (impl (fast-logcount-32* x))
+             (spec (logcount x))
+             (eq (equal impl spec))
+             (?uneq-sat (fgl-sat-check (make-fgl-sat-config) (not eq))))
+          (show-counterexample))
+        ;;    (alists (syntax-bind alists1
+        ;;                         (mv-let (bindings-vals var-vals)
+        ;;                           (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
+        ;;                           (g-concrete (list bindings-vals var-vals))))))
+        ;; (cw "Counterexample!: alists: ~x0~%" alists))
+        :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
+                 :in-theory nil)))
+   (value-triple :failed-as-expected)))
+
+
+;; (thm
+;;  (implies (unsigned-byte-p 32 x)
+;;           (equal (fast-logcount-32 x)
+;;                  (logcount x)))
+;;  :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)
+;;           :in-theory nil)))

@@ -85,6 +85,8 @@
   (def-cons-opener interp-st->bvar-db)
   (def-cons-opener interp-st->pathcond)
   (def-cons-opener interp-st->constraint)
+  (def-cons-opener interp-st->cgraph)
+  (def-cons-opener interp-st->cgraph^)
   (def-cons-opener logicman->bfrstate)
   (def-cons-opener logicman->aignet)
   (def-cons-opener logicman->mode)
@@ -617,7 +619,7 @@
 
   (local (in-theory (disable gl-interp-test-bvar-db-ok-implies-previous-ok)))
 
-  (defthm gl-interp-cp-correct1
+  (defthm gl-interp-cp-correct
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
                   (fgl-ev-meta-extract-global-facts)
@@ -670,7 +672,7 @@
                                       gl-interp-test-correct
                                       iff-forall-extensions-necc
                                       fgl-ev-of-extension-when-term-vars-bound))))))
-    :rule-classes nil))
+    :rule-classes :clause-processor))
 
 
 
