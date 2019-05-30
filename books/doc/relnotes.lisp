@@ -135,7 +135,7 @@
     "Some APT-specific XDOC constructors have been extended and improved.")
 
    (xdoc::p
-    "An input has been added to @(tsee tailrec) to control whether
+    "An input has been added to @(tsee apt::tailrec) to control whether
      the wrapper function is generated or not.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
