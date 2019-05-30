@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) -- Package
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -188,6 +188,7 @@
                          make-lambda
                          make-lambda-term
                          make-paired-name
+                         maybe-pseudo-event-formp
                          measure
                          merge-sort-lexorder
                          msg-downcase-first
