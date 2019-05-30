@@ -187,7 +187,7 @@ trigger on any of the following:</p>
 
 
 
-(acl2::defevaluator-fast svdecomp-ev svdecomp-ev-lst
+(acl2::defevaluator svdecomp-ev svdecomp-ev-lst
   ((not a)
    (if a b c)
    (implies a b)
