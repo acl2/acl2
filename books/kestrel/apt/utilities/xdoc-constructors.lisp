@@ -295,7 +295,7 @@
     (b* ((thm-name-ref
           (case wrapper?
             (:never "@('old-to-new')")
-            (:optional "@(old-to-new')
+            (:optional "@('old-to-new')
                         (if the @(':wrapper') input is @('nil')) or
                         @('old-to-wrapper')
                         (if the @(':wrapper') input is @('t'))")
