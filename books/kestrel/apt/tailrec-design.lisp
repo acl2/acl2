@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Design Notes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,6 +80,8 @@
      "@($f'$) corresponds to @('new').")
     (xdoc::li
      "@($\\tilde{f}$) corresponds to @('wrapper').")
+    (xdoc::li
+     "@($f{}f'$) corresponds to @('old-to-new').")
     (xdoc::li
      "@($f{}\\tilde{f}$) corresponds to @('old-to-wrapper')."))
 

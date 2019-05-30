@@ -134,6 +134,10 @@
    (xdoc::p
     "Some APT-specific XDOC constructors have been extended and improved.")
 
+   (xdoc::p
+    "An input has been added to @(tsee tailrec) to control whether
+     the wrapper function is generated or not.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
