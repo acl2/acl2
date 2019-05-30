@@ -155,9 +155,9 @@
          to use as the name of the function."))
       ,@(and (eq wrapper? :optional)
              (list
-              (xdoc::p
-               "This input may be present
-                only if the @(':wrapper') input is @('t').")))
+              '(xdoc::p
+                "This input may be present
+                 only if the @(':wrapper') input is @('t').")))
       (xdoc::p
        "In the rest of this documentation page,
         let @('wrapper') be this function.")
@@ -198,9 +198,9 @@
         "@('nil'), to disable it."))
       ,@(and (eq wrapper? :optional)
              (list
-              (xdoc::p
-               "This input may be present
-                only if the @(':wrapper') input is @('t').")))
+              '(xdoc::p
+                "This input may be present
+                 only if the @(':wrapper') input is @('t').")))
       ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
