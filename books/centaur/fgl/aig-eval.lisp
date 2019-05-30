@@ -128,7 +128,9 @@
     (implies (and (not err)
                   (hons-assoc-equal key varmap)
                   (not (hons-assoc-equal key acc)))
-             (mv-nth 0 (gobj-syntactic-boolean-fix (cdr (hons-assoc-equal key x)))))))
+             (mv-nth 0 (gobj-syntactic-boolean-fix (cdr (hons-assoc-equal key x))))))
+
+  (local (in-theory (enable gl-object-alist-fix))))
 
 
 
@@ -305,6 +307,8 @@
                           (equal (acl2::aig-env-lookup v x)
                                  (acl2::aig-env-lookup v y))))
          :rewrite :direct))
+
+(local (in-theory (disable aig-env-equiv)))
 
 (local (defthm aig-env-equiv-self
          (aig-env-equiv x x)

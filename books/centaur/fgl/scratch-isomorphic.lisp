@@ -186,6 +186,10 @@
   major-stack-scratch-isomorphic (stack$a-set-bindings bindings stack) 2
   :hints(("Goal" :in-theory (enable stack$a-set-bindings))))
 
+(defcong major-stack-scratch-isomorphic
+  major-stack-scratch-isomorphic (stack$a-set-debug debug stack) 2
+  :hints(("Goal" :in-theory (enable stack$a-set-debug))))
+
 (defcong scratchlist-isomorphic scratchlist-isomorphic (update-nth n obj x) 3
   :hints(("Goal" :in-theory (enable update-nth))))
 
@@ -240,6 +244,12 @@
 (defthm major-stack-scratch-isomorphic-of-set-bindings
   (major-stack-scratch-isomorphic (stack$a-set-bindings bindings stack) stack)
   :hints(("Goal" :in-theory (enable stack$a-set-bindings major-stack-scratch-isomorphic
+                                    major-frame-scratch-isomorphic))))
+
+(defthm major-stack-scratch-isomorphic-of-set-debug
+  (major-stack-scratch-isomorphic (stack$a-set-debug debug stack)
+                                  stack)
+  :hints(("Goal" :in-theory (enable stack$a-set-debug major-stack-scratch-isomorphic
                                     major-frame-scratch-isomorphic))))
 
 (defthm major-stack-scratch-isomorphic-of-add-minor-bindings

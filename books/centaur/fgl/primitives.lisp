@@ -83,6 +83,23 @@
        ((unless ok) (mv nil nil interp-st)))
     (mv t fix interp-st)))
 
+(local (defthm integerp-of-fgl-object-alist-eval
+         (iff (integerp (fgl-object-alist-eval x env))
+              (integerp (gl-object-alist-fix x)))
+         :hints(("Goal" :induct (len x)
+                 :in-theory (enable (:i len))
+                 :expand ((fgl-object-alist-eval x env)
+                          (gl-object-alist-fix x))))))
+
+(def-gl-primitive integerp (x)
+  (gl-object-case x
+    :g-concrete (mv t (integerp x.val) interp-st)
+    :g-integer (mv t t interp-st)
+    :g-boolean (mv t nil interp-st)
+    :g-cons (mv t nil interp-st)
+    :g-map (mv t (integerp x.alist) interp-st)
+    :otherwise (mv nil nil interp-st)))
+
 
 (local (defthm fgl-object-alist-eval-under-iff
          (iff (fgl-object-alist-eval x env)
@@ -231,6 +248,23 @@
                             (g-concrete->val cdr)))
         (g-cons car cdr))
       interp-st))
+
+(set-ignore-ok t)
+
+;; (local (defthm fgl-object-eval-when-booleanp
+;;          (implies (booleanp x)
+;;                   (equal (Fgl-object-eval x env) x))
+;;          :hints(("Goal" :in-theory (enable booleanp fgl-object-eval)))))
+
+
+(def-gl-primitive consp (x)
+  (gl-object-case x
+    :g-concrete (mv t (consp x.val) interp-st)
+    :g-integer (mv t nil interp-st)
+    :g-boolean (mv t nil interp-st)
+    :g-cons (mv t t interp-st)
+    :g-map (mv t (consp x.alist) interp-st)
+    :otherwise (mv nil nil interp-st)))
 
 (local (defthm consp-car-when-gl-object-alist-p
          (implies (and (gl-object-alist-p x)

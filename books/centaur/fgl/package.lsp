@@ -53,25 +53,9 @@
 
      alist-keys alist-vals
 
-     qv bfr-and bfr-not bfr-and
-     bfr-p bfr-or bfr-xor bfr-iff bfr-ite bfr-eval bfr-eval-list
-     q-implies add-bfr-fn add-bfr-pat add-bfr-fn-pat max-depth
-     equal-by-bfr-evals-hint-heavy
-     equal-of-booleans-rewrite bfr-ite-fn q-implies-fn bfr-or
-     bfr-eval-when-non-consp-values
-     |(bfr-ite non-nil y z)|
-     bfr-eval-when-not-consp
-     bfr-eval-of-non-consp-cheap
+     qv q-implies max-depth
+     equal-of-booleans-rewrite q-implies-fn
 
-     bfr-eval-cp-default-hint
-     bfr-eval-list-when-not-consp
-     bfr-p-of-bfr-and
-     bfr-p-of-bfr-not
-     bfr-p-of-bfr-ite
-     bfr-p-of-bfr-xor
-     bfr-p-of-bfr-iff
-     bfr-p-of-bfr-or
-     bfr-p-of-q-implies
      lnfix lifix lbfix lposfix pos-fix
 
      mv-nth-cons-meta
@@ -114,10 +98,6 @@
 
      parse-clause-id
      is-prefix subgoal-of
-
-     bfr-eval-of-bfr-and
-     bfr-eval-of-bfr-or
-     bfr-eval-of-bfr-not
 
      a b c d e f g h i j k l m n o p q r s t u v w x y z
 
@@ -167,28 +147,28 @@
      flag-present flag-fn-name flag-alist flag-defthm-macro flag-equivs-name
      use-by-hint use-by-computed-hint
 
-     def-gl-clause-processor gl-hint
-     def-gl-thm def-gl-param-thm
-     def-g-thm def-g-param-thm make-g-world
-     mk-g-number mk-g-integer mk-g-boolean mk-g-ite mk-g-concrete
-     gobjectp glc glr gl-fnsym gl-interp
-     gl-interp-raw gl-interp
-     gl-aside gl-ignore nonnil-symbol-listp
+     ;; def-gl-clause-processor gl-hint
+     ;; def-gl-thm def-gl-param-thm
+     ;; def-g-thm def-g-param-thm make-g-world
+     ;; mk-g-number mk-g-integer mk-g-boolean mk-g-ite mk-g-concrete
+     ;; gobjectp glc glr gl-fnsym gl-interp
+     ;; gl-interp-raw gl-interp
+     ;; gl-aside gl-ignore nonnil-symbol-listp
 
-     def-gl-rule
-     def-gl-ruled
-     def-gl-rulel
-     def-gl-ruledl
+     ;; def-gl-rule
+     ;; def-gl-ruled
+     ;; def-gl-rulel
+     ;; def-gl-ruledl
 
      xor
-     gl-bdd-mode gl-aig-mode gl-mbe
+     ;; gl-bdd-mode gl-aig-mode gl-mbe
 
      logcons logcar logcdr loghead logtail logapp logext
      b-ior b-and b-xor b-not bfix bitp
      bool-fix bool-fix$inline
      bool->bit bool->bit$inline
      bit->bool bit->bool$inline
-     binary-- binary-minus-for-gl
+     binary-- ;; binary-minus-for-gl
 
      numlist
      defsection
@@ -205,7 +185,7 @@
      set-max-mem
      the-method
      aignet
-     gl
+     ;; gl
      iff* and* and**
 
      new old

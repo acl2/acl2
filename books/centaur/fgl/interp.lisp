@@ -1550,7 +1550,7 @@
                (equiv-contexts '(iff))
                (backchain-limit (1- backchain-limit) backchain-limit))
               ((gl-interp-recursive-call successp interp-st)
-               (gl-rewrite-relieve-hyps rule.hyps interp-st state)))
+               (gl-rewrite-relieve-hyps rule.hyps rule 0 interp-st state)))
 
              ((unless (and** successp (not (interp-st->errmsg interp-st))))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
@@ -1558,7 +1558,7 @@
                    (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st)))
                 (mv nil nil interp-st)))
 
-             (interp-st (interp-st-prof-pop-increment t interp-st))
+             (interp-st (interp-st-set-debug `(,rule :rhs) interp-st))
              (concl-flags (!interp-flags->intro-synvars t flags))
              ((interp-st-bind
                (flags concl-flags flags))
@@ -1567,12 +1567,17 @@
 
              (interp-st (interp-st-pop-frame interp-st))
              ((when (interp-st->errmsg interp-st))
-              (b* ((interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
-                (mv nil nil interp-st))))
+              (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
+                   (interp-st (interp-st-cancel-error :abort-rewrite interp-st)))
+                (mv nil nil interp-st)))
+
+             (interp-st (interp-st-prof-pop-increment t interp-st)))
 
           (mv t val interp-st)))
       
       (define gl-rewrite-relieve-hyps ((hyps pseudo-term-listp)
+                                       (rule)
+                                       (hyp-num natp)
                                        (interp-st interp-st-bfrs-ok)
                                        state)
         :measure (list (nfix (interp-st->reclimit interp-st)) 9000
@@ -1582,12 +1587,14 @@
         (b* (((when (atom hyps))
               (mv t interp-st))
              ((gl-interp-recursive-call ok interp-st)
-              (gl-rewrite-relieve-hyp (car hyps) interp-st state))
+              (gl-rewrite-relieve-hyp (car hyps) rule hyp-num interp-st state))
              ((when (not ok))
               (mv ok interp-st)))
-          (gl-rewrite-relieve-hyps (cdr hyps) interp-st state)))
+          (gl-rewrite-relieve-hyps (cdr hyps) rule (+ 1 (lnfix hyp-num)) interp-st state)))
       
       (define gl-rewrite-relieve-hyp ((hyp pseudo-termp)
+                                      (rule)
+                                      (hyp-num natp)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
         :measure (list (nfix (interp-st->reclimit interp-st)) 9000
@@ -1596,6 +1603,7 @@
                      new-interp-st)
         (b* (((mv synp-type untrans-form trans-term vars)
               (gl-interp-match-synp hyp))
+             (interp-st (interp-st-set-debug `(,rule :hyp ,(lnfix hyp-num)) interp-st))
              ((when synp-type)
               (gl-rewrite-relieve-hyp-synp synp-type trans-term vars untrans-form interp-st state))
              ((mv test-bfr interp-st)
@@ -2636,7 +2644,7 @@
                   :do-not-induct t
                   :clause-processor (cmr::resolve-flags-cp
                                      clause
-                                     ',(cons 'acl2::flag fns)))))))
+                                     ',(cons 'fgl::flag fns)))))))
 
 (defsection stack-isomorphic-of-gl-interp
 
@@ -3979,7 +3987,7 @@
   (b* (((major-frame x1) (car x))
        ((major-frame y1) (car y)))
     (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
-     (equal x1.debug y1.debug)
+     ;; (equal x1.debug y1.debug)
      (minor-stack-equiv x1.minor-stack y1.minor-stack)
      (if (atom (cdr x))
          (atom (cdr y))
@@ -4015,6 +4023,11 @@
     stack-equiv-except-top-bindings
     (stack$a-pop-scratch stack) 1
     :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-set-debug debug stack) 2
+    :hints(("Goal" :in-theory (enable stack$a-set-debug))))
 
   (defcong stack-equiv-except-top-bindings
     stack-equiv-except-top-bindings
@@ -4055,7 +4068,12 @@
                                       stack$a-set-bindings
                                       fgl-major-stack-concretize
                                       fgl-major-frame-concretize)))
-    :fn gl-rewrite-relieve-hyp-synp))
+    :fn gl-rewrite-relieve-hyp-synp)
+
+  (defthm stack-equiv-except-top-bindings-of-set-debug
+    (stack-equiv-except-top-bindings (stack$a-set-debug debug stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-debug)))))
 
 
 (define minor-stack-equiv-except-top-bindings ((x minor-stack-p)
@@ -4064,7 +4082,7 @@
   (b* (((minor-frame x1) (car x))
        ((minor-frame y1) (car y)))
     (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
-     (equal x1.debug y1.debug)
+     ;;(equal x1.debug y1.debug)
      (scratchlist-equiv x1.scratch y1.scratch)
      (if (atom (cdr x))
          (atom (cdr y))
@@ -4079,7 +4097,7 @@
   (b* (((major-frame x1) (car x))
        ((major-frame y1) (car y)))
     (and ;;(ec-call (gl-bindings-extension-p x1.bindings y1.bindings))
-     (equal x1.debug y1.debug)
+     ;; (equal x1.debug y1.debug)
      (minor-stack-equiv-except-top-bindings x1.minor-stack y1.minor-stack)
      (if (atom (cdr x))
          (atom (cdr y))
@@ -4349,19 +4367,33 @@
              :hints(("Goal" :in-theory (enable gl-bfr-object-bindings-p)))
              :rule-classes :forward-chaining))
 
+    (local (defret stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp-lemma
+             (implies (and (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
+                                  (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st))))
+                      (stack-bindings-extension-p
+                       (fgl-major-stack-concretize (interp-st->stack new-interp-st) env
+                                                   logicman)
+                       (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st))))
+             :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
+                                               stack$a-set-bindings
+                                               stack$a-bindings
+                                               fgl-major-stack-concretize
+                                               fgl-major-frame-concretize)))
+             :fn gl-rewrite-relieve-hyp-synp))
+
     (defret stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp
-      (implies (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
-                      (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+      (implies (and (equal (fgl-major-stack-concretize (interp-st->stack new-interp-st) env logicman)
+                           (fgl-major-stack-concretize (interp-st->stack new-interp-st) env (interp-st->logicman new-interp-st)))
+                    (stack-bindings-extension-p
+                     (fgl-major-stack-concretize (interp-st->stack interp-st) env (interp-st->logicman interp-st))
+                     (fgl-major-stack-concretize (interp-st->stack interp-st1) env (interp-st->logicman interp-st1))))
                (stack-bindings-extension-p
                 (fgl-major-stack-concretize (interp-st->stack new-interp-st) env
                                 logicman)
-                (fgl-major-stack-concretize (interp-st->stack interp-st) env
-                                (interp-st->logicman interp-st))))
-      :hints(("Goal" :in-theory (enable gl-rewrite-relieve-hyp-synp
-                                        stack$a-set-bindings
-                                        stack$a-bindings
-                                        fgl-major-stack-concretize
-                                        fgl-major-frame-concretize)))
+                (fgl-major-stack-concretize (interp-st->stack interp-st1) env
+                                (interp-st->logicman interp-st1))))
+      :hints(("Goal" :use stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp-lemma
+              :in-theory (disable stack-bindings-extension-p-of-gl-rewrite-relieve-hyp-synp-lemma)))
       :fn gl-rewrite-relieve-hyp-synp)
 
     (def-updater-independence-thm ev-interp-st-stack-bindings-extension-p-trans-rw

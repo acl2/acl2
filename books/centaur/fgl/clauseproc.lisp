@@ -539,6 +539,13 @@
                            (mv nil nil state interp-st)))
        (- (and (interp-st->errmsg interp-st)
                (cw "error message: ~x0~%" (interp-st->errmsg interp-st))))
+       ((mv ctrex-errmsg & var-vals interp-st)
+        (interp-st-ipasir-counterex-bindings nil interp-st state))
+       (- (and (not (interp-st->errmsg interp-st))
+               (if ctrex-errmsg
+                   (cw "Error retrieving counterexample: ~@0~%" ctrex-errmsg)
+                 (cw "Counterexample bindings: ~x0~%" var-vals))))
+
        (debug-obj (interp-st->debug-info interp-st))
        (state (my-set-gl-interp-error-debug-obj debug-obj state)))
     (mv "Failed" (list clause) state interp-st))

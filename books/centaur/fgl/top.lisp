@@ -81,6 +81,24 @@
 (def-fancy-ev-primitives counterex-primitives)
 
 
+
+(defun show-counterexample ()
+  nil)
+
+(table gl-fn-modes 'show-counterexample
+       (make-gl-function-mode :dont-concrete-exec t))
+
+(def-gl-rewrite show-counterexample-rw
+  (equal (show-counterexample)
+         (b* (((list bindings vars)
+               (syntax-bind alists
+                            (mv-let (bindings-vals var-vals)
+                              (interp-st-ipasir-counterex-stack-prev-bindings/print-errors interp-st state)
+                              (g-concrete (list bindings-vals var-vals))))))
+           (cw "Counterexample -- bindings: ~x0 variables: ~x1~%"
+               bindings vars))))
+
+
 ;; Convenience macro to create a glcp-config object that captures the current
 ;; definitions, rewrite rules, branch merge rules, and function modes from
 ;; their respective tables.

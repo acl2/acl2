@@ -2195,7 +2195,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   
   (defthm gobj-bfr-eval-reduce-by-bfr-eval
     (implies (and (equal ans (bfr-eval x (gl-env->bfr-vals env)))
-                  (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'acl2::bfr-eval-fn)) :otherwise t)))
+                  (syntaxp (pseudo-term-case ans :fncall (not (eq ans.fn 'bfr-eval-fn)) :otherwise t)))
              (equal (gobj-bfr-eval x env) ans))))
 
 
@@ -2618,17 +2618,17 @@ logicman stobj.  If no logicman argument is supplied, the variable named
    t
    :rule-classes nil
    :hints (("goal" :use ((:functional-instance aabf-trivial-thm
-                          (aabf-eval acl2::bfr-eval-fn)
+                          (aabf-eval bfr-eval-fn)
                           (aabf-p (lambda (x man) (bfr-p x (logicman->bfrstate man))))
                           (aabf-pred (lambda (x man) (bfr-p x (logicman->bfrstate man))))
                           (aabf-true (lambda () t))
                           (aabf-false (lambda () nil))
-                          (aabf-not acl2::bfr-not-fn)
-                          (aabf-and acl2::bfr-and-fn)
-                          (aabf-or acl2::bfr-or-fn)
-                          (aabf-xor acl2::bfr-xor-fn)
-                          (aabf-iff acl2::bfr-iff-fn)
-                          (aabf-ite acl2::bfr-ite-fn)
+                          (aabf-not bfr-not-fn)
+                          (aabf-and bfr-and-fn)
+                          (aabf-or bfr-or-fn)
+                          (aabf-xor bfr-xor-fn)
+                          (aabf-iff bfr-iff-fn)
+                          (aabf-ite bfr-ite-fn)
                           (aabf-syntactically-equal equal)
                           (aabf-extension-p logicman-extension-p)))))))
 
@@ -2645,17 +2645,17 @@ logicman stobj.  If no logicman argument is supplied, the variable named
    t
    :rule-classes nil
    :hints (("goal" :use ((:functional-instance aabf-trivial-thm
-                          (aabf-eval acl2::bfr-eval-fn)
+                          (aabf-eval bfr-eval-fn)
                           (aabf-p (lambda (x man) (bfr-p x (logicman->bfrstate man))))
                           (aabf-pred (lambda (x man) (not (bfr-depends-on var x man))))
                           (aabf-true (lambda () t))
                           (aabf-false (lambda () nil))
-                          (aabf-not acl2::bfr-not-fn)
-                          (aabf-and acl2::bfr-and-fn)
-                          (aabf-or acl2::bfr-or-fn)
-                          (aabf-xor acl2::bfr-xor-fn)
-                          (aabf-iff acl2::bfr-iff-fn)
-                          (aabf-ite acl2::bfr-ite-fn)
+                          (aabf-not bfr-not-fn)
+                          (aabf-and bfr-and-fn)
+                          (aabf-or bfr-or-fn)
+                          (aabf-xor bfr-xor-fn)
+                          (aabf-iff bfr-iff-fn)
+                          (aabf-ite bfr-ite-fn)
                           (aabf-syntactically-equal equal)
                           (aabf-extension-p logicman-extension-p)))))))
 
