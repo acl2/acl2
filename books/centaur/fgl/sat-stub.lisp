@@ -65,7 +65,9 @@
     (defret interp-st-get-of-<fn>
       (implies (and (not (equal (interp-st-field-fix key) :logicman))
                     (not (equal (interp-st-field-fix key) :errmsg))
-                    (not (equal (interp-st-field-fix key) :debug-info)))
+                    (not (equal (interp-st-field-fix key) :debug-info))
+                    (not (equal (interp-st-field-fix key) :sat-ctrex))
+                    (not (equal (interp-st-field-fix key) :ctrex-env)))
                (equal (interp-st-get key new-interp-st)
                       (interp-st-get key interp-st))))
 
@@ -297,35 +299,47 @@
            (bfr-env$-p env$ bfrstate))))
 
 (encapsulate
-  (((interp-st-sat-counterexample env$ interp-st state) => (mv * env$)
-    :formals (env$ interp-st state)
+  (((interp-st-sat-counterexample interp-st state) => (mv * interp-st)
+    :formals (interp-st state)
     :guard (interp-st-bfrs-ok interp-st)))
-  (local (defun interp-st-sat-counterexample (env$ interp-st state)
+  (local (defun interp-st-sat-counterexample (interp-st state)
            (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
-                           :stobjs (env$ interp-st state))
-                    (ignore interp-st state))
-           (mv t env$)))
+                           :stobjs (interp-st state))
+                    (ignore state))
+           (mv t interp-st)))
+
+  (defthm interp-st-get-of-interp-st-sat-counterexample
+    (implies (and (not (equal (interp-st-field-fix key) :ctrex-env))
+                  (not (equal (interp-st-field-fix key) :sat-ctrex)))
+             (equal (interp-st-get key (mv-nth 1 (interp-st-sat-counterexample interp-st state)))
+                    (interp-st-get key interp-st))))
 
   (defthm bfr-env$-p-of-interp-st-sat-counterexample
-    (b* (((mv err new-env$) (interp-st-sat-counterexample env$ interp-st state)))
+    (b* (((mv err new-interp-st) (interp-st-sat-counterexample interp-st state)))
       (implies (not err)
-               (bfr-env$-p new-env$
+               (bfr-env$-p (interp-st->ctrex-env new-interp-st)
                            (logicman->bfrstate (interp-st->logicman interp-st)))))
     :hints(("Goal" :in-theory (enable bfr-env$-p)))))
 
 (encapsulate
-  (((interp-st-monolithic-sat-counterexample env$ interp-st state) => (mv * env$)
-    :formals (env$ interp-st state)
+  (((interp-st-monolithic-sat-counterexample interp-st state) => (mv * interp-st)
+    :formals (interp-st state)
     :guard (interp-st-bfrs-ok interp-st)))
-  (local (defun interp-st-monolithic-sat-counterexample (env$ interp-st state)
+  (local (defun interp-st-monolithic-sat-counterexample (interp-st state)
            (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
-                           :stobjs (env$ interp-st state))
-                    (ignore interp-st state))
-           (mv t env$)))
+                           :stobjs (interp-st state))
+                    (ignore state))
+           (mv t interp-st)))
+
+  (defthm interp-st-get-of-interp-st-monolithic-sat-counterexample
+    (implies (and (not (equal (interp-st-field-fix key) :ctrex-env))
+                  (not (equal (interp-st-field-fix key) :sat-ctrex)))
+             (equal (interp-st-get key (mv-nth 1 (interp-st-monolithic-sat-counterexample interp-st state)))
+                    (interp-st-get key interp-st))))
 
   (defthm bfr-env$-p-of-interp-st-monolithic-sat-counterexample
-    (b* (((mv err new-env$) (interp-st-monolithic-sat-counterexample env$ interp-st state)))
+    (b* (((mv err new-interp-st) (interp-st-monolithic-sat-counterexample interp-st state)))
       (implies (not err)
-               (bfr-env$-p new-env$
+               (bfr-env$-p (interp-st->ctrex-env new-interp-st)
                            (logicman->bfrstate (interp-st->logicman interp-st)))))
     :hints(("Goal" :in-theory (enable bfr-env$-p)))))

@@ -1070,7 +1070,9 @@
              (and (implies (aignet::sat-lit-list-listp cnf sat-lits)
                            (aignet::sat-lit-list-listp new-cnf new-sat-lits))
                   (implies (aignet::sat-lit-listp cube sat-lits)
-                           (aignet::sat-lit-listp new-cube new-sat-lits))))
+                           (aignet::sat-lit-listp new-cube new-sat-lits))
+                  (implies (equal aignet (logicman->aignet logicman))
+                           (aignet::sat-lits-wfp new-sat-lits aignet))))
     :hints(("Goal" :in-theory (enable logicman-pathcond-p))))
 
   (defret cnf-for-aignet-of-<fn>

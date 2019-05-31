@@ -36,7 +36,8 @@
 (include-book "primitives")
 (include-book "fgarrays")
 (include-book "aig-eval")
-(include-book "sat")
+(include-book "ipasir-sat")
+(include-book "satlink-sat")
 (include-book "ctrex-utils")
 
 ;; ----------------------------------------------------------------------
@@ -59,6 +60,9 @@
 ;; translated if interp-st is used.)
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
+
+(fancy-ev-add-primitive interp-st-sat-counterexample t)
+(fancy-ev-add-primitive interp-st-monolithic-sat-counterexample t)
 
 (fancy-ev-add-primitive interp-st-counterex-stack-prev-bindings/print-errors
                         (< 1 (interp-st-stack-frames interp-st)))

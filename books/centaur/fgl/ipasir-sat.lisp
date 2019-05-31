@@ -371,7 +371,7 @@
     
 
 
-(define interp-st-sat-check-core ((config fgl-sat-config-p)
+(define interp-st-ipasir-sat-check-core ((config fgl-sat-config-p)
                                   (bfr interp-st-bfr-p)
                                   (interp-st interp-st-bfrs-ok)
                                   state)
@@ -645,7 +645,7 @@
              (equal (gobj-bfr-eval ans env logicman)
                     (gobj-bfr-eval bfr env (interp-st->logicman interp-st))))
     :hints ((acl2::function-termhint
-             interp-st-sat-check-core
+             interp-st-ipasir-sat-check-core
              (:solve
               (b* ((aignet (logicman->aignet logicman))
                    (sat-lits (logicman->sat-lits logicman))
@@ -739,7 +739,7 @@
 
 
 (make-event
- `(define interp-st-sat-check-impl (params
+ `(define interp-st-ipasir-sat-check-impl (params
                                     (bfr interp-st-bfr-p)
                                     (interp-st interp-st-bfrs-ok)
                                     state)
@@ -753,13 +753,10 @@
          ((unless (fgl-sat-config-p params))
           (gl-interp-error
            :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object"))))
-      (interp-st-sat-check-core params bfr interp-st state))
+      (interp-st-ipasir-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))
 
-
-(defattach interp-st-sat-check interp-st-sat-check-impl)
-(defattach interp-st-monolithic-sat-check interp-st-sat-check-impl)
 
 
 
@@ -786,108 +783,6 @@
   (defret len-of-<fn>
     (equal (len new-bitarr) (len bitarr))))
     
-
-#!aignet  
-(defsection cnf->aignet-vals
-  ;; BOZO this is probably a good logical definition for this but it might be
-  ;; nice to have an exec that iterates over the sat-lits/cnf-vals instead of
-  ;; having to skip all the IDs with no sat-vars in vals
-  (defiteration cnf->aignet-vals (vals cnf-vals sat-lits aignet)
-    (declare (xargs :stobjs (vals cnf-vals sat-lits aignet)
-                    :guard (and (sat-lits-wfp sat-lits aignet)
-                                (<= (num-fanins aignet) (bits-length vals)))))
-    (b* ((id n)
-         ((unless (aignet-id-has-sat-var id sat-lits))
-          vals)
-         (lit (aignet-id->sat-lit id sat-lits))
-         (val (satlink::eval-lit lit cnf-vals)))
-      (set-bit n val vals))
-    :returns vals
-    :last (num-fanins aignet))
-
-  (in-theory (disable cnf->aignet-vals))
-  (local (in-theory (enable cnf->aignet-vals
-                            (:induction cnf->aignet-vals-iter))))
-
-  (defthm cnf->aignet-vals-iter-normalize-aignet
-    (implies (syntaxp (not (equal aignet ''nil)))
-             (equal (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
-                    (cnf->aignet-vals-iter n vals cnf-vals sat-lits nil)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet)
-            :expand-others
-            ((:free (aignet)
-              (cnf->aignet-vals-iter n vals cnf-vals sat-lits aignet))))))
-
-  (defthm nth-of-cnf->aignet-vals-iter
-    (equal (nth n (cnf->aignet-vals-iter m vals cnf-vals sat-lits
-                                         aignet))
-           (if (and (< (nfix n) (nfix m))
-                    (aignet-id-has-sat-var n sat-lits))
-               (satlink::eval-lit
-                (aignet-id->sat-lit n sat-lits)
-                cnf-vals)
-             (nth n vals)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
-
-  (defthm nth-of-cnf->aignet-vals
-    (equal (nth n (cnf->aignet-vals vals cnf-vals sat-lits aignet))
-           (if (and (aignet-idp n aignet)
-                    (aignet-id-has-sat-var n sat-lits))
-               (satlink::eval-lit
-                (aignet-id->sat-lit n sat-lits)
-                cnf-vals)
-             (nth n vals)))
-    :hints(("Goal" :in-theory (enable aignet-idp))))
-
-  (defthm len-of-cnf->aignet-vals-iter
-    (implies (and (<= (nfix (num-fanins aignet))
-                      (bits-length vals))
-                  (<= (nfix m) (bits-length vals)))
-             (equal (len (cnf->aignet-vals-iter m vals cnf-vals sat-lits
-                                                aignet))
-                    (len vals)))
-    :hints((acl2::just-induct-and-expand
-            (cnf->aignet-vals-iter m vals cnf-vals sat-lits aignet))))
-
-  (defthm len-of-cnf->aignet-vals
-    (implies (and (<= (nfix (num-fanins aignet))
-                      (bits-length vals)))
-             (equal (len (cnf->aignet-vals vals cnf-vals sat-lits
-                                           aignet))
-                    (len vals))))
-
-  (local (in-theory (disable cnf->aignet-vals)))
-
-  (defthmd cnf->aignet-vals-of-aignet-extension-lemma
-    (implies (and (aignet-extension-binding)
-                  (sat-lits-wfp sat-lits orig))
-             (bit-equiv (nth n (cnf->aignet-vals vals cnf-vals sat-lits new))
-                        (nth n (cnf->aignet-vals vals cnf-vals sat-lits orig))))
-    :hints (("goal" :in-theory (enable
-                                sat-lits-wfp-implies-no-sat-var-when-not-aignet-idp))))
-
-  (local (in-theory (e/d (cnf->aignet-vals-of-aignet-extension-lemma))))
-
-  (defthm cnf->aignet-vals-of-aignet-extension
-    (implies (and (aignet-extension-binding)
-                  (sat-lits-wfp sat-lits orig))
-             (bits-equiv (cnf->aignet-vals vals cnf-vals sat-lits new)
-                         (cnf->aignet-vals vals cnf-vals sat-lits orig)))
-    :hints (("goal" :in-theory (enable bits-equiv))))
-
-
-  (defthm cnf->aignet-vals-of-sat-lit-extension-idempotent
-    (implies (and (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (sat-lits-wfp sat-lits1 aignet)
-                  (sat-lits-wfp sat-lits2 aignet))
-             (let ((aignet-vals1 (cnf->aignet-vals
-                                  vals cnf-vals sat-lits2 aignet)))
-               (bits-equiv (cnf->aignet-vals
-                            aignet-vals1 cnf-vals sat-lits1 aignet)
-                           aignet-vals1)))
-    :hints(("Goal" :in-theory (enable bits-equiv)))))
   
 
 (define logicman-ipasir->env$ (logicman env$)
@@ -929,18 +824,33 @@
 
 
 
-(define interp-st-ipasir->env$ (env$
-                                (interp-st interp-st-bfrs-ok)
-                                state)
-  :returns (mv err new-env$)
+(define interp-st-ipasir-counterexample ((interp-st interp-st-bfrs-ok)
+                                         state)
+  :returns (mv err new-interp-st)
   (declare (ignore state))
-  (stobj-let ((logicman (interp-st->logicman interp-st)))
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
              (err env$)
              (logicman-ipasir->env$ logicman env$)
-             (mv err env$))
+             (mv err interp-st))
   ///
-  (defret bfr-env$-p-of-<fn>
-    (bfr-env$-p new-env$ (logicman->bfrstate (interp-st->logicman interp-st)))))
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :ctrex-env))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
 
-(defattach interp-st-sat-counterexample interp-st-ipasir->env$)
-(defattach interp-st-monolithic-sat-counterexample interp-st-ipasir->env$)
+  (defret bfr-env$-p-of-<fn>
+    (implies (not err)
+             (bfr-env$-p (interp-st->ctrex-env new-interp-st)
+                         (logicman->bfrstate (interp-st->logicman interp-st))))))
+
+(defmacro fgl-use-ipasir-for-incremental-sat ()
+  '(progn (defattach interp-st-sat-check interp-st-ipasir-sat-check-impl)
+          (defattach interp-st-sat-counterexample interp-st-ipasir-counterexample)))
+
+(defmacro fgl-use-ipasir-for-monolithic-sat ()
+  '(progn (defattach interp-st-monolithic-sat-check interp-st-ipasir-sat-check-impl)
+          (defattach interp-st-monolithic-sat-counterexample interp-st-ipasir-counterexample)))
+
+(fgl-use-ipasir-for-incremental-sat)
+(local (fgl-use-ipasir-for-monolithic-sat))

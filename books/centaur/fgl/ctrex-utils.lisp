@@ -2313,9 +2313,125 @@
                   (symbol-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+(define interp-st-infer-ctrex-var-assignments ((vars pseudo-var-list-p)
+                                               (interp-st interp-st-bfrs-ok)
+                                               (state))
+  :returns (mv (errmsg)
+               (new-interp-st))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable bfr-listp-when-not-member-witness))))
+  (b* ((cgraph (interp-st->cgraph interp-st))
+       (memo (interp-st->cgraph-memo interp-st))
+       (cgraph-index (interp-st->cgraph-index interp-st)))
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (bvar-db (interp-st->bvar-db interp-st))
+                (env$ (interp-st->ctrex-env interp-st)))
+               (errmsg cgraph memo cgraph-index env$)
+               (b* ((ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
+                    ((unless (ctrex-ruletable-p ruletable))
+                     (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$))
+                    ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
+                     (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable (w state)))
+                    ((unless (bfr-env$-p env$ (logicman->bfrstate)))
+                     (mv "Bad env$ -- not bfr-env$-p" cgraph memo (next-bvar bvar-db) env$))
+                    ((mv var-vals assigns sts)
+                     (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
+                    (- (fast-alist-free assigns))
+                    (sts (fast-alist-free (fast-alist-clean sts)))
+                    (deriv-errors (cgraph-derivstates-summarize-errors sts))
+                    (env$ (update-env$->obj-alist var-vals env$))
+                    (full-deriv-errors (ctrex-summarize-errors vars var-vals deriv-errors)))
+                 (mv full-deriv-errors cgraph memo (next-bvar bvar-db) env$))
+               (b* ((interp-st (update-interp-st->cgraph cgraph interp-st))
+                    (interp-st (update-interp-st->cgraph-memo memo interp-st))
+                    (interp-st (update-interp-st->cgraph-index cgraph-index interp-st)))
+                 (mv errmsg interp-st))))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
+
+  (defret bfr-env$-p-of-<fn>
+    (implies (and (not errmsg)
+                  (equal bfrstate (logicman->bfrstate (interp-st->logicman interp-st))))
+             (bfr-env$-p (interp-st->ctrex-env new-interp-st) bfrstate))))
+
+
+(fty::deftagsum bvar-db-consistency-error
+  (:eval-error ((obj gl-object-p)
+                (msg)))
+  (:inconsistency ((obj gl-object-p)
+                   (var-val)
+                   (obj-val)))
+  :layout :tree)
+
+(fty::deflist bvar-db-consistency-errorlist :elt-type bvar-db-consistency-error :true-listp t)
+               
+
+(define bvar-db-check-ctrex-consistency ((n natp)
+                                         bvar-db logicman env$ state
+                                         (acc bvar-db-consistency-errorlist-p))
+  :guard (and (<= (base-bvar bvar-db) n)
+              (<= n (next-bvar bvar-db))
+              (equal (next-bvar bvar-db) (bfr-nvars))
+              (lbfr-listp (bvar-db-bfrlist bvar-db))
+              (bfr-env$-p env$ (logicman->bfrstate)))
+  :guard-hints (("goal" :in-theory (enable bfr-varname-p)))
+  
+  :returns (errs bvar-db-consistency-errorlist-p)
+  :measure (nfix (- (next-bvar bvar-db) (nfix n)))
+  (b* ((acc (bvar-db-consistency-errorlist-fix acc))
+       ((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
+                   :exec (eql n (next-bvar bvar-db))))
+        acc)
+       (var (bfr-var n logicman))
+       (obj (get-bvar->term n bvar-db))
+       (var-val (bfr-eval-fast var env$))
+       ((mv eval-err obj-val) (magic-gl-object-eval obj env$))
+       (acc (cond (eval-err (cons (make-bvar-db-consistency-error-eval-error :obj obj :msg eval-err)
+                                  acc))
+                  ((xor var-val obj-val)
+                   (cons (make-bvar-db-consistency-error-inconsistency :obj obj :var-val var-val :obj-val obj-val)
+                         acc))
+                  (t acc))))
+    (bvar-db-check-ctrex-consistency (1+ (lnfix n)) bvar-db logicman env$ state acc)))
+       
+  
+(define interp-st-check-bvar-db-ctrex-consistency ((interp-st interp-st-bfrs-ok)
+                                                   (state))
+  :returns (new-interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
+              (logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (err consistency-result)
+             (b* (((unless (bfr-env$-p env$ (logicman->bfrstate)))
+                   (mv "Bad counterexample env" nil)))
+               (mv nil
+                   (bvar-db-check-ctrex-consistency
+                    (base-bvar bvar-db) bvar-db logicman env$ state nil)))
+             (b* (((when err)
+                   (cw "Error checking bvar-db consistency: ~@0" err)
+                   interp-st)
+                  (interp-st
+                   (interp-st-put-user-scratch :bvar-db-ctrex-consistency-errors consistency-result interp-st)))
+               (and consistency-result
+                    (cw "Inconsistencies in bvar-db counterexample (~x0 total). See error list: ~x1.~%"
+                        (len consistency-result)
+                        '(cdr (hons-get :bvar-db-ctrex-consistency-errors (@ fgl-user-scratch)))))
+               interp-st)))
+
+
 (define interp-st-counterex-bindings ((x gl-object-bindings-p)
-                                             (interp-st)
-                                             (state))
+                                      (interp-st)
+                                      (state))
   :returns (mv (errmsg)
                (bindings-vals symbol-alistp)
                (var-vals obj-alist-p)
@@ -2325,42 +2441,29 @@
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable interp-st-bfrs-ok
                                           bfr-listp-when-not-member-witness))))
-  (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode interp-st)))
-        (mv "bfr-mode must be :aignet"
-            nil nil interp-st))
-       ((acl2::local-stobjs env$)
-        (mv errmsg binding-vals var-vals interp-st env$))
-       (x (gl-object-bindings-fix x))
-       ((mv err env$) (interp-st-sat-counterexample env$ interp-st state))
+  :prepwork ((local (defthm gl-object-alist-p-when-gl-object-bindings-p
+                      (implies (gl-object-bindings-p x)
+                               (gl-object-alist-p x))
+                      :hints(("Goal" :in-theory (enable gl-object-alist-p
+                                                        gl-object-bindings-p))))))
+  (b* ((x (gl-object-bindings-fix x))
+       (vars (gl-object-alist-vars x nil))
+       ((mv err interp-st)
+        (interp-st-infer-ctrex-var-assignments vars interp-st state))
        ((when err)
-        (mv (msg "Error getting SAT counterexample: ~@0" err) nil nil interp-st env$))
-       (cgraph (interp-st->cgraph interp-st))
-       (memo (interp-st->cgraph-memo interp-st))
-       (cgraph-index (interp-st->cgraph-index interp-st)))
+        (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
+            nil nil interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
-                (bvar-db (interp-st->bvar-db interp-st)))
-               (errmsg binding-vals var-vals cgraph memo cgraph-index env$)
-               (b* ((vars (gl-objectlist-vars (alist-vals (gl-object-bindings-fix x)) nil))
-                    (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
-                    ((unless (ctrex-ruletable-p ruletable))
-                     (mv "bad ctrex-ruletable~%" nil nil cgraph memo cgraph-index env$))
-                    ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
-                     (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable (w state)))
-                    ((mv var-vals assigns sts)
-                     (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
-                    (- (fast-alist-free assigns))
-                    (sts (fast-alist-free (fast-alist-clean sts)))
-                    (deriv-errors (cgraph-derivstates-summarize-errors sts))
-                    (env$ (update-env$->obj-alist var-vals env$))
-                    (full-deriv-errors (ctrex-summarize-errors vars var-vals deriv-errors))
-                    ((mv eval-err objs) (magic-gl-objectlist-eval (alist-vals x) env$))
-                    (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
-                    (binding-vals (pairlis$ (alist-keys x) objs)))
-                 (mv errmsg binding-vals var-vals cgraph memo (next-bvar bvar-db) env$))
-               (b* ((interp-st (update-interp-st->cgraph cgraph interp-st))
-                    (interp-st (update-interp-st->cgraph-memo memo interp-st))
-                    (interp-st (update-interp-st->cgraph-index cgraph-index interp-st)))
-                 (mv errmsg binding-vals var-vals interp-st env$))))
+                (env$ (interp-st->ctrex-env interp-st)))
+               (errmsg binding-vals var-vals)
+               (b* (((mv eval-err objs) (magic-gl-objectlist-eval (alist-vals x) env$))
+                    ;; (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
+                    (binding-vals (pairlis$ (alist-keys x) objs))
+                    (var-vals (env$->obj-alist env$)))
+                 (mv eval-err binding-vals var-vals))
+               (mv (and errmsg
+                        (msg "Error evaluating objects under the counterexample: ~@0" errmsg))
+                   binding-vals  var-vals interp-st)))
   ///
   (defret interp-st-get-of-<fn>
     (implies (member (interp-st-field-fix key)
@@ -2376,7 +2479,7 @@
 
 
 (define interp-st-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
-                                                   (state))
+                                            (state))
   :returns (mv errmsg
                (bindings-vals symbol-alistp)
                (var-vals obj-alist-p)

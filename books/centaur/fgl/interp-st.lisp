@@ -100,6 +100,7 @@
     (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
     (cgraph-memo :type (satisfies cgraph-alist-p) :initially nil :fix cgraph-alist-fix)
     (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    (ctrex-env :type env$)
     (sat-ctrex :type bitarr)
 
     (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
@@ -305,6 +306,18 @@
 ;;                (equal (interp-st->constraint interp-st1) (interp-st->constraint interp-st)))))))
   
 ;;   :subsubsts `((fields . ,*interp-st-field-templates*))))
+
+(define interp-st-put-user-scratch (key val interp-st)
+  :returns (new-interp-st)
+  (update-interp-st->user-scratch
+   (hons-acons key val (interp-st->user-scratch interp-st))
+   interp-st)
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :user-scratch))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st)))))
+
 
 
 (defthm interp-st-implies-natp-flags

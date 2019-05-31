@@ -74,6 +74,8 @@
                          (cons (fgl-object-eval (car x) env)
                                (fgl-objectlist-eval (cdr x) env))))))
 
+(local (in-theory (disable member acl2::member-equal-append)))
+
 (local (in-theory (enable kwote-lst
                           fgl-objectlist-eval)))
 

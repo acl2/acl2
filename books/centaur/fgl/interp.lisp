@@ -328,7 +328,7 @@
        ((unless (gl-bfr-object-p val (interp-st-bfr-state)))
         (gl-interp-error
          :msg (gl-msg "Syntax-bind error: ~x0 evaluted to an illformed symbolic object, saved in ~x1."
-                      (pseudo-term-quote->val untrans) '(@ gl-interp-error-debug-obj))
+                      (pseudo-term-quote->val untrans) '(@ fgl-interp-error-debug-obj))
          :debug-obj val))
        ;; BOZO We might actually want to bind this to a non-concrete value
        (interp-st (interp-st-add-binding varname val interp-st)))
@@ -2145,7 +2145,7 @@
                              contradiction is stored in the state global (~x0 ~
                              ~x1), but note that a previous constraint ~
                              instance might have caused the unsoundness."
-                            '@ 'gl-interp-error-debug-obj)
+                            '@ 'fgl-interp-error-debug-obj)
                :debug-obj sub1
                :nvals 0)))
           (gl-interp-add-constraints-for-substs rest interp-st state)))

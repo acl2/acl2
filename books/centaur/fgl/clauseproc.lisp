@@ -492,9 +492,12 @@
        (@ fgl-rewrite-rule-table)))
 
 
-(define my-set-gl-interp-error-debug-obj (obj state)
-  (if obj
-      (f-put-global 'gl-interp-error-debug-obj obj state)
+(define save-interp-st-info-into-state (interp-st state)
+  (b* ((debug-obj (interp-st->debug-info interp-st))
+       (state (if debug-obj
+                  (f-put-global 'fgl-interp-error-debug-obj debug-obj state)
+                state))
+       (state (f-put-global 'fgl-user-scratch (interp-st->user-scratch interp-st) state)))
     state))
 
 (local (defthm bfr-listp-of-stack$a-bindings-when-stack
@@ -541,22 +544,32 @@
          sat-config
          ans-interp interp-st state))
        ((acl2::hintcontext-bind ((sat-interp-st interp-st))))
+
        ((when (and (equal ans t)
                    (not (interp-st->errmsg interp-st))))
         (acl2::hintcontext :interp-test
                            (mv nil nil state interp-st)))
-       (- (and (interp-st->errmsg interp-st)
-               (cw "error message: ~x0~%" (interp-st->errmsg interp-st))))
-       ((mv ctrex-errmsg & var-vals interp-st)
+       ((when (interp-st->errmsg interp-st))
+        (cw "Interpreter error: ~@0" (interp-st->errmsg interp-st))
+        (b* ((state (save-interp-st-info-into-state interp-st state)))
+          (mv "Failed" (list clause) state interp-st)))
+       ((mv sat-ctrex-err interp-st)
+        (interp-st-monolithic-sat-counterexample interp-st state))
+       ((when sat-ctrex-err)
+        (cw "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err)
+        (b* ((state (save-interp-st-info-into-state interp-st state)))
+          (mv "Failed" (list clause) state interp-st)))
+       ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
         (interp-st-counterex-bindings (interp-st-bindings interp-st) interp-st state))
-       (- (and (not (interp-st->errmsg interp-st))
-               (if ctrex-errmsg
-                   (cw "Error retrieving counterexample: ~@0~%" ctrex-errmsg)
-                 (cw "Counterexample bindings: ~x0~%" var-vals))))
+       ((when ctrex-errmsg)
+        (cw "Error extending counterexample: ~@0~%" ctrex-errmsg)
+        (b* ((state (save-interp-st-info-into-state interp-st state)))
+          (mv "Failed" (list clause) state interp-st)))
+       (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
+       (- (cw "Counterexample bindings: ~@0~%" ctrex-bindings))
 
-       (debug-obj (interp-st->debug-info interp-st))
-       (state (my-set-gl-interp-error-debug-obj debug-obj state)))
-    (mv "Failed" (list clause) state interp-st))
+       (state (save-interp-st-info-into-state interp-st state)))
+    (mv "Counterexample" (list clause) state interp-st))
   ///
   (set-ignore-ok t)
 
