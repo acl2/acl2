@@ -56,6 +56,9 @@
    (ctrex-transform :default '(lambda (x) x))
    (abort-vacuous booleanp :default t)
    (check-vacuous booleanp :default t)
+
+   (trace-rewrites booleanp :default nil)
+
    (n-counterexamples natp :rule-classes (:rewrite :type-prescription) :default 3)
    (hyp-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
    (concl-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)

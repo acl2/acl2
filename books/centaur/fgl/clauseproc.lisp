@@ -121,7 +121,11 @@
   (b* ((interp-st (mbe :logic (non-exec (create-interp-st)) :exec interp-st))
        ((glcp-config config))
        (interp-st (update-interp-st->reclimit config.concl-clk interp-st))
-       (interp-st (update-interp-st->config config interp-st)))
+       (interp-st (update-interp-st->config config interp-st))
+       (flags (interp-st->flags interp-st))
+       (interp-st (update-interp-st->flags
+                   (!interp-flags->trace-rewrites config.trace-rewrites flags)
+                   interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman state)
                (b* ((logicman (update-logicman->mode (bfrmode :aignet) logicman)))

@@ -1213,7 +1213,28 @@
              (equal (gl-interp-check-reclimit new) (gl-interp-check-reclimit old)))))
 
 
+(encapsulate
+  (((gl-rewrite-try-rule-start-trace * * * interp-st state) => *
+    :formals (rule fn args interp-st state)
+    :guard t)
+   ((gl-rewrite-try-rule-hyps-trace * * * * interp-st state) => *
+    :formals (failed-hyp rule fn args interp-st state)
+    :guard t)
+   ((gl-rewrite-try-rule-finish-trace * * * * interp-st state) => *
+    :formals (val rule fn args interp-st state)
+    :guard t))
 
+  (set-ignore-ok t)
+  (set-irrelevant-formals-ok t)
+  (local (defun gl-rewrite-try-rule-start-trace (rule fn args interp-st state)
+           (declare (xargs :stobjs (interp-st state)))
+           nil))
+  (local (defun gl-rewrite-try-rule-hyps-trace (failed-hyp rule fn args interp-st state)
+           (declare (xargs :stobjs (interp-st state)))
+           nil))
+  (local (defun gl-rewrite-try-rule-finish-trace (val rule fn args interp-st state)
+           (declare (xargs :stobjs (interp-st state)))
+           nil)))
 
 
 
@@ -1537,6 +1558,9 @@
               ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
               (mv nil nil interp-st))
              (flags (interp-st->flags interp-st))
+             (trace (interp-flags->trace-rewrites flags))
+             (- (and trace
+                     (gl-rewrite-try-rule-start-trace rule fn args interp-st state)))
              (hyps-flags  (!interp-flags->intro-synvars
                            t
                            (!interp-flags->intro-bvars
@@ -1549,10 +1573,13 @@
                (flags hyps-flags flags)
                (equiv-contexts '(iff))
                (backchain-limit (1- backchain-limit) backchain-limit))
-              ((gl-interp-recursive-call successp interp-st)
+              ((gl-interp-recursive-call failed-hyp interp-st)
                (gl-rewrite-relieve-hyps rule.hyps rule 0 interp-st state)))
 
-             ((unless (and** successp (not (interp-st->errmsg interp-st))))
+             (- (and trace
+                     (gl-rewrite-try-rule-hyps-trace failed-hyp rule fn args interp-st state)))
+
+             ((when (or** failed-hyp (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
                    (interp-st (interp-st-pop-frame interp-st))
                    (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st)))
@@ -1564,6 +1591,8 @@
                (flags concl-flags flags))
               ((mv val interp-st)
                (gl-interp-term-equivs rule.rhs interp-st state)))
+
+             (- (and trace (gl-rewrite-try-rule-finish-trace val rule fn args interp-st state)))
 
              (interp-st (interp-st-pop-frame interp-st))
              ((when (interp-st->errmsg interp-st))
@@ -1582,14 +1611,14 @@
                                        state)
         :measure (list (nfix (interp-st->reclimit interp-st)) 9000
                        (pseudo-term-list-binding-count hyps) 0)
-        :returns (mv successp
+        :returns (mv failed-hyp
                      new-interp-st)
         (b* (((when (atom hyps))
-              (mv t interp-st))
+              (mv nil interp-st))
              ((gl-interp-recursive-call ok interp-st)
               (gl-rewrite-relieve-hyp (car hyps) rule hyp-num interp-st state))
              ((when (not ok))
-              (mv ok interp-st)))
+              (mv (lnfix hyp-num) interp-st)))
           (gl-rewrite-relieve-hyps (cdr hyps) rule (+ 1 (lnfix hyp-num)) interp-st state)))
       
       (define gl-rewrite-relieve-hyp ((hyp pseudo-termp)
@@ -7068,7 +7097,7 @@
                                           nil))))))
                ((:fnname gl-rewrite-relieve-hyps)
                 (:add-concl
-                 (implies (and successp
+                 (implies (and (not failed-hyp)
                                (equal (interp-st->equiv-contexts interp-st) '(iff)))
                           (iff-forall-extensions
                            t (conjoin hyps) eval-alist))))

@@ -50,7 +50,8 @@
 (fty::defbitstruct interp-flags
   ((intro-bvars booleanp :default t)
    (intro-synvars booleanp :default t)
-   (simplify-logic booleanp :default t)))
+   (simplify-logic booleanp :default t)
+   (trace-rewrites booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)
