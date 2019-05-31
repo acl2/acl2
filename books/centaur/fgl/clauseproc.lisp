@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "interp")
+(include-book "ctrex-utils")
 ;; (include-book "primitives")
 
 (define variable-g-bindings ((vars pseudo-var-list-p))
@@ -496,6 +497,13 @@
       (f-put-global 'gl-interp-error-debug-obj obj state)
     state))
 
+(local (defthm bfr-listp-of-stack$a-bindings-when-stack
+         (implies (bfr-listp (major-stack-bfrlist stack))
+                  (bfr-listp (gl-object-bindings-bfrlist (stack$a-bindings stack))))
+         :hints(("Goal" :in-theory (enable stack$a-bindings
+                                           major-frame-bfrlist)
+                 :expand ((major-stack-bfrlist stack))))))
+
 (define gl-interp-cp ((clause pseudo-term-listp)
                       hint
                       state)
@@ -540,7 +548,7 @@
        (- (and (interp-st->errmsg interp-st)
                (cw "error message: ~x0~%" (interp-st->errmsg interp-st))))
        ((mv ctrex-errmsg & var-vals interp-st)
-        (interp-st-ipasir-counterex-bindings nil interp-st state))
+        (interp-st-counterex-bindings (interp-st-bindings interp-st) interp-st state))
        (- (and (not (interp-st->errmsg interp-st))
                (if ctrex-errmsg
                    (cw "Error retrieving counterexample: ~@0~%" ctrex-errmsg)
@@ -680,6 +688,7 @@
                                       iff-forall-extensions-necc
                                       fgl-ev-of-extension-when-term-vars-bound))))))
     :rule-classes :clause-processor))
+
 
 
 

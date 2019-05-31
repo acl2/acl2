@@ -117,23 +117,7 @@
 ;;          (endint (and x y))))
 
 
-(defund gl-int-endp (x)
-  (gl-object-case x
-    :g-integer (atom (cdr x.bits))
-    :g-boolean t
-    :g-cons t
-    :g-concrete (or (zip x.val) (eql x.val -1))
-    :otherwise nil))
 
-(define check-int-endp (x xsyn)
-  :verify-guards nil
-  (and (gl-int-endp xsyn)
-       (int-endp x))
-  ///
-  (defthm check-int-endp-open
-    (iff (check-int-endp x xsyn)
-         (and* (gl-int-endp xsyn)
-               (int-endp x)))))
 
 ;; (defmacro check-int-endp (x xsyn)
 ;;   `(let* ((x ,x)
@@ -238,79 +222,7 @@
 
 
 
-(define check-consp (x xsyn)
-  :verify-guards nil
-  (and (gobj-syntactic-consp xsyn)
-       (consp x))
-  ///
-  (defthm check-consp-open
-    (iff (check-consp x xsyn)
-         (and* (gobj-syntactic-consp xsyn)
-               (consp x)))))
 
-
-
-(define check-booleanp (x xsyn)
-  :verify-guards nil
-  (and (gobj-syntactic-booleanp xsyn)
-       (booleanp x))
-  ///
-  (defthm check-booleanp-open
-    (iff (check-booleanp x xsyn)
-         (and* (gobj-syntactic-booleanp xsyn)
-               (booleanp x)))))
-
-(define gobj-non-integerp ((x gl-object-p))
-  (gl-object-case x
-    :g-boolean t
-    :g-concrete (not (integerp x.val))
-    :g-cons t
-    :otherwise nil))
-
-(define check-non-integerp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-integerp xsyn)
-       (not (integerp x)))
-  ///
-  (defthm check-non-integerp-open
-    (iff (check-non-integerp x xsyn)
-         (and* (gobj-non-integerp xsyn)
-               (not (integerp x))))))
-
-
-(define gobj-non-booleanp ((x gl-object-p))
-  (gl-object-case x
-    :g-integer t
-    :g-concrete (not (booleanp x.val))
-    :g-cons t
-    :otherwise nil))
-
-(define check-non-booleanp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-booleanp xsyn)
-       (not (booleanp x)))
-  ///
-  (defthm check-non-booleanp-open
-    (iff (check-non-booleanp x xsyn)
-         (and* (gobj-non-booleanp xsyn)
-               (not (booleanp x))))))
-
-(define gobj-non-consp ((x gl-object-p))
-  (gl-object-case x
-    :g-integer t
-    :g-concrete (not (consp x.val))
-    :g-boolean t
-    :otherwise nil))
-
-(define check-non-consp (x xsyn)
-  :verify-guards nil
-  (and (gobj-non-consp xsyn)
-       (not (consp x)))
-  ///
-  (defthm check-non-consp-open
-    (iff (check-non-consp x xsyn)
-         (and* (gobj-non-consp xsyn)
-               (not (consp x))))))
 
 
 
@@ -601,7 +513,7 @@
          (b* (((list bindings vars)
                (syntax-bind alists
                             (mv-let (bindings-vals var-vals)
-                              (interp-st-ipasir-counterex-stack-prev-bindings/print-errors interp-st state)
+                              (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)
                               (g-concrete (list bindings-vals var-vals))))))
            (cw "Counterexample -- bindings: ~x0 variables: ~x1~%"
                bindings vars))))
@@ -620,7 +532,7 @@
           (show-counterexample))
         ;;    (alists (syntax-bind alists1
         ;;                         (mv-let (bindings-vals var-vals)
-        ;;                           (interp-st-ipasir-counterex-stack-bindings/print-errors interp-st state)
+        ;;                           (interp-st-counterex-stack-bindings/print-errors interp-st state)
         ;;                           (g-concrete (list bindings-vals var-vals))))))
         ;; (cw "Counterexample!: alists: ~x0~%" alists))
         :hints (("goal" :clause-processor (gl-interp-cp clause (default-glcp-config) state)

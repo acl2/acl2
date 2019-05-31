@@ -60,20 +60,20 @@
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-prev-bindings/print-errors
+(fancy-ev-add-primitive interp-st-counterex-stack-prev-bindings/print-errors
                         (< 1 (interp-st-stack-frames interp-st)))
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings/print-errors
+(fancy-ev-add-primitive interp-st-counterex-bindings/print-errors
                         (and (gl-object-bindings-p x)
                              (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings/print-errors t)
+(fancy-ev-add-primitive interp-st-counterex-stack-bindings/print-errors t)
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-bindings
+(fancy-ev-add-primitive interp-st-counterex-bindings
                         (and (gl-object-bindings-p x)
                              (interp-st-bfr-listp (gl-object-bindings-bfrlist x))))
 
-(fancy-ev-add-primitive interp-st-ipasir-counterex-stack-bindings t)
+(fancy-ev-add-primitive interp-st-counterex-stack-bindings t)
 
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
@@ -93,7 +93,7 @@
          (b* (((list bindings vars)
                (syntax-bind alists
                             (mv-let (bindings-vals var-vals)
-                              (interp-st-ipasir-counterex-stack-prev-bindings/print-errors interp-st state)
+                              (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)
                               (g-concrete (list bindings-vals var-vals))))))
            (cw "Counterexample -- bindings: ~x0 variables: ~x1~%"
                bindings vars))))

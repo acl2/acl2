@@ -91,6 +91,19 @@
                  :expand ((fgl-object-alist-eval x env)
                           (gl-object-alist-fix x))))))
 
+
+(local (defthm gl-object-kind-when-booleanp
+         (implies (booleanp x)
+                  (equal (gl-object-kind x) :g-concrete))
+         :hints(("Goal" :in-theory (enable gl-object-kind)))))
+
+(local (defthm fgl-object-eval-when-booleanp
+         (implies (booleanp x)
+                  (equal (Fgl-object-eval x env) x))
+         :hints(("Goal" :in-theory (enable booleanp fgl-object-eval)))))
+
+
+
 (def-gl-primitive integerp (x)
   (gl-object-case x
     :g-concrete (mv t (integerp x.val) interp-st)
@@ -177,10 +190,6 @@
 
 (local (in-theory (enable int-endp
                           gl-object-bfrlist-when-g-concrete)))
-(local (defthm gl-object-kind-when-booleanp
-         (implies (booleanp x)
-                  (equal (gl-object-kind x) :g-concrete))
-         :hints(("Goal" :in-theory (enable gl-object-kind)))))
 
 (local (defthm gobj-bfr-list-eval-when-atom-cdr
          (implies (not (consp (cdr bits)))
@@ -250,11 +259,6 @@
       interp-st))
 
 (set-ignore-ok t)
-
-;; (local (defthm fgl-object-eval-when-booleanp
-;;          (implies (booleanp x)
-;;                   (equal (Fgl-object-eval x env) x))
-;;          :hints(("Goal" :in-theory (enable booleanp fgl-object-eval)))))
 
 
 (def-gl-primitive consp (x)

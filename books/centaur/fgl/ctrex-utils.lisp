@@ -2313,7 +2313,7 @@
                   (symbol-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
-(define interp-st-ipasir-counterex-bindings ((x gl-object-bindings-p)
+(define interp-st-counterex-bindings ((x gl-object-bindings-p)
                                              (interp-st)
                                              (state))
   :returns (mv (errmsg)
@@ -2375,7 +2375,7 @@
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
-(define interp-st-ipasir-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
+(define interp-st-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
                                                    (state))
   :returns (mv errmsg
                (bindings-vals symbol-alistp)
@@ -2391,7 +2391,7 @@
                            (minor-stack-bfrlist (major-frame->minor-stack (car (interp-st->stack interp-st)))))))
   (b* ((bindings (append (interp-st-minor-bindings interp-st)
                          (interp-st-bindings interp-st))))
-    (interp-st-ipasir-counterex-bindings bindings interp-st state))
+    (interp-st-counterex-bindings bindings interp-st state))
   ///
   (defret interp-st-get-of-<fn>
     (implies (member (interp-st-field-fix key)
@@ -2409,13 +2409,13 @@
 (verify-termination evisc-tuple)
 (verify-guards evisc-tuple)
 
-(define interp-st-ipasir-counterex-stack-bindings/print-errors ((interp-st interp-st-bfrs-ok)
+(define interp-st-counterex-stack-bindings/print-errors ((interp-st interp-st-bfrs-ok)
                                                                 (state))
   :returns (mv (bindings-vals symbol-alistp)
                (var-vals obj-alist-p)
                (new-interp-st))
   (b* (((mv errmsg bindings-vals var-vals interp-st)
-        (interp-st-ipasir-counterex-stack-bindings interp-st state)))
+        (interp-st-counterex-stack-bindings interp-st state)))
     (and errmsg
          (acl2::fmt-to-comment-window
           "~@0" `((#\0 . ,errmsg)) 0
@@ -2435,7 +2435,7 @@
              (interp-st-bfrs-ok new-interp-st))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
-(define interp-st-ipasir-counterex-bindings/print-errors ((x gl-object-bindings-p)
+(define interp-st-counterex-bindings/print-errors ((x gl-object-bindings-p)
                                                           (interp-st)
                                                           (state))
   :returns (mv (bindings-vals symbol-alistp)
@@ -2444,7 +2444,7 @@
   :guard (and (interp-st-bfrs-ok interp-st)
               (interp-st-bfr-listp (gl-object-bindings-bfrlist x)))
   (b* (((mv errmsg bindings-vals var-vals interp-st)
-        (interp-st-ipasir-counterex-bindings x interp-st state)))
+        (interp-st-counterex-bindings x interp-st state)))
     (and errmsg
          (acl2::fmt-to-comment-window
           "~@0" `((#\0 . ,errmsg)) 0
@@ -2489,7 +2489,7 @@
          :hints(("Goal" :in-theory (enable major-stack-bfrlist nth)))))
 
 
-(define interp-st-ipasir-counterex-stack-prev-bindings/print-errors ((interp-st interp-st-bfrs-ok)
+(define interp-st-counterex-stack-prev-bindings/print-errors ((interp-st interp-st-bfrs-ok)
                                                                 state)
   :guard (< 1 (interp-st-stack-frames interp-st))
   :guard-hints (("goal" :in-theory (enable interp-st-prev-bindings
@@ -2500,7 +2500,7 @@
                (var-vals obj-alist-p)
                (new-interp-st))
   (b* ((bindings (interp-st-prev-bindings interp-st)))
-    (interp-st-ipasir-counterex-bindings/print-errors bindings interp-st state))
+    (interp-st-counterex-bindings/print-errors bindings interp-st state))
   ///
   (defret interp-st-get-of-<fn>
     (implies (member (interp-st-field-fix key)
