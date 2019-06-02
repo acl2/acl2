@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definterface-hash sha-512
-  :input-size-limit (expt 2 64)
+  :input-size-limit (expt 2 128)
   :output-size 512
   :parents (interfaces)
   :short "SHA-512 interface."
