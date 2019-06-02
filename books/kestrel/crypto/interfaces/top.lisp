@@ -12,7 +12,7 @@
 
 (include-book "definterface-hash")
 (include-book "definterface-hmac")
-(include-book "deinterface-pbkdf2")
+(include-book "definterface-pbkdf2")
 
 (include-book "keccak-256")
 (include-book "keccak-512")
@@ -22,6 +22,9 @@
 
 (include-book "hmac-sha-256")
 (include-book "hmac-sha-512")
+
+(include-book "pbkdf2-hmac-sha-256")
+(include-book "pbkdf2-hmac-sha-512")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

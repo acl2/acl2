@@ -184,6 +184,12 @@
      These supersede the previously existing placeholder
      for HMAC-SHA-512, which has been removed.")
 
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee crypto::definterface-pbkdf2))
+     for the PBKDF2 functions HMAC-SHA-256 and PBKDF2 HMAC-SHA-512.
+     These supersede the previously existing placeholder
+     for PBKDF2 HMAC-SHA-512, which has been removed.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
