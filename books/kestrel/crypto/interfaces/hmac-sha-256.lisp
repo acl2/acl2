@@ -31,6 +31,6 @@
 (defsection hmac-sha-256-interface-ext
   :extension hmac-sha-256-interface
 
-  (defrule byte-list32p-of-hmac-sha-256-bytes
+  (defrule byte-list32p-of-hmac-sha-256
     (byte-list32p (hmac-sha-256 key text))
     :enable byte-list32p))

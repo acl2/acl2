@@ -31,6 +31,6 @@
 (defsection hmac-sha-512-interface-ext
   :extension hmac-sha-512-interface
 
-  (defrule byte-list64p-of-hmac-sha-512-bytes
+  (defrule byte-list64p-of-hmac-sha-512
     (byte-list64p (hmac-sha-512 key text))
     :enable byte-list64p))
