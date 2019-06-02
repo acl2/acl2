@@ -10,6 +10,9 @@
 
 (in-package "CRYPTO")
 
+(include-book "definterface-hash")
+(include-book "definterface-hmac")
+
 (include-book "keccak-256")
 (include-book "keccak-512")
 (include-book "ripemd-160")
