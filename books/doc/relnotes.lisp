@@ -164,15 +164,21 @@
      to introduce interfaces of hash functions.")
 
    (xdoc::p
-    "A macro @(tsee crypto::definterface-hmax) has been added
+    "A macro @(tsee crypto::definterface-hmac) has been added
      to introduce interfaces of HMAC functions.")
 
    (xdoc::p
     "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
-     for the cryptographic hash functions
+     for the hash functions
      Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.
      These supersede the previously existing placeholders
-     for these hash functions, which have been removed.")
+     for Keccak-256, RIPEMD-160, and SHA-256, which have been removed.")
+
+   (xdoc::p
+    "An interface has been introduced (via @(tsee crypto::definterface-hmac))
+     for the HMAC function HMAC-SHA-512.
+     This supersedes the previously existing placeholder
+     for HMAC-SHA-512, which has been removed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
