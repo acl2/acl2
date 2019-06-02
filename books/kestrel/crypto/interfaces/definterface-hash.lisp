@@ -204,7 +204,7 @@
   (b* (;; validate the NAME input:
        ((unless (symbolp name))
         (raise "The NAME input must be a symbol, ~
-                but is it ~x0 instead." name))
+                but it is ~x0 instead." name))
        ;; validate the :INPUT-SIZE-LIMIT input:
        ((unless (or (null input-size-limit)
                     (and (posp input-size-limit)
