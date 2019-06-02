@@ -159,6 +159,10 @@
                   "placeholder for elliptic curve secp256k1")
     " has been extended with an (abstract) signing operation.")
 
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-hash) has been added
+     to introduce interfaces of hash functions.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
