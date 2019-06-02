@@ -65,6 +65,7 @@
                             unsigned-byte-fix
                             unsigned-byte-list-fix
                             crypto::hmac-sha-512
+                            crypto::pbkdf2-hmac-sha-512
                             crypto::ripemd-160-bytes
                             crypto::sha-256-bytes
                             crypto::secp256k1-add

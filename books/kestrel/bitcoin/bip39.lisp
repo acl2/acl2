@@ -11,7 +11,7 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/crypto/pbkdf2-hmac-sha-512-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/pbkdf2-hmac-sha-512" :dir :system)
 (include-book "kestrel/crypto/interfaces/sha-256" :dir :system)
 (include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/bits-and-ubyte11s-as-digits" :dir :system)
@@ -213,6 +213,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip39-mnemonic-to-seed ((mnemonic stringp) (passphrase stringp))
+  :guard (and (< (length mnemonic) (expt 2 125))
+              (< (length passphrase) (- (expt 2 125) (+ 128 4))))
   :returns (seed byte-listp)
   :short "Turn a mnemonic string into a seed."
   :long
@@ -233,13 +235,23 @@
    (xdoc::p
     "Note that this function does not require the mnemonic string to be
      a space-separated sequence of mnemonic words.
-     It accepts any string as mnemonic, as well as any string as passphrase."))
+     It accepts any string as mnemonic, as well as any string as passphrase.
+     More precisely, there are (large) limits on the lengths of these strings,
+     dictated by the limits on the password and salt inputs of
+     @(tsee pbkdf2-hmac-sha-512), which we add as guards:
+     the limit on the mnemonic
+     (which is used as password of @(tsee pbkdf2-hmac-sha-512))
+     is the same as the one on the password of @(tsee pbkdf2-hmac-sha-512).
+     the limit on the passphrase
+     (which is used as salt of @(tsee pbkdf2-hmac-sha-512))
+     is a little smaller than needed in general, but simpler
+     (see the guard of @(tsee pbkdf2-hmac-sha-512))."))
   (b* ((password (string=>nats mnemonic))
        (salt (string=>nats (string-append "mnemonic"
-                                                (str::str-fix passphrase))))
+                                          (str::str-fix passphrase))))
        (iterations 2048)
        (length 64))
-    (crypto::pbkdf2-hmac-sha-512 password salt iterations length))
+    (pbkdf2-hmac-sha-512 password salt iterations length))
   :no-function t
   :guard-hints (("Goal"
                  :in-theory
@@ -256,14 +268,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip39-entropy-to-seed ((entropy bip39-entropyp) (passphrase stringp))
+  :guard (< (length passphrase) (- (expt 2 125) (+ 128 4)))
   :returns (seed byte-listp)
   :short "Turn an entropy value into a seed."
   :long
   (xdoc::topstring
    (xdoc::p
     "This combines @(tsee bip39-entropy-to-mnemonic)
-     and @(tsee bip39-mnemonic-to-seed)."))
-  (bip39-mnemonic-to-seed (bip39-entropy-to-mnemonic entropy) passphrase)
+     and @(tsee bip39-mnemonic-to-seed).")
+   (xdoc::p
+    "The limit on the passphrase
+     is the same as in @(tsee bip39-mnemonic-to-seed).
+     The mnemonic is always below the limit in @(tsee bip39-mnemonic-to-seed),
+     but for now we check it at run time;
+     eventually we will replace this check with a proof."))
+  (b* ((mnemonic (bip39-entropy-to-mnemonic entropy))
+       (mnemonic (if (< (length mnemonic) (expt 2 125))
+                     mnemonic
+                   "")) ; never happens
+       (seed (bip39-mnemonic-to-seed mnemonic passphrase)))
+    seed)
   :no-function t
   :hooks (:fix)
   ///
