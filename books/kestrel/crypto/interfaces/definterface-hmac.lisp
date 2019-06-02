@@ -35,16 +35,17 @@
 
    (xdoc::p
     "This macro introduces a weakly constrained ACL2 function
-     for an HMAC function,
-     which takes two byte lists as arguments (the key and the text),
+     for an HMAC function;
+     the underlying hash function is specified via a reference to
+     the name of an existing @(tsee definterface-hash).
+     The HMAC function
+     takes two byte lists as arguments (the key and the text),
      and returns a byte list;
      the use of bytes (vs. bits) is consistent with RFC 2104.
      The guard of the function requires the arguments to be byte lists.
      The function is constrained to fix its arguments to byte lists,
      and to return a byte list whose size is
-     the output size of the hash function,
-     which is specified via a reference to
-     the name of an existing @(tsee definterface-hash).")
+     the output size of the hash function.")
 
    (xdoc::p
     "If the referenced hash function has no limit on its input size,
@@ -166,6 +167,49 @@
   :order-subtopics t
   :default-parent t)
 
+(std::defaggregate definterface-hmac-info
+  :short "Information about a @(tsee definterface-hmac) interface,
+          recorded as a pair's value in the
+          <see topic='@(url definterface-hmac-table)'
+          >@(tsee definterface-hmac) table</see>."
+  :long
+  "<p>
+   The name of the interface is the key of the pair in the table.
+   </p>"
+  ((key-size-limit "The limit on the key size in bytes,
+                    equal to the @(':input-size-limit') input, divided by 8,
+                    of the @(tsee definterface-hash)
+                    referenced by the @(tsee definterface-hmac)."
+                   maybe-posp)
+   (block-size "The @(':block-size') input." maybe-posp)
+   (output-size "The size of the output in bytes,
+                 equal to the @(':output-size') input, divided by 8,
+                 of the @(tsee definterface-hash)
+                    referenced by the @(tsee definterface-hmac)."
+                posp))
+  :pred definterface-hmac-infop)
+
+(defval *definterface-hmac-table-name*
+  'definterface-hmac-table
+  :short "Name of the
+          <see topic='@(url definterface-hmac-table)'
+          >@(tsee definterface-hmac) table</see>.")
+
+(defsection definterface-hmac-table
+  :short "@(csee table) of @(tsee definterface-hmac) interfaces."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each successful call of @(tsee definterface-hmac),
+     this table includes a pair whose key is the name of the interface
+     and whose value contains other information about the call
+     (see @(tsee definterface-hmac-infop))."))
+
+  (make-event
+   `(table ,*definterface-hmac-table-name* nil nil
+      :guard (and (symbolp acl2::key) ; name of the interface
+                  (definterface-hmac-infop acl2::val)))))
+
 (define definterface-hmac-fn (name
                               hash
                               block-size
@@ -229,13 +273,13 @@
                                              pkg-witness))
        (consp-thm-name (acl2::packn-pos (list 'consp-of- name)
                                         pkg-witness))
-       ;; guard of the generated functions:
+       ;; guard of the generated function:
        (guard (if input-size-limit
                   `(and (byte-listp key)
-                        (byte-listp text)
                         (< (len key) ,input-size-limit-/-8)
+                        (byte-listp text)
                         (< (len text) (- ,input-size-limit-/-8
-                                         (if (< (len key) ,block-size)
+                                         (if (<= (len key) ,block-size)
                                              (len key)
                                            ,(/ output-size 8)))))
                 '(and (byte-listp key)
@@ -262,7 +306,13 @@
                      (consp (,name key text))
                      :rule-classes :type-prescription
                      :use ,len-thm-name
-                     :disable ,len-thm-name)))
+                     :disable ,len-thm-name))
+       (table-event `(table ,*definterface-hmac-table-name*
+                       ',name
+                       ',(make-definterface-hmac-info
+                          :key-size-limit input-size-limit-/-8
+                          :block-size block-size
+                          :output-size output-size-/-8))))
     ;; top-level event:
     `(encapsulate
        ()
@@ -278,7 +328,8 @@
            ,len-thm
            ,fix-thms)
          ,true-listp-thm
-         ,consp-thm))))
+         ,consp-thm)
+       ,table-event)))
 
 (defsection definterface-hmac-macro-definition
   :short "Definition of the @(tsee definterface-hmac) macro."
