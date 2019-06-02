@@ -10,7 +10,6 @@
 
 (in-package "CRYPTO")
 
-(include-book "hmac-sha-512-placeholder")
 (include-book "pbkdf2-hmac-sha-512-placeholder")
 (include-book "secp256k1-placeholder")
 
