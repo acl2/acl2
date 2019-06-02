@@ -1,4 +1,4 @@
-; Cryptography
+; Cryptographic Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,11 +11,10 @@
 (in-package "CRYPTO")
 
 (include-book "hmac-sha-512-placeholder")
-(include-book "keccak-256-placeholder")
 (include-book "pbkdf2-hmac-sha-512-placeholder")
-(include-book "ripemd-160-placeholder")
 (include-book "secp256k1-placeholder")
-(include-book "sha-256-placeholder")
+
+(include-book "interfaces/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

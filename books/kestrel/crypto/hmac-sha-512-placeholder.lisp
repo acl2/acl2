@@ -1,4 +1,4 @@
-; Cryptography -- HMAC-SHA-512 Placeholder
+; Cryptographic Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

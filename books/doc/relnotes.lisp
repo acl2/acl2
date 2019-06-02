@@ -166,7 +166,9 @@
    (xdoc::p
     "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
      for the cryptographic hash functions
-     Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.")
+     Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.
+     These supersede the previously existing placeholders
+     for these hash functions, which have been removed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
