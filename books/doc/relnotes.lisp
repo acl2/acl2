@@ -168,6 +168,10 @@
      to introduce interfaces of HMAC functions.")
 
    (xdoc::p
+    "A macro @(tsee crypto::definterface-pbkdf2) has been added
+     to introduce interfaces of PBKDF2 functions.")
+
+   (xdoc::p
     "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
      for the hash functions
      Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.
