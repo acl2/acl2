@@ -10,8 +10,8 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/crypto/ripemd-160-placeholder" :dir :system)
-(include-book "kestrel/crypto/sha-256-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/ripemd-160" :dir :system)
+(include-book "kestrel/crypto/interfaces/sha-256" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,7 +44,7 @@
      It is sometimes called `Hash160',
      e.g. see the @('OP_HASH160') opcode,
      or see the documentation of BIP 32."))
-  (ripemd-160 (sha-256 bytes))
+  (ripemd-160-bytes (sha-256-bytes bytes))
   ///
 
   (more-returns

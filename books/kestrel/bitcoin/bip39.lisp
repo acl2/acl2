@@ -12,7 +12,7 @@
 (in-package "BITCOIN")
 
 (include-book "kestrel/crypto/pbkdf2-hmac-sha-512-placeholder" :dir :system)
-(include-book "kestrel/crypto/sha-256-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/sha-256" :dir :system)
 (include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/bits-and-ubyte11s-as-digits" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
@@ -128,7 +128,7 @@
      based on the possible values of @('ENT')."))
   (b* ((entropy (bip39-entropy-fix entropy))
        (entropy-bytes (bits=>bebytes entropy))
-       (hash-bytes (sha-256 entropy-bytes))
+       (hash-bytes (sha-256-bytes entropy-bytes))
        (hash (bebytes=>bits hash-bytes))
        (checksum (take (/ (len entropy) 32) hash))
        (all-bits (append entropy checksum)))
