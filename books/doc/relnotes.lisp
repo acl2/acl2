@@ -163,6 +163,11 @@
     "A macro @(tsee crypto::definterface-hash) has been added
      to introduce interfaces of hash functions.")
 
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
+     for the cryptographic hash functions
+     Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))
