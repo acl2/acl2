@@ -175,9 +175,9 @@
      for Keccak-256, RIPEMD-160, and SHA-256, which have been removed.")
 
    (xdoc::p
-    "An interface has been introduced (via @(tsee crypto::definterface-hmac))
-     for the HMAC function HMAC-SHA-512.
-     This supersedes the previously existing placeholder
+    "Interfaces have been introduced (via @(tsee crypto::definterface-hmac))
+     for the HMAC functions HMAC-SHA-256 and HMAC-SHA-512.
+     These supersede the previously existing placeholder
      for HMAC-SHA-512, which has been removed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

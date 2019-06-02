@@ -19,6 +19,7 @@
 (include-book "sha-256")
 (include-book "sha-512")
 
+(include-book "hmac-sha-256")
 (include-book "hmac-sha-512")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
