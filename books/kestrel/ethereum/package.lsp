@@ -48,7 +48,7 @@
                              unsigned-byte-fix
                              unsigned-byte-list-fix
                              std::define-sk
-                             crypto::keccak-256
+                             crypto::keccak-256-bytes
                              crypto::secp256k1-point-to-bytes
                              crypto::secp256k1-priv-key-p
                              crypto::secp256k1-priv-to-pub

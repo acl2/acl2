@@ -11,7 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
-(include-book "kestrel/crypto/keccak-256-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -60,7 +60,7 @@
      from a private key instead."))
   (b* ((pub-key (mbe :logic (secp256k1-pub-key-fix pub-key) :exec pub-key))
        (uncompressed-form (secp256k1-point-to-bytes pub-key nil))
-       (hash (keccak-256 uncompressed-form))
+       (hash (keccak-256-bytes uncompressed-form))
        (address (nthcdr 12 hash)))
     address)
   :hooks (:fix))
