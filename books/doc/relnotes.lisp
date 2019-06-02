@@ -154,12 +154,6 @@
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
-    "The "
-    (xdoc::seeurl "crypto::secp256k1-placeholder"
-                  "placeholder for elliptic curve secp256k1")
-    " has been extended with an (abstract) signing operation.")
-
-   (xdoc::p
     "A macro @(tsee crypto::definterface-hash) has been added
      to introduce interfaces of hash functions.")
 
@@ -189,6 +183,21 @@
      for the PBKDF2 functions HMAC-SHA-256 and PBKDF2 HMAC-SHA-512.
      These supersede the previously existing placeholder
      for PBKDF2 HMAC-SHA-512, which has been removed.")
+
+   (xdoc::p
+    "The `placeholder' for elliptic curve secp256k1
+     has been turned into an `interface' for elliptic curve secp256k1,
+     consistently with the changes above.
+     There are no more cryptographic `placeholders',
+     but `interfaces' instead.
+     Their structure is quite similar,
+     but the nomenclature indicates a more permanent status.")
+
+   (xdoc::p
+    "The "
+    (xdoc::seeurl "crypto::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    " has been extended with an (abstract) signing operation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -11,7 +11,7 @@
 (in-package "BITCOIN")
 
 (include-book "kestrel/crypto/interfaces/hmac-sha-512" :dir :system)
-(include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
@@ -396,7 +396,7 @@
     "Proving the equivalence of this function with @(tsee bip32-ckd-priv-pub)
      (for non-hardened child keys)
      requires the use of certain properties of elliptic curve operations
-     that are currently not formalized in the secp256k1 placeholder.
+     that are currently not formalized in the secp256k1 interface.
      Thus, this proof will be done later."))
   (bip32-ckd-pub (bip32-n parent) i)
   :no-function t

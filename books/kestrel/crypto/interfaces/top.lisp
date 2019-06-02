@@ -26,6 +26,8 @@
 (include-book "pbkdf2-hmac-sha-256")
 (include-book "pbkdf2-hmac-sha-512")
 
+(include-book "secp256k1")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc interfaces
