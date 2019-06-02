@@ -23,6 +23,7 @@
                            byte-list32p
                            byte-list64p
                            defxdoc+
+                           maybe-posp
                            nat-equiv
                            nat=>bebytes
                            pos-fix)))
