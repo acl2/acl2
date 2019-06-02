@@ -24,7 +24,7 @@
     (xdoc::a :href "https://tools.ietf.org/html/rfc8018" "RFC 8018 standard")
     "; it is essentially parameterized over a pseudorandom function.
      Here we use HMAC-SHA-512 as the pseudorandom function:
-     see @(tsee hmac-sha-512-placeholder).")
+     see @(tsee hmac-sha-512-interface).")
    (xdoc::p
     "According to RFC 8018,
      the password and salt inputs are sequences of bytes,
