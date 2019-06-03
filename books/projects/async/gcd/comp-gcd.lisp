@@ -167,10 +167,10 @@
 ;; Constraints on the state of COMP-GCD
 
 (defund comp-gcd$st-format (st data-size)
-  (b* ((l0 (get-field *comp-gcd$l0* st))
-       (l1 (get-field *comp-gcd$l1* st))
-       (l2 (get-field *comp-gcd$l2* st))
-       (br (get-field *comp-gcd$br* st)))
+  (b* ((l0 (nth *comp-gcd$l0* st))
+       (l1 (nth *comp-gcd$l1* st))
+       (l2 (nth *comp-gcd$l2* st))
+       (br (nth *comp-gcd$br* st)))
     (and (link$st-format l0 (* 2 data-size))
          (link$st-format l1 (* 2 data-size))
          (link$st-format l2 (* 2 data-size))
@@ -186,11 +186,11 @@
   :rule-classes :forward-chaining)
 
 (defund comp-gcd$valid-st (st data-size)
-  (b* ((s (get-field *comp-gcd$s* st))
-       (l0 (get-field *comp-gcd$l0* st))
-       (l1 (get-field *comp-gcd$l1* st))
-       (l2 (get-field *comp-gcd$l2* st))
-       (br (get-field *comp-gcd$br* st)))
+  (b* ((s (nth *comp-gcd$s* st))
+       (l0 (nth *comp-gcd$l0* st))
+       (l1 (nth *comp-gcd$l1* st))
+       (l2 (nth *comp-gcd$l2* st))
+       (br (nth *comp-gcd$br* st)))
     (and (link1$valid-st s)
          (link$valid-st l0 (* 2 data-size))
          (link$valid-st l1 (* 2 data-size))
@@ -242,14 +242,14 @@
 
          (me-go-signals (take *merge$go-num* go-signals))
 
-         (s (get-field *comp-gcd$s* st))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s))
-         (l0 (get-field *comp-gcd$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l2 (get-field *comp-gcd$l2* st))
-         (l2.s (get-field *link$s* l2))
-         (l2.d (get-field *link$d* l2))
+         (s (nth *comp-gcd$s* st))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s))
+         (l0 (nth *comp-gcd$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l2 (nth *comp-gcd$l2* st))
+         (l2.s (nth *link$s* l2))
+         (l2.d (nth *link$d* l2))
 
          (me-full-in0 (f-and full-in (car s.s)))
          (me-full-in1 (f-and (car l2.s) (car s.s))))
@@ -268,13 +268,13 @@
          (br-go-signals (take *comp-gcd-cond$go-num*
                               (nthcdr *merge$go-num* go-signals)))
 
-         (s (get-field *comp-gcd$s* st))
-         (s.s (get-field *link1$s* s))
-         (l0 (get-field *comp-gcd$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l0.d (get-field *link$d* l0))
-         (l1 (get-field *comp-gcd$l1* st))
-         (l1.s (get-field *link$s* l1))
+         (s (nth *comp-gcd$s* st))
+         (s.s (nth *link1$s* s))
+         (l0 (nth *comp-gcd$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l0.d (nth *link$d* l0))
+         (l1 (nth *comp-gcd$l1* st))
+         (l1.s (nth *link$s* l1))
 
          (br-empty-out0- (f-or empty-out- (car s.s)))
          (br-empty-out1- (f-or (car l1.s) (car s.s))))
@@ -293,11 +293,11 @@
                                            *comp-gcd-cond$go-num*)
                                         go-signals)))
 
-         (l1 (get-field *comp-gcd$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (l1.d (get-field *link$d* l1))
-         (l2 (get-field *comp-gcd$l2* st))
-         (l2.s (get-field *link$s* l2)))
+         (l1 (nth *comp-gcd$l1* st))
+         (l1.s (nth *link$s* l1))
+         (l1.d (nth *link$d* l1))
+         (l2 (nth *comp-gcd$l2* st))
+         (l2.s (nth *link$s* l2)))
 
       (list* (f-buf (car l1.s)) (f-buf (car l2.s))
              (append (v-threefix (strip-cars l1.d))
@@ -319,7 +319,7 @@
 
   (defund comp-gcd$out-act (inputs st data-size)
     (comp-gcd-cond$out-act0 (comp-gcd$br-inputs inputs st data-size)
-                            (get-field *comp-gcd$br* st)
+                            (nth *comp-gcd$br* st)
                             data-size))
 
   (defthm comp-gcd$out-act-inactive
@@ -332,7 +332,7 @@
 
   (defund comp-gcd$data-out (inputs st data-size)
     (comp-gcd-cond$data0-out (comp-gcd$br-inputs inputs st data-size)
-                             (get-field *comp-gcd$br* st)
+                             (nth *comp-gcd$br* st)
                              data-size))
 
   (defthm len-comp-gcd$data-out-1
@@ -398,13 +398,13 @@
 (defun comp-gcd$step (inputs st data-size)
   (b* ((data-in (comp-gcd$data-in inputs data-size))
 
-       (s (get-field *comp-gcd$s* st))
-       (s.d (get-field *link1$d* s))
-       (l0 (get-field *comp-gcd$l0* st))
-       (l1 (get-field *comp-gcd$l1* st))
-       (l2 (get-field *comp-gcd$l2* st))
-       (l2.d (get-field *link$d* l2))
-       (br (get-field *comp-gcd$br* st))
+       (s (nth *comp-gcd$s* st))
+       (s.d (nth *link1$d* s))
+       (l0 (nth *comp-gcd$l0* st))
+       (l1 (nth *comp-gcd$l1* st))
+       (l2 (nth *comp-gcd$l2* st))
+       (l2.d (nth *link$d* l2))
+       (br (nth *comp-gcd$br* st))
 
        (me-inputs (comp-gcd$me-inputs inputs st data-size))
        (br-inputs (comp-gcd$br-inputs inputs st data-size))
@@ -542,10 +542,10 @@
 ;; sequence from the current state.
 
 (defund comp-gcd$extract (st)
-  (b* ((l0 (get-field *comp-gcd$l0* st))
-       (l1 (get-field *comp-gcd$l1* st))
-       (l2 (get-field *comp-gcd$l2* st))
-       (br (get-field *comp-gcd$br* st)))
+  (b* ((l0 (nth *comp-gcd$l0* st))
+       (l1 (nth *comp-gcd$l1* st))
+       (l2 (nth *comp-gcd$l2* st))
+       (br (nth *comp-gcd$br* st)))
     (gcd$op-map
      (append (extract-valid-data (list l1 l2 l0))
              (comp-gcd-cond$extract br)))))
@@ -565,10 +565,10 @@
 
 (progn
   (defund comp-gcd$inv (st)
-    (b* ((s (get-field *comp-gcd$s* st))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s))
-         (br (get-field *comp-gcd$br* st)))
+    (b* ((s (nth *comp-gcd$s* st))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s))
+         (br (nth *comp-gcd$br* st)))
       (and (comp-gcd-cond$inv br)
            (if (and (fullp s.s) (not (car s.d)))
                (= (len (comp-gcd$extract st))
@@ -606,8 +606,7 @@
                     (comp-gcd$br-inputs inputs st data-size)
                     (nth *comp-gcd$br* st)
                     data-size)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      comp-gcd$br-inputs)
+     :hints (("Goal" :in-theory (e/d (comp-gcd$br-inputs)
                                      ())))))
 
   (local
@@ -619,8 +618,7 @@
                     (comp-gcd$br-inputs inputs st data-size)
                     (nth *comp-gcd$br* st)
                     data-size)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      comp-gcd$br-inputs)
+     :hints (("Goal" :in-theory (e/d (comp-gcd$br-inputs)
                                      ())))))
 
   (local
@@ -635,8 +633,7 @@
                     (comp-gcd$br-inputs inputs st data-size)
                     (nth *comp-gcd$br* st)
                     data-size)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      comp-gcd$br-inputs)
+     :hints (("Goal" :in-theory (e/d (comp-gcd$br-inputs)
                                      ())))))
 
   (local
@@ -651,8 +648,7 @@
                     (comp-gcd$br-inputs inputs st data-size)
                     (nth *comp-gcd$br* st)
                     data-size)))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act0
+     :hints (("Goal" :in-theory (e/d (branch$act0
                                       gcd-cond$br-inputs
                                       gcd-cond$data-in
                                       gcd-cond$flag
@@ -677,8 +673,7 @@
                       (nth *comp-gcd$br* st)
                       data-size)
                      t))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      branch$act1
+     :hints (("Goal" :in-theory (e/d (branch$act1
                                       gcd-cond$br-inputs
                                       gcd-cond$data-in
                                       gcd-cond$flag
@@ -707,8 +702,7 @@
                          (equal (len l1.d) (* 2 data-size))
                          (bvp (strip-cars l1.d))))
                 (booleanp (gcd-body1$act body-inputs data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        merge$act0
+     :hints (("Goal" :in-theory (enable merge$act0
                                         merge$act1
                                         merge$act
                                         gcd-body1$data-in
@@ -728,8 +722,7 @@
                                 (nth *comp-gcd$l2* st))
                            '(t)))
                 (not (gcd-body1$act body-inputs data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-gcd$body-inputs)))))
+     :hints (("Goal" :in-theory (enable comp-gcd$body-inputs)))))
 
   (local
    (defthm bvp-comp-gcd$body-data-out
@@ -739,8 +732,7 @@
        (implies (and (equal (len l1.d) (* 2 data-size))
                      (bvp (strip-cars l1.d)))
                 (bvp (gcd-body1$data-out body-inputs data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        gcd-body1$data-in
+     :hints (("Goal" :in-theory (enable gcd-body1$data-in
                                         comp-gcd$body-inputs)))))
 
   (defthm comp-gcd$inv-preserved
@@ -750,8 +742,7 @@
              (comp-gcd$inv (comp-gcd$step inputs st data-size)))
     :hints (("Goal"
              :use comp-gcd$input-format=>br$input-format
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               comp-gcd-cond$extracted-step
                               comp-gcd$valid-st
                               comp-gcd$inv
@@ -810,8 +801,7 @@
                  (gcd$op (strip-cars l1.d)))))
      :hints (("Goal"
               :do-not-induct t
-              :in-theory (e/d (get-field
-                               gcd-body1$data-in
+              :in-theory (e/d (gcd-body1$data-in
                                gcd-body1$a<b
                                gcd-body1$data-out
                                gcd-body1$data0-out
@@ -837,8 +827,7 @@
                  (nthcdr data-size
                          (comp-gcd-cond$data-in br-inputs data-size))))
                (strip-cars l0.d))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-gcd-cond$op
+     :hints (("Goal" :in-theory (enable comp-gcd-cond$op
                                         comp-gcd-cond$data-in
                                         comp-gcd$br-inputs)))))
 
@@ -851,8 +840,7 @@
                       (comp-gcd$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use comp-gcd$input-format=>br$input-format
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               joint-act
                               comp-gcd-cond$valid-st=>constraint
                               comp-gcd-cond$extracted-step
@@ -886,8 +874,7 @@
                               data-size))
   :hints (("Goal"
            :use comp-gcd$input-format=>br$input-format
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             comp-gcd-cond$valid-st=>constraint
                             comp-gcd$valid-st

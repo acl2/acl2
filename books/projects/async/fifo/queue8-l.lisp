@@ -130,8 +130,8 @@
 ;; Constraints on the state of QUEUE8-L
 
 (defund queue8-l$st-format (st data-size)
-  (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
-       (q4-l1 (get-field *queue8-l$q4-l1* st)))
+  (b* ((q4-l0 (nth *queue8-l$q4-l0* st))
+       (q4-l1 (nth *queue8-l$q4-l1* st)))
     (and (queue4-l$st-format q4-l0 data-size)
          (queue4-l$st-format q4-l1 data-size))))
 
@@ -142,8 +142,8 @@
   :rule-classes :forward-chaining)
 
 (defund queue8-l$valid-st (st data-size)
-  (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
-       (q4-l1 (get-field *queue8-l$q4-l1* st)))
+  (b* ((q4-l0 (nth *queue8-l$q4-l0* st))
+       (q4-l1 (nth *queue8-l$q4-l1* st)))
     (and (queue4-l$valid-st q4-l0 data-size)
          (queue4-l$valid-st q4-l1 data-size))))
 
@@ -202,8 +202,8 @@
                                  (nthcdr *queue8-l$prim-go-num*
                                          go-signals)))
 
-         (q4-l0 (get-field *queue8-l$q4-l0* st))
-         (q4-l1 (get-field *queue8-l$q4-l1* st))
+         (q4-l0 (nth *queue8-l$q4-l0* st))
+         (q4-l1 (nth *queue8-l$q4-l1* st))
 
          (trans-act (joint-act (queue4-l$ready-out q4-l0)
                                (queue4-l$ready-in- q4-l1)
@@ -224,8 +224,8 @@
                                             *queue4-l$go-num*)
                                          go-signals)))
 
-         (q4-l0 (get-field *queue8-l$q4-l0* st))
-         (q4-l1 (get-field *queue8-l$q4-l1* st))
+         (q4-l0 (nth *queue8-l$q4-l0* st))
+         (q4-l1 (nth *queue8-l$q4-l1* st))
 
          (trans-act (joint-act (queue4-l$ready-out q4-l0)
                                (queue4-l$ready-in- q4-l1)
@@ -238,7 +238,7 @@
   ;; Extract the "ready-in-" signal
 
   (defund queue8-l$ready-in- (st)
-    (b* ((q4-l0 (get-field *queue8-l$q4-l0* st)))
+    (b* ((q4-l0 (nth *queue8-l$q4-l0* st)))
       (queue4-l$ready-in- q4-l0)))
 
   (defthm booleanp-queue8-l$ready-in-
@@ -251,7 +251,7 @@
   ;; Extract the "ready-out" signal
 
   (defund queue8-l$ready-out (st)
-    (b* ((q4-l1 (get-field *queue8-l$q4-l1* st)))
+    (b* ((q4-l1 (nth *queue8-l$q4-l1* st)))
       (queue4-l$ready-out q4-l1)))
 
   (defthm booleanp-queue8-l$ready-out
@@ -264,7 +264,7 @@
   ;; Extract the output data
 
   (defund queue8-l$data-out (st)
-    (b* ((q4-l1 (get-field *queue8-l$q4-l1* st)))
+    (b* ((q4-l1 (nth *queue8-l$q4-l1* st)))
       (queue4-l$data-out q4-l1)))
 
   (defthm len-queue8-l$data-out-1
@@ -320,8 +320,8 @@
 ;; This function specifies the next state of QUEUE8-L.
 
 (defun queue8-l$step (inputs st data-size)
-  (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
-       (q4-l1 (get-field *queue8-l$q4-l1* st))
+  (b* ((q4-l0 (nth *queue8-l$q4-l0* st))
+       (q4-l1 (nth *queue8-l$q4-l1* st))
 
        (q4-l0-inputs (queue8-l$q4-l0-inputs inputs st data-size))
        (q4-l1-inputs (queue8-l$q4-l1-inputs inputs st data-size)))
@@ -415,8 +415,7 @@
              (nth *queue8-l$q4-l0* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             queue4-l$valid-st=>constraint
+            :in-theory (e/d (queue4-l$valid-st=>constraint
                              queue4-l$input-format
                              queue4-l$in-act
                              queue4-l$out-act
@@ -436,8 +435,7 @@
              (nth *queue8-l$q4-l1* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             joint-act
+            :in-theory (e/d (joint-act
                              queue4-l$valid-st=>constraint
                              queue4-l$input-format
                              queue4-l$in-act
@@ -473,8 +471,8 @@
 ;; sequence from the current state.
 
 (defund queue8-l$extract (st)
-  (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
-       (q4-l1 (get-field *queue8-l$q4-l1* st)))
+  (b* ((q4-l0 (nth *queue8-l$q4-l0* st))
+       (q4-l1 (nth *queue8-l$q4-l1* st)))
     (append (queue4-l$extract q4-l0)
             (queue4-l$extract q4-l1))))
 
@@ -540,8 +538,7 @@
                         data-size)
                        (queue4-l$data-out q4-l0))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue4-l$valid-st
+              :in-theory (enable queue4-l$valid-st
                                  queue4-l$data-in
                                  queue4-l$data-out
                                  queue8-l$q4-l1-inputs)))))
@@ -591,8 +588,7 @@
                       (queue8-l$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use queue8-l$input-format=>q4-l0$input-format
-             :in-theory (e/d (get-field
-                              queue4-l$valid-st=>constraint
+             :in-theory (e/d (queue4-l$valid-st=>constraint
                               queue4-l$extracted-step
                               queue8-l$extracted-step
                               queue8-l$input-format
@@ -618,8 +614,7 @@
            (queue8-l$valid-st (queue8-l$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue8-l$valid-st
+           :in-theory (e/d (queue8-l$valid-st
                             queue8-l$step)
                            ()))))
 
@@ -644,8 +639,7 @@
     :hints (("Goal"
              :do-not-induct t
              :use queue8-l$input-format=>q4-l1$input-format
-             :in-theory (e/d (get-field
-                              queue4-l$valid-st=>constraint
+             :in-theory (e/d (queue4-l$valid-st=>constraint
                               queue8-l$input-format
                               queue8-l$valid-st
                               queue8-l$extract

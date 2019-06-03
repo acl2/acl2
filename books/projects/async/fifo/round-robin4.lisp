@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -151,8 +151,8 @@
 ;; Constraints on the state of RR4
 
 (defund round-robin4$st-format (st data-size)
-  (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-       (q40-l1 (get-field *round-robin4$q40-l1* st)))
+  (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+       (q40-l1 (nth *round-robin4$q40-l1* st)))
     (and (< 0 data-size)
          (queue40-l$st-format q40-l0 data-size)
          (queue40-l$st-format q40-l1 data-size))))
@@ -164,10 +164,10 @@
   :rule-classes :forward-chaining)
 
 (defund round-robin4$valid-st (st data-size)
-  (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-       (q40-l1 (get-field *round-robin4$q40-l1* st))
-       (br (get-field *round-robin4$br* st))
-       (me (get-field *round-robin4$me* st)))
+  (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+       (q40-l1 (nth *round-robin4$q40-l1* st))
+       (br (nth *round-robin4$br* st))
+       (me (nth *round-robin4$me* st)))
     (and (< 0 data-size)
          (queue40-l$valid-st q40-l0 data-size)
          (queue40-l$valid-st q40-l1 data-size)
@@ -219,8 +219,8 @@
                               (nthcdr (* 2 *queue40-l$go-num*)
                                       go-signals)))
 
-         (q40-l0 (get-field *round-robin4$q40-l0* st))
-         (q40-l1 (get-field *round-robin4$q40-l1* st))
+         (q40-l0 (nth *round-robin4$q40-l0* st))
+         (q40-l1 (nth *round-robin4$q40-l1* st))
 
          (q40-l0-ready-in- (queue40-l$ready-in- q40-l0))
          (q40-l1-ready-in- (queue40-l$ready-in- q40-l1)))
@@ -239,8 +239,8 @@
                                          *alt-branch$go-num*)
                                       go-signals)))
 
-         (q40-l0 (get-field *round-robin4$q40-l0* st))
-         (q40-l1 (get-field *round-robin4$q40-l1* st))
+         (q40-l0 (nth *round-robin4$q40-l0* st))
+         (q40-l1 (nth *round-robin4$q40-l1* st))
 
          (q40-l0-ready-out (queue40-l$ready-out q40-l0))
          (q40-l0-data-out (queue40-l$data-out q40-l0))
@@ -258,8 +258,8 @@
 
          (q40-l0-go-signals (take *queue40-l$go-num* go-signals))
 
-         (br (get-field *round-robin4$br* st))
-         (me (get-field *round-robin4$me* st))
+         (br (nth *round-robin4$br* st))
+         (me (nth *round-robin4$me* st))
 
          (br-inputs (round-robin4$br-inputs inputs st data-size))
          (me-inputs (round-robin4$me-inputs inputs st data-size))
@@ -281,8 +281,8 @@
                                (nthcdr *queue40-l$go-num*
                                        go-signals)))
 
-         (br (get-field *round-robin4$br* st))
-         (me (get-field *round-robin4$me* st))
+         (br (nth *round-robin4$br* st))
+         (me (nth *round-robin4$me* st))
 
          (br-inputs (round-robin4$br-inputs inputs st data-size))
          (me-inputs (round-robin4$me-inputs inputs st data-size))
@@ -298,7 +298,7 @@
 
   (defund round-robin4$in-act (inputs st data-size)
     (b* ((br-inputs (round-robin4$br-inputs inputs st data-size))
-         (br (get-field *round-robin4$br* st)))
+         (br (nth *round-robin4$br* st)))
       (alt-branch$act br-inputs br data-size)))
 
   (defthm round-robin4$in-act-inactive
@@ -311,7 +311,7 @@
 
   (defund round-robin4$out-act (inputs st data-size)
     (b* ((me-inputs (round-robin4$me-inputs inputs st data-size))
-         (me (get-field *round-robin4$me* st)))
+         (me (nth *round-robin4$me* st)))
       (alt-merge$act me-inputs me data-size)))
 
   (defthm round-robin4$out-act-inactive
@@ -323,15 +323,15 @@
   ;; Extract the output data
 
   (defund round-robin4$data-out (st)
-    (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-         (q40-l1 (get-field *round-robin4$q40-l1* st))
-         (me (get-field *round-robin4$me* st))
+    (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+         (q40-l1 (nth *round-robin4$q40-l1* st))
+         (me (nth *round-robin4$me* st))
 
          (q40-l0-data-out (queue40-l$data-out q40-l0))
          (q40-l1-data-out (queue40-l$data-out q40-l1))
 
-         (me-select (get-field *alt-merge$select* me))
-         (me-select.d (get-field *link1$d* me-select)))
+         (me-select (nth *alt-merge$select* me))
+         (me-select.d (nth *link1$d* me-select)))
       (fv-if (car me-select.d)
              q40-l1-data-out
              q40-l0-data-out)))
@@ -404,10 +404,10 @@
 ;; This function specifies the next state of RR4.
 
 (defun round-robin4$step (inputs st data-size)
-  (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-       (q40-l1 (get-field *round-robin4$q40-l1* st))
-       (br (get-field *round-robin4$br* st))
-       (me (get-field *round-robin4$me* st))
+  (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+       (q40-l1 (nth *round-robin4$q40-l1* st))
+       (br (nth *round-robin4$br* st))
+       (me (nth *round-robin4$me* st))
 
        (q40-l0-inputs (round-robin4$q40-l0-inputs inputs st data-size))
        (q40-l1-inputs (round-robin4$q40-l1-inputs inputs st data-size))
@@ -484,8 +484,7 @@
              (nth *round-robin4$q40-l0* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             f-and3
+            :in-theory (e/d (f-and3
                              queue40-l$valid-st=>constraint
                              queue40-l$input-format
                              queue40-l$in-act
@@ -515,8 +514,7 @@
              (nth *round-robin4$q40-l1* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             f-and3
+            :in-theory (e/d (f-and3
                              queue40-l$valid-st=>constraint
                              queue40-l$input-format
                              queue40-l$in-act
@@ -645,18 +643,18 @@
 ;; from the current state.
 
 (defund round-robin4$extract (st)
-  (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-       (q40-l1 (get-field *round-robin4$q40-l1* st))
-       (me (get-field *round-robin4$me* st))
+  (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+       (q40-l1 (nth *round-robin4$q40-l1* st))
+       (me (nth *round-robin4$me* st))
 
        (a-seq (queue40-l$extract q40-l0))
        (b-seq (queue40-l$extract q40-l1))
 
-       (me-select       (get-field *alt-merge$select* me))
-       (me-select.s     (get-field *link1$s* me-select))
-       (me-select.d     (get-field *link1$d* me-select))
-       (me-select-buf   (get-field *alt-merge$select-buf* me))
-       (me-select-buf.d (get-field *link1$d* me-select-buf))
+       (me-select       (nth *alt-merge$select* me))
+       (me-select.s     (nth *link1$s* me-select))
+       (me-select.d     (nth *link1$d* me-select))
+       (me-select-buf   (nth *alt-merge$select-buf* me))
+       (me-select-buf.d (nth *link1$d* me-select-buf))
        (valid-me-select (if (fullp me-select.s)
                             (car me-select.d)
                           (car me-select-buf.d))))
@@ -690,28 +688,28 @@
 
 (progn
   (defund round-robin4$inv (st)
-    (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-         (q40-l1 (get-field *round-robin4$q40-l1* st))
-         (br (get-field *round-robin4$br* st))
-         (me (get-field *round-robin4$me* st))
+    (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+         (q40-l1 (nth *round-robin4$q40-l1* st))
+         (br (nth *round-robin4$br* st))
+         (me (nth *round-robin4$me* st))
 
          (a-seq (queue40-l$extract q40-l0))
          (b-seq (queue40-l$extract q40-l1))
 
-         (br-select       (get-field *alt-branch$select* br))
-         (br-select.s     (get-field *link1$s* br-select))
-         (br-select.d     (get-field *link1$d* br-select))
-         (br-select-buf   (get-field *alt-branch$select-buf* br))
-         (br-select-buf.d (get-field *link1$d* br-select-buf))
+         (br-select       (nth *alt-branch$select* br))
+         (br-select.s     (nth *link1$s* br-select))
+         (br-select.d     (nth *link1$d* br-select))
+         (br-select-buf   (nth *alt-branch$select-buf* br))
+         (br-select-buf.d (nth *link1$d* br-select-buf))
          (valid-br-select (if (fullp br-select.s)
                               (car br-select.d)
                             (car br-select-buf.d)))
 
-         (me-select       (get-field *alt-merge$select* me))
-         (me-select.s     (get-field *link1$s* me-select))
-         (me-select.d     (get-field *link1$d* me-select))
-         (me-select-buf   (get-field *alt-merge$select-buf* me))
-         (me-select-buf.d (get-field *link1$d* me-select-buf))
+         (me-select       (nth *alt-merge$select* me))
+         (me-select.s     (nth *link1$s* me-select))
+         (me-select.d     (nth *link1$d* me-select))
+         (me-select-buf   (nth *alt-merge$select-buf* me))
+         (me-select-buf.d (nth *link1$d* me-select-buf))
          (valid-me-select (if (fullp me-select.s)
                               (car me-select.d)
                             (car me-select-buf.d))))
@@ -749,8 +747,7 @@
                      (round-robin4$q40-l0-inputs inputs st data-size)))
                (not (queue40-l$in-act
                      (round-robin4$q40-l1-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      queue40-l$in-act
+     :hints (("Goal" :in-theory (e/d (queue40-l$in-act
                                       queue40-l$in-act
                                       round-robin4$q40-l0-inputs
                                       round-robin4$q40-l1-inputs
@@ -772,8 +769,7 @@
                          (equal br-select-buf.s '(t))))
                 (not (queue40-l$in-act
                       (round-robin4$q40-l0-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-or3
+     :hints (("Goal" :in-theory (enable f-or3
                                         queue40-l$in-act
                                         alt-branch$valid-st
                                         alt-branch$act0
@@ -785,8 +781,7 @@
                    (queue40-l$ready-in- (nth *round-robin4$q40-l0* st)))
               (not (queue40-l$in-act
                     (round-robin4$q40-l0-inputs inputs st data-size))))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      queue40-l$valid-st
+     :hints (("Goal" :in-theory (e/d (queue40-l$valid-st
                                       queue40-l$ready-in-
                                       queue40-l$in-act
                                       round-robin4$q40-l0-inputs
@@ -808,8 +803,7 @@
                          (equal me-select-buf.s '(t))))
                 (not (queue40-l$out-act
                       (round-robin4$q40-l0-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
+     :hints (("Goal" :in-theory (enable f-and3
                                         queue40-l$out-act
                                         alt-merge$valid-st
                                         alt-merge$act0
@@ -821,8 +815,7 @@
                    (not (queue40-l$ready-out (nth *round-robin4$q40-l0* st))))
               (not (queue40-l$out-act
                     (round-robin4$q40-l0-inputs inputs st data-size))))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      queue40-l$valid-st
+     :hints (("Goal" :in-theory (e/d (queue40-l$valid-st
                                       queue40-l$ready-out
                                       queue40-l$out-act
                                       round-robin4$q40-l0-inputs
@@ -844,8 +837,7 @@
                          (equal br-select-buf.s '(t))))
                 (not (queue40-l$in-act
                       (round-robin4$q40-l1-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-or3
+     :hints (("Goal" :in-theory (enable f-or3
                                         queue40-l$in-act
                                         alt-branch$valid-st
                                         alt-branch$act1
@@ -857,8 +849,7 @@
                    (queue40-l$ready-in- (nth *round-robin4$q40-l1* st)))
               (not (queue40-l$in-act
                     (round-robin4$q40-l1-inputs inputs st data-size))))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      queue40-l$valid-st
+     :hints (("Goal" :in-theory (e/d (queue40-l$valid-st
                                       queue40-l$ready-in-
                                       queue40-l$in-act
                                       round-robin4$q40-l1-inputs
@@ -880,8 +871,7 @@
                          (equal me-select-buf.s '(t))))
                 (not (queue40-l$out-act
                       (round-robin4$q40-l1-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        f-and3
+     :hints (("Goal" :in-theory (enable f-and3
                                         queue40-l$out-act
                                         alt-merge$valid-st
                                         alt-merge$act1
@@ -893,8 +883,7 @@
                    (not (queue40-l$ready-out (nth *round-robin4$q40-l1* st))))
               (not (queue40-l$out-act
                     (round-robin4$q40-l1-inputs inputs st data-size))))
-     :hints (("Goal" :in-theory (e/d (get-field
-                                      queue40-l$valid-st
+     :hints (("Goal" :in-theory (e/d (queue40-l$valid-st
                                       queue40-l$ready-out
                                       queue40-l$out-act
                                       round-robin4$q40-l1-inputs
@@ -925,8 +914,7 @@
                                        inputs)))
                (queue40-l$in-act
                 (round-robin4$q40-l0-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue40-l$valid-st=>constraint
+     :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                         queue40-l$in-act
                                         alt-branch$act0
                                         round-robin4$q40-l0-inputs
@@ -958,8 +946,7 @@
                                        inputs)))
                (queue40-l$out-act
                 (round-robin4$q40-l0-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue40-l$valid-st=>constraint
+     :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                         queue40-l$out-act
                                         alt-merge$act0
                                         round-robin4$q40-l0-inputs
@@ -989,8 +976,7 @@
                                        inputs)))
                (queue40-l$in-act
                 (round-robin4$q40-l1-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue40-l$valid-st=>constraint
+     :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                         queue40-l$in-act
                                         alt-branch$act1
                                         round-robin4$q40-l1-inputs
@@ -1022,8 +1008,7 @@
                                        inputs)))
                (queue40-l$out-act
                 (round-robin4$q40-l1-inputs inputs st data-size)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue40-l$valid-st=>constraint
+     :hints (("Goal" :in-theory (enable queue40-l$valid-st=>constraint
                                         queue40-l$out-act
                                         alt-merge$act1
                                         round-robin4$q40-l1-inputs
@@ -1037,8 +1022,7 @@
     :hints (("Goal"
              :use (round-robin4$input-format=>q40-l0$input-format
                    round-robin4$input-format=>q40-l1$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               queue40-l$valid-st=>constraint
                               queue40-l$extracted-step
                               round-robin4$valid-st
@@ -1167,8 +1151,7 @@
     :hints (("Goal"
              :use (round-robin4$input-format=>q40-l0$input-format
                    round-robin4$input-format=>q40-l1$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               queue40-l$valid-st=>constraint
                               queue40-l$extracted-step
                               round-robin4$extracted-step
@@ -1209,8 +1192,7 @@
             (round-robin4$step inputs st data-size)
             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            round-robin4$valid-st
+           :in-theory (e/d (round-robin4$valid-st
                             round-robin4$step)
                            ()))))
 

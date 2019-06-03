@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -27,8 +27,8 @@
 
 (progn
   (defun interl$map-to-links (st)
-    (b* ((q40-l0 (get-field *interl$q40-l0* st))
-         (q40-l1 (get-field *interl$q40-l1* st)))
+    (b* ((q40-l0 (nth *interl$q40-l0* st))
+         (q40-l1 (nth *interl$q40-l1* st)))
       (append (list (cons 'q40-l0 (queue40-l$map-to-links q40-l0)))
               (list (cons 'q40-l1 (queue40-l$map-to-links q40-l1))))))
 
@@ -107,9 +107,9 @@
 
 (progn
   (defun igcd$map-to-links (st)
-    (b* ((l (get-field *igcd$l* st))
-         (interl (get-field *igcd$interl* st))
-         (gcd1 (get-field *igcd$gcd1* st)))
+    (b* ((l (nth *igcd$l* st))
+         (interl (nth *igcd$interl* st))
+         (gcd1 (nth *igcd$gcd1* st)))
       (append (list (cons 'interl (interl$map-to-links interl)))
               (map-to-links (list (cons 'l l)))
               (list (cons 'gcd1 (gcd1$map-to-links gcd1))))))
@@ -192,11 +192,11 @@
 
 (progn
   (defun comp-interl$map-to-links (st)
-    (b* ((l0 (get-field *comp-interl$l0* st))
-         (l1 (get-field *comp-interl$l1* st))
-         (interl0 (get-field *comp-interl$interl0* st))
-         (interl1 (get-field *comp-interl$interl1* st))
-         (interl2 (get-field *comp-interl$interl2* st)))
+    (b* ((l0 (nth *comp-interl$l0* st))
+         (l1 (nth *comp-interl$l1* st))
+         (interl0 (nth *comp-interl$interl0* st))
+         (interl1 (nth *comp-interl$interl1* st))
+         (interl2 (nth *comp-interl$interl2* st)))
       (append (list (cons 'interl0 (interl$map-to-links interl0)))
               (list (cons 'interl1 (interl$map-to-links interl1)))
               (map-to-links (list (cons 'l0 l0)

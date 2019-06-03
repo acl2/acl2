@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -181,12 +181,12 @@
 ;; Constraints on the state of COMP-V-OR
 
 (defund comp-v-or$st-format (st data-size)
-  (b* ((a0 (get-field *comp-v-or$a0* st))
-       (b0 (get-field *comp-v-or$b0* st))
-       (a1 (get-field *comp-v-or$a1* st))
-       (b1 (get-field *comp-v-or$b1* st))
-       (q2 (get-field *comp-v-or$q2* st))
-       (q3 (get-field *comp-v-or$q3* st)))
+  (b* ((a0 (nth *comp-v-or$a0* st))
+       (b0 (nth *comp-v-or$b0* st))
+       (a1 (nth *comp-v-or$a1* st))
+       (b1 (nth *comp-v-or$b1* st))
+       (q2 (nth *comp-v-or$q2* st))
+       (q3 (nth *comp-v-or$q3* st)))
     (and (link$st-format a0 data-size)
          (link$st-format b0 data-size)
          (link$st-format a1 data-size)
@@ -202,12 +202,12 @@
   :rule-classes :forward-chaining)
 
 (defund comp-v-or$valid-st (st data-size)
-  (b* ((a0 (get-field *comp-v-or$a0* st))
-       (b0 (get-field *comp-v-or$b0* st))
-       (a1 (get-field *comp-v-or$a1* st))
-       (b1 (get-field *comp-v-or$b1* st))
-       (q2 (get-field *comp-v-or$q2* st))
-       (q3 (get-field *comp-v-or$q3* st)))
+  (b* ((a0 (nth *comp-v-or$a0* st))
+       (b0 (nth *comp-v-or$b0* st))
+       (a1 (nth *comp-v-or$a1* st))
+       (b1 (nth *comp-v-or$b1* st))
+       (q2 (nth *comp-v-or$q2* st))
+       (q3 (nth *comp-v-or$q3* st)))
     (and (link$valid-st a0 data-size)
          (link$valid-st b0 data-size)
          (link$valid-st a1 data-size)
@@ -274,11 +274,11 @@
                               (nthcdr *comp-v-or$prim-go-num*
                                       go-signals)))
 
-         (a0  (get-field *comp-v-or$a0* st))
-         (a0.s (get-field *link$s* a0))
-         (a0.d (get-field *link$d* a0))
-         (a1 (get-field *comp-v-or$a1* st))
-         (a1.s (get-field *link$s* a1)))
+         (a0  (nth *comp-v-or$a0* st))
+         (a0.s (nth *link$s* a0))
+         (a0.d (nth *link$d* a0))
+         (a1 (nth *comp-v-or$a1* st))
+         (a1.s (nth *link$s* a1)))
 
       (list* (f-buf (car a0.s)) (f-buf (car a1.s))
              (append (v-threefix (strip-cars a0.d))
@@ -294,11 +294,11 @@
                                          *queue2$go-num*)
                                       go-signals)))
 
-         (b0  (get-field *comp-v-or$b0* st))
-         (b0.s (get-field *link$s* b0))
-         (b0.d (get-field *link$d* b0))
-         (b1 (get-field *comp-v-or$b1* st))
-         (b1.s (get-field *link$s* b1)))
+         (b0  (nth *comp-v-or$b0* st))
+         (b0.s (nth *link$s* b0))
+         (b0.d (nth *link$d* b0))
+         (b1 (nth *comp-v-or$b1* st))
+         (b1.s (nth *link$s* b1)))
 
       (list* (f-buf (car b0.s)) (f-buf (car b1.s))
              (append (v-threefix (strip-cars b0.d))
@@ -310,10 +310,10 @@
     (b* ((full-in (nth 0 inputs))
          (go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
-         (a0 (get-field *comp-v-or$a0* st))
-         (a0.s (get-field *link$s* a0))
-         (b0 (get-field *comp-v-or$b0* st))
-         (b0.s (get-field *link$s* b0)))
+         (a0 (nth *comp-v-or$a0* st))
+         (a0.s (nth *link$s* a0))
+         (b0 (nth *comp-v-or$b0* st))
+         (b0.s (nth *link$s* b0)))
       (joint-act full-in
                  (f-or (car a0.s) (car b0.s))
                  go-in)))
@@ -330,10 +330,10 @@
          (go-signals (nthcdr (comp-v-or$data-ins-len data-size) inputs))
          (go-out (nth 1 go-signals))
 
-         (a1 (get-field *comp-v-or$a1* st))
-         (a1.s (get-field *link$s* a1))
-         (b1 (get-field *comp-v-or$b1* st))
-         (b1.s (get-field *link$s* b1)))
+         (a1 (nth *comp-v-or$a1* st))
+         (a1.s (nth *link$s* a1))
+         (b1 (nth *comp-v-or$b1* st))
+         (b1.s (nth *link$s* b1)))
       (joint-act (f-and (car a1.s) (car b1.s))
                  empty-out-
                  go-out)))
@@ -346,10 +346,10 @@
   ;; Extract the output data
 
   (defund comp-v-or$data-out (st)
-    (fv-or (strip-cars (get-field *link$d*
-                                  (get-field *comp-v-or$a1* st)))
-           (strip-cars (get-field *link$d*
-                                  (get-field *comp-v-or$b1* st)))))
+    (fv-or (strip-cars (nth *link$d*
+                                  (nth *comp-v-or$a1* st)))
+           (strip-cars (nth *link$d*
+                                  (nth *comp-v-or$b1* st)))))
 
   (defthm len-comp-v-or$data-out-1
     (implies (comp-v-or$st-format st data-size)
@@ -413,12 +413,12 @@
   (b* ((a (comp-v-or$a inputs data-size))
        (b (comp-v-or$b inputs data-size))
 
-       (a0 (get-field *comp-v-or$a0* st))
-       (b0 (get-field *comp-v-or$b0* st))
-       (a1 (get-field *comp-v-or$a1* st))
-       (b1 (get-field *comp-v-or$b1* st))
-       (q2 (get-field *comp-v-or$q2* st))
-       (q3 (get-field *comp-v-or$q3* st))
+       (a0 (nth *comp-v-or$a0* st))
+       (b0 (nth *comp-v-or$b0* st))
+       (a1 (nth *comp-v-or$a1* st))
+       (b1 (nth *comp-v-or$b1* st))
+       (q2 (nth *comp-v-or$q2* st))
+       (q3 (nth *comp-v-or$q3* st))
 
        (q2-inputs (comp-v-or$q2-inputs inputs st data-size))
        (q2-in-act (queue2$in-act q2-inputs q2 data-size))
@@ -586,12 +586,12 @@
 ;; sequence from the current state.
 
 (defund comp-v-or$extract (st)
-  (b* ((a0 (get-field *comp-v-or$a0* st))
-       (b0 (get-field *comp-v-or$b0* st))
-       (a1 (get-field *comp-v-or$a1* st))
-       (b1 (get-field *comp-v-or$b1* st))
-       (q2 (get-field *comp-v-or$q2* st))
-       (q3 (get-field *comp-v-or$q3* st))
+  (b* ((a0 (nth *comp-v-or$a0* st))
+       (b0 (nth *comp-v-or$b0* st))
+       (a1 (nth *comp-v-or$a1* st))
+       (b1 (nth *comp-v-or$b1* st))
+       (q2 (nth *comp-v-or$q2* st))
+       (q3 (nth *comp-v-or$q3* st))
 
        (a-seq (append (extract-valid-data (list a0))
                       (queue2$extract q2)
@@ -616,12 +616,12 @@
 
 (progn
   (defund comp-v-or$inv (st)
-    (b* ((a0 (get-field *comp-v-or$a0* st))
-         (b0 (get-field *comp-v-or$b0* st))
-         (a1 (get-field *comp-v-or$a1* st))
-         (b1 (get-field *comp-v-or$b1* st))
-         (q2 (get-field *comp-v-or$q2* st))
-         (q3 (get-field *comp-v-or$q3* st))
+    (b* ((a0 (nth *comp-v-or$a0* st))
+         (b0 (nth *comp-v-or$b0* st))
+         (a1 (nth *comp-v-or$a1* st))
+         (b1 (nth *comp-v-or$b1* st))
+         (q2 (nth *comp-v-or$q2* st))
+         (q3 (nth *comp-v-or$q3* st))
 
          (a-seq (append (extract-valid-data (list a0 a1))
                         (queue2$extract q2)))
@@ -631,51 +631,43 @@
 
   (local
    (defthm comp-v-or$q2-in-act-inactive
-     (implies (equal (nth *link$s*
-                          (nth *comp-v-or$a0* st))
+     (implies (equal (nth *link$s* (nth *comp-v-or$a0* st))
                      '(nil))
               (not (queue2$in-act (comp-v-or$q2-inputs inputs st data-size)
                                   (nth *comp-v-or$q2* st)
                                   data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-v-or$q2-inputs)))))
+              :in-theory (enable comp-v-or$q2-inputs)))))
 
   (local
    (defthm comp-v-or$q3-in-act-inactive
-     (implies (equal (nth *link$s*
-                          (nth *comp-v-or$b0* st))
+     (implies (equal (nth *link$s* (nth *comp-v-or$b0* st))
                      '(nil))
               (not (queue3$in-act (comp-v-or$q3-inputs inputs st data-size)
                                   (nth *comp-v-or$q3* st)
                                   data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-v-or$q3-inputs)))))
+              :in-theory (enable comp-v-or$q3-inputs)))))
 
   (local
    (defthm comp-v-or$q2-out-act-inactive
-     (implies (equal (nth *link$s*
-                          (nth *comp-v-or$a1* st))
+     (implies (equal (nth *link$s* (nth *comp-v-or$a1* st))
                      '(t))
               (not (queue2$out-act (comp-v-or$q2-inputs inputs st data-size)
                                    (nth *comp-v-or$q2* st)
                                    data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-v-or$q2-inputs)))))
+              :in-theory (enable comp-v-or$q2-inputs)))))
 
   (local
    (defthm comp-v-or$q3-out-act-inactive
-     (implies (equal (nth *link$s*
-                          (nth *comp-v-or$b1* st))
+     (implies (equal (nth *link$s* (nth *comp-v-or$b1* st))
                      '(t))
               (not (queue3$out-act (comp-v-or$q3-inputs inputs st data-size)
                                    (nth *comp-v-or$q3* st)
                                    data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-v-or$q3-inputs)))))
+              :in-theory (enable comp-v-or$q3-inputs)))))
 
   (defthm comp-v-or$inv-preserved
     (implies (and (comp-v-or$input-format inputs data-size)
@@ -685,8 +677,7 @@
     :hints (("Goal"
              :use (comp-v-or$input-format=>q2$input-format
                    comp-v-or$input-format=>q3$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               queue2$extracted-step
                               queue3$extracted-step
                               comp-v-or$valid-st
@@ -747,8 +738,8 @@
 
   (local
    (defthm comp-v-or$q2-data-in-rewrite
-     (b* ((a0 (get-field *comp-v-or$a0* st))
-          (a0.d (get-field *link$d* a0)))
+     (b* ((a0 (nth *comp-v-or$a0* st))
+          (a0.d (nth *link$d* a0)))
        (implies (and (bvp (strip-cars a0.d))
                      (equal (len a0.d) data-size))
                 (equal (queue2$data-in
@@ -761,8 +752,8 @@
 
   (local
    (defthm comp-v-or$q3-data-in-rewrite
-     (b* ((b0 (get-field *comp-v-or$b0* st))
-          (b0.d (get-field *link$d* b0)))
+     (b* ((b0 (nth *comp-v-or$b0* st))
+          (b0.d (nth *link$d* b0)))
        (implies (and (bvp (strip-cars b0.d))
                      (equal (len b0.d) data-size))
                 (equal (queue3$data-in
@@ -794,8 +785,7 @@
     :hints (("Goal"
              :use (comp-v-or$input-format=>q2$input-format
                    comp-v-or$input-format=>q3$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               queue2$extracted-step
                               queue3$extracted-step
                               comp-v-or$extracted-step
@@ -825,8 +815,7 @@
   :hints (("Goal"
            :use (comp-v-or$input-format=>q2$input-format
                  comp-v-or$input-format=>q3$input-format)
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             comp-v-or$valid-st
                             comp-v-or$step
@@ -868,4 +857,3 @@
 ;; The multi-step input-output relationship
 
 (in-out-stream-lemma comp-v-or :op comp-v-or$op :inv t)
-

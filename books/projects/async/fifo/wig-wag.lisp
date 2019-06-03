@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -130,8 +130,8 @@
 ;; Constraints on the state of WW
 
 (defund wig-wag$st-format (st data-size)
-  (b* ((l0 (get-field *wig-wag$l0* st))
-       (l1 (get-field *wig-wag$l1* st)))
+  (b* ((l0 (nth *wig-wag$l0* st))
+       (l1 (nth *wig-wag$l1* st)))
     (and (< 0 data-size)
          (link$st-format l0 data-size)
          (link$st-format l1 data-size))))
@@ -143,10 +143,10 @@
   :rule-classes :forward-chaining)
 
 (defund wig-wag$valid-st (st data-size)
-  (b* ((l0 (get-field *wig-wag$l0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (br (get-field *wig-wag$br* st))
-       (me (get-field *wig-wag$me* st)))
+  (b* ((l0 (nth *wig-wag$l0* st))
+       (l1 (nth *wig-wag$l1* st))
+       (br (nth *wig-wag$br* st))
+       (me (nth *wig-wag$me* st)))
     (and (wig-wag$st-format st data-size)
 
          (link$valid-st l0 data-size)
@@ -194,10 +194,10 @@
 
          (br-go-signals (take *alt-branch$go-num* go-signals))
 
-         (l0 (get-field *wig-wag$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l1 (get-field *wig-wag$l1* st))
-         (l1.s (get-field *link$s* l1)))
+         (l0 (nth *wig-wag$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l1 (nth *wig-wag$l1* st))
+         (l1.s (nth *link$s* l1)))
 
       (list* full-in (f-buf (car l0.s)) (f-buf (car l1.s))
              (append data-in br-go-signals))))
@@ -211,12 +211,12 @@
          (me-go-signals (take *alt-merge$go-num*
                               (nthcdr *alt-branch$go-num* go-signals)))
 
-         (l0 (get-field *wig-wag$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l0.d (get-field *link$d* l0))
-         (l1 (get-field *wig-wag$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (l1.d (get-field *link$d* l1)))
+         (l0 (nth *wig-wag$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l0.d (nth *link$d* l0))
+         (l1 (nth *wig-wag$l1* st))
+         (l1.s (nth *link$s* l1))
+         (l1.d (nth *link$d* l1)))
 
       (list* (f-buf (car l0.s)) (f-buf (car l1.s)) empty-out-
              (append (v-threefix (strip-cars l0.d))
@@ -227,7 +227,7 @@
 
   (defund wig-wag$in-act (inputs st data-size)
     (b* ((br-inputs (wig-wag$br-inputs inputs st data-size))
-         (br (get-field *wig-wag$br* st)))
+         (br (nth *wig-wag$br* st)))
       (alt-branch$act br-inputs br data-size)))
 
   (defthm wig-wag$in-act-inactive
@@ -240,7 +240,7 @@
 
   (defund wig-wag$out-act (inputs st data-size)
     (b* ((me-inputs (wig-wag$me-inputs inputs st data-size))
-         (me (get-field *wig-wag$me* st)))
+         (me (nth *wig-wag$me* st)))
       (alt-merge$act me-inputs me data-size)))
 
   (defthm wig-wag$out-act-inactive
@@ -252,13 +252,13 @@
   ;; Extract the output data
 
   (defund wig-wag$data-out (st)
-    (b* ((l0 (get-field *wig-wag$l0* st))
-         (l0.d (get-field *link$d* l0))
-         (l1 (get-field *wig-wag$l1* st))
-         (l1.d (get-field *link$d* l1))
-         (me (get-field *wig-wag$me* st))
-         (me-select (get-field *alt-merge$select* me))
-         (me-select.d (get-field *link1$d* me-select)))
+    (b* ((l0 (nth *wig-wag$l0* st))
+         (l0.d (nth *link$d* l0))
+         (l1 (nth *wig-wag$l1* st))
+         (l1.d (nth *link$d* l1))
+         (me (nth *wig-wag$me* st))
+         (me-select (nth *alt-merge$select* me))
+         (me-select.d (nth *link1$d* me-select)))
       (fv-if (car me-select.d)
              (strip-cars l1.d)
              (strip-cars l0.d))))
@@ -333,10 +333,10 @@
 (defun wig-wag$step (inputs st data-size)
   (b* ((data-in (wig-wag$data-in inputs data-size))
 
-       (l0 (get-field *wig-wag$l0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (br (get-field *wig-wag$br* st))
-       (me (get-field *wig-wag$me* st))
+       (l0 (nth *wig-wag$l0* st))
+       (l1 (nth *wig-wag$l1* st))
+       (br (nth *wig-wag$br* st))
+       (me (nth *wig-wag$me* st))
 
        (br-inputs (wig-wag$br-inputs inputs st data-size))
        (me-inputs (wig-wag$me-inputs inputs st data-size))
@@ -469,15 +469,15 @@
 ;; the current state.
 
 (defund wig-wag$extract (st)
-  (b* ((l0 (get-field *wig-wag$l0* st))
-       (l1 (get-field *wig-wag$l1* st))
-       (me (get-field *wig-wag$me* st))
+  (b* ((l0 (nth *wig-wag$l0* st))
+       (l1 (nth *wig-wag$l1* st))
+       (me (nth *wig-wag$me* st))
 
-       (me-select       (get-field *alt-merge$select* me))
-       (me-select.s     (get-field *link1$s* me-select))
-       (me-select.d     (get-field *link1$d* me-select))
-       (me-select-buf   (get-field *alt-merge$select-buf* me))
-       (me-select-buf.d (get-field *link1$d* me-select-buf))
+       (me-select       (nth *alt-merge$select* me))
+       (me-select.s     (nth *link1$s* me-select))
+       (me-select.d     (nth *link1$d* me-select))
+       (me-select-buf   (nth *alt-merge$select-buf* me))
+       (me-select-buf.d (nth *link1$d* me-select-buf))
        (valid-me-select (if (fullp me-select.s)
                             (car me-select.d)
                           (car me-select-buf.d))))
@@ -506,27 +506,27 @@
 
 (progn
   (defund wig-wag$inv (st)
-    (b* ((l0 (get-field *wig-wag$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l1 (get-field *wig-wag$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (br (get-field *wig-wag$br* st))
-         (me (get-field *wig-wag$me* st))
+    (b* ((l0 (nth *wig-wag$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l1 (nth *wig-wag$l1* st))
+         (l1.s (nth *link$s* l1))
+         (br (nth *wig-wag$br* st))
+         (me (nth *wig-wag$me* st))
 
-         (br-select       (get-field *alt-branch$select* br))
-         (br-select.s     (get-field *link1$s* br-select))
-         (br-select.d     (get-field *link1$d* br-select))
-         (br-select-buf   (get-field *alt-branch$select-buf* br))
-         (br-select-buf.d (get-field *link1$d* br-select-buf))
+         (br-select       (nth *alt-branch$select* br))
+         (br-select.s     (nth *link1$s* br-select))
+         (br-select.d     (nth *link1$d* br-select))
+         (br-select-buf   (nth *alt-branch$select-buf* br))
+         (br-select-buf.d (nth *link1$d* br-select-buf))
          (valid-br-select (if (fullp br-select.s)
                               (car br-select.d)
                             (car br-select-buf.d)))
 
-         (me-select       (get-field *alt-merge$select* me))
-         (me-select.s     (get-field *link1$s* me-select))
-         (me-select.d     (get-field *link1$d* me-select))
-         (me-select-buf   (get-field *alt-merge$select-buf* me))
-         (me-select-buf.d (get-field *link1$d* me-select-buf))
+         (me-select       (nth *alt-merge$select* me))
+         (me-select.s     (nth *link1$s* me-select))
+         (me-select.d     (nth *link1$d* me-select))
+         (me-select-buf   (nth *alt-merge$select-buf* me))
+         (me-select-buf.d (nth *link1$d* me-select-buf))
          (valid-me-select (if (fullp me-select.s)
                               (car me-select.d)
                             (car me-select-buf.d))))
@@ -571,8 +571,7 @@
                   (wig-wag$inv st))
              (wig-wag$inv (wig-wag$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               wig-wag$valid-st
                               wig-wag$inv
                               wig-wag$step
@@ -623,8 +622,7 @@
              (equal (wig-wag$extract next-st)
                     (wig-wag$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             wig-wag$extracted-step
                             wig-wag$valid-st
@@ -667,8 +665,7 @@
                     (nth *wig-wag$br* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 wig-wag$br-inputs)))))
+              :in-theory (enable wig-wag$br-inputs)))))
 
   (local
    (defthm wig-wag$br-act1-inactive
@@ -680,8 +677,7 @@
                     (nth *wig-wag$br* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 wig-wag$br-inputs)))))
+              :in-theory (enable wig-wag$br-inputs)))))
 
   (local
    (defthm wig-wag$me-act0-inactive
@@ -693,8 +689,7 @@
                     (nth *wig-wag$me* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 wig-wag$me-inputs)))))
+              :in-theory (enable wig-wag$me-inputs)))))
 
   (local
    (defthm wig-wag$me-act1-inactive
@@ -706,8 +701,7 @@
                     (nth *wig-wag$me* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 wig-wag$me-inputs)))))
+              :in-theory (enable wig-wag$me-inputs)))))
 
   (local
    (defthm wig-wag$br-acts-inactive
@@ -726,8 +720,7 @@
     :hints (("Goal"
              :use (wig-wag$input-format=>br$input-format
                    wig-wag$input-format=>me$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               wig-wag$input-format
                               wig-wag$valid-st
                               wig-wag$st-format

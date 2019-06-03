@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -184,11 +184,11 @@
 ;; Constraints on the state of Q5
 
 (defund queue5$st-format (st data-size)
-  (b* ((l0 (get-field *queue5$l0* st))
-       (l1 (get-field *queue5$l1* st))
-       (l2 (get-field *queue5$l2* st))
-       (l3 (get-field *queue5$l3* st))
-       (l4 (get-field *queue5$l4* st)))
+  (b* ((l0 (nth *queue5$l0* st))
+       (l1 (nth *queue5$l1* st))
+       (l2 (nth *queue5$l2* st))
+       (l3 (nth *queue5$l3* st))
+       (l4 (nth *queue5$l4* st)))
     (and (link$st-format l0 data-size)
          (link$st-format l1 data-size)
          (link$st-format l2 data-size)
@@ -202,11 +202,11 @@
   :rule-classes :forward-chaining)
 
 (defund queue5$valid-st (st data-size)
-  (b* ((l0 (get-field *queue5$l0* st))
-       (l1 (get-field *queue5$l1* st))
-       (l2 (get-field *queue5$l2* st))
-       (l3 (get-field *queue5$l3* st))
-       (l4 (get-field *queue5$l4* st)))
+  (b* ((l0 (nth *queue5$l0* st))
+       (l1 (nth *queue5$l1* st))
+       (l2 (nth *queue5$l2* st))
+       (l3 (nth *queue5$l3* st))
+       (l4 (nth *queue5$l4* st)))
     (and (link$valid-st l0 data-size)
          (link$valid-st l1 data-size)
          (link$valid-st l2 data-size)
@@ -251,8 +251,8 @@
          (go-signals (nthcdr (queue5$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
 
-         (l0 (get-field *queue5$l0* st))
-         (l0.s (get-field *link$s* l0)))
+         (l0 (nth *queue5$l0* st))
+         (l0.s (nth *link$s* l0)))
       (joint-act full-in (car l0.s) go-in)))
 
   (defthm queue5$in-act-inactive
@@ -267,8 +267,8 @@
          (go-signals (nthcdr (queue5$data-ins-len data-size) inputs))
          (go-out (nth 5 go-signals))
 
-         (l4 (get-field *queue5$l4* st))
-         (l4.s (get-field *link$s* l4)))
+         (l4 (nth *queue5$l4* st))
+         (l4.s (nth *link$s* l4)))
       (joint-act (car l4.s) empty-out- go-out)))
 
   (defthm queue5$out-act-inactive
@@ -279,8 +279,8 @@
   ;; Extract the output data
 
   (defund queue5$data-out (st)
-    (v-threefix (strip-cars (get-field *link$d*
-                                       (get-field *queue5$l4* st)))))
+    (v-threefix (strip-cars (nth *link$d*
+                                 (nth *queue5$l4* st)))))
 
   (defthm len-queue5$data-out-1
     (implies (queue5$st-format st data-size)
@@ -345,20 +345,20 @@
        (go-trans3 (nth 3 go-signals))
        (go-trans4 (nth 4 go-signals))
 
-       (l0 (get-field *queue5$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *queue5$l1* st))
-       (l1.s (get-field *link$s* l1))
-       (l1.d (get-field *link$d* l1))
-       (l2 (get-field *queue5$l2* st))
-       (l2.s (get-field *link$s* l2))
-       (l2.d (get-field *link$d* l2))
-       (l3 (get-field *queue5$l3* st))
-       (l3.s (get-field *link$s* l3))
-       (l3.d (get-field *link$d* l3))
-       (l4 (get-field *queue5$l4* st))
-       (l4.s (get-field *link$s* l4))
+       (l0 (nth *queue5$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *queue5$l1* st))
+       (l1.s (nth *link$s* l1))
+       (l1.d (nth *link$d* l1))
+       (l2 (nth *queue5$l2* st))
+       (l2.s (nth *link$s* l2))
+       (l2.d (nth *link$d* l2))
+       (l3 (nth *queue5$l3* st))
+       (l3.s (nth *link$s* l3))
+       (l3.d (nth *link$d* l3))
+       (l4 (nth *queue5$l4* st))
+       (l4.s (nth *link$s* l4))
 
        (in-act (queue5$in-act inputs st data-size))
        (out-act (queue5$out-act inputs st data-size))
@@ -461,11 +461,11 @@
 ;; the current state.
 
 (defund queue5$extract (st)
-  (b* ((l0 (get-field *queue5$l0* st))
-       (l1 (get-field *queue5$l1* st))
-       (l2 (get-field *queue5$l2* st))
-       (l3 (get-field *queue5$l3* st))
-       (l4 (get-field *queue5$l4* st)))
+  (b* ((l0 (nth *queue5$l0* st))
+       (l1 (nth *queue5$l1* st))
+       (l2 (nth *queue5$l2* st))
+       (l3 (nth *queue5$l3* st))
+       (l4 (nth *queue5$l4* st)))
     (extract-valid-data (list l0 l1 l2 l3 l4))))
 
 (defthm queue5$extract-not-empty
@@ -506,8 +506,7 @@
              (equal (queue5$extract next-st)
                     (queue5$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
+           :in-theory (enable f-sr
                               queue5$extracted-step
                               queue5$input-format
                               queue5$valid-st
@@ -529,8 +528,7 @@
            (queue5$valid-st (queue5$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue5$input-format
+           :in-theory (e/d (queue5$input-format
                             queue5$valid-st
                             queue5$st-format
                             queue5$step

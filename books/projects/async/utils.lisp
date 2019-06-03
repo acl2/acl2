@@ -589,16 +589,6 @@
            (member (cons e x)
                    (cons-rec e y))))
 
-;; GET-FIELD
-
-;; We use this function as a wrapper of NTH. This is useful when we don't want
-;; to apply rewrite rules to NTH by letting GET-FIELD remain disabled.
-
-(defund get-field (n l)
-  (declare (xargs :guard (and (natp n)
-                              (true-listp l))))
-  (nth n l))
-
 ;; INTERLEAVE
 
 (defun interleave (l1 l2)

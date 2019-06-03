@@ -1324,7 +1324,6 @@
 
 (deftheory de-rules
   '(open-nth
-    get-field
     len-1-true-listp=>true-listp
     nthcdr-of-pos-const-idx
     md-name md-ins md-outs md-st md-occs

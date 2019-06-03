@@ -179,11 +179,11 @@
 ;; Constraints on the state of QUEUE5-L
 
 (defund queue5-l$st-format (st data-size)
-  (b* ((l0 (get-field *queue5-l$l0* st))
-       (l1 (get-field *queue5-l$l1* st))
-       (l2 (get-field *queue5-l$l2* st))
-       (l3 (get-field *queue5-l$l3* st))
-       (l4 (get-field *queue5-l$l4* st)))
+  (b* ((l0 (nth *queue5-l$l0* st))
+       (l1 (nth *queue5-l$l1* st))
+       (l2 (nth *queue5-l$l2* st))
+       (l3 (nth *queue5-l$l3* st))
+       (l4 (nth *queue5-l$l4* st)))
     (and (link$st-format l0 data-size)
          (link$st-format l1 data-size)
          (link$st-format l2 data-size)
@@ -197,11 +197,11 @@
   :rule-classes :forward-chaining)
 
 (defund queue5-l$valid-st (st data-size)
-  (b* ((l0 (get-field *queue5-l$l0* st))
-       (l1 (get-field *queue5-l$l1* st))
-       (l2 (get-field *queue5-l$l2* st))
-       (l3 (get-field *queue5-l$l3* st))
-       (l4 (get-field *queue5-l$l4* st)))
+  (b* ((l0 (nth *queue5-l$l0* st))
+       (l1 (nth *queue5-l$l1* st))
+       (l2 (nth *queue5-l$l2* st))
+       (l3 (nth *queue5-l$l3* st))
+       (l4 (nth *queue5-l$l4* st)))
     (and (link$valid-st l0 data-size)
          (link$valid-st l1 data-size)
          (link$valid-st l2 data-size)
@@ -252,8 +252,8 @@
   ;; Extract the "ready-in-" signal
 
   (defund queue5-l$ready-in- (st)
-    (b* ((l0 (get-field *queue5-l$l0* st))
-         (l0.s (get-field *link$s* l0)))
+    (b* ((l0 (nth *queue5-l$l0* st))
+         (l0.s (nth *link$s* l0)))
       (f-buf (car l0.s))))
 
   (defthm booleanp-queue5-l$ready-in-
@@ -266,8 +266,8 @@
   ;; Extract the "ready-out" signal
 
   (defund queue5-l$ready-out (st)
-    (b* ((l4 (get-field *queue5-l$l4* st))
-         (l4.s (get-field *link$s* l4)))
+    (b* ((l4 (nth *queue5-l$l4* st))
+         (l4.s (nth *link$s* l4)))
       (f-buf (car l4.s))))
 
   (defthm booleanp-queue5-l$ready-out
@@ -280,8 +280,8 @@
   ;; Extract the output data
 
   (defund queue5-l$data-out (st)
-    (v-threefix (strip-cars (get-field *link$d*
-                                       (get-field *queue5-l$l4* st)))))
+    (v-threefix (strip-cars (nth *link$d*
+                                 (nth *queue5-l$l4* st)))))
 
   (defthm v-threefix-of-queue5-l$data-out-canceled
     (equal (v-threefix (queue5-l$data-out st))
@@ -351,20 +351,20 @@
        (go-trans3 (nth 2 go-signals))
        (go-trans4 (nth 3 go-signals))
 
-       (l0 (get-field *queue5-l$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *queue5-l$l1* st))
-       (l1.s (get-field *link$s* l1))
-       (l1.d (get-field *link$d* l1))
-       (l2 (get-field *queue5-l$l2* st))
-       (l2.s (get-field *link$s* l2))
-       (l2.d (get-field *link$d* l2))
-       (l3 (get-field *queue5-l$l3* st))
-       (l3.s (get-field *link$s* l3))
-       (l3.d (get-field *link$d* l3))
-       (l4 (get-field *queue5-l$l4* st))
-       (l4.s (get-field *link$s* l4))
+       (l0 (nth *queue5-l$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *queue5-l$l1* st))
+       (l1.s (nth *link$s* l1))
+       (l1.d (nth *link$d* l1))
+       (l2 (nth *queue5-l$l2* st))
+       (l2.s (nth *link$s* l2))
+       (l2.d (nth *link$d* l2))
+       (l3 (nth *queue5-l$l3* st))
+       (l3.s (nth *link$s* l3))
+       (l3.d (nth *link$d* l3))
+       (l4 (nth *queue5-l$l4* st))
+       (l4.s (nth *link$s* l4))
 
        (trans1-act (joint-act (car l0.s) (car l1.s) go-trans1))
        (trans2-act (joint-act (car l1.s) (car l2.s) go-trans2))
@@ -484,11 +484,11 @@
 ;; sequence from the current state.
 
 (defund queue5-l$extract (st)
-  (b* ((l0 (get-field *queue5-l$l0* st))
-       (l1 (get-field *queue5-l$l1* st))
-       (l2 (get-field *queue5-l$l2* st))
-       (l3 (get-field *queue5-l$l3* st))
-       (l4 (get-field *queue5-l$l4* st)))
+  (b* ((l0 (nth *queue5-l$l0* st))
+       (l1 (nth *queue5-l$l1* st))
+       (l2 (nth *queue5-l$l2* st))
+       (l3 (nth *queue5-l$l3* st))
+       (l4 (nth *queue5-l$l4* st)))
     (extract-valid-data (list l0 l1 l2 l3 l4))))
 
 (defthm queue5-l$extract-not-empty
@@ -528,8 +528,7 @@
              (equal (queue5-l$extract next-st)
                     (queue5-l$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
+           :in-theory (enable f-sr
                               queue5-l$extracted-step
                               queue5-l$input-format
                               queue5-l$valid-st
@@ -550,8 +549,7 @@
            (queue5-l$valid-st (queue5-l$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             queue5-l$input-format
                             queue5-l$valid-st
                             queue5-l$step
