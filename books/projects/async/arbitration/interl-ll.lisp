@@ -150,9 +150,9 @@
 ;; Constraints on the state of INTERL-LL
 
 (defund interl-ll$st-format (st data-size)
-  (b* ((q9-l (get-field *interl-ll$q9-l* st))
-       (q11-l (get-field *interl-ll$q11-l* st))
-       (arb-merge (get-field *interl-ll$arb-merge* st)))
+  (b* ((q9-l (nth *interl-ll$q9-l* st))
+       (q11-l (nth *interl-ll$q11-l* st))
+       (arb-merge (nth *interl-ll$arb-merge* st)))
     (and (< 0 data-size)
          (queue9-l$st-format q9-l data-size)
          (queue11-l$st-format q11-l data-size)
@@ -165,9 +165,9 @@
   :rule-classes :forward-chaining)
 
 (defund interl-ll$valid-st (st data-size)
-  (b* ((q9-l (get-field *interl-ll$q9-l* st))
-       (q11-l (get-field *interl-ll$q11-l* st))
-       (arb-merge (get-field *interl-ll$arb-merge* st)))
+  (b* ((q9-l (nth *interl-ll$q9-l* st))
+       (q11-l (nth *interl-ll$q11-l* st))
+       (arb-merge (nth *interl-ll$arb-merge* st)))
     (and (< 0 data-size)
          (queue9-l$valid-st q9-l data-size)
          (queue11-l$valid-st q11-l data-size)
@@ -237,7 +237,7 @@
   ;; Extract the "ready-in0-" signal
 
   (defund interl-ll$ready-in0- (st)
-    (b* ((q9-l (get-field *interl-ll$q9-l* st)))
+    (b* ((q9-l (nth *interl-ll$q9-l* st)))
       (queue9-l$ready-in- q9-l)))
 
   (defthm booleanp-interl-ll$ready-in0-
@@ -250,7 +250,7 @@
   ;; Extract the "ready-in1-" signal
 
   (defund interl-ll$ready-in1- (st)
-    (b* ((q11-l (get-field *interl-ll$q11-l* st)))
+    (b* ((q11-l (nth *interl-ll$q11-l* st)))
       (queue11-l$ready-in- q11-l)))
 
   (defthm booleanp-interl-ll$ready-in1-
@@ -275,8 +275,8 @@
                                                 *queue11-l$go-num*)
                                              go-signals)))
 
-         (q9-l (get-field *interl-ll$q9-l* st))
-         (q11-l (get-field *interl-ll$q11-l* st))
+         (q9-l (nth *interl-ll$q9-l* st))
+         (q11-l (nth *interl-ll$q11-l* st))
 
          (q9-l-ready-out (queue9-l$ready-out q9-l))
          (q9-l-data-out (queue9-l$data-out q9-l))
@@ -290,7 +290,7 @@
 
   (defund interl-ll$out-act0 (inputs st data-size)
     (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
-         (arb-merge (get-field *interl-ll$arb-merge* st)))
+         (arb-merge (nth *interl-ll$arb-merge* st)))
       (arb-merge$act0 arb-merge-inputs arb-merge data-size)))
 
   (defthm interl-ll$out-act0-inactive
@@ -303,7 +303,7 @@
 
   (defund interl-ll$out-act1 (inputs st data-size)
     (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
-         (arb-merge (get-field *interl-ll$arb-merge* st)))
+         (arb-merge (nth *interl-ll$arb-merge* st)))
       (arb-merge$act1 arb-merge-inputs arb-merge data-size)))
 
   (defthm interl-ll$out-act1-inactive
@@ -345,7 +345,7 @@
                                 (nthcdr *interl-ll$prim-go-num*
                                         go-signals)))
 
-         (arb-merge (get-field *interl-ll$arb-merge* st))
+         (arb-merge (nth *interl-ll$arb-merge* st))
 
          (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
          (out-act0 (arb-merge$act0 arb-merge-inputs arb-merge data-size)))
@@ -367,7 +367,7 @@
                                             *queue9-l$go-num*)
                                          go-signals)))
 
-         (arb-merge (get-field *interl-ll$arb-merge* st))
+         (arb-merge (nth *interl-ll$arb-merge* st))
 
          (arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
          (out-act1 (arb-merge$act1 arb-merge-inputs arb-merge data-size)))
@@ -379,7 +379,7 @@
 
   (defund interl-ll$data-out (inputs st data-size)
     (b* ((arb-merge-inputs (interl-ll$arb-merge-inputs inputs st data-size))
-         (arb-merge (get-field *interl-ll$arb-merge* st)))
+         (arb-merge (nth *interl-ll$arb-merge* st)))
       (arb-merge$data-out arb-merge-inputs arb-merge data-size)))
 
   (defthm len-interl-ll$data-out-1
@@ -443,9 +443,9 @@
 ;; This function specifies the next state of INTERL-LL.
 
 (defun interl-ll$step (inputs st data-size)
-  (b* ((q9-l        (get-field *interl-ll$q9-l* st))
-       (q11-l       (get-field *interl-ll$q11-l* st))
-       (arb-merge (get-field *interl-ll$arb-merge* st))
+  (b* ((q9-l        (nth *interl-ll$q9-l* st))
+       (q11-l       (nth *interl-ll$q11-l* st))
+       (arb-merge (nth *interl-ll$arb-merge* st))
 
        (q9-l-inputs (interl-ll$q9-l-inputs inputs st data-size))
        (q11-l-inputs (interl-ll$q11-l-inputs inputs st data-size))
@@ -553,8 +553,7 @@
              (nth *interl-ll$q9-l* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             f-and4
+            :in-theory (e/d (f-and4
                              f-and5
                              queue9-l$input-format
                              queue9-l$in-act
@@ -582,7 +581,6 @@
    :hints (("Goal"
             :in-theory (e/d (f-and4
                              f-and5
-                             get-field
                              queue11-l$input-format
                              queue11-l$in-act
                              queue11-l$out-act
@@ -698,11 +696,11 @@
 ;; The extraction functions for INTERL-LL
 
 (defund interl-ll$extract0 (st)
-  (b* ((q9-l (get-field *interl-ll$q9-l* st)))
+  (b* ((q9-l (nth *interl-ll$q9-l* st)))
     (queue9-l$extract q9-l)))
 
 (defund interl-ll$extract1 (st)
-  (b* ((q11-l (get-field *interl-ll$q11-l* st)))
+  (b* ((q11-l (nth *interl-ll$q11-l* st)))
     (queue11-l$extract q11-l)))
 
 (defthm interl-ll$extract0-not-empty
@@ -842,8 +840,7 @@
                     (equal (interl-ll$extract1 next-st)
                            (interl-ll$extracted1-step inputs st data-size)))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              queue9-l$extracted-step
+             :in-theory (e/d (queue9-l$extracted-step
                               queue11-l$extracted-step
                               interl-ll$extracted0-step
                               interl-ll$extracted1-step
@@ -866,8 +863,7 @@
            (interl-ll$valid-st (interl-ll$step inputs st data-size)
                                data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            interl-ll$valid-st
+           :in-theory (e/d (interl-ll$valid-st
                             interl-ll$step)
                            ()))))
 
@@ -881,8 +877,7 @@
               (equal (interl-ll$data-out inputs st data-size)
                      (queue9-l$data-out (nth *interl-ll$q9-l* st))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 f-and4
+              :in-theory (enable f-and4
                                  f-and5
                                  queue9-l$valid-st=>constraint
                                  arb-merge$valid-st
@@ -903,8 +898,7 @@
               (equal (interl-ll$data-out inputs st data-size)
                      (queue11-l$data-out (nth *interl-ll$q11-l* st))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 f-and4
+              :in-theory (enable f-and4
                                  f-and5
                                  queue11-l$valid-st=>constraint
                                  arb-merge$valid-st
@@ -943,8 +937,7 @@
                             (interl-ll$extract0 st))))
     :hints (("Goal"
              :use interl-ll$input-format=>q9-l$input-format
-             :in-theory (e/d (get-field
-                              interl-ll$valid-st
+             :in-theory (e/d (interl-ll$valid-st
                               interl-ll$extract0)
                              (interl-ll$input-format=>q9-l$input-format)))))
 
@@ -957,8 +950,7 @@
                             (interl-ll$extract1 st))))
     :hints (("Goal"
              :use interl-ll$input-format=>q11-l$input-format
-             :in-theory (e/d (get-field
-                              interl-ll$valid-st
+             :in-theory (e/d (interl-ll$valid-st
                               interl-ll$extract1)
                              (interl-ll$input-format=>q11-l$input-format)))))
   )
@@ -1067,9 +1059,9 @@
 
 ;; (progn
 ;;   (defun interl-ll$map-to-links (st)
-;;     (b* ((q9-l (get-field *interl-ll$q9-l* st))
-;;          (q11-l (get-field *interl-ll$q11-l* st))
-;;          (arb-merge (get-field *interl-ll$arb-merge* st)))
+;;     (b* ((q9-l (nth *interl-ll$q9-l* st))
+;;          (q11-l (nth *interl-ll$q11-l* st))
+;;          (arb-merge (nth *interl-ll$arb-merge* st)))
 ;;       (append (list (cons 'q9-l (queue9-l$map-to-links q9-l)))
 ;;               (list (cons 'q11-l (queue11-l$map-to-links q11-l)))
 ;;               (list (cons 'arb-merge (arb-merge$map-to-links arb-merge))))))

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -152,9 +152,9 @@
 ;; Constraints on the state of Q3
 
 (defund queue3$st-format (st data-size)
-  (b* ((l0 (get-field *queue3$l0* st))
-       (l1 (get-field *queue3$l1* st))
-       (l2 (get-field *queue3$l2* st)))
+  (b* ((l0 (nth *queue3$l0* st))
+       (l1 (nth *queue3$l1* st))
+       (l2 (nth *queue3$l2* st)))
     (and (link$st-format l0 data-size)
          (link$st-format l1 data-size)
          (link$st-format l2 data-size))))
@@ -166,9 +166,9 @@
   :rule-classes :forward-chaining)
 
 (defund queue3$valid-st (st data-size)
-  (b* ((l0 (get-field *queue3$l0* st))
-       (l1 (get-field *queue3$l1* st))
-       (l2 (get-field *queue3$l2* st)))
+  (b* ((l0 (nth *queue3$l0* st))
+       (l1 (nth *queue3$l1* st))
+       (l2 (nth *queue3$l2* st)))
     (and (link$valid-st l0 data-size)
          (link$valid-st l1 data-size)
          (link$valid-st l2 data-size))))
@@ -211,8 +211,8 @@
          (go-signals (nthcdr (queue3$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
 
-         (l0 (get-field *queue3$l0* st))
-         (l0.s (get-field *link$s* l0)))
+         (l0 (nth *queue3$l0* st))
+         (l0.s (nth *link$s* l0)))
       (joint-act full-in (car l0.s) go-in)))
 
   (defthm queue3$in-act-inactive
@@ -227,8 +227,8 @@
          (go-signals (nthcdr (queue3$data-ins-len data-size) inputs))
          (go-out (nth 3 go-signals))
 
-         (l2 (get-field *queue3$l2* st))
-         (l2.s (get-field *link$s* l2)))
+         (l2 (nth *queue3$l2* st))
+         (l2.s (nth *link$s* l2)))
       (joint-act (car l2.s) empty-out- go-out)))
 
   (defthm queue3$out-act-inactive
@@ -239,8 +239,8 @@
   ;; Extract the output data
 
   (defund queue3$data-out (st)
-    (v-threefix (strip-cars (get-field *link$d*
-                                       (get-field *queue3$l2* st)))))
+    (v-threefix (strip-cars (nth *link$d*
+                                 (nth *queue3$l2* st)))))
 
   (defthm len-queue3$data-out-1
     (implies (queue3$st-format st data-size)
@@ -304,14 +304,14 @@
        (go-trans1 (nth 1 go-signals))
        (go-trans2 (nth 2 go-signals))
 
-       (l0 (get-field *queue3$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *queue3$l1* st))
-       (l1.s (get-field *link$s* l1))
-       (l1.d (get-field *link$d* l1))
-       (l2 (get-field *queue3$l2* st))
-       (l2.s (get-field *link$s* l2))
+       (l0 (nth *queue3$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *queue3$l1* st))
+       (l1.s (nth *link$s* l1))
+       (l1.d (nth *link$d* l1))
+       (l2 (nth *queue3$l2* st))
+       (l2.s (nth *link$s* l2))
 
        (in-act (queue3$in-act inputs st data-size))
        (out-act (queue3$out-act inputs st data-size))
@@ -406,9 +406,9 @@
 ;; the current state.
 
 (defund queue3$extract (st)
-  (b* ((l0 (get-field *queue3$l0* st))
-       (l1 (get-field *queue3$l1* st))
-       (l2 (get-field *queue3$l2* st)))
+  (b* ((l0 (nth *queue3$l0* st))
+       (l1 (nth *queue3$l1* st))
+       (l2 (nth *queue3$l2* st)))
     (extract-valid-data (list l0 l1 l2))))
 
 (defthm queue3$extract-not-empty
@@ -449,8 +449,7 @@
              (equal (queue3$extract next-st)
                     (queue3$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
+           :in-theory (enable f-sr
                               queue3$extracted-step
                               queue3$input-format
                               queue3$valid-st
@@ -472,8 +471,7 @@
            (queue3$valid-st (queue3$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue3$input-format
+           :in-theory (e/d (queue3$input-format
                             queue3$valid-st
                             queue3$st-format
                             queue3$step
@@ -509,4 +507,3 @@
 ;; The multi-step input-output relationship
 
 (in-out-stream-lemma queue3)
-

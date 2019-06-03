@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -132,8 +132,8 @@
 ;; Constraints on the state of ALT-BRANCH
 
 (defund alt-branch$valid-st (st)
-  (b* ((select (get-field *alt-branch$select* st))
-       (select-buf (get-field *alt-branch$select-buf* st)))
+  (b* ((select (nth *alt-branch$select* st))
+       (select-buf (nth *alt-branch$select-buf* st)))
     (and (link1$valid-st select)
          (link1$valid-st select-buf))))
 
@@ -164,11 +164,11 @@
 
          (go-alt-branch (nth 0 go-signals))
 
-         (select (get-field *alt-branch$select* st))
-         (select.s (get-field *link1$s* select))
-         (select.d (get-field *link1$d* select))
-         (select-buf (get-field *alt-branch$select-buf* st))
-         (select-buf.s (get-field *link1$s* select-buf))
+         (select (nth *alt-branch$select* st))
+         (select.s (nth *link1$s* select))
+         (select.d (nth *link1$d* select))
+         (select-buf (nth *alt-branch$select-buf* st))
+         (select-buf.s (nth *link1$s* select-buf))
 
          (m-full-in (f-and full-in (car select.s)))
          (m-empty-out0- (f-or3 empty-out0- (car select-buf.s) (car select.d))))
@@ -190,11 +190,11 @@
 
          (go-alt-branch (nth 0 go-signals))
 
-         (select (get-field *alt-branch$select* st))
-         (select.s (get-field *link1$s* select))
-         (select.d (get-field *link1$d* select))
-         (select-buf (get-field *alt-branch$select-buf* st))
-         (select-buf.s (get-field *link1$s* select-buf))
+         (select (nth *alt-branch$select* st))
+         (select.s (nth *link1$s* select))
+         (select.d (nth *link1$d* select))
+         (select-buf (nth *alt-branch$select-buf* st))
+         (select-buf.s (nth *link1$s* select-buf))
 
          (m-full-in (f-and full-in (car select.s)))
          (m-empty-out1- (f-or3 empty-out1-
@@ -257,12 +257,12 @@
 
        (go-buf (nth 1 go-signals))
 
-       (select (get-field *alt-branch$select* st))
-       (select.s (get-field *link1$s* select))
-       (select.d (get-field *link1$d* select))
-       (select-buf (get-field *alt-branch$select-buf* st))
-       (select-buf.s (get-field *link1$s* select-buf))
-       (select-buf.d (get-field *link1$d* select-buf))
+       (select (nth *alt-branch$select* st))
+       (select.s (nth *link1$s* select))
+       (select.d (nth *link1$d* select))
+       (select-buf (nth *alt-branch$select-buf* st))
+       (select-buf.s (nth *link1$s* select-buf))
+       (select-buf.d (nth *link1$d* select-buf))
 
        (act (alt-branch$act inputs st data-size))
        (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
@@ -356,8 +356,7 @@
            (alt-branch$valid-st
             (alt-branch$step inputs st data-size)))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             alt-branch$input-format
                             alt-branch$valid-st
                             alt-branch$step
@@ -369,10 +368,10 @@
 ;; A state invariant
 
 (defund alt-branch$inv (st)
-  (b* ((select (get-field *alt-branch$select* st))
-       (select.s (get-field *link1$s* select))
-       (select-buf (get-field *alt-branch$select-buf* st))
-       (select-buf.s (get-field *link1$s* select-buf)))
+  (b* ((select (nth *alt-branch$select* st))
+       (select.s (nth *link1$s* select))
+       (select-buf (nth *alt-branch$select-buf* st))
+       (select-buf.s (nth *link1$s* select-buf)))
     (not (equal select.s select-buf.s))))
 
 (defthm alt-branch$inv-preserved
@@ -381,8 +380,7 @@
                 (alt-branch$inv st))
            (alt-branch$inv (alt-branch$step inputs st data-size)))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             alt-branch$input-format
                             alt-branch$valid-st
                             alt-branch$inv

@@ -137,26 +137,28 @@
 
 ;; ======================================================================
 
-(define value/state-lemma (state name
-                                 &key
-                                 (type ''value)
-                                 (hyps 't))
+(define outputs/step-gen (state name
+                                &key
+                                (type ''outputs)
+                                (inputs '())
+                                (input-signals '())
+                                (hyps 't)
+                                (enable 'nil)
+                                (disable 'nil))
   :mode :program
   (b* ((fn-name (strings-to-symbol (symbol-name name)
-                                   (if (equal type 'value)
-                                       "$OUTPUTS"
+                                   (if (equal type 'outputs)
+                                       "$OUTPUTS-GEN"
                                      "$STEP")))
-       (lemma-name (strings-to-symbol (symbol-name name)
-                                      (if (equal type 'value)
-                                          "$VALUE"
-                                        "$STATE")))
+       ;; (lemma-name (strings-to-symbol (symbol-name name)
+       ;;                                (if (equal type 'value)
+       ;;                                    "$VALUE"
+       ;;                                  "$STATE")))
        (recognizer (strings-to-symbol (symbol-name name)
                                       "&"))
        (destructure (strings-to-symbol (symbol-name name)
                                        "*$DESTRUCTURE"))
-       (st-format (strings-to-symbol (symbol-name name)
-                                     "$ST-FORMAT"))
-       (eval (if (equal type 'value) 'se 'de))
+       (eval (if (equal type 'outputs) 'se 'de))
        (hints
         `(("Goal"
            :do-not-induct t
@@ -165,30 +167,36 @@
            :in-theory (e/d (de-rules
                             ,recognizer
                             ,destructure
-                            ,st-format)
-                           (de-module-disabled-rules)))))
+                            ,@enable)
+                           (de-module-disabled-rules
+                            ,@disable)))))
        ((mv & lemma state)
-        (bash-fn `(implies ,hyps
-                           (equal (,eval (si ',name data-size)
-                                         inputs st netlist)
-                                  ?))
+        (bash-fn `(b* ((inputs ,inputs))
+                    (implies ,hyps
+                             (equal (,eval (si ',name data-size)
+                                           inputs st netlist)
+                                    ?)))
                  hints nil 'bash state))
        (fn-body (cadr (caddar lemma))))
     (mv nil
-        `(progn
-           (defun ,fn-name (inputs st data-size)
-             (declare (ignorable data-size))
-             ,fn-body)
+        `(defun ,fn-name (inputs st data-size)
+             (b* ,input-signals
+               ,fn-body))
+        ;; `(progn
+        ;;    (defun ,fn-name (inputs st data-size)
+        ;;      (b* ,input-signals
+        ;;        ,fn-body))
 
-           (defthm ,lemma-name
-             (implies ,hyps
-                      (equal (,eval (si ',name data-size)
-                                    inputs st netlist)
-                             (,fn-name inputs st data-size)))
-             :hints ,hints)
+        ;;    (defthm ,lemma-name
+        ;;      (b* ((inputs ,inputs))
+        ;;        (implies ,hyps
+        ;;                 (equal (,eval (si ',name data-size)
+        ;;                               inputs st netlist)
+        ;;                        (,fn-name inputs st data-size))))
+        ;;      :hints ,hints)
 
-           (in-theory (disable ,fn-name))
-           )
+        ;;    (in-theory (disable ,fn-name))
+        ;;    )
         state)))
 
 (defmacro run-gen (name &rest sizes)
@@ -517,9 +525,7 @@
                   (,st-format (,step inputs st ,@sizes)
                               ,@sizes))
          :hints (("Goal"
-                  :in-theory (enable get-field
-                                     link$step
-                                     ,step
+                  :in-theory (enable ,step
                                      ,st-format))))
 
        (defthmd ,value-alt
@@ -653,7 +659,9 @@
                        (,st-format st ,@sizes))
                   (equal (,seq-netlist inputs-seq st netlist ,(car sizes) n)
                          (,seq inputs-seq st ,@sizes n)))
-         :hints (("Goal" :in-theory (enable ,value-alt ,state-alt))))
+         :hints (("Goal" :in-theory (enable ,value-alt
+                                            ,state-alt
+                                            ,act-fn))))
        )
     ))
 

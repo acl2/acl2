@@ -202,8 +202,8 @@
 ;; Constraints on the state of SERIAL-ADD
 
 (defund serial-add$st-format (st data-size cnt-size)
-  (b* ((piso2 (get-field *serial-add$piso2* st))
-       (sipo (get-field *serial-add$sipo* st)))
+  (b* ((piso2 (nth *serial-add$piso2* st))
+       (sipo (nth *serial-add$sipo* st)))
     (and (piso2-sreg$st-format piso2 data-size cnt-size)
          (sipo-sreg$st-format sipo data-size cnt-size))))
 
@@ -216,14 +216,14 @@
   :rule-classes :forward-chaining)
 
 (defund serial-add$valid-st (st data-size cnt-size)
-  (b* ((a (get-field *serial-add$a* st))
-       (b (get-field *serial-add$b* st))
-       (ci (get-field *serial-add$ci* st))
-       (s (get-field *serial-add$s* st))
-       (co (get-field *serial-add$co* st))
-       (done (get-field *serial-add$done* st))
-       (piso2 (get-field *serial-add$piso2* st))
-       (sipo (get-field *serial-add$sipo* st)))
+  (b* ((a (nth *serial-add$a* st))
+       (b (nth *serial-add$b* st))
+       (ci (nth *serial-add$ci* st))
+       (s (nth *serial-add$s* st))
+       (co (nth *serial-add$co* st))
+       (done (nth *serial-add$done* st))
+       (piso2 (nth *serial-add$piso2* st))
+       (sipo (nth *serial-add$sipo* st)))
     (and (link1$valid-st a)
          (link1$valid-st b)
          (link1$valid-st ci)
@@ -298,10 +298,10 @@
                                   (nthcdr *serial-add$prim-go-num*
                                           go-signals)))
 
-         (a (get-field *serial-add$a* st))
-         (a.s (get-field *link1$s* a))
-         (b (get-field *serial-add$b* st))
-         (b.s (get-field *link1$s* b)))
+         (a (nth *serial-add$a* st))
+         (a.s (nth *link1$s* a))
+         (b (nth *serial-add$b* st))
+         (b.s (nth *link1$s* b)))
 
       (list* full-in0 (f-buf (car a.s)) (f-buf (car b.s))
              (append data0-in data1-in piso2-go-signals))))
@@ -317,11 +317,11 @@
                                            *piso2-sreg$go-num*)
                                         go-signals)))
 
-         (s (get-field *serial-add$s* st))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s))
-         (done (get-field *serial-add$done* st))
-         (done.s (get-field *link1$s* done))
+         (s (nth *serial-add$s* st))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s))
+         (done (nth *serial-add$done* st))
+         (done.s (nth *link1$s* done))
 
          (sipo-full-in (f-and (car s.s) (f-not (car done.s)))))
 
@@ -332,7 +332,7 @@
 
   (defund serial-add$in-act (inputs st data-size)
     (b* ((piso2-inputs (serial-add$piso2-inputs inputs st data-size))
-         (piso2 (get-field *serial-add$piso2* st)))
+         (piso2 (nth *serial-add$piso2* st)))
       (piso2-sreg$in-act piso2-inputs piso2 data-size)))
 
   (defthm serial-add$in-act-inactive
@@ -345,7 +345,7 @@
 
   (defund serial-add$out-act (inputs st data-size)
     (b* ((sipo-inputs (serial-add$sipo-inputs inputs st data-size))
-         (sipo (get-field *serial-add$sipo* st)))
+         (sipo (nth *serial-add$sipo* st)))
       (sipo-sreg$out-act sipo-inputs sipo)))
 
   (defthm serial-add$out-act-inactive
@@ -357,7 +357,7 @@
   ;; Extract the output data
 
   (defund serial-add$data-out (st)
-    (b* ((sipo (get-field *serial-add$sipo* st)))
+    (b* ((sipo (nth *serial-add$sipo* st)))
       (sipo-sreg$data-out sipo)))
 
   (defthm len-serial-add$data-out-1
@@ -430,29 +430,29 @@
        (go-add (nth 0 go-signals))
        (go-c-buf (nth 1 go-signals))
 
-       (a (get-field *serial-add$a* st))
-       (b (get-field *serial-add$b* st))
-       (ci (get-field *serial-add$ci* st))
-       (s (get-field *serial-add$s* st))
-       (co (get-field *serial-add$co* st))
-       (done (get-field *serial-add$done* st))
-       (piso2 (get-field *serial-add$piso2* st))
-       (sipo (get-field *serial-add$sipo* st))
+       (a (nth *serial-add$a* st))
+       (b (nth *serial-add$b* st))
+       (ci (nth *serial-add$ci* st))
+       (s (nth *serial-add$s* st))
+       (co (nth *serial-add$co* st))
+       (done (nth *serial-add$done* st))
+       (piso2 (nth *serial-add$piso2* st))
+       (sipo (nth *serial-add$sipo* st))
 
        (piso2-inputs (serial-add$piso2-inputs inputs st data-size))
        (sipo-inputs (serial-add$sipo-inputs inputs st data-size))
 
-       (a.s (get-field *link1$s* a))
-       (a.d (get-field *link1$d* a))
-       (b.s (get-field *link1$s* b))
-       (b.d (get-field *link1$d* b))
-       (ci.s (get-field *link1$s* ci))
-       (ci.d (get-field *link1$d* ci))
-       (s.s (get-field *link1$s* s))
-       (co.s (get-field *link1$s* co))
-       (co.d (get-field *link1$d* co))
-       (done.s (get-field *link1$s* done))
-       (done.d (get-field *link1$d* done))
+       (a.s (nth *link1$s* a))
+       (a.d (nth *link1$d* a))
+       (b.s (nth *link1$s* b))
+       (b.d (nth *link1$d* b))
+       (ci.s (nth *link1$s* ci))
+       (ci.d (nth *link1$d* ci))
+       (s.s (nth *link1$s* s))
+       (co.s (nth *link1$s* co))
+       (co.d (nth *link1$d* co))
+       (done.s (nth *link1$s* done))
+       (done.d (nth *link1$d* done))
 
        (piso2-out0-act
         (piso2-sreg$out0-act piso2-inputs piso2 data-size))
@@ -635,23 +635,23 @@
 ;; sequence from the current state.
 
 (defund serial-add$extract (st data-size)
-  (b* ((a (get-field *serial-add$a* st))
-       (b (get-field *serial-add$b* st))
-       (ci (get-field *serial-add$ci* st))
-       (s (get-field *serial-add$s* st))
-       (co (get-field *serial-add$co* st))
-       (piso2 (get-field *serial-add$piso2* st))
-       (sipo (get-field *serial-add$sipo* st))
+  (b* ((a (nth *serial-add$a* st))
+       (b (nth *serial-add$b* st))
+       (ci (nth *serial-add$ci* st))
+       (s (nth *serial-add$s* st))
+       (co (nth *serial-add$co* st))
+       (piso2 (nth *serial-add$piso2* st))
+       (sipo (nth *serial-add$sipo* st))
 
-       (a.s (get-field *link1$s* a))
-       (a.d (get-field *link1$d* a))
-       (b.s (get-field *link1$s* b))
-       (b.d (get-field *link1$d* b))
-       (ci.s (get-field *link1$s* ci))
-       (ci.d (get-field *link1$d* ci))
-       (s.s (get-field *link1$s* s))
-       (s.d (get-field *link1$d* s))
-       (co.d (get-field *link1$d* co))
+       (a.s (nth *link1$s* a))
+       (a.d (nth *link1$d* a))
+       (b.s (nth *link1$s* b))
+       (b.d (nth *link1$d* b))
+       (ci.s (nth *link1$s* ci))
+       (ci.d (nth *link1$d* ci))
+       (s.s (nth *link1$s* s))
+       (s.d (nth *link1$d* s))
+       (co.d (nth *link1$d* co))
 
        (a.valid-d (if (fullp a.s) a.d nil))
        (b.valid-d (if (fullp b.s) b.d nil))
@@ -693,26 +693,26 @@
 
 (progn
   (defund serial-add$inv (st data-size)
-    (b* ((a (get-field *serial-add$a* st))
-         (b (get-field *serial-add$b* st))
-         (ci (get-field *serial-add$ci* st))
-         (s (get-field *serial-add$s* st))
-         (co (get-field *serial-add$co* st))
-         (done (get-field *serial-add$done* st))
-         (piso2 (get-field *serial-add$piso2* st))
-         (sipo (get-field *serial-add$sipo* st))
+    (b* ((a (nth *serial-add$a* st))
+         (b (nth *serial-add$b* st))
+         (ci (nth *serial-add$ci* st))
+         (s (nth *serial-add$s* st))
+         (co (nth *serial-add$co* st))
+         (done (nth *serial-add$done* st))
+         (piso2 (nth *serial-add$piso2* st))
+         (sipo (nth *serial-add$sipo* st))
 
-         (a.s (get-field *link1$s* a))
-         (a.d (get-field *link1$d* a))
-         (b.s (get-field *link1$s* b))
-         (b.d (get-field *link1$d* b))
-         (ci.s (get-field *link1$s* ci))
-         (ci.d (get-field *link1$d* ci))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s))
-         (co.s (get-field *link1$s* co))
-         (done.s (get-field *link1$s* done))
-         (done.d (get-field *link1$d* done))
+         (a.s (nth *link1$s* a))
+         (a.d (nth *link1$d* a))
+         (b.s (nth *link1$s* b))
+         (b.d (nth *link1$d* b))
+         (ci.s (nth *link1$s* ci))
+         (ci.d (nth *link1$d* ci))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s))
+         (co.s (nth *link1$s* co))
+         (done.s (nth *link1$s* done))
+         (done.d (nth *link1$d* done))
 
          (a.valid-d (if (fullp a.s) a.d nil))
          (b.valid-d (if (fullp b.s) b.d nil))
@@ -771,8 +771,7 @@
                 (not (piso2-sreg$out0-act piso2-inputs
                                           piso2
                                           data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        serial-add$piso2-inputs)))))
+     :hints (("Goal" :in-theory (enable serial-add$piso2-inputs)))))
 
   (local
    (defthm serial-add$piso2-out1-act-inactive
@@ -784,8 +783,7 @@
                 (not (piso2-sreg$out1-act piso2-inputs
                                           piso2
                                           data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        serial-add$piso2-inputs)))))
+     :hints (("Goal" :in-theory (enable serial-add$piso2-inputs)))))
 
   (local
    (defthm serial-add$sipo-in-act-inactive
@@ -798,8 +796,7 @@
        (implies (or (emptyp s.s)
                     (fullp done.s))
                 (not (sipo-sreg$in-act sipo-inputs sipo))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        serial-add$sipo-inputs)))))
+     :hints (("Goal" :in-theory (enable serial-add$sipo-inputs)))))
 
   (local
    (defthm v-to-nat-of-v-zp
@@ -842,8 +839,7 @@
       :hints (("Goal"
                :use (serial-add$input-format=>piso2$input-format
                      serial-add$input-format=>sipo$input-format)
-               :in-theory (e/d (get-field
-                                f-sr
+               :in-theory (e/d (f-sr
                                 pos-len=>cons
                                 sipo-sreg$valid-st=>constraint
                                 piso2-sreg$extracted0-step
@@ -905,8 +901,8 @@
 
   (local
    (defthm serial-add-aux-3
-     (b* ((s (get-field *serial-add$s* st))
-          (s.d (get-field *link1$d* s))
+     (b* ((s (nth *serial-add$s* st))
+          (s.d (nth *link1$d* s))
           (sipo-inputs (serial-add$sipo-inputs inputs st data-size)))
        (equal (sipo-sreg$bit-in sipo-inputs)
               (f-buf (car s.d))))
@@ -945,8 +941,7 @@
     :hints (("Goal"
              :use (serial-add$input-format=>piso2$input-format
                    serial-add$input-format=>sipo$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               list-rewrite-1
                               consp-is-pos-len
                               v-adder
@@ -985,8 +980,7 @@
   :hints (("Goal"
            :use (serial-add$input-format=>piso2$input-format
                  serial-add$input-format=>sipo$input-format)
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             sipo-sreg$valid-st=>constraint
                             serial-add$valid-st
                             serial-add$step)
@@ -1004,8 +998,7 @@
                           (serial-add$extract st data-size))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (get-field
-                            serial-add$valid-st
+           :in-theory (e/d (serial-add$valid-st
                             serial-add$inv
                             serial-add$extract
                             serial-add$out-act

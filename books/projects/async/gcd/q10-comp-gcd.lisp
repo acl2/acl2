@@ -126,9 +126,9 @@
 ;; Constraints on the state of Q10-COMP-GCD
 
 (defund q10-comp-gcd$st-format (st data-size)
-  (b* ((l         (get-field *q10-comp-gcd$l* st))
-       (q10       (get-field *q10-comp-gcd$q10* st))
-       (comp-gcd (get-field *q10-comp-gcd$comp-gcd* st)))
+  (b* ((l         (nth *q10-comp-gcd$l* st))
+       (q10       (nth *q10-comp-gcd$q10* st))
+       (comp-gcd (nth *q10-comp-gcd$comp-gcd* st)))
     (and (link$st-format l (* 2 data-size))
          (queue10$st-format q10 (* 2 data-size))
          (comp-gcd$st-format comp-gcd data-size))))
@@ -142,9 +142,9 @@
   :rule-classes :forward-chaining)
 
 (defund q10-comp-gcd$valid-st (st data-size)
-  (b* ((l         (get-field *q10-comp-gcd$l* st))
-       (q10       (get-field *q10-comp-gcd$q10* st))
-       (comp-gcd (get-field *q10-comp-gcd$comp-gcd* st)))
+  (b* ((l         (nth *q10-comp-gcd$l* st))
+       (q10       (nth *q10-comp-gcd$q10* st))
+       (comp-gcd (nth *q10-comp-gcd$comp-gcd* st)))
     (and (link$valid-st l (* 2 data-size))
          (queue10$valid-st q10 (* 2 data-size))
          (comp-gcd$valid-st comp-gcd data-size))))
@@ -195,8 +195,8 @@
 
          (q10-go-signals (take *queue10$go-num* go-signals))
 
-         (l (get-field *q10-comp-gcd$l* st))
-         (l.s (get-field *link$s* l)))
+         (l (nth *q10-comp-gcd$l* st))
+         (l.s (nth *link$s* l)))
 
       (list* full-in (f-buf (car l.s))
              (append data-in q10-go-signals))))
@@ -211,9 +211,9 @@
          (comp-gcd-go-signals (take *comp-gcd$go-num*
                                      (nthcdr *queue10$go-num* go-signals)))
 
-         (l (get-field *q10-comp-gcd$l* st))
-         (l.s (get-field *link$s* l))
-         (l.d (get-field *link$d* l)))
+         (l (nth *q10-comp-gcd$l* st))
+         (l.s (nth *link$s* l))
+         (l.d (nth *link$d* l)))
 
       (list* (f-buf (car l.s)) empty-out-
              (append (v-threefix (strip-cars l.d))
@@ -223,7 +223,7 @@
 
   (defund q10-comp-gcd$in-act (inputs st data-size)
     (queue10$in-act (q10-comp-gcd$q10-inputs inputs st data-size)
-                    (get-field *q10-comp-gcd$q10* st)
+                    (nth *q10-comp-gcd$q10* st)
                     (* 2 data-size)))
 
   (defthm q10-comp-gcd$in-act-inactive
@@ -236,7 +236,7 @@
 
   (defund q10-comp-gcd$out-act (inputs st data-size)
     (comp-gcd$out-act (q10-comp-gcd$comp-gcd-inputs inputs st data-size)
-                       (get-field *q10-comp-gcd$comp-gcd* st)
+                       (nth *q10-comp-gcd$comp-gcd* st)
                        data-size))
 
   (defthm q10-comp-gcd$out-act-inactive
@@ -249,7 +249,7 @@
 
   (defund q10-comp-gcd$data-out (inputs st data-size)
     (comp-gcd$data-out (q10-comp-gcd$comp-gcd-inputs inputs st data-size)
-                        (get-field *q10-comp-gcd$comp-gcd* st)
+                        (nth *q10-comp-gcd$comp-gcd* st)
                         data-size))
 
   (defthm len-q10-comp-gcd$data-out-1
@@ -313,9 +313,9 @@
 ;; This function specifies the next state of Q10-COMP-GCD.
 
 (defun q10-comp-gcd$step (inputs st data-size)
-  (b* ((l   (get-field *q10-comp-gcd$l* st))
-       (q10  (get-field *q10-comp-gcd$q10* st))
-       (comp-gcd (get-field *q10-comp-gcd$comp-gcd* st))
+  (b* ((l   (nth *q10-comp-gcd$l* st))
+       (q10  (nth *q10-comp-gcd$q10* st))
+       (comp-gcd (nth *q10-comp-gcd$comp-gcd* st))
 
        (q10-inputs (q10-comp-gcd$q10-inputs inputs st data-size))
        (comp-gcd-inputs (q10-comp-gcd$comp-gcd-inputs
@@ -450,9 +450,9 @@
 ;; sequence from the current state.
 
 (defund q10-comp-gcd$extract (st)
-  (b* ((l   (get-field *q10-comp-gcd$l* st))
-       (q10  (get-field *q10-comp-gcd$q10* st))
-       (comp-gcd (get-field *q10-comp-gcd$comp-gcd* st)))
+  (b* ((l   (nth *q10-comp-gcd$l* st))
+       (q10  (nth *q10-comp-gcd$q10* st))
+       (comp-gcd (nth *q10-comp-gcd$comp-gcd* st)))
     (append
      (gcd$op-map
       (append (queue10$extract q10)
@@ -474,7 +474,7 @@
 
 (progn
   (defund q10-comp-gcd$inv (st)
-    (b* ((comp-gcd (get-field *q10-comp-gcd$comp-gcd* st)))
+    (b* ((comp-gcd (nth *q10-comp-gcd$comp-gcd* st)))
       (comp-gcd$inv comp-gcd)))
 
   (defthm q10-comp-gcd$inv-preserved
@@ -484,8 +484,7 @@
              (q10-comp-gcd$inv
               (q10-comp-gcd$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              q10-comp-gcd$valid-st
+             :in-theory (e/d (q10-comp-gcd$valid-st
                               q10-comp-gcd$inv
                               q10-comp-gcd$step)
                              ()))))
@@ -522,8 +521,7 @@
                     (nth *q10-comp-gcd$q10* st)
                     (* 2 data-size))))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               q10-comp-gcd$q10-inputs)
+              :in-theory (e/d (q10-comp-gcd$q10-inputs)
                               ())))))
 
   (local
@@ -536,8 +534,7 @@
                     (nth *q10-comp-gcd$comp-gcd* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               q10-comp-gcd$comp-gcd-inputs)
+              :in-theory (e/d (q10-comp-gcd$comp-gcd-inputs)
                               ())))))
 
   (local
@@ -562,8 +559,7 @@
                      (bvp (strip-cars l.d)))
                 (equal (comp-gcd$data-in comp-gcd-inputs data-size)
                        (strip-cars l.d))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        q10-comp-gcd$comp-gcd-inputs
+     :hints (("Goal" :in-theory (enable q10-comp-gcd$comp-gcd-inputs
                                         comp-gcd$data-in)))))
 
   (local
@@ -583,8 +579,7 @@
     (("Goal"
       :use (q10-comp-gcd$input-format=>q10$input-format
             q10-comp-gcd$input-format=>comp-gcd$input-format)
-      :in-theory (e/d (get-field
-                       f-sr
+      :in-theory (e/d (f-sr
                        comp-gcd$valid-st=>constraint
                        queue10$extracted-step
                        comp-gcd$extracted-step
@@ -619,8 +614,7 @@
   (("Goal"
     :use (q10-comp-gcd$input-format=>q10$input-format
           q10-comp-gcd$input-format=>comp-gcd$input-format)
-    :in-theory (e/d (get-field
-                     f-sr
+    :in-theory (e/d (f-sr
                      q10-comp-gcd$valid-st
                      q10-comp-gcd$step)
                     (q10-comp-gcd$input-format=>q10$input-format

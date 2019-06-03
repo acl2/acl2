@@ -188,12 +188,12 @@
 ;; Constraints on the state of COMP-GCD-COND
 
 (defund comp-gcd-cond$st-format (st data-size)
-  (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-       (b0 (get-field *comp-gcd-cond$b0* st))
-       (a1 (get-field *comp-gcd-cond$a1* st))
-       (b1 (get-field *comp-gcd-cond$b1* st))
-       (q2 (get-field *comp-gcd-cond$q2* st))
-       (q3 (get-field *comp-gcd-cond$q3* st)))
+  (b* ((a0 (nth *comp-gcd-cond$a0* st))
+       (b0 (nth *comp-gcd-cond$b0* st))
+       (a1 (nth *comp-gcd-cond$a1* st))
+       (b1 (nth *comp-gcd-cond$b1* st))
+       (q2 (nth *comp-gcd-cond$q2* st))
+       (q3 (nth *comp-gcd-cond$q3* st)))
     (and (natp data-size)
          (<= 3 data-size)
 
@@ -213,12 +213,12 @@
   :rule-classes :forward-chaining)
 
 (defund comp-gcd-cond$valid-st (st data-size)
-  (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-       (b0 (get-field *comp-gcd-cond$b0* st))
-       (a1 (get-field *comp-gcd-cond$a1* st))
-       (b1 (get-field *comp-gcd-cond$b1* st))
-       (q2 (get-field *comp-gcd-cond$q2* st))
-       (q3 (get-field *comp-gcd-cond$q3* st)))
+  (b* ((a0 (nth *comp-gcd-cond$a0* st))
+       (b0 (nth *comp-gcd-cond$b0* st))
+       (a1 (nth *comp-gcd-cond$a1* st))
+       (b1 (nth *comp-gcd-cond$b1* st))
+       (q2 (nth *comp-gcd-cond$q2* st))
+       (q3 (nth *comp-gcd-cond$q3* st)))
     (and (comp-gcd-cond$st-format st data-size)
 
          (link$valid-st a0 data-size)
@@ -271,11 +271,11 @@
                                          *gcd-cond$go-num*)
                                       go-signals)))
 
-         (a0 (get-field *comp-gcd-cond$a0* st))
-         (a0.s (get-field *link$s* a0))
-         (a0.d (get-field *link$d* a0))
-         (a1 (get-field *comp-gcd-cond$a1* st))
-         (a1.s (get-field *link$s* a1)))
+         (a0 (nth *comp-gcd-cond$a0* st))
+         (a0.s (nth *link$s* a0))
+         (a0.d (nth *link$d* a0))
+         (a1 (nth *comp-gcd-cond$a1* st))
+         (a1.s (nth *link$s* a1)))
 
       (list* (f-buf (car a0.s)) (f-buf (car a1.s))
              (append (v-threefix (strip-cars a0.d))
@@ -292,11 +292,11 @@
                                          *queue2$go-num*)
                                       go-signals)))
 
-         (b0 (get-field *comp-gcd-cond$b0* st))
-         (b0.s (get-field *link$s* b0))
-         (b0.d (get-field *link$d* b0))
-         (b1 (get-field *comp-gcd-cond$b1* st))
-         (b1.s (get-field *link$s* b1)))
+         (b0 (nth *comp-gcd-cond$b0* st))
+         (b0.s (nth *link$s* b0))
+         (b0.d (nth *link$d* b0))
+         (b1 (nth *comp-gcd-cond$b1* st))
+         (b1.s (nth *link$s* b1)))
 
       (list* (f-buf (car b0.s)) (f-buf (car b1.s))
              (append (v-threefix (strip-cars b0.d))
@@ -314,12 +314,12 @@
                               (nthcdr *comp-gcd-cond$prim-go-num*
                                       go-signals)))
 
-         (a1 (get-field *comp-gcd-cond$a1* st))
-         (a1.s (get-field *link$s* a1))
-         (a1.d (get-field *link$d* a1))
-         (b1 (get-field *comp-gcd-cond$b1* st))
-         (b1.s (get-field *link$s* b1))
-         (b1.d (get-field *link$d* b1))
+         (a1 (nth *comp-gcd-cond$a1* st))
+         (a1.s (nth *link$s* a1))
+         (a1.d (nth *link$d* a1))
+         (b1 (nth *comp-gcd-cond$b1* st))
+         (b1.s (nth *link$s* b1))
+         (b1.d (nth *link$d* b1))
 
          (br-full-in (f-and (car a1.s) (car b1.s))))
 
@@ -334,10 +334,10 @@
     (b* ((full-in (nth 0 inputs))
          (go-signals (nthcdr (comp-gcd-cond$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
-         (a0 (get-field *comp-gcd-cond$a0* st))
-         (a0.s (get-field *link$s* a0))
-         (b0 (get-field *comp-gcd-cond$b0* st))
-         (b0.s (get-field *link$s* b0)))
+         (a0 (nth *comp-gcd-cond$a0* st))
+         (a0.s (nth *link$s* a0))
+         (b0 (nth *comp-gcd-cond$b0* st))
+         (b0.s (nth *link$s* b0)))
       (joint-act full-in
                  (f-or (car a0.s) (car b0.s))
                  go-in)))
@@ -561,12 +561,12 @@
          (a (take data-size data-in))
          (b (nthcdr data-size data-in))
 
-         (a0 (get-field *comp-gcd-cond$a0* st))
-         (b0 (get-field *comp-gcd-cond$b0* st))
-         (a1 (get-field *comp-gcd-cond$a1* st))
-         (b1 (get-field *comp-gcd-cond$b1* st))
-         (q2 (get-field *comp-gcd-cond$q2* st))
-         (q3 (get-field *comp-gcd-cond$q3* st))
+         (a0 (nth *comp-gcd-cond$a0* st))
+         (b0 (nth *comp-gcd-cond$b0* st))
+         (a1 (nth *comp-gcd-cond$a1* st))
+         (b1 (nth *comp-gcd-cond$b1* st))
+         (q2 (nth *comp-gcd-cond$q2* st))
+         (q3 (nth *comp-gcd-cond$q3* st))
 
          (q2-inputs (comp-gcd-cond$q2-inputs inputs st data-size))
          (q2-in-act (queue2$in-act q2-inputs q2 data-size))
@@ -774,12 +774,12 @@
 ;; sequence from the current state.
 
 (defund comp-gcd-cond$extract (st)
-  (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-       (b0 (get-field *comp-gcd-cond$b0* st))
-       (a1 (get-field *comp-gcd-cond$a1* st))
-       (b1 (get-field *comp-gcd-cond$b1* st))
-       (q2 (get-field *comp-gcd-cond$q2* st))
-       (q3 (get-field *comp-gcd-cond$q3* st))
+  (b* ((a0 (nth *comp-gcd-cond$a0* st))
+       (b0 (nth *comp-gcd-cond$b0* st))
+       (a1 (nth *comp-gcd-cond$a1* st))
+       (b1 (nth *comp-gcd-cond$b1* st))
+       (q2 (nth *comp-gcd-cond$q2* st))
+       (q3 (nth *comp-gcd-cond$q3* st))
 
        (a-seq (append (extract-valid-data (list a0))
                       (queue2$extract q2)
@@ -823,12 +823,12 @@
 
 (progn
   (defund comp-gcd-cond$inv (st)
-    (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-         (b0 (get-field *comp-gcd-cond$b0* st))
-         (a1 (get-field *comp-gcd-cond$a1* st))
-         (b1 (get-field *comp-gcd-cond$b1* st))
-         (q2 (get-field *comp-gcd-cond$q2* st))
-         (q3 (get-field *comp-gcd-cond$q3* st))
+    (b* ((a0 (nth *comp-gcd-cond$a0* st))
+         (b0 (nth *comp-gcd-cond$b0* st))
+         (a1 (nth *comp-gcd-cond$a1* st))
+         (b1 (nth *comp-gcd-cond$b1* st))
+         (q2 (nth *comp-gcd-cond$q2* st))
+         (q3 (nth *comp-gcd-cond$q3* st))
 
          (a-seq (append (extract-valid-data (list a0 a1))
                         (queue2$extract q2)))
@@ -846,8 +846,7 @@
                                   (nth *comp-gcd-cond$q2* st)
                                   data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-gcd-cond$q2-inputs)))))
+              :in-theory (enable comp-gcd-cond$q2-inputs)))))
 
   (local
    (defthm comp-gcd-cond$q3-in-act-inactive
@@ -859,8 +858,7 @@
                                   (nth *comp-gcd-cond$q3* st)
                                   data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-gcd-cond$q3-inputs)))))
+              :in-theory (enable comp-gcd-cond$q3-inputs)))))
 
   (local
    (defthm comp-gcd-cond$q2-out-act-inactive
@@ -872,8 +870,7 @@
                                    (nth *comp-gcd-cond$q2* st)
                                    data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-gcd-cond$q2-inputs)))))
+              :in-theory (enable comp-gcd-cond$q2-inputs)))))
 
   (local
    (defthm comp-gcd-cond$q3-out-act-inactive
@@ -885,8 +882,7 @@
                                    (nth *comp-gcd-cond$q3* st)
                                    data-size)))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 comp-gcd-cond$q3-inputs)))))
+              :in-theory (enable comp-gcd-cond$q3-inputs)))))
 
   (defthm comp-gcd-cond$inv-preserved
     (implies (and (comp-gcd-cond$input-format inputs data-size)
@@ -897,8 +893,7 @@
     :hints (("Goal"
              :use (comp-gcd-cond$input-format=>q2$input-format
                    comp-gcd-cond$input-format=>q3$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               queue2$extracted-step
                               queue3$extracted-step
                               branch$act0
@@ -977,8 +972,8 @@
 
   (local
    (defthm comp-gcd-cond$q2-data-in-rewrite
-     (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-          (a0.d (get-field *link$d* a0)))
+     (b* ((a0 (nth *comp-gcd-cond$a0* st))
+          (a0.d (nth *link$d* a0)))
        (implies (and (bvp (strip-cars a0.d))
                      (equal (len a0.d) data-size))
                 (equal (queue2$data-in
@@ -991,8 +986,8 @@
 
   (local
    (defthm comp-gcd-cond$q3-data-in-rewrite
-     (b* ((b0 (get-field *comp-gcd-cond$b0* st))
-          (b0.d (get-field *link$d* b0)))
+     (b* ((b0 (nth *comp-gcd-cond$b0* st))
+          (b0.d (nth *link$d* b0)))
        (implies (and (bvp (strip-cars b0.d))
                      (equal (len b0.d) data-size))
                 (equal (queue3$data-in
@@ -1024,8 +1019,7 @@
     :hints (("Goal"
              :use (comp-gcd-cond$input-format=>q2$input-format
                    comp-gcd-cond$input-format=>q3$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               joint-act
                               queue2$extracted-step
                               queue3$extracted-step
@@ -1070,8 +1064,7 @@
   :hints (("Goal"
            :use (comp-gcd-cond$input-format=>q2$input-format
                  comp-gcd-cond$input-format=>q3$input-format)
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             branch$act0
                             branch$act1
@@ -1100,10 +1093,10 @@
 
   (local
    (defthm comp-gcd-cond$data-outs-rewrite
-     (b* ((a1 (get-field *comp-gcd-cond$a1* st))
-          (a1.d (get-field *link$d* a1))
-          (b1 (get-field *comp-gcd-cond$b1* st))
-          (b1.d (get-field *link$d* b1)))
+     (b* ((a1 (nth *comp-gcd-cond$a1* st))
+          (a1.d (nth *link$d* a1))
+          (b1 (nth *comp-gcd-cond$b1* st))
+          (b1.d (nth *link$d* b1)))
        (implies (and (comp-gcd-cond$valid-st st data-size)
                      (comp-gcd-cond$out-act inputs st data-size))
                 (equal (comp-gcd-cond$data1-out inputs st data-size)

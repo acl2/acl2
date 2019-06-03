@@ -105,7 +105,7 @@
 ;; Constraints on the state of Telescope
 
 (defund telescope$valid-st (st)
-  (b* ((x (get-field *telescope$x* st)))
+  (b* ((x (nth *telescope$x* st)))
     (validp x))) ;; The link status is either full or empty.
 
 ;; Extract the input and output signals for Telescope
@@ -135,7 +135,7 @@
 
          (go (nth 0 go-signals))
 
-         (x (get-field *telescope$x* st))
+         (x (nth *telescope$x* st))
 
          (x-full-in (f-and (car x) full-in)))
       (joint-act x-full-in empty-out- go)))
@@ -155,7 +155,7 @@
 
          (go (nth 0 go-signals))
 
-         (x (get-field *telescope$x* st))
+         (x (nth *telescope$x* st))
 
          (x-empty-out- (f-or (car x) empty-out-)))
       (joint-act full-in x-empty-out- go)))
@@ -217,7 +217,7 @@
   (b* ((in-act (telescope$in-act inputs st data-size))
        (out-act (telescope$out-act inputs st data-size))
 
-       (x (get-field *telescope$x* st)))
+       (x (nth *telescope$x* st)))
     (list (list (f-sr out-act in-act (car x))))))
 
 ;; The state lemma for Telescope

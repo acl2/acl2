@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; February 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -313,8 +313,8 @@
 ;; Constraints on the state of LINK1
 
 (defun link1$valid-st (st)
-  (b* ((s (get-field *link1$s* st))
-       (d (get-field *link1$d* st)))
+  (b* ((s (nth *link1$s* st))
+       (d (nth *link1$d* st)))
     (and (validp s)
          (true-listp d)
          (equal (len d) 1)
@@ -326,8 +326,8 @@
 (defthm link1$value
   (b* ((fill$ (car inputs))
        (bit-in (caddr inputs))
-       (s (get-field *link1$s* st))
-       (d (get-field *link1$d* st)))
+       (s (nth *link1$s* st))
+       (d (nth *link1$d* st)))
     (implies (link1& netlist)
              (equal (se 'link1 inputs st netlist)
                     (list (f-buf (car s))
@@ -348,8 +348,8 @@
        (drain (nth 1 inputs))
        (bit-in (nth 2 inputs))
 
-       (s (get-field *link1$s* st))
-       (d (get-field *link1$d* st)))
+       (s (nth *link1$s* st))
+       (d (nth *link1$d* st)))
     (list
      (list (f-sr fill$ drain (car s)))
      (list (f-if fill$ bit-in (car d))))))
@@ -372,7 +372,7 @@
                            ((link1*)
                             de-module-disabled-rules)))))
 
-;;(in-theory (disable link1$step))
+;; (in-theory (disable link1$step))
 
 ;; ======================================================================
 
@@ -411,8 +411,8 @@
   (if (atom st)
       nil
     (b* ((link (car st)))
-      (if (fullp (get-field *link$s* link))
-          (cons (strip-cars (get-field *link$d* link))
+      (if (fullp (nth *link$s* link))
+          (cons (strip-cars (nth *link$d* link))
                 (extract-valid-data (cdr st)))
         (extract-valid-data (cdr st))))))
 
@@ -446,7 +446,7 @@
 ;; Constraints on the state of LINK
 
 (defun link$st-format (st data-size)
-  (b* ((d (get-field *link$d* st)))
+  (b* ((d (nth *link$d* st)))
     (and (len-1-true-listp d)
          (equal (len d) data-size))))
 
@@ -457,8 +457,8 @@
   :rule-classes :forward-chaining)
 
 (defun link$valid-st (st data-size)
-  (b* ((s (get-field *link$s* st))
-       (d (get-field *link$d* st)))
+  (b* ((s (nth *link$s* st))
+       (d (nth *link$d* st)))
     (and (link$st-format st data-size)
 
          (validp s) ;; The link status is either full or empty.
@@ -475,8 +475,8 @@
 (defthm link$value
   (b* ((fill$ (car inputs))
        (data-in (cddr inputs))
-       (s (get-field *link$s* st))
-       (d (get-field *link$d* st)))
+       (s (nth *link$s* st))
+       (d (nth *link$d* st)))
     (implies (and (link& netlist data-size)
                   (true-listp data-in)
                   (equal (len data-in) data-size)
@@ -500,8 +500,8 @@
        (data-in (take (nfix data-size)
                       (nthcdr 2 inputs)))
 
-       (s (get-field *link$s* st))
-       (d (get-field *link$d* st)))
+       (s (nth *link$s* st))
+       (d (nth *link$d* st)))
     (list
      (list (f-sr fill$ drain (car s)))
      (pairlis$ (fv-if fill$ data-in (strip-cars d))
@@ -528,7 +528,7 @@
                             link*$destructure)
                            (de-module-disabled-rules)))))
 
-;;(in-theory (disable link$step))
+;; (in-theory (disable link$step))
 
 (defthm link$valid-st-preserved
   (implies (and (booleanp (nth 0 inputs))
@@ -539,7 +539,7 @@
                 (link$valid-st st data-size))
            (link$valid-st (link$step inputs st data-size)
                           data-size))
-  :hints (("Goal" :in-theory (enable get-field f-sr))))
+  :hints (("Goal" :in-theory (enable f-sr))))
 
 
 

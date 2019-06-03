@@ -173,9 +173,9 @@
 ;; Constraints on the state of GCD-BODY2
 
 (defund gcd-body2$st-format (st data-size)
-  (b* ((l0 (get-field *gcd-body2$l0* st))
-       (l1 (get-field *gcd-body2$l1* st))
-       (l2 (get-field *gcd-body2$l2* st)))
+  (b* ((l0 (nth *gcd-body2$l0* st))
+       (l1 (nth *gcd-body2$l1* st))
+       (l2 (nth *gcd-body2$l2* st)))
     (and (< 0 data-size)
          (link$st-format l0 (* 2 data-size))
          (link$st-format l1 data-size)
@@ -188,9 +188,9 @@
   :rule-classes :forward-chaining)
 
 (defund gcd-body2$valid-st (st data-size)
-  (b* ((l0 (get-field *gcd-body2$l0* st))
-       (l1 (get-field *gcd-body2$l1* st))
-       (l2 (get-field *gcd-body2$l2* st)))
+  (b* ((l0 (nth *gcd-body2$l0* st))
+       (l1 (nth *gcd-body2$l1* st))
+       (l2 (nth *gcd-body2$l2* st)))
     (and (< 0 data-size)
          (link$valid-st l0 (* 2 data-size))
          (link$valid-st l1 data-size)
@@ -242,10 +242,10 @@
          (go-signals (nthcdr (gcd-body2$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
 
-         (l0 (get-field *gcd-body2$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l1 (get-field *gcd-body2$l1* st))
-         (l1.s (get-field *link$s* l1))
+         (l0 (nth *gcd-body2$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l1 (nth *gcd-body2$l1* st))
+         (l1.s (nth *link$s* l1))
 
          (ready-in- (f-or (car l0.s) (car l1.s))))
       (joint-act full-in ready-in- go-in)))
@@ -262,10 +262,10 @@
          (go-signals (nthcdr (gcd-body2$data-ins-len data-size) inputs))
          (go-out (nth 1 go-signals))
 
-         (l1 (get-field *gcd-body2$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (l2 (get-field *gcd-body2$l2* st))
-         (l2.s (get-field *link$s* l2))
+         (l1 (nth *gcd-body2$l1* st))
+         (l1.s (nth *link$s* l1))
+         (l2 (nth *gcd-body2$l2* st))
+         (l2.s (nth *link$s* l2))
 
          (ready-out (f-and (car l1.s) (car l2.s))))
       (joint-act ready-out empty-out- go-out)))
@@ -286,10 +286,10 @@
   ;; Extract the output data
 
   (defund gcd-body2$data-out (st)
-    (b* ((l1 (get-field *gcd-body2$l1* st))
-         (l1.d (get-field *link$d* l1))
-         (l2 (get-field *gcd-body2$l2* st))
-         (l2.d (get-field *link$d* l2)))
+    (b* ((l1 (nth *gcd-body2$l1* st))
+         (l1.d (nth *link$d* l1))
+         (l2 (nth *gcd-body2$l2* st))
+         (l2.d (nth *link$d* l2)))
       (append (v-threefix (strip-cars l2.d))
               (v-threefix (strip-cars l1.d)))))
 
@@ -356,12 +356,12 @@
 
        (go-sub (nth 2 go-signals))
 
-       (l0 (get-field *gcd-body2$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *gcd-body2$l1* st))
-       (l2 (get-field *gcd-body2$l2* st))
-       (l2.s (get-field *link$s* l2))
+       (l0 (nth *gcd-body2$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *gcd-body2$l1* st))
+       (l2 (nth *gcd-body2$l2* st))
+       (l2.s (nth *link$s* l2))
 
        (in-act (gcd-body2$in-act inputs st data-size))
        (out-act (gcd-body2$out-act inputs st data-size))
@@ -512,14 +512,14 @@
 ;; sequence from the current state.
 
 (defund gcd-body2$extract (st data-size)
-  (b* ((l0 (get-field *gcd-body2$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *gcd-body2$l1* st))
-       (l1.s (get-field *link$s* l1))
-       (l1.d (get-field *link$d* l1))
-       (l2 (get-field *gcd-body2$l2* st))
-       (l2.d (get-field *link$d* l2)))
+  (b* ((l0 (nth *gcd-body2$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *gcd-body2$l1* st))
+       (l1.s (nth *link$s* l1))
+       (l1.d (nth *link$d* l1))
+       (l2 (nth *gcd-body2$l2* st))
+       (l2.d (nth *link$d* l2)))
     (if (emptyp l1.s)
         nil
       (list
@@ -546,9 +546,9 @@
 
 (progn
   (defund gcd-body2$inv (st)
-    (b* ((l0 (get-field *gcd-body2$l0* st))
-         (l1 (get-field *gcd-body2$l1* st))
-         (l2 (get-field *gcd-body2$l2* st))
+    (b* ((l0 (nth *gcd-body2$l0* st))
+         (l1 (nth *gcd-body2$l1* st))
+         (l2 (nth *gcd-body2$l2* st))
 
          (len1 (len (extract-valid-data (list l0 l2))))
          (len2 (len (extract-valid-data (list l1)))))
@@ -561,8 +561,7 @@
              (gcd-body2$inv
               (gcd-body2$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               gcd-body2$valid-st
                               gcd-body2$inv
                               gcd-body2$step
@@ -616,8 +615,7 @@
              (equal (gcd-body2$extract next-st data-size)
                     (gcd-body2$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            joint-act
+           :in-theory (e/d (joint-act
                             pos-len=>cons
                             fv-if-rewrite
                             gcd-body2$extracted-step
@@ -644,8 +642,7 @@
             (gcd-body2$step inputs st data-size)
             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             gcd-body2$valid-st
                             gcd-body2$step

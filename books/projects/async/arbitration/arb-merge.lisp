@@ -183,16 +183,16 @@
 ;; Constraints on the state of ARB-MERGE
 
 (defund arb-merge$st-format (st)
-  (b* ((arb (get-field *arb-merge$arb* st))
-       (arb-buf (get-field *arb-merge$arb-buf* st)))
+  (b* ((arb (nth *arb-merge$arb* st))
+       (arb-buf (nth *arb-merge$arb-buf* st)))
     (and (link$st-format arb 2)
          (link$st-format arb-buf 2))))
 
 ;; Constraints on the state of ARB-MERGE
 
 (defund arb-merge$valid-st (st)
-  (b* ((arb (get-field *arb-merge$arb* st))
-       (arb-buf (get-field *arb-merge$arb-buf* st)))
+  (b* ((arb (nth *arb-merge$arb* st))
+       (arb-buf (nth *arb-merge$arb-buf* st)))
     (and (link$valid-st arb 2)
          (link$valid-st arb-buf 2))))
 
@@ -251,13 +251,13 @@
          (b-select (f-bool select))
          (go-arb-merge (nth 0 go-signals))
 
-         (arb (get-field *arb-merge$arb* st))
-         (arb.s (get-field *link$s* arb))
-         (arb.d (get-field *link$d* arb))
+         (arb (nth *arb-merge$arb* st))
+         (arb.s (nth *link$s* arb))
+         (arb.d (nth *link$d* arb))
          (excl-out (car (v-threefix (strip-cars arb.d))))
          (arb-out (cadr (v-threefix (strip-cars arb.d))))
-         (arb-buf (get-field *arb-merge$arb-buf* st))
-         (arb-buf.s (get-field *link$s* arb-buf))
+         (arb-buf (nth *arb-merge$arb-buf* st))
+         (arb-buf.s (nth *link$s* arb-buf))
 
          (m-full-in0 (f-or3 (f-and4 full-in0
                                     (f-not full-in1)
@@ -296,13 +296,13 @@
          (b-select (f-bool select))
          (go-arb-merge (nth 0 go-signals))
 
-         (arb (get-field *arb-merge$arb* st))
-         (arb.s (get-field *link$s* arb))
-         (arb.d (get-field *link$d* arb))
+         (arb (nth *arb-merge$arb* st))
+         (arb.s (nth *link$s* arb))
+         (arb.d (nth *link$d* arb))
          (excl-out (car (v-threefix (strip-cars arb.d))))
          (arb-out (cadr (v-threefix (strip-cars arb.d))))
-         (arb-buf (get-field *arb-merge$arb-buf* st))
-         (arb-buf.s (get-field *link$s* arb-buf))
+         (arb-buf (nth *arb-merge$arb-buf* st))
+         (arb-buf.s (nth *link$s* arb-buf))
 
          (m-full-in1 (f-or3 (f-and4 (f-not full-in0)
                                     full-in1
@@ -423,13 +423,13 @@
        (b-select (f-bool select))
        (go-buf (nth 1 go-signals))
 
-       (arb (get-field *arb-merge$arb* st))
-       (arb.s (get-field *link$s* arb))
-       (arb.d (get-field *link$d* arb))
+       (arb (nth *arb-merge$arb* st))
+       (arb.s (nth *link$s* arb))
+       (arb.d (nth *link$d* arb))
        (excl-out (car (v-threefix (strip-cars arb.d))))
-       (arb-buf (get-field *arb-merge$arb-buf* st))
-       (arb-buf.s (get-field *link$s* arb-buf))
-       (arb-buf.d (get-field *link$d* arb-buf))
+       (arb-buf (nth *arb-merge$arb-buf* st))
+       (arb-buf.s (nth *link$s* arb-buf))
+       (arb-buf.d (nth *link$d* arb-buf))
 
        (act (arb-merge$act inputs st data-size))
        (buf-act (joint-act (car arb-buf.s) (car arb.s) go-buf))
@@ -532,8 +532,7 @@
 (defthm arb-merge$st-format-preserved
   (implies (arb-merge$st-format st)
            (arb-merge$st-format (arb-merge$step inputs st data-size)))
-  :hints (("Goal" :in-theory (enable get-field
-                                     arb-merge$step
+  :hints (("Goal" :in-theory (enable arb-merge$step
                                      arb-merge$st-format))))
 
 ;; Prove that arb-merge$valid-st is an invariant.
@@ -543,8 +542,7 @@
                 (arb-merge$valid-st st))
            (arb-merge$valid-st (arb-merge$step inputs st data-size)))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             f-and4
                             f-and5
                             f-or3
@@ -575,18 +573,18 @@
        (b-select (f-bool select))
        (go-arb-merge (nth 0 go-signals))
 
-       (arb (get-field *arb-merge$arb* st))
-       (arb.s (get-field *link$s* arb))
-       (arb.d (get-field *link$d* arb))
+       (arb (nth *arb-merge$arb* st))
+       (arb.s (nth *link$s* arb))
+       (arb.d (nth *link$d* arb))
        (excl-out (car (v-threefix (strip-cars arb.d))))
-       (arb-buf (get-field *arb-merge$arb-buf* st))
-       (arb-buf.s (get-field *link$s* arb-buf))
+       (arb-buf (nth *arb-merge$arb-buf* st))
+       (arb-buf.s (nth *link$s* arb-buf))
 
        (next-st (arb-merge$step inputs st data-size))
 
-       (next-arb-buf (get-field *arb-merge$arb-buf* next-st))
-       (next-arb-buf.s (get-field *link$s* next-arb-buf))
-       (next-arb-buf.d (get-field *link$d* next-arb-buf)))
+       (next-arb-buf (nth *arb-merge$arb-buf* next-st))
+       (next-arb-buf.s (nth *link$s* next-arb-buf))
+       (next-arb-buf.d (nth *link$d* next-arb-buf)))
     (implies (and (arb-merge$valid-st st)
                   (equal full-in0 t)
                   (equal full-in1 t)
@@ -602,8 +600,7 @@
                   (fullp next-arb-buf.s)
                   (equal next-arb-buf.d
                          (list '(t) (list (not b-select)))))))
-  :hints (("Goal" :in-theory (enable get-field
-                                     f-bool
+  :hints (("Goal" :in-theory (enable f-bool
                                      arb-merge$valid-st
                                      arb-merge$step
                                      arb-merge$act0
@@ -619,19 +616,19 @@
 
        (go-arb-merge (nth 0 go-signals))
 
-       (arb (get-field *arb-merge$arb* st))
-       (arb.s (get-field *link$s* arb))
-       (arb.d (get-field *link$d* arb))
+       (arb (nth *arb-merge$arb* st))
+       (arb.s (nth *link$s* arb))
+       (arb.d (nth *link$d* arb))
        (excl-out (car (v-threefix (strip-cars arb.d))))
        (arb-out (cadr (v-threefix (strip-cars arb.d))))
-       (arb-buf (get-field *arb-merge$arb-buf* st))
-       (arb-buf.s (get-field *link$s* arb-buf))
+       (arb-buf (nth *arb-merge$arb-buf* st))
+       (arb-buf.s (nth *link$s* arb-buf))
 
        (next-st (arb-merge$step inputs st data-size))
 
-       (next-arb-buf (get-field *arb-merge$arb-buf* next-st))
-       (next-arb-buf.s (get-field *link$s* next-arb-buf))
-       (next-arb-buf.d (get-field *link$d* next-arb-buf)))
+       (next-arb-buf (nth *arb-merge$arb-buf* next-st))
+       (next-arb-buf.s (nth *link$s* next-arb-buf))
+       (next-arb-buf.d (nth *link$d* next-arb-buf)))
     (implies (and (arb-merge$valid-st st)
                   (equal full-in0 t)
                   (not empty-out-)
@@ -645,8 +642,7 @@
                   (fullp next-arb-buf.s)
                   (equal next-arb-buf.d
                          '((nil) (nil))))))
-  :hints (("Goal" :in-theory (enable get-field
-                                     3vp
+  :hints (("Goal" :in-theory (enable 3vp
                                      f-or3
                                      f-bool
                                      arb-merge$valid-st
@@ -664,19 +660,19 @@
 
        (go-arb-merge (nth 0 go-signals))
 
-       (arb (get-field *arb-merge$arb* st))
-       (arb.s (get-field *link$s* arb))
-       (arb.d (get-field *link$d* arb))
+       (arb (nth *arb-merge$arb* st))
+       (arb.s (nth *link$s* arb))
+       (arb.d (nth *link$d* arb))
        (excl-out (car (v-threefix (strip-cars arb.d))))
        (arb-out (cadr (v-threefix (strip-cars arb.d))))
-       (arb-buf (get-field *arb-merge$arb-buf* st))
-       (arb-buf.s (get-field *link$s* arb-buf))
+       (arb-buf (nth *arb-merge$arb-buf* st))
+       (arb-buf.s (nth *link$s* arb-buf))
 
        (next-st (arb-merge$step inputs st data-size))
 
-       (next-arb-buf (get-field *arb-merge$arb-buf* next-st))
-       (next-arb-buf.s (get-field *link$s* next-arb-buf))
-       (next-arb-buf.d (get-field *link$d* next-arb-buf)))
+       (next-arb-buf (nth *arb-merge$arb-buf* next-st))
+       (next-arb-buf.s (nth *link$s* next-arb-buf))
+       (next-arb-buf.d (nth *link$d* next-arb-buf)))
     (implies (and (arb-merge$valid-st st)
                   (equal full-in1 t)
                   (not empty-out-)
@@ -690,8 +686,7 @@
                   (fullp next-arb-buf.s)
                   (equal next-arb-buf.d
                          '((nil) (nil))))))
-  :hints (("Goal" :in-theory (enable get-field
-                                     3vp
+  :hints (("Goal" :in-theory (enable 3vp
                                      f-or3
                                      f-bool
                                      arb-merge$valid-st

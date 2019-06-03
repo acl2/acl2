@@ -130,8 +130,8 @@
 ;; Constraints on the state of QUEUE20-L
 
 (defund queue20-l$st-format (st data-size)
-  (b* ((q10-l0 (get-field *queue20-l$q10-l0* st))
-       (q10-l1 (get-field *queue20-l$q10-l1* st)))
+  (b* ((q10-l0 (nth *queue20-l$q10-l0* st))
+       (q10-l1 (nth *queue20-l$q10-l1* st)))
     (and (queue10-l$st-format q10-l0 data-size)
          (queue10-l$st-format q10-l1 data-size))))
 
@@ -142,8 +142,8 @@
   :rule-classes :forward-chaining)
 
 (defund queue20-l$valid-st (st data-size)
-  (b* ((q10-l0 (get-field *queue20-l$q10-l0* st))
-       (q10-l1 (get-field *queue20-l$q10-l1* st)))
+  (b* ((q10-l0 (nth *queue20-l$q10-l0* st))
+       (q10-l1 (nth *queue20-l$q10-l1* st)))
     (and (queue10-l$valid-st q10-l0 data-size)
          (queue10-l$valid-st q10-l1 data-size))))
 
@@ -202,8 +202,8 @@
          (q10-l0-go-signals (take *queue10-l$go-num*
                                   (nthcdr *queue20-l$prim-go-num* go-signals)))
 
-         (q10-l0 (get-field *queue20-l$q10-l0* st))
-         (q10-l1 (get-field *queue20-l$q10-l1* st))
+         (q10-l0 (nth *queue20-l$q10-l0* st))
+         (q10-l1 (nth *queue20-l$q10-l1* st))
 
          (trans-act (joint-act (queue10-l$ready-out q10-l0)
                                (queue10-l$ready-in- q10-l1)
@@ -224,8 +224,8 @@
                                              *queue10-l$go-num*)
                                           go-signals)))
 
-         (q10-l0 (get-field *queue20-l$q10-l0* st))
-         (q10-l1 (get-field *queue20-l$q10-l1* st))
+         (q10-l0 (nth *queue20-l$q10-l0* st))
+         (q10-l1 (nth *queue20-l$q10-l1* st))
 
          (trans-act (joint-act (queue10-l$ready-out q10-l0)
                                (queue10-l$ready-in- q10-l1)
@@ -238,7 +238,7 @@
   ;; Extract the "ready-in-" signal
 
   (defund queue20-l$ready-in- (st)
-    (b* ((q10-l0 (get-field *queue20-l$q10-l0* st)))
+    (b* ((q10-l0 (nth *queue20-l$q10-l0* st)))
       (queue10-l$ready-in- q10-l0)))
 
   (defthm booleanp-queue20-l$ready-in-
@@ -251,7 +251,7 @@
   ;; Extract the "ready-out" signal
 
   (defund queue20-l$ready-out (st)
-    (b* ((q10-l1 (get-field *queue20-l$q10-l1* st)))
+    (b* ((q10-l1 (nth *queue20-l$q10-l1* st)))
       (queue10-l$ready-out q10-l1)))
 
   (defthm booleanp-queue20-l$ready-out
@@ -264,7 +264,7 @@
   ;; Extract the output data
 
   (defund queue20-l$data-out (st)
-    (b* ((q10-l1 (get-field *queue20-l$q10-l1* st)))
+    (b* ((q10-l1 (nth *queue20-l$q10-l1* st)))
       (queue10-l$data-out q10-l1)))
 
   (defthm len-queue20-l$data-out-1
@@ -320,8 +320,8 @@
 ;; This function specifies the next state of QUEUE20-L.
 
 (defun queue20-l$step (inputs st data-size)
-  (b* ((q10-l0 (get-field *queue20-l$q10-l0* st))
-       (q10-l1 (get-field *queue20-l$q10-l1* st))
+  (b* ((q10-l0 (nth *queue20-l$q10-l0* st))
+       (q10-l1 (nth *queue20-l$q10-l1* st))
 
        (q10-l0-inputs (queue20-l$q10-l0-inputs inputs st data-size))
        (q10-l1-inputs (queue20-l$q10-l1-inputs inputs st data-size)))
@@ -415,8 +415,7 @@
              (nth *queue20-l$q10-l0* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             queue10-l$valid-st=>constraint
+            :in-theory (e/d (queue10-l$valid-st=>constraint
                              queue10-l$input-format
                              queue10-l$in-act
                              queue10-l$out-act
@@ -436,8 +435,7 @@
              (nth *queue20-l$q10-l1* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             joint-act
+            :in-theory (e/d (joint-act
                              queue10-l$valid-st=>constraint
                              queue10-l$input-format
                              queue10-l$in-act
@@ -473,8 +471,8 @@
 ;; sequence from the current state.
 
 (defund queue20-l$extract (st)
-  (b* ((q10-l0 (get-field *queue20-l$q10-l0* st))
-       (q10-l1 (get-field *queue20-l$q10-l1* st)))
+  (b* ((q10-l0 (nth *queue20-l$q10-l0* st))
+       (q10-l1 (nth *queue20-l$q10-l1* st)))
     (append (queue10-l$extract q10-l0)
             (queue10-l$extract q10-l1))))
 
@@ -542,8 +540,7 @@
      :hints (("Goal"
               :use (:instance queue10-l$valid-st=>constraint
                               (st (nth *queue20-l$q10-l0* st)))
-              :in-theory (enable get-field
-                                 queue10-l$valid-st
+              :in-theory (enable queue10-l$valid-st
                                  queue10-l$data-in
                                  queue10-l$data-out
                                  queue20-l$q10-l1-inputs)))))
@@ -593,8 +590,7 @@
                       (queue20-l$extracted-step inputs st data-size))))
     :hints (("Goal"
              :use queue20-l$input-format=>q10-l0$input-format
-             :in-theory (e/d (get-field
-                              queue10-l$valid-st=>constraint
+             :in-theory (e/d (queue10-l$valid-st=>constraint
                               queue10-l$extracted-step
                               queue20-l$extracted-step
                               queue20-l$input-format
@@ -620,8 +616,7 @@
            (queue20-l$valid-st (queue20-l$step inputs st data-size)
                              data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            queue20-l$valid-st
+           :in-theory (e/d (queue20-l$valid-st
                             queue20-l$step)
                            ()))))
 
@@ -646,8 +641,7 @@
     :hints (("Goal"
              :do-not-induct t
              :use queue20-l$input-format=>q10-l1$input-format
-             :in-theory (e/d (get-field
-                              queue10-l$valid-st=>constraint
+             :in-theory (e/d (queue10-l$valid-st=>constraint
                               queue20-l$input-format
                               queue20-l$valid-st
                               queue20-l$extract

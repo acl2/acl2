@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -44,10 +44,10 @@
 
 (progn
   (defun gcd1$map-to-links (st)
-    (b* ((s (get-field *gcd1$s* st))
-         (l0 (get-field *gcd1$l0* st))
-         (l1 (get-field *gcd1$l1* st))
-         (l2 (get-field *gcd1$l2* st)))
+    (b* ((s (nth *gcd1$s* st))
+         (l0 (nth *gcd1$l0* st))
+         (l1 (nth *gcd1$l1* st))
+         (l2 (nth *gcd1$l2* st)))
       (append (map-to-links1 (list (cons 's s)))
               (map-to-links (list (cons 'l0 l0)
                                   (cons 'l1 l1)
@@ -131,9 +131,9 @@
 
 (progn
   (defun gcd-body2$map-to-links (st)
-    (b* ((l0 (get-field *gcd-body2$l0* st))
-         (l1 (get-field *gcd-body2$l1* st))
-         (l2 (get-field *gcd-body2$l2* st)))
+    (b* ((l0 (nth *gcd-body2$l0* st))
+         (l1 (nth *gcd-body2$l1* st))
+         (l2 (nth *gcd-body2$l2* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)))))
@@ -215,11 +215,11 @@
 
 (progn
   (defun gcd2$map-to-links (st)
-    (b* ((s (get-field *gcd2$s* st))
-         (l0 (get-field *gcd2$l0* st))
-         (l1 (get-field *gcd2$l1* st))
-         (l2 (get-field *gcd2$l2* st))
-         (body (get-field *gcd2$body* st)))
+    (b* ((s (nth *gcd2$s* st))
+         (l0 (nth *gcd2$l0* st))
+         (l1 (nth *gcd2$l1* st))
+         (l2 (nth *gcd2$l2* st))
+         (body (nth *gcd2$body* st)))
       (append (map-to-links1 (list (cons 's s)))
               (map-to-links (list (cons 'l0 l0)
                                   (cons 'l1 l1)))
@@ -306,10 +306,10 @@
 
 (progn
   (defun gcd-body3$map-to-links (st)
-    (b* ((l0 (get-field *gcd-body3$l0* st))
-         (l1 (get-field *gcd-body3$l1* st))
-         (l2 (get-field *gcd-body3$l2* st))
-         (sub (get-field *gcd-body3$sub* st)))
+    (b* ((l0 (nth *gcd-body3$l0* st))
+         (l1 (nth *gcd-body3$l1* st))
+         (l2 (nth *gcd-body3$l2* st))
+         (sub (nth *gcd-body3$sub* st)))
       (append (map-to-links (list (cons 'l0 l0)))
               (list (cons 'sub (serial-sub$map-to-links sub)))
               (map-to-links (list (cons 'l1 l1)
@@ -400,11 +400,11 @@
 
 (progn
   (defun gcd3$map-to-links (st)
-    (b* ((s (get-field *gcd3$s* st))
-         (l0 (get-field *gcd3$l0* st))
-         (l1 (get-field *gcd3$l1* st))
-         (l2 (get-field *gcd3$l2* st))
-         (body (get-field *gcd3$body* st)))
+    (b* ((s (nth *gcd3$s* st))
+         (l0 (nth *gcd3$l0* st))
+         (l1 (nth *gcd3$l1* st))
+         (l2 (nth *gcd3$l2* st))
+         (body (nth *gcd3$body* st)))
       (append (map-to-links1 (list (cons 's s)))
               (map-to-links (list (cons 'l0 l0)
                                   (cons 'l1 l1)))
@@ -497,12 +497,12 @@
 
 (progn
   (defun comp-gcd-cond$map-to-links (st)
-    (b* ((a0 (get-field *comp-gcd-cond$a0* st))
-         (b0 (get-field *comp-gcd-cond$b0* st))
-         (a1 (get-field *comp-gcd-cond$a1* st))
-         (b1 (get-field *comp-gcd-cond$b1* st))
-         (q2 (get-field *comp-gcd-cond$q2* st))
-         (q3 (get-field *comp-gcd-cond$q3* st)))
+    (b* ((a0 (nth *comp-gcd-cond$a0* st))
+         (b0 (nth *comp-gcd-cond$b0* st))
+         (a1 (nth *comp-gcd-cond$a1* st))
+         (b1 (nth *comp-gcd-cond$b1* st))
+         (q2 (nth *comp-gcd-cond$q2* st))
+         (q3 (nth *comp-gcd-cond$q3* st)))
       (append (map-to-links (list (cons 'a0 a0)
                                   (cons 'b0 b0)))
               (cons (cons 'q2 (queue2$map-to-links q2))
@@ -589,11 +589,11 @@
 
 (progn
   (defun comp-gcd$map-to-links (st)
-    (b* ((s (get-field *comp-gcd$s* st))
-         (l0 (get-field *comp-gcd$l0* st))
-         (l1 (get-field *comp-gcd$l1* st))
-         (l2 (get-field *comp-gcd$l2* st))
-         (br (get-field *comp-gcd$br* st)))
+    (b* ((s (nth *comp-gcd$s* st))
+         (l0 (nth *comp-gcd$l0* st))
+         (l1 (nth *comp-gcd$l1* st))
+         (l2 (nth *comp-gcd$l2* st))
+         (br (nth *comp-gcd$br* st)))
       (append (map-to-links1 (list (cons 's s)))
               (map-to-links (list (cons 'l0 l0)
                                   (cons 'l1 l1)
@@ -680,9 +680,9 @@
 
 (progn
   (defun q10-gcd1$map-to-links (st)
-    (b* ((l   (get-field *q10-gcd1$l* st))
-         (q10 (get-field *q10-gcd1$q10* st))
-         (gcd1 (get-field *q10-gcd1$gcd1* st)))
+    (b* ((l   (nth *q10-gcd1$l* st))
+         (q10 (nth *q10-gcd1$q10* st))
+         (gcd1 (nth *q10-gcd1$gcd1* st)))
       (append (list (cons 'q10 (queue10$map-to-links q10)))
               (map-to-links (list (cons 'l l)))
               (list (cons 'gcd1 (gcd1$map-to-links gcd1))))))
@@ -763,9 +763,9 @@
 
 (progn
   (defun q10-comp-gcd$map-to-links (st)
-    (b* ((l   (get-field *q10-comp-gcd$l* st))
-         (q10 (get-field *q10-comp-gcd$q10* st))
-         (comp-gcd (get-field *q10-comp-gcd$comp-gcd* st)))
+    (b* ((l   (nth *q10-comp-gcd$l* st))
+         (q10 (nth *q10-comp-gcd$q10* st))
+         (comp-gcd (nth *q10-comp-gcd$comp-gcd* st)))
       (append (list (cons 'q10 (queue10$map-to-links q10)))
               (map-to-links (list (cons 'l l)))
               (list (cons 'comp-gcd (comp-gcd$map-to-links comp-gcd))))))

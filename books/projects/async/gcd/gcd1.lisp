@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; March 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -183,9 +183,9 @@
 ;; Constraints on the state of GCD1
 
 (defund gcd1$st-format (st data-size)
-  (b* ((l0 (get-field *gcd1$l0* st))
-       (l1 (get-field *gcd1$l1* st))
-       (l2 (get-field *gcd1$l2* st)))
+  (b* ((l0 (nth *gcd1$l0* st))
+       (l1 (nth *gcd1$l1* st))
+       (l2 (nth *gcd1$l2* st)))
     (and (natp data-size)
          (<= 3 data-size)
          (link$st-format l0 (* 2 data-size))
@@ -200,10 +200,10 @@
   :rule-classes :forward-chaining)
 
 (defund gcd1$valid-st (st data-size)
-  (b* ((s  (get-field *gcd1$s* st))
-       (l0 (get-field *gcd1$l0* st))
-       (l1 (get-field *gcd1$l1* st))
-       (l2 (get-field *gcd1$l2* st)))
+  (b* ((s  (nth *gcd1$s* st))
+       (l0 (nth *gcd1$l0* st))
+       (l1 (nth *gcd1$l1* st))
+       (l2 (nth *gcd1$l2* st)))
     (and (gcd1$st-format st data-size)
          (link1$valid-st s)
          (link$valid-st l0 (* 2 data-size))
@@ -250,14 +250,14 @@
 
          (me-go-signals (take *merge$go-num* go-signals))
 
-         (s (get-field *gcd1$s* st))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s))
-         (l0 (get-field *gcd1$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l2 (get-field *gcd1$l2* st))
-         (l2.s (get-field *link$s* l2))
-         (l2.d (get-field *link$d* l2))
+         (s (nth *gcd1$s* st))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s))
+         (l0 (nth *gcd1$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l2 (nth *gcd1$l2* st))
+         (l2.s (nth *link$s* l2))
+         (l2.d (nth *link$d* l2))
 
          (me-full-in0 (f-and full-in (car s.s)))
          (me-full-in1 (f-and (car l2.s) (car s.s))))
@@ -276,13 +276,13 @@
          (br-go-signals (take *gcd-cond$go-num*
                               (nthcdr *merge$go-num* go-signals)))
 
-         (s (get-field *gcd1$s* st))
-         (s.s (get-field *link1$s* s))
-         (l0 (get-field *gcd1$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l0.d (get-field *link$d* l0))
-         (l1 (get-field *gcd1$l1* st))
-         (l1.s (get-field *link$s* l1))
+         (s (nth *gcd1$s* st))
+         (s.s (nth *link1$s* s))
+         (l0 (nth *gcd1$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l0.d (nth *link$d* l0))
+         (l1 (nth *gcd1$l1* st))
+         (l1.s (nth *link$s* l1))
 
          (br-empty-out0- (f-or empty-out- (car s.s)))
          (br-empty-out1- (f-or (car l1.s) (car s.s))))
@@ -301,11 +301,11 @@
                                            *gcd-cond$go-num*)
                                         go-signals)))
 
-         (l1 (get-field *gcd1$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (l1.d (get-field *link$d* l1))
-         (l2 (get-field *gcd1$l2* st))
-         (l2.s (get-field *link$s* l2)))
+         (l1 (nth *gcd1$l1* st))
+         (l1.s (nth *link$s* l1))
+         (l1.d (nth *link$d* l1))
+         (l2 (nth *gcd1$l2* st))
+         (l2.s (nth *link$s* l2)))
 
       (list* (f-buf (car l1.s)) (f-buf (car l2.s))
              (append (v-threefix (strip-cars l1.d))
@@ -408,12 +408,12 @@
 (defun gcd1$step (inputs st data-size)
   (b* ((data-in (gcd1$data-in inputs data-size))
 
-       (s (get-field *gcd1$s* st))
-       (s.d (get-field *link1$d* s))
-       (l0 (get-field *gcd1$l0* st))
-       (l1 (get-field *gcd1$l1* st))
-       (l2 (get-field *gcd1$l2* st))
-       (l2.d (get-field *link$d* l2))
+       (s (nth *gcd1$s* st))
+       (s.d (nth *link1$d* s))
+       (l0 (nth *gcd1$l0* st))
+       (l1 (nth *gcd1$l1* st))
+       (l2 (nth *gcd1$l2* st))
+       (l2.d (nth *link$d* l2))
 
        (me-inputs (gcd1$me-inputs inputs st data-size))
        (br-inputs (gcd1$br-inputs inputs st data-size))
@@ -534,9 +534,9 @@
 ;; from the current state.
 
 (defund gcd1$extract (st)
-  (b* ((l0 (get-field *gcd1$l0* st))
-       (l1 (get-field *gcd1$l1* st))
-       (l2 (get-field *gcd1$l2* st)))
+  (b* ((l0 (nth *gcd1$l0* st))
+       (l1 (nth *gcd1$l1* st))
+       (l2 (nth *gcd1$l2* st)))
     (gcd$op-map
      (extract-valid-data (list l1 l2 l0)))))
 
@@ -559,9 +559,9 @@
 
 (progn
   (defund gcd1$inv (st)
-    (b* ((s (get-field *gcd1$s* st))
-         (s.s (get-field *link1$s* s))
-         (s.d (get-field *link1$d* s)))
+    (b* ((s (nth *gcd1$s* st))
+         (s.s (nth *link1$s* s))
+         (s.d (nth *link1$d* s)))
       (if (and (fullp s.s) (not (car s.d)))
           (= (len (gcd1$extract st))
              0)
@@ -606,8 +606,7 @@
                          (equal (len l1.d) (* 2 data-size))
                          (bvp (strip-cars l1.d))))
                 (booleanp (gcd-body1$act body-inputs data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        merge$act0
+     :hints (("Goal" :in-theory (enable merge$act0
                                         merge$act1
                                         merge$act
                                         gcd-body1$data-in
@@ -627,8 +626,7 @@
                                 (nth *gcd1$l2* st))
                            '(t)))
                 (not (gcd-body1$act body-inputs data-size))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        gcd1$body-inputs)))))
+     :hints (("Goal" :in-theory (enable gcd1$body-inputs)))))
 
   (defthm gcd1$inv-preserved
     (implies (and (gcd1$input-format inputs data-size)
@@ -636,8 +634,7 @@
                   (gcd1$inv st))
              (gcd1$inv (gcd1$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               gcd1$valid-st
                               gcd1$st-format
                               gcd1$inv
@@ -713,8 +710,7 @@
                        (v-not (nthcdr data-size (strip-cars l1.d))))
                       (nthcdr data-size (strip-cars l1.d)))))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 gcd-body1$data-in
+              :in-theory (enable gcd-body1$data-in
                                  gcd-body1$a<b
                                  gcd-body1$data-out
                                  gcd-body1$data0-out
@@ -729,8 +725,7 @@
                (equal (gcd1$extract next-st)
                       (gcd1$extracted-step inputs st data-size))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               joint-act
                               gcd1$extracted-step
                               gcd1$valid-st
@@ -773,8 +768,7 @@
            (gcd1$valid-st (gcd1$step inputs st data-size)
                          data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             gcd1$valid-st
                             gcd1$st-format

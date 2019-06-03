@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -155,8 +155,8 @@
 ;; Constraints on the state of Q2
 
 (defund queue2$st-format (st data-size)
-  (b* ((l0 (get-field *queue2$l0* st))
-       (l1 (get-field *queue2$l1* st)))
+  (b* ((l0 (nth *queue2$l0* st))
+       (l1 (nth *queue2$l1* st)))
     (and (link$st-format l0 data-size)
          (link$st-format l1 data-size))))
 
@@ -167,8 +167,8 @@
   :rule-classes :forward-chaining)
 
 (defund queue2$valid-st (st data-size)
-  (b* ((l0 (get-field *queue2$l0* st))
-       (l1 (get-field *queue2$l1* st)))
+  (b* ((l0 (nth *queue2$l0* st))
+       (l1 (nth *queue2$l1* st)))
     (and (link$valid-st l0 data-size)
          (link$valid-st l1 data-size))))
 
@@ -210,8 +210,8 @@
          (go-signals (nthcdr (queue2$data-ins-len data-size) inputs))
          (go-in (nth 0 go-signals))
 
-         (l0 (get-field *queue2$l0* st))
-         (l0.s (get-field *link$s* l0)))
+         (l0 (nth *queue2$l0* st))
+         (l0.s (nth *link$s* l0)))
       (joint-act full-in (car l0.s) go-in)))
 
   (defthm queue2$in-act-inactive
@@ -226,8 +226,8 @@
          (go-signals (nthcdr (queue2$data-ins-len data-size) inputs))
          (go-out (nth 2 go-signals))
 
-         (l1 (get-field *queue2$l1* st))
-         (l1.s (get-field *link$s* l1)))
+         (l1 (nth *queue2$l1* st))
+         (l1.s (nth *link$s* l1)))
       (joint-act (car l1.s) empty-out- go-out)))
 
   (defthm queue2$out-act-inactive
@@ -238,8 +238,8 @@
   ;; Extract the output data
 
   (defund queue2$data-out (st)
-    (v-threefix (strip-cars (get-field *link$d*
-                                       (get-field *queue2$l1* st)))))
+    (v-threefix (strip-cars (nth *link$d*
+                                 (nth *queue2$l1* st)))))
 
   (defthm len-queue2$data-out-1
     (implies (queue2$st-format st data-size)
@@ -302,11 +302,11 @@
 
        (go-trans (nth 1 go-signals))
 
-       (l0 (get-field *queue2$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *queue2$l1* st))
-       (l1.s (get-field *link$s* l1))
+       (l0 (nth *queue2$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *queue2$l1* st))
+       (l1.s (nth *link$s* l1))
 
        (in-act (queue2$in-act inputs st data-size))
        (out-act (queue2$out-act inputs st data-size))
@@ -397,8 +397,8 @@
 ;; the current state.
 
 (defund queue2$extract (st)
-  (b* ((l0 (get-field *queue2$l0* st))
-       (l1 (get-field *queue2$l1* st)))
+  (b* ((l0 (nth *queue2$l0* st))
+       (l1 (nth *queue2$l1* st)))
     (extract-valid-data (list l0 l1))))
 
 (defthm queue2$extract-not-empty
@@ -446,8 +446,7 @@
              (equal (queue2$extract next-st)
                     (queue2$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
+           :in-theory (enable f-sr
                               queue2$extracted-step
                               queue2$input-format
                               queue2$valid-st
@@ -469,8 +468,7 @@
            (queue2$valid-st (queue2$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             queue2$input-format
                             queue2$valid-st
                             queue2$st-format
@@ -506,4 +504,3 @@
 ;; The multi-step input-output relationship
 
 (in-out-stream-lemma queue2)
-
