@@ -287,6 +287,7 @@
      </p>"
     :elt-type repetition
     :true-listp t
+    :elementp-of-nil nil
     :pred concatenationp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -366,6 +367,7 @@
    </p>"
   :elt-type rule
   :true-listp t
+  :elementp-of-nil nil
   :pred rulelistp)
 
 (defxdoc grammar
