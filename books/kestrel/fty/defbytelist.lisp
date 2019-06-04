@@ -255,6 +255,7 @@
             ,@(and short (list :short short))
             ,@(and long (list :long long))
             :true-listp t
+            :elementp-of-nil nil
             :pred ,pred
             :fix ,fix
             :equiv ,equiv))
