@@ -99,7 +99,7 @@
     "@(':name-bits')"
     (xdoc::p
      "A symbol that names the generated constrained function
-      that operates in bits.")
+      that operates on bits.")
     (xdoc::p
      "If not supplied, it defaults to @('name') followed by @('-bits')."))
 
@@ -107,7 +107,7 @@
     "@(':name-bytes')"
     (xdoc::p
      "A symbol that names the generated constrained function
-      that operates in bytes.")
+      that operates on bytes.")
     (xdoc::p
      "If not supplied, it defaults to @('name') followed by @('-bytes')."))
 
@@ -177,10 +177,10 @@
     (xdoc::ul
      (xdoc::li
       "A type prescription rules saying that
-        the function returns a @(tsee true-listp).")
+       the function returns a @(tsee true-listp).")
      (xdoc::li
       "A type prescription rule saying that
-        the function returns a @(tsee consp).")))))
+       the function returns a @(tsee consp).")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

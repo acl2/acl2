@@ -154,10 +154,10 @@
     (xdoc::ul
      (xdoc::li
       "A type prescription rules saying that
-        the function returns a @(tsee true-listp).")
+       the function returns a @(tsee true-listp).")
      (xdoc::li
       "A type prescription rule saying that
-        the function returns a @(tsee consp).")))))
+       the function returns a @(tsee consp).")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
