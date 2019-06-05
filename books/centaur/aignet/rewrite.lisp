@@ -671,21 +671,7 @@
   ///
   (def-aignet-preservation-thms aignet-build-cut :stobjname aignet2)
 
-  (local (defun nth-of-repeat-ind (n m)
-           (if (zp n)
-               m
-             (nth-of-repeat-ind (1- n) (1- m)))))
-  (local (defthmd nth-of-repeat-split
-           (equal (nth n (acl2::repeat m x))
-                  (and (< (nfix n) (nfix m))
-                       x) )
-           :hints(("Goal" :in-theory (enable nth acl2::repeat)
-                   :induct (nth-of-repeat-ind n m)))))
-
-  (local (defthm dfs-copy-onto-invar-of-empty-marks
-           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
-           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
-                                             nth-of-repeat-split)))))
+  
 
   (local (defthm b-xor-identity
            (equal (b-xor a (b-xor a b))
@@ -870,22 +856,6 @@
     (mv lit copy2 eba strash2 aignet2))
   ///
   (def-aignet-preservation-thms aignet-build-cut-tmp :stobjname aignet2)
-
-  (local (defun nth-of-repeat-ind (n m)
-           (if (zp n)
-               m
-             (nth-of-repeat-ind (1- n) (1- m)))))
-  (local (defthmd nth-of-repeat-split
-           (equal (nth n (acl2::repeat m x))
-                  (and (< (nfix n) (nfix m))
-                       x) )
-           :hints(("Goal" :in-theory (enable nth acl2::repeat)
-                   :induct (nth-of-repeat-ind n m)))))
-
-  (local (defthm dfs-copy-onto-invar-of-empty-marks
-           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
-           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
-                                             nth-of-repeat-split)))))
 
   (defret aignet-litp-of-aignet-build-cut-tmp
     (implies (and (aignet-input-copies-in-bounds copy2 (rwlib->aigs rwlib) aignet2)
@@ -1106,22 +1076,6 @@
   ///
   (def-aignet-preservation-thms eval-cut-implementation :stobjname aignet2)
 
-  (local (defun nth-of-repeat-ind (n m)
-           (if (zp n)
-               m
-             (nth-of-repeat-ind (1- n) (1- m)))))
-  (local (defthmd nth-of-repeat-split
-           (equal (nth n (acl2::repeat m x))
-                  (and (< (nfix n) (nfix m))
-                       x) )
-           :hints(("Goal" :in-theory (enable nth acl2::repeat)
-                   :induct (nth-of-repeat-ind n m)))))
-
-  (local (defthm dfs-copy-onto-invar-of-empty-marks
-           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
-           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
-                                             nth-of-repeat-split)))))
-
   ;; (defret aignet-litp-of-eval-cut-implementation
   ;;   (implies (and (aignet-copies-in-bounds copy2 aignet2)
   ;;                 (cutsdb-lit-idsp aignet2 cutsdb)
@@ -1263,22 +1217,6 @@
     :hints(("Goal" :in-theory (enable cut-impl-index-ok))))
 
   (def-aignet-preservation-thms eval-cut-implementations :stobjname aignet2)
-
-  (local (defun nth-of-repeat-ind (n m)
-           (if (zp n)
-               m
-             (nth-of-repeat-ind (1- n) (1- m)))))
-  (local (defthmd nth-of-repeat-split
-           (equal (nth n (acl2::repeat m x))
-                  (and (< (nfix n) (nfix m))
-                       x) )
-           :hints(("Goal" :in-theory (enable nth acl2::repeat)
-                   :induct (nth-of-repeat-ind n m)))))
-
-  (local (defthm dfs-copy-onto-invar-of-empty-marks
-           (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
-           :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
-                                             nth-of-repeat-split)))))
 
 
   (defret aignet-copies-in-bounds-of-eval-cut-implementations-copy2

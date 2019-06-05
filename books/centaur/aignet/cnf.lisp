@@ -1004,7 +1004,10 @@ correctness criterion we've described.</p>
                   (aignet-lits-have-sat-vars lits sat-lits))
              (sat-lit-listp (aignet-lits->sat-lits lits sat-lits)
                             sat-lits))
-    :hints(("Goal" :in-theory (enable aignet-lit->sat-lit)))))
+    :hints(("Goal" :in-theory (enable aignet-lit->sat-lit))))
+
+  (defthm lit-listp-of-aignet-lits->sat-lits
+    (lit-listp (aignet-lits->sat-lits lits sat-lits))))
 
 
 
@@ -3264,6 +3267,19 @@ correctness criterion we've described.</p>
             ;;          (acl2::simple-generalize-cp
             ;;           clause ',alist))))
             ))
+
+  (defthm cnf-for-aignet-preserved-by-aignet-lit-list->cnf
+    (b* (((mv new-sat-lits new-cnf)
+          (aignet-lit-list->cnf x use-muxes aignet-refcounts sat-lits aignet cnf)))
+      (implies (and (cnf-for-aignet aignet cnf sat-lits)
+                    (sat-lits-wfp sat-lits aignet)
+                    (aignet-lit-listp x aignet)
+                    (sat-lit-list-listp cnf sat-lits))
+               (cnf-for-aignet aignet new-cnf new-sat-lits)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (disable aignet-lit-list->cnf-normalize-cnf))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
 
   (defthm cnf-for-aignet-preserved-by-aignet-lit->cnf-normalized
     (b* (((mv new-sat-lits new-cnf)

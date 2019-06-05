@@ -382,7 +382,8 @@
                             (<field-equiv> . ,x.field-equiv)
                             (<stobjpred> . ,x.pred))
                    :strs `(("<STOBJNAME>" . ,(symbol-name stobjname)))
-                   :features (if x.rename-pred '(:rename-pred) '(:no-rename-pred))))
+                   :features (if x.rename-pred '(:rename-pred) '(:no-rename-pred))
+                   :pkg-sym stobjname))
        (field-templates (acl2::combine-each-tmplsubst-with-default field-templates template1))
        (template (acl2::change-tmplsubst template1
                                          :subsubsts `((:fields . ,field-templates))))
@@ -404,6 +405,8 @@
        :renaming ((:@append :fields <renaming>))
        :inline <inline> :non-memoizable <non-memoizable>)
 
+     (acl2::def-ruleset! <stobjname>-defs nil)
+
      (:@append :fields
       (:@ :fix
        (define <access> ((:@ :arrayp (i natp)) <stobjname>)
@@ -412,7 +415,9 @@
          :returns (<field> (<pred> <field>) :rule-classes <rule-classes>)
          (the <elt-type>
               (mbe :logic (non-exec (<fix> (<base-access> (:@ :arrayp i) <stobjname>)))
-                   :exec (<base-access> (:@ :arrayp i) <stobjname>))))
+                   :exec (<base-access> (:@ :arrayp i) <stobjname>)))
+         ///
+         (acl2::add-to-ruleset! <stobjname>-defs <access>))
        (:@ :not-stobjp
         (define <update> ((:@ :arrayp (i natp))
                           (<field> (<pred> <field>) :type <elt-type>)
@@ -421,7 +426,9 @@
           :inline t
           :split-types t
           (mbe :logic (<base-update> (:@ :arrayp i) (<fix> <field>) <stobjname>)
-               :exec (<base-update> (:@ :arrayp i) <field> <stobjname>))))))
+               :exec (<base-update> (:@ :arrayp i) <field> <stobjname>))
+         ///
+         (acl2::add-to-ruleset! <stobjname>-defs <update>)))))
 
      (std::defenum <fieldp> ((:@proj :fields :<field>)))
 
@@ -519,12 +526,20 @@
            :hints(("Goal" :in-theory (enable <access>)))
            :rule-classes <rule-classes>)))
 
-       (in-theory (disable
-                   <stobjpred>
-                   (:@append :fields
-                    <base-access> <base-update>
-                    (:@ :arrayp
-                     <length> <resize>)))))))
+       
+       (acl2::add-to-ruleset! <stobjname>-defs
+                              '(<stobjpred>
+                                (:@append :fields
+                                 <base-access> <base-update>
+                                 (:@ :arrayp
+                                  <length> <resize>))))
+       (in-theory (disable* <stobjname>-defs
+                   ;; <stobjpred>
+                   ;; (:@append :fields
+                   ;;  <base-access> <base-update>
+                   ;;  (:@ :arrayp
+                   ;;   <length> <resize>))
+                   )))))
 
 
 (defun defnicestobj-fn (name args state)

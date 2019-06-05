@@ -1124,6 +1124,19 @@
                                      aignet-copy-regs)))
             (and stable-under-simplificationp
                  (let ((lit (car (last clause))))
+                 `(:expand (,lit))))))
+
+  (defret input-copy-values-of-aignet-copy-regs-when-input-copies-in-bounds
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (bits-equiv (input-copy-values
+                          0 invals regvals aignet new-copy new-aignet2)
+                         (input-copy-values
+                          0 invals regvals aignet copy aignet2)))
+    :hints (("goal" :in-theory (e/d (nth-of-input-copy-values-split)
+                                    (input-copy-values
+                                     aignet-copy-regs)))
+            (and stable-under-simplificationp
+                 (let ((lit (car (last clause))))
                  `(:expand (,lit)))))))
 
 
@@ -2951,7 +2964,23 @@ aignet when its initial value is the specified vector:</p>
                                 (reg-copy-values 0 invals regvals aignet copy aignet2)
                                 aignet))))
     :hints (("goal" :use ((:instance dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec (id (lit->var lit))))
-             :in-theory (disable dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec)))))
+             :in-theory (disable dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec))))
+
+  (local (defun nth-of-repeat-ind (n m)
+           (if (zp n)
+               m
+             (nth-of-repeat-ind (1- n) (1- m)))))
+  (local (defthmd nth-of-repeat-split
+           (equal (nth n (acl2::repeat m x))
+                  (and (< (nfix n) (nfix m))
+                       x) )
+           :hints(("Goal" :in-theory (enable nth acl2::repeat)
+                   :induct (nth-of-repeat-ind n m)))))
+
+  (defthm dfs-copy-onto-invar-of-empty-marks
+    (dfs-copy-onto-invar aignet (acl2::repeat n 0) copy aignet2)
+    :hints(("Goal" :in-theory (enable dfs-copy-onto-invar
+                                      nth-of-repeat-split)))))
 
 (define aignet-copy-dfs-eba-rec ((id :type (integer 0 *))
                                  aignet
@@ -3092,7 +3121,15 @@ aignet when its initial value is the specified vector:</p>
     (implies (syntaxp (not (and (equal aignet2 ''nil)
                                 (equal copy ''nil))))
              (equal (init-copy-comb aignet copy aignet2)
-                    (init-copy-comb aignet nil nil)))))
+                    (init-copy-comb aignet nil nil))))
+
+  (defret input-copy-values-of-init-copy-comb
+    (bits-equiv (input-copy-values 0 invals regvals aignet new-copy new-aignet2)
+                (take (num-ins aignet) invals)))
+
+  (defret reg-copy-values-of-init-copy-comb
+    (bits-equiv (reg-copy-values 0 invals regvals aignet new-copy new-aignet2)
+                (take (num-regs aignet) regvals))))
 
 
 
