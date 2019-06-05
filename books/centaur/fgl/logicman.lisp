@@ -60,7 +60,6 @@
   (aignet-refcounts :type u32arr)
   (refcounts-index :type (integer 0 *) :pred natp :fix nfix :initially 0))
 
-
 (local (in-theory (disable aignet::aignetp
                            aignet::strashp
                            ipasir::ipasirp
@@ -188,7 +187,80 @@
   
 ;;   :subsubsts `((fields . ,*logicman-field-templates*))))
 
+(define sat-lits-init (sat-lits)
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable aignet::resize-aignet->sat
+                                           aignet::create-sat-lits
+                                           aignet::sat-litsp
+                                           update-nth nth len
+                                           resize-list)
+                 :do-not-induct t))
+  :prepwork ((local (defthm equal-of-plus-const
+                      (implies (and (syntaxp (and (quotep c1) (quotep c2)))
+                                    (acl2-numberp c2))
+                               (equal (equal (+ c1 x) c2)
+                                      (equal (fix x) (- c2 (fix c1)))))))
+             (local (defthm len-equal-0
+                      (equal (equal (len x) 0)
+                             (not (consp x))))))
+  (mbe :logic (non-exec (aignet::create-sat-lits))
+       :exec (b* ((sat-lits (aignet::update-sat-next-var$ 1 sat-lits))
+                  (sat-lits (aignet::resize-aignet->sat 0 sat-lits))
+                  (sat-lits (aignet::resize-sat->aignet 1 sat-lits)))
+               (aignet::update-sat->aigneti 0 0 sat-lits))))
 
+                    
+(define ipasir-maybe-release (ipasir)
+  :returns (new-ipasir)
+  (if (eq (ipasir::ipasir-get-status ipasir) :undef)
+      ipasir
+    (ipasir-release ipasir))
+  ///
+  (defret status-of-ipasir-maybe-release
+    (equal (ipasir::ipasir$a->status new-ipasir) :undef)))
+
+(define logicman-init (&key
+                       (logicman 'logicman)
+                       ((max-ins natp) '0)
+                       ((max-nodes posp) '1))
+  :returns new-logicman
+  :enabled t
+  :prepwork ((local (defthm equal-of-plus-const
+                      (implies (and (syntaxp (and (quotep c1) (quotep c2)))
+                                    (acl2-numberp c2))
+                               (equal (equal (+ c1 x) c2)
+                                      (equal (fix x) (- c2 (fix c1)))))))
+             (local (defthm len-equal-const
+                      (implies (syntaxp (quotep n))
+                               (equal (equal (len x) n)
+                                      (if (zp n)
+                                          (and (not (consp x))
+                                               (equal n 0))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (+ -1 n))))))))
+             (local (in-theory (e/d* (logicman-defs
+                                       aignet::strashp
+                                       update-nth len)
+                                    (cons-equal)))))
+  :guard-hints (("goal" :do-not-induct t))
+  (mbe :logic (non-exec
+               (b* ((ipasir (ipasir-maybe-release (logicman->ipasir logicman)))
+                    (logicman (non-exec (create-logicman))))
+                 (update-logicman->ipasir ipasir logicman)))
+       :exec (stobj-let ((aignet (logicman->aignet logicman))
+                         (ipasir (logicman->ipasir logicman))
+                         (strash (logicman->strash logicman))
+                         (sat-lits (logicman->sat-lits logicman))
+                         (u32arr (logicman->aignet-refcounts logicman)))
+                        (aignet ipasir strash sat-lits u32arr)
+                        (b* ((aignet (aignet::aignet-init 0 0 max-ins max-nodes aignet))
+                             (ipasir (ipasir-maybe-release ipasir))
+                             (strash (strashtab-clear strash))
+                             (sat-lits (sat-lits-init sat-lits))
+                             (u32arr (resize-u32 0 u32arr)))
+                          (mv aignet ipasir strash sat-lits u32arr))
+                        (b* ((logicman (update-logicman->mode 0 logicman)))
+                          (update-logicman->refcounts-index 0 logicman)))))
 
 (defmacro lbfr-mode (&optional (logicman 'logicman))
   `(logicman->mode ,logicman))
@@ -908,20 +980,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
   ;;            (equal (aignet::stype-count :pi (logicman->aignet logicman))
   ;;                   (bfr-nvars))))
   )
-                    
-(define logicman-init ((base-nvars natp)
-                       (bfr-mode bfr-mode-p)
-                       &optional (logicman 'logicman))
-  :returns (new-logicman)
-  (b* ((logicman (update-logicman->mode (bfr-mode-fix bfr-mode) logicman))
-       ((unless (bfr-mode-is :aignet))
-        logicman))
-    (stobj-let
-     ((aignet (logicman->aignet logicman)))
-     (aignet)
-     (b* ((aignet (aignet::aignet-init 0 0 (* 2 (lnfix base-nvars)) 100000 aignet)))
-       (aignet::aignet-add-ins base-nvars aignet))
-     logicman)))
+
    
 
 (define logicman-add-var (;; (obj gl-object-p)
@@ -2256,16 +2315,14 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 
-(defprod fgl-sat-config
-  ((ignore-pathcond booleanp :default t)
-   (ignore-constraint booleanp :default nil)
-   (ipasir-callback-limit acl2::maybe-natp :default nil)
-   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil)))
 
-(define fgl-sat-check ((params fgl-sat-config-p)
-                       x)
+
+(define fgl-sat-check (params x)
   (declare (ignore params))
   (if x t nil))
+
+(defmacro fgl-validity-check (params x)
+  `(not (fgl-sat-check ,params (not ,x))))
 
 (define append-alist-vals ((x true-list-listp))
   (if (atom x)

@@ -481,6 +481,12 @@
   (list (make-major-frame)))
 
 
+(define stack$a-empty ((x major-stack-p))
+  (declare (ignore x))
+  :enabled t
+  (list (make-major-frame)))
+
+
 
 
 

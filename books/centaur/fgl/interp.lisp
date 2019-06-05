@@ -42,6 +42,7 @@
 (include-book "tools/some-events" :dir :system)
 (include-book "primitives-stub")
 (include-book "sat-stub")
+(include-book "trace")
 (include-book "fancy-ev")
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
@@ -50,6 +51,35 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+
+
+
+;; NOTE: All these rules should be superfluous, but they might significantly speed up proofs.
+(local (in-theory (disable INTERP-ST-GET-OF-INTERP-ST-FIELD-FIX-KEY-NORMALIZE-CONST)))
+
+(local (defthm interp-st-bfrs-ok-of-update-reclimit
+         (implies (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfrs-ok (update-interp-st->reclimit reclimit interp-st)))))
+
+(local (defthm interp-st-bfrs-ok-of-update-equiv-contexts
+         (implies (interp-st-bfrs-ok interp-st)
+                  (interp-st-bfrs-ok (update-interp-st->equiv-contexts equiv-contexts interp-st)))))
+
+(local (defthm interp-st->logicman-of-update-reclimit
+         (equal (interp-st->logicman (update-interp-st->reclimit reclimit interp-st))
+                (interp-st->logicman interp-st))))
+
+(local (defthm interp-st->logicman-of-update-equiv-contexts
+         (equal (interp-st->logicman (update-interp-st->equiv-contexts equiv-contexts interp-st))
+                (interp-st->logicman interp-st))))
+
+(local (defthm interp-st->logicman-of-update-stack
+         (equal (interp-st->logicman (update-interp-st->stack equiv-contexts interp-st))
+                (interp-st->logicman interp-st))))
+
+(local (defthm interp-st->logicman-of-update-errmsg
+         (equal (interp-st->logicman (update-interp-st->errmsg equiv-contexts interp-st))
+                (interp-st->logicman interp-st))))
 
 
 
@@ -1213,30 +1243,6 @@
              (equal (gl-interp-check-reclimit new) (gl-interp-check-reclimit old)))))
 
 
-(encapsulate
-  (((gl-rewrite-try-rule-start-trace * * * interp-st state) => *
-    :formals (rule fn args interp-st state)
-    :guard t)
-   ((gl-rewrite-try-rule-hyps-trace * * * * interp-st state) => *
-    :formals (failed-hyp rule fn args interp-st state)
-    :guard t)
-   ((gl-rewrite-try-rule-finish-trace * * * * interp-st state) => *
-    :formals (val rule fn args interp-st state)
-    :guard t))
-
-  (set-ignore-ok t)
-  (set-irrelevant-formals-ok t)
-  (local (defun gl-rewrite-try-rule-start-trace (rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)))
-           nil))
-  (local (defun gl-rewrite-try-rule-hyps-trace (failed-hyp rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)))
-           nil))
-  (local (defun gl-rewrite-try-rule-finish-trace (val rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)))
-           nil)))
-
-
 
 (set-state-ok t)
 
@@ -1559,8 +1565,7 @@
               (mv nil nil interp-st))
              (flags (interp-st->flags interp-st))
              (trace (interp-flags->trace-rewrites flags))
-             (- (and trace
-                     (gl-rewrite-try-rule-start-trace rule fn args interp-st state)))
+             (interp-st (gl-rewrite-try-rule-trace-wrapper trace :start rule fn args interp-st state))
              (hyps-flags  (!interp-flags->intro-synvars
                            t
                            (!interp-flags->intro-bvars
@@ -1576,8 +1581,8 @@
               ((gl-interp-recursive-call failed-hyp interp-st)
                (gl-rewrite-relieve-hyps rule.hyps rule 0 interp-st state)))
 
-             (- (and trace
-                     (gl-rewrite-try-rule-hyps-trace failed-hyp rule fn args interp-st state)))
+             (interp-st (gl-rewrite-try-rule-trace-wrapper
+                         trace `(:hyps . ,failed-hyp) rule fn args interp-st state))
 
              ((when (or** failed-hyp (interp-st->errmsg interp-st)))
               (b* ((interp-st (interp-st-prof-pop-increment nil interp-st))
@@ -1592,7 +1597,8 @@
               ((mv val interp-st)
                (gl-interp-term-equivs rule.rhs interp-st state)))
 
-             (- (and trace (gl-rewrite-try-rule-finish-trace val rule fn args interp-st state)))
+             (interp-st (gl-rewrite-try-rule-trace-wrapper
+                         trace `(:finish . ,val) rule fn args interp-st state))
 
              (interp-st (interp-st-pop-frame interp-st))
              ((when (interp-st->errmsg interp-st))
@@ -2363,6 +2369,9 @@
               (gl-interp-merge-branch-args testbfr rest-thenargs rest-elseargs interp-st state))
              ((mv arg1 interp-st) (interp-st-pop-scratch-gl-obj interp-st)))
           (mv (cons arg1 args) interp-st))))))
+
+
+
 
 
 
@@ -7328,4 +7337,3 @@
     ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
     
     :mutual-recursion gl-interp)))
-

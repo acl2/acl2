@@ -183,6 +183,11 @@
     ,*interp-st-sat-check-thms*))
 
 
+(encapsulate
+  (((fgl-toplevel-sat-check-config) => *))
+  (local (defun fgl-toplevel-sat-check-config () nil)))
+
+
 (make-event
  `(define interp-st-sat-check-wrapper ((params gl-object-p)
                                        (bfr interp-st-bfr-p)

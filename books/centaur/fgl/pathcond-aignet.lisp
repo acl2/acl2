@@ -842,7 +842,13 @@
 
   (defthm nbalist-extension-of-nbalist-stobj-rewind
     (nbalist-extension-p x (nbalist-stobj-rewind len x))
-    :hints(("Goal" :in-theory (enable nbalist-extension-p)))))
+    :hints(("Goal" :in-theory (enable nbalist-extension-p))))
+
+  (local (defthm len-equal-0
+           (Equal (equal (len x) 0) (not (consp x)))))
+
+  (defthm nbalist-stobj-rewind-of-0
+    (equal (nbalist-stobj-rewind 0 x) nil)))
 
 
                   

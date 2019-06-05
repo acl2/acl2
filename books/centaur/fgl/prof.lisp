@@ -47,7 +47,24 @@
   (prof-array :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
   (prof-stack :type (satisfies nat-nat-alist-p)))
 
-
+(define interp-profiler-init (interp-profiler)
+  :prepwork ((local (defthm equal-of-len
+                      (implies (syntaxp (quotep n))
+                               (equal (equal (len x) n)
+                                      (cond ((not (natp n)) nil)
+                                            ((equal n 0) (not (consp x)))
+                                            (t (and (Consp x)
+                                                    (equal (len (cdr x)) (1- n))))))))))
+  :guard-hints (("goal" :in-theory (enable update-nth nth)
+                 :do-not-induct t))
+  :enabled t
+  (mbe :logic (non-exec (create-interp-profiler))
+       :exec (b* ((interp-profiler (update-prof-enabledp nil interp-profiler))
+                  (interp-profiler (update-prof-indextable nil interp-profiler))
+                  (interp-profiler (update-prof-totalcount 0 interp-profiler))
+                  (interp-profiler (update-prof-nextindex 0 interp-profiler))
+                  (interp-profiler (resize-prof-array 0 interp-profiler)))
+               (update-prof-stack nil interp-profiler))))
 
 
 ;; Prof-array layout:

@@ -86,21 +86,30 @@
 
 
 
-(defun show-counterexample ()
+(defun show-counterexample (msg)
+  (declare (ignore msg))
   nil)
 
 (table gl-fn-modes 'show-counterexample
        (make-gl-function-mode :dont-concrete-exec t))
 
 (def-gl-rewrite show-counterexample-rw
-  (equal (show-counterexample)
-         (b* (((list bindings vars)
+  (equal (show-counterexample msg)
+         (b* (((list error bindings vars)
                (syntax-bind alists
-                            (mv-let (bindings-vals var-vals)
-                              (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)
-                              (g-concrete (list bindings-vals var-vals))))))
-           (cw "Counterexample -- bindings: ~x0 variables: ~x1~%"
-               bindings vars))))
+                            (b* (((mv sat-ctrex-err interp-st)
+                                  (interp-st-sat-counterexample interp-st state))
+                                 ((when sat-ctrex-err)
+                                  (g-concrete
+                                   (list (msg "error getting SAT counterexample: ~@0" sat-ctrex-err)
+                                         nil nil)))
+                                 ((mv bindings-vals var-vals)
+                                  (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)))
+                              (g-concrete (list nil bindings-vals var-vals)))))
+              ((when error)
+               (cw "~@0: ~@1" msg error)))
+           (cw "~@0: Counterexample -- bindings: ~x1 variables: ~x2~%"
+               msg bindings vars))))
 
 
 ;; Convenience macro to create a glcp-config object that captures the current
@@ -111,5 +120,7 @@
     :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
     :definition-table (table-alist 'gl-definition-rules (w state))
     :branch-merge-rules (table-alist 'gl-branch-merge-rules (w state))
-    :function-modes (table-alist 'gl-fn-modes (w state))))
+    :function-modes (table-alist 'gl-fn-modes (w state))
+    :trace-rewrites (and (boundp-global :fgl-trace-rewrites state)
+                         (@ :fgl-trace-rewrites))))
 

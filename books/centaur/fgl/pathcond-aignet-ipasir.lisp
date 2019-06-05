@@ -143,21 +143,58 @@
                 (b-xor neg (eval-lit lit env)))
          :hints(("Goal" :in-theory (enable lit-negate-cond eval-lit)))))
 
-(define nbalist-to-cube ((nbalist nbalistp)
-                         (sat-lits))
+(define nbalist-to-cube ((nbalist nbalistp))
   :measure (len (nbalist-fix nbalist))
-  :guard (nbalist-has-sat-lits nbalist sat-lits)
-  :guard-hints (("goal" :in-theory (enable nbalist-has-sat-lits)))
+  :returns (cube lit-listp)
   (b* ((nbalist (nbalist-fix nbalist))
        ((when (atom nbalist))
         nil))
-    (cons (aignet-lit->sat-lit (make-lit (caar nbalist)
-                                         (b-not (cdar nbalist)))
-                               sat-lits)
-          (nbalist-to-cube (cdr nbalist) sat-lits)))
-
-
+    (cons (make-lit (caar nbalist)
+                    (b-not (cdar nbalist)))
+          (nbalist-to-cube (cdr nbalist))))
   ///
+  (defret nbalist-to-cube-correct
+    (equal (aignet-eval-conjunction cube invals regvals aignet)
+           (bool->bit (aignet-pathcond-eval aignet nbalist invals regvals)))
+    :hints(("Goal" :in-theory (enable aignet-pathcond-eval-redef
+                                      aignet-eval-conjunction
+                                      lit-eval))))
+
+  (defret aignet-lits-have-sat-vars-of-<fn>
+    (implies (nbalist-has-sat-lits nbalist sat-lits)
+             (aignet-lits-have-sat-vars cube sat-lits))
+    :hints(("Goal" :in-theory (enable aignet-lits-have-sat-vars
+                                      nbalist-has-sat-lits))))
+
+  (defret aignet-lit-listp-of-<fn>
+    (implies (aignet-pathcond-p nbalist aignet)
+             (aignet-lit-listp cube aignet))
+    :hints(("Goal" :in-theory (enable aignet-pathcond-p-redef
+                                      aignet-lit-listp))))
+
+  (defret len-of-<fn>
+    (equal (len cube)
+           (len (nbalist-fix nbalist))))
+  
+  (local (defun nth-of-nbalist-ind (n x)
+           (if (zp n)
+               x
+             (nth-of-nbalist-ind (1- n) (cdr (nbalist-fix x))))))
+  (defthm nth-of-nbalist-to-cube
+    (implies (< (nfix n) (len (nbalist-fix nbalist)))
+             (equal (nth n (nbalist-to-cube nbalist))
+                    (make-lit (car (nth n (nbalist-fix nbalist)))
+                              (b-not (cdr (nth n (nbalist-fix nbalist)))))))
+    :hints(("Goal" :in-theory (enable nth nbalist-to-cube)
+            :induct (nth-of-nbalist-ind n nbalist)
+            :expand ((nbalist-to-cube nbalist)))))
+
+  (local (defthm bitp-cdar-of-nbalist-fix
+           (implies (consp (nbalist-fix x))
+                    (bitp (cdar (nbalist-fix x))))
+           :hints(("Goal" :in-theory (enable nbalist-fix)))
+           :rule-classes :type-prescription))
+
   (defthm cnf-for-aignet-implies-aignet-pathcond-eval-when-cnf-sat
     (b* ((invals (cnf->aignet-invals invals cnf-vals sat-lits aignet))
          (regvals (cnf->aignet-regvals regvals cnf-vals sat-lits aignet)))
@@ -168,21 +205,41 @@
                     (equal 1 (satlink::eval-formula cnf cnf-vals)))
                (equal (aignet-pathcond-eval aignet nbalist invals regvals)
                       (bit->bool (satlink::eval-cube
-                                  (nbalist-to-cube nbalist sat-lits)
+                                  (aignet-lits->sat-lits (nbalist-to-cube nbalist) sat-lits)
                                   cnf-vals)))))
-    :hints(("Goal" :in-theory (enable aignet-pathcond-eval-redef
+    :hints(("Goal" :in-theory (e/d (aignet-pathcond-eval-redef
+                                      aignet-pathcond-p-redef
                                       nbalist-has-sat-lits
                                       aignet-lit->sat-lit
                                       eval-cube)
-            :induct (nbalist-to-cube nbalist sat-lits))))
+                                   ())
+            :induct (nbalist-to-cube nbalist)))))
+         
 
-  (defthm nbalist-to-cube-of-sat-lits-extension
-    (implies (and (sat-lit-extension-binding)
-                  (sat-lit-extension-p sat-lits2 sat-lits1)
-                  (nbalist-has-sat-lits nbalist sat-lits1))
-             (equal (nbalist-to-cube nbalist sat-lits2)
-                    (nbalist-to-cube nbalist sat-lits1)))
-    :hints(("Goal" :in-theory (enable nbalist-has-sat-lits)))))
+
+;; (define nbalist-to-cube ((nbalist nbalistp)
+;;                          (sat-lits))
+;;   :measure (len (nbalist-fix nbalist))
+;;   :guard (nbalist-has-sat-lits nbalist sat-lits)
+;;   :guard-hints (("goal" :in-theory (enable nbalist-has-sat-lits)))
+;;   (b* ((nbalist (nbalist-fix nbalist))
+;;        ((when (atom nbalist))
+;;         nil))
+;;     (cons (aignet-lit->sat-lit (make-lit (caar nbalist)
+;;                                          (b-not (cdar nbalist)))
+;;                                sat-lits)
+;;           (nbalist-to-cube (cdr nbalist) sat-lits)))
+
+
+;;   ///
+
+;;   (defthm nbalist-to-cube-of-sat-lits-extension
+;;     (implies (and (sat-lit-extension-binding)
+;;                   (sat-lit-extension-p sat-lits2 sat-lits1)
+;;                   (nbalist-has-sat-lits nbalist sat-lits1))
+;;              (equal (nbalist-to-cube nbalist sat-lits2)
+;;                     (nbalist-to-cube nbalist sat-lits1)))
+;;     :hints(("Goal" :in-theory (enable nbalist-has-sat-lits)))))
                                       
 
 (Defthm lit-list-listp-of-append
@@ -753,4 +810,124 @@
   :returns (mv new-sat-lits new-cnf new-cube)
   (mbe :logic (non-exec (nbalist-to-cnf aignet-pathcond aignet sat-lits cnf cube aignet-refcounts))
        :exec (aignet-pathcond-to-cnf-aux 0 aignet-pathcond aignet sat-lits cnf cube aignet-refcounts)))
+
+
+(define aignet-pathcond-to-litarr-aux ((n natp)
+                                     (offset natp)
+                                     (aignet-pathcond)
+                                     (litarr))
+  :guard (and (<= n (aignet-pathcond-len aignet-pathcond))
+              (<= (+ (aignet-pathcond-len aignet-pathcond) offset) (lits-length litarr)))
+  :measure (nfix (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+  :returns (new-litarr)
+  (b* (((when (mbe :logic (zp (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+                   :exec (eql (aignet-pathcond-len aignet-pathcond) n)))
+        litarr)
+       (id (aignet-pathcond-nthkey n aignet-pathcond))
+       (bit (aignet-pathcond-lookup id aignet-pathcond))
+       ;; For a pathcond to eval to true, each ID has to evaluate to its
+       ;; corresponding bit from the nbalist.  For the corresponding lit to
+       ;; eval to true, we need to NOT negate it if the resulting evaluation is
+       ;; 1.  So we negate the bit.
+       (lit (make-lit id (b-not bit)))
+       (litarr (set-lit (+ (lnfix n) (lnfix offset)) lit litarr)))
+    (aignet-pathcond-to-litarr-aux (1+ (lnfix n)) offset aignet-pathcond litarr))
+  ///
+
+  (local (defthm nat-equiv-of-plus
+           (implies (nat-equiv k (+ (nfix n) (nfix offset)))
+                    (nat-equiv (+ (nfix k) (- (nfix offset))) n))))
+
+  (local (defret nth-of-aignet-pathcond-to-litarr-aux
+           (implies (<= (nfix n) (aignet-pathcond-len aignet-pathcond))
+                    (equal (nth k new-litarr)
+                           (cond ((< (nfix k) (+ (nfix n) (nfix offset))) (nth k litarr))
+                                 ((< (nfix k) (+ (nfix offset) (aignet-pathcond-len aignet-pathcond)))
+                                  (nth (- (nfix k) (nfix offset)) (nbalist-to-cube aignet-pathcond)))
+                                 (t (nth k litarr)))))
+           :hints(("Goal" :in-theory (enable* update-nth-lit
+                                              acl2::arith-equiv-forwarding)
+                   :induct <call>
+                   :expand (<call>)))))
+
+  (local (defret len-of-aignet-pathcond-to-litarr-aux
+           (implies (<= (+ (nfix offset) (aignet-pathcond-len aignet-pathcond)) (len litarr)) 
+                    (equal (len new-litarr)
+                           (len litarr)))
+           :hints (("goal" :induct <call> :expand (<call>)
+                    :in-theory (enable update-nth-lit)))))
+
+  (local (defret true-listp-of-aignet-pathcond-to-litarr-aux
+           (implies (true-listp litarr)
+                    (true-listp new-litarr))
+           :hints (("goal" :induct <call> :expand (<call>)
+                    :in-theory (enable update-nth-lit)))))
+
+  (local (include-book "std/lists/nth" :dir :system))
+  (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/take" :dir :system))
+  (local (include-book "arithmetic/top" :dir :system))
+  (local (in-theory (disable acl2::nthcdr-of-cdr cdr-of-nthcdr)))
+
+  (defret aignet-pathcond-to-litarr-aux-elim
+    (implies (and (<= (nfix n) (aignet-pathcond-len aignet-pathcond))
+                  (<= (+ (nfix offset) (aignet-pathcond-len aignet-pathcond)) (len litarr))
+                  (true-listp litarr))
+             (equal new-litarr
+                    (append (take (+ (nfix n) (nfix offset)) litarr)
+                            (nthcdr n (nbalist-to-cube aignet-pathcond))
+                            (nthcdr (+ (nfix offset) (len (nbalist-fix aignet-pathcond))) litarr))))
+    :hints (("goal" :do-not-induct t)
+            (acl2::equal-by-nths-hint))))
+
+(define aignet-pathcond-to-litarr ((offset natp)
+                                 (aignet-pathcond)
+                                 (litarr))
+  :guard (<= (+ offset (aignet-pathcond-len aignet-pathcond)) (lits-length litarr))
+  (aignet-pathcond-to-litarr-aux 0 offset aignet-pathcond litarr))
+
+
+
+(define aignet-pathcond-to-cube-aux ((n natp)
+                                     (aignet-pathcond)
+                                     (cube lit-listp))
+  :guard (<= n (aignet-pathcond-len aignet-pathcond))
+  :measure (nfix (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+  :returns (new-cube lit-listp)
+  (b* (((when (mbe :logic (zp (- (aignet-pathcond-len aignet-pathcond) (nfix n)))
+                   :exec (eql (aignet-pathcond-len aignet-pathcond) n)))
+        (lit-list-fix cube))
+       (id (aignet-pathcond-nthkey n aignet-pathcond))
+       (bit (aignet-pathcond-lookup id aignet-pathcond))
+       ;; For a pathcond to eval to true, each ID has to evaluate to its
+       ;; corresponding bit from the nbalist.  For the corresponding lit to
+       ;; eval to true, we need to NOT negate it if the resulting evaluation is
+       ;; 1.  So we negate the bit.
+       (lit (make-lit id (b-not bit)))
+       (cube (cons lit (lit-list-fix cube))))
+    (aignet-pathcond-to-cube-aux (1+ (lnfix n)) aignet-pathcond cube))
+  ///
+  (defret aignet-pathcond-to-cube-aux-elim
+    (equal new-cube
+           (revappend (nthcdr n (nbalist-to-cube aignet-pathcond))
+                      (lit-list-fix cube)))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (acl2::rev (nthcdr n (nbalist-to-cube aignet-pathcond))))))))
+
+(define aignet-pathcond-to-cube ((aignet-pathcond)
+                                 (cube lit-listp))
+  :returns (new-cube lit-listp)
+  :prepwork ((local (defthm lit-listp-of-rev
+                      (implies (lit-listp X)
+                               (lit-listp (acl2::rev x)))
+                      :hints(("Goal" :in-theory (enable acl2::rev))))))
+  (aignet-pathcond-to-cube-aux 0 aignet-pathcond cube)
+  ///
+  (defret aignet-pathcond-to-cube-elim
+    (equal (aignet-pathcond-to-cube aignet-pathcond cube)
+           (revappend (nbalist-to-cube aignet-pathcond) (lit-list-fix cube)))))
+
+
+
 

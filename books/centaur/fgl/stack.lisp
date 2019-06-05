@@ -3604,6 +3604,46 @@
                                       stack$c-build-top-major-frame
                                       stack$c-build-minor-frame)))))
 
+(define stack$c-empty (stack$c)
+  :guard-hints (("goal" :in-theory (enable update-nth nth len update-nth-array resize-list)
+                 :do-not-induct t))
+  :prepwork ((local (defthm equal-of-len
+                      (implies (syntaxp (quotep n))
+                               (equal (equal (len x) n)
+                                      (if (zp n)
+                                          (and (equal n 0)
+                                               (not (consp x)))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (1- n))))))
+                      :hints(("Goal" :in-theory (enable len)))))
+             (local (defund resize-list-elem (x default)
+                      (if (consp x) (car x) default)))
+             (local (defthm resize-list-of-const
+                      (implies (syntaxp (Quotep n))
+                               (equal (resize-list x n default)
+                                      (if (zp n)
+                                          nil
+                                        (cons (resize-list-elem x default)
+                                              (resize-list (cdr x) (1- n) default)))))
+                      :hints(("Goal" :in-theory (enable resize-list resize-list-elem))))))
+  :enabled t
+  (mbe :logic (non-exec (create-stack$c))
+       :exec
+       (b* ((stack$c (resize-stack$c-minor 2 stack$c))
+            (stack$c (update-stack$c-minori 0 nil stack$c))
+            (stack$c (update-stack$c-minori 1 nil stack$c))
+            (stack$c (resize-stack$c-major 2 stack$c))
+            (stack$c (update-stack$c-majori 0 nil stack$c))
+            (stack$c (update-stack$c-majori 1 nil stack$c))
+            (stack$c (resize-stack$c-scratch 2 stack$c))
+            (stack$c (update-stack$c-scratchi1 0 0 stack$c))
+            (stack$c (update-stack$c-scratchi1 1 0 stack$c))
+            (stack$c (resize-stack$c-frame-top-minor 0 stack$c))
+            (stack$c (resize-stack$c-frame-next-scratch 0 stack$c))
+            (stack$c (update-stack$c-top-frame1 0 stack$c))
+            (stack$c (update-stack$c-top-minor1 0 stack$c)))
+         (update-stack$c-next-scratch1 1 stack$c))))
+            
 
 
 
@@ -3680,4 +3720,5 @@
                  *scratchobj-tmplsubsts*)
               (stack-pop-minor-frame :logic stack$a-pop-minor-frame :exec stack$c-pop-minor-frame :protect t)
               (stack-pop-frame :logic stack$a-pop-frame :exec stack$c-pop-frame :protect t)
-              (stack-extract :logic stack$a-extract :exec stack$c-extract))))
+              (stack-extract :logic stack$a-extract :exec stack$c-extract)
+              (stack-empty :logic stack$a-empty :exec stack$c-empty :protect t))))

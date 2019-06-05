@@ -237,3 +237,107 @@
                    (equal (4vec->upper x) (fgl::int upper))
                    (equal (4vec->lower x) (fgl::int lower)))))
 
+(def-gl-rewrite integerp-of-4vec
+  (equal (integerp (sv::4vec x y))
+         (equal (int x) (int y)))
+  :hints(("Goal" :in-theory (enable sv::4vec))))
+
+(def-gl-rewrite int-of-4vec
+  (equal (int (sv::4vec x y))
+         (b* ((x (int x)))
+           (if (equal x (int y)) x 0)))
+  :hints(("Goal" :in-theory (enable sv::4vec))))
+
+(def-gl-rewrite intcar-of-4vec
+  (equal (intcar (sv::4vec x y))
+         (and (equal (int x) (int y)) (intcar x)))
+  :hints(("Goal" :in-theory (enable sv::4vec))))
+
+(def-gl-rewrite intcdr-of-4vec
+  (equal (intcdr (sv::4vec x y))
+         (if (equal (int x) (int y)) (intcdr x) 0))
+  :hints(("Goal" :in-theory (enable sv::4vec))))
+
+
+
+(defmacro svdecomp-hints (&key hyp
+                               g-bindings
+                               enable
+                               rewrite-limit)
+  (declare (ignorable hyp g-bindings))
+  `'(:computed-hint-replacement
+     ((if stable-under-simplificationp
+          (let ((state ,(if rewrite-limit
+                            `(f-put-global 'sv::svdecomp-rewrite-limit ,rewrite-limit state)
+                          'state)))
+            (value '(:in-theory (acl2::e/d**
+                                 #!sv
+                                 (svdecomp-equal-svex-alist-evals-meta
+                                  svdecomp-equal-svexlist-evals-meta
+                                  svdecomp-equal-svex-evals-meta)))))
+        (value nil))
+      (and stable-under-simplificationp
+           '(:in-theory (acl2::e/d**
+                         #!sv ((:ruleset svtv-execs)
+                               (:ruleset svtv-autoins)
+                               (:ruleset svtv-autohyps)
+                               (:ruleset svtv-alist-autoins)
+                               (:ruleset svtv-alist-autohyps)
+                               ,@fgl::enable))))
+      (if stable-under-simplificationp
+          (value '(:clause-processor
+                   (gl-interp-cp clause
+                                 (default-glcp-config)
+                                 interp-st state)))
+        (value nil)))
+     :in-theory (acl2::e/d**
+                 #!sv 
+                 (svtv-run
+                  (:ruleset svtv-execs)
+                  (:ruleset svtv-autoins)
+                  (:ruleset svtv-autohyps)
+                  (:ruleset svtv-alist-autoins)
+                  (:ruleset svtv-alist-autohyps)
+                  assoc-in-svex-alist-eval
+                  hons-assoc-in-svex-alist-eval
+                  alistp-of-svex-alist-eval
+                  assoc-of-append
+                  acl2::hons-assoc-equal-append
+                  assoc-of-acons
+                  hons-assoc-equal-of-acons
+                  assoc-of-nil
+                  hons-assoc-equal-of-nil
+                  alistp-of-acons
+                  car-cons
+                  cdr-cons
+                  return-type-of-svex-alist-eval-for-symbolic
+                  svexlist-eval-for-symbolic
+                  fal-extract-of-svex-alist-eval
+                  ;; fal-extract-open-cons
+                  ;; fal-extract-done
+                  ;; cons-onto-svex-alist-eval
+                  ;; cons-onto-svex-alist-eval-append
+                  ;; cons-svex-evals-into-svex-alist-eval
+
+                  ;; Note: Need all functions used in processing the svtv->outexprs
+                  ;; into the evaluated svex alists here
+                  (hons-assoc-equal)
+                  (svex-alist-fix)
+                  (car) (cdr)
+                  (svar-p)
+                  (svex-p)
+                  (svtv->outexprs)
+                  (svarlist-fix)
+                  (mergesort)
+                  (difference)
+                  (alistp)
+                  (svex-alist-keys)
+                  (append)
+                  (consp)
+                  (assoc)
+                  (acl2::fal-extract)
+                  svex-alist-eval-svex-env-equiv-congruence-on-env
+                  svexlist-eval-svex-env-equiv-congruence-on-env
+                  svex-eval-svex-env-equiv-congruence-on-env
+                  svex-env-fix-under-svex-env-equiv
+                  ,@fgl::enable))))

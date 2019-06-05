@@ -36,10 +36,14 @@
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
 
+(defprod fgl-ipasir-config
+  ((ignore-pathcond booleanp :default t)
+   (ignore-constraint booleanp :default nil)
+   (ipasir-callback-limit acl2::maybe-natp :default nil)
+   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil)))
 
 
-
-(define logicman-maybe-recycle-ipasir ((config fgl-sat-config-p)
+(define logicman-maybe-recycle-ipasir ((config fgl-ipasir-config-p)
                                        logicman)
   :guard (and (logicman-invar logicman)
               (stobj-let ((ipasir (logicman->ipasir logicman)))
@@ -49,7 +53,7 @@
               (bfr-mode-is :aignet (logicman->mode logicman)))
   :prepwork ((local (in-theory (enable logicman-invar))))
   :returns new-logicman
-  (b* (((fgl-sat-config config)))
+  (b* (((fgl-ipasir-config config)))
     (stobj-let ((ipasir (logicman->ipasir logicman))
                 (sat-lits (logicman->sat-lits logicman)))
                (ipasir sat-lits)
@@ -371,7 +375,7 @@
     
 
 
-(define interp-st-ipasir-sat-check-core ((config fgl-sat-config-p)
+(define interp-st-ipasir-sat-check-core ((config fgl-ipasir-config-p)
                                   (bfr interp-st-bfr-p)
                                   (interp-st interp-st-bfrs-ok)
                                   state)
@@ -384,7 +388,7 @@
   :guard-hints (("goal" :in-theory (enable interp-st-bfrs-ok)))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
         (mv bfr interp-st))
-       ((fgl-sat-config config)))
+       ((fgl-ipasir-config config)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (pathcond (interp-st->pathcond interp-st))
                 (constraint-pathcond (interp-st->constraint interp-st)))
@@ -581,10 +585,11 @@
                      (equal (stype-count :reg aignet) 0))
                 (equal (aignet-pathcond-eval aignet nbalist invals regvals)
                        (bit->bool (satlink::eval-cube
-                                   (nbalist-to-cube nbalist sat-lits)
+                                   (aignet-lits->sat-lits (nbalist-to-cube nbalist) sat-lits)
                                    cnf-vals)))))
      :hints(("Goal" :use cnf-for-aignet-implies-aignet-pathcond-eval-when-cnf-sat
-             :in-theory (disable cnf-for-aignet-implies-aignet-pathcond-eval-when-cnf-sat)))))
+             :in-theory (disable cnf-for-aignet-implies-aignet-pathcond-eval-when-cnf-sat)))
+     ))
 
   (local (defthm aignet-pathcond-p-when-logicman-pathcond-p
            (implies (and (logicman-pathcond-p pathcond logicman)
@@ -617,7 +622,7 @@
                      (aignet-pathcond-p nbalist aignet)
                      (nbalist-has-sat-lits nbalist sat-lits))
                 (equal (satlink::eval-cube
-                        (nbalist-to-cube nbalist sat-lits)
+                        (aignet-lits->sat-lits (nbalist-to-cube nbalist) sat-lits)
                         cnf-vals)
                        (bool->bit (aignet-pathcond-eval aignet nbalist invals regvals))
                        ;; (lit-eval lit invals regvals aignet)
@@ -737,22 +742,21 @@
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
              (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
 
-
 (make-event
  `(define interp-st-ipasir-sat-check-impl (params
-                                    (bfr interp-st-bfr-p)
-                                    (interp-st interp-st-bfrs-ok)
-                                    state)
+                                           (bfr interp-st-bfr-p)
+                                           (interp-st interp-st-bfrs-ok)
+                                           state)
     :returns (mv (ans)
                  new-interp-st)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
-        ;; Skip the SAT check when not in aignet mode, for now.
+          ;; Skip the SAT check when not in aignet mode, for now.
           (mv bfr interp-st))
          ((when (interp-st->errmsg interp-st))
           (mv nil interp-st))
-         ((unless (fgl-sat-config-p params))
+         ((unless (fgl-ipasir-config-p params))
           (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object"))))
+           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object"))))
       (interp-st-ipasir-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))

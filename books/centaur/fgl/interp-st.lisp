@@ -69,9 +69,27 @@
   (obj-alist :type (satisfies obj-alist-p) :fix obj-alist-fix))
 
 
+(local (defthmd equal-of-len
+         (implies (syntaxp (quotep n))
+                  (equal (equal (len x) n)
+                         (cond ((not (natp n)) nil)
+                               ((equal n 0) (not (consp x)))
+                               (t (and (Consp x)
+                                       (equal (len (cdr x)) (1- n)))))))))
 
-
-
+(define env$-init (env$)
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable* env$-defs
+                                            equal-of-len
+                                            update-nth)))
+  (mbe :logic (non-exec (create-env$))
+       :exec (b* ((env$ (update-env$->alist nil env$))
+                  (env$ (update-env$->obj-alist nil env$)))
+               (stobj-let ((bitarr (env$->bitarr env$)))
+                          (bitarr)
+                          (resize-bits 0 bitarr)
+                          env$))))
+  
 
 
 (make-event
@@ -105,208 +123,66 @@
     (sat-ctrex :type bitarr)
 
     (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
+    (trace-scratch :type t :initially nil)
 
-    (errmsg :type t)
+    (errmsg :type t :initially nil)
     (debug-info :type t)))
 
-;; (make-event
-;;  `(defconst *interp-st-fields*
-;;     ;; note: predfn is required if fix is provided
-;;     '((stack :type stack)
-;;       (logicman :type logicman)
-;;       (bvar-db :type bvar-db)
-;;       (pathcond :type pathcond)
-;;       (constraint :type pathcond)
-;;       (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :predfn constraint-db-p)
-;;       (prof :type interp-profiler)
-;;       (backchain-limit :type integer :initially -1 :fix lifix :predfn integerp)
-;;       ;; (bvar-mode :type t)
-;;       (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :predfn equiv-contextsp)
-;;       (reclimit :type (integer 0 *) :initially 0 :fix lnfix :predfn natp)
-;;       (config :type (satisfies glcp-config-p) :initially ,(make-glcp-config) :fix glcp-config-fix :predfn glcp-config-p)
-;;       (flags :type (and (unsigned-byte 60)
-;;                         (satisfies interp-flags-p))
-;;              :initially ,(make-interp-flags)
-;;              :fix interp-flags-fix :predfn interp-flags-p)
-;;       (errmsg :type t)
-;;       (debug-info :type t))))
+
+(define interp-st-init (interp-st)
+  :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
+                                           update-nth
+                                           equal-of-len)
+                                         (default-car default-cdr cons-equal
+                                           (:t update-nth) (:t true-listp)
+                                           (:t true-listp-update-nth)
+                                           len set::sets-are-true-lists-cheap
+                                           (:t pathcondp)
+                                           pathcondp-implies-update-aig-equal
+                                           pathcondp-implies-update-bdd-equal
+                                           pathcondp-implies-update-aignet-equal
+                                           acl2::consp-of-nth-when-atom-listp))))
+  (mbe :logic
+       (non-exec (b* ((logicman (interp-st->logicman interp-st))
+                      (interp-st (create-interp-st)))
+                   (update-interp-st->logicman (logicman-init) interp-st)))
+       :exec (stobj-let ((stack (interp-st->stack interp-st))
+                         (logicman (interp-st->logicman interp-st))
+                         (bvar-db (interp-st->bvar-db interp-st))
+                         (pathcond (interp-st->pathcond interp-st))
+                         (constraint-pathcond (interp-st->constraint interp-st))
+                         (interp-profiler (interp-st->prof interp-st))
+                         (env$ (interp-st->ctrex-env interp-st))
+                         (bitarr (interp-st->sat-ctrex interp-st)))
+                        (stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr)
+                        (b* ((stack (stack-empty stack))
+                             (logicman (logicman-init))
+                             (bvar-db (init-bvar-db 0 bvar-db))
+                             (pathcond (pathcond-init pathcond))
+                             (constraint-pathcond (pathcond-init constraint-pathcond))
+                             (interp-profiler (interp-profiler-init interp-profiler))
+                             (env$ (env$-init env$))
+                             (bitarr (resize-bits 0 bitarr)))
+                          (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr))
+                        (b* ((interp-st (update-interp-st->constraint-db nil interp-st))
+                             (interp-st (update-interp-st->backchain-limit -1 interp-st))
+                             (interp-st (update-interp-st->equiv-contexts nil interp-st))
+                             (interp-st (update-interp-st->reclimit 0 interp-st))
+                             (interp-st (update-interp-st->config (make-glcp-config) interp-st))
+                             (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
+                             (interp-st (resize-interp-st->fgarrays 0 interp-st))
+                             (interp-st (update-interp-st->next-fgarray 0 interp-st))
+                             (- (fast-alist-free (interp-st->cgraph interp-st))
+                                (fast-alist-free (interp-st->cgraph-memo interp-st)))
+                             (interp-st (update-interp-st->cgraph nil interp-st))
+                             (interp-st (update-interp-st->cgraph-memo nil interp-st))
+                             (interp-st (update-interp-st->cgraph-index 0 interp-st))
+                             (interp-st (update-interp-st->user-scratch nil interp-st))
+                             (interp-st (update-interp-st->trace-scratch nil interp-st))
+                             (interp-st (update-interp-st->errmsg nil interp-st)))
+                          (update-interp-st->debug-info nil interp-st)))))
 
 
-;; (local (defun member-eq-tree (x tree)
-;;          (declare (xargs :guard (symbolp x)))
-;;          (if (atom tree)
-;;              (eq x tree)
-;;            (or (member-eq-tree x (car tree))
-;;                (member-eq-tree x (cdr tree))))))
-
-;; (local (defun interp-st-fields-to-templates (fields)
-;;          (declare (xargs :mode :program))
-;;          (if (atom fields)
-;;              nil
-;;            (cons (b* ((name (caar fields))
-;;                       (type (cadr (assoc-keyword :type (cdar fields))))
-;;                       (initially (cadr (assoc-keyword :initially (cdar fields))))
-;;                       (fix (cadr (assoc-keyword :fix (cdar fields))))
-;;                       (predfn (cadr (assoc-keyword :predfn (cdar fields))))
-;;                       (type-pred (acl2::translate-declaration-to-guard type name nil))
-;;                       (typep (and type-pred (not (member-eq-tree 'satisfies type))))
-;;                       (pred (or type-pred
-;;                                 (and (symbolp type)
-;;                                      `(,(intern-in-package-of-symbol (concatenate 'string (symbol-name type) "P")
-;;                                                                      type)
-;;                                        ,name))))
-;;                       (- (and (not pred)
-;;                               (er hard? 'interp-st-fields-to-templates
-;;                                   "couldn't figure out the predicate for the type of ~x0~%" (car fields)))))
-;;                    (acl2::make-tmplsubst :atoms `((<field> . ,name)
-;;                                                   (:<field> . ,(intern$ (symbol-name (caar fields)) "KEYWORD"))
-;;                                                   (<fieldcase> . ,(if (atom (cdr fields))
-;;                                                                       t
-;;                                                                     (intern$ (symbol-name (caar fields)) "KEYWORD")))
-;;                                                   (<type> . ,type)
-;;                                                   (<initially> . ,(and initially
-;;                                                                        `(:initially ,initially)))
-;;                                                   (<pred> . ,pred)
-;;                                                   (<predfn> . ,predfn)
-;;                                                   (<fix> . ,fix))
-;;                                          :features (append (cond ((eq pred t) '(:no-pred))
-;;                                                                  (typep '(:type-pred)) 
-;;                                                                  (t nil))
-;;                                                            (if fix
-;;                                                                '(:fix)
-;;                                                              '(:no-fix)))
-;;                                          :strs `(("<FIELD>" . ,(symbol-name (caar fields))))
-;;                                          :pkg-sym 'fgl::foo))
-;;                  (interp-st-fields-to-templates (cdr fields))))))
-
-;; (make-event
-;;  `(defconst *interp-st-field-templates*
-;;     ',(interp-st-fields-to-templates *interp-st-fields*)))
-  
-
-;; (make-event
-;;  (acl2::template-subst
-;;   '(defstobj interp-st
-;;      (:@proj fields (interp-st-><field> :type <type> . <initially>))
-;;      :renaming ((:@append fields
-;;                  (:@ :fix
-;;                   (interp-st-><field> interp-st-><field>1)
-;;                   (update-interp-st-><field> update-interp-st-><field>1)))))
-;;   :subsubsts `((fields . ,*interp-st-field-templates*))))
-
-
-;; (local (defthm unsigned-byte-60-when-interp-flags
-;;          (implies (interp-flags-p x)
-;;                   (unsigned-byte-p 60 x))
-;;          :hints(("Goal" :in-theory (enable interp-flags-p)))))
-
-;; (local (in-theory (disable unsigned-byte-p)))
-
-;; (make-event
-;;  (cons
-;;   'progn
-;;   (acl2::template-append
-;;    '((:@ :fix
-;;       (define interp-st-><field> (interp-st)
-;;         :inline t
-;;         :returns (<field> <predfn> (:@ :type-pred
-;;                                     :rule-classes (:rewrite (:type-prescription :typed-term <field>))))
-;;         (mbe :logic (<fix> (interp-st-><field>1 interp-st))
-;;              :exec (interp-st-><field>1 interp-st)))
-
-;;       (define update-interp-st-><field> ((x <predfn> :type <type>)
-;;                                          interp-st)
-;;         :split-types t
-;;         :inline t
-;;         (mbe :logic (update-interp-st-><field>1 (<fix> x) interp-st)
-;;              :exec (update-interp-st-><field>1 x interp-st)))))
-;;      *interp-st-field-templates*)))
-
-;; (make-event
-;;  (acl2::template-subst
-;;   '(std::defenum interp-st-field-p ((:@proj fields :<field>)))
-;;   :subsubsts `((fields . ,*interp-st-field-templates*))))
-
-;; (make-event
-;;  (acl2::template-subst
-;;   '(define interp-st-get ((key interp-st-field-p) &optional (interp-st 'interp-st))
-;;      ;; bozo define doesn't correctly support :non-executable t with macro args
-;;      (declare (xargs :non-executable t))
-;;      :no-function t
-;;      :prepwork ((local (in-theory (enable interp-st-field-fix))))
-;;      (prog2$ (acl2::throw-nonexec-error 'interp-st-get-fn (list key interp-st))
-;;              (case key
-;;                (:@proj fields (<fieldcase> (interp-st-><field> interp-st))))))
-;;   :subsubsts `((fields . ,*interp-st-field-templates*))))
-
-;; (make-event
-;;  (acl2::template-subst
-;;   '(defsection interp-st-field-basics
-;;      (local (in-theory (enable interp-st-get
-;;                                interp-st-field-fix
-;;                                interp-stp)))
-;;      (local (in-theory (enable (:@append fields
-;;                                 (:@ :fix
-;;                                  interp-st-><field>
-;;                                  update-interp-st-><field>)))))
-
-;;      (:@append fields
-;;       (def-updater-independence-thm interp-st-><field>-updater-independence
-;;         (implies (equal (interp-st-get :<field> new)
-;;                         (interp-st-get :<field> old))
-;;                  (equal (interp-st-><field> new)
-;;                         (interp-st-><field> old))))
-
-;;       (defthm update-interp-st-><field>-preserves-others
-;;         (implies (not (equal (interp-st-field-fix i) :<field>))
-;;                  (equal (interp-st-get i (update-interp-st-><field> x interp-st))
-;;                         (interp-st-get i interp-st))))
-
-;;       (defthm update-interp-st-><field>-self-preserves-interp-st
-;;         (implies (interp-stp interp-st)
-;;                  (equal (update-interp-st-><field>
-;;                          (interp-st-><field> interp-st)
-;;                          interp-st)
-;;                         interp-st))
-;;         :hints(("Goal" :in-theory (enable interp-stp
-;;                                           aignet::redundant-update-nth))))
-
-;;       (defthm interp-st-><field>-of-update-interp-st-><field>
-;;         (equal (interp-st-><field> (update-interp-st-><field> x interp-st))
-;;                (:@ :fix (<fix> x))
-;;                (:@ :no-fix x)))
-
-;;       (:@ :type-pred
-;;        (defthm interp-st-implies-<field>-type
-;;          (implies (interp-stp interp-st)
-;;                   (let ((<field> (interp-st-><field> interp-st)))
-;;                     <pred>))
-;;          :hints(("Goal" :in-theory (enable interp-st-><field>)))
-;;          :rule-classes :type-prescription))
-
-;;       (:@ (and (not :type-pred) (not :no-pred))
-;;        (defthm interp-st-implies-<field>-type
-;;          (implies (interp-stp interp-st)
-;;                   (let ((<field> (interp-st-><field> interp-st)))
-;;                     <pred>))
-;;          :hints(("Goal" :in-theory (enable interp-st-><field>))))))
-
-;;      (:@proj fields
-;;       (in-theory (disable interp-st-><field>
-;;                           update-interp-st-><field>)))
-
-;;      (local (in-theory (disable interp-st-get
-;;                                 interp-st-field-fix)))
-
-;;      ;; test:
-;;      (local 
-;;       (defthm interp-st-test-updater-independence
-;;         (b* ((interp-st1 (update-interp-st->reclimit reclimit interp-st))
-;;              (interp-st2 (update-interp-st->logicman logicman interp-st)))
-;;           (and (equal (interp-st->constraint interp-st2) (interp-st->constraint interp-st))
-;;                (equal (interp-st->constraint interp-st1) (interp-st->constraint interp-st)))))))
-  
-;;   :subsubsts `((fields . ,*interp-st-field-templates*))))
 
 (define interp-st-put-user-scratch (key val interp-st)
   :returns (new-interp-st)

@@ -236,5 +236,18 @@
                                 :exec calist-stobj-pop$c
                                 :protect t))))
 
+(define calist-stobj-empty (calist-stobj)
+  :enabled t
+  :prepwork ((local (defthm len-equal-0
+                      (equal (equal (len x) 0)
+                             (not (consp x))))))
+  :guard-hints (("goal" :in-theory (enable calistp)
+                 :expand ((:free (x) (calist-stobj-empty x)))))
+  (mbe :logic (non-exec (create-calist-stobj))
+       :exec (if (zp (calist-stobj-len calist-stobj))
+                 calist-stobj
+               (b* ((calist-stobj (calist-stobj-pop calist-stobj)))
+                 (calist-stobj-empty calist-stobj)))))
+  
   
     

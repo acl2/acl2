@@ -48,3 +48,25 @@
 
 
 
+(define pathcond-init (pathcond)
+  :prepwork ((local (defthm equal-of-len
+                      (implies (syntaxp (quotep n))
+                               (equal (equal (len x) n)
+                                      (cond ((not (natp n)) nil)
+                                            ((equal n 0) (not (consp x)))
+                                            (t (and (Consp x)
+                                                    (equal (len (cdr x)) (1- n))))))))))
+  :guard-hints (("goal" :in-theory (enable update-nth)))
+  :enabled t
+  (mbe :logic (non-exec (create-pathcond))
+       :exec (b* ((pathcond (update-pathcond-bdd t pathcond))
+                  (pathcond (update-pathcond-enabledp t pathcond))
+                  (pathcond (update-pathcond-checkpoint-ptrs nil pathcond))
+                  (pathcond (update-pathcond-checkpoint-ubdds nil pathcond)))
+               (stobj-let ((calist-stobj (pathcond-aig pathcond))
+                           (aignet-pathcond (pathcond-aignet pathcond)))
+                          (calist-stobj aignet-pathcond)
+                          (b* ((calist-stobj (calist-stobj-empty calist-stobj))
+                               (aignet-pathcond (aignet-pathcond-rewind 0 aignet-pathcond)))
+                            (mv calist-stobj aignet-pathcond))
+                          pathcond))))

@@ -263,7 +263,7 @@
 
 (def-gl-primitive make-fast-alist (x)
   (b* (((mv ok alist) (gl-make-fast-alist-rec x))
-       ((when ok) (mv t (g-map '(:g-map) alist) interp-st)))
+       ((when ok) (mv t (g-map '(:g-map) (make-fast-alist alist)) interp-st)))
     (mv nil nil interp-st))
   :formula-check fast-alist-formula-checks)
 

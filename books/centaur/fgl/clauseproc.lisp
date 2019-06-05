@@ -32,6 +32,8 @@
 
 (include-book "interp")
 (include-book "ctrex-utils")
+
+(local (in-theory (disable pseudo-termp pseudo-term-listp)))
 ;; (include-book "primitives")
 
 (define variable-g-bindings ((vars pseudo-var-list-p))
@@ -114,11 +116,11 @@
 (local (in-theory (disable w)))
 
 (define initialize-interp-st ((config glcp-config-p)
-                              (interp-st (non-exec (equal interp-st (create-interp-st))))
+                              (interp-st)
                               state)
   :returns (mv new-interp-st new-state)
   :verify-guards nil
-  (b* ((interp-st (mbe :logic (non-exec (create-interp-st)) :exec interp-st))
+  (b* ((interp-st (interp-st-init interp-st))
        ((glcp-config config))
        (interp-st (update-interp-st->reclimit config.concl-clk interp-st))
        (interp-st (update-interp-st->config config interp-st))
@@ -138,50 +140,94 @@
                             (mv logicman state)))
                (mv interp-st state)))
   ///
-  (in-theory (disable (initialize-interp-st)))
-  (defthm initialize-interp-st-norm
-    (implies (syntaxp (not (equal interp-st ''nil)))
-             (equal (initialize-interp-st config interp-st state)
-                    (initialize-interp-st config nil state))))
+  (local (defthm interp-st->stack-of-create-interp-st
+           (equal (interp-st->stack (create-interp-st))
+                  (create-stack))
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
 
-  (local
-   (acl2::set-default-hints
-    '('(:in-theory (e/d (interp-st-bfrs-ok
-                                major-stack-bfrlist
-                                stack$a-set-bindings
-                                major-frame-bfrlist
-                                bfr-nvars)))
-      (and stable-under-simplificationp
-           '(:in-theory (e/d (;; interp-st->logicman
-                              ;; interp-st->stack
-                              ;; interp-st->constraint-db
-                              ;; interp-st->constraint-db^
-                              ;; interp-st->bvar-db
-                              ;; interp-st->pathcond
-                              ;; interp-st->constraint
-                              logicman-invar
-                              ;; logicman->bfrstate
-                              ;; logicman->aignet
-                              ;; logicman->mode
-                              ;; logicman->mode^
-                              bvar-db-bfrlist
-                              bvar-db-bfrlist-aux
-                              logicman-pathcond-p
-                              logicman-pathcond-eval
-                              aignet::aignet-pathcond-eval
-                              aignet::aignet-pathcond-p
-                              aignet::nbalist-lookup
-                              interp-st-bvar-db-ok
-                              ipasir::ipasir-init$a)
-                             (pathcond-fix-of-pathcond-fix-pathcond-normalize-const
-                              LOGICMAN-PATHCOND-P-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
-                              LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
-                              (pathcond-fix))))))))
+  (local (defthm interp-st->constraint-of-create-interp-st
+           (equal (interp-st->constraint (create-interp-st))
+                  (create-pathcond))
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+
+  (local (defthm interp-st->pathcond-of-create-interp-st
+           (equal (interp-st->pathcond (create-interp-st))
+                  (create-pathcond))
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+
+  (local (defthm interp-st->bvar-db-of-create-interp-st
+           (equal (interp-st->bvar-db (create-interp-st))
+                  (create-bvar-db))
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+
+  (local (defthm interp-st->constraint-db-of-create-interp-st
+           (equal (interp-st->constraint-db (create-interp-st))
+                  nil)
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+
+  (local (defthm interp-st->cgraph-of-create-interp-st
+           (equal (interp-st->cgraph (create-interp-st))
+                  nil)
+           :hints(("Goal" :in-theory (enable* interp-st-defs)))))
+  
+
+
+  (local (in-theory (e/d (interp-st-init)
+                         (create-interp-st))))
+  ;; (defthm initialize-interp-st-norm
+  ;;   (implies (syntaxp (not (equal interp-st ''nil)))
+  ;;            (equal (initialize-interp-st config interp-st state)
+  ;;                   (initialize-interp-st config nil state))))
+
+  ;; (local
+  ;;  (acl2::set-default-hints
+  ;;   '('(:in-theory (e/d (interp-st-bfrs-ok
+  ;;                               major-stack-bfrlist
+  ;;                               stack$a-set-bindings
+  ;;                               major-frame-bfrlist
+  ;;                               bfr-nvars)))
+  ;;     (and stable-under-simplificationp
+  ;;          '(:in-theory (e/d (;; interp-st->logicman
+  ;;                             ;; interp-st->stack
+  ;;                             ;; interp-st->constraint-db
+  ;;                             ;; interp-st->constraint-db^
+  ;;                             ;; interp-st->bvar-db
+  ;;                             ;; interp-st->pathcond
+  ;;                             ;; interp-st->constraint
+  ;;                             logicman-invar
+  ;;                             ;; logicman->bfrstate
+  ;;                             ;; logicman->aignet
+  ;;                             ;; logicman->mode
+  ;;                             ;; logicman->mode^
+  ;;                             bvar-db-bfrlist
+  ;;                             bvar-db-bfrlist-aux
+  ;;                             logicman-pathcond-p
+  ;;                             logicman-pathcond-eval
+  ;;                             aignet::aignet-pathcond-eval
+  ;;                             aignet::aignet-pathcond-p
+  ;;                             aignet::nbalist-lookup
+  ;;                             interp-st-bvar-db-ok
+  ;;                             ipasir::ipasir-init$a)
+  ;;                            (pathcond-fix-of-pathcond-fix-pathcond-normalize-const
+  ;;                             LOGICMAN-PATHCOND-P-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
+  ;;                             LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
+  ;;                             (pathcond-fix))))))))
 
   (local (in-theory (disable pathcond-fix-of-pathcond-fix-pathcond-normalize-const
                              logicman-pathcond-p-fn-of-pathcond-fix-pathcond-normalize-const
                               LOGICMAN-PATHCOND-EVAL-FN-OF-PATHCOND-FIX-PATHCOND-NORMALIZE-CONST
                              (pathcond-fix))))
+
+  (local (in-theory (enable  interp-st-bfrs-ok
+                             logicman-pathcond-p
+                             logicman-invar
+                             aignet::aignet-pathcond-p
+                             ipasir::ipasir-init$a
+                             bvar-db-bfrlist
+                             bvar-db-bfrlist-aux
+                             bfr-nvars
+                             aignet::aignet-idp
+                             aignet::nbalist-lookup)))
 
   (defret interp-st-bfrs-ok-of-<fn>
     (interp-st-bfrs-ok new-interp-st)
@@ -190,14 +236,20 @@
   (defret pathcond-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->pathcond new-interp-st)
                             (interp-st->logicman new-interp-st))
-    :hints (("goal" :do-not '(preprocess))))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (enable logicman-pathcond-eval
+                                aignet::aignet-pathcond-eval))))
 
   (defret constraint-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->constraint new-interp-st)
-                            (interp-st->logicman new-interp-st)))
+                            (interp-st->logicman new-interp-st))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (enable logicman-pathcond-eval
+                                aignet::aignet-pathcond-eval))))
 
   (defret interp-st-bvar-db-ok-of-<fn>
-    (interp-st-bvar-db-ok new-interp-st env))
+    (interp-st-bvar-db-ok new-interp-st env)
+    :hints(("Goal" :in-theory (enable interp-st-bvar-db-ok))))
 
   (defret stack$a-minor-bindings-of-<fn>
     (equal (stack$a-minor-bindings (interp-st->stack new-interp-st)) nil))
@@ -499,7 +551,9 @@
 (define save-interp-st-info-into-state (interp-st state)
   (b* ((debug-obj (interp-st->debug-info interp-st))
        (state (if debug-obj
-                  (f-put-global 'fgl-interp-error-debug-obj debug-obj state)
+                  (prog2$ (cw "Saving FGL interpreter debug object to state global: ~x0~%"
+                              '(@ fgl-interp-error-debug-obj))
+                          (f-put-global 'fgl-interp-error-debug-obj debug-obj state))
                 state))
        (state (f-put-global 'fgl-user-scratch (interp-st->user-scratch interp-st) state)))
     state))
@@ -511,37 +565,25 @@
                                            major-frame-bfrlist)
                  :expand ((major-stack-bfrlist stack))))))
 
-(define gl-interp-cp ((clause pseudo-term-listp)
-                      hint
-                      state)
-  ;; :prepwork ((local (in-theory (disable acl2::member-equal-append))))
-  :hooks nil
-  :guard-debug t
-  (b* (((acl2::local-stobjs interp-st)
-        (mv erp result state interp-st))
-       ((unless (glcp-config-p hint))
-        (mv "Bad hint object -- must satisfy glcp-config-p" nil state interp-st))
-       ((unless (gl-primitive-formula-checks-stub state))
-        (mv "Failed formula checks! Some assumed definitions needed for primitives are not installed."
-            nil state interp-st))
-       (config hint)
-       (disj (disjoin clause))
-       (vars (term-vars disj))
-       ;; ((unless (gl-primitive-formula-checks-stub state))
-       ;;  (mv "Formula checks failed" (list clause) state interp-st))
+(define fgl-clause-proc-core ((goal pseudo-termp)
+                              (config glcp-config-p)
+                              (interp-st)
+                              state)
+  :returns (mv err
+               (new-interp-st)
+               (new-state))
+  (b* ((vars (term-vars goal))
        ((mv interp-st state) (initialize-interp-st config interp-st state))
+       
        (interp-st (update-interp-st-prof-enabledp t interp-st))
        (interp-st (interp-st-set-bindings (variable-g-bindings vars) interp-st))
        ((acl2::hintcontext-bind ((init-interp-st interp-st))))
        ((mv ans-interp interp-st)
-        (gl-interp-test (disjoin clause) interp-st state))
+        (gl-interp-test goal interp-st state))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
        (- (interp-st-prof-print-report interp-st))
-       (sat-config (make-fgl-sat-config :ignore-pathcond t
-                                        :ignore-constraint nil
-                                        :ipasir-callback-limit nil
-                                        :ipasir-recycle-callback-limit nil))
+       (sat-config (fgl-toplevel-sat-check-config))
        ((mv ans interp-st)
         (interp-st-monolithic-validity-check
          ;; BOZO -- use a user-provided config
@@ -551,30 +593,25 @@
 
        ((when (and (equal ans t)
                    (not (interp-st->errmsg interp-st))))
+        ;; Proved!
         (acl2::hintcontext :interp-test
-                           (mv nil nil state interp-st)))
+                           (mv nil interp-st state)))
        ((when (interp-st->errmsg interp-st))
-        (cw "Interpreter error: ~@0" (interp-st->errmsg interp-st))
-        (b* ((state (save-interp-st-info-into-state interp-st state)))
-          (mv "Failed" (list clause) state interp-st)))
+        (mv (msg "Interpreter error: ~@0" (interp-st->errmsg interp-st)) interp-st state))
        ((mv sat-ctrex-err interp-st)
         (interp-st-monolithic-sat-counterexample interp-st state))
        ((when sat-ctrex-err)
-        (cw "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err)
-        (b* ((state (save-interp-st-info-into-state interp-st state)))
-          (mv "Failed" (list clause) state interp-st)))
+        (mv (msg "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err) interp-st state))
        ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
         (interp-st-counterex-bindings (interp-st-bindings interp-st) interp-st state))
        ((when ctrex-errmsg)
-        (cw "Error extending counterexample: ~@0~%" ctrex-errmsg)
-        (b* ((state (save-interp-st-info-into-state interp-st state)))
-          (mv "Failed" (list clause) state interp-st)))
+        (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
        (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (- (cw "Counterexample bindings: ~@0~%" ctrex-bindings))
-
-       (state (save-interp-st-info-into-state interp-st state)))
-    (mv "Counterexample" (list clause) state interp-st))
+       (interp-st (update-interp-st->debug-info ctrex-bindings interp-st)))
+    (mv (msg "Counterexample -- bindings: ~x0~%" ctrex-bindings) interp-st state))
   ///
+
+  
   (set-ignore-ok t)
 
 
@@ -651,16 +688,13 @@
 
   (local (in-theory (disable gl-interp-test-bvar-db-ok-implies-previous-ok)))
 
-  (defthm gl-interp-cp-correct
-    (implies (and (pseudo-term-listp clause)
-                  (alistp a)
-                  (fgl-ev-meta-extract-global-facts)
-                  (fgl-ev (conjoin-clauses
-                           (acl2::clauses-result (gl-interp-cp clause hint state)))
-                          a))
-             (fgl-ev (disjoin clause) a))
+  (defret fgl-clause-proc-core-correct
+    (implies (and (fgl-ev-meta-extract-global-facts)
+                  (gl-primitive-formula-checks-stub state)
+                  (not err))
+             (fgl-ev goal a))
     :hints ((acl2::function-termhint
-             gl-interp-cp
+             fgl-clause-proc-core
              (:interp-test
               (b* ((NEW-LOGICMAN (INTERP-ST->LOGICMAN sat-INTERP-ST))
                    (LOGICMAN (INTERP-ST->LOGICMAN init-INTERP-ST))
@@ -686,25 +720,139 @@
                          (state ,(acl2::hq interp-state))
                          (env ,(acl2::hq env)))
                         (:instance gl-interp-test-correct
-                         (x ,(acl2::hq (disjoin clause)))
+                         (x ,(acl2::hq goal))
                          (interp-st ,(acl2::hq init-interp-st))
                          (env ,(acl2::hq env))
                          (st state)
                          (state ,(acl2::hq interp-state)))
                         (:instance iff-forall-extensions-necc
                          (obj ,(acl2::hq ans-eval))
-                         (term ,(acl2::hq (disjoin clause)))
+                         (term ,(acl2::hq goal))
                          (eval-alist ,(acl2::hq eval-alist))
                          (ext ,(acl2::hq eval-alist)))
                         (:instance fgl-ev-of-extension-when-term-vars-bound
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
-                         (x ,(acl2::hq disj))))
+                         (x ,(acl2::hq goal))))
                   :in-theory (disable eval-of-interp-st-monolithic-validity-check
                                       gl-interp-test-correct
                                       iff-forall-extensions-necc
-                                      fgl-ev-of-extension-when-term-vars-bound))))))
+                                      fgl-ev-of-extension-when-term-vars-bound)))))))
+
+  )
+
+
+
+(define gl-interp-cp ((clause pseudo-term-listp)
+                      hint
+                      interp-st
+                      state)
+  ;; :prepwork ((local (in-theory (disable acl2::member-equal-append))))
+  :hooks nil
+  :guard-debug t
+  (b* (((unless (glcp-config-p hint))
+        (mv "Bad hint object -- must satisfy glcp-config-p" nil interp-st state))
+       ((unless (gl-primitive-formula-checks-stub state))
+        (mv "Failed formula checks! Some assumed definitions needed for primitives are not installed."
+            nil interp-st state))
+       (config hint)
+       (disj (disjoin clause))
+
+       ((mv err interp-st state)
+        (fgl-clause-proc-core disj config interp-st state))
+
+       (state (save-interp-st-info-into-state interp-st state)))
+    (mv err nil interp-st state))
+  ///
+  (local (in-theory (disable pseudo-term-listp
+                             equal-of-booleans-rewrite
+                             ACL2::CONSP-OF-NODE-LIST-FIX-X-NORMALIZE-CONST
+                             not
+                             (tau-system))))
+
+  (defthm gl-interp-cp-correct
+    (implies (and (pseudo-term-listp clause)
+                  (alistp a)
+                  (fgl-ev-meta-extract-global-facts)
+                  (fgl-ev (conjoin-clauses
+                           (acl2::clauses-result (gl-interp-cp clause hint interp-st state)))
+                          a))
+             (fgl-ev (disjoin clause) a))
     :rule-classes :clause-processor))
+
+
+(define expand-an-implies ((x pseudo-termp))
+  :returns (new-x pseudo-termp)
+  :measure (pseudo-term-count x)
+  :verify-guards nil
+  (pseudo-term-case x
+    :const (pseudo-term-fix x)
+    :var (pseudo-term-fix x)
+    :fncall (if (and (eq x.fn 'implies)
+                     (eql (len x.args) 2))
+                `(if ,(car x.args) ,(cadr x.args) 't)
+              (pseudo-term-fix x))
+    :lambda (pseudo-term-lambda
+             x.formals
+             (expand-an-implies x.body)
+             x.args))
+  ///
+  (verify-guards expand-an-implies)
+
+  (local (defun-sk fgl-ev-of-expand-an-implies-cond (x)
+           (forall a
+                   (iff (fgl-ev (expand-an-implies x) a)
+                        (fgl-ev x a)))
+           :rewrite :direct))
+  (local (in-theory (disable fgl-ev-of-expand-an-implies-cond)))
+
+  (local (defthm fgl-ev-of-expand-an-implies-lemma
+           (fgl-ev-of-expand-an-implies-cond x)
+           :hints (("goal" :induct (expand-an-implies x))
+                   (and stable-under-simplificationp
+                        `(:expand (,(car (last clause))))))))
+
+  (defret fgl-ev-of-expand-an-implies
+    (iff (fgl-ev (expand-an-implies x) a)
+         (fgl-ev x a))))
+
+(define expand-an-implies-cp ((x pseudo-term-listp))
+  (if (and (consp x)
+           (not (cdr x)))
+      (list (list (expand-an-implies (car x))))
+    (list x))
+  ///
+  (defthm expand-an-implies-cp-correct
+    (implies (and (pseudo-term-listp x)
+                  (alistp a)
+                  (fgl-ev (conjoin-clauses (expand-an-implies-cp x)) a))
+             (fgl-ev (disjoin x) a))
+    :rule-classes :clause-processor))
+
+
+(defun def-fgl-thm-fn (name args)
+  (declare (xargs :mode :program))
+  `(defthm ,name
+     (implies ,(cadr (assoc-keyword :hyp args))
+              ,(cadr (assoc-keyword :concl args)))
+     :hints (("goal" :clause-processor expand-an-implies-cp)
+             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
+
+(defmacro def-fgl-thm (name &rest args)
+  (def-fgl-thm-fn name args))
+
+
+(defun fgl-thm-fn (args)
+  (declare (xargs :mode :program))
+  `(thm
+     (implies ,(cadr (assoc-keyword :hyp args))
+              ,(cadr (assoc-keyword :concl args)))
+     :hints (("goal" :clause-processor expand-an-implies-cp)
+             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
+
+(defmacro fgl-thm (&rest args)
+  (fgl-thm-fn args))
+
 
 
 

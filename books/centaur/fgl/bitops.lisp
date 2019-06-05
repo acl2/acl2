@@ -342,7 +342,7 @@
                     (b* ((x (int x))
                          (xwidth (syntax-bind xwidth (gl-object-case x
                                                        :g-integer (len x.bits)
-                                                       :g-concrete (integer-length x.val)
+                                                       :g-concrete (+ 1 (integer-length x.val))
                                                        :otherwise nil)))
                          ((unless (and xwidth
                                        (check-signed-byte-p xwidth x)))
@@ -362,6 +362,105 @@
 
   (table gl-fn-modes 'logtail-helper
        (make-gl-function-mode :dont-expand-def t)))
+
+
+(def-gl-rewrite logbitp-const-index
+  (implies (syntaxp (integerp n))
+           (equal (logbitp n x)
+                  (intcar (logtail n x))))
+  :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp))))
+
+
+(define logbitp-helper ((index integerp)
+                        (index-bound natp)
+                        (x integerp))
+  :verify-guards nil
+  (if (<= (ifix index) (nfix index-bound))
+      (logbitp index x)
+    (intcar x))
+  ///
+  (def-gl-rewrite logbitp-helper-impl
+    (implies (and (syntaxp (and (gl-object-case index :g-integer)
+                                (natp index-bound)))
+                  (natp index-bound)
+                  (integerp index))
+             (equal (logbitp-helper index index-bound x)
+                    (cond ((eql 0 index-bound)
+                           (intcar x))
+                          ((eql index index-bound)
+                           (logbitp index-bound x))
+                          (t (logbitp-helper index (1- index-bound) x)))))
+    :hints(("Goal" :in-theory (enable bitops::logbitp**))))
+
+  ;; (local (defthm logbitp-when-signed-byte-p-lemma
+  ;;          (implies (signed-byte-p n (ifix x))
+  ;;                   (equal (logbitp n x)
+  ;;                          (if (< (ifix x) 0) -1 0)))
+  ;;          :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+  ;;                                           bitops::ihsext-recursive-redefs)
+  ;;                                          (signed-byte-p))))))
+  (local (defun logbitp-when-signed-byte-p-ind (n m x)
+           (if (zp n)
+               (list m x)
+             (logbitp-when-signed-byte-p-ind (1- n) (1- m) (logcdr x)))))
+
+  (local (defthm logcdr-when-endp
+           (implies (int-endp x)
+                    (equal (logcdr x) (ifix x)))
+           :hints(("Goal" :in-theory (enable int-endp)))))
+
+  (local (defthm int-endp-by-bound
+           (implies (and (<= -1 (ifix x))
+                         (< (ifix x) 1))
+                    (int-endp x))
+           :hints(("Goal" :in-theory (enable int-endp)))))
+
+  (local (defthm logbitp-when-int-endp
+           (implies (int-endp x)
+                    (equal (logbitp n x) (< (ifix x) 0)))
+           :hints(("Goal" :in-theory (enable int-endp)))))
+
+  (local (defthm logbitp-when-signed-byte-p
+           (implies (and (signed-byte-p n (ifix x))
+                         (<= (+ -1 n) (nfix m)))
+                    (equal (logbitp m x) (< (ifix x) 0)))
+           :hints (("goal" :induct (logbitp-when-signed-byte-p-ind n m x)
+                    :expand ((signed-byte-p n (ifix x))
+                             (logbitp m x))
+                    :do-not-induct t)
+                   )
+           :otf-flg t))
+
+  (def-gl-rewrite logbitp-to-logbitp-helper
+    (implies (and (syntaxp (gl-object-case index :g-integer))
+                  (integerp index))
+             (equal (logbitp index x)
+                    (b* ((x (int x))
+                         (xwidth (syntax-bind xwidth (gl-object-case x
+                                                       :g-integer (len x.bits)
+                                                       :g-concrete (+ 1 (integer-length x.val))
+                                                       :otherwise nil)))
+                         ((unless (and xwidth
+                                       (check-signed-byte-p xwidth x)))
+                          (abort-rewrite (logbitp index x)))
+                         (indexwidth (syntax-bind indexwidth (len (g-integer->bits index))))
+                         ((unless (check-signed-byte-p indexwidth index))
+                          (abort-rewrite (logbitp index x)))
+                         (bound (1- (min (ash 1 indexwidth) xwidth))))
+                      (if (< bound index)
+                          (< x 0)
+                        (logbitp-helper index bound x)))))
+    :hints(("Goal" :in-theory (e/d (check-signed-byte-p)
+                                   (signed-byte-p
+                                    ash-1-when-signed-byte-p))
+            :use ((:instance ash-1-when-signed-byte-p (n xwidth) (x (ifix x)))
+                  (:instance ash-1-when-signed-byte-p (n indexwidth) (x index)))
+            :do-not-induct t))
+    :otf-flg t)
+
+  (table gl-fn-modes 'logbitp-helper
+       (make-gl-function-mode :dont-expand-def t)))
+
 
 (table gl-fn-modes 'acl2::logmask$inline
        (make-gl-function-mode :dont-expand-def t))
@@ -452,7 +551,7 @@
                           (abort-rewrite (loghead width x)))
                          (xwidth (syntax-bind xwidth (gl-object-case x
                                                        :g-integer (len x.bits)
-                                                       :g-concrete (integer-length x.val)
+                                                       :g-concrete (+ 1 (integer-length x.val))
                                                        :otherwise nil)))
                          ((unless (and xwidth
                                        (check-signed-byte-p xwidth x)))
@@ -807,22 +906,271 @@
   :hints(("Goal" :in-theory (enable int-endp))))
 
 
-(def-gl-rewrite fgl-logcount
-  (equal (logcount x)
-         (b* ((x (int x)))
-           (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
-               0
-             (if (acl2::negp x)
-                 (if (eql x -1)
-                     0
-                   (+ (bool->bit (not (intcar x)))
-                      (logcount (intcdr x))))
-               (if (eql x 0)
-                   0
-                 (+ (bool->bit (intcar x))
-                    (logcount (intcdr x))))))))
-  :hints(("Goal" :in-theory (enable int-endp
-                                    bitops::logcount**))))
+
+(local (defthm xor-facts
+         (and (iff (xor x nil) x)
+              (iff (xor nil x) x)
+              (iff (xor t x) (not x))
+              (iff (xor x t) (not x)))))
+
+(define +carry-ext ((width posp)
+                      (c booleanp)
+                      (x integerp)
+                      (y integerp))
+  (logext width (+ (bool->bit c)
+                    (lifix x)
+                    (lifix y)))
+  ///
+  (table gl-fn-modes '+carry-ext
+       (make-gl-function-mode :dont-expand-def t))
+
+  (local (Defthm logext-0
+           (equal (logext 0 x)
+                  (endint (intcar x)))
+           :hints(("Goal" :in-theory (enable bitops::logext**)))))
+
+  (def-gl-rewrite fgl-+carry-ext
+    (implies (syntaxp (natp width))
+             (equal (+carry-ext width c x y)
+                    (b* ((bit0 (xor c (xor (intcar x) (intcar y))))
+                         ((when (or (zp width) (eql width 1)))
+                          (endint bit0))
+                         ((when (and (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+                                     (check-int-endp y (syntax-bind ysyn (g-concrete y)))))
+                          (intcons bit0
+                                   (endint (if* c
+                                                (and (intcar x) (intcar y))
+                                                (or (intcar x) (intcar y)))))))
+                      (intcons bit0
+                               (+carry-ext (1- width)
+                                             (if* c
+                                                  (or (intcar x) (intcar y))
+                                                  (and (intcar x) (intcar y)))
+                                             (intcdr x)
+                                             (intcdr y))))))
+    :hints(("Goal" :in-theory (e/d (+carry-ext
+                                    int-endp if*
+                                    bitops::logext**
+                                    bitops::equal-logcons-strong
+                                    bitops::logxor** b-not b-xor)
+                                   (xor))
+            :expand ((:free (x) (logext width x))))))
+
+  ;; (local (defthm signed-byte-p-of-+
+  ;;          (implies (and (posp width)
+  ;;                        (signed-byte-p width y)
+  ;;                        (signed-byte-p width x))
+  ;;                   (signed-byte-p (+ 1 width) (+ x y)))
+  ;;          :hints(("Goal" :in-theory (enable signed-byte-p)
+  ;;                  :expand ((expt 2 width))))))
+
+  ;; (local (defthm signed-byte-p-of--
+  ;;          (implies (and (posp width)
+  ;;                        (signed-byte-p width x))
+  ;;                   (signed-byte-p (+ 1 width) (- x)))
+  ;;          :hints(("Goal" :in-theory (enable signed-byte-p)
+  ;;                  :expand ((expt 2 width))))))
+
+  ;; (local (defthm signed-byte-p-when-<=
+  ;;          (implies (and (signed-byte-p width1 x)
+  ;;                        (integerp width2)
+  ;;                        (<= width1 width2))
+  ;;                   (signed-byte-p width2 x))
+  ;;          :hints(("Goal" :in-theory (disable signed-byte-p)))))
+
+  ;; (local (defthm logext-when-signed-byte-p
+  ;;          (implies (signed-byte-p width x)
+  ;;                   (equal (logext width x) x))
+  ;;          :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+  ;;                                           bitops::ihsext-recursive-redefs)
+  ;;                                          (signed-byte-p))))))
+
+  ;; (def-gl-rewrite +-to-+carry-ext
+  ;;   (implies (and (integerp x) (integerp y))
+  ;;            (equal (+ x y)
+  ;;                   (b* ((x (int x))
+  ;;                        (y (int y))
+  ;;                        ((when (syntax-bind concrete (and (gl-object-case x :g-concrete)
+  ;;                                                          (gl-object-case y :g-concrete))))
+  ;;                         (+ x y))
+  ;;                        (xwidth (syntax-bind xwidth (gl-object-case x
+  ;;                                                      :g-integer (len x.bits)
+  ;;                                                      :g-concrete (+ 1 (integer-length x.val))
+  ;;                                                      :otherwise nil)))
+  ;;                        ((unless (and xwidth
+  ;;                                      (check-signed-byte-p xwidth x)))
+  ;;                         (abort-rewrite (+ x y)))
+  ;;                        (ywidth (syntax-bind ywidth (gl-object-case y
+  ;;                                                      :g-integer (len y.bits)
+  ;;                                                      :g-concrete (+ 1 (integer-length y.val))
+  ;;                                                      :otherwise nil)))
+  ;;                        ((unless (and ywidth
+  ;;                                      (check-signed-byte-p ywidth y)))
+  ;;                         (abort-rewrite (+ x y)))
+  ;;                        (width (+ 1 (max xwidth ywidth))))
+  ;;                     (+carry-ext width nil x y))))
+  ;;   :hints(("Goal" :in-theory (e/d (check-signed-byte-p)
+  ;;                                  (signed-byte-p)))))
+
+  ;; (def-gl-rewrite minus-to-+carry-ext
+  ;;   (implies (integerp x)
+  ;;            (equal (- x)
+  ;;                   (b* ((x (int x))
+  ;;                        ((when (syntax-bind concrete (gl-object-case x :g-concrete)))
+  ;;                         (- x))
+  ;;                        (xwidth (syntax-bind xwidth (gl-object-case x
+  ;;                                                      :g-integer (len x.bits)
+  ;;                                                      :otherwise nil)))
+  ;;                        ((unless (and xwidth
+  ;;                                      (check-signed-byte-p xwidth x)))
+  ;;                         (abort-rewrite (- x)))
+  ;;                        (width (+ 1 xwidth)))
+  ;;                     (+carry-ext width t 0 (lognot x)))))
+  ;;   :hints(("Goal" :in-theory (e/d (lognot check-signed-byte-p)
+  ;;                                  (signed-byte-p)))))
+  )
+
+(define +carry-trunc ((width natp)
+                      (c booleanp)
+                      (x integerp)
+                      (y integerp))
+  (loghead width (+ (bool->bit c)
+                    (lifix x)
+                    (lifix y)))
+  ///
+  (table gl-fn-modes '+carry-trunc
+       (make-gl-function-mode :dont-expand-def t))
+
+  ;; (local (Defthm logext-0
+  ;;          (equal (logext 0 x)
+  ;;                 (endint (intcar x)))
+  ;;          :hints(("Goal" :in-theory (enable bitops::logext**)))))
+
+  (def-gl-rewrite fgl-+carry-trunc
+    (implies (syntaxp (natp width))
+             (equal (+carry-trunc width c x y)
+                    (b* (((when (zp width)) 0))
+                      (intcons (xor c (xor (intcar x) (intcar y)))
+                               (+carry-trunc (1- width)
+                                             (if* c
+                                                  (or (intcar x) (intcar y))
+                                                  (and (intcar x) (intcar y)))
+                                             (intcdr x)
+                                             (intcdr y))))))
+    :hints(("Goal" :in-theory (e/d (+carry-trunc
+                                    int-endp if*
+                                    bitops::loghead**
+                                    bitops::equal-logcons-strong
+                                    bitops::logxor** b-not b-xor)
+                                   (xor))
+            :expand ((:free (x) (loghead width x)))))))
+
+
+
+(define logcount-helper ((width natp)
+                         (signbit booleanp)
+                         (x integerp))
+  (logcount (loghead width (if signbit (lognot x) x)))
+  ///
+  (local (defthm logcount-of-loghead-<=-width
+           (<= (logcount (loghead width x)) (nfix width))
+           :hints (("goal" 
+                    :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::ihsext-recursive-redefs)))
+           :rule-classes :linear))
+
+  (local (defthmd loghead-of-integer-length-of-bound
+           (implies (and (natp x) (integerp y) (<= x y))
+                    (equal (loghead (integer-length y) x)
+                           x))
+           :hints (("goal" :induct (logand x y)
+                    :in-theory (enable* bitops::ihsext-inductions
+                                        bitops::ihsext-recursive-redefs)))))
+
+  (def-gl-rewrite logcount-helper-impl
+    (implies (and (syntaxp (and (gl-object-case x :g-integer)
+                                (natp width)))
+                  (natp width))
+             (equal (logcount-helper width signbit x)
+                    (if (zp width)
+                        0
+                      (b* ((len (integer-length width)))
+                        (+carry-trunc len
+                                      (xor signbit (intcar x))
+                                      0
+                                      (logcount-helper (1- width) signbit (intcdr x)))))))
+  :hints(("Goal" :in-theory (e/d* (+carry-trunc)
+                                  (acl2::loghead-identity
+                                   ;;acl2::zip-open
+                                   acl2::unsigned-byte-p**
+                                   unsigned-byte-p
+                                   bitops::logcons->-constant))
+          :expand ((loghead width x)
+                   (loghead width -1)
+                   (lognot x)
+                   (integer-length width)
+                   (:free (x y) (loghead width (logcons x y)))
+                   (:free (x y) (logcount (logcons x y))))
+          :use ((:instance loghead-of-integer-length-of-bound
+                 (x (logcount-helper width signbit x))
+                 (y width))))))
+
+
+  (local (defthm logcount-of-ifix
+           (equal (logcount (ifix x)) (logcount x))
+           :hints(("Goal" 
+                   :expand ((logcount (ifix x))
+                            (logcount x))))))
+
+  (local (defthm logcount-of-loghead-when-signed-byte-p
+           (implies (and (signed-byte-p width (ifix x))
+                         (not (acl2::negp x)))
+                    (equal (logcount (loghead width x))
+                           (logcount x)))
+           :hints(("Goal" :in-theory (e/d* (bitops::ihsext-inductions
+                                            bitops::ihsext-recursive-redefs)
+                                           (signed-byte-p))))))
+
+  (local (defthm logcount-of-lognot
+           (equal (logcount (lognot x))
+                  (logcount x))
+           :hints (("goal" :in-theory (enable logcount)))))
+
+  (def-gl-rewrite logcount-impl
+    (equal (logcount x)
+           (b* ((x (int x))
+                ((when (syntax-bind x-concrete (gl-object-case x :g-concrete)))
+                 (logcount x))
+                (xwidth (syntax-bind xwidth (gl-object-case x
+                                              :g-integer (len x.bits)
+                                              :otherwise nil)))
+                ((unless (and xwidth
+                              (check-signed-byte-p xwidth x)))
+                 (abort-rewrite (logcount x)))
+                (x-neg (< x 0)))
+             (logcount-helper xwidth x-neg x)))
+    :hints(("Goal" :in-theory (e/d (check-signed-byte-p
+                                    bitops::logcount**)
+                                   (signed-byte-p))))))
+
+
+
+;; (def-gl-rewrite fgl-logcount
+;;   (equal (logcount x)
+;;          (b* ((x (int x)))
+;;            (if (check-int-endp x (syntax-bind xsyn (g-concrete x)))
+;;                0
+;;              (if (acl2::negp x)
+;;                  (if (eql x -1)
+;;                      0
+;;                    (+ (bool->bit (not (intcar x)))
+;;                       (logcount (intcdr x))))
+;;                (if (eql x 0)
+;;                    0
+;;                  (+ (bool->bit (intcar x))
+;;                     (logcount (intcdr x))))))))
+;;   :hints(("Goal" :in-theory (enable int-endp
+;;                                     bitops::logcount**))))
 
 
 (def-gl-rewrite expt-2-of-integer

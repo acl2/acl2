@@ -1185,3 +1185,69 @@
               new-sat-lits))
     :hints(("Goal" :in-theory (enable logicman-invar logicman-pathcond-p)))))
 
+(define bfr-cube-eval ((x lbfr-listp) env logicman)
+  (if (atom x)
+      t
+    (and (bfr-eval (car x) env)
+         (bfr-cube-eval (cdr x) env logicman)))
+  ///
+  (defthm bfr-cube-eval-of-cons
+    (equal (bfr-cube-eval (cons x y) env logicman)
+           (and (bfr-eval x env)
+                (bfr-cube-eval y env logicman))))
+
+  (defthm bfr-cube-eval-of-append
+    (equal (bfr-cube-eval (append x y) env logicman)
+           (and (bfr-cube-eval x env logicman)
+                (bfr-cube-eval y env logicman)))))
+
+(local (defthm lit-listp-of-rev
+         (implies (satlink::lit-listp x)
+                  (satlink::lit-listp (rev x)))
+         :hints(("Goal" :in-theory (enable rev)))))
+
+(define pathcond-to-cube (pathcond
+                          (cube satlink::lit-listp))
+  :returns (new-cube satlink::lit-listp)
+  (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+             (cube)
+             (aignet::aignet-pathcond-to-cube aignet-pathcond cube)
+             cube)
+  ///
+  (local (defthm aignet-eval-conjunction-of-append
+           (equal (aignet::aignet-eval-conjunction (append x y) invals regvals aignet)
+                  (b-and (aignet::aignet-eval-conjunction x invals regvals aignet)
+                         (aignet::aignet-eval-conjunction y invals regvals aignet)))
+           :hints(("Goal" :in-theory (enable aignet::aignet-eval-conjunction)))))
+
+  (local (defthm aignet-eval-conjunction-of-rev
+           (equal (aignet::aignet-eval-conjunction (rev x) invals regvals aignet)
+                  (aignet::aignet-eval-conjunction x invals regvals aignet))
+           :hints(("Goal" :in-theory (enable rev aignet::aignet-eval-conjunction)))))
+
+  (defret pathcond-eval-of-<fn>-free
+    (implies (and (lbfr-mode-is :aignet)
+                  (equal invals (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil))
+                  (nth *pathcond-enabledp* pathcond))
+             (equal (aignet::aignet-eval-conjunction
+                     new-cube invals nil (logicman->aignet logicman))
+                    (b-and (bool->bit (logicman-pathcond-eval env pathcond))
+                           (aignet::aignet-eval-conjunction
+                            cube invals nil (logicman->aignet logicman)))))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-eval))))
+
+  (defret pathcond-eval-of-<fn>
+    (implies (and (lbfr-mode-is :aignet)
+                  (nth *pathcond-enabledp* pathcond))
+             (equal (aignet::aignet-eval-conjunction
+                     new-cube
+                     (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman)) env nil)
+                     nil (logicman->aignet logicman))
+                    (b-and (bool->bit (logicman-pathcond-eval env pathcond))
+                           (aignet::aignet-eval-conjunction
+                            cube
+                            (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman)) env nil)
+                            nil (logicman->aignet logicman)))))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-eval)))))
+                    
+                  
