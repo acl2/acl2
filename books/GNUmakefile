@@ -50,16 +50,10 @@
 #                 and other miscellaneous tools and macros.  Many users may
 #                 find "basic" to be a convenient starting place.
 #
-#   formerloll    Certifies most books that are not horribly slow, including,
+#   pull-request  Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
 #                 books, the jvm models, etc.  Usually, committers to
-#                 acl2-books should run "make formerloll" first.  To be removed.
-#
-#   almost-all
-#                 An alias for "formerloll".  To be removed.
-#
-#   regression    Committers should run "make regression" before creating a
-#                 pull request or pushing their changes.
+#                 acl2-books should run "make pull-request" first.
 #
 #   all           A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
@@ -188,7 +182,7 @@ export ACL2
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: default basic formerloll
+.PHONY: default basic pull-request
 
 # Keep this before any other target so that default will be the default target
 default: basic
@@ -416,9 +410,9 @@ ifneq ($(ACL2_HAS_REALS), )
 $(info Excluding non-ACL2(r) books: [$(CERT_PL_NON_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2R), $(OK_CERTS))
 
-formerloll: nonstd/workshops/1999/calculus/book/proof-outline.cert
-formerloll: nonstd/workshops/1999/calculus/book/tree.cert
-formerloll: nonstd/workshops/1999/calculus/book/tree/proof-outline
+pull-request: nonstd/workshops/1999/calculus/book/proof-outline.cert
+pull-request: nonstd/workshops/1999/calculus/book/tree.cert
+pull-request: nonstd/workshops/1999/calculus/book/tree/proof-outline
 
 # Some additional special instructions for generated ACL2(r)-only books.
 nonstd/workshops/1999/calculus/book/proof-outline.cert: nonstd/workshops/1999/calculus/book/tree.cert
@@ -507,56 +501,12 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
 
 
-# SLOW_BOOKS is a list of books that are too slow (or in any way
-# undesirable) to include as part of an ordinary regression.  There
-# are currently comments in some of the corresponding Makefiles that
-# explain something about these books.  WARNING: It is probably a bad
-# idea to include targets here that are in ACL2_CUSTOM_TARGETS:
-# SLOW_BOOKS is removed from OK_CERTS just below, but later,
-# ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
-
-# Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
-# that we want to add back in when using target "all" instead
-# of the default target, "formerloll".
-
-ADDED_BOOKS := \
-  books/misc/check-acl2-exports.cert \
-  coi/defung/defung-stress-long.cert \
-  models/jvm/m5/apprentice.cert \
-  system/parallel/proofs/ideal-speedup.cert \
-  workshops/2009/sumners/support/examples.cert \
-  workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  workshops/2013/hardin-hardin/support/APSP.cert
-# The following could well be considered as slow books, too.
-# doc/top.cert
-# doc/top-fast.cert
-# projects/include-doc.cert
-# projects/doc.cert
-# projects/top-doc.cert
-# kestrel/auto-termination/defunt-tests.cert
-# ALSO, directory projects/async/gcd/ (perhaps even projects/async/)
-# AND   directory projects/arm/
-# could be added as x86isa is below.
-
-ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
-
-ADDED_BOOK_TARGETS :=
-
-ifneq ($(ACL2_HAS_HONS), )
-ADDED_BOOK_TARGETS += milawa-test-basic
-endif
-
-# Now SLOW_BOOKS is defined as the list above, except that below, we
-# also include in SLOW_BOOKS some books that are too slow for both an
-# ordinary regression (target "formerloll") and an "all" regression.
-# Then we remove SLOW_BOOKS from regressions, restoring its subset,
-# ADDED_BOOKS, for the "all" target.
-
-SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+# Books that currently don't certify (or don't certify on some
+# systems), and that we want to work around for the moment:
+BROKEN_BOOKS :=
 
 # The models/y86 books are a special case.  We prefer to include them
-# only with the "all" target, not the "formerloll" target, since they
+# only with the "all" target, not the "pull-request" target, since they
 # have large memory requirements -- and then, only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
@@ -580,21 +530,57 @@ ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-  ADDED_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+  BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 endif # ifneq ($(ACL2_HAS_HONS), )
 
-# Remove ADDED_BOOKS as necessary because of dependence on Quicklisp,
-# HONS, CCL, etc.:
-ADDED_BOOKS := $(filter $(ADDED_BOOKS), $(OK_CERTS))
 
-OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
-
-
-# Books that currently don't certify (or don't certify on some
-# systems), and that we want to work around for the moment:
-BROKEN_BOOKS :=
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
+
+
+# SLOW_BOOKS is a list of books that are too slow (or in any way
+# undesirable) to include as part of an ordinary regression.  There
+# are currently comments in some of the corresponding Makefiles that
+# explain something about these books.  WARNING: It is probably a bad
+# idea to include targets here that are in ACL2_CUSTOM_TARGETS:
+# SLOW_BOOKS is removed from OK_CERTS just below, but later,
+# ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
+
+SLOW_BOOKS := \
+  books/misc/check-acl2-exports.cert \
+  coi/defung/defung-stress-long.cert \
+  models/jvm/m5/apprentice.cert \
+  system/parallel/proofs/ideal-speedup.cert \
+  workshops/2009/sumners/support/examples.cert \
+  workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
+  workshops/2013/hardin-hardin/support/APSP.cert
+# The following could well be considered as slow books, too.
+# doc/top.cert
+# doc/top-fast.cert
+# projects/include-doc.cert
+# projects/doc.cert
+# projects/top-doc.cert
+# kestrel/auto-termination/defunt-tests.cert
+# ALSO, directory projects/async/gcd/ (perhaps even projects/async/)
+# AND   directory projects/arm/
+# could be added as x86isa is below.
+
+SLOW_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
+
+SLOW_BOOK_TARGETS :=
+
+ifneq ($(ACL2_HAS_HONS), )
+SLOW_BOOK_TARGETS += milawa-test-basic
+endif
+
+# Now SLOW_BOOKS is defined as the list above.
+SLOW_BOOKS += $(SLOW_BOOK_TARGETS)
+
+# We used to filter out the slow books here. As of 2019, we do it later, as
+# part of the `pull-request` target
+# OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
+
 
 ##############################
 ### Section: Cleaning
@@ -733,7 +719,7 @@ ifeq ($(ACL2_HAS_REALS), )
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
 # conflicts if -j is other than 1.  Also: Do not include any targets
-# that we don't always want built with "formerloll".
+# that we don't always want built with "pull-request".
 
 ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
@@ -1094,9 +1080,10 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
-# Warning: ACL2's GNUmakefile uses the "formerloll" target of this Makefile
-# to implement its target, "regression".  So please be careful about
-# making major changes to "formerloll" in this Makefile.
+# Warning: ACL2's GNUmakefile uses the "pull-request" target of this
+# Makefile to implement its target, "regression".  So please be
+# careful about making major changes to "pull-request" in this
+# Makefile.
 
 # First, we let the user filter the books by specifying the roots of
 # the forest of books to be certified.  Our implementation reduces
@@ -1136,23 +1123,14 @@ ifeq ($(shell ls workshops 2> /dev/null), )
 OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
-formerloll: $(OK_CERTS)
-
-.PHONY: almost-all
-almost-all: formerloll
+pull-request: $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
 # Starting 8/15/2014, all does not automatically set USE_QUICKLISP=1,
 # even in the HONS case.  In particular, "make all" no longer makes
 # doc/manual/; for that, specify USE_QUICKLISP=1.
 .PHONY: all
 
-#all:
-#	$(MAKE) formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
-
-# [Jared] I think this is how all should work.  All of this
-# ADDED_BOOKS stuff seems really complicated. :(
-
-all: formerloll $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+all: $(OK_CERTS)
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -1580,7 +1558,7 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
 	@ls -l centaur/getopt/demo2-test.ok
 
-formerloll: centaur/getopt/demo2-test.ok
+pull-request: centaur/getopt/demo2-test.ok
 
 
 
@@ -1657,7 +1635,7 @@ git_status:
 #     cert.pl, notably extending it to operate on Windows, and adding features
 #     such as automatically tracking books that rely on ACL2(h).
 #
-#   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
+#   - David Rager <ragerdl@defthm.com> provided significant early beta
 #     testing and worked to ensure the Makefile works with ACL2(p) and in
 #     different configurations of ACL2_CUSTOMIZATION; he has also provided
 #     useful make targets.
@@ -1684,6 +1662,11 @@ git_status:
 #    also do not need to manually keep track of dependencies between
 #    directories, etc.
 
+# In 2019, David Rager <ragerdl@defthm.com>, with support from the community,
+# change the "all" target so that it really builds all of the (non-broken)
+# books.  He also reworked the logic for the "slow book" mechanism, and
+# created a target for contibutors to use when making pull requests/pushes
+# to the ACL2 community github.
 
 
 
