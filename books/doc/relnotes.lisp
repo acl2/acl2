@@ -195,11 +195,13 @@
      for PBKDF2 HMAC-SHA-512, which has been removed.")
 
    (xdoc::p
-    "Interfaces have been introduced (via @(tsee definterface-encrypt-block))
+    "Interfaces have been introduced
+     (via @(tsee crypto::definterface-encrypt-block))
      for the AES-128, AES-192, and AES-256 block ciphers.")
 
    (xdoc::p
-    "Interfaces have been introduced (via @(tsee definterface-encrypt-init))
+    "Interfaces have been introduced
+     (via @(tsee crypto::definterface-encrypt-init))
      for the AES-128 CBC PKCS7, AES-192 CBC PKCS7, and AES-256 CBC PKCS7
      ciphers (CBC mode, PKCS7 padding).")
 
