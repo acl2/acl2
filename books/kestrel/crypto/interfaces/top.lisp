@@ -13,6 +13,8 @@
 (include-book "definterface-hash")
 (include-book "definterface-hmac")
 (include-book "definterface-pbkdf2")
+(include-book "definterface-encrypt-block")
+(include-book "definterface-encrypt-init")
 
 (include-book "keccak-256")
 (include-book "keccak-512")
@@ -25,6 +27,14 @@
 
 (include-book "pbkdf2-hmac-sha-256")
 (include-book "pbkdf2-hmac-sha-512")
+
+(include-book "aes-128")
+(include-book "aes-192")
+(include-book "aes-256")
+
+(include-book "aes-128-cbc-pkcs7")
+(include-book "aes-192-cbc-pkcs7")
+(include-book "aes-256-cbc-pkcs7")
 
 (include-book "secp256k1")
 

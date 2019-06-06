@@ -166,6 +166,16 @@
      to introduce interfaces of PBKDF2 functions.")
 
    (xdoc::p
+    "A macro @(tsee crypto::definterface-encrypt-block) has been added
+     to introduce interfaces of block encryption/decryption functions.")
+
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-encrypt-init) has been added
+     to introduce interfaces of encryption/decryption functions
+     that use initialization vectors
+     (as in certain block cipher modes of operation).")
+
+   (xdoc::p
     "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
      for the hash functions
      Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.
@@ -183,6 +193,15 @@
      for the PBKDF2 functions HMAC-SHA-256 and PBKDF2 HMAC-SHA-512.
      These supersede the previously existing placeholder
      for PBKDF2 HMAC-SHA-512, which has been removed.")
+
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee definterface-encrypt-block))
+     for the AES-128, AES-192, and AES-256 block ciphers.")
+
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee definterface-encrypt-init))
+     for the AES-128 CBC PKCS7, AES-192 CBC PKCS7, and AES-256 CBC PKCS7
+     ciphers (CBC mode, PKCS7 padding).")
 
    (xdoc::p
     "The `placeholder' for elliptic curve secp256k1
