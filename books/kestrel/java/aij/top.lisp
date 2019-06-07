@@ -51,5 +51,5 @@
      or via the @('compile.sh') file in this directory,
      which generates class and jar files in the same places
      where IntelliJ IDEA does;
-     this shell script assumes that OpenJDK Java 11 is in the path,
+     this shell script assumes that OpenJDK Java 12 is in the path,
      but it may well work with other Java versions or implementations.")))
