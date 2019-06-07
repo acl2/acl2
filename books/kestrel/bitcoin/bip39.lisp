@@ -152,17 +152,27 @@
     :prep-books ((include-book "arithmetic/top-with-meta" :dir :system)))
 
   (defruled values-of-len-of-bip39-entropy-to-word-indexes
-    (implies (bip39-entropyp entropy)
-             (equal (len (bip39-entropy-to-word-indexes entropy))
-                    (case (len entropy)
-                      (128 12)
-                      (160 15)
-                      (192 18)
-                      (224 21)
-                      (256 24))))
-    :enable (len-of-bip39-entropy-to-word-indexes
-             bip39-entropyp
-             bip39-entropy-fix)))
+    (equal (len (bip39-entropy-to-word-indexes entropy))
+           (case (len (bip39-entropy-fix entropy))
+             (128 12)
+             (160 15)
+             (192 18)
+             (224 21)
+             (256 24)))
+    :use (:instance lemma (entropy (bip39-entropy-fix entropy)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (bip39-entropyp entropy)
+                (equal (len (bip39-entropy-to-word-indexes entropy))
+                       (case (len entropy)
+                         (128 12)
+                         (160 15)
+                         (192 18)
+                         (224 21)
+                         (256 24))))
+       :enable (len-of-bip39-entropy-to-word-indexes
+                bip39-entropyp
+                bip39-entropy-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
