@@ -525,9 +525,12 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                 (len formals)
                 formals)))
              (clk (1- clk))
-             (interp-st (is-prof-simple-increment-def fn interp-st)))
-          (interp-term-equivs body (pairlis$ formals actuals)
-                              contexts . ,*glcp-common-inputs*)))
+             (interp-st (is-prof-push `(:d ,fn) interp-st))
+             ((glcp-er xobj)
+              (interp-term-equivs body (pairlis$ formals actuals)
+                                  contexts . ,*glcp-common-inputs*))
+             (interp-st (is-prof-pop-increment t interp-st)))
+          (glcp-value xobj)))
 
       (defun interp-if/or (test tbr fbr x alist contexts . ,*glcp-common-inputs*)
         (declare (xargs
@@ -838,8 +841,11 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((glcp-er successp term bindings)
               (rewrite fn args :if-test '(iff) . ,*glcp-common-inputs*))
              ((when successp)
-              (interp-test term bindings
-                           . ,*glcp-common-inputs*))
+              (b* (((glcp-er xobj)
+                    (interp-test term bindings
+                                 . ,*glcp-common-inputs*))
+                   (interp-st (is-prof-pop-increment t interp-st)))
+                (glcp-value xobj)))
 
              (x (g-apply fn args))
              (look (get-term->bvar x bvar-db))
@@ -999,7 +1005,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
               (cw "malformed gl rewrite rule (rhs)?? ~x0~%" rule)
               (b* ((interp-st (is-prof-pop-increment nil interp-st)))
                 (glcp-value nil nil nil)))
-             (interp-st (is-prof-pop-increment t interp-st)))
+             ;; (interp-st (is-prof-pop-increment t interp-st))
+             )
           (glcp-value t rule.rhs gobj-bindings)))
 
       (defun relieve-hyps (rune hyps bindings . ,*glcp-common-inputs*)

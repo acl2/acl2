@@ -2198,12 +2198,13 @@
             ;;                               state)))
             ;;      (value nil))))
             ;;   (& (value nil)))
-            (let ((lit (car clause)))
-              (case-match lit
-                (('not ('acl2::flag-is . &) . &)
-                 '(:computed-hint-replacement
-                   ('(:expand :lambdas))
-                   :clause-processor acl2::constant-prop-cp))))
+            ;; (and stable-under-simplificationp
+            ;;      (let ((lit (car clause)))
+            ;;        (case-match lit
+            ;;          (('not ('acl2::flag-is . &) . &)
+            ;;           '(:computed-hint-replacement
+            ;;             ('(:expand :lambdas))
+            ;;             :clause-processor acl2::constant-prop-cp)))))
             (and stable-under-simplificationp
                  '(; :in-theory (enable acl2::expand-marked-meta)
                    :do-not-induct t
@@ -3236,12 +3237,12 @@
                                          glcp-generic-geval-ev-lst-of-atom))))))
       :expand-calls t
       :hints (;; '(:error t)
-              (let ((lit (car clause)))
-                (case-match lit
-                  (('not ('acl2::flag-is . &) . &)
-                   '(;; :computed-hint-replacement
-                     ;; ('(:expand :lambdas))
-                     :clause-processor acl2::constant-prop-cp))))
+              ;; (let ((lit (car clause)))
+              ;;   (case-match lit
+              ;;     (('not ('acl2::flag-is . &) . &)
+              ;;      '(;; :computed-hint-replacement
+              ;;        ;; ('(:expand :lambdas))
+              ;;        :clause-processor acl2::constant-prop-cp))))
               (and stable-under-simplificationp
                    '(; :in-theory (enable acl2::expand-marked-meta)
                      :do-not-induct t

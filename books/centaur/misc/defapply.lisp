@@ -259,6 +259,55 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                     fnname arity values)))
                        (a a))))))
 
+
+(encapsulate nil
+  ;; ev-apply-arglist
+  (defun ev-apply-arglist (n evfn term alist)
+    (if (zp n)
+        nil
+      (cons `(,evfn (car ,term) ,alist)
+            (ev-apply-arglist (1- n) evfn `(cdr ,term) alist))))
+
+  ;; (defun ev-apply-arglist-on-result (n evfn res alist)
+  ;;   (if (zp n)
+  ;;       nil
+  ;;     (cons `(,evfn ',(car res) ',alist)
+  ;;           (ev-apply-arglist-on-result
+  ;;            (1- n) evfn (cdr res) alist))))
+  (local (in-theory (enable ev-of-arglist)))
+
+  (defthm evmeta-ev-lst-ev-apply-arglist
+    (implies (not (equal evfn 'quote))
+             (equal (evmeta-ev-lst
+                     (ev-apply-arglist arity evfn term alist) a)
+                    (evmeta-ev-lst
+                     (ev-of-arglist
+                      arity evfn
+                      (evmeta-ev term a)
+                      (evmeta-ev alist a))
+                     nil)))
+    :hints (("goal" :in-theory (enable evmeta-ev-of-fncall-args)
+             :induct (ev-apply-arglist arity evfn term alist))))
+
+  (defthm evmeta-ev-ev-apply-arglist
+    (implies (and (not (equal evfn 'quote))
+                  (not (equal fn 'quote)))
+             (equal (evmeta-ev
+                     (cons fn
+                           (ev-apply-arglist arity evfn term alist))
+                     a)
+                    (evmeta-ev
+                     (cons fn
+                           (kwote-lst
+                            (evmeta-ev-lst
+                             (ev-of-arglist
+                              arity evfn
+                              (evmeta-ev term a)
+                              (evmeta-ev alist a))
+                             nil)))
+                     nil)))
+    :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args)))))
+
 (encapsulate nil
   (local (defthm consolidate-consts-+
            (implies (syntaxp (and (quotep a) (quotep b)))
@@ -297,24 +346,26 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
   (local (defthm len-kwote-lst
            (equal (len (kwote-lst lst)) (len lst))))
 
+  (local (in-theory (disable w)))
+  (local (in-theory (enable ev-of-arglist)))
+
   (local
    (defthm evmeta-ev-lst-term-list-of-nths1
-     (implies (and (evmeta-ev-theoremp
-                    (disjoin (ev-quote-clause evfn quote-name)))
-                   (evmeta-ev-theoremp
-                    (disjoin (ev-lookup-var-clause evfn var-name)))
+     (implies (and (evmeta-ev-meta-extract-global-facts)
+                   (check-ev-of-quote evfn quote-thmname (w state))
+                   (check-ev-of-variable evfn var-thmname (w state))
                    (not (equal evfn 'quote))
                    (natp idx) (natp n))
               (equal (evmeta-ev-lst
                       (term-list-of-nths n idx args)
                       a)
                      (evmeta-ev-lst
-                      (ev-apply-arglist-on-result
+                      (ev-of-arglist
                        n evfn
                        (nthcdr idx (kwote-lst (evmeta-ev args a)))
                        alst)
                       nil)))
-     :hints(("Goal" :in-theory (enable evmeta-ev-constraint-0))
+     :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args))
             (and stable-under-simplificationp
                  (case-match id ((('0 '1) . &) t))
                  '(:cases ((< idx (len (evmeta-ev args a)))))))
@@ -322,22 +373,21 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 
 
   (defthm evmeta-ev-lst-term-list-of-nths
-     (implies (and (evmeta-ev-theoremp
-                    (disjoin (ev-quote-clause evfn quote-name)))
-                   (evmeta-ev-theoremp
-                    (disjoin (ev-lookup-var-clause evfn var-name)))
-                   (not (equal evfn 'quote))
-                   (natp idx) (natp n))
+    (implies (and (evmeta-ev-meta-extract-global-facts)
+                  (check-ev-of-quote evfn quote-thmname (w state))
+                  (check-ev-of-variable evfn var-thmname (w state))
+                  (not (equal evfn 'quote))
+                  (natp idx) (natp n))
               (equal (evmeta-ev-lst
                       (term-list-of-nths n idx args)
                       a)
                      (evmeta-ev-lst
-                      (ev-apply-arglist-on-result
+                      (ev-of-arglist
                        n evfn
                        (nthcdr idx (kwote-lst (evmeta-ev args a)))
                        nil)
                       nil)))
-     :hints(("Goal" :in-theory (enable evmeta-ev-constraint-0))
+     :hints(("Goal" :in-theory (enable evmeta-ev-of-fncall-args))
             (and stable-under-simplificationp
                  (case-match id ((('0 '1) . &) t))
                  '(:cases ((< idx (len (evmeta-ev args a)))))))))
@@ -364,28 +414,32 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 ;; case (cons 'nil (cons 'nil 'nil)), or a nest of IFs where each test
 ;; asks (eql fn 'some-fnname), the true-branch is a cons of 'T onto a
 ;; function application
-(defun apply-cases-ok (term rule-alist evfn clauses)
-  (declare (xargs :normalize nil))
+(defun apply-cases-ok (term rule-alist evfn wrld)
+  (declare (xargs :normalize nil
+                  :guard (plist-worldp wrld)
+                  :verify-guards nil))
   (case-match term
     (('if ('eql 'fn ('quote fnname . &). &) values rest . &)
-     (b* (((mv erp clauses)
-           (apply-cases-ok rest rule-alist evfn clauses))
-          ((when erp) (mv erp nil))
+     (b* ((erp
+           (apply-cases-ok rest rule-alist evfn wrld))
+          ((when erp) erp)
           ((when (or (keywordp fnname) (eq fnname 'quote)))
-           (mv (msg "~x0 is not allowed as a function name."
-                    fnname) nil))
+           (msg "~x0 is not allowed as a function name."
+                    fnname))
           (look (hons-get fnname rule-alist))
           ((when (not look))
-           (mv (msg "Function ~x0 not recognized by evaluator."
-                    fnname) nil))
+           (msg "Function ~x0 not recognized by evaluator."
+                fnname))
           ((cons arity rune) (cdr look))
           ((unless (natp arity))
-           (mv (msg "Function ~x0 supposedly has an arity of ~x1"
-                    fnname arity)
-               nil))
-          (clauses
-           (cons (ev-function-clause evfn fnname arity rune)
-                 clauses)))
+           (msg "Function ~x0 supposedly has an arity of ~x1"
+                fnname arity))
+          (rule-name (if (and (consp rune)
+                              (consp (cdr rune)))
+                         (cadr rune)
+                       rune))
+          ((unless (check-ev-of-call evfn fnname arity rule-name wrld))
+           (msg "Function ~x0 has malformed evaluator constraint" fnname)))
        (case-match values
          (('cons ''t ('cons call . &) . &)
           (b* ((fncall (reduce-identities call fnname)))
@@ -394,19 +448,16 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                ;;              (prog2$ (cw "fncall: ~x0, fnname-args case~%"
                ;;                          fncall)
                (if (list-of-nthsp arity 0 'args args)
-                   (mv nil clauses)
-                 (mv (msg "Malformed function call ~x0: bad arity?"
-                          fncall)
-                     nil)))
-              (& (mv (msg "Unrecognized form of return value: ~x0"
-                          call)
-                     nil)))))
-         (& (mv (msg "Unrecognized form of return value: ~x0"
-                     values)
-                nil)))))
+                   nil
+                 (msg "Malformed function call ~x0: bad arity?"
+                      fncall)))
+              (& (msg "Unrecognized form of return value: ~x0"
+                      call)))))
+         (& (msg "Unrecognized form of return value: ~x0"
+                 values)))))
     ('(cons 'nil (cons 'nil 'nil))
-     (mv nil clauses))
-    (& (mv (msg "Unrecognized subterm: ~x0" term) nil))))
+     nil)
+    (& (msg "Unrecognized subterm: ~x0" term))))
 
 (defun apply-cases-ind (term)
   (declare (xargs :normalize nil))
@@ -414,29 +465,6 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
     (('if ('eql 'fn ('quote . &) . &) & rest . &)
      (apply-cases-ind rest))
     (& term)))
-
-
-
-(defthm apply-cases-ok-old-clauses-correct
-  (mv-let (erp out-clauses)
-    (apply-cases-ok term rule-alist evfn in-clauses)
-    (implies (and (not (evmeta-ev-theoremp
-                   (conjoin-clauses in-clauses)))
-                  (not erp))
-             (not (evmeta-ev-theoremp
-                   (conjoin-clauses out-clauses)))))
-  :hints(("Goal" :in-theory (e/d** ((:induction apply-cases-ind)
-                                    ;; Jared: changed from hons-get-fn-do-hopy
-                                    ;; to hons-get for new hons code
-                                    eq hons-get natp nfix
-                                    (:rules-of-class :executable-counterpart
-                                                     :here)
-                                    evmeta-ev-theoremp-conjoin-clauses-cons
-                                    list-of-nthsp-term-list-of-nths))
-          :induct (apply-cases-ind term)
-          :expand ((apply-cases-ok term rule-alist evfn in-clauses)
-                   (apply-cases-ok '(cons 'nil (cons 'nil 'nil))
-                                   rule-alist evfn in-clauses)))))
 
 
 
@@ -472,17 +500,26 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                 (:EXECUTABLE-COUNTERPART ZP)
                 (:INDUCTION APPLY-CASES-IND)
                 (:META MV-NTH-CONS-META)
-                (:REWRITE EVMETA-EV-CONSTRAINT-0)
-                (:REWRITE EVMETA-EV-CONSTRAINT-1)
-                (:REWRITE EVMETA-EV-constraint-16)
-                (:REWRITE EVMETA-EV-constraint-18)
-                (:REWRITE EVMETA-EV-constraint-21)
-                (:REWRITE EVMETA-EV-CONSTRAINT-2)
-                (:REWRITE EVMETA-EV-constraint-24)
-                (:REWRITE EVMETA-EV-CONSTRAINT-4)
-                (:REWRITE EVMETA-EV-CONSTRAINT-5)
-                (:REWRITE EVMETA-EV-constraint-8)
-                (:REWRITE EVMETA-EV-constraint-11)
+                (:REWRITE EVMETA-EV-OF-FNCALL-ARGS)
+                evmeta-ev-of-variable
+                evmeta-ev-of-quote
+                ;; evmeta-ev-of-lambda
+                evmeta-ev-lst-of-atom
+                evmeta-ev-lst-of-cons
+                evmeta-ev-of-cons-call
+                evmeta-ev-of-kwote-lst-call
+                evmeta-ev-of-if-call
+                evmeta-ev-of-eql-call
+                ;; (:REWRITE EVMETA-EV-CONSTRAINT-1)
+                ;; (:REWRITE EVMETA-EV-constraint-16)
+                ;; (:REWRITE EVMETA-EV-constraint-18)
+                ;; (:REWRITE EVMETA-EV-constraint-21)
+                ;; (:REWRITE EVMETA-EV-CONSTRAINT-2)
+                ;; (:REWRITE EVMETA-EV-constraint-24)
+                ;; (:REWRITE EVMETA-EV-CONSTRAINT-4)
+                ;; (:REWRITE EVMETA-EV-CONSTRAINT-5)
+                ;; (:REWRITE EVMETA-EV-constraint-8)
+                ;; (:REWRITE EVMETA-EV-constraint-11)
                 (:REWRITE EVMETA-EV-EV-APPLY-ARGLIST)
                 (:REWRITE EVMETA-EV-LST-TERM-LIST-OF-NTHS)
                 (:REWRITE EVMETA-EV-THEOREMP-CONJOIN-CLAUSES-CONS)
@@ -491,32 +528,32 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 ;                 (:REWRITE ASSOC-EQ-IS-ASSOC-EQUAL)
                 (:REWRITE CAR-CONS)
                 (:REWRITE CDR-CONS)
-                (:REWRITE EV-FUNCTION-CLAUSE-CORRECT)
+                ;; (:REWRITE EV-FUNCTION-CLAUSE-CORRECT)
                 (:REWRITE FUNCALL-EQUAL-VALUES-CLAUSE-CORRECT)
                 (:REWRITE LIST-OF-NTHSP-TERM-LIST-OF-NTHS)
                 (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
                 (:TYPE-PRESCRIPTION KEYWORDP)
+                check-ev-of-quote-correct
+                check-ev-of-call-correct
+                check-ev-of-variable-correct
+                ev-of-arglist-is-ground
                ;;  (:TYPE-PRESCRIPTION KWOTE-LST)
                ;;  (:TYPE-PRESCRIPTION TERM-LIST-OF-NTHS)
                 )))
   (defthm apply-cases-ok-correct
-    (mv-let (erp clauses)
-      (apply-cases-ok term rule-alist evfn in-clauses)
-      (implies (and (not erp)
-                    (evmeta-ev-theoremp
-                     (conjoin-clauses clauses))
-                    (evmeta-ev-theoremp
-                     (disjoin (ev-quote-clause evfn quote-name)))
-                    (evmeta-ev-theoremp
-                     (disjoin (ev-lookup-var-clause evfn var-name)))
+    (let ((erp (apply-cases-ok term rule-alist evfn (w state))))
+      (implies (and (evmeta-ev-meta-extract-global-facts)
+                    (check-ev-of-quote evfn quote-thmname (w state))
+                    (check-ev-of-variable evfn var-thmname (w state))
                     (not (equal evfn 'quote))
-                    (mv-nth 0 (evmeta-ev term a)))
+                    (mv-nth 0 (evmeta-ev term a))
+                    (not erp))
                (equal (mv-nth 1 (evmeta-ev term a))
                       (evmeta-ev
                        `(,evfn (cons fn (kwote-lst args)) 'nil)
                        a))))
     :hints (("goal":induct (apply-cases-ind term)
-             :expand ((apply-cases-ok term rule-alist evfn in-clauses))
+             :expand ((apply-cases-ok term rule-alist evfn (w state)))
              :do-not-induct t)
             (and stable-under-simplificationp
                  '(:use ((:instance reduce-identities-identity
@@ -524,28 +561,27 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                     (fn (cdr (assoc-equal 'fn a))))))))))
 
 
-(def-functional-instance
-  interp-function-lookup-correct-for-evmeta-ev
-  interp-function-lookup-correct
-  ((ifl-ev evmeta-ev)
-   (ifl-ev-lst evmeta-ev-lst)
-   (ifl-ev-falsify evmeta-ev-falsify)
-   (ifl-ev-meta-extract-global-badguy
-    evmeta-ev-meta-extract-global-badguy))
-  :hints ((and stable-under-simplificationp
-               '(:use (evmeta-ev-constraint-0
-                       evmeta-ev-constraint-6
-                       evmeta-ev-falsify
-                       evmeta-ev-meta-extract-global-badguy)))))
+;; (def-functional-instance
+;;   interp-function-lookup-correct-for-evmeta-ev
+;;   interp-function-lookup-correct
+;;   ((ifl-ev evmeta-ev)
+;;    (ifl-ev-lst evmeta-ev-lst)
+;;    (ifl-ev-falsify evmeta-ev-falsify)
+;;    (ifl-ev-meta-extract-global-badguy
+;;     evmeta-ev-meta-extract-global-badguy))
+;;   :hints ((and stable-under-simplificationp
+;;                '(:use (evmeta-ev-of-fncall-args
+;;                        evmeta-ev-falsify
+;;                        evmeta-ev-meta-extract-global-badguy)))))
 
-(def-functional-instance
-  interp-function-lookup-correct-1-for-evmeta-ev
-  interp-function-lookup-correct-1
-  ((ifl-ev evmeta-ev)
-   (ifl-ev-lst evmeta-ev-lst)
-   (ifl-ev-falsify evmeta-ev-falsify)
-   (ifl-ev-meta-extract-global-badguy
-    evmeta-ev-meta-extract-global-badguy)))
+;; (def-functional-instance
+;;   interp-function-lookup-correct-1-for-evmeta-ev
+;;   interp-function-lookup-correct-1
+;;   ((ifl-ev evmeta-ev)
+;;    (ifl-ev-lst evmeta-ev-lst)
+;;    (ifl-ev-falsify evmeta-ev-falsify)
+;;    (ifl-ev-meta-extract-global-badguy
+;;     evmeta-ev-meta-extract-global-badguy)))
 
 (without-waterfall-parallelism
 (defun apply-for-ev-cp (clause hints state)
@@ -554,36 +590,38 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                   :verify-guards nil))
   (case-match clause
     ((('implies
-       ('mv-nth ''0 app)
-       ('equal ('mv-nth ''1 app)
+       ('mv-nth ''0 (applyfn 'fn 'args))
+       ('equal ('mv-nth ''1 (applyfn 'fn 'args))
                (evalfn . '((cons fn (kwote-lst args)) 'nil)))))
      (b* (((when (eq evalfn 'quote))
            (mv "The eval function is QUOTE which is silly."
                nil state))
-          ((unless (consp app))
-           (mv "the clause is malformed in an improbable way"
-               nil state))
-          ((cons applyfn formals) app)
+          ;; ((unless (consp app))
+          ;;  (mv "the clause is malformed in an improbable way"
+          ;;      nil state))
+          ;; ((cons applyfn formals) app)
           (world (w state))
           (rule-alist (ev-collect-apply-lemmas evalfn nil world))
-          ((mv erp body formals-look defs)
-           (interp-function-lookup applyfn nil nil world))
-          ((when erp) (mv erp nil state))
-          ((unless (equal formals formals-look))
+          ;; ((mv erp body formals defs)
+          ;;  (interp-function-lookup applyfn nil nil world))
+          ((mv ok formals body)
+           (fn-get-def applyfn state))
+          ((unless ok) (mv "error looking up apply function" nil state))
+          ((unless (equal '(fn args) formals))
            (mv "The formals in the clause don't match the world"
                nil state))
-          (clauses-for-apply-def
-           (interp-defs-alist-clauses defs))
-          ((mv erp cases-clauses)
-           (apply-cases-ok body rule-alist evalfn nil))
+          ;; (clauses-for-apply-def
+          ;;  (interp-defs-alist-clauses defs))
+          (erp
+           (apply-cases-ok body rule-alist evalfn world))
           ((when erp) (mv erp nil state))
           (quote-name (cdr (hons-get :quote rule-alist)))
-          (var-name (cdr (hons-get :lookup-var rule-alist))))
-       (value
-        (list* (ev-quote-clause evalfn quote-name)
-               (ev-lookup-var-clause evalfn var-name)
-               (append clauses-for-apply-def
-                       cases-clauses)))))
+          (var-name (cdr (hons-get :lookup-var rule-alist)))
+          ((unless (check-ev-of-quote evalfn (cadr quote-name) world))
+           (mv "The quote constraint is malformed" nil state))
+          ((unless (check-ev-of-variable evalfn (cadr var-name) world))
+           (mv "The variable constraint is malformed" nil state)))
+       (value nil)))
     (& (mv (msg "The clause was not of the correct form: ~x0"
                 clause)
            nil state)))))
@@ -591,6 +629,16 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
 (in-theory (disable ev-collect-apply-lemmas))
 
 (include-book "tools/with-quoted-forms" :dir :system)
+
+(local (defthm len-of-kwote-lst
+         (equal (len (kwote-lst x)) (len x))))
+
+(local (defthm len-of-evmeta-ev-lst
+         (equal (len (evmeta-ev-lst x a)) (len x))))
+
+(local (defthm evmeta-ev-lst-of-kwote-lst
+         (equal (evmeta-ev-lst (kwote-lst x) a)
+                (true-list-fix x))))
 
 (defthm apply-for-ev-cp-correct
   (implies (and (pseudo-term-listp clause)
@@ -602,12 +650,16 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                    (apply-for-ev-cp clause hints state)))))
            (evmeta-ev (disjoin clause) a))
   :hints(("goal" :in-theory
-            (e/d (evmeta-ev-disjoin-when-consp)
+            (e/d (evmeta-ev-disjoin-when-consp
+                  evmeta-ev-of-fncall-args)
                  (apply-cases-ok-correct
+                  evmeta-ev-meta-extract-fn-check-def
                   apply-cases-ok
                   pseudo-term-listp
-                  assoc hons-assoc-equal
-                  assoc-equal default-car default-cdr
+                  ;; assoc
+                  hons-assoc-equal
+                  ;; assoc-equal
+                  default-car default-cdr
                   nth alistp interp-defs-alist-clauses w))
             :restrict
             ((evmeta-ev-disjoin-when-consp
@@ -616,15 +668,20 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
               (bind-as-in-definition
                apply-for-ev-cp
                (rule-alist body evalfn quote-name
-                           var-name)
+                           var-name applyfn formals)
                `(:use ((:instance
                         apply-cases-ok-correct
                         (term ,body)
                         (rule-alist ,rule-alist)
                         (evfn ,evalfn)
-                        (in-clauses nil)
-                        (quote-name ,quote-name)
-                        (var-name ,var-name)))
+                        (quote-thmname (cadr ,quote-name))
+                        (var-thmname (cadr ,var-name))
+                        (a (pairlis$ ,formals
+                                     (evmeta-ev-lst ,formals a))))
+                       (:instance EVMETA-EV-META-EXTRACT-FN-CHECK-DEF
+                        (fn ,applyfn) (st state) (formals ,formals) (body ,body)
+                        (args (kwote-lst (evmeta-ev-lst ,formals a)))
+                        (a a)))
                  :do-not-induct t))))
   :otf-flg t
   :rule-classes :clause-processor)
@@ -635,7 +692,8 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
  (progn
    (defapply evmeta-ev-apply
      (EQL EQUAL IF NOT
-          USE-BY-HINT USE-THESE-HINTS CAR CDR NTH
+          ;; USE-BY-HINT USE-THESE-HINTS
+          CAR CDR NTH
           CONS CONSP
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced assoc by assoc-equal).]
@@ -881,7 +939,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                   ;;  (_name_-apply)
                                   ;;  (:rules-of-class :definition :here))
                                   ;; (kwote ;; kwote-lst _name_-ev-concrete-lst
-                                  ;;  nfix _name_-ev-constraint-0)
+                                  ;;  nfix _name_-ev-of-fncall-args)
                                   )
                 ;; :in-theory '(_name_-apply-agrees-with-_name_-ev
                 ;;              _name_-apply-of-fns

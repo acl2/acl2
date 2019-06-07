@@ -59,6 +59,7 @@
    (nth n x)
    (cons a b)
    (consp x)
+   (synp vars form term)
 ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
 ;  (replaced assoc-eq by assoc-equal).]
    (assoc-equal x a)
@@ -90,71 +91,80 @@
    (set-difference-theories (current-theory :here)
                             (current-theory 'before-run-gified-ev-tag))))
 
+(acl2::def-meta-extract run-gified-ev run-gified-ev-lst)
+
 (local
  (progn
    (include-book "tools/def-functional-instance" :dir :system)
 
-   (acl2::def-ev-theoremp run-gified-ev)
 
    (acl2::def-functional-instance
-    ev-expand-fncall-clause-correct-for-run-gified-ev
-    acl2::ev-expand-fncall-clause-correct
+     check-ev-of-fncall-args-correct-for-run-gified-ev
+     acl2::check-ev-of-fncall-args-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable run-gified-ev-constraint-0)
-                              :use ((:instance run-gified-ev-falsify))))))
+                              :use ((:instance run-gified-ev-falsify)
+                                    (:instance run-gified-ev-meta-extract-global-badguy))))))
 
    (acl2::def-functional-instance
-    ev-lookup-var-clause-correct-for-run-gified-ev
-    acl2::ev-lookup-var-clause-correct
-    ((acl2::evmeta-ev run-gified-ev)
+     check-ev-of-variable-correct-for-run-gified-ev
+     acl2::check-ev-of-variable-correct
+     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    ev-function-clause-correct-for-run-gified-ev
-    acl2::ev-function-clause-correct
+     check-ev-of-quote-correct-for-run-gified-ev
+     acl2::check-ev-of-quote-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    evmeta-ev-lst-ev-apply-arglist-for-run-gified-ev
-    acl2::evmeta-ev-lst-ev-apply-arglist
+     check-ev-of-lambda-correct-for-run-gified-ev
+     acl2::check-ev-of-lambda-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    evlst-cons-clause-correct-for-run-gified-ev
-    acl2::evlst-cons-clause-correct
+     check-ev-of-nonsymbol-atom-correct-for-run-gified-ev
+     acl2::check-ev-of-nonsymbol-atom-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    evlst-atom-clause-correct-for-run-gified-ev
-    acl2::evlst-atom-clause-correct
+     check-ev-of-bad-fncall-correct-for-run-gified-ev
+     acl2::check-ev-of-bad-fncall-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    ev-lambda-clause-correct-for-run-gified-ev
-    acl2::ev-lambda-clause-correct
+     check-ev-of-call-correct-for-run-gified-ev
+     acl2::check-ev-of-call-correct
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))
 
    (acl2::def-functional-instance
-    ev-quote-clause-correct-for-run-gified-ev
-    acl2::ev-quote-clause-correct
+     ev-of-arglist-is-ground-for-run-gified-ev
+     acl2::ev-of-arglist-is-ground
     ((acl2::evmeta-ev run-gified-ev)
      (acl2::evmeta-ev-lst run-gified-ev-lst)
-     (acl2::evmeta-ev-falsify run-gified-ev-falsify)))))
-
+     (acl2::evmeta-ev-falsify run-gified-ev-falsify)
+     (acl2::evmeta-ev-meta-extract-global-badguy run-gified-ev-meta-extract-global-badguy)))))
 
 
 (defun run-gified-lhs-and-okp-breakdown (lhs okp)
@@ -590,11 +600,12 @@
      (run-gified-check-geval-thm thm gfn fn geval)
      (let ((hyp (run-gified-ev (nth (+ -5 (len formals)) args)
                                a))
-           (env (cdr (assoc-equal 'env a))))
+           ;; (env (cdr (assoc-equal 'env a)))
+           )
        (implies (and (not erp)
                      (run-gified-ev
                       thm
-                      (cons (cons 'env (cdr (assoc-equal 'env a)))
+                      (cons (cons 'env env)
                             (pairlis$ formals (run-gified-ev-lst args a))))
                      (not (eq geval 'quote))
                      (not (eq gfn 'quote))
@@ -602,13 +613,13 @@
                      (equal (len formals) (len args))
                      (bfr-hyp-eval hyp (car env)))
                 (equal (run-gified-ev
-                        `(,geval (mv-nth '0 (,gfn . ,args)) env)
+                        `(,geval (mv-nth '0 (,gfn . ,args)) (quote ,env))
                         a)
                        (run-gified-ev
                         `(,fn . ,(make-evals-of-formals
                                   (take (- (len formals) 5)
                                         args)
-                                  geval 'env))
+                                  geval (kwote env)))
                         a)))))
    :hints(("Goal"
            :in-theory (e/d () ;; equal-nthcdr-cons
@@ -662,7 +673,8 @@
    (mv-let (erp thm formals)
      (run-gified-get-geval-thm gfn fn geval-alist geval)
      (let ((hyp (run-gified-ev (nth (+ -5 (len formals)) args) a))
-           (env (cdr (assoc-equal 'env a))))
+           ;; (env (cdr (assoc-equal 'env a)))
+           )
        (implies
         (and (not erp)
              (run-gified-ev-theoremp (disjoin thm))
@@ -671,11 +683,11 @@
              (not (equal gfn 'quote))
              (not (equal fn 'quote))
              (equal (len args) (len formals)))
-        (equal (run-gified-ev `(,geval (mv-nth '0 (,gfn . ,args)) env)
+        (equal (run-gified-ev `(,geval (mv-nth '0 (,gfn . ,args)) (quote ,env))
                               a)
                (run-gified-ev `(,fn
                                 . ,(make-evals-of-formals
-                                    (take (- (len formals) 5) args) geval 'env))
+                                    (take (- (len formals) 5) args) geval (kwote env)))
                               a)))))
    :hints(("Goal" :in-theory (e/d (use-by-hint) ())
            :use ((:instance run-gified-ev-falsify
@@ -684,7 +696,7 @@
                             (a (let ((formals
                                       (mv-nth 2 (run-gified-get-geval-thm
                                                  gfn fn geval-alist geval))))
-                                 (cons (cons 'env (cdr (assoc-equal 'env a)))
+                                 (cons (cons 'env env)
                                        (pairlis$ formals (run-gified-ev-lst
                                                           args a)))))))))))
 
@@ -692,8 +704,7 @@
  (defthm run-gified-get-geval-thm-correct-corollary
    (mv-let (erp thm formals)
      (run-gified-get-geval-thm gfn fn geval-alist geval)
-     (let ((hyp (run-gified-ev (nth (+ -5 (len formals)) args) a))
-           (env (cdr (assoc-equal 'env a))))
+     (let ((hyp (run-gified-ev (nth (+ -5 (len formals)) args) a)))
        (implies
         (and (not erp)
              (run-gified-ev-theoremp (disjoin thm))
@@ -711,12 +722,11 @@
                                                     (acl2::kwote-lst
                                                      (run-gified-ev-lst args a)))
                                                    nil)))
-                                    (list 'quote
-                                          (cdr (assoc-equal 'env a))))
+                                    (list 'quote env))
                               nil)
                (run-gified-ev `(,fn
                                 . ,(make-evals-of-formals
-                                    (take (- (len formals) 5) args) geval 'env))
+                                    (take (- (len formals) 5) args) geval (kwote env)))
                               a)))))
    :hints(("Goal" :in-theory (e/d (run-gified-ev-constraint-0)
                                   (run-gified-get-geval-thm-correct))
@@ -728,42 +738,37 @@
 
 
 
-(defun run-gified-get-eval-thm (fnname formals evfn eval-alist)
+(defun run-gified-get-eval-thm (fnname formals evfn eval-alist world)
   (b* ((look (hons-get fnname eval-alist))
        ((when (not look))
-        (mv (acl2::msg "Function ~x0 not recognized by evaluator." fnname)
-            nil))
+        (acl2::msg "Function ~x0 not recognized by evaluator." fnname))
        ((cons arity rune) (cdr look))
        ((unless (equal arity (len formals)))
-        (mv (acl2::msg "~x0 arity: ~x1 eval-alist, ~x2 geval"
-                       fnname arity (len formals))
-            nil)))
-    (mv nil (acl2::ev-function-clause evfn fnname arity rune))))
+        (acl2::msg "~x0 arity: ~x1 eval-alist, ~x2 geval"
+                   fnname arity (len formals)))
+       ((unless (acl2::check-ev-of-call evfn fnname arity (cadr rune) world))
+        (acl2::msg "bad constraint: ~x0" fnname)))
+    nil))
+
+(local (in-theory (disable w)))
 
 (local
  (defthm run-gified-get-eval-thm-correct
-   (mv-let (erp thm)
-     (run-gified-get-eval-thm fn formals evfn eval-alist)
+   (let ((erp (run-gified-get-eval-thm fn formals evfn eval-alist (w state))))
      (let ((ex (run-gified-ev x a)))
        (implies (and (not erp)
                      (run-gified-ev-theoremp (disjoin thm))
+                     (run-gified-ev-meta-extract-global-facts)
                      (consp ex)
                      (equal (car ex) fn)
                      (not (equal evfn 'quote))
                      (not (equal fn 'quote)))
                 (equal (run-gified-ev `(,evfn ,x ,ma) a)
                        (run-gified-ev
-                        `(,fn . ,(acl2::ev-apply-arglist
-                                  (len formals) evfn `(cdr ,x) ma))
-                        a)))))
-   :hints (("goal" :use
-            ((:instance ev-function-clause-correct-for-run-gified-ev
-                        (acl2::fn fn)
-                        (name (cddr (hons-assoc-equal fn eval-alist)))
-                        (acl2::arity (len formals))
-                        (acl2::evfn evfn)
-                        (acl2::ma ma)))
-            :in-theory (disable ev-function-clause-correct-for-run-gified-ev)))))
+                        `(,fn . ,(acl2::ev-of-arglist
+                                  (len formals) evfn (cdr (run-gified-ev x a))
+                                  (run-gified-ev ma a)))
+                        a)))))))
 
 (in-theory (disable run-gified-get-eval-thm))
 
@@ -1171,7 +1176,7 @@
 
    (in-theory (disable acl2::kwote-lst nth))
 
-   (in-theory (disable acl2::ev-apply-arglist-on-result))
+   ;; (in-theory (disable acl2::ev-apply-arglist-on-result))
 
    (in-theory (disable nthcdr))
 
@@ -1200,10 +1205,9 @@
      ;;                     (len formals)))))
      (implies (and ;;  (natp n)
                ;;                 (< n (len actuals))
-               (run-gified-ev-theoremp
-                (disjoin (acl2::ev-quote-clause evalfn quote-name)))
-               (run-gified-ev-theoremp
-                (disjoin (acl2::ev-lookup-var-clause evalfn var-name)))
+               (acl2::check-ev-of-quote evalfn quote-name (w state))
+               (acl2::check-ev-of-variable evalfn var-name (w state))
+               (run-gified-ev-meta-extract-global-facts)
                (run-gified-ev-theoremp
                 (disjoin (geval-list-def-thm
                           geval-list gevalfn)))
@@ -1214,7 +1218,7 @@
                (not (equal geval-list 'quote))
                (not (equal evalfn 'quote)))
               (equal (run-gified-ev-lst
-                      (acl2::ev-apply-arglist-on-result
+                      (acl2::ev-of-arglist ;; acl2::ev-apply-arglist-on-result
                        n
                        evalfn
                        (acl2::kwote-lst
@@ -1237,7 +1241,7 @@
              :induct t
              :in-theory (enable acl2::take)
              :expand ((:free (a b c)
-                             (acl2::ev-apply-arglist-on-result
+                             (acl2::ev-of-arglist
                               n a b c))))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (my-run-gified-ev-constraint-0
@@ -1282,7 +1286,7 @@
 (local (in-theory (disable acl2-count)))
 
 (defun run-gified-process-body (body eval-alist evalfn geval-alist gevalfn
-                                     clauses)
+                                     clauses world)
   (if (equal body
              '((LAMBDA (HYP)
                        (CONS 'NIL (CONS 'NIL (CONS HYP 'NIL))))
@@ -1305,16 +1309,16 @@
           (mv "A function name is QUOTE which is bizzaro." nil))
          ((mv erp clauses)
           (run-gified-process-body rest eval-alist evalfn geval-alist gevalfn
-                                   clauses))
+                                   clauses world))
          ((when erp) (mv erp nil))
          ((mv erp geval-thm formals)
           (run-gified-get-geval-thm gfnname fnname geval-alist gevalfn))
          ((when erp) (mv erp nil))
          ((unless (equal (len args) (len formals)))
           (mv "The number of arguments doesn't match." nil))
-         ((mv erp eval-thm)
+         (erp
           (run-gified-get-eval-thm fnname (take (- (len formals) 5) formals)
-                                   evalfn eval-alist))
+                                   evalfn eval-alist world))
          ((when erp) (mv erp nil))
          ((unless (and (nths-matching-formalsp 0 (take (- (len formals) 5) formals)
                                                'actuals
@@ -1324,7 +1328,7 @@
                                                                       bvar-db state))))
           (mv (acl2::msg "Malformed function args: ~x0" (caddr body))
               nil))
-         (clauses (list* geval-thm eval-thm clauses)))
+         (clauses (list* geval-thm clauses)))
       (mv nil clauses))))
 
 (defun ev-constraint-for-search (lemmas hyp-terms ev-term)
@@ -1353,16 +1357,32 @@
 (defmacro ev-constraint-for (ev fn)
   `(ev-constraint-for-fn ',ev ',fn world))
 
+(local (Defthm take-of-run-gified-ev-lst
+         (implies (<= (nfix n) (len x))
+                  (equal (take n (run-gified-ev-lst x a))
+                         (run-gified-ev-lst (take n x) a)))))
+
 
 (local
  (encapsulate nil
-
+   (local (defthm nth-when-nthcdr
+            (implies (and (equal v (nthcdr n x))
+                          (syntaxp (quotep v)))
+                     (equal (nth n x) (car v)))))
+   (local (in-theory (enable NTHS-MATCHING-FORMALSP-MAKE-NTHS-MATCHING-FORMALS-EV1)))
+   (local (in-theory (disable run-gified-ev-lst-take)))
    (local
     (in-theory (disable
                         cheap-default-car cheap-default-cdr acl2::take
-                        ev-quote-clause-correct-for-run-gified-ev
-                        ev-lookup-var-clause-correct-for-run-gified-ev
+                        ;; ev-quote-clause-correct-for-run-gified-ev
+                        ;; ev-lookup-var-clause-correct-for-run-gified-ev
                         nth-when-len-smaller
+                        check-ev-of-bad-fncall-correct-for-run-gified-ev
+                        check-ev-of-fncall-args-correct-for-run-gified-ev
+                        check-ev-of-quote-correct-for-run-gified-ev
+                        check-ev-of-lambda-correct-for-run-gified-ev
+                        check-ev-of-nonsymbol-atom-correct-for-run-gified-ev
+                        check-ev-of-variable-correct-for-run-gified-ev
                         (:definition run-gified-process-body)
                         ;; (:REWRITE RUN-GIFIED-EV-constraint-32)
                         ;; (:REWRITE RUN-GIFIED-EV-constraint-31)
@@ -1424,13 +1444,12 @@
 
      (mv-let (erp clauses)
        (run-gified-process-body body eval-alist evalfn geval-alist gevalfn
-                                in-clauses)
+                                in-clauses (w state))
        (implies (and (not erp)
+                     (run-gified-ev-meta-extract-global-facts)
+                     (acl2::check-ev-of-quote evalfn quote-name (w state))
+                     (acl2::check-ev-of-variable evalfn var-name (w state))
                      (run-gified-ev-theoremp (conjoin-clauses clauses))
-                     (run-gified-ev-theoremp
-                      (disjoin (acl2::ev-quote-clause evalfn quote-name)))
-                     (run-gified-ev-theoremp
-                      (disjoin (acl2::ev-lookup-var-clause evalfn var-name)))
                      (run-gified-ev-theoremp
                       (disjoin (geval-list-def-thm
                                 geval-list gevalfn)))
@@ -1442,17 +1461,22 @@
                      (not (equal geval-list 'quote))
                      (mv-nth 0 (run-gified-ev body a))
                      (bfr-hyp-eval (cdr (assoc-equal 'hyp a))
-                               (cadr (assoc-equal 'env a))))
+                               (car env)))
                 (and
                  (equal (run-gified-ev
-                         `(,gevalfn (mv-nth '1 ,body) env)
-                         a)
+                         `(,gevalfn (quote ,(mv-nth 1 (run-gified-ev body a)))
+                                    (quote ,env))
+                         nil)
                         (run-gified-ev
                          `(,evalfn
-                           (cons fn (acl2::kwote-lst
-                                     (,geval-list actuals env)))
+                           (quote ,(cons (cdr (assoc 'fn a))
+                                         (kwote-lst
+                                          (run-gified-ev
+                                           `(,geval-list (quote ,(cdr (assoc 'actuals a)))
+                                                         (quote ,env))
+                                           nil))))
                            'nil)
-                         a))
+                         nil))
                  ;; (equal (run-gified-ev
                  ;;         `(,gevalfn (mv-nth '2 ,body) env)
                  ;;         a)
@@ -1465,48 +1489,50 @@
                  )))
      :hints (("goal" :induct (run-gified-process-body body eval-alist evalfn
                                                       geval-alist gevalfn
-                                                      in-clauses)
+                                                      in-clauses (w state))
               :expand ((run-gified-process-body body eval-alist evalfn
                                                 geval-alist gevalfn
-                                                in-clauses)))
+                                                in-clauses (w state))))
              (and stable-under-simplificationp
-                  '(:in-theory (enable run-gified-ev-constraint-0)))
-             (and stable-under-simplificationp
-                  '(:use ((:instance
-                           nth-of-nthcdr
-                           (n 0)
-                           (y (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY)))
-                           (m (+ -5 (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN
-                                                    BODY))))))
-                          (:instance
-                           nths-matching-formalsp-make-nths-matching-formals-ev1
-                           (list (ACL2::TAKE (+ -5
-                                                       (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
-                                                    (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
-                           (formals (ACL2::TAKE
-                                     (+ -5
-                                        (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
-                                     (MV-NTH
-                                      2
-                                      (RUN-GIFIED-GET-GEVAL-THM (MV-NTH 2 (RUN-GIFIED-CASE-BREAKDOWN BODY))
-                                                                (MV-NTH 1 (RUN-GIFIED-CASE-BREAKDOWN BODY))
-                                                                GEVAL-ALIST GEVALFN))))
-                           (varname 'ACTUALS)))
-                         :in-theory (e/d (my-run-gified-ev-constraint-0)
-                                         (nth-of-nthcdr))))))))
+                  '(:in-theory (enable run-gified-ev-constraint-0
+                                       my-run-gified-ev-constraint-0)
+                    :do-not-induct t))
+             ;; (and stable-under-simplificationp
+             ;;      '(:use ((:instance
+             ;;               nth-of-nthcdr
+             ;;               (n 0)
+             ;;               (y (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY)))
+             ;;               (m (+ -5 (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN
+             ;;                                        BODY))))))
+             ;;              (:instance
+             ;;               nths-matching-formalsp-make-nths-matching-formals-ev1
+             ;;               (list (ACL2::TAKE (+ -5
+             ;;                                           (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
+             ;;                                        (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
+             ;;               (formals (ACL2::TAKE
+             ;;                         (+ -5
+             ;;                            (LEN (MV-NTH 3 (RUN-GIFIED-CASE-BREAKDOWN BODY))))
+             ;;                         (MV-NTH
+             ;;                          2
+             ;;                          (RUN-GIFIED-GET-GEVAL-THM (MV-NTH 2 (RUN-GIFIED-CASE-BREAKDOWN BODY))
+             ;;                                                    (MV-NTH 1 (RUN-GIFIED-CASE-BREAKDOWN BODY))
+             ;;                                                    GEVAL-ALIST GEVALFN))))
+             ;;               (varname 'ACTUALS)))
+             ;;             :in-theory (e/d (my-run-gified-ev-constraint-0)
+             ;;                             (nth-of-nthcdr))))
+             ))))
 
 
 (local
  (defthm run-gified-process-body-correct1
    (mv-let (erp clauses)
      (run-gified-process-body body eval-alist evalfn geval-alist gevalfn
-                              in-clauses)
+                              in-clauses (w state))
      (implies (and (not erp)
+                   (run-gified-ev-meta-extract-global-facts)
+                   (acl2::check-ev-of-quote evalfn quote-name (w state))
+                   (acl2::check-ev-of-variable evalfn var-name (w state))
                    (run-gified-ev-theoremp (conjoin-clauses clauses))
-                   (run-gified-ev-theoremp
-                    (disjoin (acl2::ev-quote-clause evalfn quote-name)))
-                   (run-gified-ev-theoremp
-                    (disjoin (acl2::ev-lookup-var-clause evalfn var-name)))
                    (run-gified-ev-theoremp
                     (disjoin (geval-list-def-thm
                               geval-list gevalfn)))
@@ -1518,15 +1544,15 @@
                    (not (equal geval-list 'quote))
                    (mv-nth 0 (run-gified-ev body a))
                    (bfr-hyp-eval (cdr (assoc-equal 'hyp a))
-                             (cadr (assoc-equal 'env a))))
+                                 (car env)))
               (equal (run-gified-ev
                       (list gevalfn
                             (list 'quote (mv-nth 1 (run-gified-ev body a)))
-                            (list 'quote (cdr (assoc-equal 'env a))))
+                            (list 'quote env))
                       nil)
                      (run-gified-ev
                       `(,evalfn (cons fn (acl2::kwote-lst
-                                          (,geval-list actuals env)))
+                                          (,geval-list actuals (quote ,env))))
                                 'nil)
                       a))))
    :hints(("Goal" :in-theory (e/d (run-gified-ev-constraint-0)
@@ -1570,31 +1596,32 @@
        ((when (eq geval-list-fn 'quote))
         (mv "The geval-list function is QUOTE which is silly." nil state))
        ((when erp) (mv erp nil state))
+       ((mv ok ?formals body) (acl2::fn-get-def run-gified-fn state))
+       ((unless ok)
+        (mv (msg "Failed to get the function definition for ~x0" run-gified-fn) nil state))
+       ((unless (equal formals '(fn actuals hyp clk config bvar-db state)))
+        (mv (msg "Expected the formals of ~x0 to be ~x1" run-gified-fn '(fn actuals hyp clk config bvar-db state))
+            nil state))
        (world (w state))
-       (body (acl2::body run-gified-fn nil world))
-       (body-clause (function-def-clause run-gified-fn run-gified-fn
-                                         '(fn actuals hyp clk config bvar-db state)
-                                         body))
        ((when (eq ev-fn 'quote))
         (mv "The eval function is QUOTE which is silly."
             nil state))
        (eval-rule-alist (acl2::ev-collect-apply-lemmas ev-fn nil world))
+       ((unless (acl2::check-ev-of-quote ev-fn (cadr (cdr (hons-get :quote eval-rule-alist))) world))
+        (mv "The eval function doesn't have the expected QUOTE constraint." nil state))
+       ((unless (acl2::check-ev-of-variable ev-fn (cadr (cdr (hons-get :lookup-var eval-rule-alist))) world))
+        (mv "The eval function doesn't have the expected variable-lookup constraint." nil state))
        ((mv erp geval-rule-alist)
         (geval-rule-alist (table-alist 'gl-function-info world) geval-fn
                           world))
        ((when erp) (mv erp nil state))
        ((mv erp clauses)
         (run-gified-process-body body eval-rule-alist ev-fn
-                                 geval-rule-alist geval-fn nil))
+                                 geval-rule-alist geval-fn nil world))
        ((when erp) (mv erp nil state)))
     (value
-     (list* (acl2::ev-quote-clause
-             ev-fn (cdr (hons-get :quote eval-rule-alist)))
-            (acl2::ev-lookup-var-clause
-             ev-fn (cdr (hons-get :lookup-var eval-rule-alist)))
-            (geval-list-def-thm geval-list-fn geval-fn)
+     (list* (geval-list-def-thm geval-list-fn geval-fn)
             (geval-of-nil-thm geval-fn geval-nil)
-            body-clause
             clauses))))
 
 (local
@@ -1678,10 +1705,31 @@
  (in-theory (disable acl2::ev-collect-apply-lemmas body table-alist w)))
 
 (local (in-theory (disable run-gified-process-body assoc-equal)))
-(local (in-theory (disable SIMPLE-ONE-WAY-UNIFY-LST-WITH-RUN-GIFIED-EV)))
+(local (in-theory (disable SIMPLE-ONE-WAY-UNIFY-LST-WITH-RUN-GIFIED-EV
+                           check-ev-of-bad-fncall-correct-for-run-gified-ev
+                           check-ev-of-nonsymbol-atom-correct-for-run-gified-ev
+                           check-ev-of-fncall-args-correct-for-run-gified-ev
+                           check-ev-of-quote-correct-for-run-gified-ev
+                           check-ev-of-lambda-correct-for-run-gified-ev
+                           check-ev-of-variable-correct-for-run-gified-ev)))
+(local (defthm assoc-equal-of-cons
+         (implies (syntaxp (and (quotep var)
+                                (quotep key)))
+                  (equal (assoc var (cons (cons key val) rest))
+                         (if (equal var key)
+                             (cons key val)
+                           (assoc var rest))))
+         :hints(("Goal" :in-theory (enable assoc)))))
+(local (defthm pairlis-open
+         (equal (pairlis$ (cons a b) c)
+                (cons (cons a (car c))
+                      (pairlis$ b (cdr c))))))
+(local (in-theory (disable pairlis$)))
+
 (defthm run-gified-clause-proc-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
+                (run-gified-ev-meta-extract-global-facts)
                 (run-gified-ev
                  (conjoin-clauses
                   (acl2::clauses-result
@@ -1691,7 +1739,9 @@
                    (acl2::clauses-result
                     (run-gified-clause-proc clause hints state))))))
            (run-gified-ev (disjoin clause) a))
-  :hints (("goal" :do-not-induct t)
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable run-gified-ev-constraint-0 ;; assoc-equal
+                              ))
           (and stable-under-simplificationp
                '(:computed-hint-replacement
                  ('(:clause-processor
@@ -1722,18 +1772,42 @@
                                                                       (W STATE))
                                                          GEVAL-FN (W STATE)))
                                . geval-alist))))
-                  '(:clause-processor
-                    (acl2::simple-generalize-cp
-                     clause '(((ACL2::EV-COLLECT-APPLY-LEMMAS
-                                evalfn 'NIL (W STATE)) . eval-alist))))
-                  '(:use ((:instance run-gified-ev-falsify
-                                     (x (disjoin (function-def-clause
-                                                  run-gified-fn run-gified-fn
-                                                  '(fn actuals hyp clk config bvar-db state)
-                                                  (body run-gified-fn nil (w
-                                                                           state)))))
-                                     (a a)))
-                         :in-theory (enable run-gified-ev-constraint-0)))
+                  ;; '(:use ((:instance run-gified-ev-meta-extract-fn-check-def
+                  ;;          (st state)
+                  ;;          (fn run-gified-fn)
+                  ;;          (formals (mv-nth 1 (acl2::fn-get-def geval-fn state)))
+                  ;;          (body (mv-nth 2 (acl2::fn-get-def geval-fn state)))
+                  ;;          (args (list (LIST
+                  ;;                       'QUOTE
+                  ;;                       (MV-NTH 1
+                  ;;                               (RUN-GIFIED-EV (LIST RUN-GIFIED-FN
+                  ;;                                                    (LIST 'QUOTE (CDR (ASSOC-EQUAL 'FN A)))
+                  ;;                                                    (LIST 'QUOTE
+                  ;;                                                          (CDR (ASSOC-EQUAL 'ACTUALS A)))
+                  ;;                                                    (LIST 'QUOTE (CDR (ASSOC-EQUAL 'HYP A)))
+                  ;;                                                    (LIST 'QUOTE (CDR (ASSOC-EQUAL 'CLK A)))
+                  ;;                                                    (LIST 'QUOTE
+                  ;;                                                          (CDR (ASSOC-EQUAL 'CONFIG A)))
+                  ;;                                                    (LIST 'QUOTE
+                  ;;                                                          (CDR (ASSOC-EQUAL 'BVAR-DB A)))
+                  ;;                                                    (LIST 'QUOTE
+                  ;;                                                          (CDR (ASSOC-EQUAL 'STATE A))))
+                  ;;                                              NIL)))
+                  ;;                      (LIST 'QUOTE
+                  ;;                            (CDR (ASSOC-EQUAL 'ENV A)))))
+                  ;;          (a nil))))
+                  ;; '(:clause-processor
+                  ;;   (acl2::simple-generalize-cp
+                  ;;    clause '(((ACL2::EV-COLLECT-APPLY-LEMMAS
+                  ;;               evalfn 'NIL (W STATE)) . eval-alist))))
+                  ;; '(:use ((:instance run-gified-ev-falsify
+                  ;;                    (x (disjoin (function-def-clause
+                  ;;                                 run-gified-fn run-gified-fn
+                  ;;                                 '(fn actuals hyp clk config bvar-db state)
+                  ;;                                 (MV-NTH 2 (ACL2::FN-GET-DEF GEVAL-FN STATE)))))
+                  ;;                    (a a)))
+                  ;;        :in-theory (enable run-gified-ev-constraint-0))
+                  )
                  :clause-processor
                  (acl2::simple-generalize-cp
                   clause '(((MV-NTH '1 (ACL2::SIMPLE-ONE-WAY-UNIFY-LST
@@ -1743,3 +1817,4 @@
                                                    (EQUAL LHS-TERM RHS-TERM)))
                                         CLAUSE 'NIL)) . subst))))))
   :rule-classes :clause-processor)
+
