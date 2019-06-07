@@ -35,6 +35,34 @@
 (set-state-ok t)
 
 
+(defun function-deps (fn wrld)
+  (b* ((body (getpropc fn 'acl2::unnormalized-body nil wrld)))
+    (acl2::all-fnnames body)))
+
+(defun function-deps-lst (fns wrld acc)
+  (if (atom fns)
+      acc
+    (b* ((body (getpropc (car fns) 'acl2::unnormalized-body nil wrld)))
+      (function-deps-lst (cdr fns) wrld (acl2::all-fnnames1 nil body acc)))))
+       
+
+(mutual-recursion
+ (defun collect-toposort-function-deps (fn wrld seen toposort)
+   (declare (xargs :mode :program))
+   (b* (((when (member-eq fn seen))
+         (mv seen toposort))
+        (clique (or (getpropc fn 'acl2::recursivep nil wrld) (list fn)))
+        (deps (function-deps-lst clique wrld nil))
+        (seen (append clique seen))
+        ((mv seen toposort)
+         (collect-toposort-function-deps-list deps wrld seen toposort)))
+     (mv seen (append clique toposort))))
+ (defun collect-toposort-function-deps-list (fns wrld seen toposort)
+   (b* (((when (atom fns)) (mv seen toposort))
+        ((mv seen toposort) (collect-toposort-function-deps (car fns) wrld seen toposort)))
+     (collect-toposort-function-deps-list (cdr fns) wrld seen toposort))))
+
+
 (defun gl-primitive-formula-checks (formulas state)
   (declare (xargs :stobjs state :mode :program))
   (if (atom formulas)
@@ -142,6 +170,30 @@
 (defmacro def-formula-check-definition-thm (name formula-check)
   `(make-event
     (def-formula-check-definition-thm-fn ',name ',formula-check (w state))))
+
+(defun def-formula-checks-definition-thm-list-fn (x name)
+  (if (atom x)
+      nil
+    (cons `(def-formula-check-definition-thm ,(car x) ,name)
+          (def-formula-checks-definition-thm-list-fn (cdr x) name))))
+
+(defmacro def-formula-checks-definition-thm-list (x name)
+  `(make-event
+    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',name))))
+
+(defun def-formula-checks-fn (name fns wrld)
+  (declare (xargs :mode :program))
+  (b* (((mv ?seen deps) (collect-toposort-function-deps-list fns wrld *fgl-ev-base-fns* nil))
+       (deps (rev deps)))
+    `(progn
+       (def-gl-formula-checks ,name ,deps)
+       (local (def-gl-formula-checks-lemmas ,name))
+       (def-formula-checks-definition-thm-list ',deps ,name))))
+
+(defmacro def-formula-checks (name fns)
+  `(make-event
+    (def-formula-checks-fn ',name ',fns (W state))))
+     
 
 
 

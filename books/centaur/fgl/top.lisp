@@ -119,7 +119,7 @@
   '(make-glcp-config
     :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
     :definition-table (table-alist 'gl-definition-rules (w state))
-    :branch-merge-rules (table-alist 'gl-branch-merge-rules (w state))
+    :branch-merge-rules (cdr (assoc 'FGL::GL-BRANCH-MERGE-RULES (table-alist 'gl-branch-merge-rules (w state))))
     :function-modes (table-alist 'gl-fn-modes (w state))
     :trace-rewrites (and (boundp-global :fgl-trace-rewrites state)
                          (@ :fgl-trace-rewrites))))

@@ -34,44 +34,13 @@
 (local (include-book "primitive-lemmas"))
 (local (std::add-default-post-define-hook :fix))
 
-(def-gl-formula-checks fgarray-formula-checks
-  (hons-equal
-   atom
-   hons-assoc-equal
-   nfix
-   acl2::lnfix$inline
-   create-fgarray$a
+(def-formula-checks fgarray-formula-checks
+  (create-fgarray$a
    fgarray-get$a
    fgarray-set$a
-   max
-   natp
-   zp
-   fgarray-max-key
-   fgarray-compress$a-aux
    fgarray-compress$a
    fgarray->alist$a
    fgarray-init$a))
-
-(local (def-gl-formula-checks-lemmas fgarray-formula-checks))
-
-
-(def-formula-check-definition-thm hons-equal fgarray-formula-checks)
-(def-formula-check-definition-thm atom fgarray-formula-checks)
-(def-formula-check-definition-thm hons-assoc-equal fgarray-formula-checks)
-(def-formula-check-definition-thm nfix fgarray-formula-checks)
-(def-formula-check-definition-thm acl2::lnfix$inline fgarray-formula-checks)
-(def-formula-check-definition-thm create-fgarray$a fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-get$a fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-set$a fgarray-formula-checks)
-(def-formula-check-definition-thm max fgarray-formula-checks)
-(def-formula-check-definition-thm natp fgarray-formula-checks)
-(def-formula-check-definition-thm zp fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-max-key fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-compress$a-aux fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-compress$a fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray->alist$a fgarray-formula-checks)
-(def-formula-check-definition-thm fgarray-init$a fgarray-formula-checks)
-
 
 (set-ignore-ok t)
 

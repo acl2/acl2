@@ -51,7 +51,8 @@
   ((intro-bvars booleanp :default t)
    (intro-synvars booleanp :default t)
    (simplify-logic booleanp :default t)
-   (trace-rewrites booleanp :default nil)))
+   (trace-rewrites booleanp :default nil)
+   (make-ites booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)
@@ -227,14 +228,14 @@
    (prof-pop-increment successp interp-profiler)
    interp-st))
 
-(define interp-st-prof-simple-increment-def (name interp-st)
-  :returns (new-interp-st)
-  :enabled t :hooks nil
-  (stobj-let
-   ((interp-profiler (interp-st->prof interp-st)))
-   (interp-profiler)
-   (prof-simple-increment-def name interp-profiler)
-   interp-st))
+;; (define interp-st-prof-simple-increment-def (name interp-st)
+;;   :returns (new-interp-st)
+;;   :enabled t :hooks nil
+;;   (stobj-let
+;;    ((interp-profiler (interp-st->prof interp-st)))
+;;    (interp-profiler)
+;;    (prof-simple-increment-def name interp-profiler)
+;;    interp-st))
 
 (define interp-st-prof-simple-increment-exec (name interp-st)
   :returns (new-interp-st)

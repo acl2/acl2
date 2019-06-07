@@ -34,30 +34,8 @@
 (local (include-book "primitive-lemmas"))
 (local (std::add-default-post-define-hook :fix))
 
-(def-gl-formula-checks fast-alist-formula-checks
-  (hons-get
-   hons-assoc-equal
-   hons-equal
-   atom
-   last
-   hons-acons
-   fast-alist-fork
-   fast-alist-clean
-   make-fast-alist))
-
-(local (def-gl-formula-checks-lemmas fast-alist-formula-checks))
-
-
-(def-formula-check-definition-thm atom             fast-alist-formula-checks)
-(def-formula-check-definition-thm hons-equal       fast-alist-formula-checks)
-(def-formula-check-definition-thm hons-assoc-equal fast-alist-formula-checks)
-(def-formula-check-definition-thm hons-get         fast-alist-formula-checks)
-(def-formula-check-definition-thm hons-acons       fast-alist-formula-checks)
-(def-formula-check-definition-thm fast-alist-fork  fast-alist-formula-checks)
-(def-formula-check-definition-thm last             fast-alist-formula-checks)
-(def-formula-check-definition-thm fast-alist-clean fast-alist-formula-checks)
-(def-formula-check-definition-thm make-fast-alist  fast-alist-formula-checks)
-
+(def-formula-checks fast-alist-formula-checks
+  (hons-get hons-acons fast-alist-fork fast-alist-clean make-fast-alist))
 
 (set-ignore-ok t)
 

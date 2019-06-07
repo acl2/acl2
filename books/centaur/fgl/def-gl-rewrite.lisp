@@ -311,8 +311,7 @@ must be a function call.</li>
        (defthm ,name
          ,body
          :hints ,hints
-         :otf-flg ,otf-flg
-         :rule-classes nil)
+         :otf-flg ,otf-flg)
        (add-gl-branch-merge ,name)))
 
   (defmacro def-gl-branch-merge (name body &key hints otf-flg)

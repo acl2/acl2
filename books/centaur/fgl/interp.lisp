@@ -426,16 +426,25 @@
 
   :returns (mv contra
                (new-interp-st))
+  :guard-hints (("goal" :in-theory (enable pathcond-rewind-ok)))
   (stobj-let ((logicman (interp-st->logicman interp-st))
               (pathcond (interp-st->pathcond interp-st))
               (constraint-pathcond (interp-st->constraint interp-st)))
              (contra pathcond constraint-pathcond)
              ;; this is a bit weak... would be better to check against
              ;; both constraint and pathcond at once somehow
-             (b* (((mv constraint-implies constraint-pathcond)
-                   (logicman-pathcond-implies test constraint-pathcond))
-                  ((when (eql constraint-implies 0))
+             (b* ((constraint-pathcond (pathcond-fix constraint-pathcond))
+                  ((unless test)
                    (mv t pathcond constraint-pathcond))
+                  ;; ((mv constraint-implies constraint-pathcond)
+                  ;;  (logicman-pathcond-implies test constraint-pathcond))
+                  ;; ((when (eql constraint-implies 0))
+                  ;;  (mv t pathcond constraint-pathcond))
+                  ((mv contra constraint-pathcond)
+                   (logicman-pathcond-assume test constraint-pathcond))
+                  ((when contra)
+                   (mv t pathcond constraint-pathcond))
+                  (constraint-pathcond (pathcond-rewind (logicman->mode logicman) constraint-pathcond))
                   ((mv contra pathcond) (logicman-pathcond-assume test pathcond)))
                (mv contra pathcond constraint-pathcond))
              (mv contra interp-st))
@@ -807,6 +816,7 @@
 (define gl-object-basic-merge ((test lbfr-p)
                                (then gl-object-p)
                                (else gl-object-p)
+                               (make-ites-p)
                                &optional
                                (logicman 'logicman))
   :measure (acl2::two-nats-measure (+ (gl-object-count then)
@@ -936,7 +946,8 @@
                                              (x y)))
                                :in-theory (disable fgl-object-eval-of-gl-bfr-object-fix))))))
   :verify-guards nil
-  :returns (mv (obj gl-object-p)
+  :returns (mv (okp)
+               (obj gl-object-p)
                new-logicman)
   :guard-hints (("goal" :in-theory (enable bfr-ite-bss-fn)))
   :guard (and (gl-bfr-object-p then (logicman->bfrstate))
@@ -946,7 +957,7 @@
        (else (gl-bfr-object-fix else))
        ((when (equal (gl-object-fix then)
                      (gl-object-fix else)))
-        (mv (gl-bfr-object-fix then) logicman))
+        (mv t (gl-bfr-object-fix then) logicman))
        ((when (and (gobj-syntactic-booleanp then)
                    (gobj-syntactic-booleanp else)))
         (b* (((mv bfr logicman)
@@ -954,7 +965,7 @@
                        (gobj-syntactic-boolean->bool then)
                        (gobj-syntactic-boolean->bool else)
                        logicman)))
-          (mv (mk-g-boolean bfr) logicman)))
+          (mv t (mk-g-boolean bfr) logicman)))
        ((when (and (gobj-syntactic-integerp then)
                    (gobj-syntactic-integerp else)))
         (b* (((mv bfr logicman)
@@ -962,30 +973,42 @@
                             (gobj-syntactic-integer->bits then)
                             (gobj-syntactic-integer->bits else)
                             logicman)))
-          (mv (mk-g-integer bfr) logicman)))
+          (mv t (mk-g-integer bfr) logicman)))
        ((when (and (gobj-syntactic-consp then)
                    (gobj-syntactic-consp else)))
         (b* ((test (bfr-fix test))
-             ((mv car logicman)
+             ((mv car-ok car logicman)
               (gl-object-basic-merge test
                                      (gobj-syntactic-list->car then)
                                      (gobj-syntactic-list->car else)
+                                     make-ites-p
                                      logicman))
-             ((mv cdr logicman)
+             ((unless car-ok)
+              (mv nil nil logicman))
+             ((mv cdr-ok cdr logicman)
               (gl-object-basic-merge test
                                      (gobj-syntactic-list->cdr then)
                                      (gobj-syntactic-list->cdr else)
-                                     logicman)))
-          (mv (mk-g-cons car cdr) logicman))))
-    (mv (g-ite (mk-g-boolean (bfr-fix test)) then else)
+                                     make-ites-p
+                                     logicman))
+             ((unless cdr-ok)
+              (mv nil nil logicman)))
+          (mv t (mk-g-cons car cdr) logicman))))
+    (mv make-ites-p
+        (if make-ites-p (g-ite (mk-g-boolean (bfr-fix test)) then else) nil)
         logicman))
   ///
-  ;; (defret gl-bfr-object-p-of-<fn>
-  ;;   (gl-bfr-object-p obj (logicman->bfrstate new-logicman)))
-
   (local (in-theory (disable bfr-listp-when-not-member-witness
                              gl-bfr-object-fix-when-gl-bfr-object-p
                              (:d gl-object-basic-merge))))
+  ;; (defret gl-bfr-object-p-of-<fn>
+  ;;   (gl-bfr-object-p obj (logicman->bfrstate new-logicman)))
+
+  (fty::deffixequiv gl-object-basic-merge
+    :hints (("goal" :induct t)
+            '(:expand ((:free (test else) (gl-object-basic-merge test then else make-ites-p))
+                       (:free (test then) (gl-object-basic-merge test then else make-ites-p))))))
+                       
 
   (local (defthm bfr-listp-gl-object-bfrlist-of-gl-bfr-object-fix
            (bfr-listp (gl-object-bfrlist (gl-bfr-object-fix x)))
@@ -1015,10 +1038,11 @@
                  '(:in-theory (enable bfr-listp-when-not-member-witness)))))
 
   (defret eval-of-gl-object-basic-merge
-    (equal (fgl-object-eval obj env new-logicman)
-           (if (gobj-bfr-eval test env)
-               (fgl-object-eval then env logicman)
-             (fgl-object-eval else env logicman)))
+    (implies okp
+             (equal (fgl-object-eval obj env new-logicman)
+                    (if (gobj-bfr-eval test env)
+                        (fgl-object-eval then env logicman)
+                      (fgl-object-eval else env logicman))))
     :hints(("Goal" :expand (<call>) :induct <call>
             :in-theory (enable gobj-bfr-eval ;; gobj-bfr-list-eval-is-bfr-list-eval
                                fgl-object-eval-when-gobj-syntactic-consp))))
@@ -1039,6 +1063,67 @@
              (equal (logicman-get key new-logicman)
                     (logicman-get key logicman)))
     :hints(("Goal" :expand (<call>) :induct <call>))))
+
+(define interp-st-gl-object-basic-merge ((test interp-st-bfr-p)
+                                         (then gl-object-p)
+                                         (else gl-object-p)
+                                         interp-st)
+  :returns (mv (obj gl-object-p)
+               new-interp-st)
+  
+  :guard (and (interp-st-bfr-listp (gl-object-bfrlist then) interp-st)
+              (interp-st-bfr-listp (gl-object-bfrlist else) interp-st))
+  (b* ((make-ites (interp-flags->make-ites (interp-st->flags interp-st))))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (okp obj logicman)
+               (gl-object-basic-merge test then else make-ites logicman)
+               (b* (((unless okp)
+                     (gl-interp-error :msg "If-then-else failed to merge"
+                                      :debug-obj (cons test (gl-objectlist-fix (list then else))))))
+                 (mv obj interp-st))))
+  ///
+                       
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st)))
+
+  (defret bfr-object-p-of-<fn>
+    (lbfr-listp (gl-object-bfrlist obj) (interp-st->logicman new-interp-st)))
+
+  (defret logicman-extension-p-of-<fn>
+    (logicman-extension-p (interp-st->logicman new-interp-st) (interp-st->logicman interp-st)))
+
+  (defret eval-of-interp-st-gl-object-basic-merge
+    (implies (not (interp-st->errmsg new-interp-st))
+             (equal (fgl-object-eval obj env (interp-st->logicman new-interp-st))
+                    (if (gobj-bfr-eval test env (interp-st->logicman interp-st))
+                        (fgl-object-eval then env (interp-st->logicman interp-st))
+                      (fgl-object-eval else env (interp-st->logicman interp-st))))))
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (equal key1 (interp-st-field-fix key))
+                  (not (equal key1 :logicman))
+                  (not (equal key1 :errmsg))
+                  (not (equal key1 :debug-info)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-return-values-correct
+    (equal (list . <values>)
+           <call>))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+
 
 
 
@@ -2019,6 +2104,13 @@
              ;; Note we wouldn't do this fully "right" even if we had perfect
              ;; knowledge of congruences because our test term might be bound to a
              ;; variable that is used in both Boolean and non-Boolean contexts.
+
+             ;; Note this is still a little weak -- e.g. if foo above is a
+             ;; function that has an IFF congruence under IFF, then in the call
+             ;; above x is rewritten under an EQUAL congruence context, and our
+             ;; re-rewriting foo under an IFF congruence doesn't help that
+             ;; because we're not rewriting the args over again.
+             
              (reclimit (interp-st->reclimit interp-st))
              ((when (gl-interp-check-reclimit interp-st))
               (gl-interp-error
@@ -2284,10 +2376,7 @@
              ((unless (and** thenfn
                              (eq thenfn elsefn)
                              (eql (len thenargs) (len elseargs))))
-              (stobj-let ((logicman (interp-st->logicman interp-st)))
-                         (obj logicman)
-                         (gl-object-basic-merge testbfr thenval elseval)
-                         (mv obj interp-st)))
+              (interp-st-gl-object-basic-merge testbfr thenval elseval interp-st))
              ;; BOZO sad:
              (reclimit (interp-st->reclimit interp-st))
              ((when (gl-interp-check-reclimit interp-st))

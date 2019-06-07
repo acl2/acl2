@@ -223,12 +223,17 @@
 (in-theory (enable bfr-listp-when-not-member-witness))
 
 
-(defret gobj-bfr-list-eval-of-scons
-  (equal (gobj-bfr-list-eval bits env)
-         (scons (gobj-bfr-eval bit0 env)
-                (gobj-bfr-list-eval rest-bits env)))
-  :hints(("Goal" :in-theory (enable gobj-bfr-list-eval scons)))
-  :fn scons)
+(local (defthm bit-identity
+         (implies (bitp b)
+                  (equal (logcons b (- b)) (- b)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+(defthm gobj-bfr-list-eval-of-scons
+  (equal (bools->int (gobj-bfr-list-eval (scons bit0 rest-bits) env))
+         (intcons (gobj-bfr-eval bit0 env)
+                  (bools->int (gobj-bfr-list-eval rest-bits env))))
+  :hints(("Goal" :in-theory (enable gobj-bfr-list-eval scons)
+          :do-not-induct t)))
 
 
 (defthm equal-of-bfr-listp-witness

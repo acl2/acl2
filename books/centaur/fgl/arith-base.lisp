@@ -202,12 +202,23 @@ sign bit, which we must implicitly extend out to infinity.</p>"
 (define scons (bit0 (rest-bits true-listp))
   :returns (bits true-listp)
   :inline t
-  (cons bit0
-        (if (atom rest-bits)
-            '(nil)
-          (mbe :logic (true-list-fix rest-bits)
-               :exec rest-bits)))
+  (if (and 
+       (mbe :logic (atom (cdr rest-bits))
+            :exec (or (atom rest-bits) (atom (cdr rest-bits))))
+       (hons-equal bit0 (mbe :logic (car rest-bits)
+                             :exec (and (consp rest-bits) (car rest-bits)))))
+      (mbe :logic (true-list-fix rest-bits)
+           :exec rest-bits)
+    (cons bit0
+          (if (atom rest-bits)
+              '(nil)
+            (mbe :logic (true-list-fix rest-bits)
+                 :exec rest-bits))))
   ///
+
+  (local (defthm bit-identity
+           (implies (bitp x)
+                    (equal (+ x (* 2 (- x))) (- x)))))
 
   (defret bools->int-of-scons
     (equal (bools->int bits)

@@ -69,11 +69,29 @@
 
 ;; Prof-array layout:
 ;; The index for each rule is associated with the rule in prof-indextable.
-;; Each rule name gets 4 slots --
-;; (* 4 index)       -- tries (successful)
-;; (+ 1 (* 4 index)) -- tries (unsuccessful)
-;; (+ 2 (* 4 index)) -- frames (successful)
-;; (+ 3 (* 4 index)) -- frames (unsuccessful)
+;; Each rule name gets 5 slots --
+;; (* 5 index)       -- tries (successful)
+;; (+ 1 (* 5 index)) -- tries (unsuccessful)
+;; (+ 2 (* 5 index)) -- frames (successful)
+;; (+ 3 (* 5 index)) -- frames (unsuccessful)
+;; (+ 4 (* 5 index)) -- number of occurrences of the rule remaining on the stack.
+
+;; Previously, we naively counted tries/frames by recording on the stack the
+;; current total count of rule applications attempted, then adding the
+;; difference between the new total count and the recorded total count when
+;; popping that frame off the stack. However, when rules are applied under
+;; other applications of the same rule, this counts many applications multiple
+;; times for that rule.  E.g., if a rule is applied inside 99 other
+;; applications of that same rule, then the frames counted under that
+;; application are counted 100x toward that rule!
+
+;; There is some double-counting inherent in counting frames (versus tries,
+;; which are pretty straightforward).  Each rule application attempt will be
+;; counted toward the frame count of every rule in the stack.  But we'll avoid
+;; this sort of N^2 behavior within a single rule by only counting frames when
+;; on the outermost application of a rule -- that is, when the number of
+;; occurrences of the rule remaining on the stack is 1.
+
 
 (defmacro prof-index-to-slot (index tries/frames succ/fail)
   (if (and (or (eq tries/frames :tries)
@@ -82,15 +100,18 @@
                (eq succ/fail :fail)))
       (if (eq tries/frames :tries)
           (if (eq succ/fail :succ)
-              `(* 4 ,index)
-            `(+ 1 (* 4 ,index)))
+              `(* 5 ,index)
+            `(+ 1 (* 5 ,index)))
         (if (eq succ/fail :succ)
-            `(+ 2 (* 4 ,index))
-          `(+ 3 (* 4 ,index))))
+            `(+ 2 (* 5 ,index))
+          `(+ 3 (* 5 ,index))))
     (er hard? 'prof-index-to-slot "Bad inputs~%")))
 
+(defmacro prof-index-stackcount (index)
+  `(+ 4 (* 5 ,index)))
+
 (defmacro prof-index-in-range (index length)
-  `(< (+ 3 (* 4 ,index)) ,length))
+  `(< (+ 4 (* 5 ,index)) ,length))
 
 (local (defthm prof-arrayp-is-u32-listp
          (equal (prof-arrayp x)
@@ -126,7 +147,8 @@
        (interp-profiler (update-prof-arrayi (prof-index-to-slot index :tries :succ) 0 interp-profiler))
        (interp-profiler (update-prof-arrayi (prof-index-to-slot index :tries :fail) 0 interp-profiler))
        (interp-profiler (update-prof-arrayi (prof-index-to-slot index :frames :succ) 0 interp-profiler))
-       (interp-profiler (update-prof-arrayi (prof-index-to-slot index :frames :fail) 0 interp-profiler)))
+       (interp-profiler (update-prof-arrayi (prof-index-to-slot index :frames :fail) 0 interp-profiler))
+       (interp-profiler (update-prof-arrayi (prof-index-stackcount index) 0 interp-profiler)))
     (mv index interp-profiler))
   ///
   (std::defret prof-index-in-range-of-prof-ensure-index
@@ -141,12 +163,74 @@
                     (nth n interp-profiler)))))
   
 
+;; (local (defthm plus-one-when-unsigned-byte-p
+;;          (implies (and (unsigned-byte-p 32 x)
+;;                        (<= (+ 1 x) #xffffffff))
+;;                   (unsigned-byte-p 32 (+ 1 x)))
+;;          :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
+
+(local (in-theory (enable acl2::nth-in-u32-listp-u32p)))
+
+;; (local (defthm rationalp-when-integerp
+;;          (implies (integerp x)
+;;                   (rationalp x))))
+
+(define prof-increment-stackcount ((index natp)
+                                   interp-profiler)
+  :returns (new-interp-profiler)
+  :guard (prof-index-in-range index (prof-array-length interp-profiler))
+  (b* ((stackcount-idx (prof-index-stackcount (lnfix index))))
+    (update-prof-arrayi stackcount-idx
+                        ;; needs to be 32-bit
+                        (logand #xffffffff (+ 1 (prof-arrayi stackcount-idx interp-profiler)))
+                        interp-profiler))
+  ///
+
+  (std::defret prof-increment-stackcount-frame
+    (implies (not (member n (list *prof-arrayi*)))
+             (equal (nth n new-interp-profiler)
+                    (nth n interp-profiler)))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (std::defret prof-increment-stackcount-len
+    (implies (prof-index-in-range (nfix index) (len (nth *prof-arrayi* interp-profiler)))
+             (Equal (len (nth *prof-arrayi* new-interp-profiler))
+                    (len (nth *prof-arrayi* interp-profiler))))
+    :hints(("Goal" :in-theory (disable (force))))))
+
+(define prof-decrement-stackcount ((index natp)
+                                   interp-profiler)
+  :returns (mv (new-stackcount natp :rule-classes :type-prescription)
+               (new-interp-profiler))
+  :guard (prof-index-in-range index (prof-array-length interp-profiler))
+  (b* ((stackcount-idx (prof-index-stackcount (lnfix index)))
+       (new-stackcount (max 0 (+ -1 (lnfix (prof-arrayi stackcount-idx interp-profiler)))))
+       (interp-profiler (update-prof-arrayi stackcount-idx
+                                            new-stackcount
+                                            interp-profiler)))
+    (mv new-stackcount interp-profiler))
+  ///
+
+  (std::defret prof-decrement-stackcount-frame
+    (implies (not (member n (list *prof-arrayi*)))
+             (equal (nth n new-interp-profiler)
+                    (nth n interp-profiler)))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (std::defret prof-decrement-stackcount-len
+    (implies (prof-index-in-range (nfix index) (len (nth *prof-arrayi* interp-profiler)))
+             (Equal (len (nth *prof-arrayi* new-interp-profiler))
+                    (len (nth *prof-arrayi* interp-profiler))))
+    :hints(("Goal" :in-theory (disable (force))))))
+
+
 ;; Stack contains conses (rule-index . totalcount) that are pushed on when beginning to relieve a rule's hyps.  Each 
 (define prof-push (name interp-profiler)
   :returns (new-interp-profiler)
   (b* (((unless (prof-enabledp interp-profiler)) interp-profiler)
        (totalcount (prof-totalcount interp-profiler))
-       ((mv index interp-profiler) (prof-ensure-index name interp-profiler)))
+       ((mv index interp-profiler) (prof-ensure-index name interp-profiler))
+       (interp-profiler (prof-increment-stackcount index interp-profiler)))
     (update-prof-stack (cons (cons index totalcount) (prof-stack interp-profiler))
                        interp-profiler)))
 
@@ -188,6 +272,9 @@
         (cw "Interp-profiler count invariant violated~%")
         interp-profiler)
        (interp-profiler (update-prof-totalcount totalcount interp-profiler))
+       ((mv stackcount interp-profiler) (prof-decrement-stackcount index interp-profiler))
+       ((unless (eql stackcount 0))
+        interp-profiler)
        (diff (- totalcount (lnfix prev-count))))
     (prof-increment-index index successp diff interp-profiler))
   ///
@@ -235,12 +322,6 @@
   (b* (((mv index interp-profiler) (prof-ensure-index name interp-profiler))
        (count (prof-totalcount interp-profiler)))
     (prof-increment-base index count t interp-profiler)))
-
-(define prof-simple-increment-def (name interp-profiler)
-  :returns (new-interp-profiler)
-  (b* (((unless (prof-enabledp interp-profiler))
-        interp-profiler))
-    (prof-simple-increment `(:d ,name) interp-profiler)))
 
 (define prof-simple-increment-exec (name interp-profiler)
   :returns (new-interp-profiler)
@@ -322,7 +403,7 @@
     :true-listp t))
 
 (define prof->prof-entry (name (index natp) interp-profiler)
-  :guard (< (+ 3 (* 4 index)) (prof-array-length interp-profiler))
+  :guard (prof-index-in-range index (prof-array-length interp-profiler))
   :returns (entry prof-entry-p)
   (make-prof-entry :name name
                    :tries-succ (lnfix (prof-arrayi (prof-index-to-slot index :tries :succ) interp-profiler))
@@ -339,7 +420,7 @@
         (prof->prof-entrylist-aux (cdr table) interp-profiler acc))
        ((cons name index) (car table))
        ((unless (and (natp index)
-                     (< (+ 3 (* 4 index)) (prof-array-length interp-profiler))))
+                     (prof-index-in-range index (prof-array-length interp-profiler))))
         (cw "Interp-profiler invariant violated~%")
         (prof->prof-entrylist-aux (cdr table) interp-profiler acc))
        (entry (prof->prof-entry name index interp-profiler)))
