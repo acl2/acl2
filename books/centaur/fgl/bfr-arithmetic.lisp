@@ -218,9 +218,13 @@
 ;;                      (x (aabf-car x)) (x-equiv b)))
 ;;               :in-theory (disable aabf-syntactically-equal-implies-equal-aabf-eval-1)))))
 
-(defmacro logicman-extension-nvars-preserved (x y)
+(defmacro logicman-extension-plus (x y)
   `(and (logicman-extension-p ,x ,y)
-        (equal (bfr-nvars ,x) (bfr-nvars ,y))))
+        (equal (bfr-nvars ,x) (bfr-nvars ,y))
+        (equal (logicman->ipasir ,x) (logicman->ipasir ,y))
+        (equal (logicman->sat-lits ,x) (logicman->sat-lits ,y))
+        (equal (logicman->refcounts-index ,x) (logicman->refcounts-index ,y))
+        (equal (logicman->aignet-refcounts ,x) (logicman->aignet-refcounts ,y))))
 
 (table aabf->bfr-map
        nil
@@ -236,7 +240,7 @@
          (aabf-iff                 . bfr-iff)
          (aabf-ite                 . bfr-ite)
          (aabf-syntactically-equal . equal)
-         (aabf-extension-p         . logicman-extension-nvars-preserved)
+         (aabf-extension-p         . logicman-extension-plus)
          (aabflist-eval            . gobj-bfr-list-eval)
          (aabflist-p               . lbfr-listp)
          (aabflist-pred            . bfr-list-not-depends-on-var)
@@ -263,7 +267,7 @@
          (aabf-iff bfr-iff-fn)
          (aabf-ite bfr-ite-fn)
          (aabf-syntactically-equal hons-equal)
-         (aabf-extension-p (lambda (x y) (logicman-extension-nvars-preserved x y)))
+         (aabf-extension-p (lambda (x y) (logicman-extension-plus x y)))
          (aabflist-eval gobj-bfr-list-eval-fn)
          ;; (aabf-syntactically-true-p bfr-syntactically-true-p)
          ;; (aabf-syntactically-false-p bfr-syntactically-false-p)

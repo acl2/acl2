@@ -38,7 +38,12 @@
 
 
 (def-formula-checks bitops-formula-checks
-  (logapp acl2::logmask$inline acl2::logtail$inline acl2::loghead$inline logbitp))
+  (logapp
+   acl2::logmask$inline
+   acl2::logtail$inline
+   acl2::loghead$inline
+   logbitp
+   integer-length))
 
 
 
@@ -213,10 +218,132 @@
   :formula-check bitops-formula-checks)
 
 
+(def-gl-primitive < (x y)
+  (b* ((ok (gobj-syntactic-integerp x))
+       ((unless ok) (mv nil nil interp-st))
+       (ok (gobj-syntactic-integerp y))
+       ((unless ok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans logicman)
+               (bfr-<-ss x-bits y-bits logicman)
+               (mv t (mk-g-boolean ans) interp-st))))
+
+(def-gl-primitive integer-length (x)
+  (b* (((mv ok x) (gobj-syntactic-integer-fix x))
+       ((unless ok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans logicman)
+               (bfr-integer-length-s x-bits logicman)
+               (mv t (mk-g-integer ans) interp-st)))
+  :formula-check bitops-formula-checks)
+
+(define gl-equal-primitive ((x gl-object-p)
+                            (y gl-object-p)
+                            interp-st)
+  :returns (mv ok (equalp gl-object-p) new-interp-st)
+  
+
+(local (defthm gl-objectlist-fix-when-consp
+         (implies (consp x)
+                  (equal (gl-objectlist-fix x)
+                         (cons (gl-object-fix (car x))
+                               (gl-objectlist-fix (cdr x)))))))
+
+(local (defthm equal-of-g-concrete->val
+         (implies (and (gl-object-case x :g-concrete)
+                       (gl-object-case y :g-concrete))
+                  (equal (equal (g-concrete->val x)
+                                (g-concrete->val y))
+                         (equal (gl-object-fix x)
+                                (gl-object-fix y))))
+         :hints(("Goal" :in-theory (e/d (gl-object-fix-when-g-concrete)
+                                        (g-concrete-of-fields))))))
+
+(local (defthmd g-concrete->val-type-when-not-syntactic-integer
+         (implies (and (not (gobj-syntactic-integerp x))
+                       (gl-object-case x :g-concrete))
+                  (not (integerp (g-concrete->val x))))
+         :hints(("Goal" :in-theory (enable gobj-syntactic-integerp)))
+         :rule-classes :type-prescription))
+
+(local (defthmd g-concrete->val-type-when-not-syntactic-boolean
+         (implies (and (not (gobj-syntactic-booleanp x))
+                       (gl-object-case x :g-concrete))
+                  (not (booleanp (g-concrete->val x))))
+         :hints(("Goal" :in-theory (enable gobj-syntactic-booleanp)))
+         :rule-classes :type-prescription))
+
+(local (in-theory (enable g-concrete->val-type-when-not-syntactic-boolean
+                          g-concrete->val-type-when-not-syntactic-integer)))
+
+(local (in-theory (disable acl2::member-equal-append
+                           acl2::member-of-append
+                           boolean-listp
+                           (tau-system))))
+
+(def-gl-primitive equal (x y)
+  (b* (((when (equal x y)) (mv t t interp-st))
+       ((when (and (gl-object-case x :g-concrete)
+                   (gl-object-case y :g-concrete)))
+        (mv t nil interp-st))
+       ((when (gobj-syntactic-integerp x))
+        (cond ((gobj-syntactic-integerp y)
+               (stobj-let ((logicman (interp-st->logicman interp-st)))
+                          (ans logicman)
+                          (bfr-=-ss (gobj-syntactic-integer->bits x)
+                                    (gobj-syntactic-integer->bits y)
+                                    logicman)
+                          (mv t (mk-g-boolean ans) interp-st)))
+              ((gl-object-case y '(:g-boolean :g-concrete :g-cons))
+               (mv t nil interp-st))
+              (t (mv nil nil interp-st))))
+       ((when (gobj-syntactic-booleanp x))
+        (cond ((gobj-syntactic-booleanp y)
+               (stobj-let ((logicman (interp-st->logicman interp-st)))
+                          (ans logicman)
+                          (bfr-iff (gobj-syntactic-boolean->bool x)
+                                   (gobj-syntactic-boolean->bool y)
+                                   logicman)
+                          (mv t (mk-g-boolean ans) interp-st)))
+              ((gl-object-case y '(:g-integer :g-concrete :g-cons))
+               (mv t nil interp-st))
+              (t (mv nil nil interp-st))))
+       ((when (gobj-syntactic-integerp y))
+        (mv (gl-object-case x '(:g-boolean :g-concrete :g-cons))
+            nil interp-st))
+       ((when (gobj-syntactic-booleanp y))
+        (mv (gl-object-case x '(:g-integer :g-concrete :g-cons))
+            nil interp-st)))
+    ;; BOZO add support for recursive primitives and add CONS case
+    (mv nil nil interp-st)))
+
+(local (in-theory (disable g-concrete->val-type-when-not-syntactic-boolean
+                           g-concrete->val-type-when-not-syntactic-integer)))
+       ;; ((when (gobj-syntactic-consp x))
+       ;;  (cond ((gobj-syntactic-consp y)
+       ;;         (b* (((mv ok car-equal
+       ;;         (stobj-let ((logicman (interp-st->logicman interp-st)))
+       ;;                    (ans logicman)
+       ;;                    (bfr-iff (gobj-syntactic-boolean->bool x)
+       ;;                             (gobj-syntactic-boolean->bool y))
+       ;;                    (mv t (mk-g-boolean ans) interp-st)))
+       ;;        ((gl-object-case y '(:g-integer :g-concrete :g-cons))
+       ;;         (mv t nil interp-st))
+       ;;        (t (mv nil nil interp-st)))
+          
+
+
+
 
 (local (install-gl-primitives logapp))
 (remove-gl-rewrite logapp-const-width)
 (remove-gl-rewrite logtail-const-shift)
+(remove-gl-rewrite integer-length-impl)
+(remove-gl-rewrite <-impl)
+(remove-gl-rewrite fgl-equal)
 
 (def-gl-rewrite logapp-const-width-allow-primitive
   (implies (syntaxp (and (integerp n)
@@ -231,3 +358,29 @@
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::logapp**))))
 
+(def-gl-rewrite logtail-const-shift-allow-primitive
+  (implies (syntaxp (and (integerp n)
+                         (gl-object-case x '(:g-var :g-apply))))
+           (equal (logtail n x)
+                  (if (or (zp n)
+                          (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+                      (int x)
+                    (logtail (1- n) (intcdr x)))))
+  :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
+                                    bitops::logtail**))))
+
+
+
+(def-gl-rewrite fgl-equal-of-cons
+  (equal (equal x y)
+         (let ((xsyn (syntax-bind xsyn (g-concrete x)))
+               (ysyn (syntax-bind ysyn (g-concrete y))))
+           (cond ((check-consp x xsyn)
+                  (cond ((check-consp y ysyn)
+                         (and (equal (car x) (car y))
+                              (equal (cdr x) (cdr y))))
+                        ((check-non-consp y ysyn) nil)
+                        (t (abort-rewrite (equal x y)))))
+                 ((and (check-consp y ysyn)
+                       (check-non-consp x xsyn)) nil)
+                 (t (abort-rewrite (equal x y)))))))
