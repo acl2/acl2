@@ -42,7 +42,7 @@
      (xdoc::a :href "https://github.com/ethereum/wiki/wiki" "Ethereum Wiki")
      ", referenced as `[Wiki]' in the documentation of this library.")
     (xdoc::li
-     "The BYZANTIUM VERSION db5942f of the "
+     "The BYZANTIUM VERSION 3e36772 of the "
      (xdoc::a :href "https://github.com/ethereum/yellowpaper"
        "Ethereum Yellow Paper")
      ", referenced as `[YP]' in the documentation of this library.
