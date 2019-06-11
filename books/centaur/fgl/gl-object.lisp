@@ -57,7 +57,76 @@
 
 (fty::deftypes gl-object
   (fty::defflexsum gl-object
+    :parents (fgl)
+    :short "FGL symbolic object type"
+    :long "<p>An FGL symbolic object is the representation for symbolic data
+inside the FGL interpreter.  There are several kinds of objects, including
+concrete objects that simply represent a particular explicit value, bit-level
+objects that represent some function resulting in a Boolean or
+bitvector (integer), and termlike objects that represent free variables and
+calls of arbitrary functions on symbolic objects.</p>
+
+<p>Symbolic objects are evaluated using @(see fgl-object-eval).  This takes an
+environment object of type @(see gl-env) consisting of an alist mapping free
+variables to their values, for evaluating @(see g-var) objects, and a Boolean
+function environment for evaluating @(see g-boolean) and @(see g-integer)
+objects.</p>
+
+<p>The GL object type is an <see topic='@(url fty::fty)'>FTY</see>-style
+sum-of-products type.  That means any of the sum members listed above may be
+used to construct an object of this type.  Functions that access GL objects
+must check which kind of object they have been passed.  The kind of a GL object
+may be accessed using the @('gl-object-kind') function, but usually it is
+easier to use the @('gl-object-case') macro, which we illustrate using the
+following examples:</p>
+@({
+;; If x is a g-concrete representing an integer, return its integer-length plus
+;; one, else if it's a g-integer return the length of its bitlist, else NIL:
+ (gl-object-case x
+    :g-concrete (and (integerp x.val) (+ 1 (integer-length x.val)))
+    :g-integer (len x.bits)
+    :otherwise nil)
+
+;; Check whether x can be syntactically determined to be always non-NIL.
+ (defun gobj-syntactically-nonnil (x)
+   (gl-object-case x
+      :g-concrete (and x.val t)
+      :g-integer  t
+      :g-boolean  (eq x.bool t)
+      :g-ite      (if (gobj-syntactically-nonnil x.test)
+                      (gobj-syntactically-nonnil x.then)
+                    (and (gobj-syntactically-nonnil x.then)
+                         (gobj-syntactically-nonnil x.else)))
+      :g-apply    nil
+      :g-var      nil
+      :g-cons     t
+      :g-map      (and x.alist t)))
+
+;; Check whether x is a g-concrete object.
+  (gl-object-case x :g-concrete)
+
+;; Check whether x is either a g-concrete or g-boolean object.
+  (gl-object-case x '(:g-concrete :g-boolean))
+
+ })
+
+<p>The first two examples above show @('gl-object-case') both
+case-splitting between different kinds and also binding fields of @('x') using
+dotted notation, e.g. @('x.bits') above is bound to @('(g-integer->bits x)').
+The latter two show a special syntax that is a shortcut for checking the kind
+of @('x').  Note that it is likely preferable to use @('(gl-object-case
+x :g-concrete)') rather than @('(eq (gl-object-kind x) :g-concrete)'), even
+though they have the same meaning, because the former will produce an error in
+case you misspell @(':g-concrete').</p>
+"
     (:g-concrete
+     :short "GL-object constructor for constant (quoted) objects."
+     :long "<p>An object constructed as @('(g-concrete val)') evaluates to @('val').
+            Atoms other than the GL object keywords (listed below) are represented as themselves.
+            Other objects are represented as @('(:g-concrete . obj)').</p>
+            <p>The GL object keywords are members of the list @('(gl-object-keys)'), namely:</p>
+            @(`(:code (gl-object-keys))`)
+            <p>All atoms other than these are GL objects representing themselves.</p>"
      :cond (or (atom x)
                (eq (car x) :g-concrete))
      :shape (and (not (member x (gl-object-keys)))
@@ -73,16 +142,30 @@
                   (cons :g-concrete val))
      :type-name g-concrete)
     (:g-boolean
+     :short "GL object constructor for symbolic Boolean objects."
+     :long "<p>An object constructed as @('(g-boolean bool)') evaluates to the
+            value of the Boolean function @('bool') under the current
+            Boolean function environment, evaluated by @(see bfr-eval)."
      :cond (eq (car x) :g-boolean)
      :fields ((bool :acc-body (cdr x)))
      :ctor-body (cons :g-boolean bool)
      :type-name g-boolean)
     (:g-integer
+     :short "GL object constructor for symbolic integers, with Boolean functions representing the bits."
+     :long "<p>An object constructed as @('(g-integer bits)') evaluates to the
+            two's-complement integer formed by evaluating each Boolean function
+            in the list @('bits') using @(see bfr-eval), and then converting
+            that Boolean list to an integer using @(see bool->bits).</p>"
      :cond (eq (car x) :g-integer)
      :fields ((bits :acc-body (cdr x) :type true-listp))
      :ctor-body (cons :g-integer bits)
      :type-name g-integer)
     (:g-ite
+     :short "GL object constructor for if-then-else objects."
+     :long "<p>An object constructed as @('(g-ite test then else)') represents
+            the if-then-else of the evaluations of sub-objects test, then, and
+            else.</p>
+            <p>This could simply be replaced by @('(g-apply 'if test then else)').</p>"
      :cond (eq (car x) :g-ite)
      :shape (and (consp (cdr x))
                  (consp (cddr x)))
@@ -92,6 +175,10 @@
      :ctor-body (cons :g-ite (cons test (cons then else)))
      :type-name g-ite)
     (:g-apply
+     :short "GL object constructor for function calls."
+     :long "<p>An object constructed as @('(g-apply fn args)') represents the
+            application of function symbol @('fn') to the evaluation of
+            @('args'), which must be a list of GL objects.</p>"
      :cond (eq (car x) :g-apply)
      :shape (consp (cdr x))
      :fields ((fn :type pseudo-fnsym :acc-body (cadr x))
@@ -99,11 +186,22 @@
      :ctor-body (cons :g-apply (cons fn args))
      :type-name g-apply)
     (:g-var
+     :short "GL object constructor for free variables."
+     :long "<p>An object constructed as @('(g-var name)') simply evaluates to
+            the binding of variable symbol @('name') in the free variable alist
+            of the environment.</p>"
      :cond (eq (car x) :g-var)
      :fields ((name :type pseudo-var :acc-body (cdr x)))
      :ctor-body (cons :g-var name)
      :type-name g-var)
     (:g-map
+     :short "GL object constructor for fast alists and arrays."
+     :long "<p>An object constructed as @('(g-map tag alist)') evaluates to the
+            evaluation of @('alist') as a GL object alist -- that is, a list of
+            pairs where the keys are concrete objects which are not evaluated
+            and the values are GL objects.  The @('g-map') kind is used in
+            fast-alist and @(see fgarray) primitives to offer constant-time
+            lookups in fast alists and arrays.</p>"
      :cond (and (consp (car x))
                 (eq (caar x) :g-map))
      :fields ((tag :type g-map-tag :acc-body (car x))
@@ -112,6 +210,13 @@
      :type-name g-map)
 
     (:g-cons
+     :short "GL object constructor for conses."
+     :long "<p>An object constructed as @('(g-cons car cdr)') evaluates to the
+            cons of the evaluations of GL objects @('car') and @('cdr').  This
+            could be represented instead as @('(g-apply 'cons car cdr)'), but
+            the @('g-cons') constructor saves memory by using only one cons in
+            its representation, rather than four as would be used in the
+            @('g-apply') version.</p>"
      :fields ((car :type gl-object :acc-body (car x))
               (cdr :type gl-object :acc-body (cdr x)))
      :ctor-body (cons car cdr)
@@ -129,8 +234,10 @@
                        (not (equal (car x) :g-map)))
               :hints (("goal" :expand ((gl-object-p x)
                                        (gl-object-p (car x)))))))))
-  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t)
-  (fty::defmap gl-object-alist :val-type gl-object :true-listp nil))
+  (fty::deflist gl-objectlist :elt-type gl-object :true-listp t :elementp-of-nil t
+    :parents (gl-object))
+  (fty::defmap gl-object-alist :val-type gl-object :true-listp nil
+    :parents (gl-object)))
      
 
 (defsection g-int

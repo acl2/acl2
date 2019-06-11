@@ -51,10 +51,14 @@
 (defun collect-lemmas-for-rune (rune world)
   (declare (xargs :mode :program))
   (b* ((nume (acl2::runep rune world))
-       ((unless nume) nil)
+       ((unless nume)
+        (er hard? 'collect-lemmas-for-rune
+            "Found no nume for ~x0" rune))
        (segment (acl2::world-to-next-event
                  (cdr (acl2::decode-logical-name (cadr rune) world)))))
-    (scan-props-for-nume-lemma (acl2::actual-props segment nil nil) nume)))
+    (or (scan-props-for-nume-lemma (acl2::actual-props segment nil nil) nume)
+        (er hard? 'collect-lemmas-for-rune
+            "Found no lemmas for ~x0 (nume: ~x1)" rune nume))))
 
 (defun collect-lemmas-for-runes (runes world)
   (Declare (xargs :mode :program))
@@ -269,12 +273,42 @@ current GL clause processor.</p>
   (declare (xargs :guard (plist-worldp wrld)))
   (cdr (hons-assoc-equal 'gl-branch-merge-rules (table-alist 'gl-branch-merge-rules wrld))))
 
+(defun find-gl-branch-merge-lemma (lemmas)
+  (b* (((when (atom lemmas)) nil)
+       (x (car lemmas))
+       (lhs (acl2::access acl2::rewrite-rule x :lhs))
+       ((unless (case-match lhs
+                  (('if test (fn . &) else)
+                   (and (symbolp test)
+                        (symbolp else)
+                        (symbolp fn)
+                        (not (eq fn 'quote))))
+                  (& nil)))
+        (find-gl-branch-merge-lemma (cdr lemmas))))
+    x))
+    
+(defun check-gl-branch-merge-rule-fn (rune wrld)
+  (Declare (Xargs :guard (plist-worldp wrld)
+                  :mode :program))
+  (b* ((lemmas (collect-lemmas-for-rune rune wrld))
+       ((unless (find-gl-branch-merge-lemma lemmas))
+        (er hard? 'check-gl-branch-merge-rule-fn
+            "Couldn't find a suitable branch merge rule named ~x0.  Such a ~
+             rule ought to have IF as the leading function symbol of the LHS." rune)))
+    '(value-triple :ok)))
+       
+
+(defmacro check-gl-branch-merge-rule (rune)
+  `(make-event (check-gl-branch-merge-rule-fn ',rune (w state))))
+
 (defun add-gl-branch-merge-fn (rune)
   (declare (xargs :mode :program))
   (b* ((rune (if (symbolp rune) `(:rewrite ,rune) rune)))
-    `(table gl-branch-merge-rules
-            'gl-branch-merge-rules
-            (add-to-set-equal ',rune (gl-branch-merge-rules world)))))
+    `(progn
+       (check-gl-branch-merge-rule ,rune)
+       (table gl-branch-merge-rules
+              'gl-branch-merge-rules
+              (add-to-set-equal ',rune (gl-branch-merge-rules world))))))
 
 (defmacro add-gl-branch-merge (rune)
   (add-gl-branch-merge-fn rune))

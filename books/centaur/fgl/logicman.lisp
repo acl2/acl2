@@ -830,8 +830,27 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 
 
-(define bfr-eval ((x lbfr-p) env &optional (logicman 'logicman))
+(define bfr-eval ((x lbfr-p "A Boolean function object")
+                  (env "The (Boolean) evaluation environment")
+                  &optional ((logicman 'logicman) "The logic manager"))
   :short "Evaluate a BFR under an appropriate BDD/AIG environment."
+  :long "<p>@('Bfr-eval') is the evaluator for Boolean function objects in FGL.</p>
+
+<p>Boolean function objects in FGL may be <see topic='@(url acl2::ubdds)'>UBDDs</see>,
+<see topic='@(url acl2::aig)'>hons-AIGs</see>, or <see topic='@(url acl2::aignet)'>
+aignet</see> literals (represented as natural numbers).  The @(see bfr-mode) of
+the logic manager (accessed as @('(logicman->mode logicman)')) determines how
+the objects are interpreted.  Furthermore, in the aignet mode, literals must be
+evaluated relative to an aignet, which is also stored in the logic manager as a
+nested stobj, accessed using @('(logicman->aignet logicman)').</p>
+
+<p>The @('env') input determines the values of Boolean variables, but its form
+also depends on the BFR mode.  In UBDD mode, it is an ordered list of Boolean
+values, where @('(nth n env)') is the value of Boolean variable @('n').
+Otherwise, it is a fast alist mapping natural numbers to Boolean values, and
+the value of the nth Boolean variable is @('(cdr (hons-get n env))').  In
+aignet mode, the Boolean variable numbers map to primary inputs of the AIG --
+registers are not used.</p>"
   :returns (bool t)
   :prepwork (;; (local (include-book "std/lists/nth" :dir :system))
              (local (defthm alist-to-bits-of-nil-under-bits-equiv
@@ -2187,8 +2206,10 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 (fty::defmap obj-alist :true-listp t)
 
 (fty::defprod gl-env
-  ((obj-alist obj-alist)
-   (bfr-vals))
+  :parents (fgl-object-eval)
+  :short "Type of environment objects for FGL object evaluation."
+  ((obj-alist obj-alist "Alist mapping free variable names to their values")
+   (bfr-vals            "Boolean function evaluation environment for use by @(see bfr-eval)"))
   :layout :tree)
 
 (define gobj-bfr-eval ((x lbfr-p)
