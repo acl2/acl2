@@ -131,7 +131,7 @@
   ;; Op/En: RM
   ;; [OP REG, R/M]
   ;; 8A: MOV r8,  r/m8
-  ;; 8A: MOV r16, r/m16
+  ;; 8B: MOV r16, r/m16
   ;; 8B: MOV r32, r/m32
   ;; 8B: MOV r64, r/m64
 
