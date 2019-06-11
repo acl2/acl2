@@ -271,6 +271,18 @@
      have been moved to @('[books]/std/alists/')
      from @('[books]/kestrel/utilities/alists/').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "x86isa::x86isa" "X86ISA"))
+
+   (xdoc::p
+    "The following instructions have been added to the model:")
+   (xdoc::ul
+    (xdoc::li "@('MOV moffs8, AL')")
+    (xdoc::li "@('MOV moffs16, AX')")
+    (xdoc::li "@('MOV moffs32, EAX')")
+    (xdoc::li "@('MOV moffs64, RAX')"))
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")

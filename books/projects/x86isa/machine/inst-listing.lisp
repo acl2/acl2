@@ -1145,11 +1145,11 @@
           '((:UD (UD-LOCK-USED))))
     (INST "MOV" (OP :OP #xA2)
           (ARG :OP1 '(O B) :OP2 '(:AL))
-          'NIL
+          '(X86-MOV-OP/EN-TD)
           '((:UD (UD-LOCK-USED))))
     (INST "MOV" (OP :OP #xA3)
           (ARG :OP1 '(O V) :OP2 '(:RAX))
-          'NIL
+          '(X86-MOV-OP/EN-TD)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVS/B" (OP :OP #xA4)
           (ARG :OP1 '(Y B) :OP2 '(X B))
