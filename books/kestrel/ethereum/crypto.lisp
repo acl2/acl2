@@ -26,5 +26,5 @@
      from external libraries.")
    (xdoc::p
     "In particular, the function "
-    (xdoc::seeurl "crypto::keccak-256-placeholder" "@('keccak-256')")
+    (xdoc::seeurl "crypto::keccak-256-interface" "@('keccak-256-bytes')")
     " corresponds to @($\\mathtt{KEC}$) [YP:3].")))

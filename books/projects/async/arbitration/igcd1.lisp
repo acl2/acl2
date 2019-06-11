@@ -132,9 +132,9 @@
 ;; Constraints on the state of IGCD
 
 (defund igcd$st-format (st data-size)
-  (b* ((l (get-field *igcd$l* st))
-       (interl (get-field *igcd$interl* st))
-       (gcd1 (get-field *igcd$gcd1* st)))
+  (b* ((l (nth *igcd$l* st))
+       (interl (nth *igcd$interl* st))
+       (gcd1 (nth *igcd$gcd1* st)))
     (and (link$st-format l (* 2 data-size))
          (interl$st-format interl (* 2 data-size))
          (gcd1$st-format gcd1 data-size))))
@@ -147,9 +147,9 @@
   :rule-classes :forward-chaining)
 
 (defund igcd$valid-st (st data-size)
-  (b* ((l (get-field *igcd$l* st))
-       (interl (get-field *igcd$interl* st))
-       (gcd1 (get-field *igcd$gcd1* st)))
+  (b* ((l (nth *igcd$l* st))
+       (interl (nth *igcd$interl* st))
+       (gcd1 (nth *igcd$gcd1* st)))
     (and (link$valid-st l (* 2 data-size))
          (interl$valid-st interl (* 2 data-size))
          (gcd1$valid-st gcd1 data-size))))
@@ -219,8 +219,8 @@
 
          (interl-go-signals (take *interl$go-num* go-signals))
 
-         (l (get-field *igcd$l* st))
-         (l.s (get-field *link$s* l)))
+         (l (nth *igcd$l* st))
+         (l.s (nth *link$s* l)))
       (list* full-in0 full-in1 (f-buf (car l.s))
              (append data0-in data1-in
                      (cons select interl-go-signals)))))
@@ -229,14 +229,14 @@
 
   (defund igcd$interl-out-act0 (inputs st data-size)
     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
-         (interl (get-field *igcd$interl* st)))
+         (interl (nth *igcd$interl* st)))
       (interl$out-act0 interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "out-act1" signal for joint INTERL
 
   (defund igcd$interl-out-act1 (inputs st data-size)
     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
-         (interl (get-field *igcd$interl* st)))
+         (interl (nth *igcd$interl* st)))
       (interl$out-act1 interl-inputs interl (* 2 data-size))))
 
   (defthm igcd$interl-out-act-mutually-exclusive
@@ -257,7 +257,7 @@
 
   (defund igcd$interl-data-out (inputs st data-size)
     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
-         (interl (get-field *igcd$interl* st)))
+         (interl (nth *igcd$interl* st)))
       (interl$data-out interl-inputs interl (* 2 data-size))))
 
   ;; Extract the inputs for joint GCD1
@@ -271,9 +271,9 @@
          (gcd1-go-signals (take *gcd1$go-num*
                                (nthcdr *interl$go-num* go-signals)))
 
-         (l (get-field *igcd$l* st))
-         (l.s (get-field *link$s* l))
-         (l.d (get-field *link$d* l)))
+         (l (nth *igcd$l* st))
+         (l.s (nth *link$s* l))
+         (l.d (nth *link$d* l)))
 
       (list* (f-buf (car l.s)) empty-out-
              (append (v-threefix (strip-cars l.d))
@@ -283,28 +283,28 @@
 
   (defund igcd$in0-act (inputs st data-size)
     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
-         (interl (get-field *igcd$interl* st)))
+         (interl (nth *igcd$interl* st)))
       (interl$in0-act interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "in1-act" signal
 
   (defund igcd$in1-act (inputs st data-size)
     (b* ((interl-inputs (igcd$interl-inputs inputs st data-size))
-         (interl (get-field *igcd$interl* st)))
+         (interl (nth *igcd$interl* st)))
       (interl$in1-act interl-inputs interl (* 2 data-size))))
 
   ;; Extract the "out-act" signal
 
   (defund igcd$out-act (inputs st data-size)
     (gcd1$out-act (igcd$gcd1-inputs inputs st data-size)
-                 (get-field *igcd$gcd1* st)
+                 (nth *igcd$gcd1* st)
                  data-size))
 
   ;; Extract the output data
 
   (defund igcd$data-out (inputs st data-size)
     (gcd1$data-out (igcd$gcd1-inputs inputs st data-size)
-                  (get-field *igcd$gcd1* st)
+                  (nth *igcd$gcd1* st)
                   data-size))
 
   (defthm len-igcd$data-out-1
@@ -381,9 +381,9 @@
   ;; This function specifies the next state of IGCD.
 
   (defun igcd$step (inputs st data-size)
-    (b* ((l (get-field *igcd$l* st))
-         (interl (get-field *igcd$interl* st))
-         (gcd1 (get-field *igcd$gcd1* st))
+    (b* ((l (nth *igcd$l* st))
+         (interl (nth *igcd$interl* st))
+         (gcd1 (nth *igcd$gcd1* st))
 
          (interl-inputs (igcd$interl-inputs inputs st data-size))
          (gcd1-inputs (igcd$gcd1-inputs inputs st data-size))
@@ -543,16 +543,16 @@
 ;; The extraction functions for IGCD
 
 (defund igcd$extract0 (st)
-  (b* ((interl (get-field *igcd$interl* st)))
+  (b* ((interl (nth *igcd$interl* st)))
     (igcd$op-map (interl$extract0 interl))))
 
 (defund igcd$extract1 (st)
-  (b* ((interl (get-field *igcd$interl* st)))
+  (b* ((interl (nth *igcd$interl* st)))
     (igcd$op-map (interl$extract1 interl))))
 
 (defund igcd$extract2 (st)
-  (b* ((l (get-field *igcd$l* st))
-       (gcd1 (get-field *igcd$gcd1* st)))
+  (b* ((l (nth *igcd$l* st))
+       (gcd1 (nth *igcd$gcd1* st)))
     (append (igcd$op-map (extract-valid-data (list l)))
             (gcd1$extract gcd1))))
 
@@ -593,7 +593,7 @@
 
 (progn
   (defund igcd$inv (st)
-    (b* ((gcd1 (get-field *igcd$gcd1* st)))
+    (b* ((gcd1 (nth *igcd$gcd1* st)))
       (gcd1$inv gcd1)))
 
   (defthm igcd$inv-preserved
@@ -602,8 +602,7 @@
                   (igcd$inv st))
              (igcd$inv (igcd$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              igcd$valid-st
+             :in-theory (e/d (igcd$valid-st
                               igcd$inv
                               igcd$step)
                              ()))))
@@ -697,8 +696,7 @@
                     (equal (igcd$extract1 next-st)
                            (igcd$extracted1-step inputs st data-size)))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               gcd1$valid-st=>constraint
                               interl$extracted0-step
                               interl$extracted1-step
@@ -732,8 +730,7 @@
                          (nth *igcd$interl* st)
                          (* 2 data-size)))))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               igcd$interl-inputs)
+              :in-theory (e/d (igcd$interl-inputs)
                               (nfix))))))
 
   (local
@@ -745,8 +742,7 @@
                                (nth *igcd$gcd1* st)
                                data-size)))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               igcd$gcd1-inputs)
+              :in-theory (e/d (igcd$gcd1-inputs)
                               (nfix))))))
 
   (local
@@ -759,8 +755,7 @@
                      (bvp (strip-cars l.d)))
                 (equal (gcd1$data-in gcd1-inputs data-size)
                        (strip-cars l.d))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        igcd$gcd1-inputs
+     :hints (("Goal" :in-theory (enable igcd$gcd1-inputs
                                         gcd1$data-in)))))
 
   (defthm igcd$extracted2-step-correct
@@ -772,8 +767,7 @@
                       (igcd$extracted2-step inputs st data-size))))
     :hints (("Goal"
              :use igcd$input-format=>gcd1$input-format
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               interl$out-act
                               gcd1$valid-st=>constraint
                               gcd1$extracted-step
@@ -813,7 +807,6 @@
    (defthm igcd$valid-st-preserved-aux-2
      (implies (link$valid-st st data-size)
               (booleanp (car (nth *link$s* st))))
-     :hints (("Goal" :in-theory (enable get-field)))
      :rule-classes (:rewrite :type-prescription)))
 
   (defthm igcd$valid-st-preserved
@@ -824,8 +817,7 @@
     :hints (("Goal"
              :use (igcd$input-format=>interl$input-format
                    igcd$input-format=>gcd1$input-format)
-             :in-theory (e/d (get-field
-                              igcd$valid-st
+             :in-theory (e/d (igcd$valid-st
                               igcd$step
                               igcd$interl-inputs
                               igcd$gcd1-inputs)

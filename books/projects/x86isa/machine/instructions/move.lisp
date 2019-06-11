@@ -131,7 +131,7 @@
   ;; Op/En: RM
   ;; [OP REG, R/M]
   ;; 8A: MOV r8,  r/m8
-  ;; 8A: MOV r16, r/m16
+  ;; 8B: MOV r16, r/m16
   ;; 8B: MOV r32, r/m32
   ;; 8B: MOV r64, r/m64
 
@@ -219,7 +219,7 @@
        ;; offset, either 16, 32 or 64 bits.
 
        ;; Under the "Instruction Column in the Opcode Summary Table"
-       ;; (Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.3):
+       ;; (Intel manual, Jan'19, Vol. 2, Sec. 3.1.1.3):
 
        ;; moffs8, moffs16, moffs32, moffs64   A simple memory variable
        ;; (memory offset) of type byte, word, or doubleword used by
@@ -230,13 +230,13 @@
        ;; address-size attribute of the instruction.
 
        ;; Under "Codes for Addressing Method"
-       ;; (Intel manual, Mar'17, Vol. 2, App. A.2.1):
+       ;; (Intel manual, Jan'19, Vol. 2, App. A.2.1):
 
        ;; O The instruction has no ModR/M byte. The offset of the
        ;; operand is coded as a word or double word (depending on
        ;; address size attribute) in the instruction. No base
        ;; register, index register, or scaling factor can be applied
-       ;; (for example, MOV (A0 A3)).
+       ;; (for example, MOV (A0-A3)).
 
        (byte-operand? (eql opcode #xA0))
        ((the (integer 1 8) operand-size)
@@ -271,6 +271,108 @@
 
        ;; Write the data to rAX:
        (x86 (!rgfi-size operand-size *rax* data rex-byte x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+(def-inst x86-mov-Op/En-TD
+
+  ;; Op/En: TD
+  ;; [OP Moffs, rAX]
+  ;; A2: MOV moffs8,                  AL
+  ;; A3: MOV moffs16/moffs32/moffs64, AX/EAX/RAX
+
+  :parents (one-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d (select-address-size
+					 segment-base-and-bounds
+					 ea-to-la
+					 rme-size
+					 rime-size)
+					(unsigned-byte-p))))
+  :body
+
+  (b* ((ctx 'x86-mov-Op/En-TD)
+
+       ;; This instruction does not require a ModR/M byte.
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+		   (prefixes->adr prefixes)))
+
+       ;; The Intel manual says the following:
+
+       ;; Under the MOV instruction description:
+
+       ;; The moffs8, moffs16, moffs32 and moffs64 operands specify a
+       ;; simple offset relative to the segment base, where 8, 16, 32
+       ;; and 64 refer to the size of the data. The address-size
+       ;; attribute of the instruction determines the size of the
+       ;; offset, either 16, 32 or 64 bits.
+
+       ;; Under the "Instruction Column in the Opcode Summary Table"
+       ;; (Intel manual, Jan'19, Vol. 2, Sec. 3.1.1.3):
+
+       ;; moffs8, moffs16, moffs32, moffs64   A simple memory variable
+       ;; (memory offset) of type byte, word, or doubleword used by
+       ;; some variants of the MOV instruction. The actual address is
+       ;; given by a simple offset relative to the segment base. No
+       ;; ModR/M byte is used in the instruction. The number shown
+       ;; with moffs indicates its size, which is determined by the
+       ;; address-size attribute of the instruction.
+
+       ;; Under "Codes for Addressing Method"
+       ;; (Intel manual, Jan'19, Vol. 2, App. A.2.1):
+
+       ;; O The instruction has no ModR/M byte. The offset of the
+       ;; operand is coded as a word or double word (depending on
+       ;; address size attribute) in the instruction. No base
+       ;; register, index register, or scaling factor can be applied
+       ;; (for example, MOV (A0-A3)).
+
+       (byte-operand? (eql opcode #xA2))
+       ((the (integer 1 8) operand-size)
+	(select-operand-size
+         proc-mode byte-operand? rex-byte nil prefixes nil nil nil x86))
+
+       ((the (integer 1 8) offset-size)
+	(select-address-size proc-mode p4? x86))
+
+       ;; Get the offset:
+       ((mv flg offset x86)
+	(rime-size-opt proc-mode offset-size temp-rip #.*cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rime-size-error flg))
+
+       ;; Check if the above memory read caused any problems:
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+	(add-to-*ip proc-mode temp-rip offset-size x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (seg-reg (select-segment-register proc-mode p2 p4? 0 0 sib x86))
+
+       ;; Get data from rAX:
+       (data (rgfi-size operand-size *rax* rex-byte x86))
+
+       ;; Write the data to offset in segment:
+       (inst-ac? (alignment-checking-enabled-p x86))
+       ((mv flg x86)
+        (x86-operand-to-reg/mem proc-mode
+                                operand-size
+                                inst-ac?
+                                nil ;; Not a memory pointer operand
+                                data
+                                seg-reg
+                                offset
+                                rex-byte
+                                0
+                                0
+                                x86))
+       ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
+
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 

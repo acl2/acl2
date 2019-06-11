@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -119,9 +119,9 @@
 ;; Constraints on the state of Q10
 
 (defund queue10$st-format (st data-size)
-  (b* ((l (get-field *queue10$l* st))
-       (q4 (get-field *queue10$q4* st))
-       (q5 (get-field *queue10$q5* st)))
+  (b* ((l (nth *queue10$l* st))
+       (q4 (nth *queue10$q4* st))
+       (q5 (nth *queue10$q5* st)))
     (and (link$st-format l data-size)
          (queue4$st-format q4 data-size)
          (queue5$st-format q5 data-size))))
@@ -133,9 +133,9 @@
   :rule-classes :forward-chaining)
 
 (defund queue10$valid-st (st data-size)
-  (b* ((l (get-field *queue10$l* st))
-       (q4 (get-field *queue10$q4* st))
-       (q5 (get-field *queue10$q5* st)))
+  (b* ((l (nth *queue10$l* st))
+       (q4 (nth *queue10$q4* st))
+       (q5 (nth *queue10$q5* st)))
     (and (link$valid-st l data-size)
          (queue4$valid-st q4 data-size)
          (queue5$valid-st q5 data-size))))
@@ -182,8 +182,8 @@
 
          (q4-go-signals (take *queue4$go-num* go-signals))
 
-         (l (get-field *queue10$l* st))
-         (l.s (get-field *link$s* l)))
+         (l (nth *queue10$l* st))
+         (l.s (nth *link$s* l)))
 
       (list* full-in (f-buf (car l.s))
              (append data-in q4-go-signals))))
@@ -197,9 +197,9 @@
          (q5-go-signals (take *queue5$go-num*
                               (nthcdr *queue4$go-num* go-signals)))
 
-         (l (get-field *queue10$l* st))
-         (l.s (get-field *link$s* l))
-         (l.d (get-field *link$d* l)))
+         (l (nth *queue10$l* st))
+         (l.s (nth *link$s* l))
+         (l.d (nth *link$d* l)))
 
       (list* (f-buf (car l.s)) empty-out-
              (append (v-threefix (strip-cars l.d)) q5-go-signals))))
@@ -208,7 +208,7 @@
 
   (defund queue10$in-act (inputs st data-size)
     (b* ((q4-inputs (queue10$q4-inputs inputs st data-size))
-         (q4 (get-field *queue10$q4* st)))
+         (q4 (nth *queue10$q4* st)))
       (queue4$in-act q4-inputs q4 data-size)))
 
   (defthm queue10$in-act-inactive
@@ -221,7 +221,7 @@
 
   (defund queue10$out-act (inputs st data-size)
     (b* ((q5-inputs (queue10$q5-inputs inputs st data-size))
-         (q5 (get-field *queue10$q5* st)))
+         (q5 (nth *queue10$q5* st)))
       (queue5$out-act q5-inputs q5 data-size)))
 
   (defthm queue10$out-act-inactive
@@ -233,7 +233,7 @@
   ;; Extract the output data
 
   (defund queue10$data-out (st)
-    (b* ((q5 (get-field *queue10$q5* st)))
+    (b* ((q5 (nth *queue10$q5* st)))
       (queue5$data-out q5)))
 
   (defthm len-queue10$data-out-1
@@ -295,9 +295,9 @@
 ;; This function specifies the next state of Q10.
 
 (defun queue10$step (inputs st data-size)
-  (b* ((l (get-field *queue10$l* st))
-       (q4 (get-field *queue10$q4* st))
-       (q5 (get-field *queue10$q5* st))
+  (b* ((l (nth *queue10$l* st))
+       (q4 (nth *queue10$q4* st))
+       (q5 (nth *queue10$q5* st))
 
        (q4-inputs (queue10$q4-inputs inputs st data-size))
        (q5-inputs (queue10$q5-inputs inputs st data-size))
@@ -424,9 +424,9 @@
 ;; the current state.
 
 (defund queue10$extract (st)
-  (b* ((l (get-field *queue10$l* st))
-       (q4 (get-field *queue10$q4* st))
-       (q5 (get-field *queue10$q5* st)))
+  (b* ((l (nth *queue10$l* st))
+       (q4 (nth *queue10$q4* st))
+       (q5 (nth *queue10$q5* st)))
     (append (queue4$extract q4)
             (extract-valid-data (list l))
             (queue5$extract q5))))
@@ -470,8 +470,7 @@
               (not (queue4$out-act (queue10$q4-inputs inputs st data-size)
                                    (nth *queue10$q4* st)
                                    data-size)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue10$q4-inputs)))))
+     :hints (("Goal" :in-theory (enable queue10$q4-inputs)))))
 
   (local
    (defthm queue10$q5-in-act-inactive
@@ -480,8 +479,7 @@
               (not (queue5$in-act (queue10$q5-inputs inputs st data-size)
                                   (nth *queue10$q5* st)
                                   data-size)))
-     :hints (("Goal" :in-theory (enable get-field
-                                        queue10$q5-inputs)))))
+     :hints (("Goal" :in-theory (enable queue10$q5-inputs)))))
 
   (local
    (defthm queue10$q4-data-in-rewrite
@@ -495,8 +493,8 @@
 
   (local
    (defthm queue10$q5-data-in-rewrite
-     (b* ((l (get-field *queue10$l* st))
-          (l.d (get-field *link$d* l)))
+     (b* ((l (nth *queue10$l* st))
+          (l.d (nth *link$d* l)))
        (implies (equal (len l.d) data-size)
                 (equal (queue5$data-in
                         (queue10$q5-inputs inputs st data-size)
@@ -515,8 +513,7 @@
     :hints (("Goal"
              :use (queue10$input-format=>q4$input-format
                    queue10$input-format=>q5$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               left-associativity-of-append
                               queue4$extracted-step
                               queue5$extracted-step
@@ -545,8 +542,7 @@
   :hints (("Goal"
            :use (queue10$input-format=>q4$input-format
                  queue10$input-format=>q5$input-format)
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             queue10$valid-st
                             queue10$step)
                            (queue10$input-format=>q4$input-format

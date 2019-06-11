@@ -10,8 +10,8 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
-(include-book "kestrel/crypto/keccak-256-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
+(include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 (include-book "words")
 (include-book "rlp/encoding")
@@ -406,7 +406,7 @@
                            (rlp-tree-leaf nil)))))
        ((mv error? message) (rlp-encode-tree 6/9-tuple))
        ((when error?) (mv :rlp (transaction 0 0 0 nil 0 nil 0 0 0)))
-       (hash (keccak-256 message))
+       (hash (keccak-256-bytes message))
        ((mv error? even? sign-r sign-s) (secp256k1-sign hash key))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)

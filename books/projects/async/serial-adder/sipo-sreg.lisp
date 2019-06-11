@@ -230,10 +230,10 @@
 ;; Constraints on the state of SIPO-SREG
 
 (defund sipo-sreg$st-format (st data-size cnt-size)
-  (b* ((r-data (get-field *sipo-sreg$r-data* st))
-       (r-cnt (get-field *sipo-sreg$r-cnt* st))
-       (w-data (get-field *sipo-sreg$w-data* st))
-       (w-cnt (get-field *sipo-sreg$w-cnt* st)))
+  (b* ((r-data (nth *sipo-sreg$r-data* st))
+       (r-cnt (nth *sipo-sreg$r-cnt* st))
+       (w-data (nth *sipo-sreg$w-data* st))
+       (w-cnt (nth *sipo-sreg$w-cnt* st)))
     (and (posp data-size)
          (natp cnt-size)
          (<= 4 cnt-size)
@@ -251,10 +251,10 @@
   :rule-classes :forward-chaining)
 
 (defund sipo-sreg$valid-st (st data-size cnt-size)
-  (b* ((r-data (get-field *sipo-sreg$r-data* st))
-       (r-cnt (get-field *sipo-sreg$r-cnt* st))
-       (w-data (get-field *sipo-sreg$w-data* st))
-       (w-cnt (get-field *sipo-sreg$w-cnt* st)))
+  (b* ((r-data (nth *sipo-sreg$r-data* st))
+       (r-cnt (nth *sipo-sreg$r-cnt* st))
+       (w-data (nth *sipo-sreg$w-data* st))
+       (w-cnt (nth *sipo-sreg$w-cnt* st)))
     (and (sipo-sreg$st-format st data-size cnt-size)
          (equal data-size (expt 2 (1- cnt-size)))
          (link$valid-st r-data data-size)
@@ -301,15 +301,15 @@
          (go-signals (nthcdr *sipo-sreg$data-ins-len* inputs))
          (go-shift (nth 0 go-signals))
 
-         (r-data (get-field *sipo-sreg$r-data* st))
-         (r-data.s (get-field *link$s* r-data))
-         (r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (r-cnt.s (get-field *link$s* r-cnt))
-         (r-cnt.d (get-field *link$d* r-cnt))
-         (w-data (get-field *sipo-sreg$w-data* st))
-         (w-data.s (get-field *link$s* w-data))
-         (w-cnt (get-field *sipo-sreg$w-cnt* st))
-         (w-cnt.s (get-field *link$s* w-cnt))
+         (r-data (nth *sipo-sreg$r-data* st))
+         (r-data.s (nth *link$s* r-data))
+         (r-cnt (nth *sipo-sreg$r-cnt* st))
+         (r-cnt.s (nth *link$s* r-cnt))
+         (r-cnt.d (nth *link$d* r-cnt))
+         (w-data (nth *sipo-sreg$w-data* st))
+         (w-data.s (nth *link$s* w-data))
+         (w-cnt (nth *sipo-sreg$w-cnt* st))
+         (w-cnt.s (nth *link$s* w-cnt))
 
          (r-cnt=0~ (f-not (f$fast-zero (strip-cars r-cnt.d))))
          (shift-full-in (f-and4 (car r-data.s) (car r-cnt.s)
@@ -330,15 +330,15 @@
          (go-signals (nthcdr *sipo-sreg$data-ins-len* inputs))
          (go-shift (nth 0 go-signals))
 
-         (r-data (get-field *sipo-sreg$r-data* st))
-         (r-data.s (get-field *link$s* r-data))
-         (r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (r-cnt.s (get-field *link$s* r-cnt))
-         (r-cnt.d (get-field *link$d* r-cnt))
-         (w-data (get-field *sipo-sreg$w-data* st))
-         (w-data.s (get-field *link$s* w-data))
-         (w-cnt (get-field *sipo-sreg$w-cnt* st))
-         (w-cnt.s (get-field *link$s* w-cnt))
+         (r-data (nth *sipo-sreg$r-data* st))
+         (r-data.s (nth *link$s* r-data))
+         (r-cnt (nth *sipo-sreg$r-cnt* st))
+         (r-cnt.s (nth *link$s* r-cnt))
+         (r-cnt.d (nth *link$d* r-cnt))
+         (w-data (nth *sipo-sreg$w-data* st))
+         (w-data.s (nth *link$s* w-data))
+         (w-cnt (nth *sipo-sreg$w-cnt* st))
+         (w-cnt.s (nth *link$s* w-cnt))
 
          (r-cnt=0 (f$fast-zero (strip-cars r-cnt.d)))
          (r-full (f-and3 (car r-data.s) (car r-cnt.s) r-cnt=0))
@@ -363,8 +363,8 @@
   ;; Extract the output data
 
   (defund sipo-sreg$cnt-out=1 (st)
-    (b* ((r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (r-cnt.d (get-field *link$d* r-cnt)))
+    (b* ((r-cnt (nth *sipo-sreg$r-cnt* st))
+         (r-cnt.d (nth *link$d* r-cnt)))
       (f-and (car (strip-cars r-cnt.d))
              (f$fast-zero (nthcdr 1 (strip-cars r-cnt.d))))))
 
@@ -397,8 +397,8 @@
     :rule-classes (:rewrite :type-prescription))
 
   (defund sipo-sreg$data-out (st)
-    (b* ((r-data (get-field *sipo-sreg$r-data* st))
-         (r-data.d (get-field *link$d* r-data)))
+    (b* ((r-data (nth *sipo-sreg$r-data* st))
+         (r-data.d (nth *link$d* r-data)))
       (v-threefix (strip-cars r-data.d))))
 
   (defthm len-sipo-sreg$data-out-1
@@ -473,18 +473,18 @@
        (go-signals (nthcdr *sipo-sreg$data-ins-len* inputs))
        (go-buf (nth 1 go-signals))
 
-       (r-data (get-field *sipo-sreg$r-data* st))
-       (r-data.s (get-field *link$s* r-data))
-       (r-data.d (get-field *link$d* r-data))
-       (r-cnt (get-field *sipo-sreg$r-cnt* st))
-       (r-cnt.s (get-field *link$s* r-cnt))
-       (r-cnt.d (get-field *link$d* r-cnt))
-       (w-data (get-field *sipo-sreg$w-data* st))
-       (w-data.s (get-field *link$s* w-data))
-       (w-data.d (get-field *link$d* w-data))
-       (w-cnt (get-field *sipo-sreg$w-cnt* st))
-       (w-cnt.s (get-field *link$s* w-cnt))
-       (w-cnt.d (get-field *link$d* w-cnt))
+       (r-data (nth *sipo-sreg$r-data* st))
+       (r-data.s (nth *link$s* r-data))
+       (r-data.d (nth *link$d* r-data))
+       (r-cnt (nth *sipo-sreg$r-cnt* st))
+       (r-cnt.s (nth *link$s* r-cnt))
+       (r-cnt.d (nth *link$d* r-cnt))
+       (w-data (nth *sipo-sreg$w-data* st))
+       (w-data.s (nth *link$s* w-data))
+       (w-data.d (nth *link$d* w-data))
+       (w-cnt (nth *sipo-sreg$w-cnt* st))
+       (w-cnt.s (nth *link$s* w-cnt))
+       (w-cnt.d (nth *link$d* w-cnt))
 
        (r-cnt=0 (f$fast-zero (strip-cars r-cnt.d)))
        (in-act (sipo-sreg$in-act inputs st))
@@ -607,8 +607,7 @@
                                      inputs st data-size cnt-size)
                                     data-size
                                     cnt-size))
-    :hints (("Goal" :in-theory (enable get-field
-                                       sipo-sreg$step
+    :hints (("Goal" :in-theory (enable sipo-sreg$step
                                        sipo-sreg$st-format))))
 
   (defthmd sipo-sreg$value-alt
@@ -650,15 +649,15 @@
 ;; The extraction function for SIPO-SREG
 
 (defund sipo-sreg$extract (st)
-  (b* ((r-data (get-field *sipo-sreg$r-data* st))
-       (r-data.s (get-field *link$s* r-data))
-       (r-data.d (get-field *link$d* r-data))
-       (r-cnt (get-field *sipo-sreg$r-cnt* st))
-       (r-cnt.d (get-field *link$d* r-cnt))
-       (w-data (get-field *sipo-sreg$w-data* st))
-       (w-data.d (get-field *link$d* w-data))
-       (w-cnt (get-field *sipo-sreg$w-cnt* st))
-       (w-cnt.d (get-field *link$d* w-cnt)))
+  (b* ((r-data (nth *sipo-sreg$r-data* st))
+       (r-data.s (nth *link$s* r-data))
+       (r-data.d (nth *link$d* r-data))
+       (r-cnt (nth *sipo-sreg$r-cnt* st))
+       (r-cnt.d (nth *link$d* r-cnt))
+       (w-data (nth *sipo-sreg$w-data* st))
+       (w-data.d (nth *link$d* w-data))
+       (w-cnt (nth *sipo-sreg$w-cnt* st))
+       (w-cnt.d (nth *link$d* w-cnt)))
     (if (fullp r-data.s)
         (nthcdr (v-to-nat (strip-cars r-cnt.d))
                 (strip-cars r-data.d))
@@ -727,18 +726,18 @@
 
 (progn
   (defund sipo-sreg$inv (st)
-    (b* ((r-data (get-field *sipo-sreg$r-data* st))
-         (r-data.s (get-field *link$s* r-data))
-         (r-data.d (get-field *link$d* r-data))
-         (r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (r-cnt.s (get-field *link$s* r-cnt))
-         (r-cnt.d (get-field *link$d* r-cnt))
-         (w-data (get-field *sipo-sreg$w-data* st))
-         (w-data.s (get-field *link$s* w-data))
-         (w-data.d (get-field *link$d* w-data))
-         (w-cnt (get-field *sipo-sreg$w-cnt* st))
-         (w-cnt.s (get-field *link$s* w-cnt))
-         (w-cnt.d (get-field *link$d* w-cnt)))
+    (b* ((r-data (nth *sipo-sreg$r-data* st))
+         (r-data.s (nth *link$s* r-data))
+         (r-data.d (nth *link$d* r-data))
+         (r-cnt (nth *sipo-sreg$r-cnt* st))
+         (r-cnt.s (nth *link$s* r-cnt))
+         (r-cnt.d (nth *link$d* r-cnt))
+         (w-data (nth *sipo-sreg$w-data* st))
+         (w-data.s (nth *link$s* w-data))
+         (w-data.d (nth *link$d* w-data))
+         (w-cnt (nth *sipo-sreg$w-cnt* st))
+         (w-cnt.s (nth *link$s* w-cnt))
+         (w-cnt.d (nth *link$d* w-cnt)))
       (and (equal r-data.s r-cnt.s)
            (equal w-data.s w-cnt.s)
            (not (equal r-data.s w-data.s))
@@ -810,8 +809,7 @@
              (sipo-sreg$inv
               (sipo-sreg$step inputs st data-size cnt-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               bvp
                               sipo-sreg$st-format
                               sipo-sreg$valid-st
@@ -858,8 +856,7 @@
                (equal (sipo-sreg$extract next-st)
                       (sipo-sreg$extracted-step inputs st))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               joint-act
                               bvp
                               pos-len=>cons
@@ -887,8 +884,7 @@
             data-size
             cnt-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             joint-act
                             bvp
                             f-and3

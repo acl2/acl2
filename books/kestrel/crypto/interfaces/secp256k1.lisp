@@ -1,4 +1,4 @@
-; Cryptography -- secp256k1 Placeholder
+; Cryptographic Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -17,18 +17,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ secp256k1-placeholder
-  :parents (placeholders)
-  :short "Elliptic curve secp256k1 placeholder."
+(defxdoc+ secp256k1-interface
+  :parents (interfaces)
+  :short "Elliptic curve secp256k1 interface."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The secp256k1 elliptic curve is specified in
-     <a href=\"http://www.secg.org/sec1-v2.pdf\"
-     >Standards for Efficient Cryptography 1 (SEC 1)</a>
-     and
-     <a href=\"http://www.secg.org/sec2-v2.pdf\"
-     >Standards for Efficient Cryptography 2 (SEC 2)</a>."))
+    "The secp256k1 elliptic curve is specified in "
+    (xdoc::a :href "http://www.secg.org/sec1-v2.pdf"
+      "Standards for Efficient Cryptography 1 (SEC 1)")
+    " and "
+    (xdoc::a :href "http://www.secg.org/sec2-v2.pdf"
+      "Standards for Efficient Cryptography 2 (SEC 2)")
+    ".")
+   (xdoc::p
+    "Currently this interface actually includes several concrete definitions.
+     These may be replaced with more abstract, constrained functions
+     at some point."))
   :order-subtopics t
   :default-parent t)
 
@@ -388,7 +393,7 @@
      operates on a hash (of a message),
      and returns a boolean to recover the public key.
      Other variants exist,
-     but this is just a placeholder.")
+     but this is just an interface.")
    (xdoc::p
     "This constrained function takes as inputs
      a hash (a list of bytes) and a private key,
@@ -412,7 +417,7 @@
      The other two results are always
      non-zero natural numbers below the order @($n$) of the curve,
      but they also happen to be field elements,
-     which is adequate for the purpose of this placeholder.")
+     which is adequate for the purpose of this interface.")
    (xdoc::p
     "We constrain this function
      to return results of the types described above unconditionally.

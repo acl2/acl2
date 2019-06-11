@@ -480,8 +480,6 @@
                       (:free (x y) (rlp-parse-tree (cons (+ 192 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 247 x) y)))))))
 
-
-
   (defthm-rlp-parse-tree-flag
 
     (defthm rlp-encode-tree-of-rlp-parse-tree
@@ -493,7 +491,7 @@
                              (byte-list-fix encoding)))))
       :flag rlp-parse-tree)
 
-    (defthm rlp-encode-tree-list-of-rl-decode-tree-list-exec
+    (defthm rlp-encode-tree-list-of-rlp-parse-tree-list
       (b* (((mv d-error? trees) (rlp-parse-tree-list encoding))
            ((mv e-error? encoding1) (rlp-encode-tree-list trees)))
         (implies (not d-error?)

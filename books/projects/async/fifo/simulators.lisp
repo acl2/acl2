@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; April 2019
+;; May 2019
 
 (in-package "ADE")
 
@@ -53,8 +53,8 @@
 
 (progn
   (defun queue2$map-to-links (st)
-    (b* ((l0 (get-field *queue2$l0* st))
-         (l1 (get-field *queue2$l1* st)))
+    (b* ((l0 (nth *queue2$l0* st))
+         (l1 (nth *queue2$l1* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)))))
 
@@ -132,9 +132,9 @@
 
 (progn
   (defun queue3$map-to-links (st)
-    (b* ((l0 (get-field *queue3$l0* st))
-         (l1 (get-field *queue3$l1* st))
-         (l2 (get-field *queue3$l2* st)))
+    (b* ((l0 (nth *queue3$l0* st))
+         (l1 (nth *queue3$l1* st))
+         (l2 (nth *queue3$l2* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)))))
@@ -213,10 +213,10 @@
 
 (progn
   (defun queue4$map-to-links (st)
-    (b* ((l0 (get-field *queue4$l0* st))
-         (l1 (get-field *queue4$l1* st))
-         (l2 (get-field *queue4$l2* st))
-         (l3 (get-field *queue4$l3* st)))
+    (b* ((l0 (nth *queue4$l0* st))
+         (l1 (nth *queue4$l1* st))
+         (l2 (nth *queue4$l2* st))
+         (l3 (nth *queue4$l3* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)
@@ -297,11 +297,11 @@
 
 (progn
   (defun queue5$map-to-links (st)
-    (b* ((l0 (get-field *queue5$l0* st))
-         (l1 (get-field *queue5$l1* st))
-         (l2 (get-field *queue5$l2* st))
-         (l3 (get-field *queue5$l3* st))
-         (l4 (get-field *queue5$l4* st)))
+    (b* ((l0 (nth *queue5$l0* st))
+         (l1 (nth *queue5$l1* st))
+         (l2 (nth *queue5$l2* st))
+         (l3 (nth *queue5$l3* st))
+         (l4 (nth *queue5$l4* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)
@@ -384,9 +384,9 @@
 
 (progn
   (defun queue10$map-to-links (st)
-    (b* ((l (get-field *queue10$l* st))
-         (q4 (get-field *queue10$q4* st))
-         (q5 (get-field *queue10$q5* st)))
+    (b* ((l (nth *queue10$l* st))
+         (q4 (nth *queue10$q4* st))
+         (q5 (nth *queue10$q5* st)))
       (append (list (cons 'q4 (queue4$map-to-links q4)))
               (map-to-links (list (cons 'l l)))
               (list (cons 'q5 (queue5$map-to-links q5))))))
@@ -466,9 +466,9 @@
 
 (progn
   (defun queue3-l$map-to-links (st)
-    (b* ((l0 (get-field *queue3-l$l0* st))
-         (l1 (get-field *queue3-l$l1* st))
-         (l2 (get-field *queue3-l$l2* st)))
+    (b* ((l0 (nth *queue3-l$l0* st))
+         (l1 (nth *queue3-l$l1* st))
+         (l2 (nth *queue3-l$l2* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)))))
@@ -547,10 +547,10 @@
 
 (progn
   (defun queue4-l$map-to-links (st)
-    (b* ((l0 (get-field *queue4-l$l0* st))
-         (l1 (get-field *queue4-l$l1* st))
-         (l2 (get-field *queue4-l$l2* st))
-         (l3 (get-field *queue4-l$l3* st)))
+    (b* ((l0 (nth *queue4-l$l0* st))
+         (l1 (nth *queue4-l$l1* st))
+         (l2 (nth *queue4-l$l2* st))
+         (l3 (nth *queue4-l$l3* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)
@@ -631,11 +631,11 @@
 
 (progn
   (defun queue5-l$map-to-links (st)
-    (b* ((l0 (get-field *queue5-l$l0* st))
-         (l1 (get-field *queue5-l$l1* st))
-         (l2 (get-field *queue5-l$l2* st))
-         (l3 (get-field *queue5-l$l3* st))
-         (l4 (get-field *queue5-l$l4* st)))
+    (b* ((l0 (nth *queue5-l$l0* st))
+         (l1 (nth *queue5-l$l1* st))
+         (l2 (nth *queue5-l$l2* st))
+         (l3 (nth *queue5-l$l3* st))
+         (l4 (nth *queue5-l$l4* st)))
       (map-to-links (list (cons 'l0 l0)
                           (cons 'l1 l1)
                           (cons 'l2 l2)
@@ -718,8 +718,8 @@
 
 (progn
   (defun queue8-l$map-to-links (st)
-    (b* ((q4-l0 (get-field *queue8-l$q4-l0* st))
-         (q4-l1 (get-field *queue8-l$q4-l1* st)))
+    (b* ((q4-l0 (nth *queue8-l$q4-l0* st))
+         (q4-l1 (nth *queue8-l$q4-l1* st)))
       (append (list (cons 'q4-l0 (queue4-l$map-to-links q4-l0)))
               (list (cons 'q4-l1 (queue4-l$map-to-links q4-l1))))))
 
@@ -795,8 +795,8 @@
 
 (progn
   (defun queue9-l$map-to-links (st)
-    (b* ((q4-l (get-field *queue9-l$q4-l* st))
-         (q5-l (get-field *queue9-l$q5-l* st)))
+    (b* ((q4-l (nth *queue9-l$q4-l* st))
+         (q5-l (nth *queue9-l$q5-l* st)))
       (append (list (cons 'q4-l (queue4-l$map-to-links q4-l)))
               (list (cons 'q5-l (queue5-l$map-to-links q5-l))))))
 
@@ -872,8 +872,8 @@
 
 (progn
   (defun queue10-l$map-to-links (st)
-    (b* ((q5-l0 (get-field *queue10-l$q5-l0* st))
-         (q5-l1 (get-field *queue10-l$q5-l1* st)))
+    (b* ((q5-l0 (nth *queue10-l$q5-l0* st))
+         (q5-l1 (nth *queue10-l$q5-l1* st)))
       (append (list (cons 'q5-l0 (queue5-l$map-to-links q5-l0)))
               (list (cons 'q5-l1 (queue5-l$map-to-links q5-l1))))))
 
@@ -949,8 +949,8 @@
 
 (progn
   (defun queue11-l$map-to-links (st)
-    (b* ((q3-l (get-field *queue11-l$q3-l* st))
-         (q8-l (get-field *queue11-l$q8-l* st)))
+    (b* ((q3-l (nth *queue11-l$q3-l* st))
+         (q8-l (nth *queue11-l$q8-l* st)))
       (append (list (cons 'q3-l (queue3-l$map-to-links q3-l)))
               (list (cons 'q8-l (queue8-l$map-to-links q8-l))))))
 
@@ -1026,8 +1026,8 @@
 
 (progn
   (defun queue20-l$map-to-links (st)
-    (b* ((q10-l0 (get-field *queue20-l$q10-l0* st))
-         (q10-l1 (get-field *queue20-l$q10-l1* st)))
+    (b* ((q10-l0 (nth *queue20-l$q10-l0* st))
+         (q10-l1 (nth *queue20-l$q10-l1* st)))
       (append (list (cons 'q10-l0 (queue10-l$map-to-links q10-l0)))
               (list (cons 'q10-l1 (queue10-l$map-to-links q10-l1))))))
 
@@ -1103,8 +1103,8 @@
 
 (progn
   (defun queue40-l$map-to-links (st)
-    (b* ((q20-l0 (get-field *queue40-l$q20-l0* st))
-         (q20-l1 (get-field *queue40-l$q20-l1* st)))
+    (b* ((q20-l0 (nth *queue40-l$q20-l0* st))
+         (q20-l1 (nth *queue40-l$q20-l1* st)))
       (append (list (cons 'q20-l0 (queue10-l$map-to-links q20-l0)))
               (list (cons 'q20-l1 (queue10-l$map-to-links q20-l1))))))
 
@@ -1180,12 +1180,12 @@
 
 (progn
   (defun comp-v-or$map-to-links (st)
-    (b* ((a0 (get-field *comp-v-or$a0* st))
-         (b0 (get-field *comp-v-or$b0* st))
-         (a1 (get-field *comp-v-or$a1* st))
-         (b1 (get-field *comp-v-or$b1* st))
-         (q2 (get-field *comp-v-or$q2* st))
-         (q3 (get-field *comp-v-or$q3* st)))
+    (b* ((a0 (nth *comp-v-or$a0* st))
+         (b0 (nth *comp-v-or$b0* st))
+         (a1 (nth *comp-v-or$a1* st))
+         (b1 (nth *comp-v-or$b1* st))
+         (q2 (nth *comp-v-or$q2* st))
+         (q3 (nth *comp-v-or$q3* st)))
       (append (map-to-links (list (cons 'a0 a0)
                                   (cons 'b0 b0)))
               (cons (cons 'q2 (queue2$map-to-links q2))
@@ -1272,8 +1272,8 @@
 
 (progn
   (defun alt-merge$map-to-links (st)
-    (b* ((select (get-field *alt-merge$select* st))
-         (select-buf (get-field *alt-merge$select-buf* st)))
+    (b* ((select (nth *alt-merge$select* st))
+         (select-buf (nth *alt-merge$select-buf* st)))
       (map-to-links1 (list (cons 'select select)
                            (cons 'select-buf select-buf)))))
 
@@ -1310,8 +1310,8 @@
 
 (progn
   (defun alt-branch$map-to-links (st)
-    (b* ((select (get-field *alt-branch$select* st))
-         (select-buf (get-field *alt-branch$select-buf* st)))
+    (b* ((select (nth *alt-branch$select* st))
+         (select-buf (nth *alt-branch$select-buf* st)))
       (map-to-links1 (list (cons 'select select)
                            (cons 'select-buf select-buf)))))
 
@@ -1348,10 +1348,10 @@
 
 (progn
   (defun wig-wag$map-to-links (st)
-    (b* ((l0 (get-field *wig-wag$l0* st))
-         (l1 (get-field *wig-wag$l1* st))
-         (br (get-field *wig-wag$br* st))
-         (me (get-field *wig-wag$me* st)))
+    (b* ((l0 (nth *wig-wag$l0* st))
+         (l1 (nth *wig-wag$l1* st))
+         (br (nth *wig-wag$br* st))
+         (me (nth *wig-wag$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
               (map-to-links (list (cons 'l0 l0)
                                   (cons 'l1 l1)))
@@ -1437,14 +1437,14 @@
 
 (progn
   (defun round-robin1$map-to-links (st)
-    (b* ((a0 (get-field *round-robin1$a0* st))
-         (b0 (get-field *round-robin1$b0* st))
-         (a1 (get-field *round-robin1$a1* st))
-         (b1 (get-field *round-robin1$b1* st))
-         (q2 (get-field *round-robin1$q2* st))
-         (q3 (get-field *round-robin1$q3* st))
-         (br (get-field *round-robin1$br* st))
-         (me (get-field *round-robin1$me* st)))
+    (b* ((a0 (nth *round-robin1$a0* st))
+         (b0 (nth *round-robin1$b0* st))
+         (a1 (nth *round-robin1$a1* st))
+         (b1 (nth *round-robin1$b1* st))
+         (q2 (nth *round-robin1$q2* st))
+         (q3 (nth *round-robin1$q3* st))
+         (br (nth *round-robin1$br* st))
+         (me (nth *round-robin1$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
               (map-to-links (list (cons 'a0 a0)
                                   (cons 'b0 b0)))
@@ -1538,10 +1538,10 @@
 
 (progn
   (defun round-robin2$map-to-links (st)
-    (b* ((q4-l (get-field *round-robin2$q4-l* st))
-         (q5-l (get-field *round-robin2$q5-l* st))
-         (br (get-field *round-robin2$br* st))
-         (me (get-field *round-robin2$me* st)))
+    (b* ((q4-l (nth *round-robin2$q4-l* st))
+         (q5-l (nth *round-robin2$q5-l* st))
+         (br (nth *round-robin2$br* st))
+         (me (nth *round-robin2$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
               (list (cons 'q4-l (queue4-l$map-to-links q4-l)))
               (list (cons 'q5-l (queue5-l$map-to-links q5-l)))
@@ -1626,10 +1626,10 @@
 
 (progn
   (defun round-robin3$map-to-links (st)
-    (b* ((q8-l (get-field *round-robin3$q8-l* st))
-         (q10-l (get-field *round-robin3$q10-l* st))
-         (br (get-field *round-robin3$br* st))
-         (me (get-field *round-robin3$me* st)))
+    (b* ((q8-l (nth *round-robin3$q8-l* st))
+         (q10-l (nth *round-robin3$q10-l* st))
+         (br (nth *round-robin3$br* st))
+         (me (nth *round-robin3$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
               (list (cons 'q8-l (queue8-l$map-to-links q8-l)))
               (list (cons 'q10-l (queue10-l$map-to-links q10-l)))
@@ -1714,10 +1714,10 @@
 
 (progn
   (defun round-robin4$map-to-links (st)
-    (b* ((q40-l0 (get-field *round-robin4$q40-l0* st))
-         (q40-l1 (get-field *round-robin4$q40-l1* st))
-         (br (get-field *round-robin4$br* st))
-         (me (get-field *round-robin4$me* st)))
+    (b* ((q40-l0 (nth *round-robin4$q40-l0* st))
+         (q40-l1 (nth *round-robin4$q40-l1* st))
+         (br (nth *round-robin4$br* st))
+         (me (nth *round-robin4$me* st)))
       (append (list (cons 'alt-branch (alt-branch$map-to-links br)))
               (list (cons 'q40-l0 (queue40-l$map-to-links q40-l0)))
               (list (cons 'q40-l1 (queue40-l$map-to-links q40-l1)))

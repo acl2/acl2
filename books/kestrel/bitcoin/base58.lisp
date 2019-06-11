@@ -114,6 +114,7 @@
   :short "True lists of Base58 characters."
   :elt-type base58-character
   :true-listp t
+  :elementp-of-nil nil
   :pred base58-character-listp
   ///
 
@@ -189,6 +190,7 @@
   :short "True lists of Base58 values."
   :elt-type base58-value
   :true-listp t
+  :elementp-of-nil nil
   :pred base58-value-listp
   ///
 

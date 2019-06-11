@@ -11,6 +11,7 @@
 
 (in-package "BITCOIN")
 
+(include-book "std/util/define" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
@@ -2088,3 +2089,28 @@
   (assert-event (no-duplicatesp-equal *bip39-english-words*))
 
   (assert-event (equal (len *bip39-english-words*) 2048)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bip39-english-words-bound-p ((strings string-listp))
+  :returns (yes/no booleanp)
+  :parents (bip39)
+  :short "Check if all the strings in a list
+          have a length less than or equal to 8,
+          which is the maximum length in the English wordlist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The maximum length of the words in the English wordlist is 8.
+     This function is used to prove upper bounds
+     on the length of the menmonic,
+     based on the lengths of the words in the English wordlist
+     and on the maximum number of words in a mnemonic.
+     See @(tsee bip39-entropy-to-mnemonic)."))
+  (or (endp strings)
+      (and (<= (length (car strings)) 8)
+           (bip39-english-words-bound-p (cdr strings))))
+  :no-function t
+  ///
+
+  (assert-event (bip39-english-words-bound-p *bip39-english-words*)))

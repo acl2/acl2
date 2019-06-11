@@ -7588,6 +7588,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+acl2-loop-only
   (if (or (= (nfix j) 0)
           (< (ifix i) j))
+
+; As noted by Mihir Mehta, the test above could reasonably be replaced by an
+; mbe call whose :logic component is as shown above and whose :exec component
+; is (< i j), but that wouldn't enhance performance, given the #-acl2-loop-only
+; code above.  (See : DOC developers-guide-background for discussion of
+; #-acl2-loop-only.)
+
+; If this code nevertheless is changed to use mbe, consider that there may be
+; many other similar opportunities to use mbe.
+
       0
     (+ 1 (nonnegative-integer-quotient (- i j) j))))
 

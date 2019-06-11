@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Implementation
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,6 +47,7 @@
      @('domain'),
      @('new-name'),
      @('new-enable'),
+     @('wrapper'),
      @('wrapper-name'),
      @('wrapper-enable'),
      @('thm-name'),
@@ -61,6 +62,13 @@
      These formal parameters have no types because they may be any values.
      </li>
      <li>
+     @('wrapper-name-present') and
+     @('wrapper-enable-present')
+     are boolean flags indicating whether the corresponding inputs
+     (whose name is obtained by removing @('-present') from these)
+     are present (i.e. supplied by the user) or not.
+     </li>
+     <li>
      @('call') is the call to @(tsee tailrec) supplied by the user.
      </li>
      <li>
@@ -69,6 +77,7 @@
      @('domain$'),
      @('new-name$'),
      @('new-enable$'),
+     @('wrapper$'),
      @('wrapper-name$'),
      @('wrapper-enable$'),
      @('thm-name$'),
@@ -660,57 +669,89 @@
     (value name)))
 
 (define tailrec-process-wrapper-name (wrapper-name
+                                      (wrapper-name-present booleanp)
                                       (new-name$ symbolp)
+                                      (wrapper$ booleanp)
                                       ctx
                                       state)
   :returns (mv erp
                (wrapper-name$ "A @(tsee symbolp)
-                               to use as the name for the wrapper function.")
+                               to use as the name for the wrapper function,
+                               or @('nil') if no wrapper is generated.")
                state)
   :mode :program
   :short "Process the @(':wrapper-name') input."
-  (b* (((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
-       (name (if (eq wrapper-name :auto)
-                 (add-suffix-to-fn new-name$ "-WRAPPER")
-               wrapper-name))
-       (description (msg "The name ~x0 of the wrapper function, ~@1,"
-                         name
-                         (if (eq wrapper-name :auto)
-                             "automatically generated ~
+  (if wrapper$
+      (b* (((er &) (ensure-symbol$ wrapper-name
+                                   "The :WRAPPER-NAME input" t nil))
+           (name (if (eq wrapper-name :auto)
+                     (add-suffix-to-fn new-name$ "-WRAPPER")
+                   wrapper-name))
+           (description (msg "The name ~x0 of the wrapper function, ~@1,"
+                             name
+                             (if (eq wrapper-name :auto)
+                                 "automatically generated ~
                               since the :WRAPPER-NAME input ~
                               is (perhaps by default) :AUTO"
-                           "supplied as the :WRAPPER-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((er &) (ensure-symbol-different$
-                name new-name$
-                (msg "the name ~x0 of the new function ~
+                               "supplied as the :WRAPPER-NAME input")))
+           ((er &) (ensure-symbol-new-event-name$ name description t nil))
+           ((er &) (ensure-symbol-different$
+                    name new-name$
+                    (msg "the name ~x0 of the new function ~
                       (determined by the :NEW-NAME input)." new-name$)
-                description
-                t nil)))
-    (value name)))
+                    description
+                    t nil)))
+        (value name))
+    (if wrapper-name-present
+        (er-soft+ ctx t nil
+                  "Since the :WRAPPER input is NIL, ~
+                   no :WRAPPER-NAME input may be supplied.")
+      (value nil))))
+
+(define tailrec-process-wrapper-enable (wrapper-enable
+                                        (wrapper-enable-present booleanp)
+                                        (wrapper$ booleanp)
+                                        ctx
+                                        state)
+  :returns (mv erp
+               (nothing "Always @('nil').")
+               state)
+  :short "Process the @(':wrapper-enable') input."
+  (if wrapper$
+      (ensure-boolean$ wrapper-enable "The :WRAPPER-ENABLE input" t nil)
+    (if wrapper-enable-present
+        (er-soft+ ctx t nil
+                  "Since the :WRAPPER input is NIL, ~
+                   no :WRAPPER-enable input may be supplied.")
+      (value nil))))
 
 (define tailrec-process-thm-name (thm-name
                                   (old$ symbolp)
                                   (new-name$ symbolp)
+                                  (wrapper$ booleanp)
                                   (wrapper-name$ symbolp)
                                   ctx
                                   state)
   :returns (mv erp
                (thm-name$ "A @(tsee symbolp)
                            to use for the theorem that
-                           relates the old and new functions.")
+                           relates the old and new or wrapper functions.")
                state)
   :mode :program
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* ((new/wrapper-name (if wrapper$ wrapper-name$ new-name$))
+       ((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
-                 (make-paired-name old$ wrapper-name$ 2 (w state))
+                 (make-paired-name old$ new/wrapper-name 2 (w state))
                thm-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the target function ~x1 ~
-                          to the wrapper function ~x2 ~
-                          ~@3,"
-                         name old$ wrapper-name$
+                          to the ~s2 function ~x3, ~
+                          ~@4,"
+                         name
+                         old$
+                         (if wrapper$ "wrapper" "new")
+                         new/wrapper-name
                          (if (eq thm-name :auto)
                              "automatically generated ~
                               since the :THM-NAME input ~
@@ -723,6 +764,7 @@
                       (determined by the :NEW-NAME input)." new-name$)
                 description
                 t nil))
+       ((when (not wrapper$)) (value name))
        ((er &) (ensure-symbol-different$
                 name wrapper-name$
                 (msg "the name ~x0 of the wrapper function ~
@@ -819,8 +861,11 @@
                                 domain
                                 new-name
                                 new-enable
+                                wrapper
                                 wrapper-name
+                                (wrapper-name-present booleanp)
                                 wrapper-enable
+                                (wrapper-enable-present booleanp)
                                 thm-name
                                 thm-enable
                                 non-executable
@@ -935,13 +980,16 @@
                           new-enable
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
+       ((er &) (ensure-boolean$ wrapper "The :WRAPPER input" t nil))
        ((er wrapper-name$) (tailrec-process-wrapper-name
-                            wrapper-name new-name$ ctx state))
-       ((er &) (ensure-boolean$ wrapper-enable
-                                "The :WRAPPER-ENABLE input" t nil))
+                            wrapper-name wrapper-name-present
+                            new-name$ wrapper ctx state))
+       ((er &) (tailrec-process-wrapper-enable
+                wrapper-enable wrapper-enable-present
+                wrapper ctx state))
        ((er thm-name$) (tailrec-process-thm-name
                         thm-name
-                        old$ new-name$ wrapper-name$
+                        old$ new-name$ wrapper wrapper-name$
                         ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
        ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
@@ -997,8 +1045,6 @@
    </p>"
   :order-subtopics t
   :default-parent t)
-
-(local (xdoc::set-default-parents tailrec-event-generation))
 
 (define tailrec-gen-var-u ((old$ symbolp))
   :returns (u "A @(tsee symbolp).")
@@ -2093,6 +2139,8 @@
                                     (r symbolp)
                                     (variant$ tailrec-variantp)
                                     (new-name$ symbolp)
+                                    (wrapper$ booleanp)
+                                    (thm-name$ symbolp)
                                     (names-to-avoid symbol-listp)
                                     (app-cond-thm-names symbol-symbol-alistp)
                                     (domain-of-old-name symbolp)
@@ -2101,7 +2149,8 @@
                                     (new-formals symbol-listp)
                                     (new-to-old-name symbolp)
                                     (wrld plist-worldp))
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event? "A @(tsee maybe-pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
   :short "Generate the theorem that relates
@@ -2128,8 +2177,16 @@
    since the old function is recursive,
    we use an explicit @(':expand') hint
    instead of just enabling the definition of old function.
+   </p>
+   <p>
+   We always generate a local event for this theorem.
+   If the @(':wrapper') input is @('nil'),
+   we also generate an exported event because in that case
+   there is no wrapper an no old-to-wrapper theorem.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'old-to-new names-to-avoid wrld))
+  (b* ((name (if wrapper$
+                 (fresh-name-in-world-with-$s 'old-to-new names-to-avoid wrld)
+               thm-name$))
        (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
                           old$ test base nonrec updates r variant$
@@ -2168,11 +2225,13 @@
                 :use (,domain-of-nonrec-thm
                       ,new-to-old-instance)))))
           (t (impossible))))
-       (event `(local (defthm ,name
-                        ,formula
-                        :rule-classes nil
-                        :hints ,hints))))
-    (mv event name)))
+       (local-event `(local (defthm ,name
+                              ,formula
+                              :hints ,hints)))
+       (exported-event? (and (not wrapper$)
+                             `(defthm ,name
+                                ,formula))))
+    (mv local-event exported-event? name)))
 
 (define tailrec-gen-wrapper-fn ((old$ symbolp)
                                 (test pseudo-termp)
@@ -2217,6 +2276,9 @@
    the proof for the case in which left identity holds
    (i.e. when the variant is @(':monoid') or @(':monoid-alt'))
    follows the proof for the special case of a ground base term.
+   </p>
+   <p>
+   This function is called only if the @(':wrapper') input is @('t').
    </p>"
   (b* ((macro (function-intro-macro wrapper-enable$ non-executable$))
        (formals (formals old$ wrld))
@@ -2281,6 +2343,9 @@
    The theorem is proved by
    expanding the (non-normalized) definition of the wrapper function
    and using the theorem that relates the old function to the new function.
+   </p>
+   <p>
+   This function is called only if the @(':wrapper') input is @('t').
    </p>"
   (b* ((macro (theorem-intro-macro thm-enable$))
        (formals (formals old$ wrld))
@@ -2310,6 +2375,7 @@
    (domain$ pseudo-termfnp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
+   (wrapper$ booleanp)
    (wrapper-name$ symbolp)
    (wrapper-enable$ booleanp)
    (thm-name$ symbolp)
@@ -2347,7 +2413,7 @@
    <p>
    The @(tsee encapsulate) also includes events
    to locally install the non-normalized definitions
-   of the old, new, and wrapper functions,
+   of the old, new, and (if generated) wrapper functions,
    because the generated proofs are based on the unnormalized bodies.
    </p>
    <p>
@@ -2383,9 +2449,12 @@
    for visual separation.
    </p>"
   (b* ((wrld (w state))
-       (names-to-avoid (list new-name$
-                             wrapper-name$
-                             thm-name$))
+       (names-to-avoid (if wrapper$
+                           (list new-name$
+                                 wrapper-name$
+                                 thm-name$)
+                         (list new-name$
+                               thm-name$)))
        ((mv app-cond-thm-events
             app-cond-thm-names) (tailrec-gen-app-conds old$
                                                        test
@@ -2517,11 +2586,14 @@
                                 verify-guards$)
                            (cons base-guard-name? names-to-avoid)
                          names-to-avoid))
-       ((mv old-to-new-event
+       ((mv old-to-new-thm-local-event
+            old-to-new-thm-exported-event?
             old-to-new-name) (tailrec-gen-old-to-new-thm
                               old$ test base nonrec updates r
                               variant$
                               new-name$
+                              wrapper$
+                              thm-name$
                               names-to-avoid
                               app-cond-thm-names
                               domain-of-old-name
@@ -2531,38 +2603,46 @@
                               new-to-old-name
                               wrld))
        (names-to-avoid (cons old-to-new-name names-to-avoid))
-       ((mv wrapper-fn-local-event
-            wrapper-fn-exported-event) (tailrec-gen-wrapper-fn
-                                        old$
-                                        test base nonrec updates r
-                                        variant$
-                                        new-name$
-                                        wrapper-name$ wrapper-enable$
-                                        non-executable$ verify-guards$
-                                        app-cond-thm-names
-                                        domain-of-ground-base-name?
-                                        base-guard-name?
-                                        new-formals
-                                        wrld))
-       ((mv wrapper-unnorm-event
-            wrapper-unnorm-name) (install-not-norm-event wrapper-name$
-                                                         t
-                                                         names-to-avoid
-                                                         wrld))
-       ((mv
-         old-to-wrapper-thm-local-event
-         old-to-wrapper-thm-exported-event) (tailrec-gen-old-to-wrapper-thm
+       ((mv wrapper-fn-local-event?
+            wrapper-fn-exported-event?) (if wrapper$
+                                            (tailrec-gen-wrapper-fn
                                              old$
-                                             wrapper-name$
-                                             thm-name$
-                                             thm-enable$
-                                             old-to-new-name
-                                             wrapper-unnorm-name
-                                             wrld))
+                                             test base nonrec updates r
+                                             variant$
+                                             new-name$
+                                             wrapper-name$ wrapper-enable$
+                                             non-executable$ verify-guards$
+                                             app-cond-thm-names
+                                             domain-of-ground-base-name?
+                                             base-guard-name?
+                                             new-formals
+                                             wrld)
+                                          (mv nil nil)))
+       ((mv wrapper-unnorm-event?
+            wrapper-unnorm-name?) (if wrapper$
+                                      (install-not-norm-event wrapper-name$
+                                                              t
+                                                              names-to-avoid
+                                                              wrld)
+                                    (mv nil nil)))
+       ((mv
+         old-to-wrapper-thm-local-event?
+         old-to-wrapper-thm-exported-event?) (if wrapper$
+                                                 (tailrec-gen-old-to-wrapper-thm
+                                                  old$
+                                                  wrapper-name$
+                                                  thm-name$
+                                                  thm-enable$
+                                                  old-to-new-name
+                                                  wrapper-unnorm-name?
+                                                  wrld)
+                                               (mv nil nil)))
        (new-fn-numbered-name-event `(add-numbered-name-in-use
                                      ,new-name$))
-       (wrapper-fn-numbered-name-event `(add-numbered-name-in-use
-                                         ,wrapper-name$))
+       (wrapper-fn-numbered-name-event? (if wrapper$
+                                            `(add-numbered-name-in-use
+                                              ,wrapper-name$)
+                                          nil))
        (encapsulate-events
         `((logic)
           (set-ignore-ok t)
@@ -2589,15 +2669,17 @@
           ,@(and gen-alpha
                  verify-guards$
                  (list base-guard-event?))
-          ,old-to-new-event
-          ,wrapper-fn-local-event
-          ,wrapper-unnorm-event
-          ,old-to-wrapper-thm-local-event
+          ,old-to-new-thm-local-event
+          ,@(and wrapper$ (list wrapper-fn-local-event?))
+          ,@(and wrapper$ (list wrapper-unnorm-event?))
+          ,@(and wrapper$ (list old-to-wrapper-thm-local-event?))
           ,new-fn-exported-event
-          ,wrapper-fn-exported-event
-          ,old-to-wrapper-thm-exported-event
+          ,@(and wrapper$ (list wrapper-fn-exported-event?))
+          ,(if wrapper$
+               old-to-wrapper-thm-exported-event?
+             old-to-new-thm-exported-event?)
           ,new-fn-numbered-name-event
-          ,wrapper-fn-numbered-name-event))
+          ,@(and wrapper$ (list wrapper-fn-numbered-name-event?))))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only$)
         (if (member-eq print$ '(:info :all))
@@ -2612,9 +2694,14 @@
                       `(,@(and (member-eq print$ '(:info :all))
                                '((cw-event "~%")))
                         (cw-event "~x0~|" ',new-fn-exported-event)
-                        (cw-event "~x0~|" ',wrapper-fn-exported-event)
-                        (cw-event "~x0~|"
-                                  ',old-to-wrapper-thm-exported-event)))))
+                        ,@(and wrapper$
+                               (list `(cw-event "~x0~|"
+                                                ',wrapper-fn-exported-event?)))
+                        ,(if wrapper$
+                             `(cw-event "~x0~|"
+                                        ',old-to-wrapper-thm-exported-event?)
+                           `(cw-event "~x0~|"
+                                      ',old-to-new-thm-exported-event?))))))
     `(progn
        ,encapsulate+
        ,transformation-table-event
@@ -2628,8 +2715,11 @@
                     domain
                     new-name
                     new-enable
+                    wrapper
                     wrapper-name
+                    (wrapper-name-present booleanp)
                     wrapper-enable
+                    (wrapper-enable-present booleanp)
                     thm-name
                     thm-enable
                     non-executable
@@ -2682,8 +2772,11 @@
                                             domain
                                             new-name
                                             new-enable
+                                            wrapper
                                             wrapper-name
+                                            wrapper-name-present
                                             wrapper-enable
+                                            wrapper-enable-present
                                             thm-name
                                             thm-enable
                                             non-executable
@@ -2704,6 +2797,7 @@
                                       domain$
                                       new-name$
                                       new-enable$
+                                      wrapper
                                       wrapper-name$
                                       wrapper-enable
                                       thm-name$
@@ -2737,8 +2831,9 @@
                      (domain ':auto)
                      (new-name ':auto)
                      (new-enable ':auto)
-                     (wrapper-name ':auto)
-                     (wrapper-enable 't)
+                     (wrapper 't)
+                     (wrapper-name ':auto wrapper-name-present)
+                     (wrapper-enable 't wrapper-enable-present)
                      (thm-name ':auto)
                      (thm-enable 't)
                      (non-executable ':auto)
@@ -2751,8 +2846,11 @@
                                    ',domain
                                    ',new-name
                                    ',new-enable
+                                   ',wrapper
                                    ',wrapper-name
+                                   ',wrapper-name-present
                                    ',wrapper-enable
+                                   ',wrapper-enable-present
                                    ',thm-name
                                    ',thm-enable
                                    ',non-executable

@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc alist-map-vals
-  :parents (alist-utilities alists)
+  :parents (std/alists alists)
   :short "Values of the map represented by an alist."
   :long
   (xdoc::topstring

@@ -1,4 +1,4 @@
-; Cryptography -- Package
+; Cryptographic Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -15,13 +15,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "CRYPTO" (append *std-pkg-symbols*
-                         '(byte-list-equiv
+                         '(bit-listp
+                           byte-list-equiv
                            byte-list-fix
                            byte-listp
                            byte-list20p
                            byte-list32p
                            byte-list64p
                            defxdoc+
+                           maybe-posp
                            nat-equiv
                            nat=>bebytes
                            pos-fix)))

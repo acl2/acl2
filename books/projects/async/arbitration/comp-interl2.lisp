@@ -154,11 +154,11 @@
 ;; Constraints on the state of COMP-INTERL
 
 (defund comp-interl$st-format (st data-size)
-  (b* ((l0 (get-field *comp-interl$l0* st))
-       (l1 (get-field *comp-interl$l1* st))
-       (interl0 (get-field *comp-interl$interl0* st))
-       (interl1 (get-field *comp-interl$interl1* st))
-       (interl2 (get-field *comp-interl$interl2* st)))
+  (b* ((l0 (nth *comp-interl$l0* st))
+       (l1 (nth *comp-interl$l1* st))
+       (interl0 (nth *comp-interl$interl0* st))
+       (interl1 (nth *comp-interl$interl1* st))
+       (interl2 (nth *comp-interl$interl2* st)))
     (and (< 0 data-size)
          (link$st-format l0 data-size)
          (link$st-format l1 data-size)
@@ -173,11 +173,11 @@
   :rule-classes :forward-chaining)
 
 (defund comp-interl$valid-st (st data-size)
-  (b* ((l0 (get-field *comp-interl$l0* st))
-       (l1 (get-field *comp-interl$l1* st))
-       (interl0 (get-field *comp-interl$interl0* st))
-       (interl1 (get-field *comp-interl$interl1* st))
-       (interl2 (get-field *comp-interl$interl2* st)))
+  (b* ((l0 (nth *comp-interl$l0* st))
+       (l1 (nth *comp-interl$l1* st))
+       (interl0 (nth *comp-interl$interl0* st))
+       (interl1 (nth *comp-interl$interl1* st))
+       (interl2 (nth *comp-interl$interl2* st)))
     (and (< 0 data-size)
          (link$valid-st l0 data-size)
          (link$valid-st l1 data-size)
@@ -279,8 +279,8 @@
 
          (interl0-go-signals (take *interl$go-num* go-signals))
 
-         (l0 (get-field *comp-interl$l0* st))
-         (l0.s (get-field *link$s* l0)))
+         (l0 (nth *comp-interl$l0* st))
+         (l0.s (nth *link$s* l0)))
       (list* full-in0 full-in1 (f-buf (car l0.s))
              (append data0-in data1-in
                      (cons select0 interl0-go-signals)))))
@@ -289,14 +289,14 @@
 
   (defund comp-interl$interl0-out-act0 (inputs st data-size)
     (b* ((interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
-         (interl0 (get-field *comp-interl$interl0* st)))
+         (interl0 (nth *comp-interl$interl0* st)))
       (interl$out-act0 interl0-inputs interl0 data-size)))
 
   ;; Extract the "out-act1" signal for joint INTERL0
 
   (defund comp-interl$interl0-out-act1 (inputs st data-size)
     (b* ((interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
-         (interl0 (get-field *comp-interl$interl0* st)))
+         (interl0 (nth *comp-interl$interl0* st)))
       (interl$out-act1 interl0-inputs interl0 data-size)))
 
   (defthm comp-interl$interl0-out-act-mutually-exclusive
@@ -317,7 +317,7 @@
 
   (defund comp-interl$interl0-data-out (inputs st data-size)
     (b* ((interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
-         (interl0 (get-field *comp-interl$interl0* st)))
+         (interl0 (nth *comp-interl$interl0* st)))
       (interl$data-out interl0-inputs interl0 data-size)))
 
   ;; Extract the inputs for joint INTERL1
@@ -337,8 +337,8 @@
          (interl1-go-signals (take *interl$go-num*
                                    (nthcdr *interl$go-num* go-signals)))
 
-         (l1 (get-field *comp-interl$l1* st))
-         (l1.s (get-field *link$s* l1)))
+         (l1 (nth *comp-interl$l1* st))
+         (l1.s (nth *link$s* l1)))
       (list* full-in2 full-in3 (f-buf (car l1.s))
              (append data2-in data3-in
                      (cons select1 interl1-go-signals)))))
@@ -347,14 +347,14 @@
 
   (defund comp-interl$interl1-out-act0 (inputs st data-size)
     (b* ((interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
-         (interl1 (get-field *comp-interl$interl1* st)))
+         (interl1 (nth *comp-interl$interl1* st)))
       (interl$out-act0 interl1-inputs interl1 data-size)))
 
   ;; Extract the "out-act1" signal for joint INTERL1
 
   (defund comp-interl$interl1-out-act1 (inputs st data-size)
     (b* ((interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
-         (interl1 (get-field *comp-interl$interl1* st)))
+         (interl1 (nth *comp-interl$interl1* st)))
       (interl$out-act1 interl1-inputs interl1 data-size)))
 
   (defthm comp-interl$interl1-out-act-mutually-exclusive
@@ -375,7 +375,7 @@
 
   (defund comp-interl$interl1-data-out (inputs st data-size)
     (b* ((interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
-         (interl1 (get-field *comp-interl$interl1* st)))
+         (interl1 (nth *comp-interl$interl1* st)))
       (interl$data-out interl1-inputs interl1 data-size)))
 
   ;; Extract the inputs for joint INTERL2
@@ -392,12 +392,12 @@
          (interl2-go-signals (take *interl$go-num*
                                    (nthcdr (* 2 *interl$go-num*) go-signals)))
 
-         (l0 (get-field *comp-interl$l0* st))
-         (l0.s (get-field *link$s* l0))
-         (l0.d (get-field *link$d* l0))
-         (l1 (get-field *comp-interl$l1* st))
-         (l1.s (get-field *link$s* l1))
-         (l1.d (get-field *link$d* l1)))
+         (l0 (nth *comp-interl$l0* st))
+         (l0.s (nth *link$s* l0))
+         (l0.d (nth *link$d* l0))
+         (l1 (nth *comp-interl$l1* st))
+         (l1.s (nth *link$s* l1))
+         (l1.d (nth *link$d* l1)))
       (list* (f-buf (car l0.s)) (f-buf (car l1.s)) empty-out-
              (append (v-threefix (strip-cars l0.d))
                      (v-threefix (strip-cars l1.d))
@@ -407,7 +407,7 @@
 
   (defund comp-interl$in0-act (inputs st data-size)
     (b* ((interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
-         (interl0 (get-field *comp-interl$interl0* st)))
+         (interl0 (nth *comp-interl$interl0* st)))
       (interl$in0-act interl0-inputs interl0 data-size)))
 
   (defthm comp-interl$in0-act-inactive
@@ -420,7 +420,7 @@
 
   (defund comp-interl$in1-act (inputs st data-size)
     (b* ((interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
-         (interl0 (get-field *comp-interl$interl0* st)))
+         (interl0 (nth *comp-interl$interl0* st)))
       (interl$in1-act interl0-inputs interl0 data-size)))
 
   (defthm comp-interl$in1-act-inactive
@@ -433,7 +433,7 @@
 
   (defund comp-interl$in2-act (inputs st data-size)
     (b* ((interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
-         (interl1 (get-field *comp-interl$interl1* st)))
+         (interl1 (nth *comp-interl$interl1* st)))
       (interl$in0-act interl1-inputs interl1 data-size)))
 
   (defthm comp-interl$in2-act-inactive
@@ -446,7 +446,7 @@
 
   (defund comp-interl$in3-act (inputs st data-size)
     (b* ((interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
-         (interl1 (get-field *comp-interl$interl1* st)))
+         (interl1 (nth *comp-interl$interl1* st)))
       (interl$in1-act interl1-inputs interl1 data-size)))
 
   (defthm comp-interl$in3-act-inactive
@@ -459,7 +459,7 @@
 
   (defund comp-interl$out-act0 (inputs st data-size)
     (b* ((interl2-inputs (comp-interl$interl2-inputs inputs st data-size))
-         (interl2 (get-field *comp-interl$interl2* st)))
+         (interl2 (nth *comp-interl$interl2* st)))
       (interl$out-act0 interl2-inputs interl2 data-size)))
 
   (defthm comp-interl$out-act0-inactive
@@ -472,7 +472,7 @@
 
   (defund comp-interl$out-act1 (inputs st data-size)
     (b* ((interl2-inputs (comp-interl$interl2-inputs inputs st data-size))
-         (interl2 (get-field *comp-interl$interl2* st)))
+         (interl2 (nth *comp-interl$interl2* st)))
       (interl$out-act1 interl2-inputs interl2 data-size)))
 
   (defthm comp-interl$out-act1-inactive
@@ -504,7 +504,7 @@
 
   (defund comp-interl$data-out (inputs st data-size)
     (b* ((interl2-inputs (comp-interl$interl2-inputs inputs st data-size))
-         (interl2 (get-field *comp-interl$interl2* st)))
+         (interl2 (nth *comp-interl$interl2* st)))
       (interl$data-out interl2-inputs interl2 data-size)))
 
   (defthm len-comp-interl$data-out-1
@@ -582,11 +582,11 @@
 ;; This function specifies the next state of COMP-INTERL.
 
 (defun comp-interl$step (inputs st data-size)
-  (b* ((l0 (get-field *comp-interl$l0* st))
-       (l1 (get-field *comp-interl$l1* st))
-       (interl0 (get-field *comp-interl$interl0* st))
-       (interl1 (get-field *comp-interl$interl1* st))
-       (interl2 (get-field *comp-interl$interl2* st))
+  (b* ((l0 (nth *comp-interl$l0* st))
+       (l1 (nth *comp-interl$l1* st))
+       (interl0 (nth *comp-interl$interl0* st))
+       (interl1 (nth *comp-interl$interl1* st))
+       (interl2 (nth *comp-interl$interl2* st))
 
        (interl0-inputs (comp-interl$interl0-inputs inputs st data-size))
        (interl1-inputs (comp-interl$interl1-inputs inputs st data-size))
@@ -821,7 +821,7 @@
      (equal (comp-interl$out-act inputs st data-size)
             (b* ((interl2-inputs
                   (comp-interl$interl2-inputs inputs st data-size))
-                 (interl2 (get-field *comp-interl$interl2* st)))
+                 (interl2 (nth *comp-interl$interl2* st)))
               (interl$out-act interl2-inputs interl2 data-size)))
      :hints (("Goal" :in-theory (enable interl$out-act
                                         comp-interl$out-act0
@@ -1362,30 +1362,30 @@
 ;; The extraction functions for COMP-INTERL
 
 (defund comp-interl$extract0 (st)
-  (b* ((interl0 (get-field *comp-interl$interl0* st)))
+  (b* ((interl0 (nth *comp-interl$interl0* st)))
     (interl$extract0 interl0)))
 
 (defund comp-interl$extract1 (st)
-  (b* ((interl0 (get-field *comp-interl$interl0* st)))
+  (b* ((interl0 (nth *comp-interl$interl0* st)))
     (interl$extract1 interl0)))
 
 (defund comp-interl$extract2 (st)
-  (b* ((interl1 (get-field *comp-interl$interl1* st)))
+  (b* ((interl1 (nth *comp-interl$interl1* st)))
     (interl$extract0 interl1)))
 
 (defund comp-interl$extract3 (st)
-  (b* ((interl1 (get-field *comp-interl$interl1* st)))
+  (b* ((interl1 (nth *comp-interl$interl1* st)))
     (interl$extract1 interl1)))
 
 (defund comp-interl$extract4 (st)
-  (b* ((l0 (get-field *comp-interl$l0* st))
-       (interl2 (get-field *comp-interl$interl2* st)))
+  (b* ((l0 (nth *comp-interl$l0* st))
+       (interl2 (nth *comp-interl$interl2* st)))
     (append (extract-valid-data (list l0))
             (interl$extract0 interl2))))
 
 (defund comp-interl$extract5 (st)
-  (b* ((l1 (get-field *comp-interl$l1* st))
-       (interl2 (get-field *comp-interl$interl2* st)))
+  (b* ((l1 (nth *comp-interl$l1* st))
+       (interl2 (nth *comp-interl$interl2* st)))
     (append (extract-valid-data (list l1))
             (interl$extract1 interl2))))
 
@@ -1580,8 +1580,7 @@
             (equal (comp-interl$extract1 next-st)
                    (comp-interl$extracted1-step inputs st data-size)))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              interl$extracted0-step
+             :in-theory (e/d (interl$extracted0-step
                               interl$extracted1-step
                               comp-interl$extracted0-step
                               comp-interl$extracted1-step
@@ -1623,8 +1622,7 @@
             (equal (comp-interl$extract3 next-st)
                    (comp-interl$extracted3-step inputs st data-size)))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              interl$extracted0-step
+             :in-theory (e/d (interl$extracted0-step
                               interl$extracted1-step
                               comp-interl$extracted2-step
                               comp-interl$extracted3-step
@@ -1648,8 +1646,7 @@
                      (equal data-size (len l0.d)))
                 (equal (interl$data0-in interl2-inputs data-size)
                        (v-threefix (strip-cars l0.d)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-interl$interl2-inputs
+     :hints (("Goal" :in-theory (enable comp-interl$interl2-inputs
                                         interl$data0-in)))))
 
   (local
@@ -1664,8 +1661,7 @@
                      (equal data-size (len l1.d)))
                 (equal (interl$data1-in interl2-inputs data-size)
                        (v-threefix (strip-cars l1.d)))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        comp-interl$interl2-inputs
+     :hints (("Goal" :in-theory (enable comp-interl$interl2-inputs
                                         interl$data1-in)))))
 
   (local
@@ -1682,8 +1678,7 @@
                          (nth *comp-interl$interl0* st)
                          data-size))))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               comp-interl$interl0-inputs)
+              :in-theory (e/d (comp-interl$interl0-inputs)
                               ())))))
 
   (local
@@ -1700,8 +1695,7 @@
                          (nth *comp-interl$interl1* st)
                          data-size))))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               comp-interl$interl1-inputs)
+              :in-theory (e/d (comp-interl$interl1-inputs)
                               ())))))
 
   (local
@@ -1714,8 +1708,7 @@
                     (nth *comp-interl$interl2* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               comp-interl$interl2-inputs)
+              :in-theory (e/d (comp-interl$interl2-inputs)
                               ())))))
 
   (local
@@ -1728,8 +1721,7 @@
                     (nth *comp-interl$interl2* st)
                     data-size)))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               comp-interl$interl2-inputs)
+              :in-theory (e/d (comp-interl$interl2-inputs)
                               ())))))
 
   (defthm comp-interl$extracted4+5-step-correct
@@ -1745,8 +1737,7 @@
              :use (comp-interl$input-format=>interl0$input-format
                    comp-interl$input-format=>interl1$input-format
                    comp-interl$input-format=>interl2$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               interl$out-act
                               interl$extracted0-step
                               interl$extracted1-step
@@ -1801,7 +1792,6 @@
    (defthm comp-interl$valid-st-preserved-aux-3
      (implies (link$valid-st st data-size)
               (booleanp (car (nth *link$s* st))))
-     :hints (("Goal" :in-theory (enable get-field)))
      :rule-classes (:rewrite :type-prescription)))
 
   (defthm comp-interl$valid-st-preserved
@@ -1813,8 +1803,7 @@
              :use (comp-interl$input-format=>interl0$input-format
                    comp-interl$input-format=>interl1$input-format
                    comp-interl$input-format=>interl2$input-format)
-             :in-theory (e/d (get-field
-                              comp-interl$valid-st
+             :in-theory (e/d (comp-interl$valid-st
                               comp-interl$step
                               comp-interl$interl0-inputs
                               comp-interl$interl1-inputs

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; December 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -28,10 +28,10 @@
 
 (progn
   (defun piso-sreg$map-to-links (st)
-    (b* ((r-data (get-field *piso-sreg$r-data* st))
-         (r-cnt (get-field *piso-sreg$r-cnt* st))
-         (w-data (get-field *piso-sreg$w-data* st))
-         (w-cnt (get-field *piso-sreg$w-cnt* st)))
+    (b* ((r-data (nth *piso-sreg$r-data* st))
+         (r-cnt (nth *piso-sreg$r-cnt* st))
+         (w-data (nth *piso-sreg$w-data* st))
+         (w-cnt (nth *piso-sreg$w-cnt* st)))
       (map-to-links (list (cons 'r-data r-data)
                           (cons 'r-cnt r-cnt)
                           (cons 'w-data w-data)
@@ -125,14 +125,14 @@
 
 (progn
   (defun piso2-sreg$map-to-links (st)
-    (b* ((r-data0 (get-field *piso2-sreg$r-data0* st))
-         (r-cnt0 (get-field *piso2-sreg$r-cnt0* st))
-         (w-data0 (get-field *piso2-sreg$w-data0* st))
-         (w-cnt0 (get-field *piso2-sreg$w-cnt0* st))
-         (r-data1 (get-field *piso2-sreg$r-data1* st))
-         (r-cnt1 (get-field *piso2-sreg$r-cnt1* st))
-         (w-data1 (get-field *piso2-sreg$w-data1* st))
-         (w-cnt1 (get-field *piso2-sreg$w-cnt1* st)))
+    (b* ((r-data0 (nth *piso2-sreg$r-data0* st))
+         (r-cnt0 (nth *piso2-sreg$r-cnt0* st))
+         (w-data0 (nth *piso2-sreg$w-data0* st))
+         (w-cnt0 (nth *piso2-sreg$w-cnt0* st))
+         (r-data1 (nth *piso2-sreg$r-data1* st))
+         (r-cnt1 (nth *piso2-sreg$r-cnt1* st))
+         (w-data1 (nth *piso2-sreg$w-data1* st))
+         (w-cnt1 (nth *piso2-sreg$w-cnt1* st)))
       (map-to-links (list (cons 'r-data0 r-data0)
                           (cons 'r-cnt0 r-cnt0)
                           (cons 'w-data0 w-data0)
@@ -240,10 +240,10 @@
 
 (progn
   (defun sipo-sreg$map-to-links (st)
-    (b* ((r-data (get-field *sipo-sreg$r-data* st))
-         (r-cnt (get-field *sipo-sreg$r-cnt* st))
-         (w-data (get-field *sipo-sreg$w-data* st))
-         (w-cnt (get-field *sipo-sreg$w-cnt* st)))
+    (b* ((r-data (nth *sipo-sreg$r-data* st))
+         (r-cnt (nth *sipo-sreg$r-cnt* st))
+         (w-data (nth *sipo-sreg$w-data* st))
+         (w-cnt (nth *sipo-sreg$w-cnt* st)))
       (map-to-links (list (cons 'r-data r-data)
                           (cons 'r-cnt r-cnt)
                           (cons 'w-data w-data)
@@ -338,14 +338,14 @@
 
 (progn
   (defun serial-add$map-to-links (st)
-    (b* ((a (get-field *serial-add$a* st))
-         (b (get-field *serial-add$b* st))
-         (ci (get-field *serial-add$ci* st))
-         (s (get-field *serial-add$s* st))
-         (co (get-field *serial-add$co* st))
-         (done (get-field *serial-add$done* st))
-         (piso2 (get-field *serial-add$piso2* st))
-         (sipo (get-field *serial-add$sipo* st)))
+    (b* ((a (nth *serial-add$a* st))
+         (b (nth *serial-add$b* st))
+         (ci (nth *serial-add$ci* st))
+         (s (nth *serial-add$s* st))
+         (co (nth *serial-add$co* st))
+         (done (nth *serial-add$done* st))
+         (piso2 (nth *serial-add$piso2* st))
+         (sipo (nth *serial-add$sipo* st)))
       (append
        (list (cons 'piso2 (piso2-sreg$map-to-links piso2)))
        (map-to-links1 (list (cons 'a a)
@@ -443,14 +443,14 @@
 
 (progn
   (defun serial-sub$map-to-links (st)
-    (b* ((a (get-field *serial-sub$a* st))
-         (b (get-field *serial-sub$b* st))
-         (ci (get-field *serial-sub$ci* st))
-         (s (get-field *serial-sub$s* st))
-         (co (get-field *serial-sub$co* st))
-         (done (get-field *serial-sub$done* st))
-         (piso2 (get-field *serial-sub$piso2* st))
-         (sipo (get-field *serial-sub$sipo* st)))
+    (b* ((a (nth *serial-sub$a* st))
+         (b (nth *serial-sub$b* st))
+         (ci (nth *serial-sub$ci* st))
+         (s (nth *serial-sub$s* st))
+         (co (nth *serial-sub$co* st))
+         (done (nth *serial-sub$done* st))
+         (piso2 (nth *serial-sub$piso2* st))
+         (sipo (nth *serial-sub$sipo* st)))
       (append
        (list (cons 'piso2 (piso2-sreg$map-to-links piso2)))
        (map-to-links1 (list (cons 'a a)

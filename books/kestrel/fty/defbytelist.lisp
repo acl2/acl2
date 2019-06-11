@@ -147,9 +147,14 @@
       this rule is disabled by default for efficiency."))
 
    (xdoc::desc
+    "@('fix-of-take')"
+    (xdoc::p
+     "A rule to rewrite @('fix') applied to @(tsee take)."))
+
+   (xdoc::desc
     "@('fix-of-rcons')"
     (xdoc::p
-     "A rule to rewrite @('fix') applied to @('rcons')."))
+     "A rule to rewrite @('fix') applied to @(tsee rcons)."))
 
    (xdoc::p
     "The above items are generated with XDOC documentation.")))
@@ -234,10 +239,12 @@
                                                             pred
                                                             '-rewrite)
                                                       pkg-witness))
+       (fix-of-take (acl2::packn-pos (list fix '-of-take) pkg-witness))
        (fix-of-rcons (acl2::packn-pos (list fix '-of-rcons) pkg-witness))
        ;; variables to use in the generated functions and theorems:
        (x (intern-in-package-of-symbol "X" pkg-witness))
        (a (intern-in-package-of-symbol "A" pkg-witness))
+       (n (intern-in-package-of-symbol "N" pkg-witness))
        ;; XDOC topic for the generated theorems:
        (type-theorems (acl2::add-suffix-to-fn type "-THEOREMS"))
        ;; generated events:
@@ -248,6 +255,7 @@
             ,@(and short (list :short short))
             ,@(and long (list :long long))
             :true-listp t
+            :elementp-of-nil nil
             :pred ,pred
             :fix ,fix
             :equiv ,equiv))
@@ -274,6 +282,17 @@
              (implies (,pred ,x)
                       (true-listp ,x))
              :in-theory '(,pred true-listp))
+           (defrule ,fix-of-take
+             (implies (<= (nfix ,n) (len ,x))
+                      (equal (,fix (take ,n ,x))
+                             (take ,n (,fix ,x))))
+             :in-theory '(,fix
+                          ,(acl2::add-suffix-to-fn fix "-OF-CONS")
+                          nfix
+                          zp
+                          len
+                          take
+                          acl2::take-of-cons))
            (defrule ,fix-of-rcons
              (equal (,fix (rcons ,a ,x))
                     (rcons (,byte-fix ,a) (,fix ,x)))

@@ -10,8 +10,8 @@
 
 (in-package "BITCOIN")
 
-(include-book "kestrel/crypto/hmac-sha-512-placeholder" :dir :system)
-(include-book "kestrel/crypto/secp256k1-placeholder" :dir :system)
+(include-book "kestrel/crypto/interfaces/hmac-sha-512" :dir :system)
+(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
@@ -93,21 +93,6 @@
       calculating addresses, auditing, etc.,
       and @(tsee bip32-export-key) for further sharing.")))
   :order-subtopics t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection bip32-library-extensions
-  :parents (bip32)
-  :short "Library extensions for BIP 32."
-  :long
-  (xdoc::topstring-p
-   "These will be moved to the appropriate libraries.")
-
-  (defrule ubyte32-list-fix-of-take
-    (implies (<= (nfix n) (len x))
-             (equal (ubyte32-list-fix (take n x))
-                    (take n (ubyte32-list-fix x))))
-    :enable ubyte32-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,8 +326,7 @@
 
   (defrule bip32-ext-key-kind-of-bip32-ckd
     (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd parent i)))
-           (bip32-ext-key-kind parent))
-    :enable bip32-ckd))
+           (bip32-ext-key-kind parent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -412,7 +396,7 @@
     "Proving the equivalence of this function with @(tsee bip32-ckd-priv-pub)
      (for non-hardened child keys)
      requires the use of certain properties of elliptic curve operations
-     that are currently not formalized in the secp256k1 placeholder.
+     that are currently not formalized in the secp256k1 interface.
      Thus, this proof will be done later."))
   (bip32-ckd-pub (bip32-n parent) i)
   :no-function t
@@ -509,8 +493,7 @@
 
   (defrule bip32-ext-key-kind-of-bip32-ckd*
     (equal (bip32-ext-key-kind (mv-nth 1 (bip32-ckd* root path)))
-           (bip32-ext-key-kind root))
-    :enable bip32-ckd*))
+           (bip32-ext-key-kind root))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,8 +513,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk bip32-path-set-closedp ((paths bip32-path-setp))
-  :returns (yes/no booleanp)
+(defsection bip32-path-set-closedp
   :short "Check if a set of key tree paths is closed under prefix."
   :long
   (xdoc::topstring
@@ -543,9 +525,20 @@
    (xdoc::p
     "The condition that the prefix is a true list
      is needed because @(tsee prefixp) ignores the final @(tsee cdr)s.
-     Without this condition, prefixed that are not true lists
+     Without this condition, prefixes that are not true lists
      would be required to be in the set,
      which would be impossible because the set's elements are all true lists.")
+   (xdoc::p
+    "We introduce this function as a constrained function,
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
+     @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
+     we use an @(tsee encapsulate) for now to introduce this function.
+     A @(tsee std::define-sk) is used to locally define the witness,
+     which also guard-verifies the matrix of the function,
+     as additional validation.")
    (xdoc::p
     "A closed non-empty set of paths always contains the empty path,
      because the empty path is a prefix of every path.")
@@ -560,63 +553,99 @@
      This is because every strict prefix of the new path
      is also a prefix of the existing path,
      and therefore already in the set by hypothesis."))
-  (forall (path prefix)
-          (b* ((paths (bip32-path-sfix paths)))
-            (implies (and (set::in path paths)
-                          (true-listp prefix)
-                          (prefixp prefix path))
-                     (set::in prefix paths))))
-  ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-path-set-closedp
-    :args ((paths bip32-path-setp))
-    :hints (("Goal"
-             :in-theory (disable bip32-path-set-closedp-necc)
-             :use ((:instance bip32-path-set-closedp-necc
-                    (paths (bip32-path-sfix paths))
-                    (path (mv-nth 0 (bip32-path-set-closedp-witness paths)))
-                    (prefix (mv-nth 1 (bip32-path-set-closedp-witness paths))))
-                   (:instance bip32-path-set-closedp-necc
-                    (path (mv-nth 0 (bip32-path-set-closedp-witness
-                                     (bip32-path-sfix paths))))
-                    (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                                       (bip32-path-sfix paths)))))))))
+  (encapsulate
+    (((bip32-path-set-closedp *) => *
+      :formals (paths)
+      :guard (bip32-path-setp paths))
+     ((bip32-path-set-closedp-witness *) => (mv * *)))
+
+    (local
+     (define-sk bip32-path-set-closedp ((paths bip32-path-setp))
+       :returns (yes/no booleanp :name bip32-path-set-closedp-return-type)
+       (forall (path prefix)
+               (b* ((paths (bip32-path-sfix paths)))
+                 (implies (and (in path paths)
+                               (true-listp prefix)
+                               (prefixp prefix path))
+                          (in prefix paths))))
+       ///
+       ;; boilerplate:
+       (fty::deffixequiv bip32-path-set-closedp
+         :args ((paths bip32-path-setp))
+         :hints
+         (("Goal"
+           :in-theory (disable bip32-path-set-closedp-necc)
+           :use ((:instance bip32-path-set-closedp-necc
+                  (paths (bip32-path-sfix paths))
+                  (path (mv-nth 0 (bip32-path-set-closedp-witness paths)))
+                  (prefix (mv-nth 1 (bip32-path-set-closedp-witness paths))))
+                 (:instance bip32-path-set-closedp-necc
+                  (path (mv-nth 0 (bip32-path-set-closedp-witness
+                                   (bip32-path-sfix paths))))
+                  (prefix (mv-nth 1 (bip32-path-set-closedp-witness
+                                     (bip32-path-sfix paths)))))))))))
+
+    (defruled bip32-path-set-closedp-definition
+      (equal (bip32-path-set-closedp paths)
+             (mv-let (path prefix)
+               (bip32-path-set-closedp-witness paths)
+               (b* ((paths (bip32-path-sfix paths)))
+                 (implies (and (in path paths)
+                               (true-listp prefix)
+                               (prefixp prefix path))
+                          (in prefix paths)))))
+      :rule-classes :definition
+      :enable bip32-path-set-closedp)
+
+    (defrule booleanp-of-bip32-path-set-closedp
+      (booleanp (bip32-path-set-closedp paths))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defruled bip32-path-set-closedp-necc
+      (implies (bip32-path-set-closedp paths)
+               (b* ((paths (bip32-path-sfix paths)))
+                 (implies (and (in path paths)
+                               (true-listp prefix)
+                               (prefixp prefix path))
+                          (in prefix paths))))
+      :enable bip32-path-set-closedp-necc)
+
+    (fty::deffixequiv bip32-path-set-closedp
+      :args ((paths bip32-path-setp))))
 
   (defrule empty-path-in-closed-nonempty-bip32-path-set
     (implies (and (bip32-path-setp paths)
-                  (not (set::empty paths))
+                  (not (empty paths))
                   (bip32-path-set-closedp paths))
-             (set::in nil paths))
+             (in nil paths))
     :use (:instance bip32-path-set-closedp-necc
           (prefix nil)
-          (path (set::head paths))))
+          (path (head paths))))
 
   (defrule bip32-path-set-closedp-of-singleton-empty-path
     (bip32-path-set-closedp '(nil))
-    :enable set::in)
+    :enable (in bip32-path-set-closedp-definition))
 
   (defrule bip32-path-set-closedp-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-path-set-closedp paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index))
-             (bip32-path-set-closedp (set::insert (rcons index path) paths)))
-    :enable (list-equiv bip32-path-set-closedp)
+             (bip32-path-set-closedp (insert (rcons index path) paths)))
+    :enable (list-equiv bip32-path-set-closedp-definition)
     :use ((:instance bip32-path-set-closedp-necc
            (path (mv-nth 0 (bip32-path-set-closedp-witness
-                            (set::insert (rcons index path) paths))))
+                            (insert (rcons index path) paths))))
            (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths)))))
+                              (insert (rcons index path) paths)))))
           (:instance bip32-path-set-closedp-necc
            (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths))))))
+                              (insert (rcons index path) paths))))))
     :cases ((equal (mv-nth 1 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths)))
+                              (insert (rcons index path) paths)))
                    (mv-nth 0 (bip32-path-set-closedp-witness
-                              (set::insert (rcons index path) paths))))))
-
-  (in-theory (disable (:e bip32-path-set-closedp))))
+                              (insert (rcons index path) paths)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +666,7 @@
     :parents (bip32-index-tree)
     :short "Recognizer for @(tsee bip32-index-tree)."
     (and (bip32-path-setp x)
-         (not (set::empty x))
+         (not (empty x))
          (bip32-path-set-closedp x))
     :no-function t
     ///
@@ -678,15 +707,14 @@
 
   (defrule bip32-index-treep-of-insert-of-rcons
     (implies (and (bip32-index-treep paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index))
-             (bip32-index-treep (set::insert (rcons index path) paths)))
+             (bip32-index-treep (insert (rcons index path) paths)))
     :enable bip32-index-treep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk bip32-valid-keys-p ((root bip32-ext-key-p) (paths bip32-path-setp))
-  :returns (yes/no booleanp)
+(defsection bip32-valid-keys-p
   :short "Check if all the derived keys in a (tree's) set of paths are valid."
   :long
   (xdoc::topstring
@@ -700,42 +728,86 @@
     "Even though this function is applied to index trees,
      it can be defined on general sets of paths.")
    (xdoc::p
+    "We introduce this function as a constrained function,
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
+     @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
+     we use an @(tsee encapsulate) for now to introduce this function.
+     A @(tsee std::define-sk) is used to locally define the witness,
+     which also guard-verifies the matrix of the function,
+     as additional validation.")
+   (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path)
      trivially satisfies this key validity condition.")
    (xdoc::p
     "Extending a path of an index tree
      preserves the validity of the keys,
-     provided that the key at the end of the new extended path is valid."))
-  (forall (path)
-          (implies (set::in path (bip32-path-sfix paths))
-                   (not (mv-nth 0 (bip32-ckd* root path)))))
-  ///
+     provided that the key at the end of the new extended path is valid.")
+   (xdoc::p
+    "The tail of a set of paths with valid keys also has all valid keys."))
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-valid-keys-p
-    :args ((root bip32-ext-key-p) (paths bip32-path-setp))
-    :hints (("Goal"
-             :in-theory (disable bip32-valid-keys-p-necc)
-             :use (;; for ROOT:
-                   (:instance bip32-valid-keys-p-necc
-                    (root (bip32-ext-key-fix root))
-                    (path (bip32-valid-keys-p-witness root paths)))
-                   (:instance bip32-valid-keys-p-necc
-                    (path (bip32-valid-keys-p-witness
-                           (bip32-ext-key-fix root) paths)))
-                   ;; for PATHS:
-                   (:instance bip32-valid-keys-p-necc
-                    (paths (bip32-path-sfix paths))
-                    (path (bip32-valid-keys-p-witness root paths)))
-                   (:instance bip32-valid-keys-p-necc
-                    (path (bip32-valid-keys-p-witness
-                           root (bip32-path-sfix paths))))))))
+  (encapsulate
+    (((bip32-valid-keys-p * *) => *
+      :formals (root paths)
+      :guard (and (bip32-ext-key-p root) (bip32-path-setp paths)))
+     ((bip32-valid-keys-p-witness * *) => *))
+
+    (local
+     (define-sk bip32-valid-keys-p ((root bip32-ext-key-p)
+                                    (paths bip32-path-setp))
+       :returns (yes/no booleanp :name bip32-valid-keys-p-return-type)
+       (forall (path)
+               (implies (in path (bip32-path-sfix paths))
+                        (not (mv-nth 0 (bip32-ckd* root path)))))
+       ///
+       ;; boilerplate:
+       (fty::deffixequiv bip32-valid-keys-p
+         :args ((root bip32-ext-key-p) (paths bip32-path-setp))
+         :hints (("Goal"
+                  :in-theory (disable bip32-valid-keys-p-necc)
+                  :use (;; for ROOT:
+                        (:instance bip32-valid-keys-p-necc
+                         (root (bip32-ext-key-fix root))
+                         (path (bip32-valid-keys-p-witness root paths)))
+                        (:instance bip32-valid-keys-p-necc
+                         (path (bip32-valid-keys-p-witness
+                                (bip32-ext-key-fix root) paths)))
+                        ;; for PATHS:
+                        (:instance bip32-valid-keys-p-necc
+                         (paths (bip32-path-sfix paths))
+                         (path (bip32-valid-keys-p-witness root paths)))
+                        (:instance bip32-valid-keys-p-necc
+                         (path (bip32-valid-keys-p-witness
+                                root (bip32-path-sfix paths))))))))))
+
+    (defruled bip32-valid-keys-p-definition
+      (equal (bip32-valid-keys-p root paths)
+             (let ((path (bip32-valid-keys-p-witness root paths)))
+               (implies (in path (bip32-path-sfix paths))
+                        (not (mv-nth 0 (bip32-ckd* root path))))))
+      :rule-classes :definition
+      :enable bip32-valid-keys-p)
+
+    (defrule booleanp-of-bip32-valid-keys-p
+      (booleanp (bip32-valid-keys-p root paths))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defruled bip32-valid-keys-p-necc
+      (implies (bip32-valid-keys-p root paths)
+               (implies (in path (bip32-path-sfix paths))
+                        (not (mv-nth 0 (bip32-ckd* root path)))))
+      :enable bip32-valid-keys-p-necc)
+
+    (fty::deffixequiv bip32-valid-keys-p
+      :args ((root bip32-ext-key-p) (paths bip32-path-setp))))
 
   (defrule bip32-valid-keys-p-of-singleton-empty-path
     (bip32-valid-keys-p root '(nil))
-    :enable (bip32-valid-keys-p
-             set::in
+    :enable (in
+             bip32-valid-keys-p-definition
              bip32-ckd*
              bip32-ckd-priv*
              bip32-ckd-pub*))
@@ -743,21 +815,25 @@
   (defrule bip32-valid-keys-p-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-valid-keys-p root paths)
-                  (set::in path paths)
+                  (in path paths)
                   (ubyte32p index)
                   (not (mv-nth 0 (bip32-ckd* root (rcons index path)))))
-             (bip32-valid-keys-p root (set::insert (rcons index path) paths)))
-    :enable bip32-valid-keys-p
+             (bip32-valid-keys-p root (insert (rcons index path) paths)))
+    :enable bip32-valid-keys-p-definition
     :use (:instance bip32-valid-keys-p-necc
           (path (bip32-valid-keys-p-witness
                  root (insert (rcons index path) paths)))))
 
-  (in-theory (disable (:e bip32-valid-keys-p))))
+  (defrule bip32-valid-keys-p-of-tail
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-keys-p root paths))
+             (bip32-valid-keys-p root (tail paths)))
+    :expand (bip32-valid-keys-p root (tail paths))
+    :enable bip32-valid-keys-p-necc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk bip32-valid-depths-p ((init bytep) (paths bip32-path-setp))
-  :returns (yes/no booleanp)
+(defsection bip32-valid-depths-p
   :short "Check if all the key depths in a (tree's) set of paths are valid."
   :long
   (xdoc::topstring
@@ -784,54 +860,103 @@
     "Even though this function is applied to index trees,
      it can be defined on general sets of paths.")
    (xdoc::p
+    "We introduce this function as a constrained function,
+     so that we can make an executable attachment for it
+     (in @('bip32-executable.lisp')).
+     Since currently @(tsee std::define-sk) does not support
+     @(tsee defun-sk)'s @(':constrain') and
+     @(tsee defun-sk) forces the guard to @('t') when @(':constrain') is @('t'),
+     we use an @(tsee encapsulate) for now to introduce this function.
+     A @(tsee std::define-sk) is used to locally define the witness,
+     which also guard-verifies the matrix of the function,
+     as additional validation.")
+   (xdoc::p
     "The singleton tree consisting of just the root
      (represented as the singleton set consisting of the empty path),
      trivially satisfies this depth validity condition.")
    (xdoc::p
     "Extending a path of an index tree
      preserves the validity of the key depths,
-     provided that the depth of the path being extended is below 255."))
-  (forall (path)
-          (implies (set::in path (bip32-path-sfix paths))
-                   (bytep (+ (byte-fix init) (len path)))))
-  ///
+     provided that the depth of the path being extended is below 255.")
+   (xdoc::p
+    "The tail of a set of paths with valid depths also has all valid depths."))
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-valid-depths-p
-    :args ((init bytep) (paths bip32-path-setp))
-    :hints (("Goal"
-             :in-theory (disable bip32-valid-depths-p-necc)
-             :use (;; for INIT:
-                   (:instance bip32-valid-depths-p-necc
-                    (init (byte-fix init))
-                    (path (bip32-valid-depths-p-witness init paths)))
-                   (:instance bip32-valid-depths-p-necc
-                    (path (bip32-valid-depths-p-witness (byte-fix init) paths)))
-                   ;; for PATHS:
-                   (:instance bip32-valid-depths-p-necc
-                    (paths (bip32-path-sfix paths))
-                    (path (bip32-valid-depths-p-witness init paths)))
-                   (:instance bip32-valid-depths-p-necc
-                    (path (bip32-valid-depths-p-witness
-                           init (bip32-path-sfix paths))))))))
+  (encapsulate
+    (((bip32-valid-depths-p * *) => *
+      :formals (init paths)
+      :guard (and (bytep init) (bip32-path-setp paths)))
+     ((bip32-valid-depths-p-witness * *) => *))
+
+    (local
+     (define-sk bip32-valid-depths-p ((init bytep) (paths bip32-path-setp))
+       :returns (yes/no booleanp :name bip32-valid-depths-p-return-type)
+       (forall (path)
+               (implies (in path (bip32-path-sfix paths))
+                        (bytep (+ (byte-fix init) (len path)))))
+       ///
+       ;; boilerplate:
+       (fty::deffixequiv bip32-valid-depths-p
+         :args ((init bytep) (paths bip32-path-setp))
+         :hints
+         (("Goal"
+           :in-theory (disable bip32-valid-depths-p-necc)
+           :use (;; for INIT:
+                 (:instance bip32-valid-depths-p-necc
+                  (init (byte-fix init))
+                  (path (bip32-valid-depths-p-witness init paths)))
+                 (:instance bip32-valid-depths-p-necc
+                  (path (bip32-valid-depths-p-witness (byte-fix init) paths)))
+                 ;; for PATHS:
+                 (:instance bip32-valid-depths-p-necc
+                  (paths (bip32-path-sfix paths))
+                  (path (bip32-valid-depths-p-witness init paths)))
+                 (:instance bip32-valid-depths-p-necc
+                  (path (bip32-valid-depths-p-witness
+                         init (bip32-path-sfix paths))))))))))
+
+    (defruled bip32-valid-depths-p-definition
+      (equal (bip32-valid-depths-p init paths)
+             (let ((path (bip32-valid-depths-p-witness init paths)))
+               (implies (in path (bip32-path-sfix paths))
+                        (bytep (+ (byte-fix init) (len path))))))
+      :rule-classes :definition
+      :enable bip32-valid-depths-p)
+
+    (defrule booleanp-of-bip32-valid-depths-p
+      (booleanp (bip32-valid-depths-p init paths))
+      :rule-classes (:rewrite :type-prescription))
+
+    (defruled bip32-valid-depths-p-necc
+      (implies (bip32-valid-depths-p init paths)
+               (implies (in path (bip32-path-sfix paths))
+                        (bytep (+ (byte-fix init) (len path)))))
+      :enable bip32-valid-depths-p-necc)
+
+    (fty::deffixequiv bip32-valid-depths-p
+      :args ((init bytep) (paths bip32-path-setp))))
 
   (defrule bip32-valid-depths-p-of-singleton-empty-path
     (bip32-valid-depths-p init '(nil))
-    :enable (bip32-valid-depths-p set::in))
+    :enable (in bip32-valid-depths-p-definition))
 
   (defrule bip32-valid-depths-p-of-insert-of-rcons
     (implies (and (bip32-path-setp paths)
                   (bip32-valid-depths-p init paths)
-                  (set::in path paths)
+                  (in path paths)
                   (< (+ (byte-fix init) (len path)) 255)
                   (ubyte32p index))
-             (bip32-valid-depths-p init (set::insert (rcons index path) paths)))
-    :enable (bip32-valid-depths-p bytep)
+             (bip32-valid-depths-p init (insert (rcons index path) paths)))
+    :enable (bytep bip32-valid-depths-p-definition)
     :use ((:instance bip32-valid-depths-p-necc
            (path (bip32-valid-depths-p-witness
                   init (insert (rcons index path) paths))))))
 
-  (in-theory (disable (:e bip32-valid-depths-p))))
+  (defrule bip32-valid-depths-p-of-tail
+    (implies (and (bip32-path-setp paths)
+                  (bip32-valid-depths-p init paths))
+             (bip32-valid-depths-p init (tail paths)))
+    :expand (bip32-valid-depths-p init (tail paths))
+    :enable bip32-valid-depths-p-necc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -937,7 +1062,7 @@
      the total depth of that key (including the root's depth)
      does not exceed 255."))
   (b* ((path (mbe :logic (ubyte32-list-fix path) :exec path)))
-    (set::in path (bip32-key-tree->index-tree tree)))
+    (in path (bip32-key-tree->index-tree tree)))
   :no-function t
   :hooks (:fix)
   ///
@@ -947,7 +1072,7 @@
              (bip32-path-in-tree-p nil tree))
     :enable (bip32-key-treep
              bip32-index-treep
-             bip32-path-set-closedp
+             bip32-path-set-closedp-definition
              bip32-key-tree->index-tree))
 
   (defrule bip32-path-in-tree-p-of-take
@@ -1021,7 +1146,7 @@
                  (< (+ tree.root-depth (len parent-path)) 255))) (mv t tree))
        ((mv error? &) (bip32-ckd* tree.root-key new-path))
        ((when error?) (mv error? tree))
-       (new-index-tree (set::insert new-path tree.index-tree))
+       (new-index-tree (insert new-path tree.index-tree))
        (new-tree (change-bip32-key-tree tree :index-tree new-index-tree)))
     (mv nil new-tree))
   :no-function t
@@ -1054,9 +1179,9 @@
       (equal (bip32-key-tree->index-tree tree1)
              (if error?
                  (bip32-key-tree->index-tree tree)
-               (set::insert (rcons (ubyte32-fix child-index)
-                                   (ubyte32-list-fix parent-path))
-                            (bip32-key-tree->index-tree tree)))))
+               (insert (rcons (ubyte32-fix child-index)
+                              (ubyte32-list-fix parent-path))
+                       (bip32-key-tree->index-tree tree)))))
     :enable bip32-path-in-tree-p)
 
   (defrule bip32-key-tree-priv-p-of-bip32-extend-tree

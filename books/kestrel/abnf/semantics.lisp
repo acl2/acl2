@@ -100,6 +100,7 @@
    </p>"
   :elt-type symbol
   :true-listp t
+  :elementp-of-nil nil
   :pred stringp
   ///
 
@@ -183,6 +184,7 @@
      </p>"
     :elt-type tree
     :true-listp t
+    :elementp-of-nil nil
     :pred tree-listp)
 
   (fty::deflist tree-list-list

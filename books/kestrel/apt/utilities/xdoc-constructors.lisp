@@ -101,11 +101,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::desc-apt-input-wrapper
+  :short "Build a description of the @(':wrapper') input
+          for the reference documentation of an APT transformation."
+  :long (xdoc::topstring-@def "xdoc::desc-apt-input-wrapper")
+  (defmacro xdoc::desc-apt-input-wrapper (&rest additional)
+    `(xdoc::desc
+      "@(':wrapper') &mdash; default @('nil')"
+      (xdoc::p
+       "Determines whether the wrapper function is generated:")
+      (xdoc::ul
+       (xdoc::li
+        "@('t'), to generate it.")
+       (xdoc::li
+        "@('nil'), to not generate it."))
+      ,@additional)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::desc-apt-input-wrapper-name
   :short "Build a description of the @(':wrapper-name') input
           for the reference documentation of an APT transformation."
-  :long (xdoc::topstring-@def "xdoc::desc-apt-input-wrapper-name")
-  (defmacro xdoc::desc-apt-input-wrapper-name (&rest additional)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('wrapper?') parameter of this macro
+     has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.
+     If the transformation never generates a wrapper,
+     this macro should not be called.")
+   (xdoc::p
+    "If the wrapper is optional, we generate some documentation text
+     asserting that the @(':wrapper-name') input may be provided
+     only if the wrapper is generated.
+     If the wrapper is always generated, no such text is generated.")
+   (xdoc::@def "xdoc::desc-apt-input-wrapper-name"))
+  (defmacro xdoc::desc-apt-input-wrapper-name (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:optional :always))))
     `(xdoc::desc
       "@(':wrapper-name') &mdash; default @(':auto')"
       (xdoc::p
@@ -118,6 +153,11 @@
         "Any other symbol
          (that is not in the main Lisp package and that is not a keyword),
          to use as the name of the function."))
+      ,@(and (eq wrapper? :optional)
+             (list
+              '(xdoc::p
+                "This input may be present
+                 only if the @(':wrapper') input is @('t').")))
       (xdoc::p
        "In the rest of this documentation page,
         let @('wrapper') be this function.")
@@ -128,8 +168,25 @@
 (defsection xdoc::desc-apt-input-wrapper-enable
   :short "Build a description of the @(':wrapper-enable') input
           for the reference documentation of an APT transformation."
-  :long (xdoc::topstring-@def "xdoc::desc-apt-input-wrapper-enable")
-  (defmacro xdoc::desc-apt-input-wrapper-enable (&rest additional)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('wrapper?') parameter of this macro
+     has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.
+     If the transformation never generates a wrapper,
+     this macro should not be called.")
+   (xdoc::p
+    "If the wrapper is optional, we generate some documentation text
+     asserting that the @(':wrapper-enable') input may be provided
+     only if the wrapper is generated.
+     If the wrapper is always generated, no such text is generated.")
+   (xdoc::@def "xdoc::desc-apt-input-wrapper-enable"))
+  (defmacro xdoc::desc-apt-input-wrapper-enable (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:optional :always))))
     `(xdoc::desc
       "@(':wrapper-enable') &mdash; default @('t')"
       (xdoc::p
@@ -139,6 +196,11 @@
         "@('t'), to enable it.")
        (xdoc::li
         "@('nil'), to disable it."))
+      ,@(and (eq wrapper? :optional)
+             (list
+              '(xdoc::p
+                "This input may be present
+                 only if the @(':wrapper') input is @('t').")))
       ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,44 +211,62 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The @('wrapper?') parameter of this macro
+     has the value @(':never') when the transformation
+     never generates a wrapper;
+     it has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.")
+   (xdoc::p
     "The theorem relates the old function to the new function
      when there is no wrapper function,
-     while it related the old function to the wrapper function
+     while it relates the old function to the wrapper function
      where there is a wrapper function.
-     This choice is determined by the @('wrapperp') parameter.")
+     Thus, the description is tailored based on the @('wrapper?') parameter.")
    (xdoc::@def "xdoc::desc-apt-input-thm-name"))
-  (defmacro xdoc::desc-apt-input-thm-name (wrapperp &rest additional)
-    (declare (xargs :guard (booleanp wrapperp)))
-    (b* ((fn (if wrapperp "wrapper" "new")))
+  (defmacro xdoc::desc-apt-input-thm-name (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
+    (b* ((new/wrapper-ref
+          (case wrapper?
+            (:never "@('new')")
+            (:optional "@('new') (if the @(':wrapper') input is @('nil')) or
+                        @('wrapper') (if the @(':wrapper') input is @('t'))")
+            (:always "@('wrapper')")))
+         (thm-name
+          (case wrapper?
+            (:never "@('old-to-new')")
+            (:optional "@('old-to-new')
+                        (if the @(':wrapper') input is @('nil')) or
+                        @('old-to-wrapper')
+                        (if the @(':wrapper') input is @('t'))")
+            (:always "@('old-to-wrapper')"))))
       `(xdoc::desc
-        "@(':thm-name') &mdash; default @(':auto')"
+        "@('thm-name') &mdash; default @(':auto')"
         (xdoc::p
-         (concatenate 'string
-                      "Determines the name of the theorem
-                       that relates @('old') to @('"
-                      ,fn
-                      "'):"))
+         "Determines the name of the theorem that relates @('old') to "
+         ,new/wrapper-ref
+         ":")
         (xdoc::ul
          (xdoc::li
-          (concatenate 'string
-                       "@(':auto'), to use the
-                        <see topic='@(url acl2::paired-names)'>paired
-                        name</see> obtained by
-                        <see topic='@(url acl2::make-paired-name)'>pairing</see>
-                        the name of @('old') and the name of @('"
-                       ,fn
-                       "'), putting the result into the same package as @('"
-                       ,fn
-                       "')."))
+          "@(':auto'), to use the "
+          (xdoc::seeurl "acl2::paired-names" "paired name")
+          " obtained by "
+          (xdoc::seeurl "acl2::make-paired-name" "pairing")
+          " the name of @('old') and the name of "
+          ,new/wrapper-ref
+          ", putting the result into the same package as "
+          ,new/wrapper-ref
+          ".")
          (xdoc::li
           "Any other symbol
            (that is not in the main Lisp package and that is not a keyword),
            to use as the name of the theorem."))
         (xdoc::p
-         (concatenate 'string
-                      "In the rest of this documentation page, let @('old-to-"
-                      ,fn
-                      "') be this theorem."))
+         "In the rest of this documentation page, let "
+         ,thm-name
+         " be this theorem.")
         ,@additional))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -197,21 +277,35 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This refers to the theorem that relates the old function
-     to either the new function or the wrapper function,
-     depending on whether the latter is present or not.
-     This is indicated by the @('wrapperp') parameter.")
+    "The @('wrapper?') parameter of this macro
+     has the value @(':never') when the transformation
+     never generates a wrapper;
+     it has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.")
+   (xdoc::p
+    "This transformation input refers to the theorem that relates
+     the old function to either the new function or the wrapper function,
+     depending on the @('wrapper?') parameter.")
    (xdoc::@def "xdoc::desc-apt-input-thm-enable"))
-  (defmacro xdoc::desc-apt-input-thm-enable (wrapperp &rest additional)
-    (declare (xargs :guard (booleanp wrapperp)))
-    (b* ((fn (if wrapperp "wrapper" "new")))
+  (defmacro xdoc::desc-apt-input-thm-enable (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
+    (b* ((thm-name-ref
+          (case wrapper?
+            (:never "@('old-to-new')")
+            (:optional "@('old-to-new')
+                        (if the @(':wrapper') input is @('nil')) or
+                        @('old-to-wrapper')
+                        (if the @(':wrapper') input is @('t'))")
+            (:always "@('old-to-wrapper')"))))
       `(xdoc::desc
         "@(':thm-enable') &mdash; default @('t')"
         (xdoc::p
-         (concatenate 'string
-                      "Determines whether @('old-to-"
-                      ,fn
-                      "') is enabled:"))
+         "Determines whether "
+         ,thm-name-ref
+         " is enabled:")
         (xdoc::ul
          (xdoc::li
           "@('t'), to enable it.")
@@ -227,41 +321,59 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The @('wrapper?') parameter of this macro
+     has the value @(':never') when the transformation
+     never generates a wrapper;
+     it has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.")
+   (xdoc::p
     "This involves the new function,
      and also the wrapper function when present.
-     This is indicated by the @('wrapperp') parameter.")
+     This is determined by the @('wrapper?') parameter of this macro.")
    (xdoc::@def "xdoc::desc-apt-input-non-executable"))
-  (defmacro xdoc::desc-apt-input-non-executable (wrapperp &rest additional)
-    (declare (xargs :guard (booleanp wrapperp)))
-    (b* ((new/newwrapper (if wrapperp
-                             "@('new') and @('wrapper') are"
-                           "@('new') is"))
-         (it/them (if wrapperp "them" "it")))
+  (defmacro xdoc::desc-apt-input-non-executable (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
+    (b* ((new/wrapper-ref
+          (case wrapper?
+            (:never "@('new')")
+            (:optional "@('new') and (if generated) @('wrapper')")
+            (:always "@('new') and @('wrapper')")))
+         (is/are
+          (case wrapper?
+            (:never "is")
+            (:optional "is/are")
+            (:always "are")))
+         (it/them
+          (case wrapper?
+            (:never "it")
+            (:optional "it/them")
+            (:always "them"))))
       `(xdoc::desc
         "@(':non-executable') &mdash; default @(':auto')"
         (xdoc::p
-         (concatenate 'string
-                      "Determines whether "
-                      ,new/newwrapper
-                      " <see topic='@(url acl2::non-executable)'
-                       >non-executable</see>:"))
+         "Determines whether "
+         ,new/wrapper-ref
+         " "
+         ,is/are
+         " "
+         (xdoc::seeurl "acl2::non-executable" "non-executable")
+         ":")
         (xdoc::ul
          (xdoc::li
-          (concatenate 'string
-                       "@('t'), to make "
-                       ,it/them
-                       " non-executable."))
+          "@('t'), to make "
+          ,it/them
+          " non-executable.")
          (xdoc::li
-          (concatenate 'string
-                       "@('nil'), to not make "
-                       ,it/them
-                       " non-executable."))
+          "@('nil'), to not make "
+          ,it/them
+          " non-executable.")
          (xdoc::li
-          (concatenate 'string
-                       "@(':auto'), to make "
-                       ,it/them
-                       " non-executable
-                        iff @('old') is non-executable.")))
+          "@(':auto'), to make "
+          ,it/them
+          " non-executable iff @('old') is non-executable."))
         ,@additional))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -272,37 +384,55 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The @('wrapper?') parameter of this macro
+     has the value @(':never') when the transformation
+     never generates a wrapper;
+     it has the value @(':optional') when the transformation includes
+     a @(':wrapper') input that determines whether
+     the wrapper is generated or not (i.e. the wrapper is optional);
+     it has the value @(':always') when the transformation
+     always generates the wrapper.")
+   (xdoc::p
     "This involves the new function,
      and also the wrapper function when present.
-     This is indicated by the @('wrapperp') parameter.")
+     This is determined by the @('wrapper?') parameter of this macro.")
    (xdoc::@def "xdoc::desc-apt-input-verify-guards"))
-  (defmacro xdoc::desc-apt-input-verify-guards (wrapperp &rest additional)
-    (declare (xargs :guard (booleanp wrapperp)))
-    (b* ((new/newwrapper (if wrapperp
-                             "@('new') and @('wrapper') are"
-                           "@('new') is"))
-         (it/them (if wrapperp "them" "it")))
+  (defmacro xdoc::desc-apt-input-verify-guards (wrapper? &rest additional)
+    (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
+    (b* ((new/wrapper-ref
+          (case wrapper?
+            (:never "@('new')")
+            (:optional "@('new') and (if generated) @('wrapper')")
+            (:always "@('new') and @('wrapper')")))
+         (is/are
+          (case wrapper?
+            (:never "is")
+            (:optional "is/are")
+            (:always "are")))
+         (it/them
+          (case wrapper?
+            (:never "it")
+            (:optional "it/them")
+            (:always "them"))))
       `(xdoc::desc
         "@(':verify-guards') &mdash; default @(':auto')"
         (xdoc::p
-         (concatenate 'string
-                      "Determines whether "
-                      ,new/newwrapper
-                      " guard-verified:"))
+         "Determines whether "
+         ,new/wrapper-ref
+         " "
+         ,is/are
+         " guard-verified:")
         (xdoc::ul
          (xdoc::li
-          (concatenate 'string
-                       "@('t'), to guard-verify "
-                       ,it/them
-                       "."))
+          "@('t'), to guard-verify "
+          ,it/them
+          ".")
          (xdoc::li
-          (concatenate 'string
-                       "@('nil'), to not guard-verify "
-                       ,it/them
-                       "."))
+          "@('nil'), to not guard-verify "
+          ,it/them
+          ".")
          (xdoc::li
-          (concatenate 'string
-                       "@(':auto'), to guard-verify "
-                       ,it/them
-                       " iff @('old') is guard-verified.")))
+          "@(':auto'), to guard-verify "
+          ,it/them
+          " iff @('old') is guard-verified."))
         ,@additional))))

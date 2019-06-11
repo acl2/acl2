@@ -77,4 +77,5 @@
     :short "True lists of RLP trees."
     :elt-type rlp-tree
     :true-listp t
+    :elementp-of-nil nil
     :pred rlp-tree-listp))

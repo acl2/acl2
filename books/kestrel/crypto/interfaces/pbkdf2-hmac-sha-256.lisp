@@ -1,4 +1,4 @@
-; Alist Utilities
+; Cryptographic Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,17 +8,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "CRYPTO")
 
-(include-book "alist-map-keys")
-(include-book "alist-map-vals")
+(include-book "definterface-pbkdf2")
+(include-book "hmac-sha-256")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc alist-utilities
-  :parents (kestrel-utilities alists)
-  :short "Some utilities for @(see alists)."
+(definterface-pbkdf2 pbkdf2-hmac-sha-256
+  :hmac hmac-sha-256
+  :parents (interfaces)
+  :short "PBKDF2 HMAC-SHA-256 interface."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These utilities may be eventually integrated into @(see std/alists).")))
+    "We instantiate PBKDF2 with HMAC-SHA-256.")))

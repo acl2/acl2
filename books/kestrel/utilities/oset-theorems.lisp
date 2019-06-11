@@ -1,6 +1,6 @@
 ; Theorems about Osets
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,4 +26,9 @@
            (if (empty x)
                0
              (1- (cardinality x))))
-    :enable cardinality))
+    :enable cardinality)
+
+  (std::defrule subset-of-tail-left
+    (implies (subset x y)
+             (subset (tail x) y))
+    :enable subset))

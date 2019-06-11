@@ -126,19 +126,98 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "apt::apt" "APT"))
+
+   (xdoc::p
+    "A new APT-specific XDOC constructor has been added.")
+
+   (xdoc::p
+    "Some APT-specific XDOC constructors have been extended and improved.")
+
+   (xdoc::p
+    "An input has been added to @(tsee apt::tailrec) to control whether
+     the wrapper function is generated or not.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
-    "A theorem has been added to the BIP 32 formalization.")
+    "Some theorems have been added to the BIP 32 formalization.")
+
+   (xdoc::p
+    "Verified executable attachments have been added
+     for some of the non-executable functions in the BIP 32 formalization.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "crypto::cryptography" "Cryptographic Library"))
 
    (xdoc::p
+    "A macro @(tsee crypto::definterface-hash) has been added
+     to introduce interfaces of hash functions.")
+
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-hmac) has been added
+     to introduce interfaces of HMAC functions.")
+
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-pbkdf2) has been added
+     to introduce interfaces of PBKDF2 functions.")
+
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-encrypt-block) has been added
+     to introduce interfaces of block encryption/decryption functions.")
+
+   (xdoc::p
+    "A macro @(tsee crypto::definterface-encrypt-init) has been added
+     to introduce interfaces of encryption/decryption functions
+     that use initialization vectors
+     (as in certain block cipher modes of operation).")
+
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee crypto::definterface-hash))
+     for the hash functions
+     Keccak-256, Keccak-512, RIPEMD-160, SHA-256, and SHA-512.
+     These supersede the previously existing placeholders
+     for Keccak-256, RIPEMD-160, and SHA-256, which have been removed.")
+
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee crypto::definterface-hmac))
+     for the HMAC functions HMAC-SHA-256 and HMAC-SHA-512.
+     These supersede the previously existing placeholder
+     for HMAC-SHA-512, which has been removed.")
+
+   (xdoc::p
+    "Interfaces have been introduced (via @(tsee crypto::definterface-pbkdf2))
+     for the PBKDF2 functions HMAC-SHA-256 and PBKDF2 HMAC-SHA-512.
+     These supersede the previously existing placeholder
+     for PBKDF2 HMAC-SHA-512, which has been removed.")
+
+   (xdoc::p
+    "Interfaces have been introduced
+     (via @(tsee crypto::definterface-encrypt-block))
+     for the AES-128, AES-192, and AES-256 block ciphers.")
+
+   (xdoc::p
+    "Interfaces have been introduced
+     (via @(tsee crypto::definterface-encrypt-init))
+     for the AES-128 CBC PKCS7, AES-192 CBC PKCS7, and AES-256 CBC PKCS7
+     ciphers (CBC mode, PKCS7 padding).")
+
+   (xdoc::p
+    "The `placeholder' for elliptic curve secp256k1
+     has been turned into an `interface' for elliptic curve secp256k1,
+     consistently with the changes above.
+     There are no more cryptographic `placeholders',
+     but `interfaces' instead.
+     Their structure is quite similar,
+     but the nomenclature indicates a more permanent status.")
+
+   (xdoc::p
     "The "
-    (xdoc::seeurl "crypto::secp256k1-placeholder"
-                  "placeholder for elliptic curve secp256k1")
+    (xdoc::seeurl "crypto::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,12 +250,38 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "list-utilities" "Kestrel List Utilities"))
+
+   (xdoc::p
+    "A theorem about @(tsee prefixp) has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "set::theorems-about-osets" "Kestrel Oset Theorems"))
+
+   (xdoc::p
+    "A theorem has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
     "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
      have been moved to @('[books]/std/alists/')
      from @('[books]/kestrel/utilities/alists/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "x86isa::x86isa" "X86ISA"))
+
+   (xdoc::p
+    "The following instructions have been added to the model:")
+   (xdoc::ul
+    (xdoc::li "@('MOV moffs8, AL')")
+    (xdoc::li "@('MOV moffs16, AX')")
+    (xdoc::li "@('MOV moffs32, EAX')")
+    (xdoc::li "@('MOV moffs64, RAX')"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,7 +331,7 @@
 
  <h3>New Libraries</h3>
 
- <h4><see topic='@(url alist-utilities)'>Alist Utilities</see></h4>
+ <h4>Kestrel Alist Utilities</h4>
 
  <p>Added an operation @(tsee remove-assocs), which generalizes @(tsee
  remove-assoc) from single keys to lists of keys.</p>

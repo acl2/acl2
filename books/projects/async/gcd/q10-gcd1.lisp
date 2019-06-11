@@ -125,9 +125,9 @@
 ;; Constraints on the state of Q10-GCD1
 
 (defund q10-gcd1$st-format (st data-size)
-  (b* ((l   (get-field *q10-gcd1$l* st))
-       (q10  (get-field *q10-gcd1$q10* st))
-       (gcd1 (get-field *q10-gcd1$gcd1* st)))
+  (b* ((l   (nth *q10-gcd1$l* st))
+       (q10  (nth *q10-gcd1$q10* st))
+       (gcd1 (nth *q10-gcd1$gcd1* st)))
     (and (link$st-format l (* 2 data-size))
          (queue10$st-format q10 (* 2 data-size))
          (gcd1$st-format gcd1 data-size))))
@@ -141,9 +141,9 @@
   :rule-classes :forward-chaining)
 
 (defund q10-gcd1$valid-st (st data-size)
-  (b* ((l   (get-field *q10-gcd1$l* st))
-       (q10  (get-field *q10-gcd1$q10* st))
-       (gcd1 (get-field *q10-gcd1$gcd1* st)))
+  (b* ((l   (nth *q10-gcd1$l* st))
+       (q10  (nth *q10-gcd1$q10* st))
+       (gcd1 (nth *q10-gcd1$gcd1* st)))
     (and (link$valid-st l (* 2 data-size))
          (queue10$valid-st q10 (* 2 data-size))
          (gcd1$valid-st gcd1 data-size))))
@@ -193,8 +193,8 @@
 
          (q10-go-signals (take *queue10$go-num* go-signals))
 
-         (l (get-field *q10-gcd1$l* st))
-         (l.s (get-field *link$s* l)))
+         (l (nth *q10-gcd1$l* st))
+         (l.s (nth *link$s* l)))
 
       (list* full-in (f-buf (car l.s))
              (append data-in q10-go-signals))))
@@ -208,9 +208,9 @@
          (gcd1-go-signals (take *gcd1$go-num*
                                (nthcdr *queue10$go-num* go-signals)))
 
-         (l (get-field *q10-gcd1$l* st))
-         (l.s (get-field *link$s* l))
-         (l.d (get-field *link$d* l)))
+         (l (nth *q10-gcd1$l* st))
+         (l.s (nth *link$s* l))
+         (l.d (nth *link$d* l)))
 
       (list* (f-buf (car l.s)) empty-out-
              (append (v-threefix (strip-cars l.d))
@@ -220,7 +220,7 @@
 
   (defund q10-gcd1$in-act (inputs st data-size)
     (queue10$in-act (q10-gcd1$q10-inputs inputs st data-size)
-                    (get-field *q10-gcd1$q10* st)
+                    (nth *q10-gcd1$q10* st)
                     (* 2 data-size)))
 
   (defthm q10-gcd1$in-act-inactive
@@ -233,7 +233,7 @@
 
   (defund q10-gcd1$out-act (inputs st data-size)
     (gcd1$out-act (q10-gcd1$gcd1-inputs inputs st data-size)
-                 (get-field *q10-gcd1$gcd1* st)
+                 (nth *q10-gcd1$gcd1* st)
                  data-size))
 
   (defthm q10-gcd1$out-act-inactive
@@ -246,7 +246,7 @@
 
   (defund q10-gcd1$data-out (inputs st data-size)
     (gcd1$data-out (q10-gcd1$gcd1-inputs inputs st data-size)
-                  (get-field *q10-gcd1$gcd1* st)
+                  (nth *q10-gcd1$gcd1* st)
                   data-size))
 
   (defthm len-q10-gcd1$data-out-1
@@ -308,9 +308,9 @@
 ;; This function specifies the next state of Q10-GCD1.
 
 (defun q10-gcd1$step (inputs st data-size)
-  (b* ((l   (get-field *q10-gcd1$l* st))
-       (q10  (get-field *q10-gcd1$q10* st))
-       (gcd1 (get-field *q10-gcd1$gcd1* st))
+  (b* ((l   (nth *q10-gcd1$l* st))
+       (q10  (nth *q10-gcd1$q10* st))
+       (gcd1 (nth *q10-gcd1$gcd1* st))
 
        (q10-inputs (q10-gcd1$q10-inputs inputs st data-size))
        (gcd1-inputs (q10-gcd1$gcd1-inputs inputs st data-size))
@@ -440,9 +440,9 @@
 ;; from the current state.
 
 (defund q10-gcd1$extract (st)
-  (b* ((l   (get-field *q10-gcd1$l* st))
-       (q10  (get-field *q10-gcd1$q10* st))
-       (gcd1 (get-field *q10-gcd1$gcd1* st)))
+  (b* ((l   (nth *q10-gcd1$l* st))
+       (q10  (nth *q10-gcd1$q10* st))
+       (gcd1 (nth *q10-gcd1$gcd1* st)))
     (append
      (gcd$op-map
       (append (queue10$extract q10)
@@ -464,7 +464,7 @@
 
 (progn
   (defund q10-gcd1$inv (st)
-    (b* ((gcd1 (get-field *q10-gcd1$gcd1* st)))
+    (b* ((gcd1 (nth *q10-gcd1$gcd1* st)))
       (gcd1$inv gcd1)))
 
   (defthm q10-gcd1$inv-preserved
@@ -473,8 +473,7 @@
                   (q10-gcd1$inv st))
              (q10-gcd1$inv (q10-gcd1$step inputs st data-size)))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              q10-gcd1$valid-st
+             :in-theory (e/d (q10-gcd1$valid-st
                               q10-gcd1$inv
                               q10-gcd1$step)
                              ()))))
@@ -510,8 +509,7 @@
                                     (nth *q10-gcd1$q10* st)
                                     (* 2 data-size))))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               q10-gcd1$q10-inputs)
+              :in-theory (e/d (q10-gcd1$q10-inputs)
                               ())))))
 
   (local
@@ -523,8 +521,7 @@
                                (nth *q10-gcd1$gcd1* st)
                                data-size)))
      :hints (("Goal"
-              :in-theory (e/d (get-field
-                               q10-gcd1$gcd1-inputs)
+              :in-theory (e/d (q10-gcd1$gcd1-inputs)
                               ())))))
 
   (local
@@ -548,8 +545,7 @@
                      (bvp (strip-cars l.d)))
                 (equal (gcd1$data-in gcd1-inputs data-size)
                        (strip-cars l.d))))
-     :hints (("Goal" :in-theory (enable get-field
-                                        q10-gcd1$gcd1-inputs
+     :hints (("Goal" :in-theory (enable q10-gcd1$gcd1-inputs
                                         gcd1$data-in)))))
 
   (local
@@ -568,8 +564,7 @@
     :hints (("Goal"
              :use (q10-gcd1$input-format=>q10$input-format
                    q10-gcd1$input-format=>gcd1$input-format)
-             :in-theory (e/d (get-field
-                              f-sr
+             :in-theory (e/d (f-sr
                               gcd1$valid-st=>constraint
                               queue10$extracted-step
                               gcd1$extracted-step
@@ -602,8 +597,7 @@
   :hints (("Goal"
            :use (q10-gcd1$input-format=>q10$input-format
                  q10-gcd1$input-format=>gcd1$input-format)
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             q10-gcd1$valid-st
                             q10-gcd1$step)
                            (q10-gcd1$input-format=>q10$input-format

@@ -4,7 +4,7 @@
 ;; ACL2.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; November 2018
+;; May 2019
 
 (in-package "ADE")
 
@@ -137,8 +137,8 @@
 ;; Constraints on the state of ALT-MERGE
 
 (defund alt-merge$valid-st (st)
-  (b* ((select (get-field *alt-merge$select* st))
-       (select-buf (get-field *alt-merge$select-buf* st)))
+  (b* ((select (nth *alt-merge$select* st))
+       (select-buf (nth *alt-merge$select-buf* st)))
     (and (link1$valid-st select)
          (link1$valid-st select-buf))))
 
@@ -185,11 +185,11 @@
 
          (go-alt-merge (nth 0 go-signals))
 
-         (select (get-field *alt-merge$select* st))
-         (select.s (get-field *link1$s* select))
-         (select.d (get-field *link1$d* select))
-         (select-buf (get-field *alt-merge$select-buf* st))
-         (select-buf.s (get-field *link1$s* select-buf))
+         (select (nth *alt-merge$select* st))
+         (select.s (nth *link1$s* select))
+         (select.d (nth *link1$d* select))
+         (select-buf (nth *alt-merge$select-buf* st))
+         (select-buf.s (nth *link1$s* select-buf))
 
          (m-full-in0 (f-and3 full-in0 (car select.s) (f-not (car select.d))))
          (m-empty-out- (f-or empty-out- (car select-buf.s))))
@@ -211,11 +211,11 @@
 
          (go-alt-merge (nth 0 go-signals))
 
-         (select (get-field *alt-merge$select* st))
-         (select.s (get-field *link1$s* select))
-         (select.d (get-field *link1$d* select))
-         (select-buf (get-field *alt-merge$select-buf* st))
-         (select-buf.s (get-field *link1$s* select-buf))
+         (select (nth *alt-merge$select* st))
+         (select.s (nth *link1$s* select))
+         (select.d (nth *link1$d* select))
+         (select-buf (nth *alt-merge$select-buf* st))
+         (select-buf.s (nth *link1$s* select-buf))
 
          (m-full-in1 (f-and3 full-in1 (car select.s) (car select.d)))
          (m-empty-out- (f-or empty-out- (car select-buf.s))))
@@ -247,8 +247,8 @@
 (defthm alt-merge$value
   (b* ((inputs (list* full-in0 full-in1 empty-out-
                       (append data0-in data1-in go-signals)))
-       (select (get-field *alt-merge$select* st))
-       (select.d (get-field *link1$d* select)))
+       (select (nth *alt-merge$select* st))
+       (select.d (nth *link1$d* select)))
     (implies (and (posp data-size)
                   (alt-merge& netlist data-size)
                   (true-listp data0-in)
@@ -281,12 +281,12 @@
 
        (go-buf (nth 1 go-signals))
 
-       (select (get-field *alt-merge$select* st))
-       (select.s (get-field *link1$s* select))
-       (select.d (get-field *link1$d* select))
-       (select-buf (get-field *alt-merge$select-buf* st))
-       (select-buf.s (get-field *link1$s* select-buf))
-       (select-buf.d (get-field *link1$d* select-buf))
+       (select (nth *alt-merge$select* st))
+       (select.s (nth *link1$s* select))
+       (select.d (nth *link1$d* select))
+       (select-buf (nth *alt-merge$select-buf* st))
+       (select-buf.s (nth *link1$s* select-buf))
+       (select-buf.d (nth *link1$d* select-buf))
 
        (act (alt-merge$act inputs st data-size))
        (buf-act (joint-act (car select-buf.s) (car select.s) go-buf))
@@ -384,8 +384,7 @@
                 (alt-merge$valid-st st))
            (alt-merge$valid-st (alt-merge$step inputs st data-size)))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             f-and3
                             alt-merge$input-format
                             alt-merge$valid-st
@@ -398,10 +397,10 @@
 ;; A state invariant
 
 (defund alt-merge$inv (st)
-  (b* ((select (get-field *alt-merge$select* st))
-       (select.s (get-field *link1$s* select))
-       (select-buf (get-field *alt-merge$select-buf* st))
-       (select-buf.s (get-field *link1$s* select-buf)))
+  (b* ((select (nth *alt-merge$select* st))
+       (select.s (nth *link1$s* select))
+       (select-buf (nth *alt-merge$select-buf* st))
+       (select-buf.s (nth *link1$s* select-buf)))
     (not (equal select.s select-buf.s))))
 
 (defthm alt-merge$inv-preserved
@@ -410,8 +409,7 @@
                 (alt-merge$inv st))
            (alt-merge$inv (alt-merge$step inputs st data-size)))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             alt-merge$input-format
                             alt-merge$valid-st
                             alt-merge$inv

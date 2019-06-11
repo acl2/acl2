@@ -67,7 +67,7 @@
     "The combined length of version prefix and payload
      must not exceed the (large) limit for SHA-256.
      See the guard of "
-    (xdoc::seeurl "crypto::sha-256-placeholder" "@('sha-256')")
+    (xdoc::seeurl "crypto::sha-256-interface" "@('sha-256')")
     ".")
    (xdoc::p
     "We require the version to be non-empty.
@@ -77,7 +77,7 @@
   (b* ((version (mbe :logic (if (consp version) version (list 0))
                      :exec version))
        (version+payload (append version payload))
-       (hash (sha-256 (sha-256 version+payload)))
+       (hash (sha-256-bytes (sha-256-bytes version+payload)))
        (checksum (take 4 hash))
        (version+payload+checksum (append version+payload checksum)))
     (base58-encode version+payload+checksum))

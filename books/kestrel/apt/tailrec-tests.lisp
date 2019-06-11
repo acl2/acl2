@@ -1,6 +1,6 @@
 ; APT Tail Recursion Transformation -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -492,6 +492,41 @@
   (in-theory (disable f))
   (tailrec f :new-enable nil)
   (assert! (fundef-disabledp 'f{1} state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :WRAPPER option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not T or NIL:
+ (must-fail (tailrec f :wrapper "none"))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert! (function-namep 'f{1}-wrapper (w state))))
+
+ ;; generate:
+ (must-succeed*
+  (tailrec f :wrapper t)
+  (assert! (function-namep 'f{1}-wrapper (w state))))
+
+ ;; do not generate:
+ (must-succeed*
+  (tailrec f :wrapper nil)
+  (assert! (not (function-namep 'f{1}-wrapper (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

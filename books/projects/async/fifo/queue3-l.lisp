@@ -146,9 +146,9 @@
 ;; Constraints on the state of QUEUE3-L
 
 (defund queue3-l$st-format (st data-size)
-  (b* ((l0 (get-field *queue3-l$l0* st))
-       (l1 (get-field *queue3-l$l1* st))
-       (l2 (get-field *queue3-l$l2* st)))
+  (b* ((l0 (nth *queue3-l$l0* st))
+       (l1 (nth *queue3-l$l1* st))
+       (l2 (nth *queue3-l$l2* st)))
     (and (link$st-format l0 data-size)
          (link$st-format l1 data-size)
          (link$st-format l2 data-size))))
@@ -160,9 +160,9 @@
   :rule-classes :forward-chaining)
 
 (defund queue3-l$valid-st (st data-size)
-  (b* ((l0 (get-field *queue3-l$l0* st))
-       (l1 (get-field *queue3-l$l1* st))
-       (l2 (get-field *queue3-l$l2* st)))
+  (b* ((l0 (nth *queue3-l$l0* st))
+       (l1 (nth *queue3-l$l1* st))
+       (l2 (nth *queue3-l$l2* st)))
     (and (link$valid-st l0 data-size)
          (link$valid-st l1 data-size)
          (link$valid-st l2 data-size))))
@@ -211,8 +211,8 @@
   ;; Extract the "ready-in-" signal
 
   (defund queue3-l$ready-in- (st)
-    (b* ((l0 (get-field *queue3-l$l0* st))
-         (l0.s (get-field *link$s* l0)))
+    (b* ((l0 (nth *queue3-l$l0* st))
+         (l0.s (nth *link$s* l0)))
       (f-buf (car l0.s))))
 
   (defthm booleanp-queue3-l$ready-in-
@@ -225,8 +225,8 @@
   ;; Extract the "ready-out" signal
 
   (defund queue3-l$ready-out (st)
-    (b* ((l2 (get-field *queue3-l$l2* st))
-         (l2.s (get-field *link$s* l2)))
+    (b* ((l2 (nth *queue3-l$l2* st))
+         (l2.s (nth *link$s* l2)))
       (f-buf (car l2.s))))
 
   (defthm booleanp-queue3-l$ready-out
@@ -239,8 +239,8 @@
   ;; Extract the output data
 
   (defund queue3-l$data-out (st)
-    (v-threefix (strip-cars (get-field *link$d*
-                                       (get-field *queue3-l$l2* st)))))
+    (v-threefix (strip-cars (nth *link$d*
+                                 (nth *queue3-l$l2* st)))))
 
   (defthm v-threefix-of-queue3-l$data-out-canceled
     (equal (v-threefix (queue3-l$data-out st))
@@ -308,14 +308,14 @@
        (go-trans1 (nth 0 go-signals))
        (go-trans2 (nth 1 go-signals))
 
-       (l0 (get-field *queue3-l$l0* st))
-       (l0.s (get-field *link$s* l0))
-       (l0.d (get-field *link$d* l0))
-       (l1 (get-field *queue3-l$l1* st))
-       (l1.s (get-field *link$s* l1))
-       (l1.d (get-field *link$d* l1))
-       (l2 (get-field *queue3-l$l2* st))
-       (l2.s (get-field *link$s* l2))
+       (l0 (nth *queue3-l$l0* st))
+       (l0.s (nth *link$s* l0))
+       (l0.d (nth *link$d* l0))
+       (l1 (nth *queue3-l$l1* st))
+       (l1.s (nth *link$s* l1))
+       (l1.d (nth *link$d* l1))
+       (l2 (nth *queue3-l$l2* st))
+       (l2.s (nth *link$s* l2))
 
        (trans1-act (joint-act (car l0.s) (car l1.s) go-trans1))
        (trans2-act (joint-act (car l1.s) (car l2.s) go-trans2))
@@ -427,9 +427,9 @@
 ;; sequence from the current state.
 
 (defund queue3-l$extract (st)
-  (b* ((l0 (get-field *queue3-l$l0* st))
-       (l1 (get-field *queue3-l$l1* st))
-       (l2 (get-field *queue3-l$l2* st)))
+  (b* ((l0 (nth *queue3-l$l0* st))
+       (l1 (nth *queue3-l$l1* st))
+       (l2 (nth *queue3-l$l2* st)))
     (extract-valid-data (list l0 l1 l2))))
 
 (defthm queue3-l$extract-not-empty
@@ -469,8 +469,7 @@
              (equal (queue3-l$extract next-st)
                     (queue3-l$extracted-step inputs st data-size))))
   :hints (("Goal"
-           :in-theory (enable get-field
-                              f-sr
+           :in-theory (enable f-sr
                               queue3-l$extracted-step
                               queue3-l$input-format
                               queue3-l$valid-st
@@ -491,8 +490,7 @@
            (queue3-l$valid-st (queue3-l$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            f-sr
+           :in-theory (e/d (f-sr
                             queue3-l$input-format
                             queue3-l$valid-st
                             queue3-l$step

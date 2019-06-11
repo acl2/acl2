@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc alist-map-keys
-  :parents (alist-utilities alists)
+  :parents (std/alists alists)
   :short "Keys of the map represented by an alist."
   :long
   (xdoc::topstring

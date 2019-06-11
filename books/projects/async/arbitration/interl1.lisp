@@ -165,8 +165,8 @@
 ;; Constraints on the state of INTERL
 
 (defund interl$st-format (st data-size)
-  (b* ((q40-l0 (get-field *interl$q40-l0* st))
-       (q40-l1 (get-field *interl$q40-l1* st)))
+  (b* ((q40-l0 (nth *interl$q40-l0* st))
+       (q40-l1 (nth *interl$q40-l1* st)))
     (and (< 0 data-size)
          (queue40-l$st-format q40-l0 data-size)
          (queue40-l$st-format q40-l1 data-size))))
@@ -178,8 +178,8 @@
   :rule-classes :forward-chaining)
 
 (defund interl$valid-st (st data-size)
-  (b* ((q40-l0 (get-field *interl$q40-l0* st))
-       (q40-l1 (get-field *interl$q40-l1* st)))
+  (b* ((q40-l0 (nth *interl$q40-l0* st))
+       (q40-l1 (nth *interl$q40-l1* st)))
     (and (< 0 data-size)
          (queue40-l$valid-st q40-l0 data-size)
          (queue40-l$valid-st q40-l1 data-size))))
@@ -243,7 +243,7 @@
 
          (go-in0 (nth 0 go-signals))
 
-         (q40-l0 (get-field *interl$q40-l0* st))
+         (q40-l0 (nth *interl$q40-l0* st))
          (q40-l0-ready-in- (queue40-l$ready-in- q40-l0)))
 
       (joint-act full-in0 q40-l0-ready-in- go-in0)))
@@ -263,7 +263,7 @@
 
          (go-in1 (nth 1 go-signals))
 
-         (q40-l1 (get-field *interl$q40-l1* st))
+         (q40-l1 (nth *interl$q40-l1* st))
          (q40-l1-ready-in- (queue40-l$ready-in- q40-l1)))
 
       (joint-act full-in1 q40-l1-ready-in- go-in1)))
@@ -288,8 +288,8 @@
                                                 *queue40-l$go-num*)
                                              go-signals)))
 
-         (q40-l0 (get-field *interl$q40-l0* st))
-         (q40-l1 (get-field *interl$q40-l1* st))
+         (q40-l0 (nth *interl$q40-l0* st))
+         (q40-l1 (nth *interl$q40-l1* st))
 
          (q40-l0-ready-out (queue40-l$ready-out q40-l0))
          (q40-l0-data-out (queue40-l$data-out q40-l0))
@@ -447,8 +447,8 @@
 ;; This function specifies the next state of INTERL.
 
 (defun interl$step (inputs st data-size)
-  (b* ((q40-l0    (get-field *interl$q40-l0* st))
-       (q40-l1    (get-field *interl$q40-l1* st))
+  (b* ((q40-l0    (nth *interl$q40-l0* st))
+       (q40-l1    (nth *interl$q40-l1* st))
 
        (q40-l0-inputs (interl$q40-l0-inputs inputs st data-size))
        (q40-l1-inputs (interl$q40-l1-inputs inputs st data-size)))
@@ -532,8 +532,7 @@
              (nth *interl$q40-l0* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             queue40-l$input-format
+            :in-theory (e/d (queue40-l$input-format
                              queue40-l$in-act
                              queue40-l$out-act
                              queue40-l$data-in
@@ -555,8 +554,7 @@
              (nth *interl$q40-l1* st)
              data-size))
    :hints (("Goal"
-            :in-theory (e/d (get-field
-                             queue40-l$input-format
+            :in-theory (e/d (queue40-l$input-format
                              queue40-l$in-act
                              queue40-l$out-act
                              queue40-l$data-in
@@ -646,11 +644,11 @@
 ;; The extraction functions for INTERL
 
 (defund interl$extract0 (st)
-  (b* ((q40-l0 (get-field *interl$q40-l0* st)))
+  (b* ((q40-l0 (nth *interl$q40-l0* st)))
     (queue40-l$extract q40-l0)))
 
 (defund interl$extract1 (st)
-  (b* ((q40-l1 (get-field *interl$q40-l1* st)))
+  (b* ((q40-l1 (nth *interl$q40-l1* st)))
     (queue40-l$extract q40-l1)))
 
 (defthm interl$extract0-not-empty
@@ -780,8 +778,7 @@
                     (equal (interl$extract1 next-st)
                            (interl$extracted1-step inputs st data-size)))))
     :hints (("Goal"
-             :in-theory (e/d (get-field
-                              queue40-l$extracted-step
+             :in-theory (e/d (queue40-l$extracted-step
                               queue40-l$extracted-step
                               interl$extracted0-step
                               interl$extracted1-step
@@ -804,8 +801,7 @@
            (interl$valid-st (interl$step inputs st data-size)
                             data-size))
   :hints (("Goal"
-           :in-theory (e/d (get-field
-                            interl$valid-st
+           :in-theory (e/d (interl$valid-st
                             interl$step)
                            ()))))
 
@@ -819,8 +815,7 @@
               (equal (interl$data-out inputs st data-size)
                      (queue40-l$data-out (nth *interl$q40-l0* st))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue40-l$valid-st=>constraint
+              :in-theory (enable queue40-l$valid-st=>constraint
                                  arb-merge$act0
                                  arb-merge$act1
                                  arb-merge$data0-in
@@ -838,8 +833,7 @@
               (equal (interl$data-out inputs st data-size)
                      (queue40-l$data-out (nth *interl$q40-l1* st))))
      :hints (("Goal"
-              :in-theory (enable get-field
-                                 queue40-l$valid-st=>constraint
+              :in-theory (enable queue40-l$valid-st=>constraint
                                  arb-merge$act0
                                  arb-merge$act1
                                  arb-merge$data1-in
@@ -875,8 +869,7 @@
                             (interl$extract0 st))))
     :hints (("Goal"
              :use interl$input-format=>q40-l0$input-format
-             :in-theory (e/d (get-field
-                              interl$valid-st
+             :in-theory (e/d (interl$valid-st
                               interl$extract0)
                              (interl$input-format=>q40-l0$input-format)))))
 
@@ -889,8 +882,7 @@
                             (interl$extract1 st))))
     :hints (("Goal"
              :use interl$input-format=>q40-l1$input-format
-             :in-theory (e/d (get-field
-                              interl$valid-st
+             :in-theory (e/d (interl$valid-st
                               interl$extract1)
                              (interl$input-format=>q40-l1$input-format)))))
   )

@@ -1,6 +1,6 @@
 ; List Utilities -- Theorems about PREFIXP
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,4 +47,11 @@
     (equal (prefixp x (rcons a y))
            (or (list-equiv x (rcons a y))
                (prefixp x y)))
-    :enable (prefixp rcons)))
+    :enable (prefixp rcons))
+
+  (defrule prefixp-of-butlast-1-right
+    (equal (prefixp x (butlast y 1))
+           (and (prefixp x y)
+                (or (not (consp y))
+                    (not (list-equiv x y)))))
+    :enable prefixp))
