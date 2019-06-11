@@ -240,11 +240,6 @@
                (mv t (mk-g-integer ans) interp-st)))
   :formula-check bitops-formula-checks)
 
-(define gl-equal-primitive ((x gl-object-p)
-                            (y gl-object-p)
-                            interp-st)
-  :returns (mv ok (equalp gl-object-p) new-interp-st)
-  
 
 (local (defthm gl-objectlist-fix-when-consp
          (implies (consp x)

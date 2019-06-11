@@ -551,7 +551,7 @@
 (define save-interp-st-info-into-state (interp-st state)
   (b* ((debug-obj (interp-st->debug-info interp-st))
        (state (if debug-obj
-                  (prog2$ (cw "Saving FGL interpreter debug object to state global: ~x0~%"
+                  (prog2$ (cw "~%Saving FGL interpreter debug object to state global: ~x0~%"
                               '(@ fgl-interp-error-debug-obj))
                           (f-put-global 'fgl-interp-error-debug-obj debug-obj state))
                 state))

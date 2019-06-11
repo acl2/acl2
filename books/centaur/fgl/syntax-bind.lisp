@@ -32,6 +32,33 @@
 
 (include-book "centaur/meta/unify" :dir :system)
 
+(defxdoc syntax-bind
+  :parents (fgl-rewrite-rules)
+  :short "Form that can bind a free variable to a value computed from examining
+the syntax of other bound variables in the RHS of a rewrite rule."
+  :long "<p>The basic syntax of a syntax-bind form is:</p>
+
+@({
+ (syntax-bind fresh-variable binding-form)
+ })
+
+<p>where fresh-variable must be a variable not previously bound and
+binding-form is a term that may mention previously bound variables.  See @(see
+fgl-rewrite-rules) for further discussion.</p>")
+
+(defxdoc abort-rewrite
+  :parents (fgl-rewrite-rules)
+  :short "Form that aborts the application of a rewrite rule when encountered in the RHS of a rule."
+  :long "<p>The basic syntax of an abort-rewrite form is:</p>
+
+@({
+ (abort-rewrite value-term)
+ })
+
+<p>where value-term can be anything.  Usually value-term is selected so that
+the rewrite rule is easy to prove -- e.g., it may just be the LHS of the
+rule.</p>")
+
 (defun syntax-bind-fn (form untrans-form dummy-var)
   (declare (ignorable form untrans-form)
            (xargs :guard t))

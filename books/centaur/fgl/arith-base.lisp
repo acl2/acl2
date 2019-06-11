@@ -41,6 +41,17 @@
 
 ;; Get the integer value of a bitvector represented as a Boolean list.  LSB first.
 (define bools->int ((x boolean-listp))
+  :parents (fgl-object-eval)
+  :short "Convert a list of Booleans into an integer."
+  :long "<p>Produces a two's-complement integer from a list of bits,
+least-significant first.  The last element of the list determines the sign of
+the value.  Some examples:</p>
+<ul>
+<li>@('(t)') and @('(t t t)') both evaluate to -1</li>
+<li>@('nil'), @('(nil)'), and @('(nil nil nil)') all evaluate to 0</li>
+<li>@('(t t t nil)') evaluates to 7</li>
+<li>@('(nil nil t)') evaluates to -4.</li>
+</ul>"
   (mbe :logic (if (atom (cdr x))
                   (- (bool->bit (car x)))
                 (logcons (bool->bit (car x))

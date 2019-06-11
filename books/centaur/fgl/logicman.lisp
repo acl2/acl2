@@ -832,7 +832,7 @@ logicman stobj.  If no logicman argument is supplied, the variable named
 
 (define bfr-eval ((x lbfr-p "A Boolean function object")
                   (env "The (Boolean) evaluation environment")
-                  &optional ((logicman 'logicman) "The logic manager"))
+                  &optional ((logicman "The logic manager") 'logicman))
   :short "Evaluate a BFR under an appropriate BDD/AIG environment."
   :long "<p>@('Bfr-eval') is the evaluator for Boolean function objects in FGL.</p>
 
