@@ -480,8 +480,6 @@
                       (:free (x y) (rlp-parse-tree (cons (+ 192 x) y)))
                       (:free (x y) (rlp-parse-tree (cons (+ 247 x) y)))))))
 
-
-
   (defthm-rlp-parse-tree-flag
 
     (defthm rlp-encode-tree-of-rlp-parse-tree
