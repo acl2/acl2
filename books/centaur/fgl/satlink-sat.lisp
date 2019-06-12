@@ -280,6 +280,7 @@
     (implies (and (not (equal (interp-st-field-fix key) :logicman))
                   (not (equal (interp-st-field-fix key) :errmsg))
                   (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack))
                   (not (equal (interp-st-field-fix key) :ctrex-env)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))

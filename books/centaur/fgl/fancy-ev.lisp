@@ -91,6 +91,41 @@
     :measure (list reclimit (pseudo-term-count x))
     :returns (mv errmsg val new-interp-st)
     :verify-guards nil
+    :parents (fgl-rewrite-rules)
+    :short "Term evaluator used by FGL for syntaxp, bind-free, and syntax-bind interpretation."
+    :long "
+<p>Fancy-ev is a term evaluator capable of running terms that include functions
+that access the FGL interpreter state and the ACL2 state, and even may modify
+the FGL interpreter state in limited ways.  It is used for evaluating syntaxp,
+bind-free, and syntax-bind forms in the FGL rewriter.</p>
+
+<p>Fancy-ev uses @(see magic-ev-fncall) to allow it to run most functions that
+do not access stobjs.  When magic-ev-fncall fails, it can also expand function
+definitions and interpret their bodies.  But additionally, it calls an
+attachable function @('fancy-ev-primitive') to allow it to directly execute
+functions that access state and/or access and/or modify the FGL @('interp-st').</p>
+
+<p>To allow a function @('my-fn') that accesses @('interp-st') or @('state') to
+be executable by @('fancy-ev'), there are two steps:</p>
+
+<ul>
+
+<li>@('(fancy-ev-add-primitive my-fn guard-form)') checks that the function
+is valid as a fancy-ev primitive and that guard-form suffices to check that the
+function's guard is satisfied when provided an interp-st satisfying
+@('interp-st-bfrs-ok').  If so, the function/guard pair is recorded in the
+table @('fancy-ev-primitives') for later use by
+@('def-fancy-ev-primitives').</li>
+
+<li>@('(def-fancy-ev-primitives my-fancy-ev-primitives-impl)') defines a
+function named @('my-fancy-ev-primitives-impl') and attaches it to
+@('fancy-ev-primitive').  The function is defined as a case statement on the
+input function symbol where for each function/guard pair in the
+@('fancy-ev-primitives') table, if the input function symbol matches that
+function, it checks the given guard form and then executes the function on the
+input arguments, returning its return value list and modified interp-st (if
+any).  This allows all functions that were added using @('fancy-ev-add-primitive') to be executed by @('fancy-ev').</li>
+</ul>"
     (pseudo-term-case x
       :const (mv nil x.val interp-st)
       :var (mv nil (cdr (hons-assoc-equal x.name alist)) interp-st)
@@ -104,7 +139,10 @@
                     (b* (((mv err test interp-st) (fancy-ev (first x.args) alist reclimit interp-st state hard-errp aokp))
                          ((when err) (mv err nil interp-st)))
                       (if test
-                          (fancy-ev (second x.args) alist reclimit interp-st state hard-errp aokp)
+                          (if (equal (first x.args) (second x.args))
+                              ;; OR case
+                              (mv nil test interp-st)
+                            (fancy-ev (second x.args) alist reclimit interp-st state hard-errp aokp))
                         (fancy-ev (third x.args) alist reclimit interp-st state hard-errp aokp))))
                    ((when (and** (eq x.fn 'return-last) (eql (len x.args) 3)))
                     (b* ((arg1 (first x.args)))
@@ -218,9 +256,6 @@
 
 (program)
 
-(defmacro fancy-ev-add-primitive (fn guard)
-  `(table fancy-ev-primitives ',fn ',guard))
-
 (defun fancy-ev-primitive-bindings (argsvar stobjs-in formals n)
   (if (atom stobjs-in)
       nil
@@ -248,45 +283,80 @@
     (cons (if (car stobjs-out) nil (car vars))
           (fancy-ev-stobj-out-results (cdr stobjs-out) (cdr vars)))))
 
-(defun fancy-ev-primitives-cases (argsvar table state)
-  (b* (((when (atom table)) nil)
-       ((cons fn guard) (car table))
-       (wrld (w state))
+(defun fancy-ev-primitive-call (argsvar fn guard state)
+  (b* ((wrld (w state))
        (formals (acl2::formals fn wrld))
        (stobjs-in (acl2::stobjs-in fn wrld))
        (diff (set-difference-eq stobjs-in '(nil interp-st state)))
        ((when diff)
-        (er hard? 'def-fancy-ev-primitives "~x0 takes input stobjs ~x1 -- only interp-st and state are allowed"
+        (er hard? 'fancy-ev-primitive-call "~x0 takes input stobjs ~x1 -- only interp-st and state are allowed"
             fn diff))
        (stobjs-out (stobjs-out fn wrld))
        (diff (set-difference-eq stobjs-out '(nil interp-st)))
        ((when diff)
-        (er hard? 'def-fancy-ev-primitives "~x0 can modify stobjs ~x1 -- only interp-st may be modified"
+        (er hard? 'fancy-ev-primitive-call "~x0 can modify stobjs ~x1 -- only interp-st may be modified"
             fn diff))
        (bindings (fancy-ev-primitive-bindings argsvar stobjs-in formals 0))
        (call-formals (fancy-ev-primitive-formals stobjs-in formals))
        ((unless (member 'interp-st stobjs-out))
-        `((,fn (b* (,@bindings
-                    (result (mbe :logic (non-exec (,fn . ,call-formals))
-                                 :exec (if ,guard
-                                           ,(if (consp (cdr stobjs-out))
-                                                `(mv-list ,(len stobjs-out)
-                                                          (,fn . ,call-formals))
-                                              `(,fn . ,call-formals))
-                                         (non-exec (ec-call (,fn . ,call-formals)))))))
-                 (mv t result interp-st)))
-          . ,(fancy-ev-primitives-cases argsvar (cdr table) state)))
+        `(b* (,@bindings
+              (result (mbe :logic (non-exec (,fn . ,call-formals))
+                           :exec (if ,guard
+                                     ,(if (consp (cdr stobjs-out))
+                                          `(mv-list ,(len stobjs-out)
+                                                    (,fn . ,call-formals))
+                                        `(,fn . ,call-formals))
+                                   (non-exec (ec-call (,fn . ,call-formals)))))))
+           (mv t result interp-st)))
        (out-bindings (fancy-ev-stobj-out-bindings stobjs-out 0))
        (results (fancy-ev-stobj-out-results stobjs-out out-bindings)))
-    `((,fn (b* (,@bindings
-                (,@(if (consp (cdr stobjs-out))
-                       `((mv . ,out-bindings))
-                     out-bindings)
-                 (mbe :logic (,fn . ,call-formals)
-                      :exec (if ,guard
-                                (,fn . ,call-formals)
-                              (ec-call (,fn . ,call-formals))))))
-             (mv t (list . ,results) interp-st)))
+    `(b* (,@bindings
+          (,@(if (consp (cdr stobjs-out))
+                 `((mv . ,out-bindings))
+               out-bindings)
+             (mbe :logic (,fn . ,call-formals)
+                  :exec (if ,guard
+                            (,fn . ,call-formals)
+                          (ec-call (,fn . ,call-formals))))))
+       (mv t (list . ,results) interp-st))))
+
+(defun fancy-ev-check-primitive-fn (fn guard state)
+  (b* ((call (fancy-ev-primitive-call 'args fn guard state)))
+    `(:or
+      (encapsulate nil
+        (local
+         (with-output :stack :pop
+           (define fancy-ev-primitive-test ((fn pseudo-fnsym-p)
+                                            (args true-listp)
+                                            (interp-st interp-st-bfrs-ok)
+                                            state)
+             :ignore-ok t
+             :irrelevant-formals-ok t
+             ,call
+             ///
+             (defattach fancy-ev-primitive fancy-ev-primitive-test)))))
+      (with-output :stack :pop
+        (value-triple
+         (er hard? 'fancy-ev-check-primitive
+             "The function ~x0 with guard ~x1 failed the check for a valid ~
+            fancy-ev primitive.  Check the error messages above for details."
+             ',fn ',guard))))))
+
+
+(defmacro fancy-ev-add-primitive (fn guard)
+  `(with-output
+     :off (error) :stack :push
+     (progn
+       (make-event (fancy-ev-check-primitive-fn ',fn ',guard state))
+       (table fancy-ev-primitives ',fn ',guard))))
+
+
+
+(defun fancy-ev-primitives-cases (argsvar table state)
+  (b* (((when (atom table)) nil)
+       ((cons fn guard) (car table))
+       (call (fancy-ev-primitive-call argsvar fn guard state)))
+    `((,fn ,call)
       . ,(fancy-ev-primitives-cases argsvar (cdr table) state))))
 
 

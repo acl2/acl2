@@ -122,11 +122,13 @@
   :verify-guards nil
   (b* ((interp-st (interp-st-init interp-st))
        ((glcp-config config))
-       (interp-st (update-interp-st->reclimit config.concl-clk interp-st))
+       (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (flags (interp-st->flags interp-st))
        (interp-st (update-interp-st->flags
-                   (!interp-flags->trace-rewrites config.trace-rewrites flags)
+                   (!interp-flags->make-ites
+                    config.make-ites
+                    (!interp-flags->trace-rewrites config.trace-rewrites flags))
                    interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
                (logicman state)
@@ -549,13 +551,27 @@
 
 
 (define save-interp-st-info-into-state (interp-st state)
-  (b* ((debug-obj (interp-st->debug-info interp-st))
-       (state (if debug-obj
-                  (prog2$ (cw "~%Saving FGL interpreter debug object to state global: ~x0~%"
-                              '(@ fgl-interp-error-debug-obj))
-                          (f-put-global 'fgl-interp-error-debug-obj debug-obj state))
+  (b* ((user-scratch (interp-st->user-scratch interp-st))
+       (state (if user-scratch
+                  (prog2$ (cw "~%The FGL interpreter's user scratch data is ~
+                               stored in state global:~%~x0~%"
+                              '(@ fgl-user-scratch))
+                          (f-put-global 'fgl-user-scratch user-scratch state))
                 state))
-       (state (f-put-global 'fgl-user-scratch (interp-st->user-scratch interp-st) state)))
+       (errmsg (interp-st->errmsg interp-st))
+       (state
+        (if errmsg
+            (progn$ (cw "~%The FGL interpreter's error message, debug object, ~
+                         and debug stack are stored in the following state ~
+                         globals:~%~x0~%~x1~%~x2~%"
+                        '(@ fgl-interp-error-message)
+                        '(@ fgl-interp-error-debug-obj)
+                        '(@ fgl-interp-error-debug-stack))
+                    (pprogn
+                     (f-put-global 'fgl-interp-error-message errmsg state)
+                     (f-put-global 'fgl-interp-error-debug-obj (interp-st->debug-info interp-st) state)
+                     (f-put-global 'fgl-interp-error-debug-stack (interp-st->debug-stack interp-st) state)))
+          state)))
     state))
 
 (local (defthm bfr-listp-of-stack$a-bindings-when-stack

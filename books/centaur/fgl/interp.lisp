@@ -357,8 +357,8 @@
                       (if (or (consp err) (stringp err)) err "(no message)"))))
        ((unless (gl-bfr-object-p val (interp-st-bfr-state)))
         (gl-interp-error
-         :msg (gl-msg "Syntax-bind error: ~x0 evaluted to an illformed symbolic object, saved in ~x1."
-                      (pseudo-term-quote->val untrans) '(@ fgl-interp-error-debug-obj))
+         :msg (gl-msg "Syntax-bind error: ~x0 evaluted to an illformed symbolic object, saved as debug object."
+                      (pseudo-term-quote->val untrans))
          :debug-obj val))
        ;; BOZO We might actually want to bind this to a non-concrete value
        (interp-st (interp-st-add-binding varname val interp-st)))
@@ -1078,7 +1078,7 @@
                (okp obj logicman)
                (gl-object-basic-merge test then else make-ites logicman)
                (b* (((unless okp)
-                     (gl-interp-error :msg "If-then-else failed to merge"
+                     (gl-interp-error :msg "If-then-else failed to merge -- see debug obj"
                                       :debug-obj (cons test (gl-objectlist-fix (list then else))))))
                  (mv obj interp-st))))
   ///
@@ -1105,7 +1105,8 @@
     (implies (and (equal key1 (interp-st-field-fix key))
                   (not (equal key1 :logicman))
                   (not (equal key1 :errmsg))
-                  (not (equal key1 :debug-info)))
+                  (not (equal key1 :debug-info))
+                  (not (equal key1 :debug-stack)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 
@@ -2269,10 +2270,9 @@
                              or an unsound fact stored in ACL2 (e.g., via ~
                              TTAG, skip-proofs, defaxiom, or soundness bug). ~
                              The constraint instance that led to the ~
-                             contradiction is stored in the state global (~x0 ~
-                             ~x1), but note that a previous constraint ~
-                             instance might have caused the unsoundness."
-                            '@ 'fgl-interp-error-debug-obj)
+                             contradiction is stored in the interpreter debug ~
+                             object, but note that a previous constraint ~
+                             instance might have caused the unsoundness.")
                :debug-obj sub1
                :nvals 0)))
           (gl-interp-add-constraints-for-substs rest interp-st state)))

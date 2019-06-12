@@ -58,8 +58,10 @@
             (or (a) (not (b)) (not (c)))
             (or (not (a)) (not (b)) (not (c)))))
   :hints (("goal" :clause-processor (gl-interp-cp clause
-                                                      (default-glcp-config)
-                                                      interp-st state))))
+                                                  (change-glcp-config
+                                                   (default-glcp-config)
+                                                   :make-ites t)
+                                                  interp-st state))))
 
 
 
@@ -508,7 +510,7 @@
                       (logcount x))))
       ((unless err)
        (er soft 'ctrex-test "Expected this to fail!~%"))
-      (x-look (assoc-equal 'x (@ fgl-interp-error-debug-obj)))
+      (x-look (assoc-equal 'x (@ :fgl-interp-error-debug-obj)))
       ((unless x-look)
        (er soft 'ctrex-test "Expected a counterexample binding for X~%"))
       (x (cdr x-look))

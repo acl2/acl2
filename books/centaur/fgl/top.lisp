@@ -123,7 +123,35 @@
     :function-modes (table-alist 'gl-fn-modes (w state))
     :trace-rewrites (and (boundp-global :fgl-trace-rewrites state)
                          (@ :fgl-trace-rewrites))
-    :concl-clk (if (boundp-global :fgl-reclimit state)
+    :reclimit (if (boundp-global :fgl-reclimit state)
                    (@ :fgl-reclimit)
-                 10000)))
+                 10000)
+    :make-ites (and (boundp-global :fgl-make-ites state)
+                    (@ :fgl-make-ites))))
 
+
+
+;; Debugging utilities
+
+(define interp-st-extract-stack (interp-st)
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stk)
+             (stack-extract stack)
+             stk))
+
+(define major-stack->debug ((x major-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (major-frame->debug (car x))
+        (and (consp (cdr x))
+             (major-stack->debug (cdr x)))))
+
+(define major-stack->debugframes-aux ((n natp) (x major-stack-p))
+  :measure (len x)
+  :ruler-extenders (cons)
+  (cons (cons (lnfix n) (major-frame->debug (car x)))
+        (and (consp (cdr x))
+             (major-stack->debugframes-aux (1+ (lnfix n)) (cdr x)))))
+
+(define major-stack->debugframes ((x major-stack-p))
+  (major-stack->debugframes-aux 0 x))

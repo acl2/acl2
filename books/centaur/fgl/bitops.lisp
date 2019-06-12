@@ -1149,7 +1149,8 @@
   (implies (syntaxp (integerp n))
            (equal (unsigned-byte-p n x)
                   (and (natp n)
-                       (equal x (loghead n x)))))
+                       (equal x (loghead n x))
+                       t)))
   :hints(("Goal" :in-theory (e/d (bitops::unsigned-byte-p**)
                                  (unsigned-byte-p)))))
 
@@ -1157,7 +1158,8 @@
   (implies (syntaxp (integerp n))
            (equal (signed-byte-p n x)
                   (and (posp n)
-                       (equal x (logext n x)))))
+                       (equal x (logext n x))
+                       t)))
   :hints(("Goal" :in-theory (e/d (bitops::signed-byte-p**)
                                  (signed-byte-p)))))
 

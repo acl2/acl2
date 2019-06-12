@@ -31,19 +31,24 @@
 (in-package "FGL")
 
 (include-book "interp-st")
-
+(include-book "centaur/meta/pseudo-rewrite-rule" :dir :system)
 
 
 
 (encapsulate
   (((gl-rewrite-try-rule-trace * * * * interp-st state) => interp-st
     :formals (status rule fn args interp-st state)
-    :guard t))
+    :guard (and (pseudo-rewrite-rule-p rule)
+                (pseudo-fnsym-p fn)
+                (true-listp args))))
 
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
   (local (defun gl-rewrite-try-rule-trace (status rule fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state)))
+           (declare (xargs :stobjs (interp-st state)
+                           :guard (and (pseudo-rewrite-rule-p rule)
+                                       (pseudo-fnsym-p fn)
+                                       (true-listp args))))
            interp-st))
 
   (defthm interp-st-get-of-gl-rewrite-try-rule-trace
@@ -51,7 +56,13 @@
              (equal (interp-st-get key (gl-rewrite-try-rule-trace status rule fn args interp-st state))
                     (interp-st-get key interp-st)))))
 
-(define gl-rewrite-try-rule-trace-wrapper (trace status rule fn args interp-st state)
+(define gl-rewrite-try-rule-trace-wrapper (trace
+                                           status
+                                           (rule pseudo-rewrite-rule-p)
+                                           (fn pseudo-fnsym-p)
+                                           (args true-listp)
+                                           interp-st
+                                           state)
   :inline t
   (if trace
       (gl-rewrite-try-rule-trace status rule fn args interp-st state)
@@ -64,17 +75,18 @@
                     (interp-st-get key interp-st)))))
 
 
-(define gl-rewrite-rule-try-trace-default (status rule fn args interp-st state)
+(define gl-rewrite-rule-try-trace-default (status
+                                           (rule pseudo-rewrite-rule-p)
+                                           (fn pseudo-fnsym-p)
+                                           (args true-listp)
+                                           interp-st state)
   :returns new-interp-st
   (b* ((rule-alist (and (boundp-global :fgl-trace-rule-alist state)
                         (@ :fgl-trace-rule-alist)))
-       ((unless (and (consp rule)
-                     (consp (cdr rule))
-                     (alistp rule-alist)))
-        ;; needed to access the rune
-        (prog2$ (cw "bad rule~%")
-                interp-st))
-       (rune (cadr rule))
+       ((unless (alistp rule-alist))
+        (er hard? 'gl-rewrite-rule-try-trace-default "Bad :fgl-trace-rule-alist -- not an alist")
+        interp-st)
+       (rune (acl2::rewrite-rule->rune rule))
        (look (assoc-equal rune rule-alist))
        ((unless look)
         interp-st)
@@ -131,3 +143,76 @@
                     (interp-st-get key interp-st)))))
 
 (defattach gl-rewrite-try-rule-trace gl-rewrite-rule-try-trace-default)
+
+(defxdoc fgl-rewrite-tracing
+  :parents (fgl)
+  :short "How to trace the FGL rewriter"
+  :long "
+
+<p>FGL allows attempts at applying rewrite rules to be traced using a
+configurable tracing function.  By default, a basic tracing function is
+provided such that the user only needs to set up some state global variables to
+enable and use it.  The function that performs the trace printing is
+attachable, so more advanced users can replace it with a custom version.</p>
+
+<h3>Basic Tracing</h3>
+
+<p>The default tracing implementation may be activated by setting the following
+state globals:</p>
+
+@({
+ ;; Enable the tracing function
+ (assign :fgl-trace-rewrites t)
+
+ ;; Alist whose keys are the rules that will be traced
+ (assign :fgl-trace-rule-alist '(((:rewrite fgl::fgl-lognot))))
+
+ ;; Evisc tuple for trace output
+ (assign :fgl-trace-evisc-tuple (evisc-tuple 8 12 nil nil))
+
+ })
+
+<p>If the attachment for the tracing function has changed, it may be reset to
+the default function as follows:</p>
+
+@({
+ (defattach gl-rewrite-try-rule-trace gl-rewrite-rule-try-trace-default)
+ })
+
+<h3>Custom Tracing</h3>
+
+<p>The default attachment for the tracing function may be replaced with a
+custom version.  It may be useful to base it upon the default implementation,
+@('gl-rewrite-rule-try-trace-default').  The tracing function must take the
+following inputs:</p>
+
+<ul>
+
+<li>@('status'), which is either @(':start') or one of the pairs
+ @('(:hyps . failed-hyp)') or @('(:finish . val)').  Details below.</li>
+
+<li>@('rule'), the rewrite rule structure of the rule being attempted, with
+guard @('(pseudo-rewrite-rule-p rule)')</li>
+
+<li>@('fn'), the leading function symbol of the LHS</li>
+
+<li>@('args'), the arguments to @('fn') with which the LHS was unified</li>
+
+<li>@('interp-st'), the FGL interpreter state</li>
+
+<li>@('state'), the ACL2 state.</li>
+</ul>
+
+<p>The function must return only a new @('interp-st'), of which the only field
+that may be modified is the @('trace-scratch') field.  This field of the
+interpreter state may be used to record any state necessary for the trace
+printing.  For example, the default implementation uses it to store the trace
+depth.</p>
+
+<p>To install your custom trace function, you may attach it to the function
+@('gl-rewrite-try-rule-trace').  Note, however, that this won't even be called
+unless tracing is enabled by setting the @(':fgl-trace-rewrites') state
+global.</p>
+
+
+")

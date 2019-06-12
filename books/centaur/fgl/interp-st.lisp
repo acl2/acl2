@@ -127,7 +127,8 @@
     (trace-scratch :type t :initially nil)
 
     (errmsg :type t :initially nil)
-    (debug-info :type t)))
+    (debug-info :type t)
+    (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix)))
 
 
 (define interp-st-init (interp-st)
@@ -180,8 +181,9 @@
                              (interp-st (update-interp-st->cgraph-index 0 interp-st))
                              (interp-st (update-interp-st->user-scratch nil interp-st))
                              (interp-st (update-interp-st->trace-scratch nil interp-st))
-                             (interp-st (update-interp-st->errmsg nil interp-st)))
-                          (update-interp-st->debug-info nil interp-st)))))
+                             (interp-st (update-interp-st->errmsg nil interp-st))
+                             (interp-st (update-interp-st->debug-info nil interp-st)))
+                          (update-interp-st->debug-stack (list (make-major-frame)) interp-st)))))
 
 
 
@@ -903,13 +905,15 @@
                              (obj)
                              (stack-extract stack)
                              obj))
-       (interp-st (update-interp-st->debug-info (list obj stack-obj) interp-st)))
+       (interp-st (update-interp-st->debug-info obj interp-st))
+       (interp-st (update-interp-st->debug-stack stack-obj interp-st)))
     interp-st)
   ///
 
   (defret interp-st-get-of-<fn>
     (implies (and (not (equal (interp-st-field-fix key) :errmsg))
-                  (not (equal (interp-st-field-fix key) :debug-info)))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
 

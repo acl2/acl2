@@ -75,8 +75,8 @@ GL are done differently in FGL.</p>
 <ul>
 <li>@(see gl-object)</li>
 <li>@(see fgl-rewrite-rules)</li>
-<li>@(see fgl-idioms)</li>
 <li>@(see fgl-primitives)</li>
+<li>@(see fgl-debugging)</li>
 </ul>
 ")
 
@@ -213,10 +213,33 @@ number, but while proving @('logtail-to-logtail-helper') we don't know that.
 Fortunately, it's fairly efficient to verify that after the fact using
 @('check-unsigned-byte-p').</p>
 
+<h3>Examining the Interpreter State</h3>
+
+<p>FGL's implementation of syntaxp, bind-free, and syntax-bind interpret the
+syntactic term using a custom evaluator, @(see fancy-ev), that can be
+instrumented to call functions that examine the ACL2 state and the FGL
+interpreter state, and even make limited modifications to the FGL interpreter
+state.  See the documentation for @(see fancy-ev) for how to use it, and see
+@(see fgl-internals) for documentation of the contents of the interpreter
+state. One main use of this is to examine counterexamples produced from
+incremental SAT calls.  By default, after loading @('fgl/top'), the rewrite
+rule @('show-counterexample-rw') rewrites the constant-nil function
+@('(show-counterexample msg)') such that a syntax-bind form fetches the latest
+incremental SAT counterexample and prints it.</p>
 ")
 
-(defxdoc fgl-idioms
-  :parents (fgl))
+;; (defxdoc fgl-idioms
+;;   :parents (fgl)
+;;   :short "")
 
 (defxdoc fgl-primitives
   :parents (fgl))
+
+(defxdoc fgl-internals
+  :parents (fgl))
+
+(defxdoc fgl-debugging
+  :parents (fgl)
+  :short "Tools for debugging FGL failures"
+  
+  )

@@ -50,18 +50,24 @@
   (or (cdr (hons-get fn (make-fast-alist (gl-function-mode-alist-fix alist)))) 0))
 
 (defprod glcp-config
-  ((abort-indeterminate booleanp :default t)
+  ((trace-rewrites booleanp :default nil)
+   (reclimit posp :rule-classes (:rewrite :type-prescription) :default 1000000)
+   (make-ites booleanp :default nil)
+   (rewrite-rule-table :default nil)
+   (definition-table :default nil)
+   (branch-merge-rules :default nil)
+   (function-modes :default nil gl-function-mode-alist)
+
+
+   (abort-indeterminate booleanp :default t)
    (abort-ctrex booleanp :default t)
    (exec-ctrex booleanp :default t)
    (ctrex-transform :default '(lambda (x) x))
    (abort-vacuous booleanp :default t)
    (check-vacuous booleanp :default t)
 
-   (trace-rewrites booleanp :default nil)
-
    (n-counterexamples natp :rule-classes (:rewrite :type-prescription) :default 3)
    (hyp-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
-   (concl-clk posp :rule-classes (:rewrite :type-prescription) :default 1000000)
    (clause-proc symbolp :rule-classes (:rewrite :type-prescription))
    (overrides) ;;  acl2::interp-defs-alistp but might be too expensive to check
      ;;  the guards in clause processors
@@ -76,10 +82,7 @@
    (split-conses booleanp :default nil)
    (split-fncalls booleanp :default nil)
    (prof-enabledp booleanp :default nil)
-   (rewrite-rule-table :default nil)
-   (definition-table :default nil)
-   (branch-merge-rules :default nil)
-   (function-modes :default nil gl-function-mode-alist)
+   
    )
   :layout :tree)
 
