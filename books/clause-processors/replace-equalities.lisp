@@ -46,7 +46,7 @@
 
 (local (in-theory (disable w)))
 
-(defevaluator-fast repl-ev repl-ev-lst
+(defevaluator repl-ev repl-ev-lst
   ((typespec-check ts x)
    (if a b c)
    (equal a b)
