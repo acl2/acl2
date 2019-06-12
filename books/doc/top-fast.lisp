@@ -274,6 +274,7 @@
 
 ;; omitted from aig
 (include-book "system/random" :dir :system)
+(include-book "std/util/defret-mutual-generate" :dir :system)
 
 ) ;; end progn so we can see total include-book time
 

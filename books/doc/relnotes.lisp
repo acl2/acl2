@@ -120,6 +120,18 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Centaur meta-reasoning library")
+
+   (xdoc::p "The @('centaur/meta') directory contains various new books focused
+     on meta-reasoning, differing from previous efforts in their use of
+     @('clause-processors/pseudo-term-fty.lisp') to treat pseudo-terms as a
+     sum-of-products type.  Among other things, this directory contains an
+     unconditional rewriter, a let-abstraction clause processor, and a clause
+     processor that quickly removes irrelevant parts of a clause during mutual
+     inductions using @('tools/flag.lisp').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -264,12 +276,45 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "A new book @('std/util/defret-mutual-generate') provides a utility "
+    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
+    " intended for generating mutually-inductive theorems over large mutual
+     recursions by applying a set of rules referencing the @(see define)
+     formals and returns to determine what hypotheses to assume and conclusions
+     to prove about each function in the mutual recursion.")
+
+   (xdoc::p
+    "@(csee std::defret) now substitutes the list of return value names for
+     symbols named @('<VALUES>') in the body and hints.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
     "The functions @(tsee alist-map-keys) and @(tsee alist-map-vals)
      have been moved to @('[books]/std/alists/')
      from @('[books]/kestrel/utilities/alists/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "stobjs::std/stobjs" "Standard STOBJs Library"))
+
+   (xdoc::p
+    "The theorems about range equivalences in
+     @('std/stobjs/updater-independence.lisp') have been somewhat improved and
+     a new utility @('def-range-equiv') added to allow defining new types of
+     equivalences over ranges of indices.")
+
+   (xdoc::p
+    "A new book @('std/stobjs/nicestobj.lisp') defines @('defnicestobj'), a
+     utility for defining a stobj with non-interference theorems about its
+     accessors and updaters in the style discussed in @(see
+     stobjs::stobj-updater-independence), with accessors that apply fixing
+     functions to provide unconditionally well-typed results.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,6 +327,24 @@
     (xdoc::li "@('MOV moffs16, AX')")
     (xdoc::li "@('MOV moffs32, EAX')")
     (xdoc::li "@('MOV moffs64, RAX')"))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "aignet" "Aignet Library"))
+
+   (xdoc::p
+    "Added @('centaur/aignet/cube-sat.lisp'), containing utilities for checking
+     satisfiability using @(see satlink) of a cube of aignet literals, possibly
+     after applying combinational-equivalence-preserving transformations.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "gl::gl" "GL"))
+
+   (xdoc::p
+    "Changed accumulated-persistence-style profiling so that it doesn't count
+     the frames contained in nested applications of a rule multiple times
+     toward that rule's frame count.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
