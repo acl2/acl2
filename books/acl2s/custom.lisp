@@ -5,6 +5,7 @@
 
 
 (in-package "ACL2S")
+(defconst *acl2s-version* "ACL2s Version 1.3.0")
 
 ;; (defun allp (x)
 ;;   (declare (ignore x)
@@ -339,3 +340,4 @@
     (assign evalable-printing-abstractions '(list cons))
     (assign triple-print-prefix "; ")
     ))
+
