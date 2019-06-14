@@ -70,7 +70,22 @@ and hons-AIG modes are not complete.  Shape specifiers don't exist yet.
 Parametrization doesn't exist yet.  Many of the usual ways of doing things in
 GL are done differently in FGL.</p>
 
-<p>Here are some places to get started:</p>
+<p>To get started with FGL in the default configuration:</p>
+@({
+ (include-book \"path/to/fgl/top-plus\")
+ (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
+
+ ;; test a proof 
+ (fgl::fgl-thm
+   :hyp (and (unsigned-byte-p 5 x) (unsigned-byte-p 5 y))
+   :concl (equal (+ x y) (+ y x)))
+
+ (fgl::def-fgl-thm my-silly-theorem
+  :hyp (unsigned-byte-p 3 x)
+  :concl (not (logbitp 4 x)))
+ })
+ 
+<p>To learn more about FGL, here are some places to get started:</p>
 
 <ul>
 <li>@(see gl-object)</li>
