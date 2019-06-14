@@ -161,27 +161,27 @@
 
 
 
-(make-event
- `(encapsulate
-    (((interp-st-monolithic-sat-check * * interp-st state)
-      => (mv * interp-st)
-      :formals (params bfr interp-st state)
-      :guard (and (interp-st-bfr-p bfr)
-                  (interp-st-bfrs-ok interp-st))))
-    (local
-     (define interp-st-monolithic-sat-check (params
-                                             (bfr interp-st-bfr-p)
-                                             (interp-st interp-st-bfrs-ok)
-                                             state)
-       :returns (mv ans
-                    new-interp-st)
-       :ignore-ok t
-       :irrelevant-formals-ok t
-       (mv bfr interp-st)))
+;; (make-event
+;;  `(encapsulate
+;;     (((interp-st-monolithic-sat-check * * interp-st state)
+;;       => (mv * interp-st)
+;;       :formals (params bfr interp-st state)
+;;       :guard (and (interp-st-bfr-p bfr)
+;;                   (interp-st-bfrs-ok interp-st))))
+;;     (local
+;;      (define interp-st-monolithic-sat-check (params
+;;                                              (bfr interp-st-bfr-p)
+;;                                              (interp-st interp-st-bfrs-ok)
+;;                                              state)
+;;        :returns (mv ans
+;;                     new-interp-st)
+;;        :ignore-ok t
+;;        :irrelevant-formals-ok t
+;;        (mv bfr interp-st)))
 
-    (local (in-theory (enable interp-st-monolithic-sat-check)))
-    . 
-    ,*interp-st-sat-check-thms*))
+;;     (local (in-theory (enable interp-st-monolithic-sat-check)))
+;;     . 
+;;     ,*interp-st-sat-check-thms*))
 
 
 (encapsulate
@@ -260,26 +260,26 @@
     . ,*interp-st-sat-check-thms*))
 
 
-(make-event
- `(define interp-st-monolithic-validity-check (params
-                                               (bfr interp-st-bfr-p)
-                                               (interp-st interp-st-bfrs-ok)
-                                               state)
-    :returns (mv ans new-interp-st)
-    (b* ((not-bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
-                             (bfr)
-                             (bfr-not bfr)
-                             bfr))
-         ((mv not-ans interp-st)
-          (interp-st-monolithic-sat-check params not-bfr interp-st state)))
-      (stobj-let ((logicman (interp-st->logicman interp-st)))
-                 (bfr)
-                 (bfr-not not-ans)
-                 (mv bfr interp-st)))
-    ///
-    (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
+;; (make-event
+;;  `(define interp-st-monolithic-validity-check (params
+;;                                                (bfr interp-st-bfr-p)
+;;                                                (interp-st interp-st-bfrs-ok)
+;;                                                state)
+;;     :returns (mv ans new-interp-st)
+;;     (b* ((not-bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
+;;                              (bfr)
+;;                              (bfr-not bfr)
+;;                              bfr))
+;;          ((mv not-ans interp-st)
+;;           (interp-st-monolithic-sat-check params not-bfr interp-st state)))
+;;       (stobj-let ((logicman (interp-st->logicman interp-st)))
+;;                  (bfr)
+;;                  (bfr-not not-ans)
+;;                  (mv bfr interp-st)))
+;;     ///
+;;     (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
-    . ,*interp-st-sat-check-thms*))
+;;     . ,*interp-st-sat-check-thms*))
 
 
 
@@ -305,47 +305,47 @@
            (bfr-env$-p env$ bfrstate))))
 
 (encapsulate
-  (((interp-st-sat-counterexample interp-st state) => (mv * interp-st)
-    :formals (interp-st state)
+  (((interp-st-sat-counterexample * interp-st state) => (mv * interp-st)
+    :formals (params interp-st state)
     :guard (interp-st-bfrs-ok interp-st)))
-  (local (defun interp-st-sat-counterexample (interp-st state)
+  (local (defun interp-st-sat-counterexample (params interp-st state)
            (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
                            :stobjs (interp-st state))
-                    (ignore state))
+                    (ignore params state))
            (mv t interp-st)))
 
   (defthm interp-st-get-of-interp-st-sat-counterexample
     (implies (and (not (equal (interp-st-field-fix key) :ctrex-env))
                   (not (equal (interp-st-field-fix key) :sat-ctrex)))
-             (equal (interp-st-get key (mv-nth 1 (interp-st-sat-counterexample interp-st state)))
+             (equal (interp-st-get key (mv-nth 1 (interp-st-sat-counterexample params interp-st state)))
                     (interp-st-get key interp-st))))
 
   (defthm bfr-env$-p-of-interp-st-sat-counterexample
-    (b* (((mv err new-interp-st) (interp-st-sat-counterexample interp-st state)))
+    (b* (((mv err new-interp-st) (interp-st-sat-counterexample params interp-st state)))
       (implies (not err)
                (bfr-env$-p (interp-st->ctrex-env new-interp-st)
                            (logicman->bfrstate (interp-st->logicman interp-st)))))
     :hints(("Goal" :in-theory (enable bfr-env$-p)))))
 
-(encapsulate
-  (((interp-st-monolithic-sat-counterexample interp-st state) => (mv * interp-st)
-    :formals (interp-st state)
-    :guard (interp-st-bfrs-ok interp-st)))
-  (local (defun interp-st-monolithic-sat-counterexample (interp-st state)
-           (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
-                           :stobjs (interp-st state))
-                    (ignore state))
-           (mv t interp-st)))
+;; (encapsulate
+;;   (((interp-st-monolithic-sat-counterexample interp-st state) => (mv * interp-st)
+;;     :formals (interp-st state)
+;;     :guard (interp-st-bfrs-ok interp-st)))
+;;   (local (defun interp-st-monolithic-sat-counterexample (interp-st state)
+;;            (declare (Xargs :guard (interp-st-bfrs-ok interp-st)
+;;                            :stobjs (interp-st state))
+;;                     (ignore state))
+;;            (mv t interp-st)))
 
-  (defthm interp-st-get-of-interp-st-monolithic-sat-counterexample
-    (implies (and (not (equal (interp-st-field-fix key) :ctrex-env))
-                  (not (equal (interp-st-field-fix key) :sat-ctrex)))
-             (equal (interp-st-get key (mv-nth 1 (interp-st-monolithic-sat-counterexample interp-st state)))
-                    (interp-st-get key interp-st))))
+;;   (defthm interp-st-get-of-interp-st-monolithic-sat-counterexample
+;;     (implies (and (not (equal (interp-st-field-fix key) :ctrex-env))
+;;                   (not (equal (interp-st-field-fix key) :sat-ctrex)))
+;;              (equal (interp-st-get key (mv-nth 1 (interp-st-monolithic-sat-counterexample interp-st state)))
+;;                     (interp-st-get key interp-st))))
 
-  (defthm bfr-env$-p-of-interp-st-monolithic-sat-counterexample
-    (b* (((mv err new-interp-st) (interp-st-monolithic-sat-counterexample interp-st state)))
-      (implies (not err)
-               (bfr-env$-p (interp-st->ctrex-env new-interp-st)
-                           (logicman->bfrstate (interp-st->logicman interp-st)))))
-    :hints(("Goal" :in-theory (enable bfr-env$-p)))))
+;;   (defthm bfr-env$-p-of-interp-st-monolithic-sat-counterexample
+;;     (b* (((mv err new-interp-st) (interp-st-monolithic-sat-counterexample interp-st state)))
+;;       (implies (not err)
+;;                (bfr-env$-p (interp-st->ctrex-env new-interp-st)
+;;                            (logicman->bfrstate (interp-st->logicman interp-st)))))
+;;     :hints(("Goal" :in-theory (enable bfr-env$-p)))))

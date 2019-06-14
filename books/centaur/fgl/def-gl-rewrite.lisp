@@ -152,15 +152,15 @@
 
 (defsection def-gl-rewrite
   :parents (reference term-level-reasoning)
-  :short "Define a rewrite rule for GL to use on term-level objects"
+  :short "Define a rewrite rule for FGL to use on term-level objects"
   :long
-  "<p>GL can use ACL2-style rewrite rules to simplify term-level symbolic
+  "<p>FGL can use ACL2-style rewrite rules to simplify term-level symbolic
 objects.  However, typically one wants a different theory for ACL2 theorem
-proving than one wants to use inside GL.  @('GL::DEF-GL-REWRITE') defines a
-rewrite rule that is only used inside GL:</p>
+proving than one wants to use inside FGL.  @('FGL::DEF-GL-REWRITE') defines a
+rewrite rule that is only used inside FGL:</p>
 
 @({
-  (gl::def-gl-rewrite my-rewrite-rule
+  (fgl::def-gl-rewrite my-rewrite-rule
      (implies (and (syntaxp (and (integerp n) (< 0 (integer-length n))))
                    (< 0 m))
               (equal (logand n m)
@@ -175,7 +175,7 @@ it even though it is disabled, as long as it is in that table.)</p>
 
 <p>Def-gl-rewrite supports syntaxp hypotheses, but the term representation used
 is different from ACL2's.  Instead of being bound to TERMPs, the variables are
-bound to symbolic objects.  See @(see gl::symbolic-objects) for
+bound to symbolic objects.  See @(see fgl::gl-object) for
 reference.</p>"
 
   (defmacro def-gl-rewrite (name &rest args)
@@ -278,10 +278,8 @@ current GL clause processor.</p>
        (x (car lemmas))
        (lhs (acl2::access acl2::rewrite-rule x :lhs))
        ((unless (case-match lhs
-                  (('if test (fn . &) else)
-                   (and (symbolp test)
-                        (symbolp else)
-                        (symbolp fn)
+                  (('if & (fn . &) &)
+                   (and (symbolp fn)
                         (not (eq fn 'quote))))
                   (& nil)))
         (find-gl-branch-merge-lemma (cdr lemmas))))

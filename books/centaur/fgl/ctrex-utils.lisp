@@ -390,7 +390,11 @@
                                           ,(acl2::hq alist)))))))
 
 (encapsulate nil
-  (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj :local t)
+  (flag::make-flag glcp-unify-term/gobj-flg glcp-unify-term/gobj
+                   :local t
+                   :hints ((and stable-under-simplificationp
+                                '(:expand ((pseudo-term-count pat)
+                                           (pseudo-term-list-count (pseudo-term-call->args pat)))))))
 
   (local (defthm gl-object-count-of-mk-g-boolean
            (equal (gl-object-count (mk-g-boolean x)) 1)
@@ -419,8 +423,29 @@
       :hints ((acl2::use-termhint
                `(:expand ((glcp-unify-term/gobj ,(acl2::hq pat)
                                                 ,(acl2::hq x)
-                                                ,(acl2::hq alist))))))
+                                                ,(acl2::hq alist)))))
+              (and stable-under-simplificationp
+                   '(:expand ((gl-object-count x)
+                              (gl-objectlist-count (g-apply->args x))
+                              (gl-objectlist-count (cdr (g-apply->args x)))))))
       :flag glcp-unify-term/gobj
+      :rule-classes :linear)
+    (defthm gl-object-count-of-glcp-unify-term/gobj-commutative-args
+      (b* (((mv flag new-alist)
+            (glcp-unify-term/gobj-commutative-args pat1 pat2 x1 x2 alist)))
+        (implies (and flag
+                      (not (hons-assoc-equal k alist))
+                      (hons-assoc-equal k new-alist))
+                 (<= (gl-object-count (cdr (hons-assoc-equal k new-alist)))
+                     (max (gl-object-count x1)
+                          (gl-object-count x2)))))
+      :hints ((acl2::use-termhint
+               `(:expand ((glcp-unify-term/gobj-commutative-args ,(acl2::hq pat1)
+                                                                 ,(acl2::hq pat2)
+                                                                 ,(acl2::hq x1)
+                                                                 ,(acl2::hq x2)
+                                                                 ,(acl2::hq alist))))))
+      :flag glcp-unify-term/gobj-commutative-args
       :rule-classes :linear)
     (defthm gl-object-count-of-glcp-unify-term/gobj-list
       (b* (((mv flag new-alist)
@@ -459,7 +484,21 @@
                (< (gl-object-count (cdr (hons-assoc-equal k new-alist)))
                   (gl-object-count x))))
     :hints (("goal" :expand ((glcp-unify-term/gobj pat x alist)
-                             (gl-object-count x))))
+                             (gl-object-count x)))
+            (and stable-under-simplificationp
+                 '(:expand ((gl-objectlist-count (g-apply->args x))
+                            (gl-objectlist-count (cdr (g-apply->args x))))
+                   :use ((:instance gl-object-count-of-glcp-unify-term/gobj-commutative-args
+                          (pat1 (car (pseudo-term-call->args pat)))
+                          (pat2 (cadr (pseudo-term-call->args pat)))
+                          (x1 (car (g-apply->args x)))
+                          (x2 (cadr (g-apply->args x))))
+                         (:instance gl-object-count-of-glcp-unify-term/gobj-commutative-args
+                          (pat1 (car (pseudo-term-call->args pat)))
+                          (pat2 (cadr (pseudo-term-call->args pat)))
+                          (x2 (car (g-apply->args x)))
+                          (x1 (cadr (g-apply->args x)))))
+                   :in-theory (disable gl-object-count-of-glcp-unify-term/gobj-commutative-args))))
     :rule-classes :linear))
 
 

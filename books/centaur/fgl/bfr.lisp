@@ -49,9 +49,9 @@ for hons-@(see aig)s and @(see aignet) added later.  To avoid redoing a lot of
 proof work, a small level of indirection was added.</p>
 
 <p>The particular Boolean function representation that we are using at any
-particular time is governed by @(see bfr-mode), and operations like @(see
-bfr-and) allow us to construct new function nodes using whatever the current
-representation is.</p>
+particular time is governed by @(see bfr-mode), and operations like
+@('bfr-and') allow us to construct new function nodes using whatever the
+current representation is.</p>
 
 <p>To support aignets, it is important for BFRs to be well-formed,
 i.e. literals whose node index is in bounds for the current aignet.  So we

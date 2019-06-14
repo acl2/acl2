@@ -43,7 +43,8 @@
    (ignore-constraint booleanp :default nil)
    (satlink-config-override :default nil)
    (transform booleanp :default nil)
-   (transform-config-override :default nil)))
+   (transform-config-override :default nil))
+  :tag :fgl-satlink-config)
 
 
 (define interp-st-sat-check-cube ((config fgl-satlink-monolithic-sat-config-p)
@@ -363,10 +364,11 @@
     :hints(("Goal" :in-theory (enable bfr-env$-p)))))
 
 
-(define interp-st-satlink-counterexample ((interp-st interp-st-bfrs-ok)
-                                         state)
+(define interp-st-satlink-counterexample (params
+                                          (interp-st interp-st-bfrs-ok)
+                                          state)
   :returns (mv err new-interp-st)
-  (declare (ignore state))
+  (declare (ignore params state))
   (stobj-let ((logicman (interp-st->logicman interp-st))
               (env$ (interp-st->ctrex-env interp-st)))
              (err env$)
@@ -388,11 +390,11 @@
  `(define fgl-satlink-default-toplevel-sat-check-config ()
     ',(make-fgl-satlink-monolithic-sat-config :ignore-pathcond nil)))
 
-(defmacro fgl-use-satlink-for-monolithic-sat ()
-  '(progn (defattach interp-st-monolithic-sat-check interp-st-satlink-sat-check-impl)
-          (defattach interp-st-monolithic-sat-counterexample interp-st-satlink-counterexample)
+(defmacro fgl-use-satlink ()
+  '(progn (defattach interp-st-sat-check interp-st-satlink-sat-check-impl)
+          (defattach interp-st-sat-counterexample interp-st-satlink-counterexample)
           (defattach fgl-toplevel-sat-check-config fgl-satlink-default-toplevel-sat-check-config)))
 
-(fgl-use-satlink-for-monolithic-sat)
+(fgl-use-satlink)
 
 

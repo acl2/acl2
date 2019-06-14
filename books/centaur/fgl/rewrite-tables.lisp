@@ -141,10 +141,8 @@
   (b* (((when (atom rules)) (fast-alist-clean acc))
        ((acl2::rewrite-rule x) (car rules)))
     (case-match x.lhs
-      (('if test (fn . &) else)
-       (if (and (symbolp test)
-                (symbolp else)
-                (symbolp fn)
+      (('if & (fn . &) &)
+       (if (and (symbolp fn)
                 (not (eq fn 'quote)))
            (sort-branch-merge-rules-by-function
             (cdr rules)

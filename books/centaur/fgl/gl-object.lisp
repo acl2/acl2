@@ -145,7 +145,7 @@ case you misspell @(':g-concrete').</p>
      :short "GL object constructor for symbolic Boolean objects."
      :long "<p>An object constructed as @('(g-boolean bool)') evaluates to the
             value of the Boolean function @('bool') under the current
-            Boolean function environment, evaluated by @(see bfr-eval)."
+            Boolean function environment, evaluated by @(see bfr-eval).</p>"
      :cond (eq (car x) :g-boolean)
      :fields ((bool :acc-body (cdr x)))
      :ctor-body (cons :g-boolean bool)
@@ -155,7 +155,7 @@ case you misspell @(':g-concrete').</p>
      :long "<p>An object constructed as @('(g-integer bits)') evaluates to the
             two's-complement integer formed by evaluating each Boolean function
             in the list @('bits') using @(see bfr-eval), and then converting
-            that Boolean list to an integer using @(see bool->bits).</p>"
+            that Boolean list to an integer using @(see bools->bits).</p>"
      :cond (eq (car x) :g-integer)
      :fields ((bits :acc-body (cdr x) :type true-listp))
      :ctor-body (cons :g-integer bits)
@@ -238,21 +238,6 @@ case you misspell @(':g-concrete').</p>
     :parents (gl-object))
   (fty::defmap gl-object-alist :val-type gl-object :true-listp nil
     :parents (gl-object)))
-     
-
-(defsection g-int
-  :parents (shape-specs)
-  :short "Create a g-binding for an integer."
-  :long "<p>This is a low-level way to create a custom shape specifier for a
-signed integer.  You might generally prefer higher-level tools like @(see
-auto-bindings).</p>"
-
-  (defun g-int (start by n)
-    (declare (xargs :guard (and (acl2-numberp start)
-                                (acl2-numberp by)
-                                (natp n))))
-    (g-integer (numlist start by n))))
-
 
 (fty::defmap gl-object-bindings :key-type pseudo-var-p :val-type gl-object :true-listp t
   ///

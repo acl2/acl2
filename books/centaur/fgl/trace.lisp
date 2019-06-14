@@ -214,5 +214,27 @@ depth.</p>
 unless tracing is enabled by setting the @(':fgl-trace-rewrites') state
 global.</p>
 
+<h3>Status argument</h3>
+
+<p>The @('status') argument passed to the tracing function tells what phase of applying the rule we are in:</p>
+
+<ul>
+
+<li>@(':start') signifies that the current function call has successfully
+unified with the LHS of the rule, so we are ready to begin relieving hyps.</li>
+
+<li>@('(:hyps . failed-hyp)') signifies that we have finished relieving hyps.
+There are three possible outcomes: there might have been an error while
+relieving hyps, in which case @('(interp-st->errmsg interp-st)') is non-NIL.
+Otherwise, if one of the hyps failed, the number of that hyp is passed as
+@('failed-hyp').  Otherwise if @('failed-hyp') is NIL, we have successfully
+relieved all the hyps and will go on to interpret the RHS.</li>
+
+<li>@('(:finish . val)') signifies that we are done interpreting the RHS of the
+rule.  There may have been an error, in which case @('(interp-st->errmsg
+interp-st)') is non-NIL.  Otherwise, @('val') is the symbolic object value
+returned from the interpretation of the RHS.</li>
+
+</ul>
 
 ")

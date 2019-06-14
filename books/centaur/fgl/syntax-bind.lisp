@@ -35,7 +35,7 @@
 (defxdoc syntax-bind
   :parents (fgl-rewrite-rules)
   :short "Form that can bind a free variable to a value computed from examining
-the syntax of other bound variables in the RHS of a rewrite rule."
+the syntax of other bound variables in the RHS of an FGL rewrite rule."
   :long "<p>The basic syntax of a syntax-bind form is:</p>
 
 @({
@@ -48,7 +48,8 @@ fgl-rewrite-rules) for further discussion.</p>")
 
 (defxdoc abort-rewrite
   :parents (fgl-rewrite-rules)
-  :short "Form that aborts the application of a rewrite rule when encountered in the RHS of a rule."
+  :short "Form that aborts the application of an FGL rewrite rule when encountered
+          while processing the RHS of the rule."
   :long "<p>The basic syntax of an abort-rewrite form is:</p>
 
 @({

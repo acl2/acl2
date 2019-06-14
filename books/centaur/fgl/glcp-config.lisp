@@ -36,11 +36,21 @@
 (include-book "centaur/fty/bitstruct" :dir :system)
 
 (fty::defbitstruct gl-function-mode
-  ((dont-concrete-exec booleanp)
-   (dont-expand-def booleanp)
-   (dont-rewrite booleanp)
-   (dont-rewrite-under-if-test booleanp)
-   (dont-primitive-exec booleanp)))
+  :parents (fgl)
+  :short "Limitations on what the FGL interpreter will do to resolve a call of a given function."
+  ((dont-concrete-exec booleanp
+    "If true, skip attempting to concretely execute the function in the case when
+     all the arguments are explicit.")
+   (dont-expand-def booleanp
+    "If true, skip expanding the function's definition after attempting ~
+     rewrites and primitive execution.")
+   (dont-rewrite booleanp
+    "If true, skip applying rewrite rules to calls of the function.")
+   (dont-rewrite-under-if-test booleanp
+    "If true, skip applying rewrite rules to calls of the function when trying
+     to resolve an IF test to a Boolean formula.")
+   (dont-primitive-exec booleanp
+    "If true, skip applying primitives to calls of the function.")))
 
 (fty::defmap gl-function-mode-alist :key-type symbolp :val-type gl-function-mode :true-listp t)
 
@@ -57,6 +67,8 @@
    (definition-table :default nil)
    (branch-merge-rules :default nil)
    (function-modes :default nil gl-function-mode-alist)
+   (prof-enabledp booleanp :default t)
+   (sat-config)
 
 
    (abort-indeterminate booleanp :default t)
@@ -81,7 +93,6 @@
    (lift-ifsp booleanp :default t)
    (split-conses booleanp :default nil)
    (split-fncalls booleanp :default nil)
-   (prof-enabledp booleanp :default nil)
    
    )
   :layout :tree)

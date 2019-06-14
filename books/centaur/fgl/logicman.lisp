@@ -2338,7 +2338,37 @@ registers are not used.</p>"
 
 
 
-(define fgl-sat-check (params x)
+(define fgl-sat-check ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                       (x "Object to check for satisfiability."))
+  :parents (fgl-solving)
+  :short "Checking satisfiability of intermediate terms during FGL interpretation."
+  :long "
+
+<p>Logically, @('(fgl-sat-check params x)') just returns @('x') fixed to a
+Boolean value.  But when FGL symbolic execution encounters an
+@('fgl-sat-check') term, it checks Boolean satisfiability of @('x') and if it
+is able to prove that all evaluations of @('x') are NIL, then it returns NIL;
+otherwise, it returns @('x') unchanged.  To instead perform a validity check,
+you could do:</p>
+@({
+ (not (fgl-sat-check params (not x)))
+ })
+
+<p>It isn't necessary to call this around the entire conclusion of the theorem
+you wish to prove -- FGL always checks the final result of symbolically
+executing the conclusion; see @(see fgl-solving).  The purpose of
+@('fgl-sat-check') is for forcing SAT checks during symbolic execution, so as
+to e.g. avoid unnecessary execution paths.</p>
+
+<p>The counterexamples from intermediate SAT checks may be pulled out of the
+interpreter state during symbolic execution using @(see syntax-bind) forms.
+For example, the rewrite rule @('show-counterexample-rw') demonstrates how to
+extract a counterexample from SAT and print it when a @('show-counterexample')
+term is encountered.</p>
+
+<p>See also @(see fgl-sat-check/print-counterexample) for a version that prints
+counterexample info for the stack frame from which it is called.</p>"
   (declare (ignore params))
   (if x t nil))
 
@@ -2663,6 +2693,51 @@ registers are not used.</p>"
 (defmacro def-gl-object-eval (prefix fns &key union-previous)
   `(make-event
     (def-gl-object-eval-fn ',prefix ',fns ',union-previous (w state))))
+
+(defxdoc fgl-object-eval
+  :parents (gl-object)
+  :short "Evaluator for FGL symbolic objects."
+  :long "
+
+<p>@('Fgl-object-eval') gives the semantics for FGL symbolic objects, in the
+same way as a term evaluator gives the semantics for terms.  In fact,
+@('fgl-object-eval') uses a term evaluator @('fgl-ev') to interpret function
+calls.</p>
+
+<p>The inputs to @('fgl-object-eval') are the object to be evaluated; an
+@('env') containing two parts: a Boolean formula environment binding Boolean
+variables to values, and a term-level environment binding term variables to
+objects; and the logic manager or @('logicman'), a stobj containing (mainly)
+the Boolean function mode and AIGNET relative to which Boolean formulas are
+evaluated using @(see bfr-eval).</p>
+
+<ul>
+<li>@(csee g-concrete) objects return the quoted value.</li>
+
+<li>@(csee g-boolean) objects return the evaluation using @(see bfr-eval) of
+the Boolean formula under the Boolean environment.</li>
+
+<li>@(csee g-integer) objects return the integer consisting of the bits
+produced by evaluating the bits using @(see bfr-eval).</li>
+
+<li>@(csee g-ite) objects return the if-then-else of the recursive
+@('fgl-object-eval') of the three arguments.</li>
+
+<li>@(csee g-apply) objects return the @('fgl-ev') evaluation of the function
+applied to the recursive @('fgl-object-eval') evaluation of the arguments.</li>
+
+<li>@(csee g-var) objects return the binding of the variable in the term-level
+environment.</li>
+
+<li>@(csee g-map) objects return the alist, with the bound values recursively
+evaluated using @('fgl-object-eval').</li>
+
+<li>@(csee g-cons) objects return the cons of the recursive
+@('fgl-object-eval') evaluations of the car and cdr.</li>
+
+</ul>
+
+")
 
 
 (def-gl-object-eval fgl nil)

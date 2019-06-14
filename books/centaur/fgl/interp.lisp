@@ -1411,8 +1411,10 @@
                ;; ((when err)
                ;;  (b* ((interp-st (interp-st-pop-minor-frame interp-st)))
                ;;    (mv nil interp-st state)))
+
+               ;; Note: Was interp-term-equivs
                ((mv val interp-st)
-                (gl-interp-term-equivs body interp-st state))
+                (gl-interp-term body interp-st state))
                (interp-st (interp-st-pop-minor-frame interp-st)))
             (mv val interp-st))
           :fncall 
@@ -1676,12 +1678,13 @@
                    (interp-st (interp-st-cancel-error :intro-bvars-fail interp-st)))
                 (mv nil nil interp-st)))
 
-             (interp-st (interp-st-set-debug `(,rule :rhs) interp-st))
+             (interp-st (interp-st-set-debug `(,rule . :rhs) interp-st))
              (concl-flags (!interp-flags->intro-synvars t flags))
              ((interp-st-bind
                (flags concl-flags flags))
               ((mv val interp-st)
-               (gl-interp-term-equivs rule.rhs interp-st state)))
+               ;; Note: Was interp-term-equivs
+               (gl-interp-term rule.rhs interp-st state)))
 
              (interp-st (gl-rewrite-try-rule-trace-wrapper
                          trace `(:finish . ,val) rule fn args interp-st state))
@@ -1724,11 +1727,12 @@
                      new-interp-st)
         (b* (((mv synp-type untrans-form trans-term vars)
               (gl-interp-match-synp hyp))
-             (interp-st (interp-st-set-debug `(,rule :hyp ,(lnfix hyp-num)) interp-st))
+             (interp-st (interp-st-set-debug `(,rule . ,(lnfix hyp-num)) interp-st))
              ((when synp-type)
               (gl-rewrite-relieve-hyp-synp synp-type trans-term vars untrans-form interp-st state))
              ((mv test-bfr interp-st)
               (gl-interp-test hyp interp-st state)))
+          ;; Could check against the pathcond here...
           (mv (eq test-bfr t) interp-st)))
 
       (define gl-interp-time$ ((timing-arg pseudo-termp)
@@ -1750,7 +1754,8 @@
              ;;  (mv nil interp-st state))
              (time$-arg (gl-interp-time$-arg time$-arg x)))
           (acl2::time$1 time$-arg
-                        (gl-interp-term-equivs x interp-st state))))
+                        ;; Note: Was interp-term-equivs
+                        (gl-interp-term x interp-st state))))
       
       (define gl-interp-sat-check ((params pseudo-termp)
                                    (x pseudo-termp)
@@ -1785,7 +1790,8 @@
         (b* (((when (equal return-last-fnname ''time$1-raw))
               (gl-interp-time$ first-arg x interp-st state)))
           ;; Otherwise just evaluate the last-arg.
-          (gl-interp-term-equivs x interp-st state)))
+          ;; Note: Was interp-term-equivs
+          (gl-interp-term x interp-st state)))
       
       
 
@@ -1931,21 +1937,26 @@
                   unreachable
                   (ans gl-object-p)
                   new-interp-st)
-        (b* (((mv contra interp-st)
-              (interp-st-pathcond-assume test interp-st))
-             ((when contra)
-              (mv t nil interp-st))
-             ((when (interp-st->errmsg interp-st))
-              (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
-                ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
-                (mv nil nil interp-st)))
-             ((mv ans interp-st)
-              (gl-interp-term-equivs x interp-st state))
-             (interp-st (interp-st-pathcond-rewind interp-st))
-             ((when (eq (interp-st->errmsg interp-st) :unreachable))
-              (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
-                (mv t nil interp-st))))
-          (mv nil ans interp-st)))
+        (pseudo-term-case x
+          :call
+          (b* (((mv contra interp-st)
+                (interp-st-pathcond-assume test interp-st))
+               ((when contra)
+                (mv t nil interp-st))
+               ((when (interp-st->errmsg interp-st))
+                (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
+                  ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
+                  (mv nil nil interp-st)))
+               ((mv ans interp-st)
+                (gl-interp-term-equivs x interp-st state))
+               (interp-st (interp-st-pathcond-rewind interp-st))
+               ((when (eq (interp-st->errmsg interp-st) :unreachable))
+                (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
+                  (mv t nil interp-st))))
+            (mv nil ans interp-st))
+          :otherwise (b* (((mv ans interp-st)
+                           (gl-interp-term-equivs x interp-st state)))
+                       (mv nil ans interp-st))))
 
       (define gl-interp-maybe-simplify-if-test ((test interp-st-bfr-p)
                                                 (xobj gl-object-p)
@@ -1960,27 +1971,38 @@
                   unreachable
                   xbfr
                   new-interp-st)
-        (b* (((mv contra interp-st)
-              (interp-st-pathcond-assume test interp-st))
-             ((when contra)
-              (mv t nil interp-st))
-             (reclimit (interp-st->reclimit interp-st))
-             ((when (gl-interp-check-reclimit interp-st))
-              (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
-                (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 2)))
-             ((when (interp-st->errmsg interp-st))
-              (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
-                ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
-                (mv nil nil interp-st)))
-             ((interp-st-bind
-               (reclimit (1- reclimit) reclimit))
-              ((mv ans interp-st)
-               (gl-interp-simplify-if-test xobj interp-st state)))
-             (interp-st (interp-st-pathcond-rewind interp-st))
-             ((when (eq (interp-st->errmsg interp-st) :unreachable))
-              (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
-                (mv t nil interp-st))))
-          (mv nil ans interp-st)))
+        (if (gl-object-case xobj '(:g-ocncrete :g-boolean :g-integer :g-cons :g-map))
+            ;; Easy cases -- don't bother with the pathcond
+            (b* ((reclimit (interp-st->reclimit interp-st))
+                 ((when (gl-interp-check-reclimit interp-st))
+                  (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 2))
+                 ((interp-st-bind
+                   (reclimit (1- reclimit) reclimit))
+                  ((mv ans interp-st)
+                   (gl-interp-simplify-if-test xobj interp-st state))))
+              (mv nil ans interp-st))
+          ;; Harder cases.
+          (b* (((mv contra interp-st)
+                (interp-st-pathcond-assume test interp-st))
+               ((when contra)
+                (mv t nil interp-st))
+               (reclimit (interp-st->reclimit interp-st))
+               ((when (gl-interp-check-reclimit interp-st))
+                (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
+                  (gl-interp-error :msg (gl-msg "The recursion limit ran out.") :nvals 2)))
+               ((when (interp-st->errmsg interp-st))
+                (b* ((interp-st (interp-st-pathcond-rewind interp-st)))
+                  ;; We cancel an error below, so we need to ensure it's not one that originated outside of this call.
+                  (mv nil nil interp-st)))
+               ((interp-st-bind
+                 (reclimit (1- reclimit) reclimit))
+                ((mv ans interp-st)
+                 (gl-interp-simplify-if-test xobj interp-st state)))
+               (interp-st (interp-st-pathcond-rewind interp-st))
+               ((when (eq (interp-st->errmsg interp-st) :unreachable))
+                (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
+                  (mv t nil interp-st))))
+            (mv nil ans interp-st))))
 
       (define gl-interp-simplify-if-test ((xobj gl-object-p)
                                           (interp-st interp-st-bfrs-ok)

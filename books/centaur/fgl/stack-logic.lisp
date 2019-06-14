@@ -37,7 +37,37 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+(defxdoc fgl-stack
+  :parents (fgl)
+  :short "Representation of the FGL interpreter stack."
+  :long "
 
+<p>FGL stores the stack of its interpreter as a nested stobj @('stack') inside
+its @('interp-st') stobj.  But the stack may also be extracted as an ordinary
+ACL2 object of type @(see major-stack).  This topic offers an overview of how
+these work; specifics of each datatype are in their respective topics.</p>
+
+<p>A @(see major-stack) is a nonempty list of @(see major-frame) objects.  Each
+such frame represents an entirely new scope for variables such as a function
+definition or rewrite rule application.  Each major-frame contains some
+debugging info, a variable bindings alist, and a @(see minor-stack), which is a
+nonempty list of @(see minor-frame) objects.  Each minor frame represents a
+lambda body within the larger context of the major frame.  It has its own
+bindings and debugging info, as well as a list of scratch objects representing
+arguments to be passed to subsequent function calls.</p>
+
+<p>The distinction between major and minor stack frames is subtle, especially
+given ACL2's insistence that lambdas bind all the variables found in their
+bodies.  The difference is that in FGL, when we encounter a lambda nesting, we
+preprocess it so as to ignore variables that are re-bound to themselves,
+instead keeping the current bindings and only adding to them.  On the other
+hand, when we apply a rewrite rule we enter a completely new namespace where
+initially only the variables of the unifying substitution are bound.  This lazy
+binding of lambdas allows us to support @(see syntax-bind) by allowing us to
+leave variables unbound until they are used in a nontrivial way: that is,
+passed into a function or bound to a different variable in a lambda.</p>
+
+")
 
 ;; This book defines a stack containing "major frames", each containing a stack
 ;; of "minor frames".  Each major and minor frame contains a binding alist and
@@ -80,6 +110,8 @@
  `(progn
     (fty::deftagsum scratchobj
       :layout :tree
+      :parents (fgl-stack)
+      :short "Type of an object stored in an FGL minor stack frame's scratch list."
       . ,(acl2::template-proj '(:<kind> ((val <pred> . <ruleclass>)))
                               *scratchobj-tmplsubsts*))
 
@@ -113,14 +145,22 @@
 
 
 
-(fty::deflist scratchlist :elt-type scratchobj :true-listp t)
+(fty::deflist scratchlist :elt-type scratchobj :true-listp t
+  :parents (fgl-stack)
+  :short "A list of scratch objects (type @(see scratchobj)) representing arguments
+          to future function calls, etc.")
 
 (fty::defprod minor-frame
-  ((bindings gl-object-bindings-p)
-   (scratch scratchlist-p)
-   (debug)))
+  :parents (fgl-stack)
+  :short "A minor stack frame representing a lambda body scope."
+  ((bindings gl-object-bindings-p "The full list of bindings for locally bound variables.")
+   (scratch scratchlist-p "The current scratch list.")
+   (debug "Debug info identifying the lambda from which this frame arose.")))
 
 (fty::deflist minor-stack :elt-type minor-frame :true-listp t :non-emptyp t
+  :parents (fgl-stack)
+  :short "A minor stack representing some nesting of lambda scopes within a major stack frame."
+  :long "<p>Representation: a nonempty list of frames of type @(see minor-frame).</p>"
   ///
   (defthm minor-stack-p-of-cons-cdr
     (implies (and (minor-stack-p x)
@@ -130,11 +170,18 @@
 
 (make-event
  `(fty::defprod major-frame
-    ((bindings gl-object-bindings-p)
-     (debug)
-     (minor-stack minor-stack-p :default ',(list (make-minor-frame))))))
+    :parents (fgl-stack)
+    :short "A major stack frame representing an entirely new namespace such as
+            a function definition or rewrite rule."
+    ((bindings gl-object-bindings-p "Top-level variable bindings of the scope.")
+     (debug "Debug info identifying the rule being applied and the current phase of its application.")
+     (minor-stack minor-stack-p :default ',(list (make-minor-frame))
+                  "The minor stack representing the current nesting of lambdas within the scope."))))
 
 (fty::deflist major-stack :elt-type major-frame :true-listp t :non-emptyp t
+  :parents (fgl-stack)
+  :short "A stack representing the current nesting of rule applications."
+  :long "<p>Representation: a nonempty list of frames of type @(see major-frame).</p>"
   ///
   (defthm major-stack-p-of-cons-cdr
     (implies (and (major-stack-p x)

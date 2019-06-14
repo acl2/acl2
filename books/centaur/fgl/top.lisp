@@ -36,9 +36,9 @@
 (include-book "primitives")
 (include-book "fgarrays")
 (include-book "aig-eval")
-(include-book "ipasir-sat")
-(include-book "satlink-sat")
+(include-book "sat-default")
 (include-book "ctrex-utils")
+(include-book "doc")
 
 ;; ----------------------------------------------------------------------
 ;; Install GL primitives:  This event collects the primitives defined in
@@ -62,7 +62,6 @@
                         (< 1 (interp-st-stack-frames interp-st)))
 
 (fancy-ev-add-primitive interp-st-sat-counterexample t)
-(fancy-ev-add-primitive interp-st-monolithic-sat-counterexample t)
 
 (fancy-ev-add-primitive interp-st-counterex-stack-prev-bindings/print-errors
                         (< 1 (interp-st-stack-frames interp-st)))
@@ -86,48 +85,110 @@
 
 
 
-(defun show-counterexample (msg)
-  (declare (ignore msg))
+(defun show-counterexample (params msg)
+  (declare (ignore params msg))
   nil)
 
 (table gl-fn-modes 'show-counterexample
-       (make-gl-function-mode :dont-concrete-exec t))
+       (make-gl-function-mode :dont-concrete-exec t
+                              :dont-expand-def t))
+
+;; Note: this function will just get interpreted by fancy-ev when running under
+;; show-counterexample-rw below, so we don't bother verifying guards etc.
+(define show-counterexample-bind ((params gl-object-p)
+                                  (interp-st interp-st-bfrs-ok)
+                                  state)
+  :verify-guards nil
+  (b* (((unless (gl-object-case params :g-concrete))
+        (mv (list (msg "error: params provided were not concrete-valued") nil nil) interp-st))
+       (params (g-concrete->val params))
+       ((mv sat-ctrex-err interp-st)
+        (interp-st-sat-counterexample params interp-st state))
+       ((when sat-ctrex-err)
+        (mv (g-concrete
+             (list (msg "error getting SAT counterexample: ~@0" sat-ctrex-err)
+                   nil nil))
+            interp-st))
+       ((mv bindings-vals var-vals interp-st)
+        (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)))
+    (mv (g-concrete (list nil bindings-vals var-vals)) interp-st)))
 
 (def-gl-rewrite show-counterexample-rw
-  (equal (show-counterexample msg)
-         (b* (((list error bindings vars)
+  (equal (show-counterexample params msg)
+         (b* (((list (list error bindings vars) &)
                (syntax-bind alists
-                            (b* (((mv sat-ctrex-err interp-st)
-                                  (interp-st-sat-counterexample interp-st state))
-                                 ((when sat-ctrex-err)
-                                  (g-concrete
-                                   (list (msg "error getting SAT counterexample: ~@0" sat-ctrex-err)
-                                         nil nil)))
-                                 ((mv bindings-vals var-vals)
-                                  (interp-st-counterex-stack-prev-bindings/print-errors interp-st state)))
-                              (g-concrete (list nil bindings-vals var-vals)))))
+                            (show-counterexample-bind params interp-st state)))
               ((when error)
                (cw "~@0: ~@1" msg error)))
            (cw "~@0: Counterexample -- bindings: ~x1 variables: ~x2~%"
                msg bindings vars))))
 
 
+(define fgl-sat-check/print-counterexample (params msg x)
+  :parents (fgl-solving)
+  :short "Check satisfiability during FGL interpretation and print counterexamples."
+  :long "
+<p>Similar to @(see fgl-sat-check), but this version additionally prints the
+counterexample bindings, when satisfiable, for the context from which it was
+called.  Its functionality depends on the rewrite rule
+@('fgl-sat-check/print-counterexample-rw').  The extra argument @('msg') should
+be a string or message identifying the particular SAT check.</p>"
+  (declare (ignore params msg))
+  (if x t nil)
+  ///
+
+  (table gl-fn-modes 'fgl-sat-check/print-counterexample
+         (make-gl-function-mode :dont-concrete-exec t
+                                :dont-expand-def t))
+
+  (def-gl-rewrite fgl-sat-check/print-counterexample-rw
+    (equal (fgl-sat-check/print-counterexample params msg x)
+           (b* ((ans (fgl-sat-check params x))
+                (unsatp (syntax-bind unsat (eq ans nil)))
+                ((when unsatp) ans)
+                ((list (list error bindings vars) &)
+                 (syntax-bind alists
+                              (show-counterexample-bind params interp-st state)))
+                ((when error)
+                 (b* ((?ignore (cw "~@0: ~@1" msg error)))
+                   ans))
+                (?ignore (cw "~@0: Counterexample -- bindings: ~x1 variables: ~x2~%"
+                             msg bindings vars)))
+             ans))
+    :hints(("Goal" :in-theory (enable fgl-sat-check)))))
+
+
+
+
+(table fgl-config-table)
+
+(define glcp-config-lookup ((table-key symbolp)
+                            (state-key symbolp)
+                            default
+                            (alist alistp)
+                            state)
+  (b* (((when (boundp-global state-key state))
+        (f-get-global state-key state))
+       (look (assoc table-key alist))
+       ((when look) (cdr look)))
+    default))
+        
+
 ;; Convenience macro to create a glcp-config object that captures the current
 ;; definitions, rewrite rules, branch merge rules, and function modes from
 ;; their respective tables.
 (defmacro default-glcp-config ()
-  '(make-glcp-config
-    :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
-    :definition-table (table-alist 'gl-definition-rules (w state))
-    :branch-merge-rules (cdr (assoc 'FGL::GL-BRANCH-MERGE-RULES (table-alist 'gl-branch-merge-rules (w state))))
-    :function-modes (table-alist 'gl-fn-modes (w state))
-    :trace-rewrites (and (boundp-global :fgl-trace-rewrites state)
-                         (@ :fgl-trace-rewrites))
-    :reclimit (if (boundp-global :fgl-reclimit state)
-                   (@ :fgl-reclimit)
-                 10000)
-    :make-ites (and (boundp-global :fgl-make-ites state)
-                    (@ :fgl-make-ites))))
+  '(b* ((configtab (table-alist 'fgl-config-table (w state))))
+     (make-glcp-config
+      :rewrite-rule-table (table-alist 'gl-rewrite-rules (w state))
+      :definition-table (table-alist 'gl-definition-rules (w state))
+      :branch-merge-rules (cdr (assoc 'FGL::GL-BRANCH-MERGE-RULES (table-alist 'gl-branch-merge-rules (w state))))
+      :function-modes (table-alist 'gl-fn-modes (w state))
+      :trace-rewrites (glcp-config-lookup :trace-rewrites :fgl-trace-rewrites nil configtab state)
+      :reclimit (glcp-config-lookup :reclimit :fgl-reclimit 10000 configtab state)
+      :make-ites (glcp-config-lookup :make-ites :fgl-make-ites nil configtab state)
+      :prof-enabledp (glcp-config-lookup :prof-enabledp :fgl-prof-enabledp t configtab state)
+      :sat-config (glcp-config-lookup :sat-config :fgl-sat-config nil configtab state))))
 
 
 

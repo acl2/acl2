@@ -160,8 +160,8 @@ the value.  Some examples:</p>
 
 (define scdr ((v true-listp))
   :returns (cdr true-listp :rule-classes :type-prescription)
-  :short "Like @(see logcdr) for signed bvecs."
-  :long "<p>See @(see bvec).  For a signed bit vector, the final bit is the
+  :short "Like @(see logcdr) for signed bit vectors."
+  :long "<p>For a signed bit vector, the final bit is the
 sign bit, which we must implicitly extend out to infinity.</p>"
   :inline t
   ;; MBE just for a simpler logical definition

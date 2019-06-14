@@ -124,6 +124,7 @@
        ((glcp-config config))
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
+       (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
        (flags (interp-st->flags interp-st))
        (interp-st (update-interp-st->flags
                    (!interp-flags->make-ites
@@ -555,22 +556,23 @@
        (state (if user-scratch
                   (prog2$ (cw "~%The FGL interpreter's user scratch data is ~
                                stored in state global:~%~x0~%"
-                              '(@ fgl-user-scratch))
-                          (f-put-global 'fgl-user-scratch user-scratch state))
+                              '(@ :fgl-user-scratch))
+                          (f-put-global ':fgl-user-scratch user-scratch state))
                 state))
        (errmsg (interp-st->errmsg interp-st))
+       (debug-obj (interp-st->debug-info interp-st))
        (state
-        (if errmsg
-            (progn$ (cw "~%The FGL interpreter's error message, debug object, ~
-                         and debug stack are stored in the following state ~
-                         globals:~%~x0~%~x1~%~x2~%"
-                        '(@ fgl-interp-error-message)
-                        '(@ fgl-interp-error-debug-obj)
-                        '(@ fgl-interp-error-debug-stack))
+        (if (or errmsg debug-obj)
+            (progn$ (cw "~%The FGL interpreter's error message (if any), ~
+                         debug object, and debug stack are stored in the ~
+                         following state globals:~%~x0~%~x1~%~x2~%"
+                        '(@ :fgl-interp-error-message)
+                        '(@ :fgl-interp-error-debug-obj)
+                        '(@ :fgl-interp-error-debug-stack))
                     (pprogn
-                     (f-put-global 'fgl-interp-error-message errmsg state)
-                     (f-put-global 'fgl-interp-error-debug-obj (interp-st->debug-info interp-st) state)
-                     (f-put-global 'fgl-interp-error-debug-stack (interp-st->debug-stack interp-st) state)))
+                     (f-put-global ':fgl-interp-error-message errmsg state)
+                     (f-put-global ':fgl-interp-error-debug-obj debug-obj state)
+                     (f-put-global ':fgl-interp-error-debug-stack (interp-st->debug-stack interp-st) state)))
           state)))
     state))
 
@@ -580,6 +582,9 @@
          :hints(("Goal" :in-theory (enable stack$a-bindings
                                            major-frame-bfrlist)
                  :expand ((major-stack-bfrlist stack))))))
+
+(define fgl-toplevel-sat-check-config-wrapper (override)
+  (or override (fgl-toplevel-sat-check-config)))
 
 (define fgl-clause-proc-core ((goal pseudo-termp)
                               (config glcp-config-p)
@@ -591,17 +596,18 @@
   (b* ((vars (term-vars goal))
        ((mv interp-st state) (initialize-interp-st config interp-st state))
        
-       (interp-st (update-interp-st-prof-enabledp t interp-st))
        (interp-st (interp-st-set-bindings (variable-g-bindings vars) interp-st))
        ((acl2::hintcontext-bind ((init-interp-st interp-st))))
        ((mv ans-interp interp-st)
         (gl-interp-test goal interp-st state))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
-       (- (interp-st-prof-print-report interp-st))
-       (sat-config (fgl-toplevel-sat-check-config))
+       (- (and (interp-st-prof-enabledp interp-st)
+               (interp-st-prof-print-report interp-st)))
+       (sat-config (fgl-toplevel-sat-check-config-wrapper
+                    (glcp-config->sat-config config)))
        ((mv ans interp-st)
-        (interp-st-monolithic-validity-check
+        (interp-st-validity-check
          ;; BOZO -- use a user-provided config
          sat-config
          ans-interp interp-st state))
@@ -615,7 +621,7 @@
        ((when (interp-st->errmsg interp-st))
         (mv (msg "Interpreter error: ~@0" (interp-st->errmsg interp-st)) interp-st state))
        ((mv sat-ctrex-err interp-st)
-        (interp-st-monolithic-sat-counterexample interp-st state))
+        (interp-st-sat-counterexample sat-config interp-st state))
        ((when sat-ctrex-err)
         (mv (msg "Error retrieving SAT counterexample: ~@0~%" sat-ctrex-err) interp-st state))
        ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
@@ -728,7 +734,7 @@
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
                                            ENV LOGICMAN))
                    (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
-                `(:use ((:instance eval-of-interp-st-monolithic-validity-check
+                `(:use ((:instance eval-of-interp-st-validity-check
                          (params ,(acl2::hq sat-config))
                          (bfr ,(acl2::hq ans-interp))
                          (interp-st ,(acl2::hq interp-interp-st))
@@ -750,7 +756,7 @@
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
                          (x ,(acl2::hq goal))))
-                  :in-theory (disable eval-of-interp-st-monolithic-validity-check
+                  :in-theory (disable eval-of-interp-st-validity-check
                                       gl-interp-test-correct
                                       iff-forall-extensions-necc
                                       fgl-ev-of-extension-when-term-vars-bound)))))))

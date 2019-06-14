@@ -342,6 +342,9 @@
        :returns (mv flag
                     (new-alist gl-object-bindings-p))
        :measure (pseudo-term-count pat)
+       :hints ((and stable-under-simplificationp
+                    '(:expand ((pseudo-term-count pat)
+                               (pseudo-term-list-count (pseudo-term-call->args pat))))))
        :verify-guards nil
        (b* ((alist (gl-object-bindings-fix alist))
             (x (gl-object-fix x))
@@ -406,7 +409,20 @@
                         ((when (gl-object-kind-eq x.kind :g-apply))
                          (b* (((g-apply x)))
                            (if (eq x.fn fn)
-                               (glcp-unify-term/gobj-list pat.args x.args alist)
+                               (if (eq fn 'equal)
+                                   ;; Special case for EQUAL -- try both ways!
+                                   (b* (((unless (eql (len pat.args) 2))
+                                         (mv nil nil))
+                                        ((mv ok alist1) (glcp-unify-term/gobj-commutative-args
+                                                        (first pat.args) (second pat.args)
+                                                        (first x.args) (second x.args)
+                                                        alist))
+                                        ((when ok) (mv ok alist1)))
+                                     (glcp-unify-term/gobj-commutative-args
+                                      (first pat.args) (second pat.args)
+                                      (second x.args) (first x.args)
+                                      alist))
+                                 (glcp-unify-term/gobj-list pat.args x.args alist))
                              (mv nil nil))))
                         ((when (gl-object-kind-eq x.kind :g-cons))
                          (b* (((g-cons x))
@@ -419,6 +435,20 @@
                      (mv nil nil))
            ;; don't support unifying with lambdas
            :otherwise (mv nil nil))))
+
+     (define glcp-unify-term/gobj-commutative-args ((pat1 pseudo-termp)
+                                                    (pat2 pseudo-termp)
+                                                    (x1 gl-object-p)
+                                                    (x2 gl-object-p)
+                                                    (alist gl-object-bindings-p))
+       :returns (mv flag
+                    (new-alist gl-object-bindings-p))
+       :measure (+ (pseudo-term-count pat1)
+                   (pseudo-term-count pat2))
+       (b* (((mv ok alist) (glcp-unify-term/gobj pat1 x1 alist))
+            ((unless ok) (mv nil nil)))
+         (glcp-unify-term/gobj pat2 x2 alist)))
+
 
      (define glcp-unify-term/gobj-list ((pat pseudo-term-listp)
                                         (x gl-objectlist-p)
@@ -463,6 +493,12 @@
          :fn glcp-unify-term/gobj)
        (defret bfrlist-of-<fn>
          (implies (and (not (member b (gl-object-bindings-bfrlist alist)))
+                       (not (member b (gl-object-bfrlist x1)))
+                       (not (member b (gl-object-bfrlist x2))))
+                  (not (member b (gl-object-bindings-bfrlist new-alist))))
+         :fn glcp-unify-term/gobj-commutative-args)
+       (defret bfrlist-of-<fn>
+         (implies (and (not (member b (gl-object-bindings-bfrlist alist)))
                        (not (member b (gl-objectlist-bfrlist x)))
                        ;; (not (equal b nil))
                        )
@@ -498,6 +534,14 @@
                          flag)
                     (equal (hons-assoc-equal k new-alist)
                            (hons-assoc-equal k (gl-object-bindings-fix alist))))
+           :hints ('(:expand (<call>
+                              (glcp-unify-term/gobj nil x alist))))
+           :fn glcp-unify-term/gobj-commutative-args)
+         (defret <fn>-alist-lookup-when-present
+           (implies (and (hons-assoc-equal k (gl-object-bindings-fix alist))
+                         flag)
+                    (equal (hons-assoc-equal k new-alist)
+                           (hons-assoc-equal k (gl-object-bindings-fix alist))))
            :hints ('(:expand ((:free (x) <call>))))
            :fn glcp-unify-term/gobj-list))
 
@@ -509,6 +553,13 @@
            :hints ('(:expand (<call>
                               (glcp-unify-term/gobj nil x alist))))
            :fn glcp-unify-term/gobj)
+         (defret <fn>-preserves-all-keys-bound
+           (implies (and (subsetp keys (alist-keys (gl-object-bindings-fix alist)))
+                         flag)
+                    (subsetp keys (alist-keys new-alist)))
+           :hints ('(:expand (<call>
+                              (glcp-unify-term/gobj nil x alist))))
+           :fn glcp-unify-term/gobj-commutative-args)
          (defret <fn>-preserves-all-keys-bound
            (implies (and (subsetp keys (alist-keys (gl-object-bindings-fix alist)))
                          flag)
@@ -535,6 +586,16 @@
            :fn glcp-unify-term/gobj)
          (defret all-keys-bound-of-<fn>
            (implies flag
+                    (and (subsetp (term-vars pat1) (alist-keys new-alist))
+                         (subsetp (term-vars pat2) (alist-keys new-alist))))
+           :hints ('(:expand (<call>
+                              (glcp-unify-term/gobj nil x alist))
+                     :in-theory (enable equal-of-len))
+                   (and stable-under-simplificationp
+                        '(:expand ((term-vars pat)))))
+           :fn glcp-unify-term/gobj-commutative-args)
+         (defret all-keys-bound-of-<fn>
+           (implies flag
                     (subsetp (termlist-vars pat) (alist-keys new-alist)))
            :hints ('(:expand ((:free (x) <call>)
                               (termlist-vars pat))))
@@ -551,6 +612,16 @@
                               (glcp-unify-term/gobj nil x alist)
                               (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))
            :fn glcp-unify-term/gobj)
+         (defret <fn>-preserves-eval-when-all-keys-bound
+           (implies (and flag
+                         (subsetp (term-vars term)
+                                  (alist-keys (gl-object-bindings-fix alist))))
+                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                           (fgl-ev term (fgl-object-bindings-eval alist env))))
+           :hints ('(:expand (<call>
+                              (glcp-unify-term/gobj nil x alist)
+                              (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))
+           :fn glcp-unify-term/gobj-commutative-args)
          (defret <fn>-preserves-eval-when-all-keys-bound
            (implies (and flag
                          (subsetp (term-vars term)
@@ -646,6 +717,16 @@
                               '(:in-theory (enable fgl-ev-of-fncall-args))))
                           nil)))))
            :fn glcp-unify-term/gobj)
+         (defret <fn>-correct
+           (implies flag
+                    (equal (equal (fgl-ev pat1 (fgl-object-bindings-eval new-alist env))
+                                  (fgl-ev pat2 (fgl-object-bindings-eval new-alist env)))
+                           (equal (fgl-object-eval x1 env)
+                                  (fgl-object-eval x2 env))))
+           :hints ('(:expand ((:free (x) <call>)
+                              (fgl-objectlist-eval x env)
+                              (fgl-objectlist-eval nil env))))
+           :fn glcp-unify-term/gobj-commutative-args)
          (defret <fn>-correct
            (implies flag
                     (equal (fgl-ev-list pat (fgl-object-bindings-eval new-alist env))

@@ -533,8 +533,25 @@
              (impl (fast-logcount-32* x))
              (spec (logcount x))
              (eq (equal impl spec))
-             (?uneq-sat (fgl-sat-check (make-fgl-ipasir-config) (not eq))))
-          (show-counterexample "unequal"))))
+             (params  (make-fgl-ipasir-config))
+             (?uneq-sat (fgl-sat-check params (not eq))))
+          (show-counterexample params "unequal"))))
+      ((unless err)
+       (er soft 'ctrex-test "Expected this to fail!~%")))
+   (value '(value-triple :ok))))
+
+(make-event
+ (b* (((mv err ?val state)
+       (fgl-thm
+        :hyp (unsigned-byte-p 32 x)
+        :concl
+        ;; (if (unsigned-byte-p 32 x)
+        (b* (;; (x (loghead 32 xx))
+             (impl (fast-logcount-32* x))
+             (spec (logcount x))
+             (eq (equal impl spec)))
+          (fgl-sat-check/print-counterexample
+           (make-fgl-ipasir-config) "unequal" (not eq)))))
       ((unless err)
        (er soft 'ctrex-test "Expected this to fail!~%")))
    (value '(value-triple :ok))))

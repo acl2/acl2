@@ -37,10 +37,18 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 
 (defprod fgl-ipasir-config
+  :parents (fgl-sat-check)
+  :short "Configuration object for IPASIR SAT checks in the default FGL configuration."
   ((ignore-pathcond booleanp :default t)
    (ignore-constraint booleanp :default nil)
-   (ipasir-callback-limit acl2::maybe-natp :default nil)
-   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil)))
+   (ipasir-callback-limit acl2::maybe-natp :default nil
+                          "Limit on the number of callbacks in a single SAT ~
+                           check after which the check fails.")
+   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
+                                  "Limit on the number of callbacks over the lifespan
+                                   of a solver object, after which the solver is
+                                   re-initialized."))
+  :tag :fgl-ipasir-config)
 
 
 (define logicman-maybe-recycle-ipasir ((config fgl-ipasir-config-p)
@@ -829,10 +837,11 @@
 
 
 
-(define interp-st-ipasir-counterexample ((interp-st interp-st-bfrs-ok)
+(define interp-st-ipasir-counterexample (params
+                                         (interp-st interp-st-bfrs-ok)
                                          state)
   :returns (mv err new-interp-st)
-  (declare (ignore state))
+  (declare (ignore params state))
   (stobj-let ((logicman (interp-st->logicman interp-st))
               (env$ (interp-st->ctrex-env interp-st)))
              (err env$)
@@ -849,13 +858,8 @@
              (bfr-env$-p (interp-st->ctrex-env new-interp-st)
                          (logicman->bfrstate (interp-st->logicman interp-st))))))
 
-(defmacro fgl-use-ipasir-for-incremental-sat ()
+(defmacro fgl-use-ipasir ()
   '(progn (defattach interp-st-sat-check interp-st-ipasir-sat-check-impl)
           (defattach interp-st-sat-counterexample interp-st-ipasir-counterexample)))
 
-(defmacro fgl-use-ipasir-for-monolithic-sat ()
-  '(progn (defattach interp-st-monolithic-sat-check interp-st-ipasir-sat-check-impl)
-          (defattach interp-st-monolithic-sat-counterexample interp-st-ipasir-counterexample)))
-
-(fgl-use-ipasir-for-incremental-sat)
-(local (fgl-use-ipasir-for-monolithic-sat))
+(fgl-use-ipasir)

@@ -379,3 +379,8 @@
                  ((and (check-consp y ysyn)
                        (check-non-consp x xsyn)) nil)
                  (t (abort-rewrite (equal x y)))))))
+
+(remove-gl-rewrite loghead-to-logapp)
+(def-gl-rewrite loghead-to-logapp-always
+  (equal (loghead n x)
+         (logapp n x 0)))
