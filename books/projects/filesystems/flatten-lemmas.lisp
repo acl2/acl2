@@ -9,8 +9,9 @@
            (no-duplicatesp x)))
 
 (defun not-intersectp-list (x l)
+  (declare (xargs :guard (and (true-listp x) (true-list-listp l))))
   (or (atom l)
-      (and (not (intersectp x (car l)))
+      (and (not (intersectp-equal x (car l)))
            (not-intersectp-list x (cdr l)))))
 
 (defcong list-equiv equal (not-intersectp-list x l) 1)
@@ -34,7 +35,7 @@
                 (subsetp-equal l1 l2))
            (not-intersectp-list x l1)))
 
-(defthm flatten-subset-no-duplicatesp-lemma-1
+(defthmd flatten-subset-no-duplicatesp-lemma-1
   (implies (and (consp z)
                 (no-duplicatesp (flatten z))
                 (member-equal y z)
@@ -86,6 +87,7 @@
 ;; (verify (implies (and (subsetp-equal x y) (disjoint-list-listp y)) (disjoint-list-listp x)))
 
 (defun member-intersectp-equal (x y)
+  (declare (xargs :guard (and (true-list-listp x) (true-list-listp y))))
   (and (consp x)
        (or (not (not-intersectp-list (car x) y))
            (member-intersectp-equal (cdr x) y))))

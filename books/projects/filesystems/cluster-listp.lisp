@@ -9,6 +9,12 @@
 (include-book "kestrel/utilities/strings/top" :dir :system)
 (local (in-theory (disable make-list-ac-removal)))
 
+;; These books were suggested by proof-by-arith.
+(local (include-book "arithmetic-5/top" :dir :system))
+(set-default-hints '((nonlinearp-default-hint++
+                      id
+                      stable-under-simplificationp hist nil)))
+
 (defund cluster-p (cluster cluster-size)
   (declare (xargs :guard t))
   (and (stringp cluster)
@@ -79,7 +85,7 @@
               nil)
       cluster-size))))
 
-(defthm
+(defthmd
   make-clusters-correctness-1
   (iff (consp (make-clusters text cluster-size))
        (and (not (zp (length text)))
@@ -95,6 +101,8 @@
     :hints
     (("goal"
       :expand (len (make-clusters text cluster-size)))))))
+
+(in-theory (enable (:rewrite make-clusters-correctness-1 . 2)))
 
 (defthm
   cluster-listp-of-make-clusters
@@ -129,40 +137,26 @@
   :rule-classes :linear
   :hints (("goal" :in-theory (enable make-clusters))))
 
-(encapsulate
-  ()
+(defthmd
+  len-of-make-clusters
+  (implies (not (zp cluster-size))
+           (equal (len (make-clusters text cluster-size))
+                  (floor (+ (length text) cluster-size -1)
+                         cluster-size)))
+  :hints (("goal" :in-theory (enable make-clusters))))
 
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
-
-  (defthmd
-    len-of-make-clusters
-    (implies (not (zp cluster-size))
-             (equal (len (make-clusters text cluster-size))
-                    (floor (+ (length text) cluster-size -1)
-                           cluster-size)))
-    :hints (("goal" :in-theory (enable make-clusters)))))
-
-(encapsulate
-  ()
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (set-default-hints '((nonlinearp-default-hint++
-                        id
-                        stable-under-simplificationp hist nil)))
-
-  (defthm
-    make-clusters-correctness-3
-    (implies (and (stringp text)
-                  (not (zp cluster-size))
-                  (<= (length text) max-length)
-                  (equal (mod max-length cluster-size) 0))
-             (<= (* cluster-size
-                    (len (make-clusters text cluster-size)))
-                 max-length))
-    :rule-classes :linear
-    :hints (("goal" :in-theory (disable make-clusters-correctness-2)
-             :use len-of-make-clusters))))
+(defthm
+  make-clusters-correctness-3
+  (implies (and (stringp text)
+                (not (zp cluster-size))
+                (<= (length text) max-length)
+                (equal (mod max-length cluster-size) 0))
+           (<= (* cluster-size
+                  (len (make-clusters text cluster-size)))
+               max-length))
+  :rule-classes :linear
+  :hints (("goal" :in-theory (disable make-clusters-correctness-2)
+           :use len-of-make-clusters)))
 
 (defthm
   cluster-listp-of-resize-list

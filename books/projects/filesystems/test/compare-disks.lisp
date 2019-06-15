@@ -1,5 +1,4 @@
 (include-book "../test-stuff")
-(include-book "oslib/argv" :dir :system)
 
 ;; See theorem compare-disks-correctness-1 in test-stuff.lisp for a proof of
 ;; correctness of this procedure.
