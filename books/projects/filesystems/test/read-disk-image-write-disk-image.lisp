@@ -7,7 +7,7 @@
       (time$
        (disk-image-to-lofat
         fat32-in-memory image-path state)))
-     (state
+     ((mv state &)
       (time$
        (lofat-to-disk-image
         fat32-in-memory image-path state))))

@@ -59,3 +59,7 @@
 (defthmd lower-bounded-integer-listp-correctness-5
   (implies (and (<= y x) (lower-bounded-integer-listp l x))
            (lower-bounded-integer-listp l y)))
+
+(defthm lower-bounded-integer-listp-of-remove
+  (implies (lower-bounded-integer-listp l b)
+           (lower-bounded-integer-listp (remove-equal x l) b)))
