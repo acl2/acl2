@@ -601,19 +601,38 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   ((acl2s-d-undefined () t :guard t))
   (local (defun acl2s-d-undefined () nil)))
 
+(defconst *input-contract-alias* '(:input-contract :require :assume))
+
+(defconst *output-contract-alias* '(:output-contract :ensure :guarantee))
+
+(defun assoc-equal-alias (alias alist)
+  (if (endp alias)
+      nil
+    (or (assoc-equal (car alias) alist)
+        (assoc-equal-alias (cdr alias) alist))))
+
+(defun get1-alias (alias alist)
+  (if (endp alias)
+      nil
+    (or (defdata::get1 (car alias) alist)
+        (get1-alias (cdr alias) alist))))
+
 (defconst *defunc-keywords*
-  '(:input-contract :output-contract :sig ;:sig unsupported now
-    :verbose :debug
-    :rule-classes :instructions :function-contract-hints :otf-flg ;for contract defthm
-    :body-contracts-hints ;for verify-guards event
-    :skip-tests
-    :force-ic-hyps-in-definitionp
-    :force-ic-hyps-in-contract-thmp
-    :skip-admissibilityp
-    :skip-function-contractp
-    :skip-body-contractsp
-    :timeout :termination-strictp :function-contract-strictp :body-contracts-strictp
-    ))
+  (append
+   *input-contract-alias*
+   *output-contract-alias*
+   '(:sig ;:sig unsupported now
+     :verbose :debug
+     :rule-classes :instructions :function-contract-hints :otf-flg ;for contract defthm
+     :body-contracts-hints ;for verify-guards event
+     :skip-tests
+     :force-ic-hyps-in-definitionp
+     :force-ic-hyps-in-contract-thmp
+     :skip-admissibilityp
+     :skip-function-contractp
+     :skip-body-contractsp
+     :timeout :termination-strictp :function-contract-strictp :body-contracts-strictp
+     )))
 
 (defdata::deffilter filter-keywords (xs) keywordp)
 
@@ -1114,15 +1133,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (formals (car defun-rest))
        (decls/docs (butlast (cdr defun-rest) 1))
        (body  (car (last defun-rest)))
-       (full-input-contract (assoc-equal :input-contract kwd-alist))
-       (full-output-contract (assoc-equal :output-contract kwd-alist))
+       (full-input-contract (assoc-equal-alias *input-contract-alias* kwd-alist))
+       (full-output-contract (assoc-equal-alias *output-contract-alias* kwd-alist))
        ((unless full-input-contract)
         (er hard ctx "~|Defunc is missing an input contract. ~%" ))
        ((unless full-output-contract)
         (er hard ctx "~|Defunc is missing an output contract. ~%" ))
 
-       (input-contract (defdata::get1 :input-contract kwd-alist ))
-       (output-contract (defdata::get1 :output-contract kwd-alist ))
+       (input-contract (get1-alias *input-contract-alias* kwd-alist ))
+       (output-contract (get1-alias *output-contract-alias* kwd-alist ))
        ((unless (simple-termp input-contract))
         (er hard ctx "~|The input contract has to be a term. ~x0 is not.~%" input-contract))
        ((unless (simple-termp output-contract))

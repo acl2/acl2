@@ -279,3 +279,4 @@ functions over natural numbers.
   `(acl2::with-outer-locals
     (local (acl2s-defaults :set testing-enabled nil))
     (defun ,name ,@args)))
+
