@@ -152,12 +152,19 @@
   (implies (not (rational-listp x))
            (not (unsigned-byte-listp n x))))
 
-;; This cannot be moved to to file-system-lemmas.lisp, because it's expressed
-;; in terms of explode.
+;; These two theorems cannot be moved to to file-system-lemmas.lisp, because
+;; they're expressed in terms of explode, which is not a built-in function.
 (defthm len-of-explode-of-string-append
   (equal (len (explode (string-append str1 str2)))
          (+ (len (explode str1))
             (len (explode str2)))))
+
+(defthmd
+  length-of-empty-list
+  (implies (stringp x)
+           (iff (equal (len (explode x)) 0)
+                (equal x "")))
+  :hints (("goal" :expand (len (explode x)))))
 
 (defthm
   unsigned-byte-listp-of-make-list-ac
@@ -217,12 +224,6 @@
   ()
 
   (local (include-book "std/basic/inductions" :dir :system))
-
-  (defthm take-of-make-list-ac
-    (implies (<= (nfix n1) (nfix n2))
-             (equal (take n1 (make-list-ac n2 val ac))
-                    (make-list-ac n1 val nil)))
-    :hints (("goal'" :induct (dec-dec-induct n1 n2))))
 
   (defcong
     str::charlisteqv equal (chars=>nats x)
