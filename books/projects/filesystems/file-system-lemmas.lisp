@@ -827,3 +827,36 @@
 (defthm no-duplicatesp-of-remove
   (implies (no-duplicatesp-equal l)
            (no-duplicatesp-equal (remove-equal x l))))
+
+(defthmd assoc-of-car-when-member
+     (implies (and (member-equal x lst) (alistp lst))
+              (consp (assoc-equal (car x) lst))))
+
+(encapsulate
+  ()
+
+  ;; The following is redundant with the eponymous function in
+  ;; books/std/basic/inductions.lisp, from where it was taken with thanks.
+  (local
+   (defun dec-dec-induct (n m)
+     (if (or (zp n)
+             (zp m))
+         nil
+       (dec-dec-induct (- n 1) (- m 1)))))
+
+  (local
+   (defthm take-of-make-list-ac-lemma-1
+     (implies (and (not (zp n1))
+                   (not (zp n2))
+                   (<= n1 n2))
+              (equal (cons val (make-list-ac (+ -1 n1) val nil))
+                     (make-list-ac n1 val nil)))
+     :hints (("Goal" :in-theory (disable cons-car-cdr make-list-ac)
+              :use ((:instance cons-car-cdr
+                               (x (make-list-ac n1 val nil))))))))
+
+  (defthm take-of-make-list-ac
+    (implies (<= (nfix n1) (nfix n2))
+             (equal (take n1 (make-list-ac n2 val ac))
+                    (make-list-ac n1 val nil)))
+    :hints (("goal" :induct (dec-dec-induct n1 n2)))))
