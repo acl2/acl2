@@ -24,7 +24,14 @@ ACL2 (the ACL2 executable, likely to be $ACL2/saved_acl2) below.
 
 $ ACL2_DIR/books/build/cert.pl --acl2 ACL2 file-system-*.lisp
 
-This certification must be completed before attempting the co-simulation
+Alternatively, the filesystem models can be certified through the
+normal process of building the ACL2 books, explained on the ACL2
+[installation
+page](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/installation.html). The
+"make certify-books" command in step 4 will build the filesystem
+books; this is simpler than using cert.pl although it takes longer.
+
+Either way, the certification must be completed before attempting the
 tests, which are located in the test/ subdirectory. This subdirectory
 has its own Makefile, which can be invoked as follows, again
 substituting a proper value for ACL2.
