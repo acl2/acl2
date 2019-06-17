@@ -260,7 +260,7 @@
      except for the range below 128.")
    (xdoc::p
     "@(tsee rlp-parse-tree) is right inverse of @(tsee rlp-encode-tree),
-     over the valid byte array encodings.
+     over the valid tree encodings.
      This implies that @(tsee rlp-parse-tree) accepts
      only valid encodings of tree:
      if it accepted an invalid encoding,
