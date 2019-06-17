@@ -13,7 +13,7 @@
 (in-theory (disable ceiling))
 
 (local (include-book "arithmetic-3/top" :dir :system)) ;todo: reduce
-(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
+(local (include-book "integerp"))
 ;(local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 ;(local (in-theory (disable floor)))
