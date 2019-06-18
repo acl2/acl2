@@ -601,9 +601,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   ((acl2s-d-undefined () t :guard t))
   (local (defun acl2s-d-undefined () nil)))
 
-(defconst *input-contract-alias* '(:input-contract :require :assume))
+(defconst *input-contract-alias*
+  '(:input-contract :require :assume :pre :pre-condition))
 
-(defconst *output-contract-alias* '(:output-contract :ensure :guarantee))
+(defconst *output-contract-alias*
+  '(:output-contract :ensure :guarantee :post :post-condition))
 
 (defun assoc-equal-alias (alias alist)
   (if (endp alias)
