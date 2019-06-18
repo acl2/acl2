@@ -24,5 +24,5 @@
 (include-book "integerp")
 ;(include-book "ceiling")
 (include-book "nonnegative-integer-quotient")
-;(include-book "mod-expt-fast")
+(include-book "mod-expt-fast")
 (include-book "mod")
