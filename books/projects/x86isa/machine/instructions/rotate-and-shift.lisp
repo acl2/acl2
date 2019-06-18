@@ -87,19 +87,19 @@
   "<p>
   Op/En: MI<br/>
   C0/0: ROL r/m8, imm8<br/>
-  C0/1: ROR r/m8,imm8<br/>
+  C0/1: ROR r/m8, imm8<br/>
   C0/2: RCL r/m8, imm8<br/>
   C0/3: RCR r/m8, imm8<br/>
-  C0/4: SAL/SHL r/m8 imm8<br/>
-  C0/5: SHR r/m8 imm8<br/>
-  C0/7: SAR r/m8 imm8<br/>
-  C1/0: ROL r/m16, r/m32, or r/m64, imm8<br/>
-  C1/1: ROR r/m16, r/m32, or r/m64, imm8<br/>
-  C1/2: RCL r/m16, r/m32, or r/m64, imm8<br/>
-  C1/3: RCR r/m16, r/m32, or r/m64, imm8<br/>
-  C1/4: SAL/SHL r/m8 r/m16 or r/m64 imm8<br/>
-  C1/5: SHR r/m16 r/m32 or r/m64 imm8<br/>
-  C1/7: SAR r/m16 r/m32 or r/m64 imm8<br/>
+  C0/4: SAL/SHL r/m8, imm8<br/>
+  C0/5: SHR r/m8, imm8<br/>
+  C0/7: SAR r/m8, imm8<br/>
+  C1/0: ROL r/m16/32/64, imm8<br/>
+  C1/1: ROR r/m16/32/64, imm8<br/>
+  C1/2: RCL r/m16/32/64, imm8<br/>
+  C1/3: RCR r/m16/32/64, imm8<br/>
+  C1/4: SAL/SHL r/m16/32/64, imm8<br/>
+  C1/5: SHR r/m16/32/64, imm8<br/>
+  C1/7: SAR r/m16/32/64. imm8<br/>
   </p>
 
   <p>
@@ -108,16 +108,16 @@
   D0/1: ROR r/m8, 1<br/>
   D0/2: RCL r/m8, 1<br/>
   D0/3: RCR r/m8, 1<br/>
-  D0/4: SAL/SHL r/m8 1<br/>
-  D0/5: SHR r/m8 1<br/>
-  D0/7: SAR r/m8 1<br/>
-  D1/0: ROL r/m16, r/m32, or r/m64, 1<br/>
-  D1/1: ROR r/m16, r/m32, or r/m64, 1<br/>
-  D1/2: RCL r/m16, r/m32, or r/m64, 1<br/>
-  D1/3: RCR r/m16, r/m32, or r/m64, 1<br/>
-  D1/4: SAL/SHL r/m16 r/m32 or r/m64 1<br/>
-  D1/5: SHR r/m16 r/m32 or r/m64 1<br/>
-  D1/7: SAR r/m16 r/m32 or r/m64 1<br/>
+  D0/4: SAL/SHL r/m8, 1<br/>
+  D0/5: SHR r/m8, 1<br/>
+  D0/7: SAR r/m8, 1<br/>
+  D1/0: ROL r/m16/32/64, 1<br/>
+  D1/1: ROR r/m16/32/64, 1<br/>
+  D1/2: RCL r/m16/32/64, 1<br/>
+  D1/3: RCR r/m16/32/64, 1<br/>
+  D1/4: SAL/SHL r/m16/32/64, 1<br/>
+  D1/5: SHR r/m16/32/64, 1<br/>
+  D1/7: SAR r/m16/32/64, 1<br/>
   </p>
 
   <p>
@@ -126,16 +126,16 @@
   D2/1: ROR r/m8, CL<br/>
   D2/2: RCL r/m8, CL<br/>
   D2/3: RCR r/m8, CL<br/>
-  D2/4: SAL/SHL r/m8 CL<br/>
-  D2/5: SHR r/m8 CL<br/>
+  D2/4: SAL/SHL r/m8, CL<br/>
+  D2/5: SHR r/m8, CL<br/>
   D2/7: SAR r/m8, CL<br/>
-  D3/0: ROL r/m16, r/m32, or r/m64, CL<br/>
-  D3/1: ROR r/m16, r/m32, or r/m64, CL<br/>
-  D3/2: RCL r/m16, r/m32, or r/m64, CL<br/>
-  D3/3: RCR r/m16, r/m32, or r/m64, CL<br/>
-  D3/4: SAL/SHL r/m16 r/m32 or r/m64 CL<br/>
-  D3/5: SHR r/m16 r/m32 or r/m64 CL<br/>
-  D3/7: SAR r/m16 r/m32 or r/m64 CL<br/>
+  D3/0: ROL r/m16/32/64, CL<br/>
+  D3/1: ROR r/m16/32/64, CL<br/>
+  D3/2: RCL r/m16/32/64, CL<br/>
+  D3/3: RCR r/m16/32/64, CL<br/>
+  D3/4: SAL/SHL r/m16/32/64, CL<br/>
+  D3/5: SHR r/m16/32/64, CL<br/>
+  D3/7: SAR r/m16/32/64, CL<br/>
   </p>"
 
   :body
