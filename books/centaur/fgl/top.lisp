@@ -39,6 +39,7 @@
 (include-book "sat-default")
 (include-book "ctrex-utils")
 (include-book "doc")
+(include-book "pathcond-fix")
 
 ;; ----------------------------------------------------------------------
 ;; Install GL primitives:  This event collects the primitives defined in
@@ -85,11 +86,11 @@
 
 
 
-(defun show-counterexample (params msg)
-  (declare (ignore params msg))
-  nil)
-
 (table gl-fn-modes 'show-counterexample
+       (make-gl-function-mode :dont-concrete-exec t
+                              :dont-expand-def t))
+
+(table gl-fn-modes 'show-top-counterexample
        (make-gl-function-mode :dont-concrete-exec t
                               :dont-expand-def t))
 
@@ -118,6 +119,38 @@
          (b* (((list (list error bindings vars) &)
                (syntax-bind alists
                             (show-counterexample-bind params interp-st state)))
+              ((when error)
+               (cw "~@0: ~@1" msg error)))
+           (cw "~@0: Counterexample -- bindings: ~x1 variables: ~x2~%"
+               msg bindings vars))))
+
+
+
+;; Note: this function will just get interpreted by fancy-ev when running under
+;; show-counterexample-rw below, so we don't bother verifying guards etc.
+(define show-top-counterexample-bind ((params gl-object-p)
+                                      (interp-st interp-st-bfrs-ok)
+                                      state)
+  :verify-guards nil
+  (b* (((unless (gl-object-case params :g-concrete))
+        (mv (list (msg "error: params provided were not concrete-valued") nil nil) interp-st))
+       (params (g-concrete->val params))
+       ((mv sat-ctrex-err interp-st)
+        (interp-st-sat-counterexample params interp-st state))
+       ((when sat-ctrex-err)
+        (mv (g-concrete
+             (list (msg "error getting SAT counterexample: ~@0" sat-ctrex-err)
+                   nil nil))
+            interp-st))
+       ((mv bindings-vals var-vals interp-st)
+        (interp-st-counterex-stack-bindings/print-errors interp-st state)))
+    (mv (g-concrete (list nil bindings-vals var-vals)) interp-st)))
+
+(def-gl-rewrite show-top-counterexample-rw
+  (equal (show-top-counterexample params msg)
+         (b* (((list (list error bindings vars) &)
+               (syntax-bind alists
+                            (show-top-counterexample-bind params interp-st state)))
               ((when error)
                (cw "~@0: ~@1" msg error)))
            (cw "~@0: Counterexample -- bindings: ~x1 variables: ~x2~%"
@@ -216,3 +249,9 @@ be a string or message identifying the particular SAT check.</p>"
 
 (define major-stack->debugframes ((x major-stack-p))
   (major-stack->debugframes-aux 0 x))
+
+(define interp-st-extract-bvar-db (interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (db)
+             (bvar-db-debug bvar-db)
+             db))

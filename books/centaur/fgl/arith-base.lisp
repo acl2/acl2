@@ -281,4 +281,55 @@ sign bit, which we must implicitly extend out to infinity.</p>"
       
 
 
+;; Catchall: simple functions that will be given various behavior by the interpreter.
+(encapsulate
+  (((fgl-toplevel-sat-check-config) => *))
+  (local (defun fgl-toplevel-sat-check-config () nil)))
 
+
+(define fgl-sat-check ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                       (x "Object to check for satisfiability."))
+  :parents (fgl-solving)
+  :short "Checking satisfiability of intermediate terms during FGL interpretation."
+  :long "
+
+<p>Logically, @('(fgl-sat-check params x)') just returns @('x') fixed to a
+Boolean value.  But when FGL symbolic execution encounters an
+@('fgl-sat-check') term, it checks Boolean satisfiability of @('x') and if it
+is able to prove that all evaluations of @('x') are NIL, then it returns NIL;
+otherwise, it returns @('x') unchanged.  To instead perform a validity check,
+you could do:</p>
+@({
+ (not (fgl-sat-check params (not x)))
+ })
+
+<p>It isn't necessary to call this around the entire conclusion of the theorem
+you wish to prove -- FGL always checks the final result of symbolically
+executing the conclusion; see @(see fgl-solving).  The purpose of
+@('fgl-sat-check') is for forcing SAT checks during symbolic execution, so as
+to e.g. avoid unnecessary execution paths.</p>
+
+<p>The counterexamples from intermediate SAT checks may be pulled out of the
+interpreter state during symbolic execution using @(see syntax-bind) forms.
+For example, the rewrite rule @('show-counterexample-rw') demonstrates how to
+extract a counterexample from SAT and print it when a @('show-counterexample')
+term is encountered.</p>
+
+<p>See also @(see fgl-sat-check/print-counterexample) for a version that prints
+counterexample info for the stack frame from which it is called.</p>"
+  (declare (ignore params))
+  (if x t nil))
+
+
+(defun show-counterexample (params msg)
+  (declare (ignore params msg))
+  nil)
+
+(defun show-top-counterexample (params msg)
+  (declare (ignore params msg))
+  nil)
+
+(defun fgl-pathcond-fix (x)
+  (declare (xargs :guard t))
+  x)

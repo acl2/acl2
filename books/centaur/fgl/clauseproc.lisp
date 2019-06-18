@@ -32,6 +32,7 @@
 
 (include-book "interp")
 (include-book "ctrex-utils")
+(include-book "casesplit")
 
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 ;; (include-book "primitives")
@@ -803,65 +804,8 @@
     :rule-classes :clause-processor))
 
 
-(define expand-an-implies ((x pseudo-termp))
-  :returns (new-x pseudo-termp)
-  :measure (pseudo-term-count x)
-  :verify-guards nil
-  (pseudo-term-case x
-    :const (pseudo-term-fix x)
-    :var (pseudo-term-fix x)
-    :fncall (if (and (eq x.fn 'implies)
-                     (eql (len x.args) 2))
-                `(if ,(car x.args) ,(cadr x.args) 't)
-              (pseudo-term-fix x))
-    :lambda (pseudo-term-lambda
-             x.formals
-             (expand-an-implies x.body)
-             x.args))
-  ///
-  (verify-guards expand-an-implies)
-
-  (local (defun-sk fgl-ev-of-expand-an-implies-cond (x)
-           (forall a
-                   (iff (fgl-ev (expand-an-implies x) a)
-                        (fgl-ev x a)))
-           :rewrite :direct))
-  (local (in-theory (disable fgl-ev-of-expand-an-implies-cond)))
-
-  (local (defthm fgl-ev-of-expand-an-implies-lemma
-           (fgl-ev-of-expand-an-implies-cond x)
-           :hints (("goal" :induct (expand-an-implies x))
-                   (and stable-under-simplificationp
-                        `(:expand (,(car (last clause))))))))
-
-  (defret fgl-ev-of-expand-an-implies
-    (iff (fgl-ev (expand-an-implies x) a)
-         (fgl-ev x a))))
-
-(define expand-an-implies-cp ((x pseudo-term-listp))
-  (if (and (consp x)
-           (not (cdr x)))
-      (list (list (expand-an-implies (car x))))
-    (list x))
-  ///
-  (defthm expand-an-implies-cp-correct
-    (implies (and (pseudo-term-listp x)
-                  (alistp a)
-                  (fgl-ev (conjoin-clauses (expand-an-implies-cp x)) a))
-             (fgl-ev (disjoin x) a))
-    :rule-classes :clause-processor))
 
 
-(defun def-fgl-thm-fn (name args)
-  (declare (xargs :mode :program))
-  `(defthm ,name
-     (implies ,(cadr (assoc-keyword :hyp args))
-              ,(cadr (assoc-keyword :concl args)))
-     :hints (("goal" :clause-processor expand-an-implies-cp)
-             '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
-
-(defmacro def-fgl-thm (name &rest args)
-  (def-fgl-thm-fn name args))
 
 
 (defun fgl-thm-fn (args)
@@ -875,10 +819,45 @@
 (defmacro fgl-thm (&rest args)
   (fgl-thm-fn args))
 
+(defun def-fgl-thm-fn (name args)
+  (declare (xargs :mode :program))
+  `(defthm ,name . ,(cdr (fgl-thm-fn args))))
+
+(defmacro def-fgl-thm (name &rest args)
+  (def-fgl-thm-fn name args))
 
 
+(defun fgl-param-thm-cases (param-bindings param-hyp)
+  (if (atom param-bindings)
+      nil
+    (cons (list (msg "Case: ~x0" (caar param-bindings))
+                `(let ,(pairlis$ (alist-keys (caar param-bindings))
+                                 (pairlis$ (kwote-lst (alist-keys (alist-vals (caar param-bindings))))
+                                           nil))
+                   ,param-hyp))
+          (fgl-param-thm-cases (cdr param-bindings) param-hyp))))
 
+(defun fgl-param-thm-fn (args)
+  (declare (xargs :mode :program))
+  `(thm
+    (implies ,(cadr (assoc-keyword :hyp args))
+             ,(cadr (assoc-keyword :concl args)))
+    :hints ((fgl-casesplit :cases
+                           (fgl-param-thm-cases
+                            ,(cadr (assoc-keyword :param-bindings args))
+                            ',(cadr (assoc-keyword :param-hyp args))))
+            '(:clause-processor (gl-interp-cp clause (default-glcp-config) interp-st state)))))
 
+(defmacro fgl-param-thm (&rest args)
+  (fgl-param-thm-fn args))
+
+(defun def-fgl-param-thm-fn (name args)
+  (declare (xargs :mode :program))
+  `(defthm ,name . ,(cdr (fgl-param-thm-fn args))))
+
+(defmacro def-fgl-param-thm (name &rest args)
+  (def-fgl-param-thm-fn name args))
+                         
             
             
 

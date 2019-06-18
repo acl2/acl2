@@ -52,7 +52,8 @@
                            (ec-call
                             (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params)))))))
               ((unless (svex-env-check-boolmasks boolmasks env))
-               (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%")))
+               (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%"))
+                    (?foo (break$)))
                  (fgl::abort-rewrite (svexlist-eval-for-symbolic orig-x env symbolic-params))))
 
               ;; (?ign (cw "Boolmasks: ~x0~%" boolmasks))
@@ -76,6 +77,22 @@
   :hints (("Goal" :use svexlist-eval-for-symbolic-redef
            :in-theory (e/d (svexlist-eval-gl)
                            (svexlist-eval-gl-is-svexlist-eval)))))
+
+#!sv
+(fgl::def-gl-rewrite svex-env-check-boolmasks-fgl
+  (equal (svex-env-check-boolmasks boolmasks env)
+         (b* (((when (atom boolmasks)) t)
+              ((unless (svar-p (caar boolmasks)))
+               (svex-env-check-boolmasks (cdr boolmasks) env))
+              ((cons var mask) (car boolmasks))
+              (val (svex-env-lookup var env))
+              (ok (4vec-boolmaskp val mask))
+              (?ign (and (not ok)
+                         (b* ((?ign2 (cw "not 4vec-boolmaskp: ~x0~%" var)))
+                           (break$)))))
+           (and (svex-env-check-boolmasks (cdr boolmasks) env)
+                ok)))
+  :hints(("Goal" :in-theory (enable svex-env-check-boolmasks))))
 
 (add-gl-rewrite sv::a4veclist-eval-redef)
 (add-gl-rewrite sv::svex-alist-eval-gl-rewrite)
@@ -341,3 +358,38 @@
                   svex-eval-svex-env-equiv-congruence-on-env
                   svex-env-fix-under-svex-env-equiv
                   ,@fgl::enable))))
+
+
+
+;; (fgl::def-gl-rewrite 4vec-boolmaskp-redef
+;;   (equal (sv::4vec-boolmaskp x mask)
+;;          (b* (((sv::4vec x))
+;;               (xor (logxor x.upper x.lower))
+;;               (and (logand mask xor))
+;;               (?ignore (fgl::syntax-bind check
+;;                                     (if (equal and 0)
+;;                                         'ok
+;;                                       (let ((?x (cw "4vec-boolmaskp not const 0~%")))
+;;                                         (break$))))))
+;;            (eql 0 and)))
+;;   :hints(("Goal" :in-theory (enable sv::4vec-boolmaskp))))
+
+(fgl::def-gl-rewrite <-of-4vec
+  (equal (< (sv::4vec a b) y)
+         (< (b* ((a (int a))
+                 (b (int b))
+                 ;; (c (break$))
+                 )
+              (if (equal a b) a 0))
+            y))
+  :hints(("Goal" :in-theory (enable sv::4vec))))
+
+(fgl::def-gl-rewrite >-of-4vec
+  (equal (> (sv::4vec a b) y)
+         (> (b* ((a (int a))
+                 (b (int b))
+                 ;; (c (break$))
+                 )
+              (if (equal a b) a 0))
+            y))
+  :hints(("Goal" :in-theory (enable sv::4vec))))

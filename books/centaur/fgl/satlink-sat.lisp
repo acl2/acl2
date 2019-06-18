@@ -39,7 +39,7 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 
 (defprod fgl-satlink-monolithic-sat-config
-  ((ignore-pathcond booleanp :default t)
+  ((ignore-pathcond booleanp :default nil)
    (ignore-constraint booleanp :default nil)
    (satlink-config-override :default nil)
    (transform booleanp :default nil)

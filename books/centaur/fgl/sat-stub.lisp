@@ -184,9 +184,6 @@
 ;;     ,*interp-st-sat-check-thms*))
 
 
-(encapsulate
-  (((fgl-toplevel-sat-check-config) => *))
-  (local (defun fgl-toplevel-sat-check-config () nil)))
 
 
 (make-event

@@ -1937,8 +1937,8 @@
                   unreachable
                   (ans gl-object-p)
                   new-interp-st)
-        (pseudo-term-case x
-          :call
+        ;; (pseudo-term-case x
+        ;;   :call
           (b* (((mv contra interp-st)
                 (interp-st-pathcond-assume test interp-st))
                ((when contra)
@@ -1954,9 +1954,10 @@
                 (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
                   (mv t nil interp-st))))
             (mv nil ans interp-st))
-          :otherwise (b* (((mv ans interp-st)
-                           (gl-interp-term-equivs x interp-st state)))
-                       (mv nil ans interp-st))))
+          ;; :otherwise (b* (((mv ans interp-st)
+          ;;                  (gl-interp-term-equivs x interp-st state)))
+          ;;              (mv nil ans interp-st)))
+      )
 
       (define gl-interp-maybe-simplify-if-test ((test interp-st-bfr-p)
                                                 (xobj gl-object-p)
@@ -1971,7 +1972,7 @@
                   unreachable
                   xbfr
                   new-interp-st)
-        (if (gl-object-case xobj '(:g-ocncrete :g-boolean :g-integer :g-cons :g-map))
+        (if (gl-object-case xobj '(:g-concrete :g-boolean :g-integer :g-cons :g-map))
             ;; Easy cases -- don't bother with the pathcond
             (b* ((reclimit (interp-st->reclimit interp-st))
                  ((when (gl-interp-check-reclimit interp-st))

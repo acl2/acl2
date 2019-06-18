@@ -37,17 +37,17 @@
   :short "A prover framework that supports bit-blasting."
   :long "
 
-<p>FGL is the successor to @(see gl::gl).  It mainly consists of a clause
-processor that calls on a custom rewriter/term interpreter which features
-support for efficient representations of Boolean functions.  Compared to GL,
-FGL offers the following new features:</p>
+<p>FGL is the successor to <see topic=@(url gl::gl)>GL</see>.  It mainly
+consists of a clause processor that calls on a custom rewriter/term interpreter
+which features support for efficient representations of Boolean functions.
+Compared to GL, FGL offers the following new features:</p>
 
 <ul>
 
 <li>Support for representing Boolean functions using the @(see
 aignet::aignet) package.</li>
 
-<li>Support for calling incremental SAT while rewriting/symbolic execution.</li>
+<li>Support for calling incremental SAT during rewriting/symbolic execution.</li>
 
 <li>Less functionality included in built-in primitives, but better able to be
 programmed using rewrite rules.</li>
@@ -99,6 +99,17 @@ GL are done differently in FGL.</p>
 </ul>
 ")
 
+(defxdoc fgl-steps-to-successful-proofs
+  :parents (fgl)
+  :short "Suggestions about how to ensure your proof is set up nicely for FGL."
+  :long "
+
+<p>
+</p>
+
+")
+
+
 (defxdoc fgl-interpreter-overview
   :parents (fgl)
   :short "Outline of the way the FGL interpreter works."
@@ -108,7 +119,7 @@ GL are done differently in FGL.</p>
 <p>The FGL interpreter is called by the FGL clause processor in order to try
 and turn the theorem term into an equivalent Boolean formula, which then can
 perhaps be solved by SAT.  In order to do this, it recursively interprets terms
-turning them into symbolic objects @(see gl-object) containing Boolean formula
+turning them into symbolic objects (see @(see gl-object)) containing Boolean formula
 objects.  In this doc topic we outline the operation of the interpreter.</p>
 
 <p>The interpreter consists of a 29-way mutual recursion.  We won't detail each
@@ -132,8 +143,8 @@ formula.</p>
 It examines the term and treats different kinds of terms differently:</p>
 <ul>
 
-<li>When it is a constant (quote), it return the quoted value, coerced to a @(see
-g-concrete) symbolic object</li>
+<li>When it is a constant (quote), it returns the quoted value, coerced to a @(see
+g-concrete) symbolic object.</li>
 
 <li>When it is a variable, it looks up the variable in the current
 bindings (alist).  There are actually two sets of bindings for our interpreter:
@@ -149,11 +160,12 @@ lambda is itself a lambda application, it recursively adds that to the
 bindinglist, stopping when it finds a lambda body that is not itself a lambda.
 The interpreter interprets the bindinglist by recurring through the list,
 recursively interpreting each of the actuals of each pair with
-@('gl-interp-term-equivs') and when a pair is done, adding the resulting
-bindings to the minor bindings of the interpreter.  When done, it then
-recursively interprets the body, then pops off the bindings produced by the
-bindinglist, returning the symbolic object resulting from interpreting the
-body.</li>
+@('gl-interp-term-equivs').  When a pair is done it adds the bindings formed by
+pairing the formals with the symbolic object results from the actuals to the
+minor bindings of the interpreter.  When done with all the @('(formals
+actuals)') pairs, it then recursively interprets the body, then pops off the
+bindings produced by the bindinglist, returning the symbolic object resulting
+from interpreting the body.</li>
 
 <li>When it is a function call, it deals with a few special cases, described
 next, and then the generic function call case.  In the generic case, it first
@@ -189,8 +201,8 @@ interpreted in FGL for side effects, you should instead bind it to an ignored
 variable or else use an equivalent two-argument function instead.</li>
 
 <li>For @('syntax-bind'), we call a subroutine that evaluates the syntax-bind
-form under the current bindings, treating those bindings as bindings to values
-rather than symbolic objects, as they are treated in other cases.  It then
+form while treating the current frame's bindings as bindings to concrete values
+rather than symbolic objects.  It then
 checks to make sure that the syntax-bind variable is not already bound in the
 current major or minor frame, and then binds the computed value to that
 variable in the current major frame if not.</li>
@@ -222,10 +234,10 @@ magic-ev-fncall).  If it runs successfuly, return the result as a
 @('g-concrete') object.</li>
 
 <li>Otherwise try applying each of the rewrite rules enabled for that function
-in the @('gl-rewrite-rules') table; see @(see fgl-rewrite-rules), using
-@('gl-rewrite-try-rule').  If any of those rules succeeds, return the symbolic
-object produced by recursively interpreting the RHS of the rule under the
-unifying substitution.</li>
+in the @('gl-rewrite-rules') table using @('gl-rewrite-try-rule'); see @(see
+fgl-rewrite-rules).  If any of those rules succeeds, return the symbolic object
+produced by recursively interpreting the RHS of the rule under the unifying
+substitution.</li>
 
 <li>Otherwise try executing a primitive associated with that function; see
 @(see fgl-primitives).  If successful, return the value from that primitive.</li>
@@ -242,10 +254,10 @@ rules.</li>
 
 <p>This completes the overview of how a term is interpreted and turned into
 either a symbolic object (@(see gl-object)) or Boolean formula.  Next we
-describe three subroutines that we skipped describing above,
-@('gl-rewrite-try-rule'), which attempts to apply a rewrite rule,
+describe three subroutines that we skipped describing above:
+@('gl-rewrite-try-rule'), which attempts to apply a rewrite rule;
 @('gl-interp-simplify-if-test'), which coerces a symbolic object into a Boolean
-formula, and @('gl-interp-merge-branches'), which merges two branches of an IF
+formula; and @('gl-interp-merge-branches'), which merges two branches of an IF
 test.  This will also lead us to discuss @('gl-interp-add-constraints'), which
 adds Boolean constraints according to a set of rules activated when introducing
 a new Boolean variable representing some term.</p>
@@ -262,7 +274,7 @@ checks @('syntaxp') and @('bind-free') hyps, the latter of which might extend
 the unifying substitution with some free variable bindings.</p>
 
 <p>If the hypotheses are all relieved, then it recurs on the conclusion using
-@('gl-interp-term) and returns the result unless there were errors recorded in
+@('gl-interp-term') and returns the result unless there were errors recorded in
 the interpreter state.  If any errors exist, it returns failure; it also
 cancels the particular error produced by @('abort-rewrite'), so that the result
 of @('abort-rewrite') is simply to fail that particular rewrite rule
@@ -312,7 +324,7 @@ Boolean variable.</p>
 symbolic objects for the then and else branch values, and returns a new
 symbolic object encapsulating the if-then-else.</p>
 
-<p>It first checks for trivial cases: test constant true, test constant false,
+<p>It first checks for trivial cases -- test constant true, test constant false,
 or branches equal -- and returns the obvious results in those cases.
 Otherwise, if either branch is a function call (@(see g-apply)) object, then it
 tries applying branch merge rules for those functions using
