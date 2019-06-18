@@ -651,7 +651,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                            honsp layout))
 
 (defun da-make-remaker (basename tag plain-fields require honsp layout pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-remaker-raw basename tag plain-fields
                        `(and ,@(strip-cadrs require))
                        honsp layout pred))
@@ -715,7 +714,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
 ;; bozo removed debugp for now
 (defun da-make-recognizer (basename tag plain-fields require layout pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-recognizer-raw basename tag plain-fields
                           `(and ,@(strip-cadrs require))
                           layout pred))
@@ -751,7 +749,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     nil))
 
 (defun da-make-requirement-of-recognizer (name require map accnames pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (let ((rule-classes (if (eq (third require) :rule-classes)
                           (fourth require)
                         :rewrite)))
@@ -766,7 +763,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 (theory 'defaggregate-basic-theory)))))))
 
 (defun da-make-requirements-of-recognizer-aux (name require map accnames pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (if (consp require)
       (cons (da-make-requirement-of-recognizer name (car require)
                                                map accnames pred)
@@ -775,7 +771,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     nil))
 
 (defun da-make-requirements-of-recognizer (name require fields pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-requirements-of-recognizer-aux name require
                                           (da-fields-recognizer-map name fields)
                                           (da-accessor-names name fields)
@@ -845,7 +840,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     (mv acc state)))
 
 (defun da-main-autodoc (name fields parents short long base-pkg pred state)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (b* ( ;; We begin by constructing the :long string
        (acc  nil)
        (foop (da-recognizer-name name pred))
@@ -866,7 +860,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
         state)))
 
 (defun da-field-autodoc (name field pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formal-p field)))
   (b* (((formal field) field)
        (foop      (da-recognizer-name name pred))
@@ -886,7 +879,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        :short ,short)))
 
 (defun da-fields-autodoc (name fields pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (if (consp fields)
       (cons (da-field-autodoc name (car fields) pred)
@@ -943,7 +935,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 ||#
 
 (defun da-ctor-autodoc (name fields honsp pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (and (symbolp name)
                               (formallist-p fields))))
   (b* ((foo                (da-constructor-name name))
@@ -1110,7 +1101,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 def-change-foo)))))
 
 (defun da-autodoc (name fields honsp parents short long base-pkg pred state)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (b* (((mv main state)
         (da-main-autodoc name fields parents short long base-pkg pred state))
