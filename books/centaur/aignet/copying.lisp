@@ -32,6 +32,7 @@
 (include-book "arrays")
 (include-book "construction")
 (include-book "mark-impls")
+(include-book "lit-lists")
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -61,8 +62,6 @@
                            acl2::natp-when-integerp
                            acl2::resize-list-when-atom)))
 (local (std::add-default-post-define-hook :fix))
-
-(defstobj-clone copy litarr :prefix "COPY")
 
 ;; (defsection aignet-copies-ok
 
@@ -191,17 +190,7 @@
                            (n (aignet-copies-in-bounds-witness . ,(cdr lit))))))))))
   )
 
-(define lit-copy ((lit litp) copy)
-  :guard (< (lit->var lit) (lits-length copy))
-  :inline t
-  :returns (copylit litp :rule-classes :type-prescription)
-  (lit-negate-cond (get-lit (lit->var lit) copy) (lit->neg lit))
-  ///
-  (defret lit->var-of-lit-copy
-    (equal (lit->var copylit) (lit->var (get-lit (lit->var lit) copy))))
 
-  (defretd lit->neg-of-lit-copy
-    (equal (lit->neg copylit) (b-xor (lit->neg lit) (lit->neg (get-lit (lit->var lit) copy))))))
 
 
 (defsection aignet-copy-comb
@@ -2399,9 +2388,6 @@ aignet when its initial value is the specified vector:</p>
 
 
 
-(acl2::defstobj-clone mark bitarr :suffix "-MARK")
-
-
 (defsection aignet-marked-copies-in-bounds
   (defun-sk aignet-marked-copies-in-bounds (copy mark aignet2)
     (forall n
@@ -2454,7 +2440,13 @@ aignet when its initial value is the specified vector:</p>
                            (copy ,(cadr other))
                            (mark ,(caddr other))
                            (aignet2 ,(cadddr other))
-                           (n (aignet-marked-copies-in-bounds-witness . ,(cdr lit)))))))))))
+                           (n (aignet-marked-copies-in-bounds-witness . ,(cdr lit))))))))))
+
+  (defthm aignet-lit-listp-of-lit-list-copies-when-marked
+    (implies (and (aignet-marked-copies-in-bounds copy mark aignet)
+                  (lit-list-marked lits mark))
+             (aignet-lit-listp (lit-list-copies lits copy) aignet))
+    :hints(("Goal" :in-theory (enable lit-list-copies lit-list-marked)))))
 
 
 ;; (defsection aignet-in/marked-copies-in-bounds
@@ -2965,6 +2957,17 @@ aignet when its initial value is the specified vector:</p>
                                 aignet))))
     :hints (("goal" :use ((:instance dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec (id (lit->var lit))))
              :in-theory (disable dfs-copy-onto-invar-holds-of-aignet-copy-dfs-rec))))
+
+  (defthm lit-eval-list-of-copies-when-dfs-copy-onto-invar
+    (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
+                  (lit-list-marked lits mark))
+             (equal (lit-eval-list (lit-list-copies lits copy) invals regvals aignet2)
+                    (lit-eval-list lits
+                                   (input-copy-values 0 invals regvals aignet copy aignet2)
+                                   (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                   aignet)))
+    :hints(("Goal" :in-theory (enable lit-list-copies lit-eval-list lit-copy lit-list-marked)
+            :expand ((:free (invals regvals) (lit-eval (car lits) invals regvals aignet))))))
 
   (local (defun nth-of-repeat-ind (n m)
            (if (zp n)

@@ -1864,12 +1864,6 @@
   (verify-guards aignet-self-copy-dfs-rec))
 
 
-;; BOZO redundant with def in cnf.lisp
-(define lits-max-id-val ((lits lit-listp))
-  (if (atom lits)
-      0
-    (max (lit-id (car lits))
-         (lits-max-id-val (cdr lits)))))
 
 (defthmd lits-max-id-val-when-aignet-lit-listp
   (implies (aignet-lit-listp lits aignet)
@@ -1944,43 +1938,6 @@
 
   (defthm marks-boundedp-of-resize-list
     (marks-boundedp limit (resize-list nil n 0))))
-
-(define lit-list-copies ((lits lit-listp)
-                         (copy))
-  :guard (< (lits-max-id-val lits) (lits-length copy))
-  :guard-hints (("goal" :in-theory (enable lits-max-id-val)))
-  :returns (lits lit-listp)
-  (if (atom lits)
-      nil
-    (cons (lit-copy (car lits) copy)
-          (lit-list-copies (cdr lits) copy))))
-
-(define lit-list-marked ((lits lit-listp)
-                         (mark))
-  :guard (< (lits-max-id-val lits) (bits-length mark))
-  :guard-hints (("goal" :in-theory (enable lits-max-id-val)))
-  (if (atom lits)
-      t
-    (and (eql (get-bit (lit->var (car lits)) mark) 1)
-         (lit-list-marked (cdr lits) mark)))
-  ///
-  (defthm aignet-lit-listp-of-lit-list-copies-when-marked
-    (implies (and (aignet-marked-copies-in-bounds copy mark aignet)
-                  (lit-list-marked lits mark))
-             (aignet-lit-listp (lit-list-copies lits copy) aignet))
-    :hints(("Goal" :in-theory (enable lit-list-copies))))
-
-  (defthm lit-eval-list-of-copies-when-dfs-copy-onto-invar
-    (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
-                  (lit-list-marked lits mark))
-             (equal (lit-eval-list (lit-list-copies lits copy) invals regvals aignet2)
-                    (lit-eval-list lits
-                                   (input-copy-values 0 invals regvals aignet copy aignet2)
-                                   (reg-copy-values 0 invals regvals aignet copy aignet2)
-                                   aignet)))
-    :hints(("Goal" :in-theory (enable lit-list-copies lit-eval-list lit-copy)
-            :expand ((:free (invals regvals) (lit-eval (car lits) invals regvals aignet)))))))
-
 
 
 

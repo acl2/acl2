@@ -376,18 +376,18 @@
     :hints (("goal" :use ((:instance dfs-copy-onto-invar-holds-of-aignet-copy-dfs-list))
              :in-theory (e/d (lit-copy lit-eval)
                              (dfs-copy-onto-invar-holds-of-aignet-copy-dfs-list))
-             :do-not-induct t))))
+             :do-not-induct t)))
 
+  (defthm lit-list-marked-preserved-by-aignet-copy-dfs-list
+    (implies (lit-list-marked lits mark)
+             (lit-list-marked lits (mv-nth 0 (aignet-copy-dfs-list lits1 aignet mark copy strash gatesimp aignet2))))
+    :hints(("Goal" :in-theory (enable lit-list-marked)
+            :induct (lit-list-marked lits mark))))
 
-(define aignet-lit-list-copies-in-bounds ((lits lit-listp)
-                                          (copy)
-                                          (aignet2))
-  :guard (< (lits-max-id-val lits) (lits-length copy))
-  (if (atom lits)
-      t
-    (and (fanin-litp (lit-copy (car lits) copy) aignet2)
-         (aignet-lit-list-copies-in-bounds (cdr lits) copy aignet2)))
-  ///
+  (defthm lit-list-marked-of-aignet-copy-dfs-list
+    (lit-list-marked lits (mv-nth 0 (aignet-copy-dfs-list lits aignet mark copy strash gatesimp aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-list lit-list-marked))))
+
   (defthm aignet-lit-list-copies-in-bounds-of-aignet-copy-dfs-list
     (implies (and (aignet-input-copies-in-bounds copy aignet aignet2)
                   (aignet-marked-copies-in-bounds copy mark aignet2))
@@ -395,72 +395,182 @@
                    (aignet-copy-dfs-list
                     lits aignet mark copy
                     strash gatesimp aignet2)))
-               (aignet-lit-list-copies-in-bounds lits copy aignet2)))
-    :hints(("Goal" :in-theory (enable aignet-copy-dfs-list))))
-  
-  (defthm aignet-lit-list-copies-in-bounds-of-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-lit-list-copies-in-bounds lits copy orig))
-             (aignet-lit-list-copies-in-bounds lits copy new))))
+               (aignet-lit-listp (lit-list-copies lits copy) aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-list lit-list-copies aignet-lit-listp))))
 
-(define aignet-add-copy-outputs ((lits lit-listp)
-                                 (copy)
-                                 (aignet2))
-  :guard (and (< (lits-max-id-val lits) (lits-length copy))
-              (aignet-lit-list-copies-in-bounds lits copy aignet2))
-  :guard-hints (("goal" :in-theory (enable aignet-lit-list-copies-in-bounds)))
-  :returns (new-aignet2)
-  (b* (((when (atom lits))
-        (mbe :logic (non-exec (node-list-fix aignet2))
-             :exec aignet2))
-       (aignet2 (aignet-add-out (lit-copy (car lits) copy) aignet2)))
-    (aignet-add-copy-outputs (cdr lits) copy aignet2))
-  ///
-  (defret num-outputs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (+ (len lits) (stype-count :po aignet2))))
-  (defret stype-count-of-<fn>
-    (implies (not (equal (stype-fix stype) :po))
-             (equal (stype-count stype new-aignet2)
-                    (stype-count stype aignet2))))
-  (def-aignet-preservation-thms aignet-add-copy-outputs :stobjname aignet2)
-  
-  (defret lookup-po-of-<fn>
-    (implies (aignet-lit-list-copies-in-bounds lits copy aignet2)
-             (equal (fanin :co (lookup-stype n :po new-aignet2))
-                    (cond ((< (nfix n) (stype-count :po aignet2))
-                           (fanin :co (lookup-stype n :po aignet2)))
-                          ((< (nfix n) (+ (len lits) (stype-count :po aignet2)))
-                           (lit-copy (nth (- (nfix n) (stype-count :po aignet2)) lits) copy))
-                          (t 0))))
-    :hints (("goal" :induct <call>
-             :expand ((:free (a b) (lookup-stype n :po (cons a b)))
-                      (aignet-lit-list-copies-in-bounds lits copy aignet2)))))
+  (defthm aignet-eval-conjunction-of-lit-list-copies
+    (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
+                  (lit-list-marked lits mark))
+             (equal (aignet-eval-conjunction (lit-list-copies lits copy) invals regvals aignet2)
+                    (aignet-eval-conjunction lits
+                                             (input-copy-values 0 invals regvals aignet copy aignet2)
+                                             (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                             aignet)))
+    :hints(("Goal" :in-theory (enable aignet-eval-conjunction
+                                      lit-list-marked
+                                      lit-list-copies
+                                      lit-copy)
+            :expand ((:free (lit invals regvals) (lit-eval lit invals regvals aignet))))))
 
-  (local (defthm aignet-litp-of-lit-copy-nth-when-aignet-lit-list-copies-in-bounds
-           (implies (and (aignet-lit-list-copies-in-bounds lits copy aignet2)
-                         (< (nfix n) (len lits)))
-                    (aignet-idp (lit->var (nth-lit (lit->var (nth n lits)) copy)) aignet2))
-           :hints(("Goal" :in-theory (enable nth aignet-lit-list-copies-in-bounds)))))
+  (defthm aignet-eval-conjunction-of-lit-list-copies-dfs
+    (implies (and (dfs-copy-onto-invar aignet mark copy aignet2)
+                  (aignet-input-copies-in-bounds copy aignet aignet2)
+                  (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-list
+                    lits1 aignet mark copy
+                    strash gatesimp aignet2)))
+               (implies (lit-list-marked lits mark)
+                        (equal (aignet-eval-conjunction (lit-list-copies lits copy) invals regvals aignet2)
+                               (aignet-eval-conjunction lits
+                                                        (input-copy-values 0 invals regvals aignet copy aignet2)
+                                                        (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                                        aignet)))))
+    :hints (("goal" :use ((:instance aignet-eval-conjunction-of-lit-list-copies
+                           (mark (mv-nth 0 (aignet-copy-dfs-list
+                                            lits1 aignet mark copy
+                                            strash gatesimp aignet2)))
+                           (copy (mv-nth 1 (aignet-copy-dfs-list
+                                            lits1 aignet mark copy
+                                            strash gatesimp aignet2)))
+                           (aignet2 (mv-nth 3 (aignet-copy-dfs-list
+                                               lits1 aignet mark copy
+                                               strash gatesimp aignet2)))))
+             :in-theory (disable aignet-eval-conjunction-of-lit-list-copies)))))
 
 
-  (defret output-eval-of-<fn>
-    (implies (aignet-lit-list-copies-in-bounds lits copy aignet2)
-             (equal (output-eval n invals regvals new-aignet2)
-                    (cond ((< (nfix n) (stype-count :po aignet2))
-                           (output-eval n invals regvals aignet2))
-                          ((< (nfix n) (+ (len lits) (stype-count :po aignet2)))
-                           (lit-eval (lit-copy (nth (- (nfix n) (stype-count :po aignet2)) lits) copy)
-                                     invals regvals aignet2))
-                          (t 0))))
-    :hints(("Goal" :in-theory (enable output-eval aignet-lit-list-copies-in-bounds)
-            :do-not-induct t))))
+
     
 
-;; BOZO doesn't hook up register inputs at all -- only for combinational use
-(define aignet-copy-with-outputs ((lits lit-listp)
-                                  (aignet)
-                                  (aignet2))
+;; (define aignet-lit-list-copies-in-bounds ((lits lit-listp)
+;;                                           (copy)
+;;                                           (aignet2))
+;;   :guard (< (lits-max-id-val lits) (lits-length copy))
+;;   (if (atom lits)
+;;       t
+;;     (and (fanin-litp (lit-copy (car lits) copy) aignet2)
+;;          (aignet-lit-list-copies-in-bounds (cdr lits) copy aignet2)))
+;;   ///
+;;   (defthm aignet-lit-list-copies-in-bounds-of-aignet-copy-dfs-list
+;;     (implies (and (aignet-input-copies-in-bounds copy aignet aignet2)
+;;                   (aignet-marked-copies-in-bounds copy mark aignet2))
+;;              (b* (((mv ?mark copy ?strash aignet2)
+;;                    (aignet-copy-dfs-list
+;;                     lits aignet mark copy
+;;                     strash gatesimp aignet2)))
+;;                (aignet-lit-list-copies-in-bounds lits copy aignet2)))
+;;     :hints(("Goal" :in-theory (enable aignet-copy-dfs-list))))
+  
+;;   (defthm aignet-lit-list-copies-in-bounds-of-extension
+;;     (implies (and (aignet-extension-binding)
+;;                   (aignet-lit-list-copies-in-bounds lits copy orig))
+;;              (aignet-lit-list-copies-in-bounds lits copy new))))
+
+;; (define aignet-add-copy-outputs ((lits lit-listp)
+;;                                  (copy)
+;;                                  (aignet2))
+;;   :guard (and (< (lits-max-id-val lits) (lits-length copy))
+;;               (aignet-lit-list-copies-in-bounds lits copy aignet2))
+;;   :guard-hints (("goal" :in-theory (enable aignet-lit-list-copies-in-bounds)))
+;;   :returns (new-aignet2)
+;;   (b* (((when (atom lits))
+;;         (mbe :logic (non-exec (node-list-fix aignet2))
+;;              :exec aignet2))
+;;        (aignet2 (aignet-add-out (lit-copy (car lits) copy) aignet2)))
+;;     (aignet-add-copy-outputs (cdr lits) copy aignet2))
+;;   ///
+;;   (defret num-outputs-of-<fn>
+;;     (equal (stype-count :po new-aignet2)
+;;            (+ (len lits) (stype-count :po aignet2))))
+;;   (defret stype-count-of-<fn>
+;;     (implies (not (equal (stype-fix stype) :po))
+;;              (equal (stype-count stype new-aignet2)
+;;                     (stype-count stype aignet2))))
+;;   (def-aignet-preservation-thms aignet-add-copy-outputs :stobjname aignet2)
+  
+;;   (defret lookup-po-of-<fn>
+;;     (implies (aignet-lit-list-copies-in-bounds lits copy aignet2)
+;;              (equal (fanin :co (lookup-stype n :po new-aignet2))
+;;                     (cond ((< (nfix n) (stype-count :po aignet2))
+;;                            (fanin :co (lookup-stype n :po aignet2)))
+;;                           ((< (nfix n) (+ (len lits) (stype-count :po aignet2)))
+;;                            (lit-copy (nth (- (nfix n) (stype-count :po aignet2)) lits) copy))
+;;                           (t 0))))
+;;     :hints (("goal" :induct <call>
+;;              :expand ((:free (a b) (lookup-stype n :po (cons a b)))
+;;                       (aignet-lit-list-copies-in-bounds lits copy aignet2)))))
+
+;;   (local (defthm aignet-litp-of-lit-copy-nth-when-aignet-lit-list-copies-in-bounds
+;;            (implies (and (aignet-lit-list-copies-in-bounds lits copy aignet2)
+;;                          (< (nfix n) (len lits)))
+;;                     (aignet-idp (lit->var (nth-lit (lit->var (nth n lits)) copy)) aignet2))
+;;            :hints(("Goal" :in-theory (enable nth aignet-lit-list-copies-in-bounds)))))
+
+
+;;   (defret output-eval-of-<fn>
+;;     (implies (aignet-lit-list-copies-in-bounds lits copy aignet2)
+;;              (equal (output-eval n invals regvals new-aignet2)
+;;                     (cond ((< (nfix n) (stype-count :po aignet2))
+;;                            (output-eval n invals regvals aignet2))
+;;                           ((< (nfix n) (+ (len lits) (stype-count :po aignet2)))
+;;                            (lit-eval (lit-copy (nth (- (nfix n) (stype-count :po aignet2)) lits) copy)
+;;                                      invals regvals aignet2))
+;;                           (t 0))))
+;;     :hints(("Goal" :in-theory (enable output-eval aignet-lit-list-copies-in-bounds)
+;;             :do-not-induct t))))
+
+
+
+
+(define aignet-conjoin-copies ((conj-lit litp)
+                               (lits lit-listp)
+                               (copy)
+                               (strash)
+                               (aignet2))
+  :guard (and (< (lits-max-id-val lits) (lits-length copy))
+              (fanin-litp conj-lit aignet2)
+              (aignet-lit-listp (lit-list-copies lits copy) aignet2))
+  :guard-hints (("goal" :in-theory (enable lit-list-copies aignet-lit-listp)))
+  :returns (mv (conj litp :rule-classes :type-prescription)
+               new-strash
+               new-aignet2)
+  (b* (((when (atom lits))
+        (b* ((aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
+                           :exec aignet2)))
+          (mv (lit-fix conj-lit) strash aignet2)))
+       ((mv conj-lit strash aignet2)
+        (aignet-hash-and (lit-copy (car lits) copy) conj-lit (aignet::default-gatesimp) strash aignet2)))
+    (aignet-conjoin-copies conj-lit (cdr lits) copy strash aignet2))
+  ///
+  (defret stype-count-of-<fn>
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2))))
+  (def-aignet-preservation-thms aignet-conjoin-copies :stobjname aignet2)
+
+  
+
+  (defret lit-eval-of-<fn>
+    (implies (and (aignet-lit-listp (lit-list-copies lits copy) aignet2)
+                  (aignet-litp conj-lit aignet2))
+             (equal (lit-eval conj invals regvals new-aignet2)
+                    (b-and (lit-eval conj-lit invals regvals aignet2)
+                           (aignet-eval-conjunction (lit-list-copies lits copy) invals regvals aignet2))))
+    :hints(("Goal" :in-theory (enable lit-list-copies
+                                      aignet-lit-listp
+                                      ;; aignet-lit-list-copies-in-bounds
+                                      aignet-eval-conjunction)
+            :induct <call>
+            :expand (<call>))))
+
+  (defret aignet-litp-of-<fn>
+    (implies (aignet-litp conj-lit aignet2)
+             (aignet-litp conj new-aignet2))))
+
+(define aignet-copy-with-conjoined-output ((lits lit-listp)
+                                           (aignet)
+                                           (aignet2))
   :guard (aignet-lit-listp lits aignet)
   :guard-debug t
   :guard-hints (("goal" :do-not-induct t
@@ -480,155 +590,209 @@
        (mark (resize-bits (num-fanins aignet) mark))
        ((mv mark copy strash aignet2)
         (aignet-copy-dfs-list lits aignet mark copy strash (default-gatesimp) aignet2))
-       (aignet2 (aignet-add-copy-outputs lits copy aignet2)))
+       ((mv conjunction strash aignet2)
+        (aignet-conjoin-copies 1 lits copy strash aignet2))
+       (aignet2 (aignet-add-out conjunction aignet2)))
     (mv aignet2 mark copy strash))
   ///
+  (defret stype-counts-of-<fn>
+    (and (equal (stype-count :pi new-aignet2)
+                (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet2)
+                (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet2)
+                1)))
+
   (defret output-eval-of-<fn>
     (implies (aignet-lit-listp lits aignet)
-             (equal (output-eval n invals regvals new-aignet2)
-                    (if (< (nfix n) (len lits))
-                        (lit-eval (nth n lits) invals regvals aignet)
-                      0)))
-    :hints (("goal" :do-not-induct t)))
+             (equal (output-eval 0 invals regvals new-aignet2)
+                    (aignet-eval-conjunction lits invals regvals aignet)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable output-eval lookup-stype))))
 
   (defret output-lit-eval-of-<fn>
     (implies (aignet-lit-listp lits aignet)
-             (equal (lit-eval (fanin :co (lookup-stype n :po new-aignet2)) invals regvals new-aignet2)
-                    (if (< (nfix n) (len lits))
-                        (lit-eval (nth n lits) invals regvals aignet)
-                      0)))
+             (equal (lit-eval (fanin :co (lookup-stype 0 :po new-aignet2)) invals regvals new-aignet2)
+                    (aignet-eval-conjunction lits invals regvals aignet)))
     :hints (("goal" :do-not-induct t
-             :use output-eval-of-aignet-copy-with-outputs
+             :use output-eval-of-aignet-copy-with-conjoined-output
              :in-theory (e/d (output-eval)
-                             (output-eval-of-aignet-copy-with-outputs
-                              <fn>)))))
+                             (output-eval-of-aignet-copy-with-conjoined-output
+                              <fn>))))))
+    
 
-  (defret stype-counts-of-<fn>
-    (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet))
-         (equal (stype-count :reg new-aignet2) (stype-count :reg aignet))
-         (equal (stype-count :po new-aignet2) (len lits)))))
+;; ;; BOZO doesn't hook up register inputs at all -- only for combinational use
+;; (define aignet-copy-with-outputs ((lits lit-listp)
+;;                                   (aignet)
+;;                                   (aignet2))
+;;   :guard (aignet-lit-listp lits aignet)
+;;   :guard-debug t
+;;   :guard-hints (("goal" :do-not-induct t
+;;                  :use ((:instance lits-max-id-val-when-aignet-lit-listp
+;;                         (x lits)))))
+;;   :returns (new-aignet2)
+;;   :prepwork ((local (defthmd lits-max-id-val-when-aignet-lit-listp
+;;                       (implies (aignet-lit-listp x aignet)
+;;                                (< (lits-max-id-val x) (num-fanins aignet)))
+;;                       :hints(("Goal" :in-theory (enable aignet-lit-listp
+;;                                                         aignet-idp
+;;                                                         lits-max-id-val)))
+;;                       :rule-classes :forward-chaining)))
+;;   (b* (((acl2::local-stobjs mark copy strash)
+;;         (mv aignet2 mark copy strash))
+;;        ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
+;;        (mark (resize-bits (num-fanins aignet) mark))
+;;        ((mv mark copy strash aignet2)
+;;         (aignet-copy-dfs-list lits aignet mark copy strash (default-gatesimp) aignet2))
+;;        (aignet2 (aignet-add-copy-outputs lits copy aignet2)))
+;;     (mv aignet2 mark copy strash))
+;;   ///
+;;   (defret output-eval-of-<fn>
+;;     (implies (aignet-lit-listp lits aignet)
+;;              (equal (output-eval n invals regvals new-aignet2)
+;;                     (if (< (nfix n) (len lits))
+;;                         (lit-eval (nth n lits) invals regvals aignet)
+;;                       0)))
+;;     :hints (("goal" :do-not-induct t)))
+
+;;   (defret output-lit-eval-of-<fn>
+;;     (implies (aignet-lit-listp lits aignet)
+;;              (equal (lit-eval (fanin :co (lookup-stype n :po new-aignet2)) invals regvals new-aignet2)
+;;                     (if (< (nfix n) (len lits))
+;;                         (lit-eval (nth n lits) invals regvals aignet)
+;;                       0)))
+;;     :hints (("goal" :do-not-induct t
+;;              :use output-eval-of-aignet-copy-with-outputs
+;;              :in-theory (e/d (output-eval)
+;;                              (output-eval-of-aignet-copy-with-outputs
+;;                               <fn>)))))
+
+;;   (defret stype-counts-of-<fn>
+;;     (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet))
+;;          (equal (stype-count :reg new-aignet2) (stype-count :reg aignet))
+;;          (equal (stype-count :po new-aignet2) (len lits)))))
 
 
-(define aignet-outputs->cube ((n natp)
-                              aignet
-                              (cube lit-listp))
-  :returns (new-cube lit-listp)
-  :guard (<= n (num-outs aignet))
-  :measure (nfix (- (num-outs aignet) (nfix n)))
-  (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
-                   :exec (eql (num-outs aignet) n)))
-        (lit-list-fix cube)))
-    (aignet-outputs->cube (1+ (lnfix n))
-                          aignet
-                          (cons (outnum->fanin n aignet)
-                                (lit-list-fix cube))))
-  ///
-  (fty::deffixequiv aignet-outputs->cube)
+;; (define aignet-outputs->cube ((n natp)
+;;                               aignet
+;;                               (cube lit-listp))
+;;   :returns (new-cube lit-listp)
+;;   :guard (<= n (num-outs aignet))
+;;   :measure (nfix (- (num-outs aignet) (nfix n)))
+;;   (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+;;                    :exec (eql (num-outs aignet) n)))
+;;         (lit-list-fix cube)))
+;;     (aignet-outputs->cube (1+ (lnfix n))
+;;                           aignet
+;;                           (cons (outnum->fanin n aignet)
+;;                                 (lit-list-fix cube))))
+;;   ///
+;;   (fty::deffixequiv aignet-outputs->cube)
 
-  (defret aignet-lit-listp-of-<fn>
-    (implies (aignet-lit-listp cube aignet)
-             (aignet-lit-listp new-cube aignet)))
+;;   (defret aignet-lit-listp-of-<fn>
+;;     (implies (aignet-lit-listp cube aignet)
+;;              (aignet-lit-listp new-cube aignet)))
 
-  (local (defun-sk aignet-outputs->cube-norm-cond (n aignet)
-           (forall cube
-                   (implies (syntaxp (not (equal cube ''nil)))
-                            (equal (aignet-outputs->cube n aignet cube)
-                                   (append (aignet-outputs->cube n aignet nil)
-                                           (lit-list-fix cube)))))
-           :rewrite :direct))
+;;   (local (defun-sk aignet-outputs->cube-norm-cond (n aignet)
+;;            (forall cube
+;;                    (implies (syntaxp (not (equal cube ''nil)))
+;;                             (equal (aignet-outputs->cube n aignet cube)
+;;                                    (append (aignet-outputs->cube n aignet nil)
+;;                                            (lit-list-fix cube)))))
+;;            :rewrite :direct))
 
-  (local (in-theory (disable aignet-outputs->cube-norm-cond)))
+;;   (local (in-theory (disable aignet-outputs->cube-norm-cond)))
 
-  (local (defthm aignet-outputs->cube-norm-lemma
-           (aignet-outputs->cube-norm-cond n aignet)
-           :hints (("goal" :induct (aignet-outputs->cube n aignet cube))
-                   (and stable-under-simplificationp
-                        `(:expand (,(car (last clause))
-                                   (:free (cube) (aignet-outputs->cube n aignet cube))))))))
+;;   (local (defthm aignet-outputs->cube-norm-lemma
+;;            (aignet-outputs->cube-norm-cond n aignet)
+;;            :hints (("goal" :induct (aignet-outputs->cube n aignet cube))
+;;                    (and stable-under-simplificationp
+;;                         `(:expand (,(car (last clause))
+;;                                    (:free (cube) (aignet-outputs->cube n aignet cube))))))))
 
-  (defthm aignet-outputs->cube-norm
-    (implies (syntaxp (not (equal cube ''nil)))
-             (equal (aignet-outputs->cube n aignet cube)
-                    (append (aignet-outputs->cube n aignet nil)
-                            (lit-list-fix cube)))))
+;;   (defthm aignet-outputs->cube-norm
+;;     (implies (syntaxp (not (equal cube ''nil)))
+;;              (equal (aignet-outputs->cube n aignet cube)
+;;                     (append (aignet-outputs->cube n aignet nil)
+;;                             (lit-list-fix cube)))))
 
-  (local (defthm aignet-eval-conjunction-of-append
-           (equal (aignet-eval-conjunction (append x y) invals regvals aignet)
-                  (b-and (aignet-eval-conjunction x invals regvals aignet)
-                         (aignet-eval-conjunction y invals regvals aignet)))
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+;;   (local (defthm aignet-eval-conjunction-of-append
+;;            (equal (aignet-eval-conjunction (append x y) invals regvals aignet)
+;;                   (b-and (aignet-eval-conjunction x invals regvals aignet)
+;;                          (aignet-eval-conjunction y invals regvals aignet)))
+;;            :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
 
-  (local (defthm aignet-eval-conjunction-of-cons
-           (equal (aignet-eval-conjunction (cons x y) invals regvals aignet)
-                  (b-and (lit-eval x invals regvals aignet)
-                         (aignet-eval-conjunction y invals regvals aignet)))
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
-  (local (defthm aignet-eval-conjunction-of-nil
-           (equal (aignet-eval-conjunction nil invals regvals aignet)
-                  1)
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+;;   (local (defthm aignet-eval-conjunction-of-cons
+;;            (equal (aignet-eval-conjunction (cons x y) invals regvals aignet)
+;;                   (b-and (lit-eval x invals regvals aignet)
+;;                          (aignet-eval-conjunction y invals regvals aignet)))
+;;            :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+;;   (local (defthm aignet-eval-conjunction-of-nil
+;;            (equal (aignet-eval-conjunction nil invals regvals aignet)
+;;                   1)
+;;            :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
 
-  (defret aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
-    (implies (and (outs-comb-equiv aignet aignet2)
-                  (equal (stype-count :po aignet) (stype-count :po aignet2)))
-             (equal (aignet-eval-conjunction
-                     (aignet-outputs->cube n aignet nil)
-                     invals regvals aignet)
-                    (aignet-eval-conjunction
-                     (aignet-outputs->cube n aignet2 nil)
-                     invals regvals aignet2)))
-    :hints (("goal" :induct <call>
-             :expand ((:free (aignet) (aignet-outputs->cube n aignet nil))))
-            (and stable-under-simplificationp
-                 '(:use ((:instance outs-comb-equiv-necc))
-                   :in-theory (e/d (output-eval)
-                                   (outs-comb-equiv-necc
-                                    OUTS-COMB-EQUIV-IMPLIES-EQUAL-OUTPUT-EVAL-4)))))
-    :rule-classes nil)
+;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
+;;     (implies (and (outs-comb-equiv aignet aignet2)
+;;                   (equal (stype-count :po aignet) (stype-count :po aignet2)))
+;;              (equal (aignet-eval-conjunction
+;;                      (aignet-outputs->cube n aignet nil)
+;;                      invals regvals aignet)
+;;                     (aignet-eval-conjunction
+;;                      (aignet-outputs->cube n aignet2 nil)
+;;                      invals regvals aignet2)))
+;;     :hints (("goal" :induct <call>
+;;              :expand ((:free (aignet) (aignet-outputs->cube n aignet nil))))
+;;             (and stable-under-simplificationp
+;;                  '(:use ((:instance outs-comb-equiv-necc))
+;;                    :in-theory (e/d (output-eval)
+;;                                    (outs-comb-equiv-necc
+;;                                     OUTS-COMB-EQUIV-IMPLIES-EQUAL-OUTPUT-EVAL-4)))))
+;;     :rule-classes nil)
 
-  (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-cube-sat-transform
-    (b* ((aignet2 (aignet-cube-sat-transform aignet config)))
-      (equal (aignet-eval-conjunction
-              (aignet-outputs->cube n aignet2 nil)
-              invals regvals aignet2)
-             (aignet-eval-conjunction
-              (aignet-outputs->cube n aignet nil)
-              invals regvals aignet)))
-    :hints (("goal" :use ((:instance aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
-                           (aignet (aignet-cube-sat-transform aignet config))
-                           (aignet2 aignet))))))
+;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-cube-sat-transform
+;;     (b* ((aignet2 (aignet-cube-sat-transform aignet config)))
+;;       (equal (aignet-eval-conjunction
+;;               (aignet-outputs->cube n aignet2 nil)
+;;               invals regvals aignet2)
+;;              (aignet-eval-conjunction
+;;               (aignet-outputs->cube n aignet nil)
+;;               invals regvals aignet)))
+;;     :hints (("goal" :use ((:instance aignet-eval-conjunction-of-aignet-outputs->cube-under-comb-equiv
+;;                            (aignet (aignet-cube-sat-transform aignet config))
+;;                            (aignet2 aignet))))))
 
-  (local (fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (nthcdr n x) x
-           :hints(("Goal" :in-theory (enable nthcdr)))))
+;;   (local (fty::deffixcong satlink::lit-list-equiv satlink::lit-list-equiv (nthcdr n x) x
+;;            :hints(("Goal" :in-theory (enable nthcdr)))))
 
-  (local (defthm nthcdr-of-nil
-           (equal (nthcdr n nil) nil)))
+;;   (local (defthm nthcdr-of-nil
+;;            (equal (nthcdr n nil) nil)))
 
-  (local (defthm consp-of-nthcdr
-           (iff (consp (nthcdr n x))
-                (< (nfix n) (len x)))
-           :hints(("Goal" :in-theory (enable nthcdr len)))))
+;;   (local (defthm consp-of-nthcdr
+;;            (iff (consp (nthcdr n x))
+;;                 (< (nfix n) (len x)))
+;;            :hints(("Goal" :in-theory (enable nthcdr len)))))
 
-  (local (defthm car-of-nthcdr
-           (equal (car (nthcdr n x))
-                  (nth n x))
-           :hints(("Goal" :in-theory (enable nthcdr nth)))))
+;;   (local (defthm car-of-nthcdr
+;;            (equal (car (nthcdr n x))
+;;                   (nth n x))
+;;            :hints(("Goal" :in-theory (enable nthcdr nth)))))
 
-  (local (defthm cdr-of-nthcdr
-           (equal (cdr (nthcdr n x))
-                  (nthcdr n (cdr x)))))
+;;   (local (defthm cdr-of-nthcdr
+;;            (equal (cdr (nthcdr n x))
+;;                   (nthcdr n (cdr x)))))
 
-  (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-copy-with-outputs
-    (b* ((aignet2 (aignet-copy-with-outputs cube aignet aignet2)))
-      (implies (aignet-lit-listp cube aignet)
-               (equal (aignet-eval-conjunction
-                       (aignet-outputs->cube n aignet2 nil)
-                       invals regvals aignet2)
-                      (aignet-eval-conjunction
-                       (nthcdr n cube) invals regvals aignet))))
-    :hints (("goal" :induct (aignet-outputs->cube n (aignet-copy-with-outputs cube aignet aignet2) nil)
-             :expand ((:free (aignet) (aignet-outputs->cube n aignet nil))
-                      (aignet-eval-conjunction (nthcdr n cube) invals regvals aignet))))))
+;;   (defret aignet-eval-conjunction-of-aignet-outputs->cube-of-aignet-copy-with-outputs
+;;     (b* ((aignet2 (aignet-copy-with-outputs cube aignet aignet2)))
+;;       (implies (aignet-lit-listp cube aignet)
+;;                (equal (aignet-eval-conjunction
+;;                        (aignet-outputs->cube n aignet2 nil)
+;;                        invals regvals aignet2)
+;;                       (aignet-eval-conjunction
+;;                        (nthcdr n cube) invals regvals aignet))))
+;;     :hints (("goal" :induct (aignet-outputs->cube n (aignet-copy-with-outputs cube aignet aignet2) nil)
+;;              :expand ((:free (aignet) (aignet-outputs->cube n aignet nil))
+;;                       (aignet-eval-conjunction (nthcdr n cube) invals regvals aignet))))))
 
 
 (define aignet-vals-copy-pis ((n natp)
@@ -756,9 +920,9 @@
         ;; vals the transformed aignet2's version
         ;; 
         (mv status bitarr aignet2 vals))
-       (aignet2 (aignet-copy-with-outputs cube aignet aignet2))
+       (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
        (aignet2 (aignet-cube-sat-transform aignet2 xform-config))
-       (new-cube (aignet-outputs->cube 0 aignet2 nil))
+       (new-cube (list (outnum->fanin 0 aignet2)))
        ((acl2::hintcontext :sat))
        ((mv status vals)
         (aignet-sat-check-cube new-cube sat-config aignet2 vals))
@@ -773,6 +937,12 @@
        
   ///
   (set-ignore-ok t)
+
+  (local (defthm lit-eval-output-to-output-eval
+           (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+                            invals regvals aignet)
+                  (output-eval n invals regvals aignet))
+           :hints(("Goal" :in-theory (enable output-eval)))))
 
   (defret aignet-transform-sat-check-cube-unsat
     (implies (and (equal 1 (aignet-eval-conjunction cube invals regvals aignet))
@@ -789,5 +959,6 @@
                        (bitarr ,(acl2::hq vals))
                        (invals invals)
                        (regvals regvals)))
-                  :in-theory (disable aignet-sat-check-cube-unsat)))))))
+                  :in-theory (e/d (aignet-eval-conjunction)
+                                  (aignet-sat-check-cube-unsat))))))))
 

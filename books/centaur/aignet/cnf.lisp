@@ -30,6 +30,7 @@
 
 (in-package "AIGNET")
 (include-book "eval")
+(include-book "lit-lists")
 (include-book "refcounts")
 (include-book "centaur/satlink/cnf" :dir :system)
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
@@ -276,7 +277,26 @@ correctness criterion we've described.</p>
     (if (atom lits)
         1
       (acl2::b-and (lit-eval (car lits) invals regvals aignet)
-                   (aignet-eval-conjunction (cdr lits) invals regvals aignet))))
+                   (aignet-eval-conjunction (cdr lits) invals regvals aignet)))
+    ///
+    (defthm aignet-eval-conjunction-preserved-by-extension
+      (implies (and (aignet-extension-binding :orig aignet)
+                    (aignet-lit-listp lits aignet))
+               (equal (aignet-eval-conjunction lits invals regvals new)
+                      (aignet-eval-conjunction lits invals regvals aignet))))
+
+    (defthm aignet-eval-conjunction-of-take-num-ins
+      (implies (<= (num-ins aignet) (nfix n))
+               (equal (aignet-eval-conjunction lits (take n invals) regvals aignet)
+                      (aignet-eval-conjunction lits invals regvals aignet))))
+
+    (defthm aignet-eval-conjunction-of-take-num-regs
+      (implies (<= (num-regs aignet) (nfix n))
+               (equal (aignet-eval-conjunction lits invals (take n regvals) aignet)
+                      (aignet-eval-conjunction lits invals regvals aignet))))
+
+    (defcong bits-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 2)
+    (defcong bits-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 3))
 
   (local
    (progn
@@ -2543,20 +2563,8 @@ correctness criterion we've described.</p>
 
   (local (in-theory (disable supergate-add-clauses))))
 
-
-
-  ;; Measure for aignet-lit->cnf is just the id-val of the lit-IDs, but we need to
-  ;; take the max over a list of lits for the list case
-(define lits-max-id-val ((lits lit-listp))
-  (if (atom lits)
-      0
-    (max (lit-id (car lits))
-         (lits-max-id-val (cdr lits))))
-  ///
-  (fty::deffixequiv lits-max-id-val)
-  
-  (local (in-theory (disable lookup-id-out-of-bounds member)))
-
+(defsection lits-max-id-val-supergate
+  (local (in-theory (enable lits-max-id-val)))
   (defthmd lits-max-id-val-of-supergate
     (<= (lits-max-id-val (mv-nth 0 (lit-collect-supergate
                                     lit top use-muxes limit supergate aignet-refcounts aignet)))
@@ -2591,21 +2599,14 @@ correctness criterion we've described.</p>
                                           (gate-id->fanin0 id aignet)
                                           nil use-muxes limit nil aignet-refcounts aignet)))
                     (limit (mv-nth 1 (lit-collect-supergate
-                                          (gate-id->fanin0 id aignet)
-                                          nil use-muxes limit nil aignet-refcounts aignet)))))
+                                      (gate-id->fanin0 id aignet)
+                                      nil use-muxes limit nil aignet-refcounts aignet)))))
              :in-theory (e/d () (lits-max-id-val-of-supergate)))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (id-is-mux)
                                    (id-type-when-is-mux)))))
-    :rule-classes (:rewrite :linear))
+    :rule-classes (:rewrite :linear)))
 
-  (defthm lits-max-id-val-of-cdr
-    (<= (lits-max-id-val (cdr x)) (lits-max-id-val x))
-    :rule-classes :linear)
-
-  (defthm lits-max-id-val-of-car
-    (<= (lit->var (car x)) (lits-max-id-val x))
-    :rule-classes :linear))
 
 (defines aignet-lit->cnf
   :prepwork ((local (defthm aignet-lit-listp-implies-cdr
