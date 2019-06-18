@@ -1,17 +1,21 @@
-This is the accompanying artefact submission for the paper titled
-"Binary-compatible verification of filesystems with ACL2". The paper
-details certain filesystem models and co-simulation tests applied to
-them; instructions for reviewing and executing these tests follow.
+This ACL2 project demonstrates the verification of a model of the
+FAT32 filesystem and the development of code proofs based on formal
+descriptions of FAT32 system calls. Details about this project are
+available in the papers "Formalising Filesystems in the ACL2 Theorem
+Prover: an Application to FAT32" (in the proceedings of the 15th
+International Workshop on the ACL2 Theorem Prover and Its
+Applications) and "Binary-compatible verification of filesystems with
+ACL2" (to appear in the proceedings of the Tenth International
+Conference on Interactive Theorem Proving).
 
-Note: The books mentioned below were certified with a development
-snapshot of ACL2, dated 2019-05-02 and identified by commit hash
-4e079e4dc956bfb6301b29bba7f84db696a38186. The GNU/Linux programs
-mkfs.fat, diff, sudo, cp, mkdir, mv, rm, rmdir, stat, unlink, and wc
-are required in order to run the tests, as is the mtools suite of
-programs (version 4.0.18).
+These ACL2 books have been certified with ACL2 version 8.2, the most
+recent release of the theorem prover. Apart from certifiable books,
+there is a co-simulation test suite in the test/ subdirectory; the
+GNU/Linux programs mkfs.fat, diff, sudo, cp, mkdir, mv, rm, rmdir,
+stat, truncate, unlink, and wc are required in order to run the tests,
+as is the mtools suite of programs (version 4.0.18).
 
-The FAT32 models HiFAT and LoFAT can be found in files hifat.lisp and
-lofat.lisp respectively. These depend on a number of helper
+The FAT32 models HiFAT and LoFAT depend on a number of helper
 functions and lemmas in other files; the cert.pl utility distributed
 with ACL2 is useful in tracking and building these dependencies. The
 shell command below certifies all the filesystem models, assuming
@@ -35,15 +39,18 @@ substituting a proper value for ACL2.
 $ cd test; sudo make ACL2=ACL2 test
 
 This should run a number of tests built on LoFAT against the actual
-programs from the Coreutils and the mtools. mkfs.fat versions 3.0.28
-and 3.0.20 are supported; the former is configured by default while
-the latter can be configured with some changes to the Makefile. sudo is
-required for mounting and unmounting the disk images involved in these
-tests; thus, root privileges on the testing machine are
-required. Implementation details can be found in the "Co-simulation"
-subsection of the accompanying paper.
+programs from the Coreutils and the mtools. These include
+co-simulation tests for the ls and rm programs, and proofs about the
+interaction of these programs can be found in the file
+ls-rm-example.lisp. Another proof which displays the model's ablility
+to reason about file contents can be found in the file
+wc-truncate-example.lisp, which states that after truncation of a
+given file to a given size, running wc -c on that same file will
+return that same size.
 
-Installation note: these tests are known to work with an ACL2 built atop
+sudo is required for mounting and unmounting the disk images involved
+in these tests; thus, root privileges on the testing machine are
+required. Installation note: these tests are known to work with an ACL2 built atop
 Clozure Common Lisp (CCL). At least one other Common Lisp
 implementation (SBCL) causes some tests to fail, on account of
 inconsistent handling of command line arguments by
@@ -53,27 +60,3 @@ ACL2 installation page points to instructions for
 and
 [installing](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/ccl.html)
 CCL.
-
-A brief listing of functions and theorems mentioned in the paper
-follows.
-* The function lofat-fs-p is in lofat.lisp.
-* The functions lofat-to-hifat-helper and lofat-to-hifat are in
-lofat.lisp.
-* The functions hifat-subsetp and hifat-equiv are in hifat-equiv.lisp.
-* The functions lofat-equiv and eqfat are in lofat.lisp.
-* The equivalence proofs hifat-to-lofat-inversion,
-lofat-to-hifat-inversion, lofat-to-string-inversion,
-string-to-lofat-inversion and string-to-m1-fs-inversion are in
-lofat.lisp. Note, string-to-m1-fs-inversion has been renamed to
-string-to-hifat-inversion for consistency with the other functions.
-* The LoFAT implementations of the various system calls are in
-lofat.lisp; the HiFAT implementations are in hifat-syscalls.lisp.
-* An ACL2 program for checking disk equivalence is mentioned in the
-"Co-simulation" subsection; this is test/compare-disks.lisp. A proof
-of its correspondence with the equivalence relation eqfat is in the
-theorem compare-disks-correctness-1 in test-stuff.lisp.
-* Two optimizations are mentioned in the "Performance" subsection; they
-are implemented in the functions disk-image-to-lofat and
-lofat-to-disk-image in lofat.lisp.
-* Finally, all co-simulation tests, along with the ACL2 programs used
-for each, are enumerated in test/Makefile.

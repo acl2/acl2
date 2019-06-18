@@ -5,8 +5,7 @@ test-cp-replicant-4 mtools-test-cp-replicant-2 \
 test-mkfs-replicant-1 test-mkfs-replicant-2 \
 test-wc-replicant-1 test-wc-replicant-2 test-wc-replicant-3 \
 test-rm-replicant-1 test-rm-replicant-2 test-rm-replicant-3 \
-test-rm-replicant-4 mtools-test-rm-replicant-1 \
-mtools-test-rm-replicant-2 \
+mtools-test-rm-replicant-1 \
 test-unlink-replicant-1 test-unlink-replicant-2 \
 test-unlink-replicant-3 \
 test-mkdir-replicant-1 test-mkdir-replicant-2 \
@@ -14,11 +13,13 @@ mtools-test-mkdir-replicant-1 \
 test-rmdir-replicant-1 test-rmdir-replicant-2 \
 mtools-test-rmdir-replicant-1 \
 test-mv-replicant-1 mtools-test-mv-replicant-1 \
-mtools-test-mv-replicant-2
+mtools-test-mv-replicant-2 \
+test-ls-replicant-1 \
+test-truncate-replicant-1 test-truncate-replicant-2 # test-rm-replicant-4 mtools-test-rm-replicant-2
 
 test: $(TEST)
 
-.PHONY: clean-mountpoint test $(TEST)
+.PHONY: clean-mountpoint test clean $(TEST)
 
 .PHONY: debug-create-dir-and-file debug-create-dir debug-do-nothing \
 debug-create-dir-copy-file
@@ -48,6 +49,9 @@ MOUNTPOINT=mount1
 UID=$(shell id -u)
 GID=$(shell id -g)
 MTOOLSRC=$(shell pwd)/.mtoolsrc
+
+clean:
+	rm -f *output*
 
 clean-mountpoint:
 	rm -rf $(MOUNTPOINT)
@@ -182,6 +186,17 @@ mtools-test-mv-replicant-2: mtools-mv-ref-output-2.raw mtools-mv-output-2.raw
 	env DISK=$(DISK) REF_INPUT="mtools-mv-ref-output-2.raw" \
 	INPUT="mtools-mv-output-2.raw" $(ACL2) -- < compare-disks.lisp
 
+test-ls-replicant-1: ls-ref-output-1.txt ls-output-1.txt
+	diff -u -i ls-ref-output-1.txt ls-output-1.txt
+
+test-truncate-replicant-1: truncate-output-1.raw truncate-ref-output-1.raw
+	env DISK=$(DISK) REF_INPUT="truncate-ref-output-1.raw" \
+	INPUT="truncate-output-1.raw" $(ACL2) -- < compare-disks.lisp
+
+test-truncate-replicant-2: truncate-output-2.raw truncate-ref-output-2.raw
+	env DISK=$(DISK) REF_INPUT="truncate-ref-output-2.raw" \
+	INPUT="truncate-output-2.raw" $(ACL2) -- < compare-disks.lisp
+
 cp-ref-output-1.txt cp-output-1.txt: $(MOUNTPOINT) cp-replicant.lisp
 	rm -f $(DISK)
 	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
@@ -258,18 +273,18 @@ mtools-cp-ref-output-2.txt mtools-cp-output-2.txt: cp-replicant.lisp
 	CP_INPUT="/vmlinuz" $(ACL2) < cp-replicant.lisp
 
 mkfs-ref-output-1.txt mkfs-output-1.txt: $(MOUNTPOINT) \
-mkfs.fat-3.0.28-replicant.lisp
+mkfs.fat-4.1-replicant.lisp
 	rm -f $(DISK)
 	(mkfs.fat -C -v -F 32 -s 1 $(DISK) $(SIZE)) > mkfs-ref-output-1.txt
 	env DISK=$(DISK) MKFS_OUTPUT="mkfs-output-1.txt" $(ACL2) < \
-	mkfs.fat-3.0.28-replicant.lisp
+	mkfs.fat-4.1-replicant.lisp
 
 mkfs-ref-output-2.txt mkfs-output-2.txt: $(MOUNTPOINT) \
-mkfs.fat-3.0.28-replicant.lisp
+mkfs.fat-4.1-replicant.lisp
 	rm -f $(DISK)
 	(mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)) > mkfs-ref-output-2.txt
 	env DISK=$(DISK) MKFS_OUTPUT="mkfs-output-2.txt" $(ACL2) < \
-	mkfs.fat-3.0.28-replicant.lisp
+	mkfs.fat-4.1-replicant.lisp
 
 wc-ref-output-1.txt wc-output-1.txt: $(MOUNTPOINT) wc-replicant.lisp
 	rm -f $(DISK)
@@ -616,6 +631,50 @@ mtools-mv-ref-output-2.raw mtools-mv-output-2.raw: mv-replicant.lisp
 	cp $(DISK) mtools-mv-ref-output-2.raw
 	env DISK="mtools-mv-output-2.raw" MV_OUTPUT="mtools-mv-output-2.raw" \
 	$(ACL2) -- "/tmp/file1.txt" "/tmp/file2.txt" < mv-replicant.lisp
+
+ls-ref-output-1.txt ls-output-1.txt: $(MOUNTPOINT) ls-replicant.lisp
+	rm -f $(DISK)
+	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
+	cp input-4623-bytes.txt $(MOUNTPOINT)/initrd.img
+	ls -1d $(MOUNTPOINT)/initrd.img > ls-ref-output-1.txt
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	env DISK=$(DISK) LS_PREFIX=$(MOUNTPOINT) \
+	LS_OUTPUT="ls-output-1.txt" $(ACL2) -- -d "/initrd.img" \
+	< ls-replicant.lisp
+
+truncate-ref-output-1.raw truncate-output-1.raw: $(MOUNTPOINT) truncate-replicant.lisp
+	rm -f $(DISK)
+	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
+	cp input-4623-bytes.txt $(MOUNTPOINT)/initrd.img
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	cp $(DISK) truncate-ref-output-1.raw
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos truncate-ref-output-1.raw $(MOUNTPOINT)
+	truncate --size 4626 $(MOUNTPOINT)/initrd.img
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	env DISK=$(DISK) TRUNCATE_OUTPUT="truncate-output-1.raw" \
+	$(ACL2) -- --size 4626 "/initrd.img" \
+	< truncate-replicant.lisp
+
+truncate-ref-output-2.raw truncate-output-2.raw: $(MOUNTPOINT) truncate-replicant.lisp
+	rm -f $(DISK)
+	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
+	cp input-4623-bytes.txt $(MOUNTPOINT)/initrd.img
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	cp $(DISK) truncate-ref-output-2.raw
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos truncate-ref-output-2.raw $(MOUNTPOINT)
+	truncate --size 4620 $(MOUNTPOINT)/initrd.img
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	env DISK=$(DISK) TRUNCATE_OUTPUT="truncate-output-2.raw" \
+	$(ACL2) -- --size 4620 "/initrd.img" \
+	< truncate-replicant.lisp
 
 debug-do-nothing: $(MOUNTPOINT) cp-replicant.lisp
 	rm -f $(DISK)

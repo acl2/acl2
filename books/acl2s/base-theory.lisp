@@ -462,3 +462,11 @@ End of new version.
 
 (defmacro =/= (x y)
   `(not (equal ,x ,y)))
+
+(defmacro != (x y)
+  `(not (equal ,x ,y)))
+
+(definec in (a :all X :tl) :bool
+  (and (consp X)
+       (or (== a (car X))
+           (in a (cdr X)))))

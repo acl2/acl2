@@ -792,7 +792,7 @@
   (fun (oneof var lam prim)))
 
 
-(defdata non-neg-rational (oneof 0 acl2s::positive-rational))
+(defdata non-neg-rational (oneof 0 acl2s::pos-rational))
 (defdata-subtype non-neg-rational rational 
   :rule-classes ((:compound-recognizer) (:forward-chaining)))
 

@@ -257,15 +257,10 @@
      for calls that ACL2's heuristics do not expand;
      note that there is an @(':expand') hint
      for each possible range of the first byte of the encoding,
-     except for the range below 128.
-     It also needs two instances of a theorem that relates
-     the length of the big endian lengths to the lengths themselves;
-     note that there are two instances,
-     one for leaf trees (i.e. byte arrays encoded with long lengths)
-     and one for non-leaf trees (i.e. subtrees encoded with long lengths).")
+     except for the range below 128.")
    (xdoc::p
     "@(tsee rlp-parse-tree) is right inverse of @(tsee rlp-encode-tree),
-     over the valid byte array encodings.
+     over the valid tree encodings.
      This implies that @(tsee rlp-parse-tree) accepts
      only valid encodings of tree:
      if it accepted an invalid encoding,
@@ -281,12 +276,7 @@
      concatenated with the reamining bytes from the decoding,
      is the initial input of the encoding (modulo fixing).
      The proof is by induction on the parsing functions.
-     It is not particularly difficult.
-     Similarly to the proof for left inverse,
-     it uses two instances of the theorem that relates
-     the length of the big endian lengths to the lengths themselves;
-     the two instances correspond to leaf and non-leaf trees
-     encoded with long lengths.")
+     It is not particularly difficult.")
    (xdoc::p
     "Without the extra checks for optimal lengths in the parser,
      the left inverse theorem would still be provable,

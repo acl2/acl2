@@ -110,7 +110,7 @@ data last modified: [2017-06-22 Thu]
                          `(acl2s::nth-rational-between ,r ,lo ,hi))
 
                         (lo ;hi is positive infinity
-                         `(+ ,lo (acl2s::nth-positive-rational-testing ,r)))
+                         `(+ ,lo (acl2s::nth-pos-rational-testing ,r)))
                         
                         ((> hi 0) ;lo is neg infinity and hi is is >= 1
                          `(let ((rat-ans (acl2s::nth-rational ,r)))
@@ -119,7 +119,7 @@ data last modified: [2017-06-22 Thu]
                               rat-ans))) ;ans shud be less than or equal to hi
                         
                         (t ;lo is neg infinity and hi is is <= 0
-                         `(- ,hi (acl2s::nth-positive-rational-testing ,r))))))))
+                         `(- ,hi (acl2s::nth-pos-rational-testing ,r))))))))
 
 (defun range-enum-I (i s)
   (b* ((tau-interval (get-tau-int (cadr s) (third s)))
@@ -253,7 +253,7 @@ data last modified: [2017-06-22 Thu]
                  'acl2s::nth-rational))
        (nth-pos-fn (if (eq dom 'acl2s::integer)
                        'acl2s::nth-nat
-                     'acl2s::nth-positive-rational))
+                     'acl2s::nth-pos-rational))
        (between-fn (if (eq dom 'acl2s::integer)
                        'defdata::random-integer-between-seed
                      'defdata::random-rational-between-seed)))

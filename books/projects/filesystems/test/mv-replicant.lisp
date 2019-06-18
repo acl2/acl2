@@ -21,7 +21,7 @@
       (hifat-to-lofat fat32-in-memory fs))
      ((mv & val state)
       (getenv$ "MV_OUTPUT" state))
-     (state
+     ((mv state &)
       (lofat-to-disk-image
        fat32-in-memory val state)))
   (mv (good-bye exit-status) fat32-in-memory state))

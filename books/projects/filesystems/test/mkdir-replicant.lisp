@@ -25,7 +25,8 @@
       (hifat-to-lofat fat32-in-memory fs))
      ((mv & val state)
       (getenv$ "MKDIR_OUTPUT" state))
-     (state
+     ;; Will take the exit status from lofat-to-disk-image later.
+     ((mv state &)
       (lofat-to-disk-image
        fat32-in-memory val state)))
   (mv (good-bye exit-status) fat32-in-memory state))

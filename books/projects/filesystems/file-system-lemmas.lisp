@@ -2,9 +2,9 @@
 
 ;; Some lemmas below are taken from other books with credit; in most cases they
 ;; replaced a theorem developed for this project which either had the same name
-;; as a theorem from a community book (causing a name conflict), or which
-;; rewrote the same target (causing :use hints to become :useless even if the
-;; project-specific lemma was disabled for the goal in question.)
+;; (causing a name conflict), or which rewrote the same target (causing :use
+;; hints to become :useless even if the project-specific lemma was disabled for
+;; the goal in question.)
 
 (defthm make-character-list-makes-character-list
   (character-listp (make-character-list x)))
@@ -46,14 +46,21 @@
              (equal (first-n-ac i l ac)
                     (revappend ac (true-list-fix l)))))))
 
-(defthm by-slice-you-mean-the-whole-cake-2
-  (implies (equal i (len l))
-           (equal (take i l) (true-list-fix l))))
+;; The following is redundant with the definition in
+;; books/std/lists/take.lisp, from where it was taken with thanks.
+(defthm take-of-len-free
+  (implies (equal len (len x)) (equal (take len x) (true-list-fix x))))
 
 (defthm assoc-after-remove1-assoc
   (implies (not (equal name1 name2))
            (equal (assoc-equal name1 (remove1-assoc name2 alist))
                   (assoc-equal name1 alist))))
+
+(defthm assoc-after-remove-assoc
+  (equal (assoc-equal name1 (remove-assoc name2 alist))
+         (if (not (equal name1 name2))
+             (assoc-equal name1 alist)
+           nil)))
 
 (defthm character-listp-of-revappend
   (equal (character-listp (revappend x y))
@@ -97,8 +104,8 @@
            :expand (len (nthcdr n x)))))
 
 (defthm revappend-of-binary-append-1
-  (equal (revappend x (binary-append y z))
-         (binary-append (revappend x y) z)))
+  (equal (binary-append (revappend x y) z)
+         (revappend x (binary-append y z))))
 
 (defthm
   binary-append-first-n-ac-nthcdr
@@ -106,12 +113,7 @@
            (equal (binary-append (first-n-ac i l ac)
                                  (nthcdr i l))
                   (revappend ac l)))
-  :hints (("goal" :induct (first-n-ac i l ac))
-          ("subgoal *1/1''"
-           :in-theory (disable revappend-of-binary-append-1)
-           :use (:instance revappend-of-binary-append-1 (x ac)
-                           (y nil)
-                           (z l)))))
+  :hints (("goal" :induct (first-n-ac i l ac))))
 
 ;; The following is redundant with the definition in books/std/lists/nth.lisp,
 ;; from where it was taken with thanks.
@@ -500,7 +502,8 @@
   (implies
    (and (not (equal key1 nil))
         (not (consp (assoc-equal key1 alist))))
-   (not (consp (assoc-equal key1 (remove1-equal x alist))))))
+   (not (consp (assoc-equal key1 (remove1-equal x alist)))))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm assoc-equal-when-member-equal
   (implies (and (member-equal x lst)
@@ -597,6 +600,17 @@
            (equal (< 0 (* x1 (len x2)))
                   (consp x2))))
 
+(defthmd
+  painful-debugging-lemma-12
+  (implies
+   (and (integerp x) (integerp y))
+   (iff (equal (+ x (- y)) 0)
+        (equal x y))))
+
+(defthmd painful-debugging-lemma-13
+  (implies (and (integerp x) (integerp y) (< x y))
+           (<= (+ 1 x) y)))
+
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/typed-lists/integer-listp.lisp, from where it was taken with
 ;; thanks.
@@ -610,7 +624,7 @@
   (equal (true-list-listp (append x y))
          (and (true-list-listp (true-list-fix x)) (true-list-listp y))))
 
-(defthm rationalp-of-nth-when-rational-listp
+(defthmd rationalp-of-nth-when-rational-listp
   (implies (rational-listp x)
            (iff (rationalp (nth n x))
                 (< (nfix n) (len x)))))
@@ -708,23 +722,15 @@
              (update-nth key val (take n l))
            (take n l))))
 
-(defthmd
-  remember-that-time-with-update-nth-lemma-1
+(defthmd remember-that-time-with-update-nth-lemma-1
   (implies (and (equal (nfix key) (- (len l) 1))
                 (true-listp l))
            (equal (revappend ac (update-nth key val l))
                   (append (first-n-ac key l ac)
                           (list val))))
-  :hints
-  (("goal" :induct (mv (first-n-ac key l ac)
-                       (update-nth key val l))
-    :expand ((len l) (len (cdr l))))
-   ("subgoal *1/1"
-    :in-theory (disable (:rewrite revappend-of-binary-append-1))
-    :use (:instance (:rewrite revappend-of-binary-append-1)
-                    (z (list val))
-                    (y nil)
-                    (x ac)))))
+  :hints (("goal" :induct (mv (first-n-ac key l ac)
+                              (update-nth key val l))
+           :expand ((len l) (len (cdr l))))))
 
 (defthmd
   remember-that-time-with-update-nth
@@ -747,8 +753,110 @@
   (equal (take n1 (nthcdr n2 l))
          (nthcdr n2 (take (+ (nfix n1) (nfix n2)) l))))
 
+(defthm
+  put-assoc-equal-without-change
+  (implies (consp (assoc-equal x alist))
+           (equal (put-assoc-equal x (cdr (assoc-equal x alist))
+                                   alist)
+                  alist)))
+
 ;; Contributed to books/std/lists/remove1-equal.lisp
 (defthm member-equal-of-remove1-equal
   (implies (not (equal x1 x2))
            (iff (member-equal x1 (remove1-equal x2 l))
                 (member-equal x1 l))))
+
+(defthm
+  member-of-intersection$
+  (implies (or (not (member-equal x l1)) (not (member-equal x l2)))
+           (not (member-equal x (intersection-equal l1 l2))))
+  :rule-classes
+  (:rewrite
+   (:type-prescription
+    :corollary
+    (implies (not (member-equal x l1))
+             (not (member-equal x (intersection-equal l1 l2)))))
+   (:type-prescription
+    :corollary
+    (implies (not (member-equal x l2))
+             (not (member-equal x (intersection-equal l1 l2)))))))
+
+(defthm
+  nth-of-intersection$
+  (implies (< (nfix n)
+              (len (intersection-equal l1 l2)))
+           (and
+            (member-equal (nth n (intersection-equal l1 l2))
+                          l1)
+            (member-equal (nth n (intersection-equal l1 l2))
+                          l2)))
+  :hints
+  (("goal"
+    :in-theory (disable member-of-intersection$)
+    :use (:instance member-of-intersection$
+                    (x (nth n (intersection-equal l1 l2)))))))
+
+(defthm
+  member-of-strip-cars-of-remove-assoc
+  (implies
+   (not (member-equal x1 (strip-cars alist)))
+   (not
+    (member-equal x1
+                  (strip-cars (remove-assoc-equal x2 alist)))))
+  :rule-classes (:rewrite :type-prescription))
+
+(defthm
+  no-duplicatesp-of-strip-cars-of-remove-assoc
+  (implies (no-duplicatesp-equal (strip-cars alist))
+           (no-duplicatesp-equal
+            (strip-cars (remove-assoc-equal x alist)))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/take.lisp, from where it was taken with thanks.
+(defthm take-fewer-of-take-more
+  (implies (<= (nfix a) (nfix b))
+           (equal (take a (take b x)) (take a x))))
+
+(defthm len-of-remove-when-no-duplicatesp
+  (implies (no-duplicatesp-equal l)
+           (equal (len (remove-equal x l))
+                  (if (member-equal x l)
+                      (- (len l) 1)
+                      (len l)))))
+
+(defthm no-duplicatesp-of-remove
+  (implies (no-duplicatesp-equal l)
+           (no-duplicatesp-equal (remove-equal x l))))
+
+(defthmd assoc-of-car-when-member
+     (implies (and (member-equal x lst) (alistp lst))
+              (consp (assoc-equal (car x) lst))))
+
+(encapsulate
+  ()
+
+  ;; The following is redundant with the eponymous function in
+  ;; books/std/basic/inductions.lisp, from where it was taken with thanks.
+  (local
+   (defun dec-dec-induct (n m)
+     (if (or (zp n)
+             (zp m))
+         nil
+       (dec-dec-induct (- n 1) (- m 1)))))
+
+  (local
+   (defthm take-of-make-list-ac-lemma-1
+     (implies (and (not (zp n1))
+                   (not (zp n2))
+                   (<= n1 n2))
+              (equal (cons val (make-list-ac (+ -1 n1) val nil))
+                     (make-list-ac n1 val nil)))
+     :hints (("Goal" :in-theory (disable cons-car-cdr make-list-ac)
+              :use ((:instance cons-car-cdr
+                               (x (make-list-ac n1 val nil))))))))
+
+  (defthm take-of-make-list-ac
+    (implies (<= (nfix n1) (nfix n2))
+             (equal (take n1 (make-list-ac n2 val ac))
+                    (make-list-ac n1 val nil)))
+    :hints (("goal" :induct (dec-dec-induct n1 n2)))))
