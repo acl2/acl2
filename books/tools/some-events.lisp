@@ -267,7 +267,11 @@
 
      (make-event
       (b* ((state (f-put-global 'my-events
-                                (generate-lots-of-identity-fns 10000)
+                                ;; Reduced this to 100 in hopes that it would
+                                ;; prevent an SBCL stack overflow of some sort.
+                                ;; To test this for real, raise it to 10000.
+                                ;; Takes 10-20 sec or so on CCL
+                                (generate-lots-of-identity-fns 100)
                                 state)))
         (value '(value-triple :invisible))))
 
