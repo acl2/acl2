@@ -189,8 +189,8 @@ macros to generate @('defval') forms, you will need to be careful.</p>")
         (raise ":parents must be a symbol list, but is ~x0." parents))
        ((unless (or (stringp long) (true-listp long)))
         (raise ":long must be a string or a true-listp, but is ~x0." long))
-       ((unless (or (not short) (stringp short)))
-        (raise ":short must be a string or nil, but is ~x0." short))
+       ((unless (or (stringp short) (true-listp short)))
+        (raise ":short must be a string or a true-listp, but is ~x0." short))
 
        ;; Note that we always generate documentation: even if the user gives no
        ;; arguments and has no default-parents set, we'll put it into the
