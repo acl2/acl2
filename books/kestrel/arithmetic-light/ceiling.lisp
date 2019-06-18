@@ -14,8 +14,8 @@
 
 (local (include-book "arithmetic-3/top" :dir :system)) ;todo: reduce
 (local (include-book "integerp"))
-;(local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
+;(local (include-book "nonnegative-integer-quotient"))
+;(local (include-book "numerator"))
 ;(local (in-theory (disable floor)))
 
 (defthmd ceiling-of-0
