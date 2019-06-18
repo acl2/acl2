@@ -216,11 +216,11 @@
                                                 :af 1
                                                 :of 1)
                                                :exec
-                                               (!rflagsBits->cf 
+                                               (!rflagsBits->cf
                                                 1
-                                                (!rflagsBits->af 
+                                                (!rflagsBits->af
                                                  1
-                                                 (!rflagsBits->of 
+                                                 (!rflagsBits->of
                                                   1 0))))))
                       (mv output-rflags undefined-flags))
 
@@ -261,7 +261,7 @@
                                               :af 1
                                               :of 1)
                                              :exec
-                                             (!rflagsBits->af 
+                                             (!rflagsBits->af
                                               1
                                               (!rflagsBits->of
                                                1
@@ -439,7 +439,7 @@ otherwise, it is set to 1.</p>"
                                                 of
                                                 input-rflags))))))))
                      (undefined-flags (the (unsigned-byte 32)
-                                        (!rflagsBits->of 1 0))))
+                                        (!rflagsBits->af 1 0))))
                   (mv output-rflags undefined-flags)))
 
                (otherwise
@@ -503,7 +503,7 @@ otherwise, it is set to 1.</p>"
                        (sf (general-sf-spec ,size result))
                        ;; OF is undefined.
 
-                       (output-rflags (mbe :logic 
+                       (output-rflags (mbe :logic
                                            (change-rflagsBits
                                             input-rflags
                                             :cf cf
@@ -528,9 +528,9 @@ otherwise, it is set to 1.</p>"
                                               :af 1
                                               :of 1)
                                              :exec
-                                             (!rflagsBits->af 
+                                             (!rflagsBits->af
                                               1
-                                              (!rflagsBits->of 
+                                              (!rflagsBits->of
                                                1 0)))))
                     (mv output-rflags undefined-flags))))))
 
@@ -816,14 +816,14 @@ set to the most-significant bit of the original operand.</p>"
                                                  sf
                                                  input-rflags)))))))
 
-                       (undefined-flags (mbe 
+                       (undefined-flags (mbe
                                          :logic
                                          (change-rflagsBits
                                           0
                                           :af 1
                                           :of 1)
                                          :exec
-                                         (!rflagsBits->af 
+                                         (!rflagsBits->af
                                           1
                                           (!rflagsBits->of
                                            1 0)))))
