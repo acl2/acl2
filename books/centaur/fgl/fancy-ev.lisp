@@ -36,7 +36,7 @@
 
 (defconst *logically-relevant-interp-st-fields*
   '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
-    :equiv-contexts :reclimit :errmsg))
+    :equiv-contexts :reclimit)) ;; removed :errmsg
 
 (encapsulate
   (((fancy-ev-primitive * * interp-st state) => (mv * * interp-st)
@@ -57,7 +57,17 @@
 
   (defthm interp-st-bfrs-ok-of-fancy-ev-primitive
     (implies (interp-st-bfrs-ok interp-st)
-             (interp-st-bfrs-ok (mv-nth 2 (fancy-ev-primitive fn args interp-st state))))))
+             (interp-st-bfrs-ok (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))))
+
+  (defthm errmsg-of-fancy-ev-primitive
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-fancy-ev-primitive
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))
+                         :unreachable)))))
    
 (define fancy-ev-definition ((fn pseudo-fnsym-p) state)
   :returns (mv ok
@@ -237,6 +247,43 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
     (defret interp-st-bfrs-ok-of-<fn>
       (implies (interp-st-bfrs-ok interp-st)
                (interp-st-bfrs-ok new-interp-st))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-list))
+
+  (defret-mutual errmsg-of-fancy-ev
+    (defret errmsg-of-<fn>
+      (implies (interp-st->errmsg interp-st)
+               (equal (interp-st->errmsg new-interp-st)
+                      (interp-st->errmsg interp-st)))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev)
+    (defret errmsg-of-<fn>
+      (implies (interp-st->errmsg interp-st)
+               (equal (interp-st->errmsg new-interp-st)
+                      (interp-st->errmsg interp-st)))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-fncall)
+    (defret errmsg-of-<fn>
+      (implies (interp-st->errmsg interp-st)
+               (equal (interp-st->errmsg new-interp-st)
+                      (interp-st->errmsg interp-st)))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-list))
+
+  (defret-mutual unreachable-of-fancy-ev
+    (defret unreachable-of-<fn>
+      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+               (not (equal (interp-st->errmsg new-interp-st) :unreachable)))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev)
+    (defret unreachable-of-<fn>
+      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+               (not (equal (interp-st->errmsg new-interp-st) :unreachable)))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-fncall)
+    (defret unreachable-of-<fn>
+      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+               (not (equal (interp-st->errmsg new-interp-st) :unreachable)))
       :hints ('(:expand (<call>)))
       :fn fancy-ev-list))
 
