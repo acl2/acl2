@@ -276,22 +276,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
-
-   (xdoc::p
-    "A new book @('std/util/defret-mutual-generate') provides a utility "
-    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
-    " intended for generating mutually-inductive theorems over large mutual
-     recursions by applying a set of rules referencing the @(see define)
-     formals and returns to determine what hypotheses to assume and conclusions
-     to prove about each function in the mutual recursion.")
-
-   (xdoc::p
-    "@(csee std::defret) now substitutes the list of return value names for
-     symbols named @('<VALUES>') in the body and hints.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
@@ -315,6 +299,22 @@
      accessors and updaters in the style discussed in @(see
      stobjs::stobj-updater-independence), with accessors that apply fixing
      functions to provide unconditionally well-typed results.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "A new book @('std/util/defret-mutual-generate') provides a utility "
+    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
+    " intended for generating mutually-inductive theorems over large mutual
+     recursions by applying a set of rules referencing the @(see define)
+     formals and returns to determine what hypotheses to assume and conclusions
+     to prove about each function in the mutual recursion.")
+
+   (xdoc::p
+    "@(csee std::defret) now substitutes the list of return value names for
+     symbols named @('<VALUES>') in the body and hints.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
