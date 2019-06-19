@@ -962,12 +962,13 @@ because the rule-classes may matter.
       `,final-form))
 
 (defmacro defdata-subtype
-    (T1 T2
-        &key (rule-classes '((:tau-system) (:forward-chaining)))
-        strictp
-        verbose
-        hints
-        otf-flg)
+    (T1
+     T2
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     strictp
+     verbose
+     hints
+     otf-flg)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2))))
   `(with-output
@@ -982,12 +983,13 @@ because the rule-classes may matter.
       'defdata::defdata-subtype (w state)))))
 
 (defmacro defdata-disjoint
-    (T1 T2
-        &key (rule-classes '((:tau-system) (:forward-chaining)))
-        strictp
-        verbose
-        hints
-        otf-flg)
+    (T1
+     T2
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     strictp
+     verbose
+     hints
+     otf-flg)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2))))
   `(with-output
@@ -1002,8 +1004,12 @@ because the rule-classes may matter.
       'defdata::defdata-disjoint (w state)))))
 
 (defmacro defdata-subtype-strict
-    (T1 T2 &key (rule-classes '((:tau-system) (:forward-chaining)))
-        verbose hints otf-flg)
+    (T1
+     T2
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     verbose
+     hints
+     otf-flg)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2))))
   `(defdata-subtype ,T1 ,T2
@@ -1014,8 +1020,12 @@ because the rule-classes may matter.
      :otf-flg ,otf-flg))
 
 (defmacro defdata-disjoint-strict
-    (T1 T2 &key (rule-classes '((:tau-system) (:forward-chaining)))
-        verbose hints otf-flg)
+    (T1
+     T2
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     verbose
+     hints
+     otf-flg)
   (declare (xargs :guard (and (proper-symbolp T1)
                               (proper-symbolp T2))))
   `(defdata-disjoint ,T1 ,T2
@@ -1024,6 +1034,110 @@ because the rule-classes may matter.
      :verbose ,verbose
      :hints ,hints
      :otf-flg ,otf-flg))
+
+(defun defdatas-disjoint-car-fn
+    (L rule-classes strictp verbose hints otf-flg)
+  (if (endp (cdr L))
+      nil
+    (cons `(defdata-disjoint ,(car L) ,(second L)
+             :rule-classes ,rule-classes
+             :strictp ,strictp
+             :verbose ,verbose
+             :hints ,hints
+             :otf-flg ,otf-flg)
+          (defdatas-disjoint-car-fn (cons (car L) (cddr L)) rule-classes strictp
+            verbose hints otf-flg))))
+
+(defun defdatas-disjoint-fn (L rule-classes strictp verbose hints otf-flg)
+  (if (endp (cdr L))
+      nil
+    (append
+     (defdatas-disjoint-car-fn L rule-classes strictp verbose hints otf-flg)
+     (defdatas-disjoint-fn (cdr L) rule-classes strictp verbose hints otf-flg))))
+
+; Check that all the defdata types in L are disjoint from each other.
+(defmacro defdatas-disjoint 
+    (L
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     strictp
+     verbose
+     hints
+     otf-flg)
+  (declare (xargs :guard (proper-symbol-listp L)))
+  `(with-output
+    ,@(and (not verbose)
+           '(:off (warning warning! observation prove proof-builder
+                           event history summary proof-tree)))
+    :stack :push
+    (encapsulate
+     ()
+     ,@(defdatas-disjoint-fn L rule-classes strictp verbose hints otf-flg))))
+
+(defmacro defdatas-disjoint-strict
+    (L
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     verbose
+     hints
+     otf-flg)
+  (declare (xargs :guard (proper-symbol-listp L)))
+  `(defdatas-disjoint ,L
+     :rule-classes ,rule-classes
+     :strictp t
+     :verbose ,verbose
+     :hints ,hints
+     :otf-flg ,otf-flg))
+
+; :trans1 (defdatas-disjoint (integer boolean string character))
+; :trans1 (defdatas-disjoint-strict (integer boolean string character))
+
+(defun defdatas-subtype-fn
+    (L rule-classes strictp verbose hints otf-flg)
+  (if (endp (cdr L))
+      nil
+    (cons `(defdata-subtype ,(car L) ,(second L)
+             :rule-classes ,rule-classes
+             :strictp ,strictp
+             :verbose ,verbose
+             :hints ,hints
+             :otf-flg ,otf-flg)
+          (defdatas-subtype-fn (cdr L) rule-classes strictp
+            verbose hints otf-flg))))
+
+; Check that L1 <= L2 <= ... <= Ln, where <= is subtype relation and
+; Li is the ith element of L.
+(defmacro defdatas-subtype 
+    (L
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     strictp
+     verbose
+     hints
+     otf-flg)
+  (declare (xargs :guard (proper-symbol-listp L)))
+  `(with-output
+    ,@(and (not verbose)
+           '(:off (warning warning! observation prove proof-builder
+                           event history summary proof-tree)))
+    :stack :push
+    (encapsulate
+     ()
+     ,@(defdatas-subtype-fn L rule-classes strictp verbose hints otf-flg))))
+
+(defmacro defdatas-subtype-strict
+    (L
+     &key (rule-classes '((:tau-system) (:forward-chaining)))
+     verbose
+     hints
+     otf-flg)
+  (declare (xargs :guard (proper-symbol-listp L)))
+  `(defdatas-subtype ,L
+     :rule-classes ,rule-classes
+     :strictp t
+     :verbose ,verbose
+     :hints ,hints
+     :otf-flg ,otf-flg))
+
+; :trans1 (defdatas-subtype (pos nat integer rational))
+; :trans1 (defdatas-subtype-strict (pos nat integer rational))
 
 (logic)
 ; misc functions needed by other files in cgen

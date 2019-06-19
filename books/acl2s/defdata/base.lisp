@@ -1215,7 +1215,8 @@
 
 (defdata acl2-number-list (listof acl2-number) )
 (defdata boolean-list (listof boolean) )
-(defdata symbol-list    (listof symbol) )
+(defdata symbol-list  (listof symbol) )
+(defdata proper-symbol-list (listof proper-symbol) )
 (defdata::register-type character-list 
                :domain-size t 
                :predicate character-listp
