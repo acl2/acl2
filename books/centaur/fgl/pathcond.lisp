@@ -1248,6 +1248,28 @@
                             cube
                             (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman)) env nil)
                             nil (logicman->aignet logicman)))))
-    :hints(("Goal" :in-theory (enable logicman-pathcond-eval)))))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-eval))))
+
+  (local
+   #!aignet
+   (defthm aignet-lit-listp-of-append
+     (implies (and (aignet-lit-listp a aignet)
+                   (aignet-lit-listp b aignet))
+              (aignet-lit-listp (append a b) aignet))))
+
+  (local
+   #!aignet
+   (defthm aignet-lit-listp-of-rev
+     (implies (aignet-lit-listp a aignet)
+              (aignet-lit-listp (acl2::rev a) aignet))))
+
+  (defret aignet-lit-listp-of-<fn>
+    (implies (and (logicman-pathcond-p pathcond)
+                  (lbfr-mode-is :aignet)
+                  (aignet::aignet-lit-listp cube (logicman->aignet logicman)))
+             (aignet::aignet-lit-listp new-cube (logicman->aignet logicman)))
+    :hints(("Goal" :in-theory (enable logicman-pathcond-p)))))
+
+             
                     
                   

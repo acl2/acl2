@@ -329,7 +329,9 @@
           (mv nil interp-st))
          ((unless (fgl-satlink-monolithic-sat-config-p params))
           (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object"))))
+           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object")))
+         ((when (eq bfr nil))
+          (mv nil interp-st)))
       (interp-st-satlink-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))

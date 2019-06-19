@@ -765,7 +765,9 @@
           (mv nil interp-st))
          ((unless (fgl-ipasir-config-p params))
           (gl-interp-error
-           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object"))))
+           :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
+         ((when (eq bfr nil))
+          (mv nil interp-st)))
       (interp-st-ipasir-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))
