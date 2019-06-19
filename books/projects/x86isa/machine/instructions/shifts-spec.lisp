@@ -35,9 +35,12 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author(s):
+; Alessandro Coglio   <coglio@kestrel.edu>
 
 ;; This book contains the specification of the following instructions:
 ;; sal  sar  shl  shr
+;; shrd
 
 (in-package "X86ISA")
 
@@ -51,9 +54,9 @@
                        (bitops::logand-with-negated-bitmask
                         force (force)))))
 
-;; Note: SRC operand is either an (unsigned-byte 6) or (unsigned-byte
-;; 5) since it is masked before the actual rotate or shift
-;; operations.
+;; Note: SRC (for SAL/SAR/SHL/SHR) or CNT (for SHRD) operand is either an
+;; (unsigned-byte 6) or (unsigned-byte 5) since it is masked before the actual
+;; rotate or shift operations.
 
 ;; ======================================================================
 
@@ -86,6 +89,8 @@
                         acl2::bitp)
                        (bitops::logand-with-bitmask))))
 
+;;;;;;;;;; SAL/SHR:
+
 (define sal/shl-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
 
@@ -97,7 +102,8 @@
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions.")
+             "We assume @('src') has been masked appropriately
+              by the decoding part of the shift instructions.")
         (input-rflags :type (unsigned-byte 32)))
 
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
@@ -361,6 +367,8 @@ otherwise, it is set to 1.</p>"
     :gen-type t
     :gen-linear t))
 
+;;;;;;;;;; SHR:
+
 (define shr-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
 
@@ -373,7 +381,8 @@ otherwise, it is set to 1.</p>"
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
+             "We assume @('src') has been masked appropriately
+              by the decoding part of the shift instructions")
         (input-rflags :type (unsigned-byte 32)))
 
        :parents (shr-spec)
@@ -639,6 +648,8 @@ set to the most-significant bit of the original operand.</p>"
     :gen-type t
     :gen-linear t))
 
+;;;;;;;;;; SAR:
+
 (define sar-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
 
@@ -652,7 +663,8 @@ set to the most-significant bit of the original operand.</p>"
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
         (src :type (unsigned-byte 6)
-             "We assume @('src') has been masked appropriately by the decoding part of the shift instructions")
+             "We assume @('src') has been masked appropriately
+              by the decoding part of the shift instructions")
         (input-rflags :type (unsigned-byte 32)))
 
        :parents (sar-spec)
@@ -921,6 +933,264 @@ most-significant bit of the original operand.</p>"
   (defthm-unsigned-byte-p n32p-mv-nth-2-sar-spec
     :bound 32
     :concl (mv-nth 2 (sar-spec size dst src input-rflags))
+    :gen-type t
+    :gen-linear t))
+
+;;;;;;;;;; SHRD:
+
+(define shrd-spec-gen ((size :type (member 16 32 64)))
+  :verify-guards nil
+
+  (b* ((size+1 (1+ size))
+       (size-1 (1- size))
+       (size*2 (* 2 size))
+       (fn-name (mk-name "SHRD-SPEC-" size))
+       (str-nbits (if (= size 8) "08" size)))
+
+    `(define ,fn-name
+       ((dst :type (unsigned-byte ,size))
+        (src :type (unsigned-byte ,size))
+        (cnt :type (unsigned-byte 6)
+             "We assume @('cnt') has been masked appropriately
+              by the decoding part of the instruction.")
+        (input-rflags :type (unsigned-byte 32)))
+       :returns (mv output-dst ; result (irrelevant if undefined-dst? is t)
+                    undefined-dst? ; true iff result of operation is undefined
+                    output-rflags ; output flags, ignoring the undefined ones
+                    undefined-flags) ; flags to set to undefined values
+
+       :parents (shrd-spec)
+
+       :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
+
+       (b* ((dst (mbe :logic (n-size ,size dst)
+                      :exec dst))
+            (src (mbe :logic (n-size ,size src)
+                      :exec src))
+            (cnt (mbe :logic (n-size 6 cnt)
+                      :exec cnt))
+            (input-rflags (mbe :logic (n32 input-rflags)
+                               :exec input-rflags))
+
+            ;; we juxtapose src and dst,
+            ;; by shifting src to the left by size bits
+            ;; and OR'ing that with dst,
+            ;; obtaining a 2*size bit value:
+            (src-dst (the (unsigned-byte ,size*2)
+                          (logior (the (unsigned-byte ,size*2)
+                                       (ash (the (unsigned-byte ,size) src)
+                                            ,size))
+                                  (the (unsigned-byte ,size) dst))))
+            ;; we shift the juxtaposed src and dst to the rigth by cnt bits,
+            ;; so that the low bits of src go into the high bits of dst:
+            (neg-cnt (the (signed-byte ,size+1) (- cnt)))
+            (output-dst (the (unsigned-byte ,size)
+                             (n-size ,size (ash (the (unsigned-byte ,size*2)
+                                                     src-dst)
+                                                (the (signed-byte ,size+1)
+                                                     neg-cnt)))))
+
+            ((mv (the (unsigned-byte 32) output-rflags)
+                 (the (unsigned-byte 32) undefined-flags))
+
+             (case cnt
+
+               (0
+                ;; no flags affected
+                (mv input-rflags 0))
+
+               (1
+                ;; all flags but AF changed accordingly, AF undefined:
+                (b* ((cf ; last bit shifted out of dst, i.e. lowest bit
+                      (mbe :logic (part-select dst :low 0 :width 1)
+                           :exec (the (unsigned-byte 1)
+                                      (logand (the (unsigned-byte ,size) dst)
+                                              1))))
+                     (of ; set iff a sign change occurred
+                      (if (= (logbit ,size-1 dst)
+                             (logbit ,size-1 output-dst))
+                          0
+                        1))
+                     (pf (general-pf-spec ,size output-dst))
+                     (zf (zf-spec output-dst))
+                     (sf (general-sf-spec ,size output-dst))
+                     (output-rflags (mbe
+                                     :logic
+                                      (change-rflagsBits
+                                       input-rflags
+                                       :cf cf
+                                       :of of
+                                       :pf pf
+                                       :zf zf
+                                       :sf sf)
+                                      :exec
+                                      (the (unsigned-byte 32)
+                                           (!rflagsBits->cf
+                                            cf
+                                            (!rflagsBits->of
+                                             of
+                                             (!rflagsBits->pf
+                                              pf
+                                              (!rflagsBits->zf
+                                               zf
+                                               (!rflagsBits->sf
+                                                sf
+                                                input-rflags))))))))
+                     (undefined-flags (the (unsigned-byte 32)
+                                           (!rflagsBits->af 1 0))))
+                  (mv output-rflags undefined-flags)))
+
+               (otherwise
+
+                (if (<= cnt ,size)
+                    ;; all flags but OF and AF changed accordingly,
+                    ;; OF and AF undefined:
+                    (b* ((cf ; last bit shifted out of dst
+                          (mbe :logic (part-select dst :low (1- cnt) :width 1)
+                               :exec (logand
+                                      1
+                                      (the (unsigned-byte ,size)
+                                           (ash (the (unsigned-byte ,size) dst)
+                                                (the (signed-byte ,size+1)
+                                                     (1+ neg-cnt)))))))
+                         (pf (general-pf-spec ,size output-dst))
+                         (zf (zf-spec output-dst))
+                         (sf (general-sf-spec ,size output-dst))
+                         (output-rflags (mbe
+                                         :logic
+                                          (change-rflagsBits
+                                           input-rflags
+                                           :cf cf
+                                           :pf pf
+                                           :zf zf
+                                           :sf sf)
+                                          :exec
+                                          (the (unsigned-byte 32)
+                                               (!rflagsBits->cf
+                                                cf
+                                                (!rflagsBits->pf
+                                                 pf
+                                                 (!rflagsBits->zf
+                                                  zf
+                                                  (!rflagsBits->sf
+                                                   sf
+                                                   input-rflags)))))))
+                         (undefined-flags (mbe
+                                           :logic
+                                            (change-rflagsBits
+                                             0
+                                             :af 1
+                                             :of 1)
+                                            :exec
+                                            (!rflagsBits->af
+                                             1
+                                             (!rflagsBits->of
+                                              1 0)))))
+                      (mv output-rflags undefined-flags))
+
+                  ;; all flags undefined:
+                  (b* ((output-rflags input-rflags)
+                       (undefined-flags (the (unsigned-byte 32)
+                                             (!rflagsBits->cf
+                                              1
+                                              (!rflagsBits->of
+                                               1
+                                               (!rflagsBits->pf
+                                                1
+                                                (!rflagsBits->zf
+                                                 1
+                                                 (!rflagsBits->sf
+                                                  1
+                                                  (!rflagsBits->af
+                                                   1
+                                                   input-rflags)))))))))
+                    (mv output-rflags undefined-flags))))))
+
+            (output-rflags (mbe :logic (n32 output-rflags)
+                                :exec output-rflags))
+
+            (undefined-flags (mbe :logic (n32 undefined-flags)
+                                  :exec undefined-flags)))
+
+         (mv output-dst
+             (> cnt ,size) ; result undefined if count exceeds operand size
+             output-rflags
+             undefined-flags))
+
+       ///
+
+       (local (in-theory (e/d () (unsigned-byte-p))))
+
+       (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+         :bound ,size
+         :concl (mv-nth 0 (,fn-name dst src cnt input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm ,(mk-name "BOOLEANP-MV-NTH-1-" fn-name)
+         (booleanp (mv-nth 1 (,fn-name dst src cnt input-rflags))))
+
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
+         :bound 32
+         :concl (mv-nth 2 (,fn-name dst src cnt input-rflags))
+         :gen-type t
+         :gen-linear t)
+
+       (defthm-unsigned-byte-p ,(mk-name "MV-NTH-3-" fn-name)
+         :bound 32
+         :concl (mv-nth 3 (,fn-name dst src cnt input-rflags))
+         :gen-type t
+         :gen-linear t))))
+
+(make-event (shrd-spec-gen 16))
+(make-event (shrd-spec-gen 32))
+(make-event (shrd-spec-gen 64))
+
+(define shrd-spec
+  ((size :type (member 2 4 8))
+   dst
+   src
+   cnt
+   (input-rflags :type (unsigned-byte 32)))
+  :guard (and (unsigned-byte-p 6 cnt)
+              (case size
+                (2 (and (n16p dst) (n16p src)))
+                (4 (and (n32p dst) (n32p src)))
+                (8 (and (n64p dst) (n64p src)))
+                (otherwise nil)))
+
+  :inline t
+  :no-function t
+
+  :parents (instruction-semantic-functions)
+
+  :short "Specification for the @('SHRD') instruction."
+
+  (case size
+    (2 (shrd-spec-16 dst src cnt input-rflags))
+    (4 (shrd-spec-32 dst src cnt input-rflags))
+    (8 (shrd-spec-64 dst src cnt input-rflags))
+    (otherwise (mv 0 nil 0 0)))
+
+  ///
+
+  (defthm natp-mv-nth-0-shrd-spec
+    (natp (mv-nth 0 (shrd-spec size dst src cnt input-rflags)))
+    :rule-classes :type-prescription)
+
+  (defthm booleanp-of-mv-nth-1-shrd-spec
+    (booleanp (mv-nth 1 (shrd-spec size dst src cnt input-rflags))))
+
+  (defthm-unsigned-byte-p n32p-mv-nth-2-shrd-spec
+    :bound 32
+    :concl (mv-nth 2 (shrd-spec size dst src cnt input-rflags))
+    :gen-type t
+    :gen-linear t)
+
+  (defthm-unsigned-byte-p n32p-mv-nth-3-shrd-spec
+    :bound 32
+    :concl (mv-nth 3 (shrd-spec size dst src cnt input-rflags))
     :gen-type t
     :gen-linear t))
 
