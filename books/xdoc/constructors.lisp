@@ -219,7 +219,7 @@
     (true-listp (mv-nth 0 (partition-macro-args args ctx)))
     :hints (("Goal" :in-theory (enable partition-macro-args))))
 
-  (defthm true-listp-of-mv-nth-1-partition-macro-args
+  (defthm alistp-of-mv-nth-1-partition-macro-args
     (alistp (mv-nth 1 (partition-macro-args args ctx)))
     :hints (("Goal" :in-theory (enable partition-macro-args)))))
 
@@ -232,7 +232,7 @@
   "<p>This complements @(tsee partition-macro-args),
       which extracts a list of regular arguments
       and an alist of keyword arguments.
-      This alist has keys that are keyword
+      This alist has keys that are keywords
       but values that, in general, are terms that need to be evaluated
       to obtain the actual values of the keyword arguments;
       the terms are the ones supplied by the caller of the macro.
