@@ -206,13 +206,13 @@
 
 (defun gen-formals-from-pretty-flags (pretty-flags)
 
-; Given a list of prettyified stobj flags, e.g., '(* * $S * STATE) we
-; generate a proposed list of formals, e.g., '(X1 X2 $S X4 STATE).  We
-; guarantee that the result is a list of symbols as long as
-; pretty-flags.  Furthermore, a non-* in pretty-flags is preserved in
-; the same slot in the output.  Furthermore, the symbol generated for
-; each * in pretty-flags is unique and not among the symbols in
-; pretty-flags.  Finally, STATE is not among the symbols we generate.
+; Given a list of prettyified stobj flags, e.g., '(* * $S * STATE) we generate
+; a proposed list of formals, e.g., '(X1 X2 $S X4 STATE).  We guarantee that
+; the result is a list of symbols of the same length as pretty-flags.
+; Furthermore, a non-* in pretty-flags is preserved in the same slot in the
+; output.  Furthermore, the symbol generated for each * in pretty-flags is
+; unique and not among the symbols in pretty-flags.  Finally, STATE is not
+; among the symbols we generate.
 
   (gen-formals-from-pretty-flags1 pretty-flags 1 pretty-flags))
 
