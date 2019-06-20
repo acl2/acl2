@@ -968,10 +968,8 @@
   (xdoc::tree-to-string
    (xdoc::&&
     (xdoc::p
-     "A @(':long') documentation string often consists of
-      a series of one or more XDOC trees
-      for paragraphs, (un)ordered lists, code blocks, etc.
-      This function can be used to wrap them into a top-level ``pseudo-tag''.")
+     "This can be used to construct XDOC strings at the ``top level'',
+      e.g. @(':short') and @(':long') documentation string.")
     (xdoc::@def "topstring")))
 
   (defmacro topstring (&rest trees)
@@ -985,9 +983,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Sometimes a @(':long') documentation string consists of a single paragraph.
-     This macro wraps the arguments (often just one string)
-     into a paragraph tree and then calls @(tsee topstring).")
+    "This combines @(tsee topstring) with @(tsee p).")
    (xdoc::@def "topstring-p"))
 
   (defmacro topstring-p (&rest trees)
@@ -1001,10 +997,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Sometimes a @(':long') documentation string
-     consists of a single definition preprocessor directive.
-     This macro wraps the arguments (often just one string)
-     into a definition directive tree and then calls @(tsee topstring).")
+    "This combines @(tsee topstring) with @(tsee @def).")
    (xdoc::@def "topstring-@def"))
 
   (defmacro topstring-@def (&rest trees)
