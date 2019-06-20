@@ -31,14 +31,18 @@
 (in-package "FGL")
 
 (include-book "arith-base")
+(include-book "syntax-bind")
 (include-book "centaur/meta/term-vars" :dir :system)
 (include-book "clause-processors/generalize" :dir :system) ;; for make-n-vars
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :System)
+(include-book "centaur/meta/bindinglist" :dir :system)
+(include-book "tools/def-functional-instance" :dir :system)
+(include-book "std/lists/index-of" :dir :system)
 
 (fty::defmap casesplit-alist :val-type pseudo-termp :true-listp t)
 
-(defevaluator fcs-ev fcs-ev-lst
+(defevaluator fcs-ev fcs-ev-list
   ((implies a b)
    (if a b c)
    (not a)
@@ -46,14 +50,147 @@
    (if* a b c)
    (fgl-sat-check params x)
    (fgl-pathcond-fix x)
-   (show-counterexample params msg))
+   (show-counterexample params msg)
+   (cons x y)
+   (car x)
+   (cdr x)
+   (syntax-bind-fn x y z))
   :namedp t)
 
 (acl2::def-join-thms fcs-ev)
 
-(acl2::def-ev-pseudo-term-fty-support fcs-ev fcs-ev-lst)
+(acl2::def-ev-pseudo-term-fty-support fcs-ev fcs-ev-list)
 
+(local (defthm alistp-of-pairlis$
+         (alistp (pairlis$ x y))))
 
+(local (defthm alistp-of-append
+         (implies (and (alistp x) (alistp y))
+                  (alistp (append x y)))))
+
+(local (defthm true-listp-of-fcs-ev-list
+         (true-listp (fcs-ev-list x a))
+         :hints (("goal" :induct (len x)))
+         :rule-classes :type-prescription))
+
+(define fcs-ev-bindinglist ((x cmr::bindinglist-p) (a alistp))
+  ;; Returns the alist for evaluating a body term nested inside all the
+  ;; bindings.
+  :returns (final-alist alistp)
+  (b* (((when (atom x)) (acl2::alist-fix a))
+       ((cmr::binding x1) (car x))
+       (new-bindings (pairlis$ x1.formals (fcs-ev-list x1.args a))))
+    (fcs-ev-bindinglist (cdr x) (append new-bindings a))))
+
+(acl2::def-functional-instance
+  fcs-ev-bindinglist-to-lambda-nest-correct
+  cmr::bindinglist-to-lambda-nest-correct
+  ((acl2::base-ev fcs-ev)
+   (acl2::base-ev-list fcs-ev-list)
+   (cmr::base-ev-bindinglist fcs-ev-bindinglist))
+  :hints(("Goal" :in-theory (enable fcs-ev-bindinglist))))
+
+(acl2::def-functional-instance
+  fcs-ev-when-agree-on-term-vars
+  cmr::base-ev-when-agree-on-term-vars
+  ((acl2::base-ev fcs-ev)
+   (acl2::base-ev-list fcs-ev-list))
+  :hints(("Goal" :in-theory (enable fcs-ev-bindinglist))))
+  
+
+(local (defthm assoc-when-nonnil
+         (implies k
+                  (equal (assoc k x)
+                         (hons-assoc-equal k x)))))
+
+(define bind-vars-to-list-elems ((vars pseudo-var-list-p)
+                                 (tmp pseudo-var-p))
+  :returns (bindings cmr::bindinglist-p)
+  :measure (len vars)
+  (b* (((when (atom vars)) nil)
+       (vars (pseudo-var-list-fix vars))
+       (tmp (pseudo-var-fix tmp))
+       ((when (atom (cdr vars)))
+        (list (cmr::binding vars `((car ,tmp))))))
+    (cons (cmr::binding (list (car vars) tmp) `((car ,tmp) (cdr ,tmp)))
+          (bind-vars-to-list-elems (cdr vars) tmp)))
+  ///
+  (local (defun fcs-ev-bindinglist-of-bind-vars-to-list-elems-ind (vars tmp a)
+           (Declare (Xargs :measure (len vars)))
+           (if (atom (cdr vars))
+               (list tmp a)
+             (fcs-ev-bindinglist-of-bind-vars-to-list-elems-ind
+              (pseudo-var-list-fix (cdr vars))
+              (pseudo-var-fix tmp)
+              (append (pairlis$ (list (pseudo-var-fix (car vars))
+                                      (pseudo-var-fix tmp))
+                                (list (cadr (assoc (pseudo-var-fix tmp) a))
+                                      (cddr (assoc (pseudo-var-fix tmp) a))))
+                      a)))))
+             
+  (local (defthm cdr-of-pseudo-var-list-fix
+           (equal (cdr (pseudo-var-list-fix x))
+                  (pseudo-var-list-fix (cdr x)))
+           :hints(("Goal" :in-theory (enable pseudo-var-list-fix)))))
+
+  (local (in-theory (disable cons-equal not no-duplicatesp-equal)))
+
+  (defthm fcs-ev-bindinglist-of-bind-vars-to-list-elems
+    (implies (and (no-duplicatesp-equal (pseudo-var-list-fix vars))
+                  (not (member (pseudo-var-fix tmp) (pseudo-var-list-fix vars)))
+                  ;; (alistp a)
+                  )
+             (equal (hons-assoc-equal v (fcs-ev-bindinglist (bind-vars-to-list-elems vars tmp) a))
+                    (cond ((member v (pseudo-var-list-fix vars))
+                           (cons v (nth (acl2::index-of v (pseudo-var-list-fix vars))
+                                        (cdr (hons-assoc-equal (pseudo-var-fix tmp)
+                                                               a)))))
+                          ((equal v (pseudo-var-fix tmp))
+                           (if (consp (cdr vars))
+                               (cons (pseudo-var-fix tmp)
+                                     (nthcdr (+ -1 (len vars)) (cdr (hons-assoc-equal (pseudo-var-fix tmp) a))))
+                             (hons-assoc-equal (pseudo-var-fix tmp) a)))
+                          (t (hons-assoc-equal v a)))))
+    :hints(("Goal" :in-theory (enable fcs-ev-bindinglist
+                                      acl2::index-of
+                                      hons-assoc-equal
+                                      ;; no-duplicatesp-equal
+                                      ;; cmr::remove-non-pseudo-vars
+                                      ;; cmr::remove-corresp-non-pseudo-vars
+                                      )
+            :expand ((pseudo-var-list-fix vars)
+                     (:free (a b) (no-duplicatesp-equal (cons a b))))
+            :induct (fcs-ev-bindinglist-of-bind-vars-to-list-elems-ind vars tmp a))))
+
+  (local
+   (defthm nth-index-of-in-fcs-ev-list
+     (implies (and (member v vars)
+                   (pseudo-var-list-p vars))
+              (equal (nth (acl2::index-of v vars) (fcs-ev-list vars a))
+                     (cdr (hons-assoc-equal v a))))
+     :hints(("Goal" :in-theory (enable acl2::index-of member pseudo-var-list-p nth)))))
+
+  (defthm eval-alists-agree-of-fcs-ev-bindinglist-of-bind-vars-to-list-elems
+    (implies (and (no-duplicatesp-equal vars)
+                  (not (member tmp vars))
+                  (pseudo-var-list-p vars)
+                  (pseudo-var-p tmp))
+             (acl2::eval-alists-agree vars (fcs-ev-bindinglist (bind-vars-to-list-elems vars tmp)
+                                                               (cons (cons tmp (fcs-ev-list vars a))
+                                                                     a))
+                                      a))
+    :hints(("Goal" :in-theory (enable ACL2::EVAL-ALISTS-AGREE-BY-BAD-GUY)))))
+
+(define construct-list-term ((x pseudo-term-listp))
+  :returns (list-term pseudo-termp)
+  (if (atom x)
+      ''nil
+    `(cons ,(pseudo-term-fix (car x))
+           ,(construct-list-term (cdr x))))
+  ///
+  (defret fcs-ev-of-<fn>
+    (equal (fcs-ev (construct-list-term x) a)
+           (fcs-ev-list x a))))
 
 
 (define disjoin* ((x pseudo-term-listp))
@@ -127,8 +264,8 @@
           (termlist-apply-fgl-pathcond-fix (cdr x))))
   ///
   (defret fcs-ev-list-of-<fn>
-    (equal (fcs-ev-lst new-x a)
-           (fcs-ev-lst x a)))
+    (equal (fcs-ev-list new-x a)
+           (fcs-ev-list x a)))
 
   (defret len-of-<fn>
     (equal (len new-x) (len x))))
@@ -168,13 +305,13 @@
          (implies (pseudo-var-list-p x)
                   (symbol-listp x))))
 
-(local (defthm fcs-ev-lst-of-append
-         (equal (fcs-ev-lst (append x y) a)
-                (append (fcs-ev-lst x a)
-                        (fcs-ev-lst y a)))))
+(local (defthm fcs-ev-list-of-append
+         (equal (fcs-ev-list (append x y) a)
+                (append (fcs-ev-list x a)
+                        (fcs-ev-list y a)))))
 
-(local (defthm len-of-fcs-ev-lst
-         (equal (len (fcs-ev-lst x a))
+(local (defthm len-of-fcs-ev-list
+         (equal (len (fcs-ev-list x a))
                 (len x))))
 
 (local (defthm lookup-in-pairlis$-append-1
@@ -195,10 +332,10 @@
          :hints(("Goal" :in-theory (enable append)
                  :induct (pairlis$ k1 v1)))))
 
-(local (defthm lookup-in-pairlis-vars-fcs-ev-lst
+(local (defthm lookup-in-pairlis-vars-fcs-ev-list
          (implies (and (pseudo-var-list-p vars)
                        (member v vars))
-                  (equal (hons-assoc-equal v (pairlis$ vars (fcs-ev-lst vars a)))
+                  (equal (hons-assoc-equal v (pairlis$ vars (fcs-ev-list vars a)))
                          (cons v (cdr (hons-assoc-equal v a)))))))
 
 (local (defthm member-set-diff
@@ -210,38 +347,49 @@
                        (pseudo-var-list-p term-vars))
                   (acl2::eval-alists-agree term-vars
                                            (pairlis$ (append vars (set-difference-equal term-vars vars))
-                                                     (append (fcs-ev-lst vars a)
-                                                             (fcs-ev-lst (set-difference-equal term-vars vars) a)))
+                                                     (append (fcs-ev-list vars a)
+                                                             (fcs-ev-list (set-difference-equal term-vars vars) a)))
                                            a))
          :hints(("Goal" :in-theory (enable acl2::eval-alists-agree-by-bad-guy)
                  :do-not-induct t))))
 
-(local
- (defthm fcs-ev-when-agree-on-term-vars
-   (implies (acl2::eval-alists-agree (term-vars x) a b)
-            (equal (fcs-ev x a)
-                   (fcs-ev x b)))
-   :hints (("goal" :use ((:functional-instance cmr::base-ev-when-agree-on-term-vars
-                          (cmr::base-ev fcs-ev)
-                          (cmr::base-ev-list fcs-ev-lst)))))))
 
-(define wrap-fgl-pathcond-fix-vars ((vars pseudo-var-list-p)
-                                    (x pseudo-termp))
+(define wrap-fgl-pathcond-fix ((x pseudo-termp))
   :returns (new-x pseudo-termp)
-  (b* ((vars (pseudo-var-list-fix vars))
-       (fixes (termlist-apply-fgl-pathcond-fix vars))
-       (free-vars (term-free-vars x vars)))
-    `((lambda (,@vars . ,free-vars)
-        ,(pseudo-term-fix x))
-      ,@fixes . ,free-vars))
+  (b* ((vars (term-vars x))
+       (list-term (construct-list-term vars))
+       (tmp (acl2::new-symbol 'tmp vars))
+       (bindings (cons (cmr::binding (list tmp) (list `(fgl-pathcond-fix ,list-term)))
+                       (bind-vars-to-list-elems vars tmp))))
+    (cmr::bindinglist-to-lambda-nest-exec bindings x))
   ///
+  
   (defret fcs-ev-of-<fn>
     (equal (fcs-ev new-x a)
            (fcs-ev x a))
-    :hints (("goal" :use ((:instance eval-alists-agree-for-wrap-fgl-pathcond-fix-vars
-                           (vars (pseudo-var-list-fix vars))
-                           (term-vars (term-vars x))))
-             :in-theory (disable eval-alists-agree-for-wrap-fgl-pathcond-fix-vars)))))
+    :hints(("Goal" :in-theory (e/d (fcs-ev-bindinglist)
+                                   (eval-alists-agree-of-fcs-ev-bindinglist-of-bind-vars-to-list-elems))
+            :use ((:instance eval-alists-agree-of-fcs-ev-bindinglist-of-bind-vars-to-list-elems
+                   (vars (term-vars x)) (tmp (acl2::new-symbol 'tmp (term-vars x)))))))))
+       
+
+;; (define wrap-fgl-pathcond-fix-vars ((vars pseudo-var-list-p)
+;;                                     (x pseudo-termp))
+;;   :returns (new-x pseudo-termp)
+;;   (b* ((vars (pseudo-var-list-fix vars))
+;;        (fixes (termlist-apply-fgl-pathcond-fix vars))
+;;        (free-vars (term-free-vars x vars)))
+;;     `((lambda (,@vars . ,free-vars)
+;;         ,(pseudo-term-fix x))
+;;       ,@fixes . ,free-vars))
+;;   ///
+;;   (defret fcs-ev-of-<fn>
+;;     (equal (fcs-ev new-x a)
+;;            (fcs-ev x a))
+;;     :hints (("goal" :use ((:instance eval-alists-agree-for-wrap-fgl-pathcond-fix-vars
+;;                            (vars (pseudo-var-list-fix vars))
+;;                            (term-vars (term-vars x))))
+;;              :in-theory (disable eval-alists-agree-for-wrap-fgl-pathcond-fix-vars)))))
 
 
 (define fgl-casesplit-core ((hyp pseudo-termp)
@@ -266,7 +414,7 @@
             (if* ,(fgl-casesplit-solve (list 'quote split-params) "Case split completeness" (disjoin* cases-vars))
                  ,(fgl-casesplit-solve-cases 'solve-params case-msgs cases-vars 'result)
                  'nil))
-          ,(wrap-fgl-pathcond-fix-vars (term-vars hyp) concl)
+          ,(wrap-fgl-pathcond-fix concl)
           ',solve-params
           . ,cases)
        't))
@@ -413,8 +561,7 @@
                      (eql (len x.args) 2))
                 (pseudo-term-fncall 'if
                                     (list (car x.args)
-                                          (wrap-fgl-pathcond-fix-vars
-                                           (term-vars (car x.args))
+                                          (wrap-fgl-pathcond-fix
                                            (cadr x.args))
                                           ''t))
               (pseudo-term-fix x))
