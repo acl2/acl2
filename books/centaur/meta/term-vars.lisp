@@ -168,6 +168,20 @@
 
   (deffixequiv-mutual term-vars)
 
+  (defthm-term-vars-flag
+    (defthm no-duplicatesp-of-term-vars
+      (no-duplicatesp (term-vars x))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((term-vars x)))))
+      :flag term-vars
+      :rule-classes :type-prescription)
+    (defthm no-duplicatesp-of-termlist-vars
+      (no-duplicatesp (termlist-vars x))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((termlist-vars x)))))
+      :flag termlist-vars
+      :rule-classes :type-prescription))
+
   (local (defthm subsetp-of-union-1
            (subsetp a (union-eq a b))))
 
