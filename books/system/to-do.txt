@@ -296,54 +296,6 @@ approach, though it's intriguing.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Extend defstub to support :guard.}}
-
-**********
-**NOTE**: Alessandro Coglio is probably working on this item.
-**********
-
-Below is the relevant email thread.
-
-Harsh Raju Chamarthi <harshrc@gmail.com>	Mon, Jun 26, 2017 at 1:44 PM
-To: acl2-help <acl2-help@utlists.utexas.edu>
-
-The documentation for defstub says we can use signatures
-signatures also have the following form:
-((hd *) => * :formals (x) :guard (consp x))
-
-But neither
-(defstub hd (*) => * :formals (x) :guard (consp x))
-nor
-(defstub (hd *) => * :formals (x) :guard (consp x))
-works.
-
-Because this does not work I have to use encapsulate directly, which
-is more wordy, but works fine. Am I missing some basic syntax with
-defstub?
-
-Matt Kaufmann <kaufmann@cs.utexas.edu>	Mon, Jun 26, 2017 at 2:04 PM
-To: Harsh Raju Chamarthi <harshrc@gmail.com>
-Cc: acl2-help@utlists.utexas.edu
-Hi, Harsh --
-
-I don't think you're missing anything.  Defstub is very limited; it
-doesn't support the use of :guard (or :formals), or anything actually
-beyond what's shown in :doc defstub.  Of course, this is legal
-
-  (defstub hd (*) => *)
-
-as is the old-style version:
-
-  (defstub hd (x) t)
-
-But you were right to use encapsulate if you want anything beyond
-that.
-
--- Matt
-[Quoted text hidden]
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Fix handling of state result, in old-style signatures without state argument.}}
 
 Below is the relevant email thread (with a typo from Matt fixed by
