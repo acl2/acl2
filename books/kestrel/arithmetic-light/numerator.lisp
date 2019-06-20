@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "denominator"))
+(local (include-book "../../arithmetic/rationals"))
 
 (defthm numerator-when-integerp
   (implies (integerp x)
@@ -28,3 +29,8 @@
            (equal (< (numerator x) 0)
                   (< x 0)))
   :hints (("Goal" :cases ((< x 0)))))
+
+(defthm numerator-of-/-when-integerp
+  (implies (integerp x)
+           (equal (numerator (/ x))
+                  (signum x))))

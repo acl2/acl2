@@ -276,22 +276,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
-
-   (xdoc::p
-    "A new book @('std/util/defret-mutual-generate') provides a utility "
-    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
-    " intended for generating mutually-inductive theorems over large mutual
-     recursions by applying a set of rules referencing the @(see define)
-     formals and returns to determine what hypotheses to assume and conclusions
-     to prove about each function in the mutual recursion.")
-
-   (xdoc::p
-    "@(csee std::defret) now substitutes the list of return value names for
-     symbols named @('<VALUES>') in the body and hints.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 (xdoc::seeurl "std/alists" "Standard Association Lists Library"))
 
    (xdoc::p
@@ -318,6 +302,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "A new book @('std/util/defret-mutual-generate') provides a utility "
+    (xdoc::seeurl "std::defret-mutual-generate" "defret-mutual-generate")
+    " intended for generating mutually-inductive theorems over large mutual
+     recursions by applying a set of rules referencing the @(see define)
+     formals and returns to determine what hypotheses to assume and conclusions
+     to prove about each function in the mutual recursion.")
+
+   (xdoc::p
+    "@(csee std::defret) now substitutes the list of return value names for
+     symbols named @('<VALUES>') in the body and hints.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "x86isa::x86isa" "X86ISA"))
 
    (xdoc::p
@@ -326,7 +326,10 @@
     (xdoc::li "@('MOV moffs8, AL')")
     (xdoc::li "@('MOV moffs16, AX')")
     (xdoc::li "@('MOV moffs32, EAX')")
-    (xdoc::li "@('MOV moffs64, RAX')"))
+    (xdoc::li "@('MOV moffs64, RAX')")
+    (xdoc::li "@('SHRD r/m16, r16, imm8')")
+    (xdoc::li "@('SHRD r/m32, r32, imm8')")
+    (xdoc::li "@('SHRD r/m64, r64, imm8')"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

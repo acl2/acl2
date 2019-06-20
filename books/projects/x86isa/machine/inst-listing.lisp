@@ -9034,7 +9034,7 @@
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(I B))
-          'NIL
+          '(X86-SHRD-MRI)
           '((:UD (UD-LOCK-USED))))
     (INST "SHRD" (OP :OP #xFAD)
           (ARG :OP1 '(E V)

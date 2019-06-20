@@ -26,9 +26,14 @@
      mget mset wf-keyp good-map
      => ;sig
      _ ;range
+
      defdata-subtype defdata-disjoint
-     defdata-alias
+     defdatas-subtype defdatas-disjoint
+
      defdata-subtype-strict defdata-disjoint-strict
+     defdatas-subtype-strict defdatas-disjoint-strict
+
+     defdata-alias
      defdata defdata-attach ;long names -- just put them as ACL2 symbols.
 
      stage
@@ -51,13 +56,20 @@
     
     listof alistof enum range record map
     _ ;for range
- 
+
     ;; function/macro exports:
     register-data-constructor 
     register-combinator
     register-type
+
+    defdata-subtype defdata-disjoint
+    defdatas-subtype defdatas-disjoint
+
     defdata-subtype-strict defdata-disjoint-strict
-    defdata-subtype defdata-disjoint defdata defdata-attach
+    defdatas-subtype-strict defdatas-disjoint-strict
+
+    defdata
+    defdata-attach
     sig =>
     
     defdata-alias

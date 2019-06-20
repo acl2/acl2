@@ -219,7 +219,7 @@
     (true-listp (mv-nth 0 (partition-macro-args args ctx)))
     :hints (("Goal" :in-theory (enable partition-macro-args))))
 
-  (defthm true-listp-of-mv-nth-1-partition-macro-args
+  (defthm alistp-of-mv-nth-1-partition-macro-args
     (alistp (mv-nth 1 (partition-macro-args args ctx)))
     :hints (("Goal" :in-theory (enable partition-macro-args)))))
 
@@ -232,7 +232,7 @@
   "<p>This complements @(tsee partition-macro-args),
       which extracts a list of regular arguments
       and an alist of keyword arguments.
-      This alist has keys that are keyword
+      This alist has keys that are keywords
       but values that, in general, are terms that need to be evaluated
       to obtain the actual values of the keyword arguments;
       the terms are the ones supplied by the caller of the macro.
@@ -968,10 +968,8 @@
   (xdoc::tree-to-string
    (xdoc::&&
     (xdoc::p
-     "A @(':long') documentation string often consists of
-      a series of one or more XDOC trees
-      for paragraphs, (un)ordered lists, code blocks, etc.
-      This function can be used to wrap them into a top-level ``pseudo-tag''.")
+     "This can be used to construct XDOC strings at the ``top level'',
+      e.g. @(':short') and @(':long') documentation string.")
     (xdoc::@def "topstring")))
 
   (defmacro topstring (&rest trees)
@@ -985,9 +983,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Sometimes a @(':long') documentation string consists of a single paragraph.
-     This macro wraps the arguments (often just one string)
-     into a paragraph tree and then calls @(tsee topstring).")
+    "This combines @(tsee topstring) with @(tsee p).")
    (xdoc::@def "topstring-p"))
 
   (defmacro topstring-p (&rest trees)
@@ -1001,10 +997,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Sometimes a @(':long') documentation string
-     consists of a single definition preprocessor directive.
-     This macro wraps the arguments (often just one string)
-     into a definition directive tree and then calls @(tsee topstring).")
+    "This combines @(tsee topstring) with @(tsee @def).")
    (xdoc::@def "topstring-@def"))
 
   (defmacro topstring-@def (&rest trees)

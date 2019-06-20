@@ -264,3 +264,138 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: SHRD
+;; ======================================================================
+
+(def-inst x86-shrd-MRI
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :parents (one-byte-opcodes)
+
+  :short "Double-precision shift right, with immediate operand."
+
+  :long
+  "<p>
+   Op/En: MRI<br/>
+   0F AC: SHRD r/m16, r16, imm8<br/>
+   0F AC: SHRD r/m32, r32, imm8<br/>
+   0F AC: SHRD r/m64, r64, imm8<br/>
+   </p>"
+
+  :body
+
+  (b* ((ctx 'x86-shrd-MRI)
+
+       (r/m (modr/m->r/m modr/m))
+       (mod (modr/m->mod modr/m))
+       (reg (modr/m->reg modr/m))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+
+       ((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode
+                             nil ; not a byte operand
+                             rex-byte
+                             nil ; not an immediate operand
+                             prefixes
+                             nil ; no 64-bit default in 64-bit mode
+                             nil ; don't ignore REX in 64-bit mode
+                             nil ; don't ignore P3 in 64-bit mode
+                             x86))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; read destination operand:
+
+       (inst-ac? t)
+       ((mv flg dst-value increment-rip-by dst-addr x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod sib
+                                               1 ; imm8
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; read source operand:
+
+       (src-value (rgfi-size operand-size
+                             (reg-index reg rex-byte #.*r*)
+                             rex-byte
+                             x86))
+
+       ;; read immediate operand (the shift count):
+
+       ((mv flg count x86)
+        (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
+       ((when flg) (!!ms-fresh :rme-size-error flg))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; check instruction length now that we have read all of it:
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; mask count according to pseudocode (the text only mentions masking
+       ;; when CL is used, but the pseudocode masks also if imm8 is used):
+
+       (count-mask (if (logbitp #.*w* rex-byte)
+                       #x3f
+                     #x1f))
+       (count (logand count-mask count))
+
+       ;; compute result and flags:
+
+       (input-rflags (the (unsigned-byte 32) (rflags x86)))
+
+       ((mv result
+            result-undefined?
+            (the (unsigned-byte 32) output-rflags)
+            (the (unsigned-byte 32) undefined-flags))
+        (shrd-spec operand-size dst-value src-value count input-rflags)) ; TODO
+
+       ((mv result x86)
+        (if result-undefined?
+            (undef-read x86)
+          (mv result x86)))
+
+       ;; update the state:
+
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+
+       ((mv flg x86)
+        (x86-operand-to-reg/mem proc-mode
+                                operand-size
+                                inst-ac?
+                                nil ;; not memory pointer operand
+                                (trunc operand-size result) ; TODO: remove trunc
+                                seg-reg
+                                dst-addr
+                                rex-byte
+                                r/m
+                                mod
+                                x86))
+       ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
+;; ======================================================================
