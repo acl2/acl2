@@ -41,6 +41,8 @@
 (include-book "doc")
 (include-book "pathcond-fix")
 
+(local (in-theory (disable w)))
+
 ;; ----------------------------------------------------------------------
 ;; Install GL primitives:  This event collects the primitives defined in
 ;; primitives, fgarrays, and fast-alists and defines a new function
@@ -81,6 +83,8 @@
 
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
+
+(fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
 
 (def-fancy-ev-primitives counterex-primitives)
 

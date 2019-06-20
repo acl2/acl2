@@ -36,6 +36,7 @@
 (include-book "interp-st-bfrs-ok")
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (disable w)))
 
 ;; BOZO maybe doesn't belong here
 (defsection fgl-major-stack-concretize-of-interp-st-logicman-extension
@@ -253,13 +254,16 @@
 
     (defret base-bvar-of-<fn>
       (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-             (base-bvar$a (interp-st->bvar-db interp-st))))))
+             (base-bvar$a (interp-st->bvar-db interp-st))))
+
+    (defret w-state-of-<fn>
+      (equal (w new-state) (w state)))))
 
 
 
 (make-event 
  `(encapsulate
-    (((gl-primitive-fncall-stub * * interp-st state) => (mv * * interp-st)
+    (((gl-primitive-fncall-stub * * interp-st state) => (mv * * interp-st state)
       :formals (fn args interp-st state)
       :guard (and (pseudo-fnsym-p fn)
                   (gl-objectlist-p args)
@@ -284,8 +288,8 @@
              :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
              :ignore-ok t
              :irrelevant-formals-ok t
-             :returns (mv successp ans new-interp-st)
-             (mv nil nil interp-st)))
+             :returns (mv successp ans new-interp-st new-state)
+             (mv nil nil interp-st state)))
 
     (local (in-theory (enable gl-primitive-fncall-stub)))
 
@@ -339,9 +343,10 @@
     :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
     :returns (mv successp
                  (ans gl-object-p)
-                 new-interp-st)
+                 new-interp-st
+                 new-state)
     (if dont
-        (mv nil nil interp-st)
+        (mv nil nil interp-st state)
       (gl-primitive-fncall-stub fn args interp-st state))
     ///
     ,@*gl-primitive-thms*

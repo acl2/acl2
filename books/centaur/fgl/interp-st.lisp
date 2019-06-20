@@ -898,7 +898,10 @@
 
 (define gl-interp-store-debug-info (msg obj interp-st)
   :returns new-interp-st
+  :guard (not (eq msg :unreachable))
   (b* (((when (interp-st->errmsg interp-st))
+        interp-st)
+       ((unless (mbt (not (eq msg :unreachable))))
         interp-st)
        (interp-st (update-interp-st->errmsg msg interp-st))
        (stack-obj (stobj-let ((stack (interp-st->stack interp-st)))
@@ -923,18 +926,18 @@
                     (interp-st->errmsg interp-st))))
 
   (defret interp-st->errmsg-of-<fn>
-    (implies msg
+    (implies (and msg
+                  (not (equal msg :unreachable)))
              (interp-st->errmsg new-interp-st)))
 
   (defret interp-st->errmsg-equal-unreachable-of-<fn>
-    (implies (and (not (equal msg x))
-                  (not (equal (interp-st->errmsg interp-st) x)))
-             (not (equal (interp-st->errmsg new-interp-st) x)))))
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
 
 (defmacro gl-interp-error (&key msg debug-obj (nvals '1))
   `(b* ((msg ,msg)
         (debug-obj ,debug-obj)
         (interp-st (gl-interp-store-debug-info msg debug-obj interp-st)))
      ,(if (eql nvals 0)
-          'interp-st
-        `(mv ,@(acl2::repeat nvals nil) interp-st))))
+          '(mv interp-st state)
+        `(mv ,@(acl2::repeat nvals nil) interp-st state))))

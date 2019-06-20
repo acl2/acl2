@@ -39,7 +39,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
-
+(local (in-theory (disable w)))
 ;; (def-gl-object-eval fgl-prim
 ;;   (acl2-numberp
 ;;    binary-* binary-+

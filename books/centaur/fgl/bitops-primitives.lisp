@@ -35,7 +35,7 @@
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-
+(local (in-theory (disable w)))
 
 (def-formula-checks bitops-formula-checks
   (logapp

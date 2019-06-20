@@ -197,7 +197,7 @@
 
 
 
-(defun def-gl-primitive-fn (fn formals body name-override formula-check-fn prepwork wrld)
+(defun def-gl-primitive-fn (fn formals body name-override formula-check-fn updates-state prepwork wrld)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
                    (intern-in-package-of-symbol
@@ -211,12 +211,16 @@
         :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
         :returns (mv successp
                      ans
-                     new-interp-st)
+                     new-interp-st
+                     new-state)
         :prepwork <prepwork>
         (if (eql (len args) <arity>)
             (b* (((list <formals>) (gl-objectlist-fix args)))
-              <body>)
-          (mv nil nil interp-st))
+              (:@ (not :updates-state)
+               (b* (((mv successp ans interp-st) <body>))
+                 (mv successp ans interp-st state)))
+              (:@ :updates-state <body>))
+          (mv nil nil interp-st state))
         ///
         <thms>
 
@@ -271,12 +275,13 @@
                    (<prefix> . ,eval-prefix))
      :str-alist `(("<FN>" . ,(symbol-name fn))
                   ("<PREFIX>" ,(symbol-name eval-prefix) . ,eval-prefix))
+     :features (and updates-state '(:updates-state))
      :pkg-sym eval-prefix)))
 
 
-(defmacro def-gl-primitive (fn formals body &key (fnname) (formula-check) (prepwork))
+(defmacro def-gl-primitive (fn formals body &key (fnname) (formula-check) (prepwork) (updates-state))
   `(make-event
-    (def-gl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',prepwork (w state))))
+    (def-gl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork (w state))))
 
 
 
@@ -344,7 +349,7 @@
 (defun gl-primitive-fncall-entries (table)
   (Declare (Xargs :mode :program))
   (if (atom table)
-      `((otherwise (mv nil nil interp-st)))
+      `((otherwise (mv nil nil interp-st state)))
     (b* ((fn (caar table)))
       (cons (acl2::template-subst
              '(<fn> (gl-<fn>-primitive args interp-st state))
@@ -417,7 +422,7 @@
                                            (interp-st interp-st-bfrs-ok)
                                            state)
           :guard (interp-st-bfr-listp (gl-objectlist-bfrlist args))
-          :returns (mv successp ans new-interp-st)
+          :returns (mv successp ans new-interp-st new-state)
           (case (pseudo-fnsym-fix fn)
             . <entries>) ;;,(gl-primitive-fncall-entries (table-alist 'gl-primitives wrld)))
           ///

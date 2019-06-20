@@ -33,6 +33,7 @@
 (include-book "primitives")
 (local (include-book "primitive-lemmas"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable w)))
 
 (def-formula-checks fast-alist-formula-checks
   (hons-get hons-acons fast-alist-fork fast-alist-clean make-fast-alist))

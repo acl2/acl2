@@ -33,6 +33,8 @@
 (include-book "ipasir-sat")
 (include-book "satlink-sat")
 
+(local (in-theory (disable w)))
+
 (fty::deftranssum fgl-sat-config
   :parents (fgl-sat-check)
   :short "Configuration object for either monolithic or incremental SAT in the default FGL configuration."
@@ -44,18 +46,22 @@
                                       (bfr interp-st-bfr-p)
                                       (interp-st interp-st-bfrs-ok)
                                       state)
-    :returns (mv ans new-interp-st)
+    :returns (mv ans new-interp-st new-state)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
           (cw "SAT check failed because we are not in AIGNET mode!~%")
-          (mv bfr interp-st))
+          (mv bfr interp-st state))
          ((when (interp-st->errmsg interp-st))
-          (mv nil interp-st))
+          (mv nil interp-st state))
          ((unless (fgl-sat-config-p params))
           (gl-interp-error
            :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to an fgl-sat-config object."))))
       (case (tag params)
-        (:fgl-satlink-config (interp-st-satlink-sat-check-core params bfr interp-st state))
-        (otherwise (interp-st-ipasir-sat-check-core params bfr interp-st state))))
+        (:fgl-satlink-config
+         (interp-st-satlink-sat-check-core params bfr interp-st state))
+        (otherwise
+         (b* (((mv ans interp-st)
+               (interp-st-ipasir-sat-check-core params bfr interp-st state)))
+           (mv ans interp-st state)))))
     ///
     . ,*interp-st-sat-check-thms*))
 

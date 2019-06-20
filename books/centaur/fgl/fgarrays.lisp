@@ -33,6 +33,7 @@
 (include-book "fast-alists")
 (local (include-book "primitive-lemmas"))
 (local (std::add-default-post-define-hook :fix))
+(local (in-theory (disable w)))
 
 (def-formula-checks fgarray-formula-checks
   (create-fgarray$a

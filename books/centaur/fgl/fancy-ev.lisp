@@ -38,36 +38,44 @@
   '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
     :equiv-contexts :reclimit)) ;; removed :errmsg
 
+(local (in-theory (disable w)))
+
+(defconst *fancy-ev-primitive-thms*
+  '((defret interp-st-get-of-<fn>
+      (implies (member (interp-st-field-fix key)
+                       *logically-relevant-interp-st-fields*)
+               (equal (interp-st-get key new-interp-st)
+                      (interp-st-get key interp-st))))
+
+    (defret interp-st-bfrs-ok-of-<fn>
+      (implies (interp-st-bfrs-ok interp-st)
+               (interp-st-bfrs-ok new-interp-st)))
+
+    (defret errmsg-of-<fn>
+      (implies (interp-st->errmsg interp-st)
+               (equal (interp-st->errmsg new-interp-st)
+                      (interp-st->errmsg interp-st))))
+
+    (defret interp-st->errmsg-equal-unreachable-of-<fn>
+      (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+               (not (equal (interp-st->errmsg new-interp-st)
+                           :unreachable))))
+
+    (defret w-state-of-<fn>
+      (equal (w new-state)
+             (w state)))))
 (encapsulate
-  (((fancy-ev-primitive * * interp-st state) => (mv * * interp-st)
+  (((fancy-ev-primitive * * interp-st state) => (mv * * interp-st state)
     :formals (fn args interp-st state)
     :guard (and (pseudo-fnsym-p fn)
                 (true-listp args)
                 (interp-st-bfrs-ok interp-st))))
-  (local (defun fancy-ev-primitive (fn args interp-st state)
-           (declare (xargs :stobjs (interp-st state))
-                    (ignore fn args state))
-           (mv nil nil interp-st)))
-
-  (defthm interp-st-get-of-fancy-ev-primitive
-    (implies (member (interp-st-field-fix key)
-                     *logically-relevant-interp-st-fields*)
-             (equal (interp-st-get key (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))
-                    (interp-st-get key interp-st))))
-
-  (defthm interp-st-bfrs-ok-of-fancy-ev-primitive
-    (implies (interp-st-bfrs-ok interp-st)
-             (interp-st-bfrs-ok (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))))
-
-  (defthm errmsg-of-fancy-ev-primitive
-    (implies (interp-st->errmsg interp-st)
-             (equal (interp-st->errmsg (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))
-                    (interp-st->errmsg interp-st))))
-
-  (defret interp-st->errmsg-equal-unreachable-of-fancy-ev-primitive
-    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
-             (not (equal (interp-st->errmsg (mv-nth 2 (fancy-ev-primitive fn args interp-st state)))
-                         :unreachable)))))
+  (local (define fancy-ev-primitive (fn args interp-st state)
+           :returns (mv ok ans new-interp-st new-state)
+           (declare (ignore fn args))
+           (mv nil nil interp-st state)))
+  (local (in-theory (enable fancy-ev-primitive)))
+  (make-event (cons 'progn *fancy-ev-primitive-thms*)))
    
 (define fancy-ev-definition ((fn pseudo-fnsym-p) state)
   :returns (mv ok
@@ -99,7 +107,7 @@
                     aokp)
     :well-founded-relation acl2::nat-list-<
     :measure (list reclimit (pseudo-term-count x))
-    :returns (mv errmsg val new-interp-st)
+    :returns (mv errmsg val new-interp-st new-state)
     :verify-guards nil
     :parents (fgl-rewrite-rules)
     :short "Term evaluator used by FGL for syntaxp, bind-free, and syntax-bind interpretation."
@@ -137,36 +145,36 @@ input arguments, returning its return value list and modified interp-st (if
 any).  This allows all functions that were added using @('fancy-ev-add-primitive') to be executed by @('fancy-ev').</li>
 </ul>"
     (pseudo-term-case x
-      :const (mv nil x.val interp-st)
-      :var (mv nil (cdr (hons-assoc-equal x.name alist)) interp-st)
-      :lambda (b* (((mv err args interp-st)
+      :const (mv nil x.val interp-st state)
+      :var (mv nil (cdr (hons-assoc-equal x.name alist)) interp-st state)
+      :lambda (b* (((mv err args interp-st state)
                     (fancy-ev-list x.args alist reclimit interp-st state hard-errp aokp))
-                   ((when err) (mv err nil interp-st)))
+                   ((when err) (mv err nil interp-st state)))
                 (fancy-ev x.body
                           (pairlis$ x.formals args)
                           reclimit interp-st state hard-errp aokp))
       :fncall (b* (((when (and** (eq x.fn 'if) (eql (len x.args) 3)))
-                    (b* (((mv err test interp-st) (fancy-ev (first x.args) alist reclimit interp-st state hard-errp aokp))
-                         ((when err) (mv err nil interp-st)))
+                    (b* (((mv err test interp-st state) (fancy-ev (first x.args) alist reclimit interp-st state hard-errp aokp))
+                         ((when err) (mv err nil interp-st state)))
                       (if test
                           (if (equal (first x.args) (second x.args))
                               ;; OR case
-                              (mv nil test interp-st)
+                              (mv nil test interp-st state)
                             (fancy-ev (second x.args) alist reclimit interp-st state hard-errp aokp))
                         (fancy-ev (third x.args) alist reclimit interp-st state hard-errp aokp))))
                    ((when (and** (eq x.fn 'return-last) (eql (len x.args) 3)))
                     (b* ((arg1 (first x.args)))
-                      (b* ((interp-st
+                      (b* (((mv interp-st state)
                             (pseudo-term-case arg1
                               :const (if (eq arg1.val 'progn)
-                                         (b* (((mv ?err ?arg1 interp-st)
+                                         (b* (((mv ?err ?arg1 interp-st state)
                                                (fancy-ev (second x.args) alist reclimit interp-st state hard-errp aokp)))
-                                           interp-st)
-                                       interp-st)
-                              :otherwise interp-st)))
+                                           (mv interp-st state))
+                                       (mv interp-st state))
+                              :otherwise (mv interp-st state))))
                         (fancy-ev (third x.args) alist reclimit interp-st state hard-errp aokp))))
-                   ((mv err args interp-st) (fancy-ev-list x.args alist reclimit interp-st state hard-errp aokp))
-                   ((when err) (mv err nil interp-st)))
+                   ((mv err args interp-st state) (fancy-ev-list x.args alist reclimit interp-st state hard-errp aokp))
+                   ((when err) (mv err nil interp-st state)))
                 (fancy-ev-fncall x.fn args reclimit interp-st state hard-errp aokp))))
 
   (define fancy-ev-fncall ((fn pseudo-fnsym-p)
@@ -175,25 +183,25 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
                            (interp-st interp-st-bfrs-ok)
                            state hard-errp aokp)
     :measure (list reclimit 0)
-    :returns (mv errmsg val new-interp-st)
+    :returns (mv errmsg val new-interp-st new-state)
     (b* ((fn (pseudo-fnsym-fix fn))
          (args (mbe :logic (true-list-fix args)
                     :exec args))
-         ((mv ev-ok val interp-st)
+         ((mv ev-ok val interp-st state)
           (fancy-ev-primitive fn args interp-st state))
-         ((when ev-ok) (mv nil val interp-st))
+         ((when ev-ok) (mv nil val interp-st state))
          ((mv ev-err val)
           (acl2::magic-ev-fncall fn
                                  args
                                  state hard-errp aokp))
-         ((unless ev-err) (mv nil val interp-st))
+         ((unless ev-err) (mv nil val interp-st state))
          ((when (zp reclimit))
-          (mv (msg "Recursion limit ran out calling ~x0" (pseudo-fnsym-fix fn)) nil interp-st))
+          (mv (msg "Recursion limit ran out calling ~x0" (pseudo-fnsym-fix fn)) nil interp-st state))
          ((mv def-ok formals body) (fancy-ev-definition fn state))
          ((unless def-ok)
-          (mv (msg "No definition for ~x0" (pseudo-fnsym-fix fn)) nil interp-st))
+          (mv (msg "No definition for ~x0" (pseudo-fnsym-fix fn)) nil interp-st state))
          ((unless (eql (len formals) (len args)))
-          (mv (msg "Wrong arity for ~x0 call" (pseudo-fnsym-fix fn)) nil interp-st)))
+          (mv (msg "Wrong arity for ~x0 call" (pseudo-fnsym-fix fn)) nil interp-st state)))
       (fancy-ev body (pairlis$ formals args) (1- reclimit) interp-st state hard-errp aokp)))
 
   (define fancy-ev-list ((x pseudo-term-listp)
@@ -202,14 +210,14 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
                          (interp-st interp-st-bfrs-ok)
                          state hard-errp aokp)
     :measure (list reclimit (pseudo-term-list-count x))
-    :returns (mv errmsg (vals true-listp) new-interp-st)
+    :returns (mv errmsg (vals true-listp) new-interp-st new-state)
     (b* (((when (atom x))
-          (mv nil nil interp-st))
-         ((mv err first interp-st) (fancy-ev (car x) alist reclimit interp-st state hard-errp aokp))
-         ((when err) (mv err nil interp-st))
-         ((mv err rest interp-st) (fancy-ev-list (cdr x) alist reclimit interp-st state hard-errp aokp))
-         ((when err) (mv err nil interp-st)))
-      (mv nil (cons first rest) interp-st)))
+          (mv nil nil interp-st state))
+         ((mv err first interp-st state) (fancy-ev (car x) alist reclimit interp-st state hard-errp aokp))
+         ((when err) (mv err nil interp-st state))
+         ((mv err rest interp-st state) (fancy-ev-list (cdr x) alist reclimit interp-st state hard-errp aokp))
+         ((when err) (mv err nil interp-st state)))
+      (mv nil (cons first rest) interp-st state)))
   ///
   (local (in-theory (disable acl2::member-of-cons member (tau-system) pseudo-termp pseudo-term-listp
                              fancy-ev fancy-ev-fncall fancy-ev-list)))
@@ -287,6 +295,20 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
       :hints ('(:expand (<call>)))
       :fn fancy-ev-list))
 
+  (defret-mutual w-state-of-fancy-ev
+    (defret w-state-of-<fn>
+      (equal (w new-state) (w state))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev)
+    (defret w-state-of-<fn>
+      (equal (w new-state) (w state))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-fncall)
+    (defret w-state-of-<fn>
+      (equal (w new-state) (w state))
+      :hints ('(:expand (<call>)))
+      :fn fancy-ev-list))
+
   (local (defthm true-listp-when-symbol-listp
            (implies (symbol-listp x)
                     (true-listp x))))
@@ -339,13 +361,13 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
         (er hard? 'fancy-ev-primitive-call "~x0 takes input stobjs ~x1 -- only interp-st and state are allowed"
             fn diff))
        (stobjs-out (stobjs-out fn wrld))
-       (diff (set-difference-eq stobjs-out '(nil interp-st)))
+       (diff (set-difference-eq stobjs-out '(nil interp-st state)))
        ((when diff)
-        (er hard? 'fancy-ev-primitive-call "~x0 can modify stobjs ~x1 -- only interp-st may be modified"
+        (er hard? 'fancy-ev-primitive-call "~x0 can modify stobjs ~x1 -- only interp-st and state may be modified"
             fn diff))
        (bindings (fancy-ev-primitive-bindings argsvar stobjs-in formals 0))
        (call-formals (fancy-ev-primitive-formals stobjs-in formals))
-       ((unless (member 'interp-st stobjs-out))
+       ((unless (intersectp-eq '(interp-st state) stobjs-out))
         `(b* (,@bindings
               (result (mbe :logic (non-exec (,fn . ,call-formals))
                            :exec (if ,guard
@@ -354,7 +376,7 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
                                                     (,fn . ,call-formals))
                                         `(,fn . ,call-formals))
                                    (non-exec (ec-call (,fn . ,call-formals)))))))
-           (mv t result interp-st)))
+           (mv t result interp-st state)))
        (out-bindings (fancy-ev-stobj-out-bindings stobjs-out 0))
        (results (fancy-ev-stobj-out-results stobjs-out out-bindings)))
     `(b* (,@bindings
@@ -365,7 +387,7 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
                   :exec (if ,guard
                             (,fn . ,call-formals)
                           (ec-call (,fn . ,call-formals))))))
-       (mv t (list . ,results) interp-st))))
+       (mv t (list . ,results) interp-st state))))
 
 (defun fancy-ev-check-primitive-fn (fn guard state)
   (b* ((call (fancy-ev-primitive-call 'args fn guard state)))
@@ -409,21 +431,44 @@ any).  This allows all functions that were added using @('fancy-ev-add-primitive
 
 (defun def-fancy-ev-primitives-fn (fnname state)
   (b* ((prims (table-alist 'fancy-ev-primitives (w state))))
-    `(define ,fnname ((fn pseudo-fnsym-p)
-                      (args true-listp)
-                      (interp-st interp-st-bfrs-ok)
-                      state)
-       :ignore-ok t
-       :irrelevant-formals-ok t
-       (case (pseudo-fnsym-fix fn)
-         ,@(fancy-ev-primitives-cases 'args prims state)
-         (otherwise (mv nil nil interp-st)))
-       ///
+    `(progn
+       (define ,fnname ((fn pseudo-fnsym-p)
+                        (args true-listp)
+                        (interp-st interp-st-bfrs-ok)
+                        state)
+         :ignore-ok t
+         :irrelevant-formals-ok t
+         :returns (mv okp ans new-interp-st new-state)
+         (case (pseudo-fnsym-fix fn)
+           ,@(fancy-ev-primitives-cases 'args prims state)
+           (otherwise (mv nil nil interp-st state)))
+         ///
+         (make-event (cons 'progn *fancy-ev-primitive-thms*)))
        (defattach fancy-ev-primitive ,fnname))))
 
 (defmacro def-fancy-ev-primitives (fnname)
   `(make-event
     (def-fancy-ev-primitives-fn ',fnname state)))
+
+(logic)
+(local
+ (progn
+
+   (define my-set-debug (val state)
+     :returns new-state
+     (f-put-global ':my-global-var val state)
+     ///
+     (defret w-of-<fn>
+       (equal (w new-state) (w state))
+       :hints(("Goal" :in-theory (enable w)))))
+
+   (fancy-ev-add-primitive gl-interp-store-debug-info (not (eq msg :unreachable)))
+
+   (fancy-ev-add-primitive my-set-debug t)
+
+   (def-fancy-ev-primitives foo)))
+
+
 
 ;; (logic)
 

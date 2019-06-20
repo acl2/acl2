@@ -598,8 +598,9 @@
        ((mv interp-st state) (initialize-interp-st config interp-st state))
        
        (interp-st (interp-st-set-bindings (variable-g-bindings vars) interp-st))
-       ((acl2::hintcontext-bind ((init-interp-st interp-st))))
-       ((mv ans-interp interp-st)
+       ((acl2::hintcontext-bind ((init-interp-st interp-st)
+                                 (init-interp-state state))))
+       ((mv ans-interp interp-st state)
         (gl-interp-test goal interp-st state))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
@@ -607,12 +608,13 @@
                (interp-st-prof-print-report interp-st)))
        (sat-config (fgl-toplevel-sat-check-config-wrapper
                     (glcp-config->sat-config config)))
-       ((mv ans interp-st)
+       ((mv ans interp-st state)
         (interp-st-validity-check
          ;; BOZO -- use a user-provided config
          sat-config
          ans-interp interp-st state))
-       ((acl2::hintcontext-bind ((sat-interp-st interp-st))))
+       ((acl2::hintcontext-bind ((sat-interp-st interp-st)
+                                 (sat-state state))))
 
        ((when (and (equal ans t)
                    (not (interp-st->errmsg interp-st))))
@@ -747,7 +749,7 @@
                          (interp-st ,(acl2::hq init-interp-st))
                          (env ,(acl2::hq env))
                          (st state)
-                         (state ,(acl2::hq interp-state)))
+                         (state ,(acl2::hq init-interp-state)))
                         (:instance iff-forall-extensions-necc
                          (obj ,(acl2::hq ans-eval))
                          (term ,(acl2::hq goal))
@@ -760,9 +762,7 @@
                   :in-theory (disable eval-of-interp-st-validity-check
                                       gl-interp-test-correct
                                       iff-forall-extensions-necc
-                                      fgl-ev-of-extension-when-term-vars-bound)))))))
-
-  )
+                                      fgl-ev-of-extension-when-term-vars-bound))))))))
 
 
 

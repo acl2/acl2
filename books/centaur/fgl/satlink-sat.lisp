@@ -176,7 +176,7 @@
 
 
 
-
+(local (in-theory (disable w)))
 
 (define interp-st-satlink-sat-check-core ((config fgl-satlink-monolithic-sat-config-p)
                                           (bfr interp-st-bfr-p)
@@ -184,35 +184,38 @@
                                           state)
   :guard (bfr-mode-is :aignet (interp-st-bfr-mode))
   :returns (mv (ans)
-               new-interp-st)
+               new-interp-st
+               new-state)
   :ignore-ok t
   :irrelevant-formals-ok t
   ;; :guard-debug t
   :guard-hints (("goal" :in-theory (e/d (interp-st-bfrs-ok) (not))))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
-        (mv bfr interp-st))
+        (mv bfr interp-st state))
        (cube (interp-st-sat-check-cube config bfr interp-st))
        ((fgl-satlink-monolithic-sat-config config)))
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (env$ (interp-st->ctrex-env interp-st)))
-               (ans env$)
+               (ans env$ state)
                (stobj-let ((aignet (logicman->aignet logicman)))
-                          (ans env$)
+                          (ans env$ state)
                           (stobj-let ((bitarr (env$->bitarr env$)))
-                                     (ans bitarr)
+                                     (ans bitarr state)
                                      (b* ((satlink-config (fgl-satlink-config-wrapper config))
                                           
                                           ((unless config.transform)
                                            (acl2::hintcontext
                                             :no-xform
-                                            (aignet::aignet-sat-check-cube cube satlink-config aignet bitarr)))
+                                            (b* (((mv status bitarr)
+                                                  (aignet::aignet-sat-check-cube cube satlink-config aignet bitarr)))
+                                              (mv status bitarr state))))
                                           (transform-config (fgl-aignet-transforms-config-wrapper config))
                                           ((acl2::hintcontext :xform)))
                                        (aignet::aignet-transform-sat-check-cube
-                                        cube satlink-config transform-config aignet bitarr))
-                                     (mv (if (eq ans :unsat) nil bfr) env$))
-                          (mv ans env$))
-               (mv ans interp-st)))
+                                        cube satlink-config transform-config aignet bitarr state))
+                                     (mv (if (eq ans :unsat) nil bfr) env$ state))
+                          (mv ans env$ state))
+               (mv ans interp-st state)))
   ///
   
   (defret interp-st-bfrs-ok-of-<fn>
@@ -313,7 +316,10 @@
 
   (defret interp-st->errmsg-equal-unreachable-of-<fn>
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
-             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (make-event
  `(define interp-st-satlink-sat-check-impl (params
@@ -321,17 +327,18 @@
                                             (interp-st interp-st-bfrs-ok)
                                             state)
     :returns (mv (ans)
-                 new-interp-st)
+                 new-interp-st
+                 new-state)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
           ;; Skip the SAT check when not in aignet mode, for now.
-          (mv bfr interp-st))
+          (mv bfr interp-st state))
          ((when (interp-st->errmsg interp-st))
-          (mv nil interp-st))
+          (mv nil interp-st state))
          ((unless (fgl-satlink-monolithic-sat-config-p params))
           (gl-interp-error
            :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-sat-config object")))
          ((when (eq bfr nil))
-          (mv nil interp-st)))
+          (mv nil interp-st state)))
       (interp-st-satlink-sat-check-core params bfr interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))

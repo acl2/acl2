@@ -35,6 +35,8 @@
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
 
+(local (in-theory (disable w)))
+
 (defconst *interp-st-sat-check-thms*
   '((defret interp-st-bfrs-ok-of-<fn>
       (implies (and (interp-st-bfrs-ok interp-st)
@@ -134,13 +136,16 @@
     (defret logicman-equiv-of-<fn>
       (logicman-equiv (interp-st->logicman new-interp-st)
                       (interp-st->logicman interp-st))
-      :hints(("Goal" :in-theory (enable logicman-equiv))))))
+      :hints(("Goal" :in-theory (enable logicman-equiv))))
+
+    (defret w-state-of-<fn>
+      (equal (w new-state) (w state)))))
 
 
 (make-event
  `(encapsulate
     (((interp-st-sat-check * * interp-st state)
-      => (mv * interp-st)
+      => (mv * interp-st state)
       :formals (params bfr interp-st state)
       :guard (and (interp-st-bfr-p bfr)
                   (interp-st-bfrs-ok interp-st))))
@@ -150,10 +155,10 @@
                                   (interp-st interp-st-bfrs-ok)
                                   state)
        :returns (mv ans
-                    new-interp-st)
+                    new-interp-st new-state)
        :ignore-ok t
        :irrelevant-formals-ok t
-       (mv bfr interp-st)))
+       (mv bfr interp-st state)))
 
     (local (in-theory (enable interp-st-sat-check)))
     . 
@@ -192,7 +197,8 @@
                                        (interp-st interp-st-bfrs-ok)
                                        state)
     :returns (mv ans
-                 new-interp-st)
+                 new-interp-st
+                 new-state)
     :ignore-ok t
     :irrelevant-formals-ok t
     (b* (((unless (gl-object-case params :g-concrete))
@@ -240,17 +246,17 @@
                                     (bfr interp-st-bfr-p)
                                     (interp-st interp-st-bfrs-ok)
                                     state)
-    :returns (mv ans new-interp-st)
+    :returns (mv ans new-interp-st new-state)
     (b* ((not-bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
                              (bfr)
                              (bfr-not bfr)
                              bfr))
-         ((mv not-ans interp-st)
+         ((mv not-ans interp-st state)
           (interp-st-sat-check params not-bfr interp-st state)))
       (stobj-let ((logicman (interp-st->logicman interp-st)))
                  (bfr)
                  (bfr-not not-ans)
-                 (mv bfr interp-st)))
+                 (mv bfr interp-st state)))
     ///
     (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 

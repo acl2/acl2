@@ -751,24 +751,29 @@
     (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
              (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
 
+(local (in-theory (disable w)))
+
 (make-event
  `(define interp-st-ipasir-sat-check-impl (params
                                            (bfr interp-st-bfr-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
     :returns (mv (ans)
-                 new-interp-st)
+                 new-interp-st
+                 new-state)
     (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
           ;; Skip the SAT check when not in aignet mode, for now.
-          (mv bfr interp-st))
+          (mv bfr interp-st state))
          ((when (interp-st->errmsg interp-st))
-          (mv nil interp-st))
+          (mv nil interp-st state))
          ((unless (fgl-ipasir-config-p params))
           (gl-interp-error
            :msg (gl-msg "Malformed fgl-sat-check call: params was not resolved to a fgl-ipasir-config object")))
          ((when (eq bfr nil))
-          (mv nil interp-st)))
-      (interp-st-ipasir-sat-check-core params bfr interp-st state))
+          (mv nil interp-st state))
+         ((mv ans interp-st)
+          (interp-st-ipasir-sat-check-core params bfr interp-st state)))
+      (mv ans interp-st state))
     ///
     . ,*interp-st-sat-check-thms*))
 
