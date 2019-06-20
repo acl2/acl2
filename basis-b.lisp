@@ -314,76 +314,192 @@
          (cdr body)))
     nil))
 
+(defun defstub-body-new (outputs)
+
+; Turn the output part of a new-style signature into a term.  This is called to
+; construct the body of the witness function that defstub passes to
+; encapsulate, when the new style is used in defstub (otherwise,
+; defstub-body-old is called).  This function never causes an error, even if
+; outputs is ill-formed; what it returns in that case is irrelevant.  If
+; outputs is well-formed, it converts each * to nil and every other symbol to
+; itself, e.g., it converts (mv * s *) to (mv nil s nil), * to nil, and state
+; to state.
+
+  (cond ((atom outputs)
+         (cond ((equal outputs '*) nil)
+               (t outputs)))
+        ((equal (car outputs) '*)
+         (cons nil (defstub-body-new (cdr outputs))))
+        (t (cons (car outputs) (defstub-body-new (cdr outputs))))))
+
+(defun defstub-body-old-aux (outputs-without-mv stobjs)
+
+; Helper of defstub-body-old; see that function.  This function processes the
+; elements after mv.
+
+  (declare (xargs :guard (symbol-listp stobjs)))
+  (cond ((atom outputs-without-mv) nil)
+        ((member-eq (car outputs-without-mv) stobjs)
+         (cons (car outputs-without-mv)
+               (defstub-body-old-aux (cdr outputs-without-mv) stobjs)))
+        (t (cons nil ; could probably use t instead
+                 (defstub-body-old-aux (cdr outputs-without-mv) stobjs)))))
+
+(defun defstub-body-old (outputs stobjs)
+
+; Turn the output part of an old-style signature into a term.  This is called
+; to construct the body of the witness function that defstub passes to the
+; encapsulate, when the old style is used in defstub (otherwise,
+; defstub-body-new is called).  This function never causes an error, even if
+; outputs is ill-formed; what it returns in that case is irrelevant.  If
+; outputs is well-formed, it converts each non-stobj name to nil and each stobj
+; name to itself, e.g., it converts (mv x s y) to (mv nil s nil), x to nil, and
+; state to state.  Since stobjs other than state are not as evident in the old
+; style as in the new style, the user-specified stobjs (as well as state, if
+; present) are passed as an extra argument to this function; these stobjs are
+; collected as explained in the comments in defstub-fn.
+
+  (declare (xargs :guard (symbol-listp stobjs)))
+  (cond ((atom outputs)
+         (cond ((member-eq outputs stobjs) outputs)
+               (t nil)))
+        (t (cons (car outputs) (defstub-body-old-aux (cdr outputs) stobjs)))))
+
 (defun defstub-fn (name args)
+
+; We cannot just "forward" the arguments of defstub to encapsulate and have
+; encapsulate validate them, for two reasons.  First, the new-style syntax
+; differs slightly in the two macros (e.g. (defstub f (*) => *) vs.
+; (encapsulate (((f *) => *)) ...)) while the old-style syntax is the same
+; (e.g. (defstub f (x) t) vs. (encapsulate ((f (x) t)) ...)), making it
+; necessary to distinguish new style from old style to adapt slightly the
+; syntax in the new style prior to passing the arguments to encapsulate.
+; Second, the witness to pass to the encapsulate is constructed differently
+; depending on whether the style is new or old.
+
+; Here we aim at performing only the "minimal" validation checks that let us
+; pass the right data to encapsulate, delegating to encapsulate all the
+; remaining validation checks.
+
+; In both styles, there must be at least two arguments following the name.  If
+; this condition fails, it would not be clear what to pass to encapsulate.
+
   (let ((len-args (length args)))
     (cond
-     ((not (or (eql len-args 2)
-               (and (eql len-args 3)
-                    (symbolp (cadr args))
-                    (equal (symbol-name (cadr args)) "=>"))))
+     ((< len-args 2)
       `(er soft 'defstub
-           "Defstub must be of the form (defstub name formals args-sig) or ~
-            (defstub name args-sig => body-sig).  See :DOC defstub."))
-     ((and (eql len-args 2)
-           (not (and (symbol-listp (car args))
-                     (or (symbolp (cadr args))
-                         (symbol-listp (cadr args))))))
-      `(er soft 'defstub
-           "For calls of the form (defstub name formals args-sig), formals ~
-            must be a true-list of symbols and args-sig must be a symbol or a ~
-            true-list of symbols.  See :DOC defstub."))
-     ((and (eql len-args 3)
-           (not (symbol-listp (car args))))
-      `(er soft 'defstub
-           "For calls of the form (defstub name args-sig => body-sig), ~
-            args-sig must be a true-list of symbols.  See :DOC defstub."))
-     ((eql len-args 2) ; old style
-      (let* ((formals (car args))
-             (body (cadr args))
-             (mv-p (and (consp body)
-                        (eq (car body) 'mv))))
+           "Defstub must be of the form (defstub name inputs => outputs ...) ~
+            or (defstub name inputs outputs ...).  See :DOC defstub."))
+
+; New and old style cannot be told apart just from the first argument after the
+; name, which for example could be (state) in both styles.  New and old styles
+; cannot be told apart just from the second argument after the name either,
+; because for example (defstub f (x) =>) is valid in the old style, where => is
+; (oddly) used as output variable.  We need to look past the second argument
+; after the name: if there is no third argument, we must be in the old style,
+; because the new style requires inputs, arrow, and outputs; if the third
+; argument is a keyword, we must be in the old style, because the output part
+; of the new style cannot be a keyword; if the third argument is not a keyword,
+; we must be in the new style instead.
+
+; We handle the old style first.
+
+     ((or (= len-args 2)
+          (keywordp (caddr args)))
+
+; We keep the same syntax for the signature, including any options.  We use the
+; inputs as the formals of the witness function.  If there is a :stobjs option
+; (which may be a single stobj name or a list thereof) or the inputs include
+; state, we declare the stobjs in the witness function (note that state may or
+; may not be explicitly declared in the stobjs option of defstub).  If there
+; are multiple outputs, we also generate an exported type prescription theorem
+; saying that the function returns a true list.  The code below includes some
+; checks on the arguments of defstub to ensure the absence of run-time errors
+; (e.g. the options are checked to satisfy keyword-value-listp before calling
+; assoc-keyword on them).
+
+      (let* ((inputs (car args))
+             (outputs (cadr args))
+             (options (cddr args))
+             (stobjs (and (keyword-value-listp options) ; assoc-keyword guard
+                          (cadr (assoc-keyword :stobjs options))))
+             (stobjs (cond ((symbol-listp stobjs) stobjs) ; covers nil case
+                           ((symbolp stobjs) (list stobjs))
+                           (t nil))) ; malformed :stobjs option
+; Stobjs is a symbol-listp at this point.
+             (stobjs (cond ((and (true-listp inputs) ; member-equal guard
+                                 (member-eq 'state inputs))
+                            (add-to-set-eq 'state stobjs))
+                           (t stobjs)))
+
+; If stobjs is ill-formed in any of the bindings above, then the signature will
+; be illegal in the generated encapsulate, in which case the value of stobjs is
+; irrelevant.
+
+             (body (defstub-body-old outputs stobjs)))
         `(encapsulate
-           ((,name ,formals ,body))
+           ((,name ,@args)) ; args includes inputs, outputs, and options
            (logic)
            (local
-            (defun ,name ,formals
-              (declare (ignorable ,@formals))
-              ,(if mv-p
-                   (let* ((output-vars (cdr body))
-                          (posn (position-eq 'state output-vars))
-                          (lst
-                           (if posn
-                               (append (make-list posn :initial-element t)
-                                       (cons 'state
-                                             (make-list (- (length output-vars)
-                                                           (1+ posn)))))
-                             (make-list (length output-vars)
-                                        :initial-element t))))
-                     `(mv ,@lst))
-                 (if (eq body 'state)
-                     'state
-                   t))))
-           ,@(and mv-p
+            (defun ,name ,inputs
+              (declare (ignorable ,@inputs)
+                       ,@(and stobjs `((xargs :stobjs ,stobjs))))
+              ,body))
+           ,@(and (consp outputs)
+
+; Note that if (car outputs) is not MV, then the signature will be illegal in
+; the generated encapsulate below, so the user will see an error message that
+; should be adequate.
+
                   `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
                                         name)
-                      (true-listp (,name ,@formals))
+                      (true-listp (,name ,@inputs))
                       :rule-classes :type-prescription))))))
-     (t (let* ((args-sig (car args))
-               (body-sig (caddr args))
-               (formals (gen-formals-from-pretty-flags args-sig))
-               (body (defstub-body body-sig))
+
+; In the new style, we adapt the syntax of the signature, keeping all the
+; options.  We derive the formals of the witness function by replacing the *s
+; in the signature with distinct symbols.  We derive the stobjs of the witness
+; function from the inputs of the signature, by collecting all the non-*s.  If
+; there are multiple outputs, we also generate an exported type prescription
+; theorem saying that the function returns a true list.  The code below
+; includes some checks on the arguments of defstub to ensure the absence of
+; run-time errors (e.g., the inputs are checked to satisfy symbol-listp before
+; calling gen-formals-from-pretty-flags).
+
+     (t (let* ((inputs (car args))
+               (arrow
+
+; We do not check here that arrow is a symbol with name "=>", since that check
+; will be made when the signature is checked in the generated encapsulate.
+
+                (cadr args))
+               (outputs (caddr args))
+               (options (cdddr args))
+               (formals (and (symbol-listp inputs)
+
+; Note that if inputs is not a symbol-listp, then the value of formals will be
+; ignored because the generated encapsulate will immediately report a signature
+; violation.
+
+                             (gen-formals-from-pretty-flags inputs)))
+               (body (defstub-body-new outputs))
                (ignores (defstub-ignores formals body))
-               (stobjs (collect-non-x '* args-sig)))
+               (stobjs (and (true-listp inputs) ; collect-non-x guard
+                            (collect-non-x '* inputs))))
           `(encapsulate
-             (((,name ,@args-sig) => ,body-sig))
+             (((,name ,@inputs) ,arrow ,outputs ,@options))
              (logic)
              (local
               (defun ,name ,formals
                 (declare (ignore ,@ignores)
-                         (xargs :stobjs ,stobjs))
+                         ,@(and stobjs `((xargs :stobjs ,stobjs))))
                 ,body))
-             ,@(and (consp body-sig)
-                    (eq (car body-sig) 'mv)
+             ,@(and (consp outputs)
+
+; Note that if (car outputs) is not MV, then the signature will be illegal in
+; the generated encapsulate below, so the user will see an error message that
+; should be adequate.
+
                     `((defthm ,(packn-pos (list "TRUE-LISTP-" name)
                                           name)
                         (true-listp (,name ,@formals))

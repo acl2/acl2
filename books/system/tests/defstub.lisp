@@ -219,6 +219,11 @@
  (assert! (and (equal (stobjs-in 'm (w state)) '())
                (equal (stobjs-out 'm (w state)) '(nil))))
 
+; check for insertion of (logic) at start of generated encapsulate events
+
+ (program)
+ (defstub p (*) => *)
+
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
