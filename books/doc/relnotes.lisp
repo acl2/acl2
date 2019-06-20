@@ -329,7 +329,10 @@
     (xdoc::li "@('MOV moffs64, RAX')")
     (xdoc::li "@('SHRD r/m16, r16, imm8')")
     (xdoc::li "@('SHRD r/m32, r32, imm8')")
-    (xdoc::li "@('SHRD r/m64, r64, imm8')"))
+    (xdoc::li "@('SHRD r/m64, r64, imm8')")
+    (xdoc::li "@('SHRD r/m16, r16, CL')")
+    (xdoc::li "@('SHRD r/m32, r32, CL')")
+    (xdoc::li "@('SHRD r/m64, r64, CL')"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

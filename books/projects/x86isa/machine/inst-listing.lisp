@@ -9034,13 +9034,13 @@
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(I B))
-          '(X86-SHRD-MRI)
+          '(X86-SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "SHRD" (OP :OP #xFAD)
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(:CL))
-          'NIL
+          '(X86-SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "FXSAVE"
           (OP :OP #xFAE

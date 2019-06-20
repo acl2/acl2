@@ -267,13 +267,13 @@
 ;; INSTRUCTION: SHRD
 ;; ======================================================================
 
-(def-inst x86-shrd-MRI
+(def-inst x86-shrd
 
   :returns (x86 x86p :hyp (x86p x86))
 
   :parents (one-byte-opcodes)
 
-  :short "Double-precision shift right, with immediate operand."
+  :short "Double-precision shift right."
 
   :long
   "<p>
@@ -281,11 +281,18 @@
    0F AC: SHRD r/m16, r16, imm8<br/>
    0F AC: SHRD r/m32, r32, imm8<br/>
    0F AC: SHRD r/m64, r64, imm8<br/>
+   </p>
+
+   <p>
+   Op/En: MRC<br/>
+   0F AC: SHRD r/m16, r16, CL<br/>
+   0F AC: SHRD r/m32, r32, CL<br/>
+   0F AC: SHRD r/m64, r64, CL<br/>
    </p>"
 
   :body
 
-  (b* ((ctx 'x86-shrd-MRI)
+  (b* ((ctx 'x86-shrd)
 
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
@@ -337,14 +344,18 @@
                              rex-byte
                              x86))
 
-       ;; read immediate operand (the shift count):
+       ;; read count operand:
 
        ((mv flg count x86)
-        (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
+        (if (= opcode #xac)
+            (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86)
+          (mv nil (rr08 *rcx* rex-byte x86) x86)))
        ((when flg) (!!ms-fresh :rme-size-error flg))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip 1 x86))
+        (if (= opcode #xac)
+            (add-to-*ip proc-mode temp-rip 1 x86)
+          (mv nil temp-rip)))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ;; check instruction length now that we have read all of it:
