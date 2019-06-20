@@ -200,15 +200,7 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc
-     "@(':wrapper') &mdash; default @('t')"
-     (xdoc::p
-      "Determines whether the wrapper function is generated:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to generate it.")
-      (xdoc::li
-       "@('nil'), to not generate it.")))
+    (xdoc::desc-apt-input-wrapper)
 
     (xdoc::desc-apt-input-wrapper-name :optional)
 
