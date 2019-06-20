@@ -1437,6 +1437,38 @@
                        (lit-eval lit invals regvals aignet)))))))
 
 
+
+(define aignet-eval-conjunction ((lits lit-listp)
+                                 invals regvals aignet)
+  :guard (and (aignet-lit-listp lits aignet)
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  :returns (res bitp)
+  (if (atom lits)
+      1
+    (acl2::b-and (lit-eval (car lits) invals regvals aignet)
+                 (aignet-eval-conjunction (cdr lits) invals regvals aignet)))
+  ///
+  (defthm aignet-eval-conjunction-preserved-by-extension
+    (implies (and (aignet-extension-binding :orig aignet)
+                  (aignet-lit-listp lits aignet))
+             (equal (aignet-eval-conjunction lits invals regvals new)
+                    (aignet-eval-conjunction lits invals regvals aignet))))
+
+  (defthm aignet-eval-conjunction-of-take-num-ins
+    (implies (<= (num-ins aignet) (nfix n))
+             (equal (aignet-eval-conjunction lits (take n invals) regvals aignet)
+                    (aignet-eval-conjunction lits invals regvals aignet))))
+
+  (defthm aignet-eval-conjunction-of-take-num-regs
+    (implies (<= (num-regs aignet) (nfix n))
+             (equal (aignet-eval-conjunction lits invals (take n regvals) aignet)
+                    (aignet-eval-conjunction lits invals regvals aignet))))
+
+  (defcong bits-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 2)
+  (defcong bits-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 3))
+
+
 (define output-eval ((n natp) invals regvals aignet)
   :guard (and (< n (num-outs aignet))
               (<= (num-ins aignet) (bits-length invals))

@@ -927,6 +927,76 @@
     (litclasses-invar invals regvals (resize-list nil n 0) litclasses aignet)
     :hints(("Goal" :in-theory (enable litclasses-invar)))))
 
+(define marks-boundedp ((limit natp) mark)
+  :non-executable t
+  (not (member 1 (nthcdr limit mark)))
+  ///
+  (local (defthm nth-is-member
+           (implies (not (equal (nth n x) nil))
+                    (member (nth n x) x))
+           :hints (("goal" :induct (nth n x)
+                    :in-theory (enable (:i nth))
+                    :expand ((nth n x))))))
+
+  (local (defthm blah
+           (equal (+ x (- x) y)
+                  (fix y))))
+
+
+  (defthmd lookup-when-marks-boundedp
+    (implies (and (marks-boundedp limit mark)
+                  (<= (nfix limit) (nfix n)))
+             (bit-equiv (nth n mark) 0))
+    :hints(("Goal" :in-theory (disable acl2::nthcdr-of-cdr
+                                       nth-is-member)
+            :use ((:instance nth-is-member
+                   (n (- (nfix n) (nfix limit)))
+                   (x (nthcdr limit mark)))))))
+
+  (local (defthm nthcdr-of-update-nth
+           (implies (< (nfix m) (nfix n))
+                    (equal (nthcdr n (update-nth m val x))
+                           (nthcdr n x)))
+           :hints(("Goal" :in-theory (e/d (update-nth nthcdr)
+                                          (acl2::nthcdr-of-cdr))))))
+
+  (defthm marks-boundedp-of-update-nth
+    (implies (and (marks-boundedp limit x)
+                  (< (nfix n) (nfix limit)))
+             (marks-boundedp limit (update-nth n val x))))
+
+  (local (in-theory (disable aignet-copy-dfs-rec-preserves-ci-copies
+                             aignet-copy-dfs-rec-preserves-copy-when-marked
+                             lookup-id-out-of-bounds
+                             lookup-id-in-bounds-when-positive)))
+
+  (defthm aignet-copy-dfs-rec-preserves-marks-boundedp
+    (implies (and (marks-boundedp limit mark)
+                  (< (nfix id) (nfix limit)))
+             (b* (((mv new-mark & & &)
+                   (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)))
+               (marks-boundedp limit new-mark)))
+    :hints(("Goal" :in-theory (e/d ((:i aignet-copy-dfs-rec)) (marks-boundedp))
+            :induct (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)
+            :expand ((aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)))))
+
+  (defthm marks-boundedp-when-lesser
+    (implies (and (marks-boundedp limit1 mark)
+                  (<= (nfix limit1) (nfix limit)))
+             (marks-boundedp limit mark)))
+
+  (local (defthm member-resize-list-nil
+           (not (member 1 (resize-list nil n 0)))
+           :hints(("Goal" :in-theory (enable acl2::resize-list-when-atom
+                                             acl2::repeat)))))
+
+  (defthm marks-boundedp-of-resize-list
+    (marks-boundedp limit (resize-list nil n 0)))
+
+  (defthm marks-boundedp-by-len
+    (implies (<= (len x) (nfix limit))
+             (marks-boundedp limit x))))
+
 (defines aignet-mark-const-nodes-rec
   :prepwork ((local (in-theory (disable lookup-id-in-bounds-when-positive
                                         lookup-id-out-of-bounds
@@ -1266,6 +1336,61 @@
 
   (fty::deffixequiv-mutual aignet-mark-const-nodes-rec))
 
+
+(define aignet-mark-const-nodes-class-list ((lits lit-listp)
+                                            aignet
+                                            constmarks
+                                            litclasses)
+  :guard (and (aignet-lit-listp lits aignet)
+              (< (lits-max-id-val lits) (bits-length constmarks))
+              (< (lits-max-id-val lits) (lits-length litclasses))
+              (non-exec (ec-call (litclasses-orderedp litclasses))))
+  :returns (mv contra new-constmarks new-litclasses)
+  (b* (((when (atom lits))
+        (mv nil constmarks litclasses))
+       ((mv contra constmarks litclasses)
+        (aignet-mark-const-nodes-class (car lits) aignet constmarks litclasses))
+       ((when contra)
+        (mv t constmarks litclasses)))
+    (aignet-mark-const-nodes-class-list (cdr lits) aignet constmarks litclasses))
+  ///
+  (defret <fn>-preserves-litclasses-orderedp
+    (implies (litclasses-orderedp litclasses)
+             (litclasses-orderedp new-litclasses))
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (defret <fn>-preserves-litclasses-size
+    (implies (< (lits-max-id-val lits) (len litclasses))
+             (equal (len new-litclasses)
+                    (len litclasses)))
+    :hints (("goal" :induct <call> :expand (<call>)
+             :in-theory (enable lits-max-id-val))))
+
+  (defret <fn>-preserves-constmarks-size
+    (implies (< (lits-max-id-val lits) (len constmarks))
+             (equal (len new-constmarks)
+                    (len constmarks)))
+    :hints (("goal" :induct <call> :expand (<call>)
+             :in-theory (enable lits-max-id-val))))
+
+  (defret <fn>-preserves-litclasses-invar
+    (implies (and (litclasses-invar invals regvals constmarks litclasses aignet)
+                  (equal 1 (aignet-eval-conjunction lits invals regvals aignet))
+                  (aignet-lit-listp lits aignet))
+             (litclasses-invar invals regvals new-constmarks new-litclasses aignet))
+    :hints (("goal" :induct <call>
+             :in-theory (enable aignet-lit-listp aignet-eval-conjunction)
+             :expand (<call>))))
+
+  (defret aignet-mark-const-nodes-class-list-contra-correct
+      (implies (and (litclasses-invar invals regvals constmarks litclasses aignet)
+                    (equal 1 (aignet-eval-conjunction lits invals regvals aignet))
+                    (aignet-lit-listp lits aignet))
+               (not contra))
+    :hints (("goal" :induct <call>
+             :in-theory (enable aignet-lit-listp aignet-eval-conjunction)
+             :expand (<call>)))))
+  
 (define aignet-mark-const-nodes-propagate ((n posp)
                                            updatedp
                                            aignet
@@ -1390,6 +1515,7 @@
              (not contra))))
 
 
+
 (define aignet-mark-const-nodes-top ((lit litp)
                                      aignet
                                      constmarks
@@ -1458,6 +1584,863 @@
   (defret <fn>-of-aignet-lit-fix
     (equal (let ((lit (aignet-lit-fix lit aignet))) <call>)
            <call>)))
+
+
+(define aignet-mark-const-nodes-top-list ((lits lit-listp)
+                                     aignet
+                                     constmarks
+                                     litclasses)
+  :guard (and (non-exec (equal constmarks (acl2::create-bitarr)))
+              (non-exec (equal litclasses (create-litarr)))
+              (aignet-lit-listp lits aignet))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp
+                                          lits-max-id-val-when-aignet-lit-listp))))
+  :returns (mv contra new-constmarks new-litclasses)
+  :prepwork ((local (defthmd lits-max-id-val-when-aignet-lit-listp
+                      (implies (aignet-lit-listp x aignet)
+                               (< (lits-max-id-val x) (+ 1 (fanin-count aignet))))
+                      :hints(("Goal" :in-theory (enable aignet-lit-listp
+                                                        aignet-idp
+                                                        lits-max-id-val)))
+                      :rule-classes :forward-chaining)))
+  (b* ((constmarks (mbe :logic (non-exec (acl2::create-bitarr)) :exec constmarks))
+       (constmarks (resize-bits (num-fanins aignet) constmarks))
+       (litclasses (mbe :logic (non-exec (create-litarr)) :exec litclasses))
+       (litclasses (resize-lits (num-fanins aignet) litclasses))
+       ((acl2::hintcontext-bind ((orig-constmarks constmarks)
+                                 (orig-litclasses litclasses))))
+       ((mv contra constmarks litclasses)
+        (aignet-mark-const-nodes-class-list lits aignet constmarks litclasses))
+       ((when contra)
+        (acl2::hintcontext
+         :contra
+         (mv contra constmarks litclasses)))
+       ((acl2::hintcontext :pass1)))
+    (aignet-mark-const-nodes-fixpoint 10 aignet constmarks litclasses))
+  ///
+
+  (defret norm-<fn>
+    (implies (syntaxp (not (and (equal constmarks ''nil)
+                                (equal litclasses ''nil))))
+             (equal <call>
+                    (let ((constmarks nil) (litclasses nil)) <call>))))
+
+  (defret litclasses-orderedp-of-<fn>
+    (litclasses-orderedp new-litclasses))
+
+  (defret litclasses-size-of-<fn>
+    (implies (aignet-lit-listp lits aignet)
+             (equal (len new-litclasses)
+                    (num-fanins aignet)))
+    :hints(("Goal" :in-theory (enable aignet-idp
+                                      lits-max-id-val-when-aignet-lit-listp))))
+
+  (defret constmarks-size-of-<fn>
+    (implies (aignet-lit-listp lits aignet)
+             (equal (len new-constmarks)
+                    (num-fanins aignet)))
+    :hints(("Goal" :in-theory (enable aignet-idp
+                                      lits-max-id-val-when-aignet-lit-listp))))
+
+  (defret litclasses-invar-of-<fn>
+    (implies (and (equal (aignet-eval-conjunction lits invals regvals aignet) 1)
+                  (aignet-lit-listp lits aignet))
+             (litclasses-invar invals regvals new-constmarks new-litclasses aignet)))
+
+  (set-ignore-ok t)
+
+  (defret <fn>-contra-correct
+    (implies (and (equal (aignet-eval-conjunction lits invals regvals aignet) 1)
+                  (aignet-lit-listp lits aignet))
+             (not contra))
+    :hints (("goal" :do-not-induct t)
+            (acl2::function-termhint
+             aignet-mark-const-nodes-top-list
+             (:contra
+              `(:use ((:instance aignet-mark-const-nodes-class-list-contra-correct
+                       (constmarks ,(acl2::hq orig-constmarks))
+                       (litclasses ,(acl2::hq orig-litclasses))
+                       (lits ,(acl2::hq lits))))
+                :in-theory (disable aignet-mark-const-nodes-class-list-contra-correct)))
+             (:pass1
+              `(:use ((:instance aignet-mark-const-nodes-fixpoint-contra-correct
+                       (constmarks ,(acl2::hq constmarks))
+                       (litclasses ,(acl2::hq litclasses))
+                       (limit 10)))
+                :in-theory (disable aignet-mark-const-nodes-fixpoint-contra-correct)))))
+    :otf-flg t))
+
+
+;; (define aignet-self-constprop-init-litclass-pis ((n natp :type (integer 0 *))
+;;                                                  constmarks
+;;                                                  litclasses
+;;                                                  aignet)
+;;   :guard (and (<= n (num-ins aignet))
+;;               (ec-call (litclasses-orderedp litclasses))
+;;               (<= (num-fanins aignet) (bits-length constmarks))
+;;               (<= (num-fanins aignet) (lits-length litclasses)))
+;;   :returns (mv new-litclasses new-constmarks)
+;;   :verify-guards nil
+;;   :measure (nfix (- (num-ins aignet) (nfix n)))
+;;   (b* (((when (mbe :logic (zp (- (num-ins aignet) (nfix n)))
+;;                    :exec (int= n (num-ins aignet))))
+;;         litclasses)
+;;        (id (innum->id n aignet))
+;;        (norm-lit (id-normal-form id constmarks litclasses))
+;;        (litclasses (set-lit id norm-lit litclasses)))
+;;     (aignet-self-constprop-init-litclass-pis (1+ (lnfix n)) constmarks litclasses aignet))
+;;   ///
+;;   (local (in-theory (disable (:d aignet-self-constprop-init-litclass-pis))))
+
+;;   (defret litclasses-invar-preserved-by-<fn>
+;;     (implies (litclasses-invar invals regvals constmarks litclasses aignet)
+;;              (litclasses-invar invals regvals new-constmarks new-litclasses aignet))
+;;     :hints (("goal" :induct <call>
+;;              :expand (<call>))
+;;             (and stable-under-simplificationp
+;;                  (let ((lit (assoc 'litclasses-invar clause)))
+;;                    `(:expand (,lit
+;;                               (:free (constmarks litclasses)
+;;                                (id-eval (litclasses-invar-witness
+;;                                          invals regvals constmarks litclasses aignet)
+;;                                         invals regvals aignet))))))))
+
+;;   (defret litclasses-orderedp-preserved-by-<fn>
+;;     (implies (litclasses-orderedp litclasses)
+;;              (litclasses-orderedp new-litclasses))
+;;     :hints (("goal" :induct <call>
+;;              :expand (<call>))
+;;             (and stable-under-simplificationp
+;;                  (let ((lit (assoc 'litclasses-orderedp clause)))
+;;                    `(:expand (,lit))))))
+
+;;   (verify-guards aignet-self-constprop-init-litclass-pis))
+
+
+(define aignet-self-copy-dfs-rec ((id natp :type (integer 0 *))
+                                  aignet
+                                  mark
+                                  copy
+                                  strash
+                                  (gatesimp gatesimp-p))
+  :returns (mv new-mark
+               new-copy
+               new-strash
+               new-aignet)
+  :measure (nfix id)
+  :guard (and (id-existsp id aignet)
+              (< id (bits-length mark))
+              (< id (lits-length copy))
+              (ec-call (aignet-marked-copies-in-bounds copy mark aignet))
+              (non-exec (ec-call (aignet-input-copies-in-bounds copy aignet aignet))))
+
+  :verify-guards nil
+  (b* (((when (int= (get-bit id mark) 1))
+        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv mark copy strash aignet)))
+       (slot0 (id->slot id 0 aignet))
+       (type (snode->type slot0))
+
+       ((when (int= type (const-type)))
+        (b* ((mark (set-bit id 1 mark))
+             (copy (set-lit id 0 copy))
+             (aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv mark copy strash aignet)))
+
+       ((unless (int= type (gate-type)))
+        (b* ((mark (set-bit id 1 mark))
+             (aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv mark copy strash aignet)))
+
+       ;; gate: recur on each fanin, then hash an AND of the two copies
+       (f0 (snode->fanin slot0))
+       (slot1 (id->slot id 1 aignet))
+       (f1 (snode->fanin slot1))
+       ((mv mark copy strash aignet)
+        (aignet-self-copy-dfs-rec
+         (lit-id f0) aignet mark copy strash gatesimp))
+       (f0-copy (lit-copy f0 copy))
+       (xor (snode->regp slot1))
+       ((when (and (int= f0-copy 0) (eql xor 0)))
+        ;; first branch was 0 so exit early
+        (b* ((copy (set-lit id 0 copy))
+             (mark (set-bit id 1 mark)))
+          (mv mark copy strash aignet)))
+       ((mv mark copy strash aignet)
+        (aignet-self-copy-dfs-rec
+         (lit-id f1) aignet mark copy strash gatesimp))
+       (f1-copy (lit-copy f1 copy))
+       ((mv id-copy strash aignet)
+        (if (eql xor 1)
+            (aignet-hash-xor f0-copy f1-copy gatesimp strash aignet)
+          (aignet-hash-and f0-copy f1-copy gatesimp strash aignet)))
+       (copy (set-lit id id-copy copy))
+       (mark (set-bit id 1 mark)))
+    (mv mark copy strash aignet))
+  ///
+
+  (local (in-theory (e/d* (acl2::arith-equiv-forwarding)
+                          (lit-negate-cond acl2::b-xor
+                                           (:d aignet-self-copy-dfs-rec)
+                                           cons-equal
+                                           ;; aignet-copies-ok
+                                           ))))
+
+
+  (local (def-aignet-preservation-thms aignet-self-copy-dfs-rec :stobjname aignet))
+
+  (defthm aignet-copy-dfs-rec-of-extension
+    (implies (and (aignet-extension-binding)
+                  (id-existsp id orig))
+             (equal (aignet-copy-dfs-rec id new mark copy strash gatesimp aignet2)
+                    (aignet-copy-dfs-rec id orig mark copy strash gatesimp aignet2)))
+    :hints(("Goal" :in-theory (enable (:i aignet-copy-dfs-rec))
+            :expand ((:free (aignet) (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2))))))
+
+  (defthm aignet-self-copy-dfs-rec-is-aignet-copy-dfs-rec
+    (equal (aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
+           (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet))
+    :hints (("goal" :induct (aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
+             :expand ((aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
+                      (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))))
+
+  (verify-guards aignet-self-copy-dfs-rec))
+
+
+
+
+(defsection self-constprop-dfs-invar
+  (defun-sk self-constprop-dfs-invar (invals regvals aignet mark copy)
+    (forall id
+            (implies (equal 1 (get-bit id mark))
+                     (equal (lit-eval (nth-lit id copy) invals regvals aignet)
+                            (id-eval id invals regvals aignet))))
+    :rewrite :direct)
+
+  (in-theory (disable self-constprop-dfs-invar))
+
+  (defthm self-constprop-dfs-invar-implies-lit-eval-lit-copy
+    (implies (and (self-constprop-dfs-invar invals regvals aignet mark copy)
+                  (equal 1 (nth (lit->var lit) mark)))
+             (equal (lit-eval (lit-copy lit copy) invals regvals aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable lit-copy)
+            :expand ((lit-eval lit invals regvals aignet)))))
+
+  (defthm self-constprop-dfs-invar-of-node-list-fix
+    (iff (self-constprop-dfs-invar invals regvals (node-list-fix aignet) mark copy)
+         (self-constprop-dfs-invar invals regvals aignet mark copy))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (assoc 'self-constprop-dfs-invar clause)))
+                   `(:expand (,lit)
+                     :use ((:instance self-constprop-dfs-invar-necc
+                            (aignet (node-list-fix aignet))
+                            (id (self-constprop-dfs-invar-witness . ,(cdr lit))))
+                           (:instance self-constprop-dfs-invar-necc
+                            (aignet aignet)
+                            (id (self-constprop-dfs-invar-witness . ,(cdr lit)))))
+                     :in-theory (disable self-constprop-dfs-invar-necc)))))))
+
+(defsection self-constprop-ci-invar
+  (local (in-theory (disable lookup-id-out-of-bounds)))
+
+  (defun-sk self-constprop-ci-invar (invals regvals aignet copy)
+    (forall id
+            (implies (equal (ctype (stype (car (lookup-id id aignet)))) :input)
+                     (equal (lit-eval (nth-lit id copy) invals regvals aignet)
+                            (id-eval id invals regvals aignet))))
+    :rewrite :direct)
+
+  (in-theory (disable self-constprop-ci-invar))
+
+  (defthm self-constprop-ci-invar-implies-lit-eval-lit-copy
+    (implies (and (self-constprop-ci-invar invals regvals aignet copy)
+                  (equal (ctype (stype (car (lookup-id (lit->var lit) aignet)))) :input))
+             (equal (lit-eval (lit-copy lit copy) invals regvals aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable lit-copy)
+            :expand ((lit-eval lit invals regvals aignet)))))
+
+  (defthm aignet-copy-dfs-rec-does-not-update-input-copies
+    (b* (((mv ?new-mark new-copy ?new-strash ?new-aignet)
+          (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)))
+      (implies (equal (ctype (stype (car (lookup-id k aignet)))) :input)
+               (equal (nth-lit k new-copy)
+                      (nth-lit k copy))))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-rec))))
+
+  (local (defthm not-equal-stype-when-new
+           (implies (and (aignet-extension-binding)
+                         (not (aignet-idp id orig))
+                         (equal (stype-count stype orig)
+                                (stype-count stype new))
+                         (not (equal stype :const)))
+                    (not (equal (stype (car (lookup-id id new))) stype)))
+           :hints(("Goal" :in-theory (e/d (;; lookup-id
+                                           aignet-idp ;; fanin-count aignet-extension-p
+                                           (:i aignet-extension-p))
+                                          (lookup-id-out-of-bounds
+                                           lookup-id-in-extension-inverse))
+                   :induct (aignet-extension-p new orig)
+                   :expand ((lookup-id id new)
+                            (fanin-count new)
+                            (aignet-extension-p new orig))))))
+
+  (local (defthm ctype-equal-input-in-extension
+           (implies (and (aignet-extension-binding)
+                         (not (aignet-idp id orig))
+                         (equal (stype-count :pi orig)
+                                (stype-count :pi new))
+                         (equal (stype-count :reg orig)
+                                (stype-count :reg new)))
+                    (not (equal (ctype (stype (car (lookup-id id new)))) :input)))
+           :hints(("Goal" :in-theory (enable ctype)))))
+
+  (defthm aignet-copy-dfs-rec-preserves-self-constprop-ci-invar
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+      (implies (and (self-constprop-ci-invar invals regvals aignet copy)
+                    (aignet-input-copies-in-bounds copy aignet aignet))
+               (self-constprop-ci-invar invals regvals new-aignet new-copy)))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))
+                   :in-theory (disable LOOKUP-ID-IMPLIES-AIGNET-IDP)
+                   :cases ((aignet-idp (self-constprop-ci-invar-witness . ,(cdar (last clause))) aignet))))))
+
+  (local (defthm ctype-when-not-const-or-gate
+           (b* ((stype (stype (car (lookup-id id aignet)))))
+             (implies (and (not (equal stype :const))
+                           (not (equal (ctype stype) :gate)))
+                      (equal (ctype stype) :input)))
+           :hints(("Goal" :in-theory (enable ctype)))))
+
+  (defthmd bit-equiv-congruence-of-equal-1
+    (implies (bit-equiv a b)
+             (equal (equal 1 a) (equal 1 b)))
+    :rule-classes :congruence)
+
+  (local (defthm aignet-idp-by-marks-boundedp
+           (implies (and (equal 1 (nth id mark))
+                         (marks-boundedp (+ 1 (fanin-count aignet)) mark))
+                    (aignet-idp id aignet))
+           :hints(("Goal" :in-theory (enable aignet-idp
+                                             lookup-when-marks-boundedp
+                                             bit-equiv-congruence-of-equal-1)))))
+
+  (local (defthm lit-eval-when-lit-copy-equal-0
+           ;; (b* ((copy (mv-nth 1 dfs))
+           ;;      (mark (mv-nth 0 dfs))
+           ;;      (aignet (mv-nth 3 dfs)))
+           (implies (and (equal (lit-copy lit copy) 0)
+                         (self-constprop-dfs-invar invals regvals new-aignet mark copy)
+                         (aignet-extension-p new-aignet aignet)
+                         (aignet-litp lit aignet)
+                         (equal 1 (nth (lit->var lit) mark)))
+                    (equal (lit-eval lit invals regvals aignet)
+                           0))
+           :hints (("goal" :use ((:instance self-constprop-dfs-invar-implies-lit-eval-lit-copy
+                                  (aignet new-aignet)))
+                    :in-theory (disable self-constprop-dfs-invar-implies-lit-eval-lit-copy)))))
+                         ;; (equal (lit-eval (lit-copy lit copy) invals regvals new-aignet)
+                         ;;        (lit-eval lit invals regvals aignet))
+
+  (defthm aignet-copy-dfs-rec-preserves-self-constprop-dfs-invar
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+      (implies (and (self-constprop-ci-invar invals regvals aignet copy)
+                    (self-constprop-dfs-invar invals regvals aignet mark copy)
+                    (aignet-input-copies-in-bounds copy aignet aignet)
+                    (aignet-marked-copies-in-bounds copy mark aignet)
+                    (marks-boundedp (num-fanins aignet) mark))
+               (self-constprop-dfs-invar invals regvals new-aignet new-mark new-copy)))
+    :hints(("Goal" :in-theory (enable (:i aignet-self-copy-dfs-rec))
+            :induct (aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
+            :expand ((aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+           (and stable-under-simplificationp
+                `(:expand (,(car (last clause)))
+                  :do-not-induct t))
+           (and stable-under-simplificationp
+                '(:expand ((id-eval id invals regvals aignet))
+                  :in-theory (enable* eval-xor-of-lits
+                                      eval-and-of-lits
+                                      acl2::arith-equiv-forwarding)))))
+
+
+  
+
+  (defthm self-constprop-ci-invar-of-node-list-fix
+    (iff (self-constprop-ci-invar invals regvals (node-list-fix aignet) copy)
+         (self-constprop-ci-invar invals regvals aignet copy))
+    :hints ((and stable-under-simplificationp
+                 (let ((lit (assoc 'self-constprop-ci-invar clause)))
+                   `(:expand (,lit)
+                     :use ((:instance self-constprop-ci-invar-necc
+                            (aignet (node-list-fix aignet))
+                            (id (self-constprop-ci-invar-witness . ,(cdr lit))))
+                           (:instance self-constprop-ci-invar-necc
+                            (aignet aignet)
+                            (id (self-constprop-ci-invar-witness . ,(cdr lit)))))
+                     :in-theory (disable self-constprop-ci-invar-necc)))))))
+
+
+
+
+
+(define aignet-self-constprop-copy-init ((n natp :type (integer 0 *))
+                                         constmarks
+                                         litclasses
+                                         aignet
+                                         copy)
+  :guard (and (<= n (num-fanins aignet))
+              (ec-call (litclasses-orderedp litclasses))
+              (<= (num-fanins aignet) (bits-length constmarks))
+              (<= (num-fanins aignet) (lits-length litclasses))
+              (<= (num-fanins aignet) (lits-length copy)))
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  :measure (nfix (- (num-fanins aignet) (nfix n)))
+  :returns (new-copy)
+  (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
+                   :exec (eql n (num-fanins aignet))))
+        copy)
+       ((unless (or (eql 1 (get-bit n constmarks))
+                    (eql (id->type n aignet) (in-type))))
+        (aignet-self-constprop-copy-init (1+ (lnfix n)) constmarks litclasses aignet copy))
+       (norm-lit (id-normal-form n constmarks litclasses))
+       (copy (set-lit n norm-lit copy)))
+    (aignet-self-constprop-copy-init (1+ (lnfix n)) constmarks litclasses aignet copy))
+  ///
+  (local (in-theory (enable* acl2::arith-equiv-forwarding)))
+
+  (defret nth-of-<fn>
+    (equal (nth-lit k new-copy)
+           (if (and (or (equal (id->type k aignet) (in-type))
+                        (equal 1 (nth k constmarks)))
+                    (<= (nfix n) (nfix k))
+                    (< (nfix k) (num-fanins aignet)))
+               (id-normal-form k constmarks litclasses)
+             (nth-lit k copy))))
+
+  (defret len-of-<fn>
+    (implies (<= (num-fanins aignet) (len copy))
+             (equal (len new-copy) (len copy))))
+
+
+
+  ;; (local (defthm aignet-idp-by-marks-boundedp
+  ;;          (implies (and (equal 1 (nth id mark))
+  ;;                        (marks-boundedp (+ 1 (fanin-count aignet)) mark))
+  ;;                   (aignet-idp id aignet))
+  ;;          :hints(("Goal" :in-theory (enable aignet-idp
+  ;;                                            lookup-when-marks-boundedp
+  ;;                                            bit-equiv-congruence-of-equal-1)))))
+
+
+  (defthm self-constprop-dfs-invar-of-<fn>
+    (b* ((new-copy (aignet-self-constprop-copy-init 0 constmarks litclasses aignet copy)))
+      (implies (and (litclasses-invar invals regvals constmarks litclasses aignet)
+                    (marks-boundedp (num-fanins aignet) constmarks))
+               (self-constprop-dfs-invar invals regvals aignet constmarks new-copy)))
+    :hints(("Goal" :in-theory (e/d (self-constprop-dfs-invar
+                                    lookup-when-marks-boundedp
+                                    bit-equiv-congruence-of-equal-1
+                                    aignet-idp)))))
+
+  (defthm self-constprop-ci-invar-of-<fn>
+    (b* ((new-copy (aignet-self-constprop-copy-init 0 constmarks litclasses aignet copy)))
+      (implies (litclasses-invar invals regvals constmarks litclasses aignet)
+               (self-constprop-ci-invar invals regvals aignet new-copy)))
+    :hints(("Goal" :in-theory (enable self-constprop-ci-invar))))
+
+  (defret aignet-input-copies-in-bounds-of-<fn>
+    :pre-bind ((n 0))
+    (aignet-input-copies-in-bounds new-copy aignet aignet)
+    :hints(("Goal" :in-theory (enable aignet-input-copies-in-bounds
+                                      aignet-idp))))
+
+  (defret aignet-marked-copies-in-bounds-of-<fn>
+    :pre-bind ((n 0))
+    (implies (marks-boundedp (+ 1 (fanin-count aignet)) constmarks)
+             (aignet-marked-copies-in-bounds new-copy constmarks aignet))
+    :hints(("Goal" :in-theory (enable aignet-marked-copies-in-bounds
+                                      lookup-when-marks-boundedp
+                                      aignet-idp
+                                      bit-equiv-congruence-of-equal-1)))))
+
+(define aignet-self-constprop-prep ((hyps lit-listp) aignet constmarks copy)
+  :guard (and (aignet-lit-listp hyps aignet)
+              (non-exec (equal copy (create-copy)))
+              (non-exec (equal constmarks (create-constmarks))))
+  :returns (mv (new-constmarks) (new-copy))
+  :guard-debug t
+  (b* (((acl2::local-stobjs litclasses)
+        (mv constmarks copy litclasses))
+       ((mv ?contra constmarks litclasses) (aignet-mark-const-nodes-top-list hyps aignet constmarks litclasses))
+       (copy (mbe :logic (non-exec (create-copy))
+                  :exec copy))
+       (copy (resize-lits (num-fanins aignet) copy))
+       (copy (aignet-self-constprop-copy-init 0 constmarks litclasses aignet copy)))
+    (mv constmarks copy litclasses))
+  ///
+
+  (defret normalize-aignet-self-constprop-prep
+    (implies (syntaxp (not (and (equal copy ''nil)
+                                (equal constmarks ''nil))))
+             (equal <call>
+                    (let ((copy nil) (constmarks nil)) <call>))))
+
+  (defret size-of-aignet-self-constprop-prep-copy
+    (implies (aignet-lit-listp hyps aignet)
+             (equal (len new-copy) (num-fanins aignet))))
+
+  (defret size-of-aignet-self-constprop-prep-constmarks
+    (implies (aignet-lit-listp hyps aignet)
+             (equal (len new-constmarks) (num-fanins aignet))))
+
+  (defret aignet-input-copies-in-bounds-of-<fn>
+    (aignet-input-copies-in-bounds new-copy aignet aignet))
+
+  (defret aignet-marked-copies-in-bounds-of-<fn>
+    (implies (aignet-lit-listp hyps aignet)
+             (aignet-marked-copies-in-bounds new-copy new-constmarks aignet)))
+
+  (defret self-constprop-ci-invar-of-<fn>
+    (implies (and (aignet-lit-listp hyps aignet)
+                  (equal 1 (aignet-eval-conjunction hyps invals regvals aignet)))
+             (self-constprop-ci-invar invals regvals aignet new-copy)))
+
+  (defret self-constprop-dfs-invar-of-<fn>
+    (implies (and (aignet-lit-listp hyps aignet)
+                  (equal 1 (aignet-eval-conjunction hyps invals regvals aignet)))
+             (self-constprop-dfs-invar invals regvals aignet new-constmarks new-copy))))
+
+
+
+
+(defthmd lits-max-id-val-when-aignet-lit-listp
+  (implies (aignet-lit-listp lits aignet)
+           (<= (lits-max-id-val lits) (fanin-count aignet)))
+  :hints(("Goal" :in-theory (enable aignet-lit-listp aignet-idp lits-max-id-val)))
+  :rule-classes :forward-chaining)
+
+
+(define aignet-self-copy-dfs-rec-list ((lits lit-listp)
+                                       aignet
+                                       mark
+                                       copy
+                                       strash
+                                       (gatesimp gatesimp-p))
+  :returns (mv new-mark
+               new-copy
+               new-strash
+               new-aignet)
+  :guard (and (aignet-lit-listp lits aignet)
+              (< (lits-max-id-val lits) (bits-length mark))
+              (< (lits-max-id-val lits) (lits-length copy))
+              (ec-call (aignet-marked-copies-in-bounds copy mark aignet))
+              (non-exec (ec-call (aignet-input-copies-in-bounds copy aignet aignet))))
+  :verify-guards nil
+  (b* (((when (atom lits))
+        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
+                          :exec aignet)))
+          (mv mark copy strash aignet)))
+       ((mv mark copy strash aignet)
+        (aignet-self-copy-dfs-rec (lit->var (car lits)) aignet mark copy strash gatesimp)))
+    (aignet-self-copy-dfs-rec-list (cdr lits) aignet mark copy strash gatesimp))
+  ///
+  (local (in-theory (disable (:d aignet-self-copy-dfs-rec-list))))
+  (defret mark-len-of-<fn>
+    (<= (len mark) (len new-mark))
+    :hints ((acl2::just-induct-and-expand <call>))
+    :rule-classes :linear)
+
+  (defret copy-len-of-<fn>
+    (<= (len copy) (len new-copy))
+    :hints ((acl2::just-induct-and-expand <call>))
+    :rule-classes :linear)
+
+  (defret mark-len-preserved-of-<fn>
+    (implies (< (lits-max-id-val lits) (len mark))
+             (equal (len new-mark)
+                    (len mark)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret copy-len-preserved-of-<fn>
+    (implies (< (lits-max-id-val lits) (len copy))
+             (equal (len new-copy)
+                    (len copy)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (def-aignet-preservation-thms aignet-self-copy-dfs-rec-list)
+
+  (verify-guards aignet-self-copy-dfs-rec-list
+    :hints (("goal" :in-theory (enable lits-max-id-val))))
+
+  (defret aignet-input-copies-in-bounds-of-<fn>
+    (implies (and (aignet-input-copies-in-bounds copy aignet aignet)
+                  ;; (aignet-lit-listp lits aignet)
+                  )
+             (aignet-input-copies-in-bounds new-copy new-aignet new-aignet))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-marked-copies-in-bounds-of-<fn>
+    (implies (and (aignet-marked-copies-in-bounds copy mark aignet)
+                  (aignet-input-copies-in-bounds copy aignet aignet)
+                  ;; (aignet-lit-listp lits aignet)
+                  )
+             (aignet-marked-copies-in-bounds new-copy new-mark new-aignet))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (local
+   (defthm aignet-litp-implies-less-than-max-fanin
+     (implies (aignet-litp lit aignet)
+              (and (< (lit->var lit) (+ 1 (fanin-count aignet)))
+                   (<= (lit->var lit) (fanin-count aignet))))
+     :hints(("Goal" :in-theory (enable aignet-idp)))))
+
+  (defret marks-boundedp-of-<fn>
+    (implies (and (marks-boundedp limit mark)
+                  (< (lits-max-id-val lits) (nfix limit)))
+             (marks-boundedp limit new-mark))
+    :hints (("goal" :in-theory (enable lits-max-id-val))
+            (acl2::just-induct-and-expand <call>)))
+  
+  (local (defthmd lookup-when-marks-boundedp-split
+           (implies (and (marks-boundedp limit mark)
+                         (case-split (<= (nfix limit) (nfix n))))
+                    (and (bit-equiv (nth n mark) 0)
+                         (not (equal 1 (nth n mark)))))
+           :hints(("Goal" :use lookup-when-marks-boundedp))))
+
+  (local (defthmd lookup-when-marks-boundedp-really-split
+           (implies (marks-boundedp limit mark)
+                    (equal (equal 1 (nth n mark))
+                           (and (< (nfix n) (nfix limit))
+                                (hide (equal 1 (nth n mark))))))
+           :hints(("Goal" :use lookup-when-marks-boundedp
+                   :expand ((:free (x) (hide x)))))))
+
+  (defthm input-copy-values-of-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :pi new) (stype-count :pi orig)))
+             (equal (input-copy-values n invals regvals new copy aignet2)
+                    (input-copy-values n invals regvals orig copy aignet2)))
+    :hints(("Goal" :in-theory (enable input-copy-values))))
+
+  (defthm reg-copy-values-of-extension
+    (implies (and (aignet-extension-binding)
+                  (equal (stype-count :reg new) (stype-count :reg orig)))
+             (equal (reg-copy-values n invals regvals new copy aignet2)
+                    (reg-copy-values n invals regvals orig copy aignet2)))
+    :hints(("Goal" :in-theory (enable reg-copy-values))))
+
+  (defthm dfs-copy-onto-invar-of-extension
+    (implies (and (aignet-extension-binding)
+                  (marks-boundedp (+ 1 (fanin-count orig)) mark)
+                  (equal (stype-count :pi new) (stype-count :pi orig))
+                  (equal (stype-count :reg new) (stype-count :reg orig)))
+             (iff (dfs-copy-onto-invar new mark copy aignet2)
+                  (dfs-copy-onto-invar orig mark copy aignet2)))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(assoc 'dfs-copy-onto-invar clause))
+                   :in-theory (enable aignet-idp lookup-when-marks-boundedp-split)))))
+             
+
+  (defret dfs-copy-onto-invar-holds-of-<fn>
+    (implies (and (aignet-lit-listp lits aignet)
+                  (marks-boundedp (+ 1 (fanin-count aignet)) mark)
+                  (dfs-copy-onto-invar aignet mark copy aignet)
+                  (aignet-input-copies-in-bounds copy aignet aignet)
+                  (aignet-marked-copies-in-bounds copy mark aignet))
+             (dfs-copy-onto-invar aignet new-mark new-copy new-aignet))
+    :hints ((acl2::just-induct-and-expand <call>)
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause))
+                            (lits-max-id-val lits)
+                            <call>)
+                   :use ((:instance marks-boundedp-of-aignet-self-copy-dfs-rec-list
+                          (limit (+ 1 (fanin-count aignet)))))
+                   :in-theory (e/d (aignet-idp lookup-when-marks-boundedp-really-split
+                                               lits-max-id-val-when-aignet-lit-listp)
+                                   (marks-boundedp-of-aignet-self-copy-dfs-rec-list))))))
+
+  (defret marks-preserved-of-<fn>
+    (implies (equal (nth n mark) 1)
+             (equal (nth n new-mark) 1))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+
+  (defret <fn>-copies-preserved-of-marked
+    (implies (equal (nth n mark) 1)
+             (equal (nth-lit n new-copy) (nth-lit n copy)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret lit-list-marked-of-<fn>
+    (lit-list-marked lits new-mark)
+    :hints (("goal" :in-theory (enable lit-list-marked))
+            (acl2::just-induct-and-expand <call>)))
+
+  (defret stype-count-of-<fn>
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret input-copy-values-of-<fn>
+    (implies (aignet-input-copies-in-bounds copy aignet aignet)
+             (equal (input-copy-values n invals regvals aignet new-copy new-aignet)
+                    (input-copy-values n invals regvals aignet copy aignet)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+    ;; :hints(("Goal" :in-theory (enable input-copy-values)
+    ;;         :induct (input-copy-values n invals regvals aignet copy aignet)
+    ;;         :expand ((:free (aignet aignet2 copy)
+    ;;                   (input-copy-values n invals regvals aignet copy aignet2))))))
+
+  (defret reg-copy-values-of-<fn>
+    (implies (aignet-input-copies-in-bounds copy aignet aignet)
+             (equal (reg-copy-values n invals regvals aignet new-copy new-aignet)
+                    (reg-copy-values n invals regvals aignet copy aignet)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret lit-eval-list-of-<fn>
+    (implies (and (dfs-copy-onto-invar aignet mark copy aignet)
+                  (marks-boundedp (+ 1 (fanin-count aignet)) mark)
+                  (aignet-input-copies-in-bounds copy aignet aignet)
+                  (aignet-marked-copies-in-bounds copy mark aignet)
+                  (aignet-lit-listp lits aignet))
+             (equal (lit-eval-list (lit-list-copies lits new-copy)
+                                   invals regvals new-aignet)
+                    (lit-eval-list lits
+                                   (input-copy-values 0 invals regvals aignet copy aignet)
+                                   (reg-copy-values 0 invals regvals aignet copy aignet)
+                                   aignet)))
+    :hints (("goal" :use ((:instance lit-eval-list-of-copies-when-dfs-copy-onto-invar
+                           (aignet2 new-aignet)
+                           (copy new-copy)
+                           (mark new-mark)))
+             :in-theory (disable <fn>
+                                 lit-eval-list-of-copies-when-dfs-copy-onto-invar))))
+
+  (defret aignet-self-copy-dfs-rec-list-preserves-marks-boundedp
+    (implies (and (marks-boundedp limit mark)
+                  (< (lits-max-id-val lits) (nfix limit)))
+             (marks-boundedp limit new-mark))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-self-copy-dfs-rec-list-preserves-self-constprop-ci-invar
+    (implies (and (self-constprop-ci-invar invals regvals aignet copy)
+                  (aignet-input-copies-in-bounds copy aignet aignet))
+             (self-constprop-ci-invar invals regvals new-aignet new-copy))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (local (in-theory (enable lits-max-id-val-when-aignet-lit-listp)))
+
+  (defret aignet-self-copy-dfs-rec-list-preserves-self-constprop-dfs-invar
+    (implies (and (self-constprop-ci-invar invals regvals aignet copy)
+                  (self-constprop-dfs-invar invals regvals aignet mark copy)
+                  (aignet-input-copies-in-bounds copy aignet aignet)
+                  (aignet-marked-copies-in-bounds copy mark aignet)
+                  (marks-boundedp (num-fanins aignet) mark)
+                  (aignet-lit-listp lits aignet))
+             (self-constprop-dfs-invar invals regvals new-aignet new-mark new-copy))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-lit-listp-of-lit-list-copies-of-<fn>
+    (implies (and (aignet-marked-copies-in-bounds copy mark aignet)
+                  (aignet-input-copies-in-bounds copy aignet aignet))
+             (aignet-lit-listp (lit-list-copies lits new-copy) new-aignet))
+    :hints (("goal" :use ((:instance aignet-marked-copies-in-bounds-of-aignet-self-copy-dfs-rec-list))
+             :in-theory (disable aignet-marked-copies-in-bounds-of-aignet-self-copy-dfs-rec-list)))))
+
+(define self-constprop-invar (invals regvals aignet mark copy)
+  :verify-guards nil
+  (and (self-constprop-ci-invar invals regvals aignet copy)
+       (self-constprop-dfs-invar invals regvals aignet mark copy)
+       (aignet-input-copies-in-bounds copy aignet aignet)
+       (aignet-marked-copies-in-bounds copy mark aignet)
+       (marks-boundedp (num-fanins aignet) mark))
+  ///
+  (defthm aignet-copy-dfs-rec-preserves-self-constprop-invar
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+      (implies (and (self-constprop-invar invals regvals aignet mark copy)
+                    (aignet-idp id aignet))
+               (self-constprop-invar invals regvals new-aignet new-mark new-copy)))
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defthm aignet-self-copy-dfs-rec-list-preserves-self-constprop-invar
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-self-copy-dfs-rec-list lits aignet mark copy strash gatesimp)))
+      (implies (and (self-constprop-invar invals regvals aignet mark copy)
+                    (aignet-lit-listp lits aignet))
+               (self-constprop-invar invals regvals new-aignet new-mark new-copy)))
+    :hints(("Goal" :in-theory (enable lits-max-id-val-when-aignet-lit-listp))))
+
+  (defthm self-constprop-invar-of-aignet-self-constprop-prep
+    (implies (and (aignet-lit-listp hyps aignet)
+                  (equal 1 (aignet-eval-conjunction hyps invals regvals aignet)))
+             (b* (((mv constmarks copy)
+                   (aignet-self-constprop-prep hyps aignet constmarks copy)))
+               (self-constprop-invar invals regvals aignet constmarks copy)))))
+
+(define self-constprop-guard (aignet mark copy)
+  (and ;; (<= (lnfix bound) (bits-length mark))
+   ;; (<= (lnfix bound) (lits-length copy))
+   (equal (bits-length mark) (lits-length copy))
+   (<= (bits-length mark) (num-fanins aignet))
+   ;; (<= (bits-length mark) (num-fanins aignet))
+   ;; (<= (lits-length copy) (num-fanins aignet))
+   (ec-call (aignet-marked-copies-in-bounds copy mark aignet))
+   (ec-call (aignet-input-copies-in-bounds copy aignet aignet)))
+  ///
+  (defthm aignet-copy-dfs-rec-preserves-self-constprop-guard
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+      (implies (and (self-constprop-guard aignet mark copy)
+                    (< (nfix id) (len mark)))
+               (self-constprop-guard new-aignet new-mark new-copy))))
+
+  (defthm aignet-copy-dfs-rec-list-preserves-self-constprop-guard
+    (b* (((mv ?new-mark new-copy ?new-strash new-aignet)
+          (aignet-self-copy-dfs-rec-list lits aignet mark copy strash gatesimp)))
+      (implies (and (self-constprop-guard aignet mark copy)
+                    (< (lits-max-id-val lits) (len mark)))
+               (self-constprop-guard new-aignet new-mark new-copy))))
+
+  (defthm self-constprop-guard-of-aignet-self-constprop-prep
+    (implies (aignet-lit-listp hyps aignet)
+             (b* (((mv constmarks copy)
+                   (aignet-self-constprop-prep hyps aignet constmarks copy)))
+               (self-constprop-guard aignet constmarks copy))))
+
+  (defthm self-constprop-guard-implies-copy-len
+    (implies (self-constprop-guard aignet mark copy)
+             (equal (len copy) (len mark)))
+    :rule-classes :forward-chaining)
+
+  (defthm self-constprop-guard-implies-copies-in-bounds
+    (implies (self-constprop-guard aignet mark copy)
+             (and (aignet-marked-copies-in-bounds copy mark aignet)
+                  (aignet-input-copies-in-bounds copy aignet aignet))))
+
+  ;; (defthm self-constprop-guard-of-lesser-bound
+  ;;   (implies (and (self-constprop-guard bound1 aignet mark copy)
+  ;;                 (<= (nfix bound) (nfix bound1)))
+  ;;            (self-constprop-guard aignet mark copy)))
+
+  ;; (defthm self-constprop-guard-of-aignet-extension
+  ;;   (implies (and (aignet-extension-binding)
+  ;;                 (self-constprop-guard orig mark copy)
+  ;;                 (equal (stype-count :pi new) (stype-count :pi orig))
+  ;;                 (equal (stype-count :reg new) (stype-count :reg orig)))
+  ;;            (self-constprop-guard new mark copy)))
+  )
+
+
 
 (define aignet-self-constprop-init-pis ((n natp :type (integer 0 *))
                                         constmarks
@@ -1542,6 +2525,7 @@
              :expand (<call>))))
 
   (verify-guards aignet-self-constprop-init-regs))
+
 
 (defthm aignet-input-copies-in-bounds-of-self-constprop-init
   (b* ((copy (aignet-self-constprop-init-pis 0 constmarks vals aignet copy))
@@ -1771,361 +2755,18 @@
 
 
 
-(define aignet-self-copy-dfs-rec ((id natp :type (integer 0 *))
-                                  aignet
-                                  mark
-                                  copy
-                                  strash
-                                  (gatesimp gatesimp-p))
-  :returns (mv new-mark
-               new-copy
-               new-strash
-               new-aignet)
-  :measure (nfix id)
-  :guard (and (id-existsp id aignet)
-              (< id (bits-length mark))
-              (< id (lits-length copy))
-              (ec-call (aignet-marked-copies-in-bounds copy mark aignet))
-              (non-exec (ec-call (aignet-input-copies-in-bounds copy aignet aignet))))
-
-  :verify-guards nil
-  (b* (((when (int= (get-bit id mark) 1))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv mark copy strash aignet)))
-       (slot0 (id->slot id 0 aignet))
-       (type (snode->type slot0))
-
-       ((when (int= type (const-type)))
-        (b* ((mark (set-bit id 1 mark))
-             (copy (set-lit id 0 copy))
-             (aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv mark copy strash aignet)))
-
-       ((unless (int= type (gate-type)))
-        (b* ((mark (set-bit id 1 mark))
-             (aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv mark copy strash aignet)))
-
-       ;; gate: recur on each fanin, then hash an AND of the two copies
-       (f0 (snode->fanin slot0))
-       (slot1 (id->slot id 1 aignet))
-       (f1 (snode->fanin slot1))
-       ((mv mark copy strash aignet)
-        (aignet-self-copy-dfs-rec
-         (lit-id f0) aignet mark copy strash gatesimp))
-       (f0-copy (lit-copy f0 copy))
-       (xor (snode->regp slot1))
-       ((when (and (int= f0-copy 0) (eql xor 0)))
-        ;; first branch was 0 so exit early
-        (b* ((copy (set-lit id 0 copy))
-             (mark (set-bit id 1 mark)))
-          (mv mark copy strash aignet)))
-       ((mv mark copy strash aignet)
-        (aignet-self-copy-dfs-rec
-         (lit-id f1) aignet mark copy strash gatesimp))
-       (f1-copy (lit-copy f1 copy))
-       ((mv id-copy strash aignet)
-        (if (eql xor 1)
-            (aignet-hash-xor f0-copy f1-copy gatesimp strash aignet)
-          (aignet-hash-and f0-copy f1-copy gatesimp strash aignet)))
-       (copy (set-lit id id-copy copy))
-       (mark (set-bit id 1 mark)))
-    (mv mark copy strash aignet))
-  ///
-
-  (local (in-theory (e/d* (acl2::arith-equiv-forwarding)
-                          (lit-negate-cond acl2::b-xor
-                                           (:d aignet-self-copy-dfs-rec)
-                                           cons-equal
-                                           ;; aignet-copies-ok
-                                           ))))
-
-
-  (local (def-aignet-preservation-thms aignet-self-copy-dfs-rec :stobjname aignet))
-
-  (defthm aignet-copy-dfs-rec-of-extension
-    (implies (and (aignet-extension-binding)
-                  (id-existsp id orig))
-             (equal (aignet-copy-dfs-rec id new mark copy strash gatesimp aignet2)
-                    (aignet-copy-dfs-rec id orig mark copy strash gatesimp aignet2)))
-    :hints(("Goal" :in-theory (enable (:i aignet-copy-dfs-rec))
-            :expand ((:free (aignet) (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2))))))
-
-  (defthm aignet-self-copy-dfs-rec-is-aignet-copy-dfs-rec
-    (equal (aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
-           (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet))
-    :hints (("goal" :induct (aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
-             :expand ((aignet-self-copy-dfs-rec id aignet mark copy strash gatesimp)
-                      (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))))
-
-  (verify-guards aignet-self-copy-dfs-rec))
 
 
 
-(defthmd lits-max-id-val-when-aignet-lit-listp
-  (implies (aignet-lit-listp lits aignet)
-           (<= (lits-max-id-val lits) (fanin-count aignet)))
-  :hints(("Goal" :in-theory (enable aignet-lit-listp aignet-idp lits-max-id-val)))
-  :rule-classes :forward-chaining)
 
 
 
-(define marks-boundedp ((limit natp) mark)
-  :non-executable t
-  (not (member 1 (nthcdr limit mark)))
-  ///
-  (local (defthm nth-is-member
-           (implies (not (equal (nth n x) nil))
-                    (member (nth n x) x))
-           :hints (("goal" :induct (nth n x)
-                    :in-theory (enable (:i nth))
-                    :expand ((nth n x))))))
-
-  (local (defthm blah
-           (equal (+ x (- x) y)
-                  (fix y))))
-
-
-  (defthmd lookup-when-marks-boundedp
-    (implies (and (marks-boundedp limit mark)
-                  (<= (nfix limit) (nfix n)))
-             (bit-equiv (nth n mark) 0))
-    :hints(("Goal" :in-theory (disable acl2::nthcdr-of-cdr
-                                       nth-is-member)
-            :use ((:instance nth-is-member
-                   (n (- (nfix n) (nfix limit)))
-                   (x (nthcdr limit mark)))))))
-
-  (local (defthm nthcdr-of-update-nth
-           (implies (< (nfix m) (nfix n))
-                    (equal (nthcdr n (update-nth m val x))
-                           (nthcdr n x)))
-           :hints(("Goal" :in-theory (e/d (update-nth nthcdr)
-                                          (acl2::nthcdr-of-cdr))))))
-
-  (defthm marks-boundedp-of-update-nth
-    (implies (and (marks-boundedp limit x)
-                  (< (nfix n) (nfix limit)))
-             (marks-boundedp limit (update-nth n val x))))
-
-  (local (in-theory (disable aignet-copy-dfs-rec-preserves-ci-copies
-                             aignet-copy-dfs-rec-preserves-copy-when-marked
-                             lookup-id-out-of-bounds
-                             lookup-id-in-bounds-when-positive)))
-
-  (defthm aignet-copy-dfs-rec-preserves-marks-boundedp
-    (implies (and (marks-boundedp limit mark)
-                  (< (nfix id) (nfix limit)))
-             (b* (((mv new-mark & & &)
-                   (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)))
-               (marks-boundedp limit new-mark)))
-    :hints(("Goal" :in-theory (e/d ((:i aignet-copy-dfs-rec)) (marks-boundedp))
-            :induct (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)
-            :expand ((aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet2)))))
-
-  (defthm marks-boundedp-when-lesser
-    (implies (and (marks-boundedp limit1 mark)
-                  (<= (nfix limit1) (nfix limit)))
-             (marks-boundedp limit mark)))
-
-  (local (defthm member-resize-list-nil
-           (not (member 1 (resize-list nil n 0)))
-           :hints(("Goal" :in-theory (enable acl2::resize-list-when-atom
-                                             acl2::repeat)))))
-
-  (defthm marks-boundedp-of-resize-list
-    (marks-boundedp limit (resize-list nil n 0))))
 
 
 
-(define aignet-self-copy-dfs-rec-list ((lits lit-listp)
-                                       aignet
-                                       mark
-                                       copy
-                                       strash
-                                       (gatesimp gatesimp-p))
-  :returns (mv new-mark
-               new-copy
-               new-strash
-               new-aignet)
-  :guard (and (aignet-lit-listp lits aignet)
-              (< (lits-max-id-val lits) (bits-length mark))
-              (< (lits-max-id-val lits) (lits-length copy))
-              (ec-call (aignet-marked-copies-in-bounds copy mark aignet))
-              (non-exec (ec-call (aignet-input-copies-in-bounds copy aignet aignet))))
-  :verify-guards nil
-  (b* (((when (atom lits))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv mark copy strash aignet)))
-       ((mv mark copy strash aignet)
-        (aignet-self-copy-dfs-rec (lit->var (car lits)) aignet mark copy strash gatesimp)))
-    (aignet-self-copy-dfs-rec-list (cdr lits) aignet mark copy strash gatesimp))
-  ///
-  (local (in-theory (disable (:d aignet-self-copy-dfs-rec-list))))
-  (defret mark-len-of-<fn>
-    (<= (len mark) (len new-mark))
-    :hints ((acl2::just-induct-and-expand <call>))
-    :rule-classes :linear)
-
-  (defret copy-len-of-<fn>
-    (<= (len copy) (len new-copy))
-    :hints ((acl2::just-induct-and-expand <call>))
-    :rule-classes :linear)
-
-  (def-aignet-preservation-thms aignet-self-copy-dfs-rec-list)
-
-  (verify-guards aignet-self-copy-dfs-rec-list
-    :hints (("goal" :in-theory (enable lits-max-id-val))))
-
-  (defret aignet-input-copies-in-bounds-of-<fn>
-    (implies (and (aignet-input-copies-in-bounds copy aignet aignet)
-                  ;; (aignet-lit-listp lits aignet)
-                  )
-             (aignet-input-copies-in-bounds new-copy new-aignet new-aignet))
-    :hints ((acl2::just-induct-and-expand <call>)))
-
-  (defret aignet-marked-copies-in-bounds-of-<fn>
-    (implies (and (aignet-marked-copies-in-bounds copy mark aignet)
-                  (aignet-input-copies-in-bounds copy aignet aignet)
-                  ;; (aignet-lit-listp lits aignet)
-                  )
-             (aignet-marked-copies-in-bounds new-copy new-mark new-aignet))
-    :hints ((acl2::just-induct-and-expand <call>)))
-
-  (local
-   (defthm aignet-litp-implies-less-than-max-fanin
-     (implies (aignet-litp lit aignet)
-              (and (< (lit->var lit) (+ 1 (fanin-count aignet)))
-                   (<= (lit->var lit) (fanin-count aignet))))
-     :hints(("Goal" :in-theory (enable aignet-idp)))))
-
-  (defret marks-boundedp-of-<fn>
-    (implies (and (marks-boundedp limit mark)
-                  (< (lits-max-id-val lits) (nfix limit)))
-             (marks-boundedp limit new-mark))
-    :hints (("goal" :in-theory (enable lits-max-id-val))
-            (acl2::just-induct-and-expand <call>)))
-  
-  (local (defthmd lookup-when-marks-boundedp-split
-           (implies (and (marks-boundedp limit mark)
-                         (case-split (<= (nfix limit) (nfix n))))
-                    (and (bit-equiv (nth n mark) 0)
-                         (not (equal 1 (nth n mark)))))
-           :hints(("Goal" :use lookup-when-marks-boundedp))))
-
-  (local (defthmd lookup-when-marks-boundedp-really-split
-           (implies (marks-boundedp limit mark)
-                    (equal (equal 1 (nth n mark))
-                           (and (< (nfix n) (nfix limit))
-                                (hide (equal 1 (nth n mark))))))
-           :hints(("Goal" :use lookup-when-marks-boundedp
-                   :expand ((:free (x) (hide x)))))))
-
-  (defthm input-copy-values-of-extension
-    (implies (and (aignet-extension-binding)
-                  (equal (stype-count :pi new) (stype-count :pi orig)))
-             (equal (input-copy-values n invals regvals new copy aignet2)
-                    (input-copy-values n invals regvals orig copy aignet2)))
-    :hints(("Goal" :in-theory (enable input-copy-values))))
-
-  (defthm reg-copy-values-of-extension
-    (implies (and (aignet-extension-binding)
-                  (equal (stype-count :reg new) (stype-count :reg orig)))
-             (equal (reg-copy-values n invals regvals new copy aignet2)
-                    (reg-copy-values n invals regvals orig copy aignet2)))
-    :hints(("Goal" :in-theory (enable reg-copy-values))))
-
-  (defthm dfs-copy-onto-invar-of-extension
-    (implies (and (aignet-extension-binding)
-                  (marks-boundedp (+ 1 (fanin-count orig)) mark)
-                  (equal (stype-count :pi new) (stype-count :pi orig))
-                  (equal (stype-count :reg new) (stype-count :reg orig)))
-             (iff (dfs-copy-onto-invar new mark copy aignet2)
-                  (dfs-copy-onto-invar orig mark copy aignet2)))
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(assoc 'dfs-copy-onto-invar clause))
-                   :in-theory (enable aignet-idp lookup-when-marks-boundedp-split)))))
-             
-
-  (defret dfs-copy-onto-invar-holds-of-<fn>
-    (implies (and (aignet-lit-listp lits aignet)
-                  (marks-boundedp (+ 1 (fanin-count aignet)) mark)
-                  (dfs-copy-onto-invar aignet mark copy aignet)
-                  (aignet-input-copies-in-bounds copy aignet aignet)
-                  (aignet-marked-copies-in-bounds copy mark aignet))
-             (dfs-copy-onto-invar aignet new-mark new-copy new-aignet))
-    :hints ((acl2::just-induct-and-expand <call>)
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause))
-                            (lits-max-id-val lits)
-                            <call>)
-                   :use ((:instance marks-boundedp-of-aignet-self-copy-dfs-rec-list
-                          (limit (+ 1 (fanin-count aignet)))))
-                   :in-theory (e/d (aignet-idp lookup-when-marks-boundedp-really-split
-                                               lits-max-id-val-when-aignet-lit-listp)
-                                   (marks-boundedp-of-aignet-self-copy-dfs-rec-list))))))
-
-  (defret marks-preserved-of-<fn>
-    (implies (equal (nth n mark) 1)
-             (equal (nth n new-mark) 1))
-    :hints ((acl2::just-induct-and-expand <call>)))
 
 
-  (defret <fn>-copies-preserved-of-marked
-    (implies (equal (nth n mark) 1)
-             (equal (nth-lit n new-copy) (nth-lit n copy)))
-    :hints ((acl2::just-induct-and-expand <call>)))
 
-  (defret lit-list-marked-of-<fn>
-    (lit-list-marked lits new-mark)
-    :hints (("goal" :in-theory (enable lit-list-marked))
-            (acl2::just-induct-and-expand <call>)))
-
-  (defret stype-count-of-<fn>
-    (implies (and (not (equal (stype-fix stype) :and))
-                  (not (equal (stype-fix stype) :xor)))
-             (equal (stype-count stype new-aignet)
-                    (stype-count stype aignet)))
-    :hints ((acl2::just-induct-and-expand <call>)))
-
-  (defret input-copy-values-of-<fn>
-    (implies (aignet-input-copies-in-bounds copy aignet aignet)
-             (equal (input-copy-values n invals regvals aignet new-copy new-aignet)
-                    (input-copy-values n invals regvals aignet copy aignet)))
-    :hints ((acl2::just-induct-and-expand <call>)))
-    ;; :hints(("Goal" :in-theory (enable input-copy-values)
-    ;;         :induct (input-copy-values n invals regvals aignet copy aignet)
-    ;;         :expand ((:free (aignet aignet2 copy)
-    ;;                   (input-copy-values n invals regvals aignet copy aignet2))))))
-
-  (defret reg-copy-values-of-<fn>
-    (implies (aignet-input-copies-in-bounds copy aignet aignet)
-             (equal (reg-copy-values n invals regvals aignet new-copy new-aignet)
-                    (reg-copy-values n invals regvals aignet copy aignet)))
-    :hints ((acl2::just-induct-and-expand <call>)))
-
-  (defret lit-eval-list-of-<fn>
-    (implies (and (dfs-copy-onto-invar aignet mark copy aignet)
-                  (marks-boundedp (+ 1 (fanin-count aignet)) mark)
-                  (aignet-input-copies-in-bounds copy aignet aignet)
-                  (aignet-marked-copies-in-bounds copy mark aignet)
-                  (aignet-lit-listp lits aignet))
-             (equal (lit-eval-list (lit-list-copies lits new-copy)
-                                   invals regvals new-aignet)
-                    (lit-eval-list lits
-                                   (input-copy-values 0 invals regvals aignet copy aignet)
-                                   (reg-copy-values 0 invals regvals aignet copy aignet)
-                                   aignet)))
-    :hints (("goal" :use ((:instance lit-eval-list-of-copies-when-dfs-copy-onto-invar
-                           (aignet2 new-aignet)
-                           (copy new-copy)
-                           (mark new-mark)))
-             :in-theory (disable <fn>
-                                 lit-eval-list-of-copies-when-dfs-copy-onto-invar)))))
 
 
 (local (in-theory (enable aignet-idp)))
@@ -2276,67 +2917,67 @@
                                     lit-eval-of-aignet-lit-fix))))
 
 
-(define self-constprop-invar (hyp mark copy aignet)
-  :non-executable t
-  :prepwork ((defun-sk self-constprop-copies-ok (hyp copy aignet)
-               (forall (invals regvals)
-                       (implies (equal 1 (lit-eval hyp invals regvals aignet))
-                                (and (bits-equiv (input-copy-values 0 invals regvals aignet copy aignet)
-                                                 (take (num-ins aignet) invals))
-                                     (bits-equiv (reg-copy-values 0 invals regvals aignet copy aignet)
-                                                 (take (num-regs aignet) regvals)))))
-               :rewrite :direct)
-             (in-theory (disable self-constprop-copies-ok)))
-  :verify-guards nil
-  :hooks nil
-  (and (dfs-copy-onto-invar aignet mark copy aignet)
-       (marks-boundedp (+ 1 (fanin-count aignet)) mark)
-       (aignet-input-copies-in-bounds copy aignet aignet)
-       (aignet-marked-copies-in-bounds copy mark aignet)
-       (self-constprop-copies-ok hyp copy aignet))
-  ///
-  (defthm self-constprop-invar-preserved-by-aignet-copy-dfs-rec
-    (implies (and (self-constprop-invar hyp mark copy aignet)
-                  (aignet-litp hyp aignet)
-                  (aignet-idp id aignet))
-             (b* (((mv mark copy & aignet)
-                   (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
-               (self-constprop-invar hyp mark copy aignet)))
-    :hints(("Goal" :in-theory (enable aignet-idp))
-           (and stable-under-simplificationp
-                `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
+;; (define self-constprop-invar (hyp mark copy aignet)
+;;   :non-executable t
+;;   :prepwork ((defun-sk self-constprop-copies-ok (hyp copy aignet)
+;;                (forall (invals regvals)
+;;                        (implies (equal 1 (lit-eval hyp invals regvals aignet))
+;;                                 (and (bits-equiv (input-copy-values 0 invals regvals aignet copy aignet)
+;;                                                  (take (num-ins aignet) invals))
+;;                                      (bits-equiv (reg-copy-values 0 invals regvals aignet copy aignet)
+;;                                                  (take (num-regs aignet) regvals)))))
+;;                :rewrite :direct)
+;;              (in-theory (disable self-constprop-copies-ok)))
+;;   :verify-guards nil
+;;   :hooks nil
+;;   (and (dfs-copy-onto-invar aignet mark copy aignet)
+;;        (marks-boundedp (+ 1 (fanin-count aignet)) mark)
+;;        (aignet-input-copies-in-bounds copy aignet aignet)
+;;        (aignet-marked-copies-in-bounds copy mark aignet)
+;;        (self-constprop-copies-ok hyp copy aignet))
+;;   ///
+;;   (defthm self-constprop-invar-preserved-by-aignet-copy-dfs-rec
+;;     (implies (and (self-constprop-invar hyp mark copy aignet)
+;;                   (aignet-litp hyp aignet)
+;;                   (aignet-idp id aignet))
+;;              (b* (((mv mark copy & aignet)
+;;                    (aignet-copy-dfs-rec id aignet mark copy strash gatesimp aignet)))
+;;                (self-constprop-invar hyp mark copy aignet)))
+;;     :hints(("Goal" :in-theory (enable aignet-idp))
+;;            (and stable-under-simplificationp
+;;                 `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
 
-  (defthm self-constprop-invar-preserved-by-aignet-self-copy-dfs-rec-list
-    (implies (and (self-constprop-invar hyp mark copy aignet)
-                  (aignet-litp hyp aignet)
-                  (aignet-lit-listp lits aignet))
-             (b* (((mv mark copy & aignet)
-                   (aignet-self-copy-dfs-rec-list lits aignet mark copy strash gatesimp)))
-               (self-constprop-invar hyp mark copy aignet)))
-    :hints(("goal" :in-theory (enable lits-max-id-val-when-aignet-lit-listp))
-           (and stable-under-simplificationp
-                `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
+;;   (defthm self-constprop-invar-preserved-by-aignet-self-copy-dfs-rec-list
+;;     (implies (and (self-constprop-invar hyp mark copy aignet)
+;;                   (aignet-litp hyp aignet)
+;;                   (aignet-lit-listp lits aignet))
+;;              (b* (((mv mark copy & aignet)
+;;                    (aignet-self-copy-dfs-rec-list lits aignet mark copy strash gatesimp)))
+;;                (self-constprop-invar hyp mark copy aignet)))
+;;     :hints(("goal" :in-theory (enable lits-max-id-val-when-aignet-lit-listp))
+;;            (and stable-under-simplificationp
+;;                 `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
 
-  (defthm self-constprop-invar-of-aignet-parametrize-copyarr
-    (self-constprop-invar hyp (resize-list nil n 0)
-                          (aignet-parametrize-copyarr hyp aignet copy)
-                          aignet)
-    :hints ((and stable-under-simplificationp
-                 `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
+;;   (defthm self-constprop-invar-of-aignet-parametrize-copyarr
+;;     (self-constprop-invar hyp (resize-list nil n 0)
+;;                           (aignet-parametrize-copyarr hyp aignet copy)
+;;                           aignet)
+;;     :hints ((and stable-under-simplificationp
+;;                  `(:expand (,(assoc 'self-constprop-copies-ok clause))))))
 
-  (defthm marked-lit-copy-when-self-constprop-invar
-    (implies (and (self-constprop-invar hyp mark copy aignet)
-                  (equal 1 (lit-eval hyp invals regvals aignet))
-                  (equal 1 (get-bit id mark)))
-             (equal (lit-eval (nth-lit id copy) invals regvals aignet)
-                    (id-eval id invals regvals aignet))))
+;;   (defthm marked-lit-copy-when-self-constprop-invar
+;;     (implies (and (self-constprop-invar hyp mark copy aignet)
+;;                   (equal 1 (lit-eval hyp invals regvals aignet))
+;;                   (equal 1 (get-bit id mark)))
+;;              (equal (lit-eval (nth-lit id copy) invals regvals aignet)
+;;                     (id-eval id invals regvals aignet))))
 
-  (defthm marked-lit-copies-when-self-constprop-invar
-    (implies (and (self-constprop-invar hyp mark copy aignet)
-                  (equal 1 (lit-eval hyp invals regvals aignet))
-                  (lit-list-marked lits mark))
-             (equal (lit-eval-list (lit-list-copies lits copy) invals regvals aignet)
-                    (lit-eval-list lits invals regvals aignet)))))
+;;   (defthm marked-lit-copies-when-self-constprop-invar
+;;     (implies (and (self-constprop-invar hyp mark copy aignet)
+;;                   (equal 1 (lit-eval hyp invals regvals aignet))
+;;                   (lit-list-marked lits mark))
+;;              (equal (lit-eval-list (lit-list-copies lits copy) invals regvals aignet)
+;;                     (lit-eval-list lits invals regvals aignet)))))
 
 
 
