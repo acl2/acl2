@@ -36,49 +36,45 @@
 
 
 (encapsulate
-  (((gl-rewrite-try-rule-trace * * * * interp-st state) => interp-st
-    :formals (status rule fn args interp-st state)
+  (((gl-rewrite-try-rule-trace * * * interp-st state) => interp-st
+    :formals (status rule call interp-st state)
     :guard (and (pseudo-rewrite-rule-p rule)
-                (pseudo-fnsym-p fn)
-                (true-listp args))))
+                (gl-object-p call))))
 
   (set-ignore-ok t)
   (set-irrelevant-formals-ok t)
-  (local (defun gl-rewrite-try-rule-trace (status rule fn args interp-st state)
+  (local (defun gl-rewrite-try-rule-trace (status rule call interp-st state)
            (declare (xargs :stobjs (interp-st state)
                            :guard (and (pseudo-rewrite-rule-p rule)
-                                       (pseudo-fnsym-p fn)
-                                       (true-listp args))))
+                                       (gl-object-p call))))
            interp-st))
 
   (defthm interp-st-get-of-gl-rewrite-try-rule-trace
     (implies (not (equal (interp-st-field-fix key) :trace-scratch))
-             (equal (interp-st-get key (gl-rewrite-try-rule-trace status rule fn args interp-st state))
+             (equal (interp-st-get key (gl-rewrite-try-rule-trace status rule call interp-st state))
                     (interp-st-get key interp-st)))))
 
 (define gl-rewrite-try-rule-trace-wrapper (trace
                                            status
                                            (rule pseudo-rewrite-rule-p)
-                                           (fn pseudo-fnsym-p)
-                                           (args true-listp)
+                                           (call gl-object-p)
                                            interp-st
                                            state)
   :inline t
   (if trace
-      (gl-rewrite-try-rule-trace status rule fn args interp-st state)
+      (gl-rewrite-try-rule-trace status rule call interp-st state)
     interp-st)
   ///
   (defthm interp-st-get-of-gl-rewrite-try-rule-trace-wrapper
     (implies (not (equal (interp-st-field-fix key) :trace-scratch))
              (equal (interp-st-get key (gl-rewrite-try-rule-trace-wrapper
-                                        trace status rule fn args interp-st state))
+                                        trace status rule call interp-st state))
                     (interp-st-get key interp-st)))))
 
 
 (define gl-rewrite-rule-try-trace-default (status
                                            (rule pseudo-rewrite-rule-p)
-                                           (fn pseudo-fnsym-p)
-                                           (args true-listp)
+                                           (call gl-object-p)
                                            interp-st state)
   :returns new-interp-st
   (b* ((rule-alist (and (boundp-global :fgl-trace-rule-alist state)
@@ -97,7 +93,7 @@
       (':start
        (prog2$ (fmt-to-comment-window
                 "~t0~x1> ~x2 ~x3~%"
-                (pairlis2 acl2::*base-10-chars* (list depth depth rune (cons fn args)))
+                (pairlis2 acl2::*base-10-chars* (list depth depth rune call))
                 0 evisc-tuple nil)
                (update-interp-st->trace-scratch (1+ depth) interp-st)))
       ((':hyps . failed-hyp)
@@ -194,9 +190,7 @@ following inputs:</p>
 <li>@('rule'), the rewrite rule structure of the rule being attempted, with
 guard @('(pseudo-rewrite-rule-p rule)')</li>
 
-<li>@('fn'), the leading function symbol of the LHS</li>
-
-<li>@('args'), the arguments to @('fn') with which the LHS was unified</li>
+<li>@('call'), the term to be rewritten, with which the LHS was unified</li>
 
 <li>@('interp-st'), the FGL interpreter state</li>
 
