@@ -82,11 +82,6 @@
      if applicable.")
 
    (xdoc::p
-    "The iteration count must be representable in 4 bytes,
-     so it must be below @($2^{32}$).
-     This is part of the guard of the PBKDF2 function.")
-
-   (xdoc::p
     "RFC 8108 says that the desired key length must not exceed
      @($(2^{32}-1)$) times the output size of the HMAC function.
      This is part of the guard of the PBKDF2 function.")
@@ -236,13 +231,11 @@
                                               ,output-size))
                                          4))
                         (posp iterations)
-                        (< iterations (expt 2 32))
                         (posp length)
                         (<= length (* (1- (expt 2 32)) ,output-size)))
                 `(and (byte-listp password)
                       (byte-listp salt)
                       (posp iterations)
-                      (< iterations (expt 2 32))
                       (posp length)
                       (<= length (* (1- (expt 2 32)) ,output-size)))))
        ;; function signature:
