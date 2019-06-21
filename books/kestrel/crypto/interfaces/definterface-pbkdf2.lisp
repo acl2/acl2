@@ -31,8 +31,9 @@
     "PBKDF2 is specified in the "
     (xdoc::a :href "https://tools.ietf.org/html/rfc8018" "RFC 8018 standard")
     ". It is parameterized over a pseudorandom function,
-     i.e. there is a PBKDF2 variant for each choice of the hash function.
-     RFC 8018 assumes the pseudorandom function to be a binary one,
+     i.e. there is a PBKDF2 variant
+     for each choice of the pseudorandom function.
+     RFC 8018 assumes the pseudorandom function to be a binary function,
      since it is applied to two arguments (see Section 5.2 of RFC 8018).")
 
    (xdoc::p
@@ -40,8 +41,8 @@
      for a PBKDF2 function;
      the underlying pseudorandom function is specified via a reference to
      the name of an existing @(tsee definterface-hmac).
-     (For now, only HMAC functions are supported
-     as choices for the PBKDF2's pseudorandom function.)
+     For now, only HMAC functions are supported
+     as choices for the PBKDF2's pseudorandom function.
      The PBKDF2 function takes as arguments
      two byte lists (the password and the salt)
      and two positive integers (the iteration count and the key length);
@@ -65,18 +66,13 @@
    (xdoc::p
     "If the hash function has an input size limit,
      the limit on the size of the HMAC function's text input
-     is a bit more complicated (see @(tsee definterface-hmac)):
-     it is the hash function's input size limit
-     diminished by
-     either (i) the length of the HMAC key (i.e. PBKDF2 password)
-     if this length is less than or equal to the hash function's block size
-     or (ii) the hash function's output size otherwise.
+     is as explained in @(tsee definterface-hmac).
      RFC 8108 says that the text passed to the HMAC function is
-     either (a) the salt concatenated with 4 bytes
-     or (b) an output of the HMAC function:
+     either (i) the salt concatenated with 4 bytes
+     or (ii) an output of the HMAC function:
      while the latter is always well below the HMAC text size limit,
      the former induces the constraint that the salt
-     must be below the limit for the HMAC text ((i) or (ii) above),
+     must be below the limit for the HMAC text (see @(tsee definterface-hmac))
      diminished by 4.
      The guard of the PBKDF2 function includes this constraint,
      if applicable.")
@@ -226,9 +222,7 @@
                         (< (len password) ,key-size-limit)
                         (byte-listp salt)
                         (< (len salt) (- (- ,key-size-limit
-                                            (if (<= (len salt) ,block-size)
-                                                (len salt)
-                                              ,output-size))
+                                            ,block-size)
                                          4))
                         (posp iterations)
                         (posp length)

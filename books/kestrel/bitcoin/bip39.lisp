@@ -307,7 +307,7 @@
 
 (define bip39-mnemonic-to-seed ((mnemonic stringp) (passphrase stringp))
   :guard (and (< (length mnemonic) (expt 2 125))
-              (< (length passphrase) (- (expt 2 125) (+ 128 4))))
+              (< (length passphrase) (- (expt 2 125) (+ 128 4 8))))
   :returns (seed byte-listp)
   :short "Turn a mnemonic string into a seed."
   :long
@@ -345,11 +345,11 @@
      (which is used as salt of "
     (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
-    ") is a little smaller than needed in general, but simpler
-     (see the guard of "
+    ") is the same as the one on the text of "
     (xdoc::seeurl "crypto::pbkdf2-hmac-sha-512-interface"
                   "@('pbkdf2-hmac-sha-512')")
-    ")."))
+    " dimished by 8 to account for
+     the appended string constant ``@('mnemonic')''."))
   (b* ((password (string=>nats mnemonic))
        (salt (string=>nats (string-append "mnemonic"
                                           (str::str-fix passphrase))))
@@ -372,7 +372,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bip39-entropy-to-seed ((entropy bip39-entropyp) (passphrase stringp))
-  :guard (< (length passphrase) (- (expt 2 125) (+ 128 4)))
+  :guard (< (length passphrase) (- (expt 2 125) (+ 128 4 8)))
   :returns (seed byte-listp)
   :short "Turn an entropy value into a seed."
   :long

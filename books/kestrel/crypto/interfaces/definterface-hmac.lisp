@@ -68,6 +68,15 @@
      the hash function's maximum input size dimished by
      either (i) the key size if it does not exceed the block size
      or (ii) the hash function's output size otherwise.
+     For simplicity,
+     we use the block size as an over-approximation of (i) and (ii)
+     (note that the block size is larger than the output size):
+     that is, the maximum size of the text size is
+     the maximum input size of the hash
+     diminished by the block size of the hash;
+     this is a very large value,
+     and using the slightly more relaxed but more complicated maximum
+     would not provide significant advantages.
      Note that @(tsee definterface-hash) has no information about
      the hash function's block size,
      which is therefore supplied directly to @('definterface-hmac').
@@ -139,8 +148,7 @@
      "A constrained function that represents the HMAC function.")
     (xdoc::p
      "Its guard consists of @(tsee byte-listp) for both arguments and,
-      if applicable, conditions on their length
-      derived as explained above.")
+      if applicable, conditions on their lengths as explained above.")
     (xdoc::p
      "This funcion is constrained to:")
     (xdoc::ul
@@ -279,9 +287,7 @@
                         (< (len key) ,input-size-limit-/-8)
                         (byte-listp text)
                         (< (len text) (- ,input-size-limit-/-8
-                                         (if (<= (len key) ,block-size)
-                                             (len key)
-                                           ,(/ output-size 8)))))
+                                         ,block-size)))
                 '(and (byte-listp key)
                       (byte-listp text))))
        ;; function signature:
