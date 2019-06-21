@@ -164,29 +164,36 @@
 
 
 (encapsulate
-  (((aignet-cube-sat-transform aignet *) => aignet
-    :guard t :formals (aignet config)))
+  (((aignet-cube-sat-transform aignet * state) => (mv aignet state)
+    :guard t :formals (aignet config state)))
 
-  (local (defun aignet-cube-sat-transform (aignet config)
-           (Declare (xargs :guard t :stobjs aignet)
-                    (ignore config))
-           aignet))
+  (local (define aignet-cube-sat-transform (aignet config state)
+           :returns (mv new-aignet new-state)
+           (Declare (ignore config))
+           (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
+                             :exec aignet)))
+             (mv aignet state))))
 
-  (defthm comb-equiv-of-aignet-cube-sat-transform
-    (comb-equiv (aignet-cube-sat-transform aignet config)
+  (local (in-theory (enable aignet-cube-sat-transform)))
+
+  (defret comb-equiv-of-<fn>
+    (comb-equiv new-aignet
                 aignet))
 
-  (defthm num-ins-of-aignet-cube-sat-transform
-    (equal (stype-count :pi (aignet-cube-sat-transform aignet config))
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet)
            (stype-count :pi aignet)))
 
-  (defthm num-outs-of-aignet-cube-sat-transform
-    (equal (stype-count :po (aignet-cube-sat-transform aignet config))
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet)
            (stype-count :po aignet)))
 
-  (defthm num-regs-of-aignet-cube-sat-transform
-    (equal (stype-count :reg (aignet-cube-sat-transform aignet config))
-           (stype-count :reg aignet))))
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet)
+           (stype-count :reg aignet)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define aignet-copy-dfs-list ((lits lit-listp)
@@ -907,32 +914,35 @@
              :in-theory (e/d* (acl2::arith-equiv-forwarding)
                               ((:d <fn>)))))))
 
+(local (in-theory (disable w)))
+
 (define aignet-transform-sat-check-cube ((cube lit-listp)
                                          (sat-config satlink::config-p)
                                          (xform-config)
                                          aignet
-                                         bitarr)
+                                         bitarr
+                                         state)
   :guard (aignet-lit-listp cube aignet)
-  :returns (mv status new-bitarr)
+  :returns (mv status new-bitarr new-state)
   :hooks nil
   (b* (((acl2::local-stobjs aignet2 vals)
         ;; NOTE: bitarr will be the original aignet version of the satisfying assign
         ;; vals the transformed aignet2's version
         ;; 
-        (mv status bitarr aignet2 vals))
+        (mv status bitarr state aignet2 vals))
        (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
-       (aignet2 (aignet-cube-sat-transform aignet2 xform-config))
+       ((mv aignet2 state) (aignet-cube-sat-transform aignet2 xform-config state))
        (new-cube (list (outnum->fanin 0 aignet2)))
        ((acl2::hintcontext :sat))
        ((mv status vals)
         (aignet-sat-check-cube new-cube sat-config aignet2 vals))
        ((unless (eq status :sat))
-        (mv status bitarr aignet2 vals))
+        (mv status bitarr state aignet2 vals))
        (bitarr (resize-bits (num-fanins aignet) bitarr))
        (bitarr (aignet-vals-copy-pis 0 vals bitarr aignet2 aignet))
        (bitarr (aignet-vals-copy-regs 0 vals bitarr aignet2 aignet))
        (bitarr (aignet-eval bitarr aignet)))
-    (mv :sat bitarr aignet2 vals))
+    (mv :sat bitarr state aignet2 vals))
        
        
   ///
@@ -960,5 +970,8 @@
                        (invals invals)
                        (regvals regvals)))
                   :in-theory (e/d (aignet-eval-conjunction)
-                                  (aignet-sat-check-cube-unsat))))))))
+                                  (aignet-sat-check-cube-unsat)))))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 

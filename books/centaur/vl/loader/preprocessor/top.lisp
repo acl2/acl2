@@ -68,7 +68,10 @@
                            STRING-LISTP-WHEN-MEMBER-EQUAL-OF-STRING-LIST-LISTP
                            SYMBOL-LISTP-WHEN-SUBSETP-EQUAL-OF-SYMBOL-LISTP
                            TRUE-LISTP-WHEN-MEMBER-EQUAL-OF-TRUE-LIST-LISTP
-                           VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO)))
+                           VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO
+                           acl2::nth-with-large-index
+                           nth-when-too-big
+                           (tau-system))))
 
 
 (defxdoc preprocessor
@@ -1075,6 +1078,23 @@ a lot, so we stick its fields together in a stobj.</p> @(def ppst)"
                        :fn fn)))
     (vl-ppst-update-warnings warnings)))
 
+(define vl-maybe-ppst-warn (&key (when)
+                                 (type symbolp)
+                                 (msg stringp)
+                                 (args true-listp)
+                                 ((fn symbolp) '__function__)
+                                 (ppst 'ppst))
+  :parents (ppst)
+  :short "Add a non-fatal warning to the @(see ppst)."
+  :long "<p>We don't print anything since it's just a warning.</p>"
+  (b* ((warnings (vl-ppst->warnings))
+       ((unless when) ppst)
+       (warnings (warn :type type
+                       :msg msg
+                       :args args
+                       :fn fn)))
+    (vl-ppst-update-warnings warnings)))
+
 
 (define vl-nice-bytes ((bytes natp))
   :returns (str stringp :rule-classes :type-prescription)
@@ -1633,13 +1653,11 @@ the defines table, and make the appropriate changes to the @('istack') and
                      :args (list loc))))
           (mv nil echars ppst)))
 
-       (ppst (if (not iframe.mi-controller)
-                 ppst
-               (vl-ppst-warn
-                :type :vl-warn-include-guard
-                :msg "~a0: suppressing multiple-include optimization due to ~
+       (ppst (vl-maybe-ppst-warn :when iframe.mi-controller
+                                 :type :vl-warn-include-guard
+                                 :msg "~a0: suppressing multiple-include optimization due to ~
                       `elsif."
-                :args (list loc))))
+                                 :args (list loc)))
 
        (this-satisfiedp (consp (vl-find-define name defines)))
        (new-activep     (and this-satisfiedp
@@ -1704,12 +1722,10 @@ the defines table, and make the appropriate changes to the @('istack') and
                      :args (list loc))))
           (mv nil ppst)))
 
-       (ppst (if (not iframe.mi-controller)
-                 ppst
-               (vl-ppst-warn
-                :type :vl-warn-include-guard
-                :msg "~a0: suppressing multiple-include optimization due to `else."
-                :args (list loc))))
+       (ppst (vl-maybe-ppst-warn :when iframe.mi-controller
+                                 :type :vl-warn-include-guard
+                                 :msg "~a0: suppressing multiple-include optimization due to `else."
+                                 :args (list loc)))
 
        (new-activep       (and iframe.initially-activep
                                (not iframe.some-thing-satisfiedp)))
@@ -2148,6 +2164,7 @@ non-arguments pieces.</p>"
         (mv nil nil echars ppst)))
     (mv t (cons (car echars) text) remainder ppst))
   ///
+  (local (in-theory (disable (:d vl-read-until-end-of-define))))
   (local (defthm cdr-of-vl-echarlist-fix
            (equal (cdr (vl-echarlist-fix x))
                   (vl-echarlist-fix (cdr x)))
@@ -2157,6 +2174,13 @@ non-arguments pieces.</p>"
                     (equal (true-listp (cdr x))
                            (True-listp x)))))
 
+  (local (set-default-hints
+          '((acl2::just-induct-and-expand
+             (vl-read-until-end-of-define echars config)))))
+
+  (local (in-theory (disable acl2::append-under-iff
+                             acl2::member-of-cons)))
+  
   (defthm true-listp-of-vl-read-until-end-of-define-prefix
     (true-listp (mv-nth 1 (vl-read-until-end-of-define echars config)))
     :rule-classes :type-prescription)
@@ -2789,12 +2813,15 @@ there may well be mismatches left.</p>"
     ;; accumulate it anyway.  Keep reading this actual.
     (vl-parse-define-actual name (cdr echars) loc stk (cons (car echars) acc) ppst))
   ///
+  (local (in-theory (disable (:d vl-parse-define-actual))))
   (defthm acl2-count-of-vl-parse-define-actual
     (b* (((mv successp ?morep ?actual remainder ?ppst)
           (vl-parse-define-actual name echars loc stk acc ppst)))
       (implies successp
                (< (acl2-count remainder)
                   (acl2-count (vl-echarlist-fix echars)))))
+    :hints ((acl2::just-induct-and-expand
+             (vl-parse-define-actual name echars loc stk acc ppst)))
     :rule-classes ((:rewrite) (:linear))))
 
 
@@ -3414,6 +3441,10 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 (define vl-maybe-update-filemap ((realfile stringp)
                                  (contents vl-echarlist-p)
                                  ppst)
+  :prepwork ((local (defthm alistp-when-vl-filemap-p-rw
+                      (implies (vl-filemap-p x)
+                               (alistp x))
+                      :hints(("Goal" :in-theory (enable (tau-system)))))))
   (b* (((vl-loadconfig config) (vl-ppst->config))
        ((unless config.filemapp)
         ppst)
@@ -3427,6 +3458,37 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        (filemap (cons (cons realfile (vl-echarlist->string contents))
                       filemap)))
     (vl-ppst-update-filemap filemap)))
+
+
+(define vl-atvl-atts-text ((echars vl-echarlist-p))
+  :returns (mv (atts-text vl-echarlist-p)
+               (remainder vl-echarlist-p))
+  (b* ((echars (vl-echarlist-fix echars))
+       ((mv & prefix remainder)
+        (vl-read-until-literal *nls* (rest-n 5 echars)))
+       ((mv comment1p pre-comment1 post-comment1)
+        (vl-read-until-literal "//" prefix))
+       ((mv comment2p pre-comment2 post-comment2)
+        (vl-read-until-literal "/*" prefix)))
+    (cond ((acl2::and** comment1p comment2p)
+           (if (< (len pre-comment1) (len pre-comment2))
+               (mv pre-comment1 (append post-comment1 remainder))
+             (mv pre-comment2 (append post-comment2 remainder))))
+          (comment1p
+           (mv pre-comment1 (append post-comment1 remainder)))
+          (comment2p
+           (mv pre-comment2 (append post-comment2 remainder)))
+          (t
+           (mv prefix remainder))))
+  ///
+  (defret true-listp-atts-text-of-<fn>
+    (true-listp atts-text)
+    :rule-classes :type-prescription)
+  ;; ///
+  ;; (defret acl2-count-of-<fn>
+  ;;   (< (acl2-count remainder) (acl2-count (vl-echarlist-fix echars)))
+  ;;   :rule-classes :linear)
+  )
 
 (with-output
   :off :all
@@ -3447,7 +3509,29 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
   :measure (two-nats-measure n (acl2-count (vl-echarlist-fix echars)))
   :verify-guards nil
   :hints(("Goal" :in-theory (disable (force))))
+  :prepwork (
 
+             ;; Speed hint
+             (local (in-theory (disable (:e tau-system)
+                                        acl2::nthcdr-append
+                                        acl2::lower-bound-of-len-when-sublistp
+                                        ACL2::NTHCDR-WITH-LARGE-INDEX
+                                        ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
+                                        ACL2::LEN-WHEN-PREFIXP
+                                        acl2::open-small-nthcdr
+                                        acl2::nthcdr-of-cdr
+                                        acl2::butlast-redefinition
+                                        butlast-under-iff
+                                        acl2::len-when-atom
+                                        (:t prefix-of-vl-read-through-literal)
+                                        acl2::len-of-nthcdr
+                                        natp-when-posp
+                                        acl2::nthcdr-when-atom
+                                        (:t acl2::binary-and*)
+                                        (:t acl2::binary-or*)
+                                        no-change-loser-of-vl-read-while-whitespace
+                                        not
+                                        ))))
   (b* ((echars (vl-echarlist-fix echars))
 
        ((when (atom echars))
@@ -3488,9 +3572,9 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              (ppst (vl-ppst-maybe-write prefix)))
           (vl-preprocess-loop remainder n ppst state)))
 
-       ((when (and (eql char1 #\/)
-                   (consp (cdr echars))
-                   (eql (vl-echar->char (second echars)) #\/)))
+       ((when (acl2::and** (eql char1 #\/)
+                           (consp (cdr echars))
+                           (eql (vl-echar->char (second echars)) #\/)))
         ;; Start of a one-line comment
 
         ;; SPECIAL VL EXTENSION.
@@ -3521,22 +3605,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (if (vl-matches-string-p "@VL" (cddr echars))
             (b* (((mv atts-text remainder)
                   ;; Figure out how much text we want to read for the attributes...
-                  (b* (((mv & prefix remainder)
-                        (vl-read-until-literal *nls* (rest-n 5 echars)))
-                       ((mv comment1p pre-comment1 post-comment1)
-                        (vl-read-until-literal "//" prefix))
-                       ((mv comment2p pre-comment2 post-comment2)
-                        (vl-read-until-literal "/*" prefix)))
-                    (cond ((and comment1p comment2p)
-                           (if (< (len pre-comment1) (len pre-comment2))
-                               (mv pre-comment1 (append post-comment1 remainder))
-                             (mv pre-comment2 (append post-comment2 remainder))))
-                          (comment1p
-                           (mv pre-comment1 (append post-comment1 remainder)))
-                          (comment2p
-                           (mv pre-comment2 (append post-comment2 remainder)))
-                          (t
-                           (mv prefix remainder)))))
+                  (vl-atvl-atts-text echars))
                  (atts (append (vl-echarlist-from-str "(*")
                                atts-text
                                (vl-echarlist-from-str "*)"))))
@@ -3560,9 +3629,9 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                (ppst   (vl-ppst-maybe-write prefix)))
             (vl-preprocess-loop remainder n ppst state))))
 
-       ((when (and (eql char1 #\/)
-                   (consp (cdr echars))
-                   (eql (vl-echar->char (second echars)) #\*)))
+       ((when (acl2::and** (eql char1 #\/)
+                           (consp (cdr echars))
+                           (eql (vl-echar->char (second echars)) #\*)))
         ;; Start of a block comment.
         ;;
         ;; SPECIAL VL EXTENSION.  We do the same thing for /*+VL...*/,
@@ -3651,8 +3720,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                      :args (list (vl-echar->loc echar1) directive))))
           (mv nil echars ppst state)))
 
-       ((when (or (equal directive "define")
-                  (equal directive "centaur_define")))
+       ((when (acl2::or** (equal directive "define")
+                          (equal directive "centaur_define")))
         ;; CENTAUR EXTENSION: we also support centaur_define
         (b* (((mv successp remainder ppst)
               (vl-process-define (vl-echar->loc echar1) remainder ppst))
@@ -3667,9 +3736,9 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
               (mv nil echars ppst state)))
           (vl-preprocess-loop remainder n ppst state)))
 
-       ((when (or (equal directive "ifdef")
-                  (equal directive "ifndef")
-                  (equal directive "elsif")))
+       ((when (acl2::or** (equal directive "ifdef")
+                          (equal directive "ifndef")
+                          (equal directive "elsif")))
         (b* (((mv successp remainder ppst)
               (vl-process-ifdef (vl-echar->loc echar1) directive remainder ppst))
              ((unless successp)
@@ -3813,8 +3882,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              ;; We now have the real filename to load.  Maybe we've already
              ;; loaded it before and don't need to load it again?
              (controller (vl-includeskips-controller-lookup realfile (vl-ppst->iskips)))
-             ((when (and controller
-                         (consp (vl-find-define controller (vl-ppst->defines)))))
+             ((when (acl2::and** controller
+                                 (consp (vl-find-define controller (vl-ppst->defines)))))
               ;; Multiple include optimization HIT: we can skip this include
               ;; and just go on reading the rest of the file.
               (b* ((iskips (vl-includeskips-record-hit realfile
@@ -3824,15 +3893,14 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                 (cw-unformatted (cat (vl-ppst-pad) " (skip " realfile ")" *nls*))
                 (vl-preprocess-loop rest-of-file (- n 1) ppst state)))
 
-             (ppst (if (not controller)
-                       ppst
-                     (vl-ppst-warn
-                      :type :vl-warn-include-guard
-                      :msg "~a0: multiple include optimization failure: the ~
+             (ppst (vl-maybe-ppst-warn
+                    :when controller
+                    :type :vl-warn-include-guard
+                    :msg "~a0: multiple include optimization failure: the ~
                               controlling define ~s1 is not currently ~
                               defined, so we will have to re-include ~s2."
-                      :args (list (vl-echar->loc echar1) controller
-                                  realfile))))
+                    :args (list (vl-echar->loc echar1) controller
+                                realfile)))
 
              (current-includes (vl-ppst->includes))
              (ppst (vl-ppst-update-includes (cons realfile current-includes)))
@@ -3923,11 +3991,11 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
              (ppst (vl-ppst-write line-echars)))
           (vl-preprocess-loop remainder n ppst state)))
 
-       ((when (or (equal directive "celldefine")
-                  (equal directive "endcelldefine")
-                  (equal directive "resetall")
-                  (equal directive "protect")
-                  (equal directive "endprotect")))
+       ((when (acl2::or** (equal directive "celldefine")
+                          (equal directive "endcelldefine")
+                          (equal directive "resetall")
+                          (equal directive "protect")
+                          (equal directive "endprotect")))
         ;; BOZO maybe add a note that we are ignoring these directives?
         (vl-preprocess-loop remainder n ppst state))
 
@@ -3943,30 +4011,20 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
            (iff (consp (mv-nth 1 (vl-read-identifier echars)))
                 (mv-nth 0 (vl-read-identifier echars)))))
 
-  ;; Speed hint
-  (local (in-theory (disable (:e tau-system)
-                             acl2::nthcdr-append
-                             acl2::lower-bound-of-len-when-sublistp
-                             ACL2::NTHCDR-WITH-LARGE-INDEX
-                             ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP
-                             ACL2::LEN-WHEN-PREFIXP
-                             acl2::open-small-nthcdr
-                             acl2::nthcdr-of-cdr
-                             acl2::butlast-redefinition
-                             )))
-
   ;; (local (set-default-hints
   ;;         ;; I think we might be hitting ACL2's heuristics on not opening up
   ;;         ;; functions when it would introduce too many ifs, so we need this to
   ;;         ;; tell it to really go ahead and open up the function.
   ;;         '('(:expand ((:free (activep) (vl-preprocess-loop echars n ppst state)))))))
 
+  (local (in-theory (disable (:d vl-preprocess-loop))))
+
   (defthm state-p1-of-vl-preprocess-loop
     (implies (force (state-p1 state))
              (b* (((mv ?successp ?echars ?ppst state)
                    (vl-preprocess-loop echars n ppst state)))
                (state-p1 state)))
-    :hints(("Goal" :induct t)))
+    :hints((acl2::just-induct-and-expand (vl-preprocess-loop echars n ppst state))))
 
   (verify-guards vl-preprocess-loop
     :hints(("Goal"

@@ -115,6 +115,7 @@ it.</p>")
   :short "Possible return values from @(see file-kind)."
   :long "<p>Here @('nil') indicates that the file does not exist.</p>")
 
+(local (in-theory (disable w)))
 
 (define file-kind
   :parents (file-types)
@@ -126,7 +127,7 @@ it.</p>")
    (state 'state))
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans file-kind-p "On success: the kind of file.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
 
   :long "<p>We check whether @('path') exists.  If so, we determine what kind
 of file it is.</p>
@@ -154,7 +155,11 @@ fancy with symlinks, this is almost surely not what you want.</p>"
     (let ((ans (mv-nth 1 (file-kind path))))
       (and (symbolp ans)
            (not (equal ans t))))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define path-exists-p ((path stringp) &key (state 'state))
@@ -169,13 +174,17 @@ reasonable.</p>"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((mv err ans state) (file-kind path))
        ((when err)
         (mv err nil state))
        (exists-p (and (not (null ans))
                       (not (eq ans :broken-symbolic-link)))))
-    (mv err exists-p state)))
+    (mv err exists-p state))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define paths-all-exist-p ((paths string-listp) &key (state 'state))
@@ -184,7 +193,7 @@ reasonable.</p>"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom paths))
         (mv nil t state))
        ((mv err ans1 state) (path-exists-p (car paths)))
@@ -192,7 +201,11 @@ reasonable.</p>"
         (mv err nil state))
        ((unless ans1)
         (mv nil nil state)))
-    (paths-all-exist-p (cdr paths))))
+    (paths-all-exist-p (cdr paths)))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define paths-all-missing-p ((paths string-listp) &key (state 'state))
@@ -201,7 +214,7 @@ reasonable.</p>"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom paths))
         (mv nil t state))
        ((mv err ans1 state) (path-exists-p (car paths)))
@@ -209,7 +222,11 @@ reasonable.</p>"
         (mv err nil state))
        ((when ans1)
         (mv nil nil state)))
-    (paths-all-missing-p (cdr paths))))
+    (paths-all-missing-p (cdr paths)))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define existing-paths ((paths string-listp) &key (state 'state))
@@ -218,7 +235,7 @@ reasonable.</p>"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans string-listp :hyp (string-listp paths)
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   :verify-guards nil
 
   (mbe :logic
@@ -263,7 +280,11 @@ reasonable.</p>"
     (true-listp (mv-nth 1 (existing-paths paths)))
     :rule-classes :type-prescription)
 
-  (verify-guards existing-paths-fn))
+  (verify-guards existing-paths-fn)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define missing-paths ((paths string-listp) &key (state 'state))
@@ -272,7 +293,7 @@ reasonable.</p>"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans string-listp :hyp (string-listp paths)
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   :verify-guards nil
 
   (mbe :logic
@@ -317,7 +338,11 @@ reasonable.</p>"
     (true-listp (mv-nth 1 (missing-paths paths)))
     :rule-classes :type-prescription)
 
-  (verify-guards missing-paths-fn))
+  (verify-guards missing-paths-fn)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define regular-file-p ((path stringp) &key (state 'state))
@@ -327,11 +352,15 @@ regular file&mdash;not to a directory, device, etc."
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((mv err ans state) (file-kind path))
        ((when err)
         (mv err nil state)))
-    (mv err (eq ans :regular-file) state)))
+    (mv err (eq ans :regular-file) state))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define regular-files-p ((paths string-listp) &key (state 'state))
@@ -341,7 +370,7 @@ files</see>?"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom paths))
         (mv nil t state))
        ((mv err ans1 state) (regular-file-p (car paths)))
@@ -349,7 +378,11 @@ files</see>?"
         (mv err nil state))
        ((unless ans1)
         (mv nil nil state)))
-    (regular-files-p (cdr paths))))
+    (regular-files-p (cdr paths)))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (define regular-files ((paths string-listp) &key (state 'state))
@@ -359,7 +392,7 @@ files</see>."
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans string-listp :hyp (string-listp paths)
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   :verify-guards nil
 
   (mbe :logic
@@ -404,7 +437,11 @@ files</see>."
     (true-listp (mv-nth 1 (regular-files paths)))
     :rule-classes :type-prescription)
 
-  (verify-guards regular-files-fn))
+  (verify-guards regular-files-fn)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 
@@ -414,11 +451,15 @@ files</see>."
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((mv err ans state) (file-kind path))
        ((when err)
         (mv err nil state)))
-    (mv err (eq ans :directory) state)))
+    (mv err (eq ans :directory) state))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define directories-p ((paths string-listp) &key (state 'state))
   :parents (file-types)
@@ -427,7 +468,7 @@ directory-p)'>directories</see>?"
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans booleanp :rule-classes :type-prescription
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   (b* (((when (atom paths))
         (mv nil t state))
        ((mv err ans1 state) (directory-p (car paths)))
@@ -435,7 +476,11 @@ directory-p)'>directories</see>?"
         (mv err nil state))
        ((unless ans1)
         (mv nil nil state)))
-    (directories-p (cdr paths))))
+    (directories-p (cdr paths)))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define directories ((paths string-listp) &key (state 'state))
   :parents (file-types)
@@ -444,7 +489,7 @@ directory-p)'>directories</see>."
   :returns (mv (err "NIL on success, or an error @(see msg) on failure.")
                (ans string-listp :hyp (string-listp paths)
                     "Meaningful only when there is no error.")
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   :verify-guards nil
 
   (mbe :logic
@@ -489,4 +534,8 @@ directory-p)'>directories</see>."
     (true-listp (mv-nth 1 (directories paths)))
     :rule-classes :type-prescription)
 
-  (verify-guards directories-fn))
+  (verify-guards directories-fn)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))

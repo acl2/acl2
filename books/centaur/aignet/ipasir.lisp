@@ -726,6 +726,18 @@
 
 (local (in-theory (enable aignet-idp)))
 
+(local (in-theory (disable w)))
+
+(local (defthm w-of-read-acl2-oracle
+         (equal (w (mv-nth 2 (read-acl2-oracle state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable read-acl2-oracle w update-acl2-oracle)))))
+
+(local (defthm w-of-random$
+         (equal (w (mv-nth 1 (random$ n state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable random$)))))
+
 (define aignet-lit-ipasir-sat-check-aux ((x litp)
                                          sat-lits ipasir
                                          aignet state)
@@ -802,7 +814,10 @@
                            (formula (ipasir::ipasir$a->formula new-ipasir))
                            (solver new-ipasir)))
              :expand ((aignet-eval-conjunction nil some-invals some-regvals aignet))
-             :in-theory (disable ipasir::ipasir-solve$a-unsat-implies-unsat)))))
+             :in-theory (disable ipasir::ipasir-solve$a-unsat-implies-unsat))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
                
 
 (acl2::defstobj-clone inmasks bitarr :prefix "INMASKS-")
@@ -1271,7 +1286,16 @@
                            (regmasks new-regmasks)
                            (mark new-mark)))
              :expand ((:free (invals regvals)
-                       (lit-eval x invals regvals aignet)))))))
+                       (lit-eval x invals regvals aignet))))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-vals-sat-care-masks-rec
+                     id inmasks regmasks invals regvals vals mark aignet state)
+             :expand-others ((:free (vals)
+                              (aignet-vals-sat-care-masks-rec
+                     id inmasks regmasks invals regvals vals mark aignet state)))))))
 
        
                                                   
@@ -1335,7 +1359,10 @@ incremental solver, but it at least illustrates how to use it.</p>"
   (defret aignet-lit-ipasir-sat-check-not-unsat-when-sat
     (implies (and (equal (lit-eval x some-invals some-regvals aignet) 1)
                   (aignet-litp x aignet))
-             (not (equal status :unsat)))))
+             (not (equal status :unsat))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 
@@ -1411,4 +1438,7 @@ incremental solver, but it at least illustrates how to use it.</p>"
   (defret aignet-lit-ipasir-sat-minimize-not-unsat-when-sat
     (implies (and (equal (lit-eval x some-invals some-regvals aignet) 1)
                   (aignet-litp x aignet))
-             (not (equal status :unsat)))))
+             (not (equal status :unsat))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))

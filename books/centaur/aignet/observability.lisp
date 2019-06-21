@@ -356,6 +356,8 @@
              (equal (input-copy-values 0 some-invals some-regvals aignet new-copy new-aignet2)
                     (input-copy-values 0 some-invals some-regvals aignet copy aignet2)))))
 
+(local (in-theory (disable w)))
+
 (define observability-fix-input-copies ((lit litp)
                                         (aignet)
                                         (copy)
@@ -466,7 +468,10 @@
   (defret observability-fix-input-copies-not-unsat-when-sat
     (implies (and (equal (lit-eval lit some-invals some-regvals aignet2) 1)
                   (aignet-litp lit aignet2))
-             (not (equal status :unsat)))))
+             (not (equal status :unsat))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
        
 
 
@@ -653,7 +658,10 @@
                                   (LIT-EVAL HYP
                                             (INPUT-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
                                             (REG-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
-                                            AIGNET))))))))
+                                            AIGNET)))))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
                                      
 
 (define observability-split-supergate-aux ((lits lit-listp)
@@ -909,7 +917,10 @@
                   (<= (num-ins aignet) (num-ins aignet2))
                   (<= (num-regs aignet) (num-regs aignet2)))
              (equal (lit-eval new-lit invals regvals new-aignet2)
-                    (lit-eval lit invals regvals aignet)))))
+                    (lit-eval lit invals regvals aignet))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
        
 
 
@@ -987,7 +998,10 @@
             :induct <call>
             :expand (<call>))
            (and stable-under-simplificationp
-                '(:expand ((:free (a b) (lookup-stype m :po (cons a b)))))))))
+                '(:expand ((:free (a b) (lookup-stype m :po (cons a b))))))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define observability-fix-nxsts ((n natp)
@@ -1087,7 +1101,10 @@
            (and stable-under-simplificationp
                 '(:expand ((:free (a b) (lookup-reg->nxst m (cons a b))))))
            (and stable-under-simplificationp
-                '(:cases ((< (nfix m) (num-regs aignet2))))))))
+                '(:cases ((< (nfix m) (num-regs aignet2)))))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define observability-fix-core ((aignet)
@@ -1176,7 +1193,10 @@
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal <call>
-                    (let ((aignet2 nil)) <call>)))))
+                    (let ((aignet2 nil)) <call>))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
              
 
 
@@ -1186,7 +1206,7 @@
                                    "Settings for the transform")
                            (state))
   :guard-debug t
-  :returns (mv new-aignet2 state)
+  :returns (mv new-aignet2 new-state)
   :parents (aignet-comb-transforms)
   :short "Transform the aignet so that some observability don't-care conditions
           don't affect the logical equivalence of nodes."
@@ -1248,14 +1268,17 @@ only changed in cases where @('A') des not hold:</p>
   (defthm normalize-input-of-observability-fix
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal (observability-fix aignet aignet2 config state)
-                    (observability-fix aignet nil config state)))))
+                    (observability-fix aignet nil config state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define observability-fix! ((aignet  "Input aignet -- will be replaced with transformation result")
                             (config observability-config-p)
                             (state))
   :guard-debug t
-  :returns (mv new-aignet state)
+  :returns (mv new-aignet new-state)
   :parents (observability-fix)
   :short "Like @(see observability-fix), but overwrites the original network instead of returning a new one."
   (b* (((acl2::local-stobjs aignet-tmp)
@@ -1277,7 +1300,10 @@ only changed in cases where @('A') des not hold:</p>
            (stype-count :po aignet)))
 
   (defret observability-fix!-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
   

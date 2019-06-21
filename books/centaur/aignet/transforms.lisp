@@ -156,7 +156,7 @@ for translating between ABC and aignet does not support xors.</p>"
 
 (define comb-transform->name ((x comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
-  (case (tag x)
+  (case (tag (comb-transform-fix x))
     (:balance-config "Balance")
     (:fraig-config "Fraig")
     (:rewrite-config "Rewrite")
@@ -168,6 +168,8 @@ for translating between ABC and aignet does not support xors.</p>"
     (t "Abc simplify")))
 
 
+
+(local (in-theory (disable w)))
 
 (define apply-comb-transform ((aignet)
                               (aignet2)
@@ -217,7 +219,11 @@ for translating between ABC and aignet does not support xors.</p>"
            (stype-count :po aignet)))
 
   (defret apply-comb-transform-comb-equivalent
-    (comb-equiv new-aignet2 aignet)))
+    (comb-equiv new-aignet2 aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define apply-comb-transform! ((aignet)
                                (transform comb-transform-p)
@@ -261,7 +267,12 @@ for translating between ABC and aignet does not support xors.</p>"
            (stype-count :po aignet)))
 
   (defret apply-comb-transform!-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
+
 
 (fty::deflist comb-transformlist :elt-type comb-transform :true-listp t)
 
@@ -317,7 +328,11 @@ for translating between ABC and aignet does not support xors.</p>"
            (stype-count :po aignet)))
 
   (defret apply-comb-transforms-logic-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 
@@ -333,7 +348,7 @@ for translating between ABC and aignet does not support xors.</p>"
   :long "<p>See @(see apply-comb-transforms!) for a version that overwrites the original network.</p>"
   :verify-guards nil
   :enabled t
-  :returns (mv new-aignet2 state)
+  :returns (mv new-aignet2 new-state)
   (if (atom transforms)
       (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
         (mv aignet2 state))
@@ -361,14 +376,18 @@ for translating between ABC and aignet does not support xors.</p>"
                 '(:in-theory (enable mv-list-of-apply-comb-transform)))))
 
   (verify-guards apply-comb-transforms
-    :hints (("goal" :expand ((apply-comb-transforms-logic aignet nil state))))))
+    :hints (("goal" :expand ((apply-comb-transforms-logic aignet nil state)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 
 (define apply-comb-transforms!-rec ((aignet)
                                 (transforms comb-transformlist-p)
                                 (state))
-  :returns (mv new-aignet state)
+  :returns (mv new-aignet new-state)
   (if (atom transforms)
       (mv aignet state)
     (b* (((mv aignet state) (apply-comb-transform! aignet (car transforms) state)))
@@ -388,7 +407,11 @@ for translating between ABC and aignet does not support xors.</p>"
            (stype-count :po aignet)))
 
   (defret apply-comb-transforms!-rec-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define apply-comb-transforms! ((aignet)
                                 (transforms comb-transformlist-p)
@@ -397,7 +420,7 @@ for translating between ABC and aignet does not support xors.</p>"
   :short "Apply a sequence of combinational transforms to a network and return
           the transformed network, overwriting the original network."
   :long "<p>See @(see apply-comb-transforms) for a version that preserves the original network.</p>"
-  :returns (mv new-aignet state)
+  :returns (mv new-aignet new-state)
   :enabled t
   (prog2$ (print-aignet-stats "Input" aignet)
           (apply-comb-transforms!-rec aignet transforms state)))

@@ -48,6 +48,7 @@
    :script "&put; dc2; dfraig; &get"
    :quiet nil))
 
+(local (in-theory (disable w)))
 
 (define abc-comb-simplify ((input-aignet)
                            (output-aignet)
@@ -99,7 +100,11 @@
            (stype-count :po input-aignet)))
 
   (defret abc-comb-simplify-comb-equivalent
-    (comb-equiv new-output-aignet input-aignet)))
+    (comb-equiv new-output-aignet input-aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define abc-comb-simplify! ((aignet)
                             (config abc-comb-simp-config-p)
@@ -143,7 +148,11 @@
            (stype-count :po aignet)))
 
   (defret abc-comb-simplify!-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
        
                            
 

@@ -342,7 +342,7 @@
 ;;          :hints(("Goal" :in-theory (enable aignet-litp find-max-fanin)))))
 
 
-
+(local (in-theory (disable w)))
 
 (defsection aignet-outs-write-aiger-lits
   ;; (local (defthmd id-lte-max-fanin-when-aignet-litp-2
@@ -409,7 +409,17 @@
              (let ((state (aignet-outs-write-aiger-lits aignet aigernums channel state)))
                (and (state-p1 state)
                     (open-output-channel-p1 channel :byte state))))
-    :hints(("Goal" :in-theory (enable aignet-outs-write-aiger-lits)))))
+    :hints(("Goal" :in-theory (enable aignet-outs-write-aiger-lits))))
+
+  (defthm w-state-of-aignet-outs-write-aiger-lits-iter
+    (equal (w (aignet-outs-write-aiger-lits-iter idx aignet aigernums channel state))
+           (w state))
+    :hints((acl2::just-induct-and-expand
+            (aignet-outs-write-aiger-lits-iter idx aignet aigernums channel state))))
+
+  (defthm w-state-of-aignet-outs-write-aiger-lits
+    (equal (w (aignet-outs-write-aiger-lits aignet aigernums channel state))
+           (w state))))
 
 (defsection aignet-nxsts-write-aiger-lits
   (local (defthm <-0-by-transitive
@@ -453,7 +463,17 @@
              (let ((state (aignet-nxsts-write-aiger-lits aignet aigernums channel state)))
                (and (state-p1 state)
                     (open-output-channel-p1 channel :byte state))))
-    :hints(("Goal" :in-theory (enable aignet-nxsts-write-aiger-lits)))))
+    :hints(("Goal" :in-theory (enable aignet-nxsts-write-aiger-lits))))
+
+  (defthm w-state-of-aignet-nxsts-write-aiger-lits-iter
+    (equal (w (aignet-nxsts-write-aiger-lits-iter idx aignet aigernums channel state))
+           (w state))
+    :hints((acl2::just-induct-and-expand
+            (aignet-nxsts-write-aiger-lits-iter idx aignet aigernums channel state))))
+
+  (defthm w-state-of-aignet-nxsts-write-aiger-lits
+    (equal (w (aignet-nxsts-write-aiger-lits aignet aigernums channel state))
+           (w state))))
 
 (local
  (defsection lits-ordered-when-aiger-fanins-precede-gates
@@ -557,7 +577,11 @@
                   (symbolp channel)
                   (open-output-channel-p1 channel :byte state))
              (and (state-p1 new-state)
-                  (open-output-channel-p1 channel :byte new-state)))))
+                  (open-output-channel-p1 channel :byte new-state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (defsection aignet-write-aiger-gates
   ;; (local (defthm id-less-than-max-fanin-by-gate-ctype
@@ -628,11 +652,22 @@
                   (open-output-channel-p1 channel :byte state))
              (let ((state (aignet-write-aiger-gates aignet aigernums channel state)))
                (and (state-p1 state)
-                    (open-output-channel-p1 channel :byte state))))))
+                    (open-output-channel-p1 channel :byte state)))))
+
+  (defthm w-state-of-aignet-write-aiger-gates-iter
+    (equal (w (aignet-write-aiger-gates-iter idx aignet aigernums channel state))
+           (w state))
+    :hints((acl2::just-induct-and-expand
+            (aignet-write-aiger-gates-iter idx aignet aigernums channel state))))
+
+  (defthm w-state-of-aignet-write-aiger-gates
+    (equal (w (aignet-write-aiger-gates aignet aigernums channel state))
+           (w state))))
 
 
 (define aignet-write-aiger-chan (aignet (channel symbolp) state)
   :guard (open-output-channel-p channel :byte state)
+  :returns (new-state)
   (b* (((local-stobjs aigernums)
         (mv aigernums state))
        (aigernums (resize-u32 (num-fanins aignet) aigernums))
@@ -657,9 +692,40 @@
                   (open-output-channel-p1 channel :byte state))
              (let ((state (aignet-write-aiger-chan aignet channel state)))
                (and (state-p1 state)
-                    (open-output-channel-p1 channel :byte state))))))
+                    (open-output-channel-p1 channel :byte state)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (defttag aignet-write-aiger)
+
+;; BOZO these are not in the right place
+(defthm w-of-open-output-channel
+  (equal (w (mv-nth 1 (open-output-channel fname type state)))
+         (w state))
+  :hints(("Goal" :in-theory (enable w open-output-channel get-global))))
+
+(defthm w-of-close-output-channel
+  (equal (w (close-output-channel channel state))
+         (w state))
+  :hints(("Goal" :in-theory (enable w close-output-channel get-global))))
+
+(defthm w-of-open-input-channel
+  (equal (w (mv-nth 1 (open-input-channel fname type state)))
+         (w state))
+  :hints(("Goal" :in-theory (enable w open-input-channel get-global))))
+
+(defthm w-of-close-input-channel
+  (equal (w (close-input-channel channel state))
+         (w state))
+  :hints(("Goal" :in-theory (enable w close-input-channel get-global))))
+
+(defthm w-of-put-global
+  (implies (not (eq name 'acl2::current-acl2-world))
+           (equal (w (put-global name val state))
+                  (w state)))
+  :hints(("Goal" :in-theory (enable w put-global get-global))))
 
 (define aignet-write-aiger
   ((fname stringp "the aiger file to be written")
@@ -668,6 +734,7 @@
   :parents (aignet)
   :short "Write an aignet into a binary <a
   href='http://fmv.jku.at/aiger/'>AIGER</a> file."
+  :returns (new-state)
   (b* (((mv channel state)
         (open-output-channel! fname :byte state))
        ((unless channel)
@@ -680,23 +747,32 @@
   (defthm state-p1-of-aignet-write-aiger
     (implies (and (stringp fname)
                   (state-p1 state))
-             (state-p1 (aignet-write-aiger fname aignet state)))))
+             (state-p1 (aignet-write-aiger fname aignet state))))
 
-(acl2::defmacfun
- aiger-write (fname &optional latch-aigs out-aigs acl2::&auto state)
- (declare (xargs :stobjs state
-                 :guard (and (stringp fname)
-                             (true-listp latch-aigs)
-                             (true-listp out-aigs)
-                             (acl2::aig-var-listp (alist-keys latch-aigs)))
-                 :guard-debug t))
- ; (declare (xargs :mode :program))
- (b* (((local-stobjs aignet) (mv pis state aignet))
-      (len (+ (len latch-aigs) (len out-aigs)))
-      ((mv aignet ?varmap invars ?regvars)
-       (aig-fsm-to-aignet latch-aigs out-aigs (+ 1 (* 5 len)) 2 aignet))
-      (state (aignet-write-aiger fname aignet state)))
-   (mv invars state aignet)))
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
+
+(define aiger-write (fname &optional latch-aigs out-aigs (state 'state))
+  (declare (xargs :guard (and (stringp fname)
+                              (true-listp latch-aigs)
+                              (true-listp out-aigs)
+                              (acl2::aig-var-listp (alist-keys latch-aigs)))
+                  :guard-debug t))
+; (declare (xargs :mode :program))
+  :returns (mv input-vars
+               new-state) 
+  (b* (((local-stobjs aignet) (mv pis state aignet))
+       (len (+ (len latch-aigs) (len out-aigs)))
+       ((mv aignet ?varmap invars ?regvars)
+        (aig-fsm-to-aignet latch-aigs out-aigs (+ 1 (* 5 len)) 2 aignet))
+       (state (aignet-write-aiger fname aignet state)))
+    (mv invars state aignet))
+  ///
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
+
 
 
 ;; (defun aignet-no-outsp (n aignet)
@@ -871,18 +947,21 @@
 (define aignet-read-aiger-latches/outs (idx litarr ncount nxtbyte channel state)
   (declare (type (integer 0 *) idx)
            (type (integer 0 *) ncount)
-           (Xargs :stobjs (litarr state)
-                  :guard (and (symbolp channel)
+           (Xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :byte state)
                               (acl2::maybe-byte-p nxtbyte)
                               (<= ncount (lits-length litarr))
                               (<= idx ncount))
                   :measure (nfix (- (nfix ncount)
                                     (nfix idx)))))
+  :returns (mv err
+               new-litarr
+               (new-nxtbyte acl2::maybe-byte-p :rule-classes (:rewrite :type-prescription))
+               new-state)
   (b* (((when (mbe :logic (zp (- (nfix ncount)
                                  (nfix idx)))
                    :exec (= idx ncount)))
-        (mv nil litarr nxtbyte state))
+        (mv nil litarr (acl2::maybe-byte-fix nxtbyte) state))
        ((mv num nxtbyte state)
         (acl2::read-ascii-nat channel nxtbyte state))
        ((when (not num))
@@ -915,10 +994,10 @@
                (and (state-p1 state)
                     (open-input-channel-p1 channel :byte state)))))
 
-  (defthm maybe-byte-p-of-aignet-read-aiger-latches/outs
-    (implies (acl2::maybe-byte-p nxtbyte)
-             (acl2::maybe-byte-p (mv-nth 2 (aignet-read-aiger-latches/outs
-                                            idx litarr ncount nxtbyte channel state))))))
+  
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 
@@ -991,8 +1070,7 @@
 ;;            (aignet-no-outsp n (mv-nth 1 (aignet-add-gate f0 f1 aignet)))))
 
 (define aignet-read-aiger-gates (idx numgates aignet nxtbyte channel state)
-  (declare (Xargs :stobjs (aignet state)
-                  :guard (and (symbolp channel)
+  (declare (Xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :byte state)
                               (acl2::maybe-byte-p nxtbyte)
                               (natp idx) (natp numgates)
@@ -1005,11 +1083,14 @@
                                  :in-theory (enable aignet-idp))
                                 (and stable-under-simplificationp
                                      '(:in-theory (enable litp))))))
-  :returns (mv msg aignet nxtbyte state)
+  :returns (mv msg
+               new-aignet
+               (new-nxtbyte acl2::maybe-byte-p :rule-classes (:rewrite :type-prescription))
+               new-state)
   (b* (((when (mbe :logic (zp (- (nfix numgates)
                                  (nfix idx)))
                    :exec (= idx numgates)))
-        (mv nil aignet nxtbyte state))
+        (mv nil aignet (acl2::maybe-byte-fix nxtbyte) state))
        (aiger-idx (mk-lit (num-fanins aignet) 0))
        ((mv err delta1 nxtbyte state)
         (acl2::read-bytecoded-nat channel nxtbyte state))
@@ -1058,7 +1139,11 @@
              (equal (stype-count stype (mv-nth 1 (aignet-read-aiger-gates
                                                   idx numgates aignet nxtbyte
                                                   channel state)))
-                    (stype-count stype aignet)))))
+                    (stype-count stype aignet))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 ;; (def-aignet-frame aignet-read-aiger-gates
@@ -1253,6 +1338,9 @@
                   :guard-debug t
                   :guard-hints (("goal"
                                  :do-not-induct t))))
+  :returns (mv err
+               new-aignet
+               new-state)
   (b* (((mv err i l a o b c nxtbyte state)
         (acl2::aiger-parse-header channel nil state))
        ((when err) (mv err aignet state))
@@ -1291,7 +1379,13 @@
              (let ((state (mv-nth 2 (aignet-read-aiger-chan
                                      aignet channel state))))
                (and (state-p1 state)
-                    (open-input-channel-p1 channel :byte state))))))
+                    (open-input-channel-p1 channel :byte state)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
+
+
 
 (define aignet-read-aiger
   ((fname stringp "the name of the aiger file to be read")
@@ -1300,6 +1394,9 @@
   :parents (aignet)
   :short "Read an aignet from a binary <a
   href='http://fmv.jku.at/aiger/'>AIGER</a> file."
+  :returns (mv err
+               new-aignet
+               new-state)
   (b* (((mv channel state) (open-input-channel fname :byte state))
        ((when (not channel))
         (mv "Could not open input file" aignet state))
@@ -1311,7 +1408,11 @@
   (defthm state-p1-of-aignet-read-aiger
     (implies (and (state-p1 state)
                   (Stringp fname))
-             (state-p1 (mv-nth 2 (aignet-read-aiger fname aignet state))))))
+             (state-p1 (mv-nth 2 (aignet-read-aiger fname aignet state)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 

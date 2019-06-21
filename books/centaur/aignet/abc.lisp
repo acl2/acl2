@@ -39,6 +39,7 @@
   :parents (aignet)
   :short "Using the open-source synthesis and equivalence/model-checking tool ABC with aignet")
 
+(local (in-theory (disable w)))
 
 (define read-ctrex-skip-regs ((regs natp)
                               (channel symbolp)
@@ -58,7 +59,11 @@
                   (open-input-channel-p1 channel :byte state)
                   (state-p1 state))
              (and (open-input-channel-p1 channel :byte new-state)
-                  (state-p1 new-state)))))
+                  (state-p1 new-state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define read-ctrex-into-frames-frame ((framenum natp)
                                       (innum natp)
@@ -104,7 +109,11 @@
                   (open-input-channel-p1 channel :byte state)
                   (state-p1 state))
              (and (open-input-channel-p1 channel :byte new-state)
-                  (state-p1 new-state)))))
+                  (state-p1 new-state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (define read-ctrex-into-frames-frames ((framenum natp)
                            frames
@@ -136,7 +145,11 @@
                   (open-input-channel-p1 channel :byte state)
                   (state-p1 state))
              (and (open-input-channel-p1 channel :byte new-state)
-                  (state-p1 new-state)))))
+                  (state-p1 new-state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
   
   
                            
@@ -172,7 +185,11 @@
 
   (std::defret read-ctrex-into-frames-preserves-state-p1
     (implies (state-p1 state)
-             (state-p1 new-state))))
+             (state-p1 new-state)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -400,10 +417,19 @@
 
   (std::defret abc-output-status-and-trace-preserves-state-p1
     (implies (state-p1 state)
-             (state-p1 new-state))))
+             (state-p1 new-state)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (acl2::defstobj-clone input-aignet aignet :prefix "INPUT-")
 (acl2::defstobj-clone output-aignet aignet :prefix "OUTPUT-")
+
+(defthm w-state-of-princ$
+  (equal (w (princ$ obj channel state))
+         (w state))
+  :hints(("Goal" :in-theory (enable w princ$ get-global))))
 
 (define aignet-run-abc-core-st ((input-aignet "input AIG")
                                 (output-aignet "output AIG")
@@ -471,7 +497,11 @@ hides the usage of state.</p>"
 
   (std::defret aignet-run-abc-core-st-preserves-state-p1
     (implies (state-p1 state)
-             (state-p1 new-state))))
+             (state-p1 new-state)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state))))
 
 (remove-untouchable acl2::create-state t)
 

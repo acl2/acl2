@@ -33,19 +33,25 @@
 (include-book "std/util/define" :dir :system)
 (local (xdoc::set-default-parents oslib))
 
+(local (in-theory (disable w)))
+
 (define getpid (&optional (state 'state))
   :returns (mv (pid "The Process ID for this ACL2 session on success, or
                      @('nil') on failure."
                     (or (natp pid)
                         (not pid))
                     :rule-classes :type-prescription)
-               (state state-p1 :hyp (force (state-p1 state))))
+               (new-state state-p1 :hyp (force (state-p1 state))))
   :short "Get the current process identification (PID) number."
 
   :long "<p>This will just fail if called on an unsupported Lisp.</p>"
-
   (b* ((- (raise  "Raw Lisp definition not installed?"))
        ((mv err val state) (read-acl2-oracle state))
        ((when err)
         (mv nil state)))
-    (mv (nfix val) state)))
+    (mv (nfix val) state))
+  ///
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+

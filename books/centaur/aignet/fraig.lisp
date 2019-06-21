@@ -730,6 +730,18 @@
 (defstobj-clone ctrex-relevant bitarr :prefix "CTREX-RELEVANT-")
 
 
+(local (in-theory (disable w)))
+
+(local (defthm w-of-read-acl2-oracle
+         (equal (w (mv-nth 2 (read-acl2-oracle state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable read-acl2-oracle w update-acl2-oracle)))))
+
+(local (defthm w-of-random$
+         (equal (w (mv-nth 1 (random$ n state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable random$)))))
+
 (define fraig-minimize-sat-ctrex-rec ((id natp)
                                       ctrex-relevant
                                       aignet2
@@ -814,6 +826,12 @@
     (implies (and (<= (num-fanins aignet2) (len ctrex-relevant))
                   (<= (nfix id) (fanin-count aignet2)))
              (equal (len new-ctrex-relevant) (len ctrex-relevant)))
+    :hints (("goal" :induct t
+             :expand ((fraig-minimize-sat-ctrex-rec
+                       id ctrex-relevant aignet2 ctrex-eval state)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))
     :hints (("goal" :induct t
              :expand ((fraig-minimize-sat-ctrex-rec
                        id ctrex-relevant aignet2 ctrex-eval state)))))
@@ -1086,7 +1104,10 @@
   (defret ctrex-count-bound-of-fraig-store-ctrex-aux
     (implies (< (nfix ctrex-count) (* 32 (s32v-ncols packed-relevants)))
              (<= new-ctrex-count (* 32 (s32v-ncols packed-relevants))))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (defstobj fraig-ctrexes
@@ -1235,6 +1256,11 @@
     (equal (stobjs::2darr->ncols new-s32v)
            (stobjs::2darr->ncols s32v))))
 
+(local (defthm w-state-of-s32v-randomize-iter
+         (equal (w (mv-nth 1 (s32v-randomize-iter n out-id s32v state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable s32v-randomize-iter)))))
+
 (define s32v-randomize-rows ((row natp) s32v state)
   :guard (<= row (s32v-nrows s32v))
   :measure (nfix (- (s32v-nrows s32v) (nfix row)))
@@ -1251,7 +1277,20 @@
 
   (defret s32v-ncols-of-s32v-randomize-rows
     (equal (stobjs::2darr->ncols new-s32v)
-           (stobjs::2darr->ncols s32v))))
+           (stobjs::2darr->ncols s32v)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+(local (defthm w-state-of-s32v-randomize-regs
+         (equal (w (mv-nth 1 (s32v-randomize-regs n s32v aignet state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable s32v-randomize-regs)))))
+
+(local (defthm w-state-of-s32v-randomize-inputs
+         (equal (w (mv-nth 1 (s32v-randomize-inputs n s32v aignet state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable s32v-randomize-inputs)))))
 
 
 (define fraig-ctrexes-init ((ncols posp)
@@ -1446,7 +1485,10 @@
                     (+ (num-ins aignet2) (num-regs aignet2)))
              (equal (fraig-ctrex-in/reg-rows new-fraig-ctrexes)
                     (+ (num-ins aignet2) (num-regs aignet2))))
-    :hints(("Goal" :in-theory (enable fraig-ctrex-in/reg-rows)))))
+    :hints(("Goal" :in-theory (enable fraig-ctrex-in/reg-rows))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define s32v-bitcol-count-set ((n natp)
                                (acc natp)
@@ -1549,7 +1591,10 @@
 
   (defret ncols-of-s32v-add-salt
     (equal (stobjs::2darr->ncols new-packed-vals)
-           (stobjs::2darr->ncols packed-vals))))
+           (stobjs::2darr->ncols packed-vals)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define s32v-row-repeat-bitcols ((output-bit natp)
@@ -1788,7 +1833,10 @@
   (defret fraig-ctrex-ncols-of-fraig-ctrexes-resim-aux
     (equal (fraig-ctrex-ncols new-fraig-ctrexes)
            (fraig-ctrex-ncols fraig-ctrexes))
-    :hints(("Goal" :in-theory (enable fraig-ctrex-ncols)))))
+    :hints(("Goal" :in-theory (enable fraig-ctrex-ncols))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define fraig-ctrexes-resim ((aignet)
                              fraig-ctrexes
@@ -1837,7 +1885,10 @@
            (fraig-ctrex-ncols fraig-ctrexes)))
 
   (defret fraig-ctrex-nbits-of-fraig-ctrexes-resim
-    (equal (nth *fraig-ctrex-nbits* new-fraig-ctrexes) 0)))
+    (equal (nth *fraig-ctrex-nbits* new-fraig-ctrexes) 0))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define fraig-stats-update-last-chance (forcedp fraig-stats)
   (b* ((fraig-stats (update-fraig-last-chance-refines
@@ -1919,7 +1970,10 @@
                   (posp (fraig-ctrex-ncols fraig-ctrexes)))
              (< (nfix (nth *fraig-ctrex-nbits* new-fraig-ctrexes))
                 (* 32 (fraig-ctrex-ncols fraig-ctrexes))))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 
@@ -2242,7 +2296,8 @@
             ;;                                                     AIGNET))))))
             ))
 
-  )
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define fraig-sweep-aux ((node natp "Current node ID")
                          (aignet  "Input aignet")
@@ -2403,7 +2458,10 @@
                   (aignet-copies-in-bounds copy aignet2)
                   (sat-lit-list-listp (ipasir::ipasir$a->formula ipasir) sat-lits))
              (aignet-copy-is-comb-equivalent
-              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2))))
+              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 
@@ -2490,7 +2548,10 @@
     (implies (and (aignet-copy-is-comb-equivalent-for-non-gates (num-fanins aignet) aignet copy aignet2)
                   (aignet-copies-in-bounds copy aignet2))
              (aignet-copy-is-comb-equivalent
-              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2))))
+              (+ 1 (fanin-count aignet)) aignet new-copy new-aignet2)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define fraig-initial-sim ((count natp)
                            (s32v)
@@ -2515,7 +2576,10 @@
   
   (defret classes-size-of-fraig-initial-sim
     (equal (classes-size new-classes)
-           (classes-size classes))))
+           (classes-size classes)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
     
   
 
@@ -2581,7 +2645,10 @@
                                 (equal classes ''nil)
                                 (equal s32v ''nil))))
              (equal (fraig-core-aux aignet aignet2 config copy strash classes s32v state)
-                    (fraig-core-aux aignet nil config nil nil nil nil state)))))
+                    (fraig-core-aux aignet nil config nil nil nil nil state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define fraig-core ((aignet  "Input aignet")
                     (aignet2 "New aignet -- will be emptied")
@@ -2612,7 +2679,10 @@
   (defthm normalize-input-of-fraig-core
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal (fraig-core aignet aignet2 config state)
-                    (fraig-core aignet nil config state)))))
+                    (fraig-core aignet nil config state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define fraig ((aignet  "Input aignet")
@@ -2628,7 +2698,7 @@ ABC, developed and maintained at Berkeley by Alan Mishchenko.</p>
 <p>Settings for the transform can be tweaked using the @('config') input, which
 is a @(see fraig-config) object.</p>"
   :guard-debug t
-  :returns (mv new-aignet2 state)
+  :returns (mv new-aignet2 new-state)
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp state))
        ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
@@ -2653,14 +2723,17 @@ is a @(see fraig-config) object.</p>"
   (defthm normalize-input-of-fraig
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal (fraig aignet aignet2 config state)
-                    (fraig aignet nil config state)))))
+                    (fraig aignet nil config state))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define fraig! ((aignet  "Input aignet -- will be replaced with transformation result")
                (config fraig-config-p)
                (state))
   :guard-debug t
-  :returns (mv new-aignet state)
+  :returns (mv new-aignet new-state)
   :parents (fraig)
   :short "Like @(see fraig), but overwrites the original network instead of returning a new one."
   (b* (((acl2::local-stobjs aignet-tmp)
@@ -2682,6 +2755,9 @@ is a @(see fraig-config) object.</p>"
            (stype-count :po aignet)))
 
   (defret fraig!-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 

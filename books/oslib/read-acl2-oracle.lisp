@@ -41,3 +41,7 @@
   (implies (force (state-p1 state))
            (state-p1 (mv-nth 2 (read-acl2-oracle state)))))
 
+(defthm w-state-of-read-acl2-oracle
+  (equal (w (mv-nth 2 (read-acl2-oracle state)))
+         (w state))
+  :hints(("Goal" :in-theory (enable update-acl2-oracle))))

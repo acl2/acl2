@@ -113,7 +113,7 @@
     (bits-equiv (bit-list-fix x) x)
     :hints(("Goal" :in-theory (enable bits-equiv)))))
 
-
+(local (in-theory (disable w)))
 
 (define aignet-lit-constprop/observability ((lit litp :type (integer 0 *))
                                             aignet
@@ -202,7 +202,10 @@
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal <call>
-                    (let ((aignet2 nil)) <call>)))))
+                    (let ((aignet2 nil)) <call>))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (define aignet-constprop/observability (aignet
                                         aignet2
@@ -248,7 +251,10 @@
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal <call>
-                    (let ((aignet2 nil)) <call>)))))
+                    (let ((aignet2 nil)) <call>))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 (fty::defprod obs-constprop-config
   ((gatesimp gatesimp-p :default (default-gatesimp)
@@ -325,7 +331,10 @@
 
   (defret num-outs-of-<fn>
     (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet))))
+           (stype-count :po aignet)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 
@@ -364,7 +373,10 @@
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
              (equal <call>
-                    (let ((aignet2 nil)) <call>)))))
+                    (let ((aignet2 nil)) <call>))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define obs-constprop! ((aignet  "Input aignet -- will be replaced with transformation result")
@@ -393,6 +405,9 @@
            (stype-count :po aignet)))
 
   (defret <fn>-comb-equivalent
-    (comb-equiv new-aignet aignet)))
+    (comb-equiv new-aignet aignet))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
