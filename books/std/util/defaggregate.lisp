@@ -27,14 +27,12 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 ;
 ; Additional Copyright Notice.
 ;
 ; This file is adapted from the Milawa Theorem Prover, Copyright (C) 2005-2009
 ; Kookamara LLC, which is also available under an MIT/X11 style license.
-;
-; Contribution by Alessandro Coglio (coglio@kestrel.edu):
-; Add support for :PRED option of DEFAGGREGATE.
 
 (in-package "STD")
 (include-book "da-base")
@@ -653,7 +651,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                            honsp layout))
 
 (defun da-make-remaker (basename tag plain-fields require honsp layout pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-remaker-raw basename tag plain-fields
                        `(and ,@(strip-cadrs require))
                        honsp layout pred))
@@ -717,7 +714,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
 ;; bozo removed debugp for now
 (defun da-make-recognizer (basename tag plain-fields require layout pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-recognizer-raw basename tag plain-fields
                           `(and ,@(strip-cadrs require))
                           layout pred))
@@ -753,7 +749,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     nil))
 
 (defun da-make-requirement-of-recognizer (name require map accnames pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (let ((rule-classes (if (eq (third require) :rule-classes)
                           (fourth require)
                         :rewrite)))
@@ -768,7 +763,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 (theory 'defaggregate-basic-theory)))))))
 
 (defun da-make-requirements-of-recognizer-aux (name require map accnames pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (if (consp require)
       (cons (da-make-requirement-of-recognizer name (car require)
                                                map accnames pred)
@@ -777,7 +771,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     nil))
 
 (defun da-make-requirements-of-recognizer (name require fields pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (da-make-requirements-of-recognizer-aux name require
                                           (da-fields-recognizer-map name fields)
                                           (da-accessor-names name fields)
@@ -847,7 +840,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
     (mv acc state)))
 
 (defun da-main-autodoc (name fields parents short long base-pkg pred state)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (b* ( ;; We begin by constructing the :long string
        (acc  nil)
        (foop (da-recognizer-name name pred))
@@ -858,8 +850,9 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        (acc  (str::revappend-chars "<p>Source link: @(srclink " acc))
        (acc  (str::revappend-chars (xdoc::full-escape-symbol foop) acc))
        (acc  (str::revappend-chars ")</p>" acc))
-       (acc  (str::revappend-chars (or long "") acc))
-       (long (str::rchars-to-string acc)))
+       ;; long may be a form that evaluates to a string:
+       (acc  `(str::revappend-chars ,(or long "") ',acc))
+       (long `(str::rchars-to-string ,acc)))
     (mv `(defxdoc ,foop
            :parents ,parents
            :short ,short
@@ -867,7 +860,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
         state)))
 
 (defun da-field-autodoc (name field pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formal-p field)))
   (b* (((formal field) field)
        (foop      (da-recognizer-name name pred))
@@ -887,7 +879,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
        :short ,short)))
 
 (defun da-fields-autodoc (name fields pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (if (consp fields)
       (cons (da-field-autodoc name (car fields) pred)
@@ -944,7 +935,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 ||#
 
 (defun da-ctor-autodoc (name fields honsp pred)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (and (symbolp name)
                               (formallist-p fields))))
   (b* ((foo                (da-constructor-name name))
@@ -1111,7 +1101,6 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 def-change-foo)))))
 
 (defun da-autodoc (name fields honsp parents short long base-pkg pred state)
-  ;; PRED is the :PRED option of DEFAGGREGATE.
   (declare (xargs :guard (formallist-p fields)))
   (b* (((mv main state)
         (da-main-autodoc name fields parents short long base-pkg pred state))
@@ -1197,12 +1186,12 @@ would have had to call @('(student->fullname x)').  For instance:</p>
         (mv (raise "~x0: :parents must be a list of symbols." name) state))
 
        (short (cdr (assoc :short kwd-alist)))
-       ((unless (or (stringp short) (not short)))
-        (mv (raise "~x0: :short must be a string (or nil)" name) state))
+       ((unless (or (stringp short) (true-listp short)))
+        (mv (raise "~x0: :short must be a string or a true list." name) state))
 
        (long (cdr (assoc :long kwd-alist)))
-       ((unless (or (stringp long) (not long)))
-        (mv (raise "~x0: :long must be a string (or nil)" name) state))
+       ((unless (or (stringp long) (true-listp long)))
+        (mv (raise "~x0: :long must be a string or a true list." name) state))
 
        (pred (cdr (assoc :pred kwd-alist)))
        ((unless (symbolp pred))
@@ -1210,11 +1199,11 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
        (mode (or (cdr (assoc :mode kwd-alist)) current-defun-mode))
        ((unless (member mode '(:logic :program)))
-        (mv (raise "~x0: :mode must be :logic or :program" name) state))
+        (mv (raise "~x0: :mode must be :logic or :program." name) state))
 
        (already-definedp (cdr (assoc :already-definedp kwd-alist)))
        ((unless (booleanp already-definedp))
-        (mv (raise "~x0: :already-definedp should be a boolean." name) state))
+        (mv (raise "~x0: :already-definedp must be a boolean." name) state))
 
        (layout (or (cdr (assoc :layout kwd-alist)) :alist))
        ((unless (member layout '(:alist :list :tree :fulltree)))
@@ -1222,18 +1211,18 @@ would have had to call @('(student->fullname x)').  For instance:</p>
 
        (honsp (cdr (assoc :hons kwd-alist)))
        ((unless (booleanp honsp))
-        (mv (raise "~x0: :hons should be a boolean." name) state))
+        (mv (raise "~x0: :hons must be a boolean." name) state))
 
        (verbosep (cdr (assoc :verbosep kwd-alist)))
        ((unless (booleanp verbosep))
-        (mv (raise "~x0: :verbosep should be a boolean." name) state))
+        (mv (raise "~x0: :verbosep must be a boolean." name) state))
 
        ;; Expand requirements to include stuff from the field specifiers.
        (old-reqs   (cdr (assoc :require kwd-alist)))
        (field-reqs (da-formals-to-requires name efields))
        (require    (append field-reqs old-reqs))
        ((unless (da-requirelist-p require))
-        (mv (raise "~x0: malformed :require field" name) state))
+        (mv (raise "~x0: malformed :require field." name) state))
        ((unless (no-duplicatesp (strip-cars require)))
         (mv (raise "~x0: The names given to :require must be unique." name) state))
 

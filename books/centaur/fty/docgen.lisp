@@ -154,8 +154,9 @@
        (acc  (revappend-chars "<p>This is a product type introduced by @(see fty::defprod).</p>" acc))
        (acc  (cons #\Newline acc))
        ((mv acc state) (defprod-main-description prod base-pkg acc state))
-       (acc  (revappend-chars (or long "") acc))
-       (long (rchars-to-string acc)))
+       ;; long may be a form that evaluates to a string:
+       (acc  `(revappend-chars ,(or long "") ',acc))
+       (long `(rchars-to-string ,acc)))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -331,8 +332,9 @@
        (acc  (revappend-chars ").</p>" acc))
        (acc  (cons #\Newline acc))
        ((mv acc state) (defprod-main-description prod base-pkg acc state))
-       (acc  (revappend-chars (or prod.long "") acc))
-       (long (rchars-to-string acc))
+       ;; prod.long may be a form that evaluates to a string:
+       (acc  `(revappend-chars ,(or prod.long "") ',acc))
+       (long `(rchars-to-string ,acc))
        (top-doc `((defxdoc ,prod.type-name
                     :parents ,parents
                     :short ,prod.short
@@ -486,8 +488,9 @@ binder.</p>")
        ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
        (acc   (revappend-chars "</dl>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (revappend-chars (or long "") acc))
-       (long  (rchars-to-string acc))
+       ;; long may be a form that evaluates to a string:
+       (acc `(revappend-chars ,(or long "") ',acc))
+       (long `(rchars-to-string ,acc))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
@@ -520,8 +523,9 @@ binder.</p>")
        ((mv acc state) (deftagsum-summarize-prods x x.prods base-pkg acc state))
        (acc   (revappend-chars "</dl>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (revappend-chars (or long "") acc))
-       (long  (rchars-to-string acc))
+       ;; long may be a form that evaluates to a string:
+       (acc `(revappend-chars ,(or long "") ',acc))
+       (long `(rchars-to-string ,acc))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
@@ -562,8 +566,9 @@ binder.</p>")
        (acc (revappend-chars "</dl>" acc))
 
        (acc   (cons #\Newline acc))
-       (acc   (revappend-chars (or long "") acc))
-       (long  (rchars-to-string acc))
+       ;; long may be a form that evaluates to a string:
+       (acc `(revappend-chars ,(or long "") ',acc))
+       (long `(rchars-to-string ,acc))
        ((mv prods-doc state)
         (deftagsum-prods-doc x x.prods (list x.name) base-pkg state))
        (case-doc (flexsum-case-macro-defxdoc x))
@@ -605,8 +610,9 @@ binder.</p>")
        (acc   (flextranssum-members->xdoc x.members acc state))
        (acc   (revappend-chars "</ul>" acc))
        (acc   (cons #\Newline acc))
-       (acc   (revappend-chars (or long "") acc))
-       (long  (rchars-to-string acc))
+       ;; long may be a form that evaluates to a string:
+       (acc `(revappend-chars ,(or long "") ',acc))
+       (long `(rchars-to-string ,acc))
        (main-doc `((defxdoc ,x.name
                      :parents ,parents
                      :short ,short
