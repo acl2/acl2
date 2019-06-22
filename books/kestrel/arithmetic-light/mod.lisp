@@ -11,6 +11,10 @@
 
 (in-package "ACL2")
 
+;; Theorem rationalp-of-mod below may not hold in ACL2(r), so for now we
+;; disable certification of this book in ACL2(r).
+; cert_param: (non-acl2r)
+
 (in-theory (disable mod))
 
 ;drop?
@@ -82,6 +86,7 @@
                   ))
   :hints (("Goal" :in-theory (enable mod))))
 
+;; To support ACL2(r), we might have to assume (rationalp y) here.
 (defthm rationalp-of-mod
   (implies (rationalp x)
            (rationalp (mod x y)))
