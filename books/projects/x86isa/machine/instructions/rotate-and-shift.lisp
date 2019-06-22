@@ -264,19 +264,33 @@
     x86))
 
 ;; ======================================================================
-;; INSTRUCTION: SHRD
+;; INSTRUCTION: SHLD/SHRD
 ;; ======================================================================
 
-(def-inst x86-shrd
+(def-inst x86-shld/shrd
 
   :returns (x86 x86p :hyp (x86p x86))
 
   :parents (one-byte-opcodes)
 
-  :short "Double-precision shift right."
+  :short "Double-precision shift left or right."
 
   :long
   "<p>
+   Op/En: MRI<br/>
+   0F A4: SHLD r/m16, r16, imm8<br/>
+   0F A4: SHLD r/m32, r32, imm8<br/>
+   0F A4: SHLD r/m64, r64, imm8<br/>
+   </p>
+
+   <p>
+   Op/En: MRC<br/>
+   0F A5: SHLD r/m16, r16, CL<br/>
+   0F A5: SHLD r/m32, r32, CL<br/>
+   0F A5: SHLD r/m64, r64, CL<br/>
+   </p>
+
+   <p>
    Op/En: MRI<br/>
    0F AC: SHRD r/m16, r16, imm8<br/>
    0F AC: SHRD r/m32, r32, imm8<br/>
@@ -285,14 +299,14 @@
 
    <p>
    Op/En: MRC<br/>
-   0F AC: SHRD r/m16, r16, CL<br/>
-   0F AC: SHRD r/m32, r32, CL<br/>
-   0F AC: SHRD r/m64, r64, CL<br/>
+   0F AD: SHRD r/m16, r16, CL<br/>
+   0F AD: SHRD r/m32, r32, CL<br/>
+   0F AD: SHRD r/m64, r64, CL<br/>
    </p>"
 
   :body
 
-  (b* ((ctx 'x86-shrd)
+  (b* ((ctx 'x86-shld/shrd)
 
        (r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
@@ -347,15 +361,17 @@
        ;; read count operand:
 
        ((mv flg count x86)
-        (if (= opcode #xac)
-            (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86)
-          (mv nil (rr08 *rcx* rex-byte x86) x86)))
+        (case opcode
+          ((#xA4 #xAC) (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
+          ((#xA5 #xAD) (mv nil (rr08 *rcx* rex-byte x86) x86))
+          (otherwise (mv nil 0 x86)))) ; unreachable
        ((when flg) (!!ms-fresh :rme-size-error flg))
 
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (if (= opcode #xac)
-            (add-to-*ip proc-mode temp-rip 1 x86)
-          (mv nil temp-rip)))
+        (case opcode
+          ((#xA4 #xAC) (add-to-*ip proc-mode temp-rip 1 x86))
+          ((#xA5 #xAD) (mv nil temp-rip))
+          (otherwise (mv nil 0)))) ; unreachable
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
        ;; check instruction length now that we have read all of it:
@@ -380,7 +396,12 @@
             result-undefined?
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
-        (shrd-spec operand-size dst-value src-value count input-rflags)) ; TODO
+        (case opcode
+          ((#xA4 #xA5) (shld-spec
+                        operand-size dst-value src-value count input-rflags))
+          ((#xAC #xAD) (shrd-spec
+                        operand-size dst-value src-value count input-rflags))
+          (otherwise (mv 0 nil 0 0)))) ; unreachable
 
        ((mv result x86)
         (if result-undefined?

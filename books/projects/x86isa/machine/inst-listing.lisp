@@ -9005,13 +9005,13 @@
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(I B))
-          'NIL
+          '(X86-SHLD/SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "SHLD" (OP :OP #xFA5)
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(:CL))
-          'NIL
+          '(X86-SHLD/SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "PUSH GS"
           (OP :OP #xFA8 :SUPERSCRIPTS '(:D64))
@@ -9034,13 +9034,13 @@
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(I B))
-          '(X86-SHRD)
+          '(X86-SHLD/SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "SHRD" (OP :OP #xFAD)
           (ARG :OP1 '(E V)
                :OP2 '(G V)
                :OP3 '(:CL))
-          '(X86-SHRD)
+          '(X86-SHLD/SHRD)
           '((:UD (UD-LOCK-USED))))
     (INST "FXSAVE"
           (OP :OP #xFAE
