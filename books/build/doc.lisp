@@ -1303,12 +1303,12 @@ certification using @('make')"
  available (now always the case; required ACL2(h) until the @(see
  acl2::hons-and-memoization) features were incorporated into ACL2)</li>
 
- <li>@('non-acl2r'): only certify when the (@see real) numbers are NOT
+ <li>@('non-acl2r'): only certify when the @(see real) numbers are NOT
  supported, i.e., when NOT using ACL2(r)</li>
 
  <li>@('reloc_stub'): print a suitable ``relocation stub'' warning</li>
 
- <li>@('uses-acl2r'): only certify when the (@see real) numbers are supported,
+ <li>@('uses-acl2r'): only certify when the @(see real) numbers are supported,
  i.e., with ACL2(r)</li>
 
  <li>@('uses-glucose'): only certify when Glucose (a SAT solver) is
@@ -1387,4 +1387,3 @@ between files.  In order to be correctly scannable by the build system, the @('i
 to the empty string instead of to @('\"1\"'), so that it will be unset for the
 purposes of @(see ifdef) and @(see ifndef).</p>"
   :pkg "ACL2")
-
