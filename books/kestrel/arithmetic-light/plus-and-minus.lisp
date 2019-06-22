@@ -1,4 +1,4 @@
-; A lightweight book about the built-in functions binary-+ and unary-.
+; A lightweight book about the built-in operations + and -.
 ;
 ; Copyright (C) 2019 Kestrel Institute
 ;

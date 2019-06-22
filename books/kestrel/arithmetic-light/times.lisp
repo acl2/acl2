@@ -1,4 +1,4 @@
-; A lightweight book about the built-in function binary-*.
+; A lightweight book about the built-in operation *.
 ;
 ; Copyright (C) 2019 Kestrel Institute
 ;
