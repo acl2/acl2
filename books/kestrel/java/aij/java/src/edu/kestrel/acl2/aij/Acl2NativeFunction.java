@@ -22,7 +22,7 @@ import java.util.Map;
  * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions also include the ACL2 "pseudo-function" {@code or},
- * described in {@link Acl2Function#apply(Acl2Value[])}.
+ * described in {@link Acl2FunctionApplication#eval(Acl2Value[])}.
  * <p>
  * More native functions could be added here in the future,
  * e.g. as optimized implementations of ACL2 built-in functions.
