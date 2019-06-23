@@ -136,17 +136,31 @@
                (nonnegative-integer-quotient i j1)))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
 
-
-;todo
-;; (defthm nonnegative-integer-quotient-lower-bound-linear
+;; (defthm nonnegative-integer-quotient-lower-bound-linear-eric
 ;;   (implies (and (integerp i)
 ;;                 (<= 0 i)
 ;;                 (integerp j)
-;;                 (<= 0 j))
-;;            (< (+ -1  (/ i j))
+;;                 (< 0 j))
+;;            (< (+ -1 (/ i j))
 ;;               (nonnegative-integer-quotient i j)))
 ;;   :rule-classes ((:linear :trigger-terms ((nonnegative-integer-quotient i j))))
-;;   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+;;   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient
+;;                                      nonnegative-integer-quotient-of-+-of---same))))
+
+;; avoids name clash with rtl
+(defthm nonnegative-integer-quotient-lower-bound-linear2
+  (implies (and (integerp i)
+                (natp j))
+           (<= (+ -1 (/ j) (/ i j))
+               (nonnegative-integer-quotient i j)))
+  :rule-classes ((:linear :trigger-terms ((nonnegative-integer-quotient i j))))
+  :hints (("subgoal *1/1" :use (:instance <-of-*-and-*-gen
+                                          (x1 0)
+                                          (x2 (+ -1 (/ J) (* I (/ J))))
+                                          (y j)))
+          ("Goal" :in-theory (e/d (nonnegative-integer-quotient
+                                   nonnegative-integer-quotient-of-+-of---same)
+                                  (<-of-*-and-*-gen)))))
 
 ;; (thm
 ;;  (IMPLIES (AND (< X Y)
@@ -169,3 +183,9 @@
 ;;                              ))
 ;;          ("Goal" :in-theory (enable nonnegative-integer-quotient
 ;;                                     ))))
+
+(defthm nonnegative-integer-quotient-of-1-arg2
+  (implies (natp i)
+           (equal (nonnegative-integer-quotient i 1)
+                  i))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
