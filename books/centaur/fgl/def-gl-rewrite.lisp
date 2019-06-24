@@ -145,7 +145,17 @@
 
 
 
+(defmacro add-gl-definition (rune)
+  `(table gl-definition-rules
+          nil
+          (alist-add-gl-rewrite ',rune (table-alist 'gl-definition-rules world) world)
+          :clear))
 
+(defmacro remove-gl-definition (rune)
+  `(table gl-definition-rules
+          nil
+          (alist-remove-gl-rewrite ',rune (table-alist 'gl-definition-rules world) world)
+          :clear))
 
 
 
@@ -181,6 +191,20 @@ reference.</p>"
   (defmacro def-gl-rewrite (name &rest args)
     `(progn (defthmd ,name . ,args)
             (add-gl-rewrite ,name))))
+
+
+(defsection def-gl-definition
+  :parents (reference term-level-reasoning)
+  :short "Define a rewrite rule for FGL to use on term-level objects, after applying primitives"
+  :long
+  "<p>This is similar to @(see def-gl-rewrite) but rules introduced with
+@('def-gl-definition') will be tried after rules introduced with
+@('def-gl-rewrite') and also after primitive functions (see @(see
+fgl-primitives)). </p>"
+
+  (defmacro def-gl-definition (name &rest args)
+    `(progn (defthmd ,name . ,args)
+            (add-gl-definition ,name))))
 
 
 (defun gl-rewrite-table-entries-for-lemma-removals (rune lemmas)
