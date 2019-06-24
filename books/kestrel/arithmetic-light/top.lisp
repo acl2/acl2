@@ -15,6 +15,7 @@
 ;; don't need and which we expect to grow over time.
 
 (include-book "expt")
+(include-book "expt2")
 (include-book "minus")
 (include-book "denominator")
 (include-book "times")
