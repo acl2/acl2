@@ -14,6 +14,7 @@
 ;; than including this top.lisp book, which is likely to include material you
 ;; don't need and which we expect to grow over time.
 
+;; Books about built-in functions:
 (include-book "take")
 (include-book "cons")
 (include-book "nthcdr")
@@ -31,3 +32,8 @@
 (include-book "butlast")
 (include-book "append")
 (include-book "revappend")
+
+;; Books about non-built-in functions:
+(include-book "firstn")
+(include-book "repeat")
+(include-book "reverse-list")
