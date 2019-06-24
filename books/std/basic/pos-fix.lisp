@@ -1,5 +1,6 @@
 ; Std/basic - Basic definitions
-; Copyright (C) 2008-2013 Centaur Technology
+;
+; Copyright (C) 2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,23 +27,34 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original author: Sol Swords <sswords@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
-(include-book "bytep")
-(include-book "nibblep")
-(include-book "pos-fix")
-(include-book "defs")
-(include-book "arith-equivs")
-(include-book "two-nats-measure")
-(include-book "intern-in-package-of-symbol")
 
-(defxdoc std/basic
-  :parents (std)
-  :short "A collection of very basic functions that are occasionally
-convenient."
+(include-book "xdoc/top" :dir :system)
 
-  :long "<p>The @('std/basic') library adds a number of very basic definitions
-that are not built into ACL2.  There's very little to this, it's generally just
-a meant to be a home for very simple definitions that don't fit into bigger
-libraries.</p>")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection pos-fix
+  :parents (posp)
+  :short "@(call pos-fix) is a fixing function for @(see posp): it is the
+identity for positive integers, or returns 1 for any other object."
+
+  :long "<p>This has guard @('t').  For better efficiency, see @(see lposfix).</p>"
+
+  (defund pos-fix (x)
+    (declare (xargs :guard t))
+    (if (posp x) x 1))
+
+  (local (in-theory (enable pos-fix)))
+
+  (defthm posp-of-pos-fix
+    (posp (pos-fix x))
+    :rule-classes :type-prescription)
+
+  (defthm pos-fix-when-posp
+    (implies (posp x)
+             (equal (pos-fix x) x))))
