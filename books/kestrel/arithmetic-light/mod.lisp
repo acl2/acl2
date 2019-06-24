@@ -34,7 +34,7 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable mod))))
 
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
 
 ;gen?
 (defthm nonneg-of-mod-type

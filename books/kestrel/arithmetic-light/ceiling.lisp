@@ -12,7 +12,7 @@
 
 (in-theory (disable ceiling))
 
-(local (include-book "arithmetic-3/top" :dir :system)) ;todo: reduce
+(local (include-book "../../arithmetic-3/top")) ;todo: reduce
 (local (include-book "integerp"))
 ;(local (include-book "nonnegative-integer-quotient"))
 ;(local (include-book "numerator"))

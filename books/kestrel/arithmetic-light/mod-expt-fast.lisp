@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
+(include-book "../../arithmetic-3/floor-mod/mod-expt-fast")
 (local (include-book "mod"))
 (local (include-book "expt"))
 
