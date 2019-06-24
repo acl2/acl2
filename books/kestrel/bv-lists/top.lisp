@@ -16,3 +16,4 @@
 (include-book "all-unsigned-byte-p")
 (include-book "all-unsigned-byte-p-of-reverse-list")
 (include-book "all-unsigned-byte-p-of-repeat")
+(include-book "unsigned-byte-listp")
