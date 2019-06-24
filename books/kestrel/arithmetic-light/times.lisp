@@ -137,3 +137,14 @@
                                   (x1 x)
                                   (x2 1))
            :in-theory (disable <-of-*-and-*-gen))))
+
+(defthmd <=-of-*-and-*-linear
+  (implies (and (<= x1 x2)
+                (< 0 y)
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (<= (* x1 y) (* x2 y)))
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance <-of-*-and-*)
+           :in-theory (disable <-of-*-and-*))))

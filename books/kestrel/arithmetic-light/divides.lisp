@@ -10,8 +10,52 @@
 
 (in-package "ACL2")
 
+(local (include-book "times"))
 (local (include-book "../library-wrappers/arithmetic-inequalities"))
+
+;; Exported in times-and-divides.lisp
+(local
+ (defthm *-of-/-same
+   (equal (* x (/ x))
+          (if (equal 0 (fix x))
+              0
+            1))))
 
 (defthm /-of-/
   (equal (/ (/ x))
          (fix x)))
+
+(defthm equal-of-/-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal k (/ x))
+                  (and (acl2-numberp k)
+                       (equal (fix x) (/ k))))))
+
+(defthm <-of-/-and-constant-1
+  (implies (and (syntaxp (quotep k))
+                (< 0 k)
+                (rationalp k)
+                (rationalp y))
+           (equal (< k (/ y))
+                  (and (not (<= y 0))
+                       (< y (/ k)))))
+  :hints (("Goal" :cases ((< y 0)
+                          (equal y 0)
+                          (< k (/ y)))
+           :in-theory (disable <-of-*-and-*-gen)
+           :use (:instance <-of-*-and-*-gen
+                           (x1 k)
+                           (x2 (/ y))
+                           (y y)))))
+
+(defthm <-of-/-and-constant-2
+  (implies (and (syntaxp (quotep k))
+                (< 0 k)
+                (rationalp k)
+                (rationalp y))
+           (equal (< (/ y) k)
+                  (or (<= y 0)
+                      (< (/ k) y))))
+  :hints (("Goal" :cases ((< y 0)
+                          (equal y 0)
+                          (< (/ y) k)))))

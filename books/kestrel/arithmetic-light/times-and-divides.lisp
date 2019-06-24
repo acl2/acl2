@@ -18,6 +18,8 @@
              0
            1)))
 
+(in-theory (disable inverse-of-*)) ;*-of-/-same is stronger
+
 (defthm *-of-*-of-/-same
   (equal (* x (* (/ x) y))
          (if (equal 0 (fix x))
@@ -46,3 +48,8 @@
                                   (x y)
                                   (y 1))
            :in-theory (disable equal-of-*-of-/))))
+
+(defthm /-of-*
+  (equal (/ (* x y))
+         (* (/ x) (/ y)))
+  :hints (("Goal" :cases ((acl2-numberp y)))))

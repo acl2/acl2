@@ -71,3 +71,17 @@
   (equal (< (+ x y) (+ x z))
          (< y z))
   :hints (("Goal" :cases ((< y z)))))
+
+(defthm <-of-+-combine-constants-1
+  (implies (syntaxp (and (quotep k2)
+                         (quotep k1)))
+           (equal (< k1 (+ k2 x))
+                  (< (- k1 k2) x)))
+  :hints (("Goal" :cases ((< k1 (+ k2 x))))))
+
+(defthm <-of-+-combine-constants-2
+  (implies (syntaxp (and (quotep k2)
+                         (quotep k1)))
+           (equal (< (+ k1 x) k2)
+                  (< x (- k2 k1))))
+  :hints (("Goal" :cases ((< (+ k1 x) k2)))))
