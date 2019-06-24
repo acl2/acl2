@@ -27,3 +27,5 @@
 (include-book "mod-expt-fast")
 (include-book "mod")
 (include-book "floor")
+(include-book "divides")
+(include-book "times-and-divides")
