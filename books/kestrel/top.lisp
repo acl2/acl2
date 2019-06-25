@@ -61,3 +61,5 @@
    </p>")
 
 (xdoc::add-resource-directory "kestrel-images" "images")
+
+(xdoc::add-resource-directory "kestrel-design-notes" "design-notes")

@@ -1,6 +1,6 @@
 ; APT Partial Evaluation Transformation -- Design Notes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,7 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 ; (depends-on "design-notes/restrict.pdf")
-; (depends-on "design-notes/notation.pdf")
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,7 +25,9 @@
    (xdoc::p
     "The design of the transformation is described in
      <a href='res/apt/parteval.pdf'>these notes</a>,
-     which use <a href='res/apt/notation.pdf'>this notation</a>.")
+     which use "
+    (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+    ".")
    (xdoc::p
     "The correspondence between the design notes and the reference documentation
      is the following:")
