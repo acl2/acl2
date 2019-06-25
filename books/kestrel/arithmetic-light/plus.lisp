@@ -85,3 +85,11 @@
            (equal (< (+ k1 x) k2)
                   (< x (- k2 k1))))
   :hints (("Goal" :cases ((< (+ k1 x) k2)))))
+
+(defthm equal-of-+-combine-constants
+  (implies (syntaxp (and (quotep k2)
+                         (quotep k1)))
+           (equal (equal k1 (+ k2 x))
+                  (and (acl2-numberp k1)
+                       (equal (- k1 k2) (fix x)))))
+  :hints (("Goal" :cases ((equal k1 (+ k2 x))))))
