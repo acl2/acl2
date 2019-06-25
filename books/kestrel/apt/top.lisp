@@ -117,7 +117,7 @@
   :parents (apt)
   :short "Design notes for the APT tools.")
 
-(xdoc::add-resource-directory "apt" "design-notes")
+(xdoc::add-resource-directory "kestrel-apt-design-notes" "design-notes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

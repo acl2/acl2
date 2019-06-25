@@ -23,9 +23,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The design of the transformation is described in
-     <a href='res/apt/parteval.pdf'>these notes</a>,
-     which use "
+    "The design of the transformation is described in "
+    (xdoc::a :href "res/kestrel-apt-design-notes/parteval.pdf" "these notes")
+    ", which use "
     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
     ".")
    (xdoc::p
