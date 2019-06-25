@@ -91,7 +91,7 @@
    If the operand size is 10, the operand must an m16:64 pointer.
    If the operand size is 4, it may be either an m16:16 pointer or not;
    in this case, the @('memory-ptr?') argument is used to
-   determined whether the address should be aligned
+   determine whether the address should be aligned
    at a word or doubleword boundary.
    If the operand size is 1, 2, 8, or 16,
    it cannot be a memory pointer of the form m16:xx.
@@ -114,13 +114,13 @@
   ///
 
   (defthm memory-byte-accesses-are-always-aligned
-    (equal (address-aligned-p eff-addr 1 mem-ptr?) t))
+    (equal (address-aligned-p addr 1 mem-ptr?) t))
 
   (defthm address-aligned-p-mem-ptr-input-irrelevant-for-all-but-bytes=4
     (implies (and (syntaxp (not (equal mem-ptr? ''nil)))
                   (not (equal nbytes 4)))
-             (equal (address-aligned-p eff-addr nbytes mem-ptr?)
-                    (address-aligned-p eff-addr nbytes nil)))))
+             (equal (address-aligned-p addr nbytes mem-ptr?)
+                    (address-aligned-p addr nbytes nil)))))
 
 ;; ----------------------------------------------------------------------
 
@@ -191,7 +191,8 @@
                          (r (code-segment-descriptor-attributesBits->r attr)))
                       (= r 0))))
              (mv (list :execute-only-code-segment eff-addr) 0 x86))
-            ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+            ((mv flg lin-addr)
+             (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
             ((when flg) (mv flg 0 x86))
             ,@(and
                check-alignment?-var
@@ -236,7 +237,7 @@
                        (x86p x86)
                        (not (mv-nth 0 ,fn-call)))
                   (equal (mv-nth 2 ,fn-call) x86))
-         :enable (,@(and signed?                         
+         :enable (,@(and signed?
                          `(,lin-mem-fn-name
                            ;; ,(mk-name "RML" size-str)
                            ))))
@@ -245,7 +246,7 @@
          (implies (app-view x86)
                   (equal (xr fld index (mv-nth 2 ,fn-call))
                          (xr fld index x86)))
-         :enable (,@(and signed?                         
+         :enable (,@(and signed?
                          `(,lin-mem-fn-name
                            ;; ,(mk-name "RML" size-str)
                            ))))
@@ -381,7 +382,9 @@
                                     (address-aligned-p
                                      eff-addr ,(/ size 8)
                                      ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
-                  (equal ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
+                  (equal ,(search-and-replace-once 'proc-mode
+                                                   '#.*64-bit-mode*
+                                                   fn-call)
                          (,lin-mem-fn-name eff-addr r-x x86))))
 
        ,@(and
@@ -397,8 +400,12 @@
                           ,(/ size 8)
                           ,(if mem-ptr?-var 'mem-ptr? 'nil))))
                     (canonical-address-p eff-addr))
-               (equal ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
-                      (list (list :unaligned-linear-address eff-addr) 0 x86))))))
+               (equal ,(search-and-replace-once 'proc-mode
+                                                '#.*64-bit-mode*
+                                                fn-call)
+                      (list (list :unaligned-linear-address eff-addr)
+                            0
+                            x86))))))
 
        (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
          (implies
@@ -486,7 +493,7 @@
     ;; Note: A #GP exception should be thrown here instead of an #AC fault when
     ;; the address is not aligned.  See Intel Manuals, Volume 3, Section 6.15,
     ;; Exception and Interrupt Reference, Interrupt 17 Alignment Check
-    ;; Exception (#AC).    
+    ;; Exception (#AC).
     ,(gen-read-function :size 128
                         :signed? nil
                         :check-alignment?-var t
@@ -564,7 +571,8 @@
                          ((when flg)
                           (mv flg 0 x86))
                          ((unless (or (not check-alignment?)
-                                      (address-aligned-p lin-addr nbytes mem-ptr?)))
+                                      (address-aligned-p
+                                       lin-addr nbytes mem-ptr?)))
                           (mv (list :unaligned-linear-address lin-addr) 0 x86)))
                       (rml-size nbytes lin-addr r-x x86))))
     :in-theory (e/d (ea-to-la) ()))
@@ -600,44 +608,51 @@
 
   (defruled rme-size-of-1-to-rme08
     (equal
-     (rme-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme08 proc-mode eff-addr seg-reg r-x x86))
     :enable (rme-size rme08))
 
   (defruled rme-size-of-2-to-rme16
     (equal
-     (rme-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rme-size rme16))
 
   (defruled rme-size-of-4-to-rme32
     (equal
-     (rme-size
-      proc-mode 4 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
-     (rme32 proc-mode eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?))
+     (rme-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
+     (rme32 proc-mode eff-addr seg-reg r-x check-alignment? x86
+            :mem-ptr? mem-ptr?))
     :enable (rme-size rme32))
 
   (defruled rme-size-of-6-to-rme48
     (equal
-     (rme-size proc-mode 6 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 6 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme48 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rme-size rme48))
 
   (defruled rme-size-of-8-to-rme64
     (equal
-     (rme-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rme-size rme64))
 
   (defruled rme-size-of-10-to-rme64
     (equal
-     (rme-size proc-mode 10 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 10 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme80 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rme-size rme80))
 
   (defruled rme-size-of-16-to-rme128
     (equal
-     (rme-size proc-mode 16 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rme-size proc-mode 16 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
      (rme128 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rme-size rme128)))
 
@@ -692,7 +707,8 @@
                   (or (not check-alignment?)
                       (address-aligned-p eff-addr nbytes mem-ptr?)))
              (equal (rime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+                               nbytes eff-addr seg-reg r-x check-alignment? x86
+                               :mem-ptr? mem-ptr?)
                     (riml-size nbytes eff-addr r-x x86))))
 
   (defrule rime-size-when-64-bit-modep-fs/gs
@@ -711,7 +727,8 @@
                          ((when flg)
                           (mv flg 0 x86))
                          ((unless (or (not check-alignment?)
-                                      (address-aligned-p lin-addr nbytes mem-ptr?)))
+                                      (address-aligned-p
+                                       lin-addr nbytes mem-ptr?)))
                           (mv (list :unaligned-linear-address lin-addr) 0 x86)))
                       (riml-size nbytes lin-addr r-x x86))))
     :in-theory (e/d (ea-to-la) ()))
@@ -745,24 +762,29 @@
     :hints (("Goal" :in-theory (e/d (rime-size) ()))))
 
   (defruled rime-size-of-1-to-rime08
-    (equal (rime-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+    (equal (rime-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
+                      :mem-ptr? mem-ptr?)
            (rime08 proc-mode eff-addr seg-reg r-x x86))
     :enable (rime-size rime08))
 
   (defruled rime-size-of-2-to-rime16
-    (equal (rime-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+    (equal (rime-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
+                      :mem-ptr? mem-ptr?)
            (rime16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rime-size rime16))
 
   (defruled rime-size-of-4-to-rime32
     (equal
-     (rime-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
-     (rime32 proc-mode eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?))
+     (rime-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
+                :mem-ptr? mem-ptr?)
+     (rime32 proc-mode eff-addr seg-reg r-x check-alignment? x86
+             :mem-ptr? mem-ptr?))
     :enable (rime-size rime32))
 
   (defruled rime-size-of-8-to-rime64
     (equal
-     (rime-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86 :mem-ptr? mem-ptr?)
+     (rime-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
+                :mem-ptr? mem-ptr?)
      (rime64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
     :enable (rime-size rime64)))
 
@@ -837,7 +859,8 @@
                                      attr)))
                               (= w 0)))))
              (mv (list :non-writable-segment eff-addr seg-reg) x86))
-            ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+            ((mv flg lin-addr)
+             (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
             ((when flg) (mv flg x86))
             ,@(and
                check-alignment?-var
@@ -859,7 +882,9 @@
                                     (address-aligned-p
                                      eff-addr ,(/ size 8)
                                      ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
-                  (equal ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
+                  (equal ,(search-and-replace-once 'proc-mode
+                                                   '#.*64-bit-mode*
+                                                   fn-call)
                          (,lin-mem-fn-name eff-addr val x86))))
 
        ,@(and
@@ -875,7 +900,9 @@
                           ,(/ size 8)
                           ,(if mem-ptr?-var 'mem-ptr? 'nil))))
                     (canonical-address-p eff-addr))
-               (equal ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
+               (equal ,(search-and-replace-once 'proc-mode
+                                                '#.*64-bit-mode*
+                                                fn-call)
                       (list (list :unaligned-linear-address eff-addr) x86))))))
 
        (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
@@ -1055,7 +1082,8 @@
                          ((when flg)
                           (mv flg x86))
                          ((unless (or (not check-alignment?)
-                                      (address-aligned-p lin-addr nbytes mem-ptr?)))
+                                      (address-aligned-p
+                                       lin-addr nbytes mem-ptr?)))
                           (mv (list :unaligned-linear-address lin-addr) x86)))
                       (wml-size nbytes lin-addr val x86))))
     :in-theory (e/d (ea-to-la) ()))
@@ -1170,7 +1198,8 @@
                          ((when flg)
                           (mv flg x86))
                          ((unless (or (not check-alignment?)
-                                      (address-aligned-p lin-addr nbytes mem-ptr?)))
+                                      (address-aligned-p
+                                       lin-addr nbytes mem-ptr?)))
                           (mv (list :unaligned-linear-address lin-addr) x86)))
                       (wiml-size nbytes lin-addr val x86))))
     :in-theory (e/d (ea-to-la) ()))
@@ -1775,10 +1804,11 @@
 ;; Note that unlike the macros above, the generic rme/wme*-size macros work for
 ;; all kinds of seg-reg values.
 
-(defmacro rme-size-opt (proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86
-                                  &key
-                                  (mem-ptr? 'nil)
-                                  (check-canonicity 'nil))
+(defmacro rme-size-opt
+    (proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86
+               &key
+               (mem-ptr? 'nil)
+               (check-canonicity 'nil))
   `(mbe
     :logic
     (rme-size
@@ -1811,10 +1841,11 @@
        ,proc-mode ,nbytes ,eff-addr ,seg-reg ,r-x ,check-alignment? ,x86
        :mem-ptr? ,mem-ptr?))))
 
-(defmacro rime-size-opt (proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86
-                                   &key
-                                   (mem-ptr? 'nil)
-                                   (check-canonicity 'nil))
+(defmacro rime-size-opt
+    (proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86
+               &key
+               (mem-ptr? 'nil)
+               (check-canonicity 'nil))
   `(mbe
     :logic
     (rime-size
@@ -1847,10 +1878,11 @@
        ,proc-mode ,nbytes ,eff-addr ,seg-reg ,r-x ,check-alignment? ,x86
        :mem-ptr? ,mem-ptr?))))
 
-(defmacro wme-size-opt (proc-mode nbytes eff-addr seg-reg val check-alignment? x86
-                                  &key
-                                  (mem-ptr? 'nil)
-                                  (check-canonicity 'nil))
+(defmacro wme-size-opt
+    (proc-mode nbytes eff-addr seg-reg val check-alignment? x86
+               &key
+               (mem-ptr? 'nil)
+               (check-canonicity 'nil))
   `(mbe
     :logic
     (wme-size
@@ -1883,10 +1915,11 @@
        ,proc-mode ,nbytes ,eff-addr ,seg-reg ,val ,check-alignment? ,x86
        :mem-ptr? ,mem-ptr?))))
 
-(defmacro wime-size-opt (proc-mode nbytes eff-addr seg-reg val check-alignment? x86
-                                   &key
-                                   (mem-ptr? 'nil)
-                                   (check-canonicity 'nil))
+(defmacro wime-size-opt
+    (proc-mode nbytes eff-addr seg-reg val check-alignment? x86
+               &key
+               (mem-ptr? 'nil)
+               (check-canonicity 'nil))
   `(mbe
     :logic
     (wime-size
