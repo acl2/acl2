@@ -27,6 +27,8 @@
 (include-book "tailrec-design")
 (include-book "tailrec-reference")
 
+; (depends-on "images/apt-logo.png")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ apt

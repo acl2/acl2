@@ -23,6 +23,8 @@
 (include-book "soft/top")
 (include-book "utilities/top")
 
+; (depends-on "images/kestrel-logo.png")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc kestrel-books
