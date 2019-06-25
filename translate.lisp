@@ -9050,15 +9050,6 @@
 
 (defun augment-ignore-vars (bound-vars value-forms acc)
 
-; Note added shortly before releasing ACL2 Version_6.1.  This function seems to
-; have been added in Version_2.9.4.  It's not clear that we need this function,
-; since it doesn't seem that translate11 is passed a form with HIDE calls
-; already added in the manner described below.  For now we'll continue to calls
-; this function, as it seems harmless enough.  We might want to try a
-; regression sometime with it redefined simply to return acc, and if that
-; succeeds, we could consider deleting it.  (But that seems dangerous to do
-; just before a release!)
-
 ; Bound-vars and value-forms are lists of the same length.  Return the result
 ; of extending the list acc by each member of bound-vars for which the
 ; corresponding element of value-forms (i.e., in the same position) is a call
@@ -9066,6 +9057,27 @@
 ; function returns a list that contains every variable declared ignored in the
 ; original let form binding bound-vars to value-forms (or the corresponding
 ; untranslations of the terms in value-forms).
+
+; We might not need this function if users never write lambda applications.
+; But consider the following example.
+
+; ((lambda (a) t) (hide x))
+
+; Translate11 first converts this to
+
+; (let ((a (hide x))) t)
+
+; and that, in turn, is passed to translate11-let.  Notice that a is not
+; declared ignored; however, it is treated as ignored because of
+; augment-ignore-vars, where a trace shows that (augment-ignore-vars (a) ((hide
+; x)) nil) returns (A).  This functionality might not seem important, but on
+; 6/24/2019 we tried eliminating augment-ignore-vars and found that community
+; book
+; books/workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/circuit.lisp
+; failed to certify because of a form (definstance genericscheduling
+; check-compliance-ct-scheduling ...), which generates a lambda using hide
+; forms in order to deal with ignored variables.  So apparently people have
+; relied on this use of hide!
 
   (cond ((endp bound-vars)
          acc)
