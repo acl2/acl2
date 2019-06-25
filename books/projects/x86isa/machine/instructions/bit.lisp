@@ -163,7 +163,7 @@
 	       (bitNumber (mod bitOffset-int-abs 8))
 	       (byte-addr (+ addr
 			     (floor bitOffset-int 8)))
-	       (inst-ac? t)
+	       (inst-ac? (alignment-checking-enabled-p x86))
 	       ((mv flg byte x86)
 		(if (signed-byte-p 64 byte-addr)
 		    (rme-size-opt proc-mode 1 byte-addr seg-reg :r inst-ac? x86
