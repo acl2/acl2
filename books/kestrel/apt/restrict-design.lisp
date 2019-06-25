@@ -1,4 +1,4 @@
-; APT Domain Restriction Transformation -- Design Notes
+; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

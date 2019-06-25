@@ -1,4 +1,4 @@
-; APT Utilities -- Customization
+; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -7,8 +7,6 @@
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 

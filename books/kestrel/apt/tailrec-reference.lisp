@@ -1,4 +1,4 @@
-; APT Tail Recursion Transformation -- Reference Documentation
+; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

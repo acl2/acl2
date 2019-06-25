@@ -1,4 +1,4 @@
-; ABNF -- Abstract Syntax
+; ABNF Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

@@ -34,6 +34,5 @@
  (progn
    (include-book "top")))
 
-
 (xdoc::archive-matching-topics
  (str::strprefixp "[books]/kestrel/" (cdr (assoc :from x))))

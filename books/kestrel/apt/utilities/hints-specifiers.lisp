@@ -1,4 +1,4 @@
-; APT Utilities -- Hints Specifiers
+; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2018, Regents of the University of Texas
 ; Written by Matt Kaufmann
