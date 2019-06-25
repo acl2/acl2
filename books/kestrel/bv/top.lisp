@@ -12,3 +12,4 @@
 (in-package "ACL2")
 
 (include-book "unsigned-byte-p")
+(include-book "unsigned-byte-p-forced")

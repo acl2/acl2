@@ -235,12 +235,6 @@
            (unsigned-byte-p size i))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-;for rules where we get the size of a term syntactically, we sometimes have to prove that the term does indeed have that size
-;we use this alternate usb so that no expensive rules fire (as they might on usb)
-(defun unsigned-byte-p-forced (bits x)
-  (declare (type t bits x))
-  (unsigned-byte-p bits x))
-
 ;; The BV library doesn't use bitp, so we rewrite it using this rule to our
 ;; normal form:
 (defthm bitp-becomes-unsigned-byte-p
