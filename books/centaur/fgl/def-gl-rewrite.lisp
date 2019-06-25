@@ -157,7 +157,8 @@
           (alist-remove-gl-rewrite ',rune (table-alist 'gl-definition-rules world) world)
           :clear))
 
-
+(defmacro disable-definition (fnname)
+  `(remove-gl-definition (:definition ,fnname)))
 
 
 (defsection def-gl-rewrite

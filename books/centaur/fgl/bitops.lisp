@@ -39,34 +39,24 @@
 (include-book "centaur/misc/starlogic" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
-(table gl-fn-modes 'intcons
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'intcons*
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'endint
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'intcar
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'intcdr
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'int-endp
-       (make-gl-function-mode :dont-expand-def t))
-(table gl-fn-modes 'int
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition intcons)
+(disable-definition intcons*)
+(disable-definition endint)
+(disable-definition intcar)
+(disable-definition intcdr)
+(disable-definition int-endp)
+(disable-definition int)
 
 
-(table gl-fn-modes 'acl2::logcons$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::logcons$inline)
 (def-gl-rewrite logcons-is-intcons
   (equal (logcons a b) (intcons (eql a 1) b)))
 
-(table gl-fn-modes 'acl2::logcar$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::logcar$inline)
 (def-gl-rewrite logcar-is-intcar
   (equal (logcar x) (if (intcar x) 1 0)))
 
-(table gl-fn-modes 'acl2::logcdr$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::logcdr$inline)
 (def-gl-rewrite logcdr-is-intcdr
   (equal (logcdr x) (intcdr x)))
 
@@ -91,8 +81,7 @@
          (and* (gl-int-endp xsyn)
                (int-endp x)))))
 
-(table gl-fn-modes 'lognot
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition lognot)
 
 (def-gl-rewrite fgl-lognot
   (equal (lognot x)
@@ -103,8 +92,7 @@
                     (lognot (intcdr x)))))
   :hints(("Goal" :in-theory (enable bitops::lognot** int-endp))))
 
-(table gl-fn-modes 'binary-logand
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition binary-logand)
 
 
 (def-gl-rewrite fgl-logand
@@ -120,8 +108,7 @@
                     (logand (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logand** int-endp))))
 
-(table gl-fn-modes 'binary-logior
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition binary-logior)
 
 (def-gl-rewrite fgl-logior
   (equal (logior x y)
@@ -136,8 +123,7 @@
                     (logior (intcdr x) (intcdr y)))))
   :hints(("Goal" :in-theory (enable bitops::logior** int-endp))))
 
-(table gl-fn-modes 'acl2::binary-logxor
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::binary-logxor)
 
 (def-gl-rewrite fgl-logxor
   (equal (logxor x y)
@@ -153,8 +139,7 @@
   :hints(("Goal" :in-theory (enable bitops::logxor** int-endp
                                     bitops::equal-logcons-strong))))
 
-(table gl-fn-modes 'acl2::binary-logeqv
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::binary-logeqv)
 
 (def-gl-rewrite fgl-logeqv
   (equal (logeqv x y)
@@ -196,8 +181,7 @@
 (define check-signed-byte-p (n x)
   (signed-byte-p n x))
 
-(table gl-fn-modes 'check-signed-byte-p
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition check-signed-byte-p)
 
 (def-gl-rewrite check-signed-byte-p-by-syntax-when-const-width
   (implies (and (syntaxp (and (gl-object-case x :g-integer)
@@ -216,8 +200,7 @@
 (define check-unsigned-byte-p (n x)
   (unsigned-byte-p n x))
 
-(table gl-fn-modes 'check-unsigned-byte-p
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition check-unsigned-byte-p)
 
 (def-gl-rewrite check-unsigned-byte-p-by-syntax-when-const-width
   (implies (and (syntaxp (and (gl-object-case x :g-integer)
@@ -233,8 +216,7 @@
                                   int-endp)
                                  (unsigned-byte-p)))))
 
-(table gl-fn-modes 'acl2::loghead$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::loghead$inline)
 
 (def-gl-rewrite loghead-const-width
   (implies (syntaxp (integerp n))
@@ -248,8 +230,7 @@
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::loghead**))))
 
-(table gl-fn-modes 'logext
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition logext)
 
 (def-gl-rewrite logext-const-width
   (implies (syntaxp (integerp n))
@@ -263,8 +244,7 @@
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::logext**))))
 
-(table gl-fn-modes 'acl2::logtail$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::logtail$inline)
 
 (def-gl-rewrite logtail-const-shift
   (implies (syntaxp (integerp n))
@@ -464,8 +444,7 @@
                       (logtail-helper n-rev n-width x))))
     :hints(("Goal" :in-theory (enable check-unsigned-byte-p))))
 
-  (table gl-fn-modes 'logtail-helper
-       (make-gl-function-mode :dont-expand-def t)))
+  (disable-definition logtail-helper))
 
 
 
@@ -581,8 +560,7 @@
                       (logapp-helper n-rev n-width x y))))
     :hints(("Goal" :in-theory (enable check-unsigned-byte-p))))
 
-  (table gl-fn-modes 'logapp-helper
-         (make-gl-function-mode :dont-expand-def t))
+  (disable-definition logapp-helper)
 
   (def-gl-rewrite loghead-to-logapp
     (implies (syntaxp (not (gl-object-case n :g-concrete)))
@@ -668,15 +646,12 @@
                       (logbitp-helper n-rev n-width x))))
     :hints(("Goal" :in-theory (enable check-unsigned-byte-p))))
 
-  (table gl-fn-modes 'logbitp-helper
-       (make-gl-function-mode :dont-expand-def t))
+  (disable-definition logbitp-helper)
 
-  (table gl-fn-modes 'logbitp
-       (make-gl-function-mode :dont-expand-def t)))
+  (disable-definition logbitp))
 
 
-(table gl-fn-modes 'acl2::logmask$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition acl2::logmask$inline)
 
 
 
@@ -685,7 +660,7 @@
   (implies (syntaxp (integerp n))
            (equal (logapp n x y)
                   (cond ((zp n) (int y))
-                        (t (intcons (intcar x)
+                        (t (intcons (and (intcar x) t)
                                     (logapp (1- n) (intcdr x) y))))))
   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
                                     bitops::logapp**))))
@@ -712,8 +687,7 @@
                (logapp (nfix sh) 0 x)))
            (logtail (nfix (- sh)) x))))
 
-(table gl-fn-modes 'ash
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition ash)
 
 
 
@@ -724,8 +698,7 @@
      (lifix x)
      (lifix y))
   ///
-  (table gl-fn-modes '+carry
-       (make-gl-function-mode :dont-expand-def t))
+  (disable-definition +carry)
 
   (def-gl-rewrite fgl-+carry
     (equal (+carry c x y)
@@ -785,8 +758,7 @@
   (mv (< (ifix x) (ifix y))
       (equal (ifix x) (ifix y)))
   ///
-  (table gl-fn-modes '</=
-         (make-gl-function-mode :dont-expand-def t))
+  (disable-definition </=)
 
   (local (defthm logcar-when-zip
            (implies (zip x) (equal (logcar x) 0))
@@ -975,8 +947,7 @@
                     (lifix x)
                     (lifix y)))
   ///
-  (table gl-fn-modes '+carry-ext
-       (make-gl-function-mode :dont-expand-def t))
+  (disable-definition +carry-ext)
 
   (local (Defthm logext-0
            (equal (logext 0 x)
@@ -1020,8 +991,7 @@
                     (lifix x)
                     (lifix y)))
   ///
-  (table gl-fn-modes '+carry-trunc
-       (make-gl-function-mode :dont-expand-def t))
+  (disable-definition +carry-trunc)
 
   ;; (local (Defthm logext-0
   ;;          (equal (logext 0 x)
@@ -1054,8 +1024,7 @@
                          (x integerp))
   (logcount (loghead width (if signbit (lognot x) x)))
   ///
-  (table gl-fn-modes 'logcount-helper
-       (make-gl-function-mode :dont-expand-def t))
+  (disable-definition logcount-helper)
 
   (local (defthm logcount-of-loghead-<=-width
            (<= (logcount (loghead width x)) (nfix width))
@@ -1174,8 +1143,7 @@
         (equal len 0)
         (< x-ext 0)))
   ///
-  (table gl-fn-modes 'integer-length-helper
-         (make-gl-function-mode :dont-expand-def t))
+  (disable-definition integer-length-helper)
 
   (local (defthm loghead-of-integer-length-when-<=
            (implies (and (natp x)
@@ -1218,8 +1186,7 @@
                            ))))
            ))
 
-  (table gl-fn-modes 'integer-length
-         (make-gl-function-mode :dont-expand-def t))
+  (disable-definition integer-length)
 
   (def-gl-rewrite integer-length-impl
     (equal (integer-length x)

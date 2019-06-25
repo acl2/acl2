@@ -622,9 +622,9 @@ encode them symbolically.</li>
          (t :neither)))
  
  ;; Turn off this function's definition! Keep the if-then-else inside it hidden.
+ (fgl::disable-definition vector-kind-encoding)
  (table fgl::gl-fn-modes 'vector-kind-encoding
-        (fgl::make-gl-function-mode :dont-expand-def t
-                                    :dont-concrete-exec t))
+        (fgl::make-gl-function-mode :dont-concrete-exec t))
  
  ;; Now rephrase vector-kind in terms of vector-kind-encoding:
  (fgl::def-gl-rewrite vector-kind-to-encoding2
@@ -650,8 +650,7 @@ encode them symbolically.</li>
  (defun vector-kind-p (x)
    (or (equal x :big) (equal x :little) (equal x :neither)))
  
- (table fgl::gl-fn-modes 'vector-kind-p
-        (fgl::make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition vector-kind-p)
  
  (fgl::def-gl-rewrite vector-kind-p-of-vector-kind-encoding
    (vector-kind-p (vector-kind-encoding littlep bigp)))
@@ -666,8 +665,7 @@ encode them symbolically.</li>
  ;; write rules directly on that:
  :ubt! vector-kind-encoding
  
- (table fgl::gl-fn-modes 'vector-kind
-        (fgl::make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition vector-kind)
  
  (fgl::def-gl-rewrite equal-of-vector-kind
    (equal (equal y (vector-kind x))
@@ -678,8 +676,7 @@ encode them symbolically.</li>
  (defun vector-kind-p (x)
    (or (equal x :big) (equal x :little) (equal x :neither)))
  
- (table fgl::gl-fn-modes 'vector-kind-p
-        (fgl::make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition vector-kind-p)
  
  (fgl::def-gl-rewrite vector-kind-p-of-vector-kind
    (vector-kind-p (vector-kind x)))
@@ -708,8 +705,7 @@ prevents us from needing to reason about this extra information.</p>
  (defun fgl-hidden-if (test then else)
    (if test then else))
  
- (table gl-fn-modes 'fgl-hidden-if
-        (make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition fgl-hidden-if)
  
  ;; This function represents a value that is likely to be just treated as
  ;; Boolean, but may not actually be T when it is non-NIL.  The TRUE input
@@ -720,8 +716,7 @@ prevents us from needing to reason about this extra information.</p>
    (and true
         (or val t)))
  
- (table gl-fn-modes 'maybe-value
-        (make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition maybe-value)
  
  ;; Under IFF, maybe-value is just its truth value.
  (def-gl-rewrite maybe-value-under-iff
@@ -759,11 +754,8 @@ prevents us from needing to reason about this extra information.</p>
    (member-equal x lst))
  
  ;; Turn off both member-equal and hide-member-equal...
- (table gl-fn-modes 'member-equal
-        (make-gl-function-mode :dont-expand-def t))
- 
- (table gl-fn-modes 'hide-member-equal
-        (make-gl-function-mode :dont-expand-def t))
+ (fgl::disable-definition member-equal)
+ (fgl::disable-definition hide-member-equal)
  
  (defthm memberp-equal-iff-member-equal
    (iff (memberp-equal x lst) (member-equal x lst)))

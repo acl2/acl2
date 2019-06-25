@@ -43,7 +43,11 @@
    acl2::logtail$inline
    acl2::loghead$inline
    logbitp
-   integer-length))
+   integer-length
+   acl2::binary-logand
+   acl2::binary-logxor
+   acl2::binary-logior
+   acl2::binary-logeqv))
 
 
 
@@ -331,54 +335,125 @@
           
 
 
+(def-gl-primitive acl2::binary-logand (x y)
+  (b* (((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (and-bits logicman)
+               (bfr-logand-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer and-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+(def-gl-primitive acl2::binary-logior (x y)
+  (b* (((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (and-bits logicman)
+               (bfr-logior-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer and-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+(def-gl-primitive acl2::binary-logxor (x y)
+  (b* (((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (and-bits logicman)
+               (bfr-logxor-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer and-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
+(def-gl-primitive acl2::binary-logeqv (x y)
+  (b* (((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (and-bits logicman)
+               (bfr-logeqv-ss x-bits y-bits logicman)
+               (mv t (mk-g-integer and-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
 
 
 (local (install-gl-primitives logapp))
+
+
+;; Downgrade the rewrite rules concerning these to definitions so they'll be tried after the primitives.
 (remove-gl-rewrite logapp-const-width)
 (remove-gl-rewrite logtail-const-shift)
 (remove-gl-rewrite integer-length-impl)
 (remove-gl-rewrite <-impl)
 (remove-gl-rewrite fgl-equal)
-
-(def-gl-rewrite logapp-const-width-allow-primitive
-  (implies (syntaxp (and (integerp n)
-                         ;; Allow this only when x is a g-var or g-apply, so
-                         ;; that the primitive would fail but this can
-                         ;; potentially generate bits for x.
-                         (gl-object-case x '(:g-var :g-apply))))
-           (equal (logapp n x y)
-                  (cond ((zp n) (int y))
-                        (t (intcons (and (intcar x) t)
-                                    (logapp (1- n) (intcdr x) y))))))
-  :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
-                                    bitops::logapp**))))
-
-(def-gl-rewrite logtail-const-shift-allow-primitive
-  (implies (syntaxp (and (integerp n)
-                         (gl-object-case x '(:g-var :g-apply))))
-           (equal (logtail n x)
-                  (if (or (zp n)
-                          (check-int-endp x (syntax-bind xsyn (g-concrete x))))
-                      (int x)
-                    (logtail (1- n) (intcdr x)))))
-  :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
-                                    bitops::logtail**))))
+(remove-gl-rewrite fgl-logand)
+(remove-gl-rewrite fgl-logior)
+(remove-gl-rewrite fgl-logxor)
+(remove-gl-rewrite fgl-logeqv)
 
 
+(add-gl-definition logapp-const-width)
+(add-gl-definition logtail-const-shift)
+(add-gl-definition integer-length-impl)
+(add-gl-definition <-impl)
+(add-gl-definition fgl-equal)
+(add-gl-definition fgl-logand)
+(add-gl-definition fgl-logior)
+(add-gl-definition fgl-logxor)
+(add-gl-definition fgl-logeqv)
 
-(def-gl-rewrite fgl-equal-of-cons
-  (equal (equal x y)
-         (let ((xsyn (syntax-bind xsyn (g-concrete x)))
-               (ysyn (syntax-bind ysyn (g-concrete y))))
-           (cond ((check-consp x xsyn)
-                  (cond ((check-consp y ysyn)
-                         (and (equal (car x) (car y))
-                              (equal (cdr x) (cdr y))))
-                        ((check-non-consp y ysyn) nil)
-                        (t (abort-rewrite (equal x y)))))
-                 ((and (check-consp y ysyn)
-                       (check-non-consp x xsyn)) nil)
-                 (t (abort-rewrite (equal x y)))))))
+
+;; (def-gl-rewrite logapp-const-width-allow-primitive
+;;   (implies (syntaxp (and (integerp n)
+;;                          ;; Allow this only when x is a g-var or g-apply, so
+;;                          ;; that the primitive would fail but this can
+;;                          ;; potentially generate bits for x.
+;;                          (gl-object-case x '(:g-var :g-apply))))
+;;            (equal (logapp n x y)
+;;                   (cond ((zp n) (int y))
+;;                         (t (intcons (and (intcar x) t)
+;;                                     (logapp (1- n) (intcdr x) y))))))
+;;   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
+;;                                     bitops::logapp**))))
+
+;; (def-gl-rewrite logtail-const-shift-allow-primitive
+;;   (implies (syntaxp (and (integerp n)
+;;                          (gl-object-case x '(:g-var :g-apply))))
+;;            (equal (logtail n x)
+;;                   (if (or (zp n)
+;;                           (check-int-endp x (syntax-bind xsyn (g-concrete x))))
+;;                       (int x)
+;;                     (logtail (1- n) (intcdr x)))))
+;;   :hints(("Goal" :in-theory (enable intcons intcar intcdr int-endp
+;;                                     bitops::logtail**))))
+
+
+
+;; (def-gl-rewrite fgl-equal-of-cons
+;;   (equal (equal x y)
+;;          (let ((xsyn (syntax-bind xsyn (g-concrete x)))
+;;                (ysyn (syntax-bind ysyn (g-concrete y))))
+;;            (cond ((check-consp x xsyn)
+;;                   (cond ((check-consp y ysyn)
+;;                          (and (equal (car x) (car y))
+;;                               (equal (cdr x) (cdr y))))
+;;                         ((check-non-consp y ysyn) nil)
+;;                         (t (abort-rewrite (equal x y)))))
+;;                  ((and (check-consp y ysyn)
+;;                        (check-non-consp x xsyn)) nil)
+;;                  (t (abort-rewrite (equal x y)))))))
 
 (remove-gl-rewrite loghead-to-logapp)
 (def-gl-rewrite loghead-to-logapp-always

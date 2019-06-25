@@ -90,13 +90,9 @@
 
 
 
-(table gl-fn-modes 'show-counterexample
-       (make-gl-function-mode :dont-concrete-exec t
-                              :dont-expand-def t))
+(disable-definition show-counterexample)
 
-(table gl-fn-modes 'show-top-counterexample
-       (make-gl-function-mode :dont-concrete-exec t
-                              :dont-expand-def t))
+(disable-definition show-top-counterexample)
 
 ;; Note: this function will just get interpreted by fancy-ev when running under
 ;; show-counterexample-rw below, so we don't bother verifying guards etc.
@@ -174,9 +170,7 @@ be a string or message identifying the particular SAT check.</p>"
   (if x t nil)
   ///
 
-  (table gl-fn-modes 'fgl-sat-check/print-counterexample
-         (make-gl-function-mode :dont-concrete-exec t
-                                :dont-expand-def t))
+  (disable-definition fgl-sat-check/print-counterexample)
 
   (def-gl-rewrite fgl-sat-check/print-counterexample-rw
     (equal (fgl-sat-check/print-counterexample params msg x)

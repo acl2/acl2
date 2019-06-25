@@ -35,6 +35,9 @@
 (include-book "svex")
 (include-book "member-equal")
 
+(local (in-theory (disable w)))
+
+(install-gl-primitives top-plus)
 
 #||
 (include-book "xdoc/save" :dir :system)

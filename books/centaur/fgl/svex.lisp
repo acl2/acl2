@@ -175,20 +175,15 @@
            
 
 
-(table gl-fn-modes 'sv::4vec-fix$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition sv::4vec-fix$inline)
 
-(table gl-fn-modes 'sv::4vec
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition sv::4vec)
 
-(table gl-fn-modes 'sv::4vec-p
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition sv::4vec-p)
 
-(table gl-fn-modes 'sv::4vec->upper$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition sv::4vec->upper$inline)
 
-(table gl-fn-modes 'sv::4vec->lower$inline
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition sv::4vec->lower$inline)
 
 (def-gl-rewrite 4vec-p-when-integerp
   (implies (and (syntaxp (gl-object-case x :g-integer))

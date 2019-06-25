@@ -52,8 +52,7 @@
 (defun fgl-hidden-if (test then else)
   (if test then else))
 
-(table gl-fn-modes 'fgl-hidden-if
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition fgl-hidden-if)
 
 ;; This function represents a value that is likely to be just treated as
 ;; Boolean, but may not actually be T when it is non-NIL.  The TRUE input
@@ -64,8 +63,7 @@
   (and true
        (or val t)))
 
-(table gl-fn-modes 'maybe-value
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition maybe-value)
 
 ;; Under IFF, maybe-value is just its truth value.
 (def-gl-rewrite maybe-value-under-iff
@@ -110,11 +108,9 @@
   (member-equal x lst))
 
 ;; Turn off both member-equal and hide-member-equal...
-(table gl-fn-modes 'member-equal
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition member-equal)
 
-(table gl-fn-modes 'hide-member-equal
-       (make-gl-function-mode :dont-expand-def t))
+(disable-definition hide-member-equal)
 
 (defthm memberp-equal-iff-member-equal
   (iff (memberp-equal x lst) (member-equal x lst)))
