@@ -23,7 +23,7 @@
            (integerp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
-(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "../../arithmetic-3/top"))
 
 ;; Note that RATIONALP-EXPT-TYPE-PRESCRIPTION and
 ;; EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE are built-in.
