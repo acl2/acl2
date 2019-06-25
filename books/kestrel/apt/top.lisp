@@ -41,7 +41,7 @@
 
   (xdoc::topstring
 
-   (xdoc::img :src "res/kestrel-images/apt-logo.png")
+   (xdoc::img :src "res/kestrel-apt-images/apt-logo.png")
 
    (xdoc::p
     "The APT transformation tools operate on ACL2 artifacts (e.g. functions)
@@ -102,6 +102,8 @@
      Project Web page</a>."))
 
   :order-subtopics t)
+
+(xdoc::add-resource-directory "kestrel-apt-images" "images")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
