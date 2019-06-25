@@ -32,7 +32,7 @@
   :short "A collection of ACL2 books contributed mainly by Kestrel Institute."
 
   :long
-  "<img src='res/kestrel/kestrel-logo.png'/>
+  "<img src='res/kestrel-images/kestrel-logo.png'/>
    <p>
    The <b>Kestrel Books</b> are a collection of ACL2 books
    contributed mainly by <a href='http://www.kestrel.edu'>Kestrel Institute</a>.
@@ -60,4 +60,4 @@
    and others.
    </p>")
 
-(xdoc::add-resource-directory "kestrel" "images")
+(xdoc::add-resource-directory "kestrel-images" "images")

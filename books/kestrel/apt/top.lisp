@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations)
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -41,7 +41,7 @@
 
   (xdoc::topstring
 
-   (xdoc::img :src "res/kestrel/apt-logo.png")
+   (xdoc::img :src "res/kestrel-images/apt-logo.png")
 
    (xdoc::p
     "The APT transformation tools operate on ACL2 artifacts (e.g. functions)
