@@ -358,7 +358,7 @@
        (data (rgfi-size operand-size *rax* rex-byte x86))
 
        ;; Write the data to offset in segment:
-       (inst-ac? (alignment-checking-enabled-p x86))
+       (inst-ac? t)
        ((mv flg x86)
         (x86-operand-to-reg/mem proc-mode
                                 operand-size
