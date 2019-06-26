@@ -64,7 +64,7 @@
                 (< 0 y) ;gen?
                 )
            (<= (floor x1 y) (floor x2 y)))
-  :hints (("Goal" :in-theory (e/d (floor <=-of-*-and-*-linear)
+  :hints (("Goal" :in-theory (e/d (floor <=-of-*-and-*-same-linear)
                                   (nonnegative-integer-quotient-lower-bound-linear2))
            :use ((:instance nonnegative-integer-quotient-lower-bound-linear2
                             (i (numerator (* x2 (/ y))))
@@ -121,12 +121,12 @@
   :rule-classes (:rewrite (:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal"
            :use ((:instance my-floor-lower-bound)
-                 (:instance <-of-*-and-*-gen
+                 (:instance <-of-*-and-*-cancel
                             (x1 (+ -1 (* i (/ j))))
                             (x2 (floor i j))
                             (y j)))
            :in-theory (disable my-floor-lower-bound
-                               <-of-*-and-*-gen))))
+                               <-of-*-and-*-cancel))))
 
 (defthmd my-floor-upper-bound ;floor-upper-bound is a theorem in rtl
   (implies (and (rationalp i)
@@ -150,12 +150,12 @@
            (<= (* j (floor i j)) i))
   :rule-classes (:rewrite (:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :use ((:instance my-floor-upper-bound)
-                        (:instance <-of-*-and-*-gen
+                        (:instance <-of-*-and-*-cancel
                                    (x2 (floor i j))
                                    (x1 (* i (/ j)))
                                    (y j)))
            :in-theory (disable my-floor-upper-bound
-                               <-of-*-and-*-gen))))
+                               <-of-*-and-*-cancel))))
 
 ;; generalizing this is hard since even if j is not rational, the quotient may be.
 (defthm floor-when-not-rationalp-arg1
@@ -165,13 +165,12 @@
                   0))
   :hints (("Goal" :in-theory (enable floor))))
 
-;rename params
 (defthmd divisibility-in-terms-of-floor
-  (implies (and (rationalp x)
-                (rationalp y)
-                (not (equal 0 y)))
-           (equal (integerp (/ x y))
-                  (equal (* y (floor x y)) x)))
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (equal (integerp (/ i j))
+                  (equal (* j (floor i j)) i)))
   :hints (("Goal" :in-theory (enable floor-when-multiple))))
 
 (defthmd floor-of---arg1
@@ -198,8 +197,8 @@
                      (+ (floor i1 j)
                         (floor i2 j))))
      :hints (("Goal"
-              :in-theory (e/d (mod) (FLOOR-UPPER-BOUND-LINEAR  <-of-*-and-*-gen))
-              :use ((:instance <-of-*-and-*-gen (x1 (+ -1 (* I1 (/ J)) (* I2 (/ J)))) (x2 (+ (FLOOR I1 J) (FLOOR I2 J))) (y j))
+              :in-theory (e/d (mod) (FLOOR-UPPER-BOUND-LINEAR  <-of-*-and-*-cancel))
+              :use ((:instance <-of-*-and-*-cancel (x1 (+ -1 (* I1 (/ J)) (* I2 (/ J)))) (x2 (+ (FLOOR I1 J) (FLOOR I2 J))) (y j))
                     (:instance FLOOR-upper-bound-linear (i i1) (j j))
                     (:instance FLOOR-upper-bound-linear (i i2) (j j))
                     (:instance floor-unique
@@ -219,12 +218,12 @@
               (equal (floor (+ i1 i2) j)
                      (+ 1 (floor i1 j) (floor i2 j))))
      :hints (("Goal"
-              :in-theory (e/d (mod) (<-of-*-and-*-gen))
-              :use ((:instance <-of-*-and-*-gen
+              :in-theory (e/d (mod) (<-of-*-and-*-cancel))
+              :use ((:instance <-of-*-and-*-cancel
                                (x1 (+ (* I1 (/ J)) (* I2 (/ J))))
                                (x2 (+ 1 (FLOOR I1 J) (FLOOR I2 J)))
                                (y j))
-                    (:instance <-of-*-and-*-gen
+                    (:instance <-of-*-and-*-cancel
                                (x1 (+ -1 (* I1 (/ J)) (* I2 (/ J))))
                                (x2 (+ 1 (FLOOR I1 J) (FLOOR I2 J)))
                                (y j))

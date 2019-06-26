@@ -154,13 +154,13 @@
            (<= (+ -1 (/ j) (/ i j))
                (nonnegative-integer-quotient i j)))
   :rule-classes ((:linear :trigger-terms ((nonnegative-integer-quotient i j))))
-  :hints (("subgoal *1/1" :use (:instance <-of-*-and-*-gen
+  :hints (("subgoal *1/1" :use (:instance <-of-*-and-*-cancel
                                           (x1 0)
                                           (x2 (+ -1 (/ J) (* I (/ J))))
                                           (y j)))
           ("Goal" :in-theory (e/d (nonnegative-integer-quotient
                                    nonnegative-integer-quotient-of-+-of---same)
-                                  (<-of-*-and-*-gen)))))
+                                  (<-of-*-and-*-cancel)))))
 
 ;; (thm
 ;;  (IMPLIES (AND (< X Y)

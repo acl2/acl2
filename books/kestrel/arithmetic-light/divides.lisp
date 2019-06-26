@@ -42,8 +42,8 @@
   :hints (("Goal" :cases ((< y 0)
                           (equal y 0)
                           (< k (/ y)))
-           :in-theory (disable <-of-*-and-*-gen)
-           :use (:instance <-of-*-and-*-gen
+           :in-theory (disable <-of-*-and-*-cancel)
+           :use (:instance <-of-*-and-*-cancel
                            (x1 k)
                            (x2 (/ y))
                            (y y)))))
