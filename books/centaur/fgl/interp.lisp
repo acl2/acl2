@@ -1786,7 +1786,7 @@
              ((mv ans-bfr interp-st) (interp-st-pop-scratch-bfr interp-st))
              ((fgl-interp-value ans-bfr)
               (interp-st-sat-check-wrapper params-obj ans-bfr interp-st state)))
-          (fgl-interp-value (g-boolean ans-bfr))))
+          (fgl-interp-value (mk-g-boolean ans-bfr))))
 
       (define gl-interp-return-last ((return-last-fnname pseudo-termp)
                                      (first-arg pseudo-termp)
@@ -3138,6 +3138,14 @@
            (b* (((g-boolean x)))
              (bfr-p x.bool)))
   :hints(("Goal" :in-theory (enable gl-object-bfrlist))))
+
+
+(local (defthm bfr-listp-of-mk-g-boolean
+         (implies (bfr-p x)
+                  (bfr-listp (gl-object-bfrlist (mk-g-boolean x))))
+         :hints(("Goal" :in-theory (enable mk-g-boolean)))))
+
+
 
 (defthm bfr-p-of-bool-fix
   (bfr-p (bool-fix x))
