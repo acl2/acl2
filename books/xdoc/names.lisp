@@ -37,6 +37,7 @@
 
 (in-package "XDOC")
 (include-book "str")
+(include-book "std/strings/printtree-concat" :dir :system)
 (program)
 
 
@@ -176,14 +177,29 @@
 
  (defattach rendered-name rendered-name-default))
 
-(defun sym-mangle (x base-pkg acc)
+(defun sym-mangle (x base-pkg archive-p acc)
 
 ; This is our "standard" for displaying symbols in HTML (in lowercase).  We
 ; write the package part only if it is not the same as the base package.
 ; Characters to print are accumulated onto acc in reverse order.  BOZO think
 ; about adding keyword support?
 
-  (b* ((base-pkg (base-pkg-display-override base-pkg))
+  (b* (((when archive-p)
+        ;; Note: When writing the acl2-doc manual (render-doc), we use
+        ;; base-pkg-display-override to ensure that all topics are displayed as
+        ;; if in the ACL2 package, whereas in the html manual we want to
+        ;; display them without package names when in the base package. But
+        ;; when archiving topics we want to be able to render it both ways.  So
+        ;; instead of rendering it we replace it with a new @(sym ...)
+        ;; directive.
+        (b* ((acc (str::printtree-rconcat "@(sym |" acc))
+             (acc (if (in-package-p x base-pkg)
+                      acc
+                    (b* ((acc (str::printtree-rconcat (symbol-package-name x) acc)))
+                      (str::printtree-rconcat "|::|" acc))))
+             (acc (str::printtree-rconcat (symbol-name x) acc)))
+          (str::printtree-rconcat "|)" acc)))                    
+        (base-pkg (base-pkg-display-override base-pkg))
        (name-low (name-low (rendered-name (symbol-name x))))
        (acc (if (in-package-p x base-pkg)
                 acc
@@ -192,11 +208,19 @@
                        (simple-html-encode-chars (explode pkg-low) acc))))))
     (simple-html-encode-chars (explode name-low) acc)))
 
-(defun sym-mangle-cap (x base-pkg acc)
+(defun sym-mangle-cap (x base-pkg archive-p acc)
 
 ; Same as sym-mangle, but upper-case the first letter.
 
-  (b* ((base-pkg (base-pkg-display-override base-pkg))
+  (b* (((when archive-p)
+        (b* ((acc (str::printtree-rconcat "@(csym |" acc))
+             (acc (if (in-package-p x base-pkg)
+                      acc
+                    (b* ((acc (str::printtree-rconcat (symbol-package-name x) acc)))
+                      (str::printtree-rconcat "|::|" acc))))
+             (acc (str::printtree-rconcat (symbol-name x) acc)))
+          (str::printtree-rconcat "|)" acc)))
+       (base-pkg (base-pkg-display-override base-pkg))
        (name-low (name-low (rendered-name (symbol-name x))))
        ((when (in-package-p x base-pkg))
         (let* ((name-cap (str::upcase-first name-low)))

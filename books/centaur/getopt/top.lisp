@@ -869,7 +869,7 @@ and so forth.  This only applies to visible options."
        (foop-link (b* ((acc (str::revappend-chars "<see topic='" nil))
                        (acc (xdoc::file-name-mangle foop acc))
                        (acc (str::revappend-chars "'>" acc))
-                       (acc (xdoc::sym-mangle foop foop acc))
+                       (acc (xdoc::sym-mangle foop foop nil acc))
                        (acc (str::revappend-chars "</see>" acc)))
                     (str::rchars-to-string acc))))
     `(define ,parse-foo

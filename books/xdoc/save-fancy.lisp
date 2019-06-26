@@ -80,7 +80,7 @@
   (declare (type symbol x)
            (type symbol base-pkg))
   (json-encode-string
-   (str::rchars-to-string (sym-mangle-cap x base-pkg nil))
+   (str::rchars-to-string (sym-mangle-cap x base-pkg nil nil))
    acc))
 
 (defun json-encode-topicnames-aux (x base-pkg acc)
