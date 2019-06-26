@@ -397,3 +397,25 @@
            (equal (mod (+ p x) p)
                   (mod x p)))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
+
+(defthm multiple-when-mod-0-cheap
+  (implies (and (equal 0 (mod n m))
+                (rationalp m)
+                (rationalp n))
+           (integerp (* (/ m) n)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil))))
+
+;move?
+;not clear which is better
+(defthm mod-floor-2-expt-2
+  (implies (and (integerp a)
+                (integerp b)
+                (posp n))
+           (equal (floor (mod a (expt 2 n)) 2)
+                  (mod (floor a 2) (expt 2 (+ -1 n)))))
+  :hints (("Goal" :in-theory (enable mod expt))))
+
+(defthm equal-of-0-and-mod-of-1
+  (implies (rationalp x)
+           (equal (equal 0 (mod x 1))
+                  (integerp x))))

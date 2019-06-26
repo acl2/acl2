@@ -53,3 +53,14 @@
                       (expt 2 i1)
                     0)))
   :hints (("Goal" :in-theory (enable))))
+
+;; Special case of mod-of-expt-twice
+(defthm mod-of-mod-of-expt-and-2
+  (implies (natp i)
+           (equal (mod (mod x (expt 2 i)) 2)
+                  (if (equal 0 i)
+                      (mod x 1)
+                  (mod x 2))))
+  :hints (("Goal" :use (:instance mod-of-expt-twice (i1 i) (i2 1))
+           :cases ((equal i 0))
+           :in-theory (disable mod-of-expt-twice))))
