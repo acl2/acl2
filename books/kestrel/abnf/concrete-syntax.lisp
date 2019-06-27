@@ -1,4 +1,4 @@
-; ABNF Library
+; ABNF (Augmented Backus-Naur Form) Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
