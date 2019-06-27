@@ -49,7 +49,7 @@
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
-(include-book "centaur/gl/def-gl-rule" :dir :system)
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
 
@@ -76,36 +76,6 @@
   (defmacro mk-name (&rest x)
     ;; Note that the package is X86ISA here.
     `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
-
-;; ======================================================================
-
-;; The following macro is useful to prove a theorem using GL in a book while
-;; including GL in that book only locally: the local GL::DEF-GL-RULEDL needs
-;; GL, but the non-local DEFTHM does not.  Note that GL::DEF-GL-RULEDL does not
-;; automatically include all of GL already.  This macro is more general than
-;; the x86 ISA model and could be moved to the GL library, perhaps renamed.
-
-(defmacro defthm-using-gl
-  (name &key hyp concl g-bindings rule-classes)
-
-  (if (and hyp concl g-bindings)
-
-      (let ((gl-name (mk-name name "-GL")))
-
-        `(progn
-
-           (gl::def-gl-ruledl
-            ,gl-name
-            :hyp ,hyp
-            :concl ,concl
-            :g-bindings ,g-bindings)
-
-           (defthm ,name
-             (implies ,hyp ,concl)
-             :hints (("Goal" :in-theory (theory 'minimal-theory)
-                      :use ((:instance ,gl-name))))
-             :rule-classes ,(or rule-classes :rewrite))))
-    nil))
 
 ;; ======================================================================
 
