@@ -1,4 +1,4 @@
-; Ethereum -- Bytes
+; Ethereum Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

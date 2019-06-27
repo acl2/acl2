@@ -1,4 +1,4 @@
-; Ethereum -- RLP Tests for Parsing and Decoding Errors
+; Ethereum Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

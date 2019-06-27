@@ -1,4 +1,4 @@
-; Java -- ATJ -- Tests -- Factorial Function
+; Java Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

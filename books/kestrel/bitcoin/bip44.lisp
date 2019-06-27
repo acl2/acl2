@@ -1,4 +1,4 @@
-; Bitcoin -- Bitcoin Improvement Proposal (BIP) 44
+; Bitcoin Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;

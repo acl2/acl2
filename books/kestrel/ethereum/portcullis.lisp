@@ -1,4 +1,4 @@
-; Ethereum -- Portcullis
+; Ethereum Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -7,7 +7,5 @@
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This follows the recommendations in the WORKING-WITH-PACKAGES manual page.
 
 (in-package "ACL2")

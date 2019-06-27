@@ -1,4 +1,4 @@
-; SOFT (Second-Order Functions and Theorems) -- Workshop Talk Examples
+; SOFT (Second-Order Functions and Theorems) Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
