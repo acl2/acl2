@@ -37,7 +37,7 @@
   :short "A prover framework that supports bit-blasting."
   :long "
 
-<p>FGL is the successor to <see topic=@(url gl::gl)>GL</see>.  It mainly
+<p>FGL is the successor to <see topic='@(url gl::gl)'>GL</see>.  It mainly
 consists of a clause processor that calls on a custom rewriter/term interpreter
 which features support for efficient representations of Boolean functions.
 Compared to GL, FGL offers the following new features:</p>

@@ -424,6 +424,34 @@
                   (not (fcs-ev concl a)))
              (not (fcs-ev (fgl-casesplit-core hyp concl split-params solve-params cases) a)))))
 
+
+(define fgl-casesplit-before-core ((hyp pseudo-termp)
+                                   (concl pseudo-termp)
+                                   (split-params)
+                                   (solve-params)
+                                   (cases casesplit-alist-p))
+  :prepwork ((local (defthm pseudo-term-listp-when-symbol-listp
+                      (implies (symbol-listp x)
+                               (pseudo-term-listp x))))
+             (local (defthm pseudo-term-listp-alist-vals-of-casesplit-alist
+                      (implies (casesplit-alist-p x)
+                               (pseudo-term-listp (alist-vals x)))
+                      :hints(("Goal" :in-theory (enable alist-vals))))))
+  :returns (thm pseudo-termp)
+  (b* ((cases (casesplit-alist-fix cases))
+       (case-msgs (alist-keys cases))
+       (cases (alist-vals cases)))
+    `(if ,(pseudo-term-fix hyp)
+         (if* ,(fgl-casesplit-solve (list 'quote split-params) "Case split completeness" (disjoin* cases))
+              ,(fgl-casesplit-solve-cases (kwote solve-params) case-msgs cases (wrap-fgl-pathcond-fix concl))
+              'nil)
+       't))
+  ///
+  (defthm fcs-ev-of-fgl-casesplit-before-core
+    (implies (and (fcs-ev hyp a)
+                  (not (fcs-ev concl a)))
+             (not (fcs-ev (fgl-casesplit-before-core hyp concl split-params solve-params cases) a)))))
+
 (local (in-theory (disable pseudo-termp
                            acl2::pseudo-termp-opener)))
 
@@ -494,6 +522,7 @@
   ((split-params)
    (solve-params)
    (split-concl-p)
+   (repeat-concl-p)
    (cases casesplit-alist-p)))
 
 (define fgl-casesplit-clause-proc ((clause pseudo-term-listp) config)
@@ -504,7 +533,9 @@
         (list clause))
        ((fgl-casesplit-config config))
        ((mv hyp concl) (fgl-casesplit-hyp/concl config.split-concl-p clause)))
-    (list (list (fgl-casesplit-core hyp concl config.split-params config.solve-params config.cases))))
+    (list (list (if config.repeat-concl-p
+                    (fgl-casesplit-before-core hyp concl config.split-params config.solve-params config.cases)
+                  (fgl-casesplit-core hyp concl config.split-params config.solve-params config.cases)))))
   ///
   (defthm fgl-casesplit-clause-proc-correct
     (implies (and (pseudo-term-listp clause)
@@ -533,7 +564,7 @@
     
        
   
-(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl-p state)
+(define fgl-casesplit-hint-fn (cases split-params solve-params split-concl-p repeat-concl-p state)
   :mode :program
   (b* (((er cases-trans) (fgl-casesplit-translate-cases cases state))
        (config (make-fgl-casesplit-config :split-params (or split-params
@@ -541,6 +572,7 @@
                                           :solve-params (or solve-params
                                                             (fgl-toplevel-sat-check-config))
                                           :split-concl-p split-concl-p
+                                          :repeat-concl-p repeat-concl-p
                                           :cases cases-trans)))
     (value `(:clause-processor (fgl-casesplit-clause-proc clause ',config)))))
 

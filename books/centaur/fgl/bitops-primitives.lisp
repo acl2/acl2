@@ -44,10 +44,14 @@
    acl2::loghead$inline
    logbitp
    integer-length
+   lognot
    acl2::binary-logand
    acl2::binary-logxor
    acl2::binary-logior
-   acl2::binary-logeqv))
+   acl2::binary-logeqv
+   +carry
+   +carry-trunc
+   +carry-ext))
 
 
 
@@ -159,6 +163,9 @@
                   :in-theory (disable fgl-object-eval-of-gobj-syntactic-integer-fix)))))
 
 (local (in-theory (enable bitops::logapp** bitops::loghead** bitops::logtail**)))
+
+(local (in-theory (disable member-equal boolean-listp integer-listp append
+                           equal-of-booleans-rewrite set::empty-set-unique)))
 
 (set-ignore-ok t)
 
@@ -334,6 +341,16 @@
        ;;        (t (mv nil nil interp-st)))
           
 
+(def-gl-primitive lognot (x)
+  (b* (((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits)
+               (bfr-lognot-s x-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st)))
+  :formula-check bitops-formula-checks)
+
 
 (def-gl-primitive acl2::binary-logand (x y)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
@@ -343,9 +360,9 @@
        (x-bits (gobj-syntactic-integer->bits x))
        (y-bits (gobj-syntactic-integer->bits y)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (and-bits logicman)
+               (ans-bits logicman)
                (bfr-logand-ss x-bits y-bits logicman)
-               (mv t (mk-g-integer and-bits) interp-st)))
+               (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
 (def-gl-primitive acl2::binary-logior (x y)
@@ -356,9 +373,9 @@
        (x-bits (gobj-syntactic-integer->bits x))
        (y-bits (gobj-syntactic-integer->bits y)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (and-bits logicman)
+               (ans-bits logicman)
                (bfr-logior-ss x-bits y-bits logicman)
-               (mv t (mk-g-integer and-bits) interp-st)))
+               (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
 (def-gl-primitive acl2::binary-logxor (x y)
@@ -369,9 +386,9 @@
        (x-bits (gobj-syntactic-integer->bits x))
        (y-bits (gobj-syntactic-integer->bits y)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (and-bits logicman)
+               (ans-bits logicman)
                (bfr-logxor-ss x-bits y-bits logicman)
-               (mv t (mk-g-integer and-bits) interp-st)))
+               (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
 (def-gl-primitive acl2::binary-logeqv (x y)
@@ -382,14 +399,78 @@
        (x-bits (gobj-syntactic-integer->bits x))
        (y-bits (gobj-syntactic-integer->bits y)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
-               (and-bits logicman)
+               (ans-bits logicman)
                (bfr-logeqv-ss x-bits y-bits logicman)
-               (mv t (mk-g-integer and-bits) interp-st)))
+               (mv t (mk-g-integer ans-bits) interp-st)))
   :formula-check bitops-formula-checks)
 
 
+(def-gl-primitive binary-+ (x y)
+  (b* (((unless (and (gobj-syntactic-integerp x)
+                     (gobj-syntactic-integerp y)))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-+-ss nil x-bits y-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st))))
 
-(local (install-gl-primitives logapp))
+(def-gl-primitive unary-- (x)
+  (b* (((unless (gobj-syntactic-integerp x))
+        (mv nil nil interp-st))
+       (x-bits (gobj-syntactic-integer->bits x)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (ans-bits logicman)
+               (bfr-unary-minus-s x-bits logicman)
+               (mv t (mk-g-integer ans-bits) interp-st))))
+
+(local (in-theory (enable +carry-trunc)))
+
+(def-gl-primitive +carry-trunc (width c x y)
+  (b* (((unless (gl-object-case width :g-concrete))
+        (mv nil nil interp-st))
+       ((mv cok c) (gobj-syntactic-boolean-fix c))
+       ((unless cok) (mv nil nil interp-st))
+       ((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (cbit (gobj-syntactic-boolean->bool c))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (+bits logicman)
+               (bfr-+-ss cbit x-bits y-bits logicman)
+               (mv t
+                   (mk-g-integer
+                    (append (extend-bits (nfix (g-concrete->val width)) +bits)
+                            '(nil)))
+                   interp-st)))
+  :formula-check bitops-formula-checks)
+
+(local (in-theory (enable +carry)))
+
+(def-gl-primitive +carry (c x y)
+  (b* (((mv cok c) (gobj-syntactic-boolean-fix c))
+       ((unless cok) (mv nil nil interp-st))
+       ((mv xok x) (gobj-syntactic-integer-fix x))
+       ((unless xok) (mv nil nil interp-st))
+       ((mv yok y) (gobj-syntactic-integer-fix y))
+       ((unless yok) (mv nil nil interp-st))
+       (cbit (gobj-syntactic-boolean->bool c))
+       (x-bits (gobj-syntactic-integer->bits x))
+       (y-bits (gobj-syntactic-integer->bits y)))
+    (stobj-let ((logicman (interp-st->logicman interp-st)))
+               (+bits logicman)
+               (bfr-+-ss cbit x-bits y-bits logicman)
+               (mv t
+                   (mk-g-integer +bits)
+                   interp-st)))
+  :formula-check bitops-formula-checks)
+
+
+(local (install-gl-primitives bitops-prim))
 
 
 ;; Downgrade the rewrite rules concerning these to definitions so they'll be tried after the primitives.
@@ -398,10 +479,15 @@
 (remove-gl-rewrite integer-length-impl)
 (remove-gl-rewrite <-impl)
 (remove-gl-rewrite fgl-equal)
+(remove-gl-rewrite fgl-lognot)
 (remove-gl-rewrite fgl-logand)
 (remove-gl-rewrite fgl-logior)
 (remove-gl-rewrite fgl-logxor)
 (remove-gl-rewrite fgl-logeqv)
+(remove-gl-rewrite +-to-+carry)
+(remove-gl-rewrite minus-to-+carry)
+(remove-gl-rewrite fgl-+carry)
+(remove-gl-rewrite fgl-+carry-trunc)
 
 
 (add-gl-definition logapp-const-width)
@@ -409,10 +495,16 @@
 (add-gl-definition integer-length-impl)
 (add-gl-definition <-impl)
 (add-gl-definition fgl-equal)
+(add-gl-definition fgl-lognot)
 (add-gl-definition fgl-logand)
 (add-gl-definition fgl-logior)
 (add-gl-definition fgl-logxor)
 (add-gl-definition fgl-logeqv)
+(add-gl-definition +-to-+carry)
+(add-gl-definition minus-to-+carry)
+(add-gl-definition fgl-+carry)
+(add-gl-definition fgl-+carry-trunc)
+
 
 
 ;; (def-gl-rewrite logapp-const-width-allow-primitive
