@@ -248,6 +248,7 @@
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
+(include-book "coi/documentation" :dir :system)
 
 (include-book "centaur/aignet/top-doc" :dir :system)
 (include-book "centaur/gl/top-doc" :dir :system)

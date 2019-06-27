@@ -1,0 +1,4 @@
+(ld "workshops/2018/kaufmann/td-cands.acl2" :dir :system)
+(include-book "projects/irv/portcullis" :dir :system)
+(ld "projects/milawa/doc.acl2" :dir :system)
+(include-book "kestrel/utilities/omaps/portcullis" :dir :system)

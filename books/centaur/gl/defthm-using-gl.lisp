@@ -49,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc dethm-using-gl
+(defxdoc defthm-using-gl
   :parents (def-gl-thm)
   :short "Prove a theorem using GL, including GL only locally."
   :long

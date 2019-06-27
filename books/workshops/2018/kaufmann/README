@@ -111,12 +111,14 @@ td-cands.acl2.  The complete steps are implemented by the call of LD
 in write-td-cands.lsp that is made by the script write-td-cands.sh,
 starting with the following:
 
-PREREQUISITE.  Certify doc/top.lisp and all books in the current
-directory (possibly excepting td-cands.lisp and the two books that
-depend on it, defunt-top.lisp and defunt-tests.lisp).
+PREREQUISITE.  Certify doc/top.lisp (probably changed to
+doc/top-slow.lisp sometime after summer 2019) and all books in the
+current directory (possibly excepting td-cands.lisp and the two books
+that depend on it, defunt-top.lisp and defunt-tests.lisp).
 
 (1) Include many of the community books together, as follows (this can
 take quite a few minutes): (include-book "doc/top" :dir :system).
+NOTE: probably change to doc/top-slow.lisp sometime after summer 2019.
 
 (2) Create a "termination database" stobj, td, from all
 singly-recursive logic-mode functions in the resulting world.
