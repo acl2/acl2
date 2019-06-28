@@ -369,3 +369,14 @@
            (equal (sub x y p)
                   (add x (neg y p) p)))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
+
+(defthm not-equal-of-add-and-0-same
+  (implies (and (integerp x1)
+                (<= 0 x1)
+                (< x1 p)
+                (not (equal x1 0))
+                (integerp p)
+                (< 2 p)
+                (rtl::primep p))
+           (not (equal (add x1 x1 p) 0)))
+  :hints (("Goal" :in-theory (enable pfield::add-same fep))))
