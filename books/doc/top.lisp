@@ -132,6 +132,7 @@
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 
 (include-book "centaur/glmc/glmc" :dir :system)
 (include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
