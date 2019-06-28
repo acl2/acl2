@@ -33,3 +33,5 @@
 (include-book "times-and-divides")
 (include-book "complex")
 (include-book "less-than")
+(include-book "realpart")
+(include-book "imagpart")
