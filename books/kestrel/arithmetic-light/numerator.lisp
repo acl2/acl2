@@ -25,10 +25,12 @@
          (integerp x)))
 
 (defthm <-of-numerator-and-0
-  (implies (rationalp x)
-           (equal (< (numerator x) 0)
-                  (< x 0)))
-  :hints (("Goal" :cases ((< x 0)))))
+  (equal (< (numerator x) 0)
+         (and (rationalp x)
+              (< x 0)))
+  :hints (("Goal" :cases ((not (rationalp x))
+                          (and (rationalp x)
+                               (< x 0))))))
 
 (defthm numerator-of-/-when-integerp
   (implies (integerp x)
