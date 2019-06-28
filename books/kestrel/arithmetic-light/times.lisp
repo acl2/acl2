@@ -11,6 +11,9 @@
 (in-package "ACL2")
 
 (local (include-book "plus"))
+(local (include-book "less-than"))
+(local (include-book "realpart"))
+(local (include-book "imagpart"))
 
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
 ; are built in to ACL2.
@@ -91,78 +94,6 @@
                           (and (< 0 X) (< Y 0))
                           (and (< 0 X) (< 0 Y))))))
 
-;; See also <-of-*-and-*-cancel, but this one may be more suitable for use in
-;; hints.  Gives rise to two linear rules, each with a free var.
-(defthm <-of-*-and-*-same-linear
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* x1 y) (* x2 y)))
-  :rule-classes :linear
-  :hints (("Goal" :use (:instance positive (x (- x2 x1))))))
-
-;; Commuted version of <-of-*-and-*-same-linear.
-(defthm <-of-*-and-*-same-alt-linear
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* y x1) (* y x2)))
-  :rule-classes :linear
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear)
-           :in-theory (disable <-of-*-and-*-same-linear))))
-
-;; This can sometimes get the proof when the linear rules does not, but we
-;; leave it disabled by default for speed.
-(defthmd <-of-*-and-*-same-forward-1
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* x1 y) (* x2 y)))
-  :rule-classes ((:forward-chaining :trigger-terms ((* x1 y))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear))))
-
-;; This can sometimes get the proof when the linear rules does not, but we
-;; leave it disabled by default for speed.
-(defthmd <-of-*-and-*-same-forward-2
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* x1 y) (* x2 y)))
-  :rule-classes ((:forward-chaining :trigger-terms ((* x2 y))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear))))
-
-;; This can sometimes get the proof when the linear rules does not, but we
-;; leave it disabled by default for speed.
-(defthmd <-of-*-and-*-same-alt-forward-1
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* y x1) (* y x2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((* y x1))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-alt-linear))))
-
-;; This can sometimes get the proof when the linear rules does not, but we
-;; leave it disabled by default for speed.
-(defthmd <-of-*-and-*-same-alt-forward-2
-  (implies (and (< x1 x2)
-                (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y))
-           (< (* y x1) (* y x2)))
-  :rule-classes ((:forward-chaining :trigger-terms ((* y x2))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-alt-linear))))
-
 ;; A stronger rewrite rule than <-of-*-and-*.  This is a cancellation rule.
 (defthm <-of-*-and-*-cancel
   (implies (and (< 0 y) ;move to conc
@@ -171,17 +102,203 @@
                 (rationalp y))
            (equal (< (* x1 y) (* x2 y))
                   (< x1 x2)))
-  :hints (("Goal" :use (<-of-*-and-*-same-linear
-                        (:instance <-of-*-and-*-same-linear (x1 x2) (x2 x1))))))
+  :hints (("Goal" :cases ((< x1 x2))
+           :use ((:instance positive (x (- x2 x1)))
+                 (:instance positive (x (- x1 x2)))))))
 
-;; See also <-of-*-and-*-cancel (which should fire when this does, recall that
-;; <= is a negated call to <), but this one may be more suitable for use in
-;; hints.  Gives rise to two linear rules, each with a free var.
+(local
+ ;; note: no rationalp hyps on x1,x2
+ (defthm <-of-*-and-*-same-helper
+   (implies (and (< x1 x2)
+                 (< 0 y)
+                 (rationalp y))
+            (< (* x1 y) (* x2 y)))
+   :hints (("Goal" :cases ((and (rationalp x1)
+                                (rationalp x2))
+                           (and (rationalp x1)
+                                (complex-rationalp x2))
+                           (and (rationalp x1)
+                                (not (acl2-numberp x2)))
+                           (and (complex-rationalp x1)
+                                (rationalp x2))
+                           (and (complex-rationalp x1)
+                                (complex-rationalp x2))
+                           (and (rationalp x1)
+                                (not (acl2-numberp x2)))
+                           (and (not (acl2-numberp x1))
+                                (rationalp x2))
+                           (and (not (acl2-numberp x1))
+                                (complex-rationalp x2))
+                           (and (not (acl2-numberp x1))
+                                (not (acl2-numberp x2))))
+            :use (:instance (:instance positive (x (- x1 x2))))
+            :in-theory (enable <-when-rationalp-and-complex-rationalp
+                               <-when-complex-rationalp-and-rationalp
+                               <-when-complex-rationalp-and-complex-rationalp)))))
+
+(local
+ ;; note: no rationalp hyps on x1,x2
+ (defthm <=-of-*-and-*-same-helper
+   (implies (and (<= x1 x2)
+                 (<= 0 y)
+                 (rationalp y))
+            (<= (* x1 y) (* x2 y)))
+   :hints (("Goal" :use (:instance <-of-*-and-*-same-helper)
+            :in-theory (disable <-of-*-and-*-same-helper)
+            :cases ((and (rationalp x1)
+                         (rationalp x2))
+                    (and (rationalp x1)
+                         (complex-rationalp x2))
+                    (and (rationalp x1)
+                         (not (acl2-numberp x2)))
+                    (and (complex-rationalp x1)
+                         (rationalp x2))
+                    (and (complex-rationalp x1)
+                         (complex-rationalp x2))
+                    (and (rationalp x1)
+                         (not (acl2-numberp x2)))
+                    (and (not (acl2-numberp x1))
+                         (rationalp x2))
+                    (and (not (acl2-numberp x1))
+                         (complex-rationalp x2))
+                    (and (not (acl2-numberp x1))
+                         (not (acl2-numberp x2))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Experience has shown that we need both the :forward-chaining rules and the
+;; :linear rules about whose names start with <-of-*-and-*-same.
+
+;; When considering a product, if the first argument is bounded above, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-forward-1
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* x1 y) (* x2 y)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* x1 y)))))
+
+;; When considering a product, if the first argument is bounded below, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-forward-2
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* x1 y) (* x2 y)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* x2 y))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+
+;; When considering a product, if the second argument is bounded above, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-forward-3
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* y x1) (* y x2)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* y x1))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+
+;; When considering a product, if the second argument is bounded below, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-forward-4
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* y x1) (* y x2)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* y x2))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; When considering a product, if the first argument is bounded above, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-linear-1
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* x1 y) (* x2 y)))
+  :rule-classes ((:linear :trigger-terms ((* x1 y)))))
+
+;; When considering a product, if the first argument is bounded below, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-linear-2
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* x1 y) (* x2 y)))
+  :rule-classes ((:linear :trigger-terms ((* x2 y))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+
+;; When considering a product, if the second argument is bounded above, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-linear-3
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* y x1) (* y x2)))
+  :rule-classes ((:linear :trigger-terms ((* y x1))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+
+;; When considering a product, if the second argument is bounded below, add a
+;; bound on the product.
+(defthm <-of-*-and-*-same-linear-4
+  (implies (and (< x1 x2)
+                (< 0 y)
+                (rationalp y))
+           (< (* y x1) (* y x2)))
+  :rule-classes ((:linear :trigger-terms ((* y x2))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+
+(deftheory <-of-*-and-*-same-linear
+  '(<-of-*-and-*-same-linear-1
+    <-of-*-and-*-same-linear-2
+    <-of-*-and-*-same-linear-3
+    <-of-*-and-*-same-linear-4)
+  :redundant-okp t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm <=-of-*-and-*-same-forward-1
+  (implies (and (<= x1 x2)
+                (<= 0 y)
+                (rationalp y))
+           (<= (* x1 y) (* x2 y)))
+  :hints (("Goal" :cases ((equal 0 y))))
+  :rule-classes ((:forward-chaining :trigger-terms ((* x1 y)))))
+
+(defthm <=-of-*-and-*-same-forward-2
+  (implies (and (<= x1 x2)
+                (<= 0 y)
+                (rationalp y))
+           (<= (* x1 y) (* x2 y)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* x2 y))))
+  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+
+(defthm <=-of-*-and-*-same-forward-3
+  (implies (and (<= x1 x2)
+                (<= 0 y)
+                (rationalp y))
+           (<= (* y x1) (* y x2)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* y x1))))
+  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+
+(defthm <=-of-*-and-*-same-forward-4
+  (implies (and (<= x1 x2)
+                (<= 0 y)
+                (rationalp y))
+           (<= (* y x1) (* y x2)))
+  :rule-classes ((:forward-chaining :trigger-terms ((* y x2))))
+  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; See also <-of-*-and-*-cancel (which should fire as a rewrite rule -- recall
+;; that <= is a negated call to <), but this one may be more suitable for use
+;; in hints.  Gives rise to two linear rules, each with a free var.
 (defthm <=-of-*-and-*-same-linear
   (implies (and (<= x1 x2)
                 (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
                 (rationalp y))
            (<= (* x1 y) (* x2 y)))
   :rule-classes :linear)
@@ -190,8 +307,6 @@
 (defthm <=-of-*-and-*-same-alt-linear
   (implies (and (<= x1 x2)
                 (< 0 y)
-                (rationalp x1)
-                (rationalp x2)
                 (rationalp y))
            (<= (* y x1) (* y x2)))
   :hints (("Goal" :use (:instance <=-of-*-and-*-same-linear)
@@ -216,8 +331,8 @@
                 (rationalp y))
            (< x (* x y)))
   :rule-classes :linear
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear (x1 1) (x2 y) (y x))
-           :in-theory (disable <-of-*-and-*-same-linear))))
+  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
+           :in-theory (disable <-of-*-and-*-same-forward-1))))
 
 (defthm <-of-*-and-*
   (implies (and (< x1 x2) ; strict
