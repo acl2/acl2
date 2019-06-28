@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/basic/pos-fix" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "fixtype")
 (local (include-book "std/lists/equiv" :dir :system))
@@ -167,28 +168,6 @@ identity function for execution.</p>"
   (fty::defbasetype symbol-equiv symbolp :topic symbolp)
 
   (defcong symbol-equiv equal (symbol-name x) 1))
-
-
-(defsection pos-fix
-  :parents (fty::basetypes posp)
-  :short "@(call pos-fix) is a fixing function for @(see posp): it is the
-identity for positive integers, or returns 1 for any other object."
-
-  :long "<p>This has no guard.  For better efficiency, see @(see lposfix).</p>"
-
-  (defund pos-fix (x)
-    (declare (xargs :guard t))
-    (if (posp x) x 1))
-
-  (local (in-theory (enable pos-fix)))
-
-  (defthm posp-of-pos-fix
-    (posp (pos-fix x))
-    :rule-classes :type-prescription)
-
-  (defthm pos-fix-when-posp
-    (implies (posp x)
-             (equal (pos-fix x) x))))
 
 
 (defsection pos-equiv

@@ -285,6 +285,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seeurl "std/basic" "Standard Basic Definitions"))
+
+   (xdoc::p
+    "The function @(tsee pos-fix),
+     along with its accompanying theorems and XDOC topic,
+     has been moved from @('[books]/centaur/fty/basetypes.lisp')
+     to a new file @('[books]/std/basic/pos-fix.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seeurl "stobjs::std/stobjs" "Standard STOBJs Library"))
 
    (xdoc::p
