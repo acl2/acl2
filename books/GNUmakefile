@@ -1663,7 +1663,7 @@ git_status:
 #    directories, etc.
 
 # In 2019, David Rager <ragerdl@defthm.com>, with support from the community,
-# change the "all" target so that it really builds all of the (non-broken)
+# changed the "all" target so that it really builds all of the (non-broken)
 # books.  He also reworked the logic for the "slow book" mechanism, and
 # created a target for contibutors to use when making pull requests/pushes
 # to the ACL2 community github.
