@@ -487,6 +487,10 @@
 ; empty string is delimited.  But it doesn't seem important to change this
 ; now.  If we do make such a change, consider the following (at least).
 
+; - Be sure to rule out * in any package as a stobj name, since in a signature,
+;   such a symbol denotes a non-stobj (see for example collect-non-* and see
+;   mentions of "*" in functions that involve signatures).
+
 ; - It will be necessary to update :doc defconst.
 
 ; - Fix the error message for, e.g., (defconst foo::* 17), so that it doesn't

@@ -3676,7 +3676,7 @@
 ; a message explaining why formals-top and pretty-flags-top are incompatible in
 ; the same signature.
 
-  (declare (xargs :guard (true-listp pretty-flags)))
+  (declare (xargs :guard (symbol-listp pretty-flags)))
   (cond ((or (atom formals)
              (endp pretty-flags))
          (cond ((and (atom formals)
@@ -3688,7 +3688,7 @@
                      formals-top (length formals-top)
                      (length pretty-flags-top)
                      (cons fn pretty-flags-top)))))
-        ((and (not (eq (car pretty-flags) '*)) ; stobj argument
+        ((and (not (equal (symbol-name (car pretty-flags)) "*")) ; stobj argument
               (not (eq (car pretty-flags) (car formals))))
          (let ((posn (- (length formals-top) (length formals))))
            (msg "the specified list of :FORMALS, ~x0, has stobj ~x1 at ~
@@ -3737,7 +3737,7 @@
           (mv (msg *generic-bad-signature-string* x) nil nil nil nil nil))
          ((not (and (symbol-listp pretty-flags1)
                     (no-duplicatesp-equal
-                     (collect-non-x '* pretty-flags1))))
+                     (collect-non-* pretty-flags1))))
           (mv (msg
                "The object ~x0 is not a legal signature because ~x1 is not ~
                 applied to a true-list of distinct symbols but to ~x2 instead."
@@ -3748,7 +3748,7 @@
                         (eq (car val) 'mv)
                         (symbol-listp (cdr val))
                         (no-duplicatesp-equal
-                         (collect-non-x '* (cdr val))))))
+                         (collect-non-* (cdr val))))))
           (mv (msg
                "The object ~x0 is not a legal signature because the result, ~
                 ... => ~x1, is not a symbol or an MV form containing distinct ~
@@ -3768,9 +3768,9 @@
                 single-threaded object names."
                x)
               nil nil nil nil nil))
-         ((not (subsetp-eq (collect-non-x '* (if (consp val)
-                                                 (cdr val)
-                                               (list val)))
+         ((not (subsetp-eq (collect-non-* (if (consp val)
+                                              (cdr val)
+                                            (list val)))
                            pretty-flags1))
           (mv (msg
                "The object ~x0 is not a legal signature because the result, ~
@@ -3778,10 +3778,10 @@
                 displayed among the inputs in ~x3."
                x
                val
-               (set-difference-eq (if (consp val)
-                                      (cdr val)
-                                    (list val))
-                                  (cons '* pretty-flags1))
+               (collect-non-* (set-difference-eq (if (consp val)
+                                                     (cdr val)
+                                                   (list val))
+                                                 pretty-flags1))
                (cons fn pretty-flags1))
               nil nil nil nil nil))
          ((not (keyword-value-listp kwd-value-list))
@@ -3835,7 +3835,7 @@
 ; Note:  Stobjs will contain duplicates iff formals does.  Stobjs will
 ; contain STATE iff formals does.
 
-                 (stobjs (collect-non-x '* pretty-flags1))
+                 (stobjs (collect-non-* pretty-flags1))
                  (msg (and formals-tail
                            (formals-pretty-flags-mismatch-msg
                             formals pretty-flags1

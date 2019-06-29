@@ -9190,11 +9190,6 @@
   (cond ((endp lst) nil)
         (t (cons (or (car lst) '*) (prettyify-stobj-flags (cdr lst))))))
 
-(defun unprettyify-stobj-flags (lst)
-  (cond ((endp lst) nil)
-        (t (cons (if (eq (car lst) '*) nil (car lst))
-                 (unprettyify-stobj-flags (cdr lst))))))
-
 (defun prettyify-stobjs-out (stobjs-out)
 
 ; This function uses prettyify-stobj-flags in the singleton case just

@@ -181,7 +181,8 @@
 
 (defun gen-formals-from-pretty-flags1 (pretty-flags i avoid)
   (cond ((endp pretty-flags) nil)
-        ((eq (car pretty-flags) '*)
+        ((and (symbolp (car pretty-flags))
+              (equal (symbol-name (car pretty-flags)) "*"))
          (let ((xi (pack2 'x i)))
            (cond ((member-eq xi avoid)
                   (let ((new-var (genvar 'genvar ;;; ACL2 package
@@ -216,29 +217,6 @@
 
   (gen-formals-from-pretty-flags1 pretty-flags 1 pretty-flags))
 
-(defun defstub-body (output)
-
-; This strange little function is used to turn an output signature
-; spec (in either the old or new style) into a term.  It never causes
-; an error, even if output is ill-formed!  What it returns in that
-; case is irrelevant.  If output is well-formed, i.e., is one of:
-
-;       output               result
-; *                           nil
-; x                           x
-; state                       state
-; (mv * state *)              (mv nil state nil)
-; (mv x state y)              (mv x state y)
-
-; it replaces the *'s by nil and otherwise doesn't do anything.
-
-  (cond ((atom output)
-         (cond ((equal output '*) nil)
-               (t output)))
-        ((equal (car output) '*)
-         (cons nil (defstub-body (cdr output))))
-        (t (cons (car output) (defstub-body (cdr output))))))
-
 (defun collect-non-x (x lst)
 
 ; This function preserves possible duplications of non-x elements in lst.
@@ -249,6 +227,38 @@
         ((equal (car lst) x)
          (collect-non-x x (cdr lst)))
         (t (cons (car lst) (collect-non-x x (cdr lst))))))
+
+(defun collect-non-* (lst)
+
+; This variant of collect-symbol-name considers any symbol with name "*",
+; regardless of the package.
+
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
+        ((equal (symbol-name (car lst)) "*")
+         (collect-non-* (cdr lst)))
+        (t (cons (car lst) (collect-non-* (cdr lst))))))
+
+(defun defstub-body-new (outputs)
+
+; Turn the output part of a new-style signature into a term.  This is called to
+; construct the body of the witness function that defstub passes to
+; encapsulate, when the new style is used in defstub (otherwise,
+; defstub-body-old is called).  This function never causes an error, even if
+; outputs is ill-formed; what it returns in that case is irrelevant.  If
+; outputs is well-formed, it converts each * to nil and every other symbol to
+; itself, e.g., it converts (mv * s *) to (mv nil s nil), * to nil, and state
+; to state.
+
+  (cond ((atom outputs)
+         (cond ((and (symbolp outputs)
+                     (equal (symbol-name outputs) "*"))
+                nil)
+               (t outputs)))
+        ((and (symbolp (car outputs))
+              (equal (symbol-name (car outputs)) "*"))
+         (cons nil (defstub-body-new (cdr outputs))))
+        (t (cons (car outputs) (defstub-body-new (cdr outputs))))))
 
 #+acl2-loop-only
 (defmacro defproxy (name args-sig arrow body-sig)
@@ -261,8 +271,8 @@
          where args-sig is a true-list of symbols.  See :DOC defproxy."))
    (t
     (let ((formals (gen-formals-from-pretty-flags args-sig))
-          (body (defstub-body body-sig))
-          (stobjs (collect-non-x '* args-sig)))
+          (body (defstub-body-new body-sig))
+          (stobjs (collect-non-* args-sig)))
       `(defun ,name ,formals
          (declare (xargs :non-executable :program
                          :mode :program
@@ -313,24 +323,6 @@
            (list body)
          (cdr body)))
     nil))
-
-(defun defstub-body-new (outputs)
-
-; Turn the output part of a new-style signature into a term.  This is called to
-; construct the body of the witness function that defstub passes to
-; encapsulate, when the new style is used in defstub (otherwise,
-; defstub-body-old is called).  This function never causes an error, even if
-; outputs is ill-formed; what it returns in that case is irrelevant.  If
-; outputs is well-formed, it converts each * to nil and every other symbol to
-; itself, e.g., it converts (mv * s *) to (mv nil s nil), * to nil, and state
-; to state.
-
-  (cond ((atom outputs)
-         (cond ((equal outputs '*) nil)
-               (t outputs)))
-        ((equal (car outputs) '*)
-         (cons nil (defstub-body-new (cdr outputs))))
-        (t (cons (car outputs) (defstub-body-new (cdr outputs))))))
 
 (defun defstub-body-old-aux (outputs-without-mv stobjs)
 
@@ -485,7 +477,7 @@
                (body (defstub-body-new outputs))
                (ignores (defstub-ignores formals body))
                (stobjs (and (true-listp inputs) ; collect-non-x guard
-                            (collect-non-x '* inputs))))
+                            (collect-non-* inputs))))
           `(encapsulate
              (((,name ,@inputs) ,arrow ,outputs ,@options))
              (logic)
