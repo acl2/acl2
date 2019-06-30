@@ -10346,6 +10346,11 @@
 ; defining equation for f, not of its mutual-recursion siblings.  To obtain
 ; their constraints as well, see constraint-info+.
 
+; Be careful about calling this function when fn is a program mode function
+; symbol!  In that case we return the formula equating the call of fn on its
+; formals with the unnormalized-body of fn, which probably is not sensible
+; logically (but might be useful for finding ancestors, for example).
+
 ; This function returns a pair (mv flg x).  In the simplest and perhaps most
 ; common case, there is no 'constraint-lst property for fn, e.g., when fn is
 ; defined by defun or defchoose and not in the scope of an encapsulate.  In
