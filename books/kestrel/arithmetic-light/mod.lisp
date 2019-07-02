@@ -151,6 +151,15 @@
   :hints (("Goal" :cases ((equal y 0))
            :in-theory (enable mod))))
 
+;this allows y to be negative (conclusion will be false)
+(defthm <-of-mod-same-arg2
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (< (mod x y) y)
+                  (if (equal 0 y)
+                      (< x 0)
+                    (<= 0 y)))))
+
 (defthm mod-bound-linear-arg2
   (implies (and (rationalp x)
                 (rationalp y)
@@ -220,20 +229,23 @@
                        (* -1 y)))))
   :hints (("Goal" :in-theory (enable mod))))
 
+;may be expensive..
+;could specialize to when y1 and y2 are obviously powers of 2
 (defthmd mod-of-mod-when-mult
   (implies (and (integerp (* y1 (/ y2)))
                 (rationalp y1)
-                (rationalp y2)
-                (not (equal 0 y2)))
+                (rationalp y2))
            (equal (mod (mod x y1) y2)
-                  (mod x y2)))
+                  (if (equal 0 y2)
+                      (mod x y1) ;rare case
+                    (mod x y2))))
   :hints (("Goal" :in-theory (e/d (mod unicity-of-0) (integerp-of-*))
            :use ((:instance integerp-of-* (x (* y1 (/ y2)))
                             (y (floor x y1)))
-                 (:instance cancel-floor-+-part-1
-                            (x (* y1 (floor i y1)))
-                            (y x)
-                            (z y2)
+                 (:instance floor-of-+-when-mult-arg1
+                            (i1 (* y1 (floor i y1)))
+                            (i2 x)
+                            (j y2)
                             (i (* y1 (/ y2) (floor x y1))))))))
 
 ;gen
@@ -283,12 +295,20 @@
                   (- (mod (- x) y))))
   :hints (("Goal" :cases ((equal '0 y)))))
 
+
+;; generalizing this is hard since even if x is not rational, the quotient may be.
 (defthm mod-when-not-rationalp-arg1
   (implies (and (not (rationalp x))
                 (rationalp y))
            (equal (mod x y)
                   (fix x)))
   :hints (("Goal" :in-theory (enable mod))))
+
+(defthm mod-when-not-acl2-numberp
+  (implies (not (acl2-numberp x))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal" :in-theory (enable mod floor))))
 
 (defthm mod-when-multiple
   (implies (and (integerp (* x (/ y)))
@@ -418,3 +438,25 @@
            (<= (mod x y) (+ -1 y)))
   :rule-classes :linear
   :hints (("Goal" :use (:instance mod-bound-linear-arg2))))
+
+
+;gen?
+(defthm <-of-mod-same2
+  (implies (and (< 0 y)
+                (rationalp y)
+                (rationalp x))
+           (not (< y (mod x y)))))
+
+;gen?
+(defthm equal-of-mod-same
+  (implies (and (< 0 y)
+                (rationalp y)
+                (rationalp x))
+           (not (equal y (mod x y)))))
+
+;two ways of saying that i is odd
+(defthm equal-of-+-1-and-*-2-of-floor-2
+  (implies (integerp i)
+           (equal (equal i (+ 1 (* 2 (floor i 2))))
+                  (equal 1 (mod i 2))))
+  :hints (("Goal" :in-theory (enable mod))))

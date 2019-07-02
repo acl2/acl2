@@ -50,33 +50,33 @@
 
 ;; pretty powerful
 (defthmd floor-normalize-denominator
-  (implies (syntaxp (not (equal j ''1)))
+  (implies (syntaxp (not (equal j ''1))) ;prevent loops
            (equal (floor i j)
                   (floor (/ i j) 1)))
   :hints (("Goal" :in-theory (enable floor))))
 
-;rename params
 (defthm floor-weak-monotone
-  (implies (and (<= x1 x2)
-                (rationalp x1)
-                (rationalp x2)
-                (rationalp y)
-                (< 0 y) ;gen?
-                )
-           (<= (floor x1 y) (floor x2 y)))
+  (implies (and (<= i1 i2)
+                (<= 0 j)
+                (rationalp i1)
+                (rationalp i2)
+                (rationalp j))
+           (<= (floor i1 j) (floor i2 j)))
   :hints (("Goal" :in-theory (e/d (floor <=-of-*-and-*-same-linear)
                                   (nonnegative-integer-quotient-lower-bound-linear2))
+           :cases ((rationalp i2))
            :use ((:instance nonnegative-integer-quotient-lower-bound-linear2
-                            (i (numerator (* x2 (/ y))))
-                            (j (denominator (* x2 (/ y)))))
+                            (i (numerator (* i2 (/ j))))
+                            (j (denominator (* i2 (/ j)))))
                  (:instance nonnegative-integer-quotient-lower-bound-linear2
-                            (i (- (numerator (* x1 (/ y)))))
-                            (j (denominator (* x1 (/ y)))))))))
+                            (i (- (numerator (* i1 (/ j)))))
+                            (j (denominator (* i1 (/ j)))))))))
 
 (defthmd floor-when-multiple
   (implies (integerp (* i (/ j)))
            (equal (floor i j)
-                  (/ i j))) :hints (("Goal" :in-theory (enable floor))))
+                  (/ i j)))
+  :hints (("Goal" :in-theory (enable floor))))
 
 ;if n is an integer in the appropriate range, then it *is* the floor
 (defthmd floor-unique
@@ -92,14 +92,13 @@
 
 ;disable?
 (defthm floor-unique-equal-version
-  (implies (and (integerp n) ;move to conclusion
-                (<= n (/ i j))
+  (implies (and (<= n (/ i j))
                 (< (+ -1 (/ i j)) n)
                 (< 0 j)
                 (rationalp i)
                 (rationalp j))
            (equal (equal (floor i j) n)
-                  t))
+                  (integerp n)))
   :hints (("Goal" :use (:instance floor-unique)
            :in-theory (disable floor-unique))))
 
@@ -113,12 +112,11 @@
   :hints (("Goal" :in-theory (enable floor))))
 
 ;; In this version, we have multiplied through by j.
-(defthmd my-floor-lower-bound-alt
+(defthm my-floor-lower-bound-alt
   (implies (and (rationalp i)
                 (rationalp j)
                 (< 0 j))
-           (< (+ (- j) i) (* j (floor i j))))
-  :rule-classes (:rewrite (:linear :trigger-terms ((* j (floor i j)))))
+           (< i (+ j (* j (floor i j)))))
   :hints (("Goal"
            :use ((:instance my-floor-lower-bound)
                  (:instance <-of-*-and-*-cancel
@@ -128,10 +126,19 @@
            :in-theory (disable my-floor-lower-bound
                                <-of-*-and-*-cancel))))
 
+(defthm my-floor-lower-bound-alt-linear
+  (implies (and (rationalp i)
+                (rationalp j)
+                (< 0 j))
+           (< i (+ j (* j (floor i j)))))
+  :rule-classes ((:linear :trigger-terms ((* j (floor i j)))))
+  :hints (("Goal" :by my-floor-lower-bound-alt)))
+
 (defthmd my-floor-upper-bound ;floor-upper-bound is a theorem in rtl
   (implies (and (rationalp i)
                 (rationalp j))
-           (<= (floor i j) (/ i j)))
+           ;; the phrasing of the * term matches our normal form
+           (<= (floor i j) (* i (/ j))))
   :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-upper-bound-linear
@@ -141,6 +148,13 @@
            (<= (floor i j) (* i (/ j))))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-upper-bound-strong-linear
+  (implies (and (not (integerp (* (/ j) i)))
+                (rationalp i)
+                (rationalp j))
+           (< (floor i j) (* (/ j) i)))
+  :rule-classes ((:linear :backchain-limit-lst (0 nil nil))))
 
 ;; In this version, we have multiplied through by j.
 (defthmd my-floor-upper-bound-alt
@@ -252,25 +266,26 @@
                          (floor i2 j)))))
     :hints (("Goal" :do-not '(generalize eliminate-destructors)))))
 
-;;compare to floor-of-+-when-mult-arg1 etc
-(defthm cancel-floor-+-part-1
-  (implies (and (equal i (/ x z))
+;could be expensive
+(defthm floor-of-+-when-mult-arg1
+  (implies (and (equal i (/ i1 j)) ; binds i
                 (integerp i)
-                (rationalp y)
-                (rationalp z))
-           (equal (floor (+ x y) z)
-                  (+ i (floor y z))))
-  :hints (("Goal" :cases ((and (acl2-numberp y) (acl2-numberp x))
-                          (and (acl2-numberp y) (not (acl2-numberp x)))
-                          (and (not (acl2-numberp y)) (not (acl2-numberp x))))
+                (rationalp i2)
+                (rationalp j))
+           (equal (floor (+ i1 i2) j)
+                  (+ i (floor i2 j))))
+  :hints (("Goal" :cases ((and (acl2-numberp i2) (acl2-numberp i1))
+                          (and (acl2-numberp i2) (not (acl2-numberp i1)))
+                          (and (not (acl2-numberp i2)) (not (acl2-numberp i1))))
            :in-theory (enable floor))))
 
-(defthm cancel-floor-+-part-1-alt
-  (implies (and (equal i (/ x z))
+;could be expensive
+(defthm floor-of-+-when-mult-arg2
+  (implies (and (equal i (/ i2 j)) ; binds i
                 (integerp i)
-                (rationalp y)
-                (rationalp z))
-           (equal (floor (+ y x) z)
-                  (+ i (floor y z))))
-  :hints (("Goal" :use (:instance cancel-floor-+-part-1)
-           :in-theory (disable cancel-floor-+-part-1))))
+                (rationalp i1)
+                (rationalp j))
+           (equal (floor (+ i1 i2) j)
+                  (+ i (floor i1 j))))
+  :hints (("Goal" :use (:instance floor-of-+-when-mult-arg1 (i1 i2) (i2 i1))
+           :in-theory (disable floor-of-+-when-mult-arg1))))
