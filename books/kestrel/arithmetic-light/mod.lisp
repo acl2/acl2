@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; Theorem rationalp-of-mod below may not hold in ACL2(r), so for now we
-;; disable certification of this book in ACL2(r).
+;; disable certification of this book in ACL2(r):
 ; cert_param: (non-acl2r)
 
 (local (include-book "times"))
@@ -22,15 +22,15 @@
 
 (in-theory (disable mod))
 
-;drop?
-(defthm acl2-numberp-of-mod
-  (acl2-numberp (mod x y)))
+;; Note: ACL2's built-in :type-prescription rule for MOD tells us that it is an
+;; acl2-number.
 
 (defthm integerp-of-mod
-  (implies (and (integerp x)
-                (integerp y))
-           (integerp (mod x y)))
-  :hints (("Goal" :in-theory (enable mod))))
+  (implies (integerp y)
+           (equal (integerp (mod x y))
+                  (integerp (fix x))))
+  :hints (("Goal" ;:cases (integerp x)
+           :in-theory (enable mod))))
 
 (defthm integerp-of-mod-type
   (implies (and (integerp x)
@@ -62,14 +62,14 @@
   :hints (("Goal" :cases ((equal 0 y))
            :in-theory (enable mod))))
 
-(defthm mod-of-0
-  (equal (mod x 0)
-         (fix x))
-  :hints (("Goal" :in-theory (enable mod))))
-
 (defthm mod-of-0-arg1
   (equal (mod 0 y)
          0)
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthm mod-of-0-arg2
+  (equal (mod x 0)
+         (fix x))
   :hints (("Goal" :in-theory (enable mod))))
 
 ;; (mod x 1) returns the fractional part of x, which for an integer is 0.
@@ -105,37 +105,36 @@
   :hints (("Goal" :cases ((rationalp i)))))
 
 (defthm mod-when-<
-  (implies (and (< i j)
-                (<= 0 i)
-                (rationalp i)
-                (natp j) ;(<= 0 j)
-                )
-           (equal (mod i j)
-                  i))
-  :hints (("Goal" :cases ((rationalp i)))))
+  (implies (and (< x y)
+                (<= 0 x)
+                (rationalp x)
+                (rationalp y))
+           (equal (mod x y)
+                  x))
+  :hints (("Goal" :cases ((rationalp x)))))
 
 (defthmd equal-of-0-and-mod
-  (implies (and (rationalp i)
-                (rationalp j))
-           (equal (equal 0 (mod i j))
-                  (if (equal 0 j)
-                      (equal 0 i)
-                    (integerp (/ i j))))))
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (equal 0 (mod x y))
+                  (if (equal 0 y)
+                      (equal 0 x)
+                    (integerp (/ x y))))))
 
 ;; (defthm integerp-of-/-becomes-equal-of-0-and-mod
-;;   (implies (and (rationalp i)
-;;                 (rationalp j)
-;;                 (not (equal 0 j)))
-;;            (equal (integerp (/ i j))
-;;                   (equal 0 (mod i j)))))
+;;   (implies (and (rationalp x)
+;;                 (rationalp y)
+;;                 (not (equal 0 y)))
+;;            (equal (integerp (/ x y))
+;;                   (equal 0 (mod x y)))))
 
 ;todo: add alt conjunct
 (defthmd integerp-of-*-of-/-becomes-equal-of-0-and-mod
-  (implies (and (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)))
-           (equal (integerp (* (/ j) i)) ;should match things like (* 1/32 x)
-                  (equal 0 (mod i j))))
+  (implies (and (rationalp x)
+                (rationalp y)
+                (not (equal 0 y)))
+           (equal (integerp (* (/ y) x)) ;should match things like (* 1/32 x)
+                  (equal 0 (mod x y))))
   :hints (("Goal" :use (:instance equal-of-0-and-mod)
            :in-theory (disable equal-of-0-and-mod))))
 
@@ -143,31 +142,31 @@
                                 (:rewrite equal-of-0-and-mod)))
 
 (defthm mod-bound-linear-arg1
-  (implies (and (rationalp i)
-                (<= 0 i)
-                (rationalp j)
-                (<= 0 j))
-           (<= (mod i j) i))
+  (implies (and (rationalp x)
+                (<= 0 x)
+                (rationalp y)
+                (<= 0 y))
+           (<= (mod x y) x))
   :rule-classes :linear
-  :hints (("Goal" :cases ((equal j 0))
+  :hints (("Goal" :cases ((equal y 0))
            :in-theory (enable mod))))
 
 (defthm mod-bound-linear-arg2
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (< (mod i j) j))
+  (implies (and (rationalp x)
+                (rationalp y)
+                (< 0 y))
+           (< (mod x y) y))
   :rule-classes :linear
-  :hints (("Goal" :cases ((equal j 0))
+  :hints (("Goal" :cases ((equal y 0))
            :in-theory (enable mod))))
 
 (defthm equal-of-mod-same-arg1
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (equal (equal i (mod i j))
-                  (and (<= 0 i)
-                       (< i j)))))
+  (implies (and (rationalp x)
+                (rationalp y)
+                (< 0 y))
+           (equal (equal x (mod x y))
+                  (and (<= 0 x)
+                       (< x y)))))
 
 (defthm mod-of-2-when-even-cheap
   (implies (and (integerp (* 1/2 x))
@@ -222,20 +221,20 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 (defthmd mod-of-mod-when-mult
-  (implies (and (integerp (* j1 (/ j2)))
-                (rationalp j1)
-                (rationalp j2)
-                (not (equal 0 j2)))
-           (equal (mod (mod i j1) j2)
-                  (mod i j2)))
+  (implies (and (integerp (* y1 (/ y2)))
+                (rationalp y1)
+                (rationalp y2)
+                (not (equal 0 y2)))
+           (equal (mod (mod x y1) y2)
+                  (mod x y2)))
   :hints (("Goal" :in-theory (e/d (mod unicity-of-0) (integerp-of-*))
-           :use ((:instance integerp-of-* (x (* j1 (/ j2)))
-                            (y (floor i j1)))
+           :use ((:instance integerp-of-* (x (* y1 (/ y2)))
+                            (y (floor x y1)))
                  (:instance cancel-floor-+-part-1
-                            (x (* j1 (floor i j1)))
-                            (y i)
-                            (z j2)
-                            (i (* j1 (/ j2) (floor i j1))))))))
+                            (x (* y1 (floor i y1)))
+                            (y x)
+                            (z y2)
+                            (i (* y1 (/ y2) (floor x y1))))))))
 
 ;gen
 (defthm mod-of-*-of-mod
@@ -274,7 +273,8 @@
                 (not (equal y 0)))
            (equal (mod (- x) y)
                   (if (equal 0 (mod x y))
-                      0 (- y (mod x y))))))
+                      0
+                    (- y (mod x y))))))
 
 (defthm mod-of-minus-arg2
   (implies (and (rationalp x)
@@ -283,36 +283,19 @@
                   (- (mod (- x) y))))
   :hints (("Goal" :cases ((equal '0 y)))))
 
-;expensive?
-(defthmd my-mod-does-nothing ;avoids name clash in rtl
-  (implies (and (< x y)
-                (<= 0 x)
-                (rationalp x)
-                (rationalp y)
-                (<= 0 y))
-           (equal (mod x y)
-                  x)))
-
 (defthm mod-when-not-rationalp-arg1
-  (implies (and (not (rationalp i))
-                (rationalp j))
-           (equal (mod i j)
-                  (fix i)))
+  (implies (and (not (rationalp x))
+                (rationalp y))
+           (equal (mod x y)
+                  (fix x)))
   :hints (("Goal" :in-theory (enable mod))))
 
-(defthm integerp-of-mod-gen
-  (implies (integerp y)
-           (equal (integerp (mod x y))
-                  (integerp (fix x))))
-  :hints (("Goal" ;:cases (integerp x)
-           :in-theory (enable mod))))
-
 (defthm mod-when-multiple
-  (implies (and (integerp (* i (/ j)))
-                (rationalp i)
-                (rationalp j)
-                (not (equal 0 j)))
-           (equal (mod i j)
+  (implies (and (integerp (* x (/ y)))
+                (rationalp x)
+                (rationalp y)
+                (not (equal 0 y)))
+           (equal (mod x y)
                   0))
   :hints (("Goal" :in-theory (enable mod
                                      floor-when-multiple))))
@@ -379,7 +362,7 @@
                 (rationalp y)
                 (< 0 y)
                 )
-           (equal (MOD (+ (- (MOD X1 y)) x2) y)
+           (equal (mod (+ (- (mod x1 y)) x2) y)
                   (mod (+ (- x1) x2) y))))
 
 (defthm mod-of-+-of---of-mod-same-arg2
@@ -388,15 +371,23 @@
                 (rationalp y)
                 (< 0 y)
                 )
-           (equal (MOD (+ x2 (- (MOD X1 y))) y)
+           (equal (mod (+ x2 (- (mod x1 y))) y)
                   (mod (+ x2 (- x1)) y))))
 
 (defthm mod-of-+-same-arg1
-  (implies (and (integerp x)
-                (posp p))
-           (equal (mod (+ p x) p)
-                  (mod x p)))
+  (implies (and (rationalp x)
+                (rationalp y)
+                (< 0 y))
+           (equal (mod (+ y x) y)
+                  (mod x y)))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
+
+(defthm mod-of-+-same-arg2
+  (implies (and (integerp x)
+                (rationalp y)
+                (< 0 y))
+           (equal (mod (+ x y) y)
+                  (mod x y))))
 
 (defthm multiple-when-mod-0-cheap
   (implies (and (equal 0 (mod n m))
@@ -419,3 +410,11 @@
   (implies (rationalp x)
            (equal (equal 0 (mod x 1))
                   (integerp x))))
+
+(defthm mod-bound-linear-arg2-strong
+  (implies (and (integerp x)
+                (integerp y)
+                (< 0 y))
+           (<= (mod x y) (+ -1 y)))
+  :rule-classes :linear
+  :hints (("Goal" :use (:instance mod-bound-linear-arg2))))
