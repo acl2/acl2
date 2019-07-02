@@ -34,13 +34,13 @@
                 (natp i2))
            (equal (mod (mod x (expt 2 i1)) (expt 2 i2))
                   (mod x (expt 2 (min i1 i2)))))
-  :hints (("Goal" :in-theory (enable mod-of-mod-when-mult
-                                     )
+  :hints (("Goal" :in-theory (e/d (mod-of-mod-when-mult)
+                                  (mod-when-<))
            :use ((:instance mod-bound-linear-arg2
-                            (i x)
-                            (j (EXPT 2 I1))
+                            (x x)
+                            (y (EXPT 2 I1))
                             )
-                 (:instance my-mod-does-nothing
+                 (:instance mod-when-<
                            (x (mod x (expt 2 i1)))
                            (y (expt 2 i2))))
            :cases ((rationalp x)))))
