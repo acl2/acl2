@@ -373,6 +373,18 @@
      our Ethereum-independent library function for ECDSA signatures
      returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
    (xdoc::p
+    "The @($v$) component of the signature is public key recovery information.
+     Based on the discussion in @(tsee crypto::secp256k1-sign),
+     the @('small-x?') flag passed to this signing function must be @('t'),
+     so that the parity of the @($y$) coordinate suffices
+     to recover the public key.")
+   (xdoc::p
+    "[YP:(281)] requires the @($s$) component of the signature
+     to be below half of the order of the curve.
+     Based on the discussion in @(tsee crypto::secp256k1-sign),
+     the @('small-s?') flag passed to this signing function must be @('t'),
+     so that a suitable @($s$) is returned.")
+   (xdoc::p
     "This function returns the signed transaction as a high-level structure.
      This would have to be RLP-encoded (via @(tsee rlp-encode-transaction))
      to obtain something that can be sent to the Ethereum network.")
@@ -407,7 +419,7 @@
        ((mv error? message) (rlp-encode-tree 6/9-tuple))
        ((when error?) (mv :rlp (transaction 0 0 0 nil 0 nil 0 0 0)))
        (hash (keccak-256-bytes message))
-       ((mv error? even? sign-r sign-s) (secp256k1-sign hash key))
+       ((mv error? & even? sign-r sign-s) (secp256k1-sign hash key t t))
        ((when error?) (mv :ecdsa (transaction 0 0 0 nil 0 nil 0 0 0)))
        (sign-v (if (zp chain-id)
                    (if even? 28 27)
