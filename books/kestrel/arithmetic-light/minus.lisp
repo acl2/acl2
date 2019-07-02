@@ -27,6 +27,13 @@
          (fix x)))
 
 ;; The (- k) in the conclusion gets computed.
+(defthm equal-of---and-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal k (- x))
+                  (and (acl2-numberp k)
+                       (equal (fix x) (- k))))))
+
+;; The (- k) in the conclusion gets computed.
 (defthm <-of-minus-and-constant
   (implies (syntaxp (quotep k))
            (equal (< (- x) k)
