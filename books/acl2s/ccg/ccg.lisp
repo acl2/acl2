@@ -7866,11 +7866,11 @@ analysis."
  to keep them from taking too long. Of course, the trade-off is that, the more
  we limit ACL2's prover, the less powerful it becomes.</p>
 
- <p>@('Pt') can be @(':built-in-clauses'), which tells ACL2 to use only <see
- topic='@(url acl2::broken-link)'>built-in-clauses</see> analysis. This is a
- very fast, and surprisingly powerful proof technique. For example, the
- definition of Ackermann's function given in the documentation for @(see CCG)
- is solved using only this proof technique.</p>
+ <p>@('Pt') can be @(':built-in-clauses'), which tells ACL2 to use only @(see
+ built-in-clause)s analysis. This is a very fast, and surprisingly powerful
+ proof technique. For example, the definition of Ackermann's function given in
+ the documentation for @(see CCG) is solved using only this proof
+ technique.</p>
 
  <p>@('Pt') can also be of the form @('(:induction-depth n)'), where @('n') is
  a natural number. This uses the full theorem prover, but limits it in two
