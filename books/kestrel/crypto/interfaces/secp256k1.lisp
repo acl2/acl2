@@ -32,8 +32,8 @@
     ".")
    (xdoc::p
     "Currently this interface actually includes several concrete definitions.
-     These may be replaced with more abstract, constrained functions
-     at some point."))
+     Eventually these may be moved somewhere else,
+     or replaced with more abstract, constrained functions."))
   :order-subtopics t
   :default-parent t)
 
