@@ -66,63 +66,55 @@
   :parents (rlp-decoding-executable)
   :short "Possible errors when parsing or decoding RLP encodings."
   :long
-  "<p>
-   These values provide information about the reason why
-   an RLP encoding is erroneous and cannot be parsed or decoded.
-   </p>
-   <p>
-   The @(':no-bytes') error occurs
-   when starting to parse or decode a (sub)tree but no bytes are available.
-   </p>
-   <p>
-   The @(':fewer-bytes-than-...') errors occur when,
-   after successfully reading a length,
-   there are fewer bytes available than the required length.
-   The length may be a short length (i.e. below 56, part of the first byte),
-   the length of a long length (i.e. between 1 and 8, part of the first byte),
-   or a long length (i.e. a big endian length).
-   In these errors, the @('fragment') field consists of the first byte,
-   possibly followed by the big endian length bytes as applicable.
-   </p>
-   <p>
-   The @(':leading-zeros-in-long-length') errors occurs when
-   a long length has leading zeros.
-   See the discussion in @(tsee rlp-parse-tree).
-   The @('fragment') field consists of the first byte
-   followed by the big endian length.
-   </p>
-   <p>
-   The @(':non-optimal-...') errors occur when
-   the encoding is longer than it must be.
-   See the discussion in @(tsee rlp-parse-tree).
-   The @('fragment') field consists of the first byte,
-   possibly followed by the big endian length bytes as applicable.
-   </p>
-   <p>
-   Since parsing and decoding are recursive,
-   errors from subtree encodings must be propagated upward,
-   because the supertree encodings are therefore erroneous.
-   The @(':error-in-subtree') errors propagate and wrap
-   the error from a subtree.
-   Note that this makes the definition of this fixtype of errors recursive.
-   </p>
-   <p>
-   The @(':extra-bytes') errors occur only in decoding, not in parsing.
-   Parsing always returns any remaining bytes as a result,
-   while decoding requires the input bytes to have the right length.
-   The @('bytes') field of these errors consists of the extra bytes.
-   </p>
-   <p>
-   The @(':non-leaf-tree') errors occur
-   when attempting to decode a byte array (i.e. a leaf tree)
-   results in a non-leaf tree instead.
-   The @('fragment') field contains the starting byte of the encoding.
-   </p>
-   <p>
-   The @(':leading-zeros-in-scalar') errors occur
-   when attempting to decode a scalar results in
-   a byte array with leading zeros.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These values provide information about the reason why
+     an RLP encoding is erroneous and cannot be parsed or decoded.")
+   (xdoc::p
+    "The @(':no-bytes') error occurs
+     when starting to parse or decode a (sub)tree but no bytes are available.")
+   (xdoc::p
+    "The @(':fewer-bytes-than-...') errors occur when,
+     after successfully reading a length,
+     there are fewer bytes available than the required length.
+     The length may be a short length (i.e. below 56, part of the first byte),
+     the length of a long length (i.e. between 1 and 8, part of the first byte),
+     or a long length (i.e. a big endian length).
+     In these errors, the @('fragment') field consists of the first byte,
+     possibly followed by the big endian length bytes as applicable.")
+   (xdoc::p
+    "The @(':leading-zeros-in-long-length') errors occurs when
+     a long length has leading zeros.
+     See the discussion in @(tsee rlp-parse-tree).
+     The @('fragment') field consists of the first byte
+     followed by the big endian length.")
+   (xdoc::p
+    "The @(':non-optimal-...') errors occur when
+     the encoding is longer than it must be.
+     See the discussion in @(tsee rlp-parse-tree).
+     The @('fragment') field consists of the first byte,
+     possibly followed by the big endian length bytes as applicable.")
+   (xdoc::p
+    "Since parsing and decoding are recursive,
+     errors from subtree encodings must be propagated upward,
+     because the supertree encodings are therefore erroneous.
+     The @(':error-in-subtree') errors propagate and wrap
+     the error from a subtree.
+     Note that this makes the definition of this fixtype of errors recursive.")
+   (xdoc::p
+    "The @(':extra-bytes') errors occur only in decoding, not in parsing.
+     Parsing always returns any remaining bytes as a result,
+     while decoding requires the input bytes to have the right length.
+     The @('bytes') field of these errors consists of the extra bytes.")
+   (xdoc::p
+    "The @(':non-leaf-tree') errors occur
+     when attempting to decode a byte array (i.e. a leaf tree)
+     results in a non-leaf tree instead.
+     The @('fragment') field contains the starting byte of the encoding.")
+   (xdoc::p
+    "The @(':leading-zeros-in-scalar') errors occur
+     when attempting to decode a scalar results in
+     a byte array with leading zeros."))
   (:no-bytes ())
   (:fewer-bytes-than-short-length ((fragment byte-list)
                                    (required nat)

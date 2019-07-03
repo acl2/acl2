@@ -1,6 +1,6 @@
 ; Assertions
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,22 +22,21 @@
   :parents (kestrel-utilities)
   :short "A variation of @(tsee assert$) with customizable context and message."
   :long
-  "<p>
-   If the optional context and message arguments are not supplied,
-   this macro works similarly to @(tsee assert$).
-   If they are supplied and the test fails,
-   they are used to display the hard error.
-   </p>
-   <p>
-   The two optional arguments must be either both supplied or both not supplied;
-   the guard requires the message if the context is present.
-   </p>
-   <p>
-   All the arguments of this macro are evaluated.
-   The (evaluated) context must be a symbol.
-   The (evaluated) message must have type @(tsee msgp).
-   </p>
-   @(def assert?)"
+  (xdoc::topstring
+   (xdoc::p
+    "If the optional context and message arguments are not supplied,
+     this macro works similarly to @(tsee assert$).
+     If they are supplied and the test fails,
+     they are used to display the hard error.")
+   (xdoc::p
+    "The two optional arguments must be
+     either both supplied or both not supplied;
+     the guard requires the message if the context is present.")
+   (xdoc::p
+    "All the arguments of this macro are evaluated.
+     The (evaluated) context must be a symbol.
+     The (evaluated) message must have type @(tsee msgp).")
+   (xdoc::@def "assert?"))
 
   (defmacro assert? (test form &optional ctx msg)
     (declare (xargs :guard (implies ctx msg)))

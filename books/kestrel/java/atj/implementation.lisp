@@ -390,20 +390,20 @@
 (std::defaggregate atj-test
   :short "Recognize a processed test specified by the @(':tests') input."
   :long
-  "<p>
-   Each test specified by the @(':tests') input
-   must the form @('(namej termj)'),
-   where @('termj') must translate to @('(fn qc1 qc2 ...)'),
-   as explained in the documentation.
-   As the @(':tests') input is processed,
-   the information about each test is stored
-   into an aggregate of this type.
-   This aggregate stores
-   @('namej'),
-   @('fn'),
-   The list of values of the quoted constants @('qc1'), @('qc2'), etc.,
-   and the result of the ground call @('(fn qc1 qc2 ...)').
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Each test specified by the @(':tests') input
+     must the form @('(namej termj)'),
+     where @('termj') must translate to @('(fn qc1 qc2 ...)'),
+     as explained in the documentation.
+     As the @(':tests') input is processed,
+     the information about each test is stored
+     into an aggregate of this type.
+     This aggregate stores
+     @('namej'),
+     @('fn'),
+     The list of values of the quoted constants @('qc1'), @('qc2'), etc.,
+     and the result of the ground call @('(fn qc1 qc2 ...)')."))
   ((name "This is @('namej')." stringp)
    (function "This is @('fn')." symbolp)
    (arguments "This is the list of values of @('qc1'), @('qc2'), etc."
@@ -696,22 +696,20 @@
 (defval *atj-allowed-raws*
   :short "ACL2 functions with raw Lisp code that are accepted by ATJ."
   :long
-  "<p>
-   This is the whitelist mentioned in the documentation.
-   </p>
-   <p>
-   The functions in this list have no side effects
-   and their execution is functionally equivalent to
-   their @('unnormalized-body') property.
-   </p>
-   <p>
-   @(tsee return-last) is not explicitly included in this list,
-   because it is only partially whitelisted, as explained in the documentation.
-   Calls of @(tsee return-last) are handled specially in the code.
-   </p>
-   <p>
-   This whitelist will be extended as needed.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is the whitelist mentioned in the documentation.")
+   (xdoc::p
+    "The functions in this list have no side effects
+     and their execution is functionally equivalent to
+     their @('unnormalized-body') property.")
+   (xdoc::p
+    "@(tsee return-last) is not explicitly included in this list,
+     because it is only partially whitelisted,
+     as explained in the documentation.
+     Calls of @(tsee return-last) are handled specially in the code.")
+   (xdoc::p
+    "This whitelist will be extended as needed."))
   '(=
     /=
     abs
@@ -1010,10 +1008,9 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 values."
   :long
-  "<p>
-   The local variables are obtained by adding numeric indices (decimal digits)
-   after this name.
-   </p>"
+  (xdoc::topstring-p
+   "The local variables are obtained by adding numeric indices (decimal digits)
+     after this name.")
   "value"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-value-local-var*)))
@@ -1022,10 +1019,9 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 terms."
   :long
-  "<p>
-   The local variables are obtained by adding numeric indices (decimal digits)
-   after this name.
-   </p>"
+  (xdoc::topstring-p
+   "The local variables are obtained by adding numeric indices (decimal digits)
+    after this name.")
   "term"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-term-local-var*)))
@@ -1034,10 +1030,9 @@
   :short "Base name of the Java local variables used to build
           Java representations of ACL2 lambda expressions."
   :long
-  "<p>
-   The local variables are obtained by adding numeric indices (decimal digits)
-   after this name.
-   </p>"
+  (xdoc::topstring-p
+   "The local variables are obtained by adding numeric indices (decimal digits)
+    after this name.")
   "lambda"
   ///
   (assert-event (atj-string-ascii-java-identifier-p *atj-lambda-local-var*)))

@@ -155,9 +155,8 @@
 (fty::defprod bip32-ext-priv-key
   :short "Extended private keys."
   :long
-  "<p>
-   An extended private key consists of a private key and a chain code.
-   </p>"
+  (xdoc::topstring-p
+   "An extended private key consists of a private key and a chain code.")
   ((key secp256k1-priv-key)
    (chain-code bip32-chain-code))
   :layout :list
@@ -176,9 +175,8 @@
 (fty::defprod bip32-ext-pub-key
   :short "Extended public keys."
   :long
-  "<p>
-   An extended public key consists of a public key and a chain code.
-   </p>"
+  (xdoc::topstring-p
+   "An extended public key consists of a public key and a chain code.")
   ((key secp256k1-pub-key)
    (chain-code bip32-chain-code))
   :layout :list)
@@ -188,9 +186,8 @@
 (fty::deftagsum bip32-ext-key
   :short "Extended keys (private or public)."
   :long
-  "<p>
-   This is the (disjoint) union of extended private and public keys.
-   </p>"
+  (xdoc::topstring-p
+   "This is the (disjoint) union of extended private and public keys.")
   (:priv ((get bip32-ext-priv-key)))
   (:pub ((get bip32-ext-pub-key)))
   ///
@@ -963,48 +960,44 @@
 (fty::defprod bip32-key-tree
   :short "Key trees."
   :long
-  "<p>
-   In a key tree, each node is labeled by a key derived from the root key.
-   Thus, at the specification level, it suffices to have
-   the root key and the underlying index tree,
-   since all the non-root keys can be derived.
-   We require each non-root key to be valid,
-   as defined by @(tsee bip32-valid-keys-p).
-   </p>
-   <p>
-   In addition to a root key and an index tree,
-   our formalization of root keys includes a few other components.
-   These are needed in order for the keys in the tree to be serializable
-   in the manner specified in [BIP32].
-   </p>
-   <p>
-   One of these components is the depth of the root key
-   with respect to the (super)tree rooted at the master key.
-   This is 0 if this tree is rooted at the master key.
-   We require each key in this (sub)tree to have a depth below 256,
-   taking into account the depth of the root.
-   We pass the root depth to @(tsee bip32-valid-depths-p)
-   to check this condition.
-   </p>
-   <p>
-   Another component is the index of the root of this tree
-   within the (super)tree rooted at the master key.
-   This must be 0 if this tree's root is master key.
-   Otherwise, the root of this subtree is some child within the supertree,
-   and this component is the index of that child.
-   Without this component,
-   we would be unable to serialize the root of this subtree.
-   Note that the non-root nodes in the tree have known indices.
-   </p>
-   <p>
-   Yet another component is the fingerprint (consisting of 4 bytes [BIP32])
-   of the parent of the key at the root of this tree.
-   This must consist of four zeros if this root key is the master key.
-   Without this component,
-   we would be unable to serialize the root of this subtree.
-   Note that the non-root nodes in the tree have parent fingerprints
-   that can be calculated from their parent key.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "In a key tree, each node is labeled by a key derived from the root key.
+     Thus, at the specification level, it suffices to have
+     the root key and the underlying index tree,
+     since all the non-root keys can be derived.
+     We require each non-root key to be valid,
+     as defined by @(tsee bip32-valid-keys-p).")
+   (xdoc::p
+    "In addition to a root key and an index tree,
+     our formalization of root keys includes a few other components.
+     These are needed in order for the keys in the tree to be serializable
+     in the manner specified in [BIP32].")
+   (xdoc::p
+    "One of these components is the depth of the root key
+     with respect to the (super)tree rooted at the master key.
+     This is 0 if this tree is rooted at the master key.
+     We require each key in this (sub)tree to have a depth below 256,
+     taking into account the depth of the root.
+     We pass the root depth to @(tsee bip32-valid-depths-p)
+     to check this condition.")
+   (xdoc::p
+    "Another component is the index of the root of this tree
+     within the (super)tree rooted at the master key.
+     This must be 0 if this tree's root is master key.
+     Otherwise, the root of this subtree is some child within the supertree,
+     and this component is the index of that child.
+     Without this component,
+     we would be unable to serialize the root of this subtree.
+     Note that the non-root nodes in the tree have known indices.")
+   (xdoc::p
+    "Yet another component is the fingerprint (consisting of 4 bytes [BIP32])
+     of the parent of the key at the root of this tree.
+     This must consist of four zeros if this root key is the master key.
+     Without this component,
+     we would be unable to serialize the root of this subtree.
+     Note that the non-root nodes in the tree have parent fingerprints
+     that can be calculated from their parent key."))
   ((root-key bip32-ext-key)
    (root-depth byte)
    (root-index ubyte32 :reqfix (if (equal root-depth 0)

@@ -95,10 +95,9 @@
 (fty::defprod secp256k1-point
   :short "Fixtype of points on the curve."
   :long
-  "<p>
-   Points consist of two coordinates that are elements of the field.
-   We do not require the point to be on the curve for now.
-   </p>"
+  (xdoc::topstring-p
+   "Points consist of two coordinates that are elements of the field.
+    We do not require the point to be on the curve for now.")
   ((x secp256k1-field)
    (y secp256k1-field))
   :pred secp256k1-pointp

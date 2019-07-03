@@ -40,13 +40,14 @@
 (defval *base58-characters*
   :short "List of characters used in Base58 encoding."
   :long
-  "<p>
-   These characters are listed in the table in
-   <a href=\"https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart\"
-   >Section `Base58 symbol chart' of Page `Base58Check encoding' of [Wiki]</a>,
-   along with their corresponding values in base 58.
-   This list is ordered according to increasing values.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These characters are listed in the table in "
+    (xdoc::a
+     :href "https://en.bitcoin.it/wiki/Base58Check_encoding#Base58_symbol_chart"
+      "Section `Base58 symbol chart' of Page `Base58Check encoding' of [Wiki]")
+    ", along with their corresponding values in base 58.
+     This list is ordered according to increasing values."))
   (explode "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
   ///
 
@@ -59,9 +60,8 @@
 (defval *base58-zero*
   :short "Character that encodes 0 in the Base58 encoding."
   :long
-  "<p>
-   This is the first character of @(tsee *base58-characters*).
-   </p>"
+  (xdoc::topstring-p
+   "This is the first character of @(tsee *base58-characters*).")
   (car *base58-characters*)
   ///
 
