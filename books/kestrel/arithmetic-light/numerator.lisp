@@ -36,3 +36,8 @@
   (implies (integerp x)
            (equal (numerator (/ x))
                   (signum x))))
+
+(defthm numerator-of--
+  (implies (rationalp x)
+           (equal (numerator (- x))
+                  (- (numerator x)))))

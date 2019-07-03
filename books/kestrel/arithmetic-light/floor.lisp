@@ -179,6 +179,13 @@
                   0))
   :hints (("Goal" :in-theory (enable floor))))
 
+(defthmd floor-when-rationalp-and-complex-rationalp
+  (implies (and (rationalp i)
+                (complex-rationalp j))
+           (equal (floor i j)
+                  0))
+  :hints (("Goal" :in-theory (enable floor))))
+
 (defthmd divisibility-in-terms-of-floor
   (implies (and (rationalp i)
                 (rationalp j)
@@ -289,3 +296,20 @@
                   (+ i (floor i1 j))))
   :hints (("Goal" :use (:instance floor-of-+-when-mult-arg1 (i1 i2) (i2 i1))
            :in-theory (disable floor-of-+-when-mult-arg1))))
+
+(defthm equal-of-0-and-floor
+  (implies (and (rationalp i)
+                (rationalp j)
+                (< 0 j))
+           (equal (equal 0 (floor i j))
+                  (and (< i j)
+                       (<= 0 i))))
+  :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-of-1-arg1
+  (implies (natp j) ;allow non nats somehow? ;allow negatives?
+           (equal (floor 1 j)
+                  (if (equal j 1)
+                      1
+                    0)))
+  :hints (("Goal" :cases ((equal 0 j)))))

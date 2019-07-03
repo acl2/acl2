@@ -59,3 +59,15 @@
   :hints (("Goal" :cases ((< y 0)
                           (equal y 0)
                           (< (/ y) k)))))
+
+(defthm <-of-/
+  (implies (rationalp x)
+           (equal (< 0 (/ x))
+                  (< 0 x)))
+  :hints (("Goal" :cases ((equal x 0)
+                          (< 0 x))
+           :in-theory (disable <-of-*-and-*-cancel)
+           :use (:instance <-of-*-and-*-cancel
+                           (x1 0)
+                           (x2 (/ x))
+                           (y (- x))))))

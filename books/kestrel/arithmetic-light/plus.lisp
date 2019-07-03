@@ -93,3 +93,17 @@
                   (and (acl2-numberp k1)
                        (equal (- k1 k2) (fix x)))))
   :hints (("Goal" :cases ((equal k1 (+ k2 x))))))
+
+(defthm rationalp-of-+-when-rationalp-arg1
+  (implies (rationalp x)
+           (equal (rationalp (+ x y))
+                  (rationalp (fix y))))
+  :hints (("Goal" :cases ((rationalp (fix y))))))
+
+(defthm rationalp-of-+-when-rationalp-arg2
+  (implies (rationalp y)
+           (equal (rationalp (+ x y))
+                  (rationalp (fix x))))
+  :hints (("Goal" :cases ((rationalp (fix x))))))
+
+(in-theory (disable rationalp-+)) ;the rules above are better

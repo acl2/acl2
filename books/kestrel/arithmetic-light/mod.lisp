@@ -17,6 +17,7 @@
 ; cert_param: (non-acl2r)
 
 (local (include-book "times"))
+(local (include-book "minus"))
 (local (include-book "plus"))
 (local (include-book "floor"))
 
@@ -39,8 +40,6 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable mod))))
 
-(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
-
 ;gen?
 (defthm nonneg-of-mod-type
   (implies (and (<= 0 x)
@@ -50,7 +49,7 @@
            (<= 0 (mod x y)))
   :rule-classes :type-prescription
   :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable mod))))
+           :in-theory (enable mod my-floor-upper-bound-alt))))
 
 (defthm nonneg-of-mod-type-2
   (implies (and ;(<= 0 x)
@@ -60,7 +59,7 @@
            (<= 0 (mod x y)))
   :rule-classes :type-prescription
   :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable mod))))
+           :in-theory (enable mod my-floor-upper-bound-alt))))
 
 (defthm mod-of-0-arg1
   (equal (mod 0 y)
@@ -76,7 +75,8 @@
 (defthm mod-of-1-when-integerp
   (implies (integerp x)
            (equal (mod x 1)
-                  0)))
+                  0))
+  :hints (("Goal" :in-theory (enable mod))))
 
 (defthm mod-of-1-arg1
   (implies (and (integerp j)
@@ -95,14 +95,19 @@
 (defthm rationalp-of-mod
   (implies (rationalp x)
            (rationalp (mod x y)))
-  :rule-classes (:rewrite :type-prescription))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :cases ((rationalp y)
+                          (complex-rationalp y))
+           :in-theory (enable mod
+                              floor-when-rationalp-and-complex-rationalp))))
+
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
 
 (defthm mod-of-mod-same-arg2
   (implies (and (rationalp x)
                 (rationalp y))
            (equal (mod (mod x y) y)
-                  (mod x y)))
-  :hints (("Goal" :cases ((rationalp i)))))
+                  (mod x y))))
 
 (defthm mod-when-<
   (implies (and (< x y)
@@ -416,16 +421,6 @@
            (integerp (* (/ m) n)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil))))
 
-;move?
-;not clear which is better
-(defthm mod-floor-2-expt-2
-  (implies (and (integerp a)
-                (integerp b)
-                (posp n))
-           (equal (floor (mod a (expt 2 n)) 2)
-                  (mod (floor a 2) (expt 2 (+ -1 n)))))
-  :hints (("Goal" :in-theory (enable mod expt))))
-
 (defthm equal-of-0-and-mod-of-1
   (implies (rationalp x)
            (equal (equal 0 (mod x 1))
@@ -455,8 +450,44 @@
            (not (equal y (mod x y)))))
 
 ;two ways of saying that i is odd
-(defthm equal-of-+-1-and-*-2-of-floor-2
+(defthm equal-of-+-1-and-*-2-of-floor-of-2
   (implies (integerp i)
            (equal (equal i (+ 1 (* 2 (floor i 2))))
                   (equal 1 (mod i 2))))
   :hints (("Goal" :in-theory (enable mod))))
+
+(defthmd *-of-2-and-floor-of-2
+  (implies (integerp i)
+           (equal (* 2 (floor i 2))
+                  (if (equal 1 (mod i 2))
+                      (+ -1 i)
+                    i)))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm split-low-bit
+  (implies (rationalp i)
+           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthmd floor-of-2-cases
+  (implies (integerp i)
+           (equal (floor i 2)
+                  (if (equal 0 (mod i 2))
+                      (/ i 2)
+                    (+ -1/2 (/ i 2)))))
+  :hints (("Goal" :use ((:instance floor-unique
+                                   (j 2)
+                                   (n (if (equal 0 (mod i 2))
+                                          (/ i 2)
+                                        (+ 1/2 (/ i 2)))))
+                        (:instance split-low-bit)))))
+
+;two ways of saying that i is even
+(defthmd equal-of-*-2-of-floor-of-2-same
+  (equal (equal (* 2 (floor i 2)) i)
+         (and (acl2-numberp i)
+              (equal 0 (mod i 2))))
+  :hints (("Goal" :in-theory (enable mod))))
+
+(theory-invariant (incompatible (:definition mod) (:rewrite equal-of-*-2-of-floor-of-2-same)))

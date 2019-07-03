@@ -35,3 +35,8 @@
                                rational-implies2
                                *-r-denominator-r
                                numerator-when-integerp))))
+
+(defthm denominator-of--
+  (implies (rationalp x)
+           (equal (denominator (- x))
+                  (denominator x))))
