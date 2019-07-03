@@ -189,3 +189,11 @@
            (equal (nonnegative-integer-quotient i 1)
                   i))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
+(defthm nonnegative-integer-quotient-when-<
+  (implies (and (< i j)
+                (natp i)
+                (natp j))
+           (equal (nonnegative-integer-quotient i j)
+                  0))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))

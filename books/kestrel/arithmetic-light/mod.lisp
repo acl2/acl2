@@ -215,7 +215,8 @@
                   (if (equal 0 (fix y))
                       (fix x)
                     (* y (mod (/ x y) 1)))))
-  :hints (("Goal" :in-theory (enable mod floor-normalize-denominator))))
+  :hints (("Goal" :in-theory (e/d (mod floor-normalize-denominator)
+                                  (floor-of-*-of-/-and-1)))))
 
 ;from rtl:
 (defthm mod-sum-cases

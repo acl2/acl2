@@ -16,6 +16,11 @@
 (local (include-book "expt2"))
 (local (include-book "times"))
 (local (include-book "times-and-divides"))
+(local (include-book "numerator"))
+(local (include-book "denominator"))
+(local (include-book "plus"))
+(local (include-book "minus"))
+(local (include-book "nonnegative-integer-quotient"))
 
 (defthm floor-of-expt-and-2
   (implies (posp n)
@@ -23,7 +28,8 @@
                   (expt 2 (+ -1 n))))
   :hints (("Goal" :in-theory (e/d (expt-of-+
                                    floor-normalize-denominator)
-                                  ()))))
+                                  (floor-of-times-1/2
+                                   floor-of-*-of-/-and-1)))))
 
 (defthm floor-of-times-2-expt
   (implies (integerp n)
@@ -32,6 +38,7 @@
   :hints (("Goal" :in-theory (e/d (floor-normalize-denominator
                                    expt-of-+)
                                   (;divisibility-in-terms-of-floor ;looped
+                                   floor-of-*-of-/-and-1
                                    )))))
 
 ; we shift right, chop, then shift back.  then doing it again with a smaller
@@ -46,3 +53,9 @@
                   (* (expt 2 n) (floor i (expt 2 n)))))
   :hints (("Goal" :in-theory (enable floor-when-multiple
                                      integerp-of-*-three))))
+
+(defthm floor-of--1-and-expt
+  (implies (natp n)
+           (equal (floor -1 (expt 2 n))
+                  -1))
+  :hints (("Goal" :in-theory (enable floor))))

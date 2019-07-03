@@ -18,8 +18,6 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/floor"))
 
-(local (in-theory (enable floor-normalize-denominator)))
-
 (defun expt2$inline (n)
   (declare (xargs :guard (natp n)))
   (let ((__function__ 'expt2))
