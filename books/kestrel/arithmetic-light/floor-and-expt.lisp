@@ -59,3 +59,10 @@
            (equal (floor -1 (expt 2 n))
                   -1))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-of-floor-special
+  (implies (and (integerp i)
+                (posp n))
+           (equal (floor (floor i 2) (* 1/2 (expt 2 n)))
+                  (floor i (expt 2 n))))
+  :hints (("Goal" :in-theory (enable floor-of-floor))))

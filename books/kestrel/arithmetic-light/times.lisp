@@ -350,3 +350,17 @@
                                    (x2 y2)
                                    (y x2)))
            :in-theory (disable <-of-*-and-*-cancel))))
+
+;; The proof given here avoids needing the book about /.
+(defthm equal-of-*-and-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (< 0 k2) ;gen
+                )
+           (equal (equal k1 (* k2 x))
+                  (and (acl2-numberp k1)
+                       (equal (/ k1 k2) (fix x)))))
+  :hints (("Goal" :in-theory (disable inverse-of-*
+                                      associativity-of-*)
+           :use ((:instance inverse-of-* (x k2))
+                 (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))

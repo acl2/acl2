@@ -627,12 +627,12 @@
 
 ;this is better than (part of) floor-type-1
 (defthm <-of-floor-and-0
-  (implies (and (rationalp x)
-                (rationalp y))
-           (equal (< (floor x y) 0)
-                  (or (and (< x 0) (> y 0))
-                      (and (> x 0) (< y 0)))))
-  :hints (("Goal" :use (:instance floor-type-1)
+  (implies (rationalp j)
+           (equal (< (floor i j) 0)
+                  (and (rationalp i)
+                       (or (and (< i 0) (> j 0))
+                           (and (> i 0) (< j 0))))))
+  :hints (("Goal" :use (:instance floor-type-1 (x i) (y j))
            :in-theory (disable floor-type-1))))
 
 ;reverse of DIVISIBILITY-IN-TERMS-OF-FLOOR?
@@ -843,13 +843,21 @@
 ;put in more parts of floor-type-3?
 (defthm floor-type-non-negative
   (implies (and (<= 0 i)
-                (< 0 j)
+                (<= 0 j)
                 (or (rationalp i)
                     (rationalp j)))
            (<= 0 (floor i j)))
+  :rule-classes (:type-prescription)
   :hints (("Goal" :in-theory (enable floor)
-           :cases ((rationalp j))))
-  :rule-classes ((:type-prescription)))
+           :cases ((rationalp j)))))
+
+;almost subsumed by <-of-floor-and-0
+(defthm <-of-floor-and-0-2
+  (implies (and (<= 0 i)
+                (<= 0 j)
+                (or (rationalp i)
+                    (rationalp j)))
+           (not (< (floor i j) 0))))
 
 (defthm floor-bound-hack-eric
   (IMPLIES (AND (<= 1 j)
