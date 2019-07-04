@@ -87,8 +87,8 @@
   :hints (("Goal" :cases ((< (+ k1 x) k2)))))
 
 (defthm equal-of-+-combine-constants
-  (implies (syntaxp (and (quotep k2)
-                         (quotep k1)))
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)))
            (equal (equal k1 (+ k2 x))
                   (and (acl2-numberp k1)
                        (equal (- k1 k2) (fix x)))))
