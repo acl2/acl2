@@ -45,7 +45,7 @@
                                   (x (+ x y)))
            :in-theory (disable integerp-of--))))
 
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "mod"))
 
 ;; two different ways of say an integer is odd
 (defthm integerp-of-+-of-1/2-and-*-of-1/2
