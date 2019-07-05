@@ -93,9 +93,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-andp?/andnp?/orp?/xorp?/pand/pandn/por/pxor-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -182,9 +180,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-cmpss/cmpsd-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -276,9 +272,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-cmpps-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -434,9 +428,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-cmppd-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -570,9 +562,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-comis?/ucomis?-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 

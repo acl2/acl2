@@ -200,9 +200,7 @@
 		:hints (("Goal" :in-theory (enable rime-size))))
   :body
 
-  (b* ((ctx 'x86-one-byte-jcc)
-
-       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+  (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
        ;; of this instruction.
        (badlength? (check-instruction-length start-rip temp-rip 1))
@@ -275,9 +273,7 @@
 
   ;; Note: Here opcode is the second byte of the two byte opcode.
 
-  (b* ((ctx 'x86-two-byte-jcc)
-
-       ((the (integer 0 4) offset-size)
+  (b* (((the (integer 0 4) offset-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes nil t t x86))
 
        ;; temp-rip right now points to the rel16/rel32 byte.  Add 2 or 4 to
@@ -339,9 +335,7 @@
 		:hints (("Goal" :in-theory (enable rime-size))))
   :body
 
-  (b* ((ctx 'x86-jrcxz)
-
-       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+  (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
        ;; of this instruction.
        (badlength? (check-instruction-length start-rip temp-rip 1))
@@ -409,9 +403,7 @@
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-cmovcc)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
@@ -495,9 +487,7 @@
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-setcc)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*

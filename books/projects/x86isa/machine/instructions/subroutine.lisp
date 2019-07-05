@@ -99,9 +99,7 @@
 
   :body
 
-  (b* ((ctx 'x86-call-E8-Op/En-M)
-
-       ((the (integer 0 4) offset-size)
+  (b* (((the (integer 0 4) offset-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes nil t t x86))
 
        ;; AC is not done during code fetches. Fetching rel16 or rel32 from the
@@ -176,9 +174,7 @@
 
   :body
 
-  (b* ((ctx ' x86-call-FF/2-Op/En-M)
-
-       ((the (integer 2 8) operand-size)
+  (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t t x86))
 
        (p2 (prefixes->seg prefixes))
@@ -310,9 +306,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-ret)
-
-       (rsp (read-*sp proc-mode x86))
+  (b* ((rsp (read-*sp proc-mode x86))
 
        ((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil 0 t t t x86))
@@ -443,9 +437,7 @@
 
   :body
 
-  (b* ((ctx 'x86-leave)
-
-       ((the (integer 2 8) operand-size)
+  (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rbp/ebp/bp (rgfi-size operand-size *rbp* 0 x86))

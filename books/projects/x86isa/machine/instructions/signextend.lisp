@@ -68,9 +68,7 @@
 					())))
   :body
 
-  (b* ((?ctx 'x86-cbw/cwd/cdqe)
-
-       ((the (integer 1 8) register-size)
+  (b* (((the (integer 1 8) register-size)
 	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
        ((the (integer 1 4) src-size) (ash register-size -1))
@@ -117,9 +115,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((?ctx 'x86-cwd/cdq/cqo)
-
-       ((the (integer 1 8) src-size)
+  (b* (((the (integer 1 8) src-size)
 	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 

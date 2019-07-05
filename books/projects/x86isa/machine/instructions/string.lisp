@@ -148,9 +148,7 @@
 
   :body
 
-  (b* ((ctx 'x86-movs)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -402,9 +400,7 @@
 
   :body
 
-  (b* ((ctx 'x86-cmps)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->rep prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))
@@ -640,9 +636,7 @@
 
   :body
 
-  (b* ((ctx 'x86-stos)
-
-       (group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
+  (b* ((group-1-prefix (the (unsigned-byte 8) (prefixes->seg prefixes)))
 
        ;; TODO: is the following already checked by GET-PREFIXES?
        (badlength? (check-instruction-length start-rip temp-rip 0))

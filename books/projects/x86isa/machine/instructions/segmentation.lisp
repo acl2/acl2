@@ -82,9 +82,7 @@
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-lgdt)
-
-       ((when (app-view x86))
+  (b* (((when (app-view x86))
         (!!ms-fresh :lgdt-unimplemented-in-app-view))
 
        (r/m (modr/m->r/m modr/m))
@@ -200,9 +198,7 @@
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-lidt)
-
-       ((when (app-view x86))
+  (b* (((when (app-view x86))
         (!!ms-fresh :lidt-unimplemented))
 
        (r/m (modr/m->r/m modr/m))
@@ -331,9 +327,7 @@ a non-canonical form, raise the SS exception.</p>"
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-lldt)
-
-       ((when (app-view x86))
+  (b* (((when (app-view x86))
         (!!ms-fresh :lldt-unimplemented))
 
        (r/m (modr/m->r/m modr/m))

@@ -96,9 +96,7 @@
 
   :body
 
-  (b* ((ctx 'x86-near-jmp-Op/En-D)
-
-       (byte-operand? (eql opcode #xEB)) ; T if jump short
+  (b* ((byte-operand? (eql opcode #xEB)) ; T if jump short
        ((the (integer 0 4) offset-size)
         (select-operand-size
          proc-mode byte-operand? rex-byte nil prefixes nil t t x86))
@@ -143,9 +141,7 @@
 
   :body
 
-  (b* ((ctx 'x86-near-jmp-Op/En-M)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        ;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 4 when this
        ;; function is called.
@@ -345,9 +341,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :body
 
-  (b* ((ctx 'x86-far-jmp-Op/En-M)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
 
        ;; Note that this exception was not mentioned in the Intel
@@ -858,9 +852,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
 
   :body
 
-  (b* ((ctx 'x86-loop)
-
-       ;; temp-rip right now points to the rel8 byte.  Add 1 to
+  (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
        ;; temp-rip to account for rel8 when computing the length
        ;; of this instruction.
        (badlength? (check-instruction-length start-rip temp-rip 1))

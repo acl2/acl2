@@ -203,9 +203,7 @@
 
   :body
 
-  (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -327,9 +325,7 @@
 						  signed-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-G-E)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -464,9 +460,7 @@
 						  signed-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-E-I)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        (p2 (prefixes->seg prefixes))
@@ -631,9 +625,7 @@
 							unsigned-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I)
-
-       (byte-operand? (equal 0 (logand 1 opcode)))
+  (b* ((byte-operand? (equal 0 (logand 1 opcode)))
        ((the (integer 1 8) operand-size)
 	(select-operand-size
          proc-mode byte-operand? rex-byte t prefixes nil nil nil x86))
@@ -713,9 +705,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-inc/dec-FE-FF)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -808,9 +798,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-inc/dec-4x)
-
-       ;; This is not encodable in 64-bit mode, because in that mode a 4x byte
+  (b* (;; This is not encodable in 64-bit mode, because in that mode a 4x byte
        ;; is treated as a REX prefix, not as an opcode. Thus, if we reach this
        ;; point in the code, we know that we are in 32-bit mode.
 
@@ -864,9 +852,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-not/neg-F6-F7)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 

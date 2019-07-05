@@ -140,9 +140,7 @@
 
   :body
 
-  (b* ((ctx 'x86-sal/sar/shl/shr/rcl/rcr/rol/ror)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
        (reg (modr/m->reg modr/m))
 
@@ -306,9 +304,7 @@
 
   :body
 
-  (b* ((ctx 'x86-shld/shrd)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
        (reg (modr/m->reg modr/m))
 

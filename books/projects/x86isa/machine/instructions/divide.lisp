@@ -93,9 +93,7 @@
 
   :body
 
-  (b* ((ctx 'x86-div)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        (p2 (prefixes->seg prefixes))
@@ -217,9 +215,7 @@
 
   :body
 
-  (b* ((ctx 'x86-idiv)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        (p2 (prefixes->seg prefixes))

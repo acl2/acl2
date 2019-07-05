@@ -79,9 +79,7 @@
 
   :body
 
-  (b* ((ctx 'x86-mul)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        (p2 (prefixes->seg prefixes))
@@ -189,9 +187,7 @@
 
   :body
 
-  (b* ((ctx 'x86-imul-Op/En-M)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
 
        (p2 (prefixes->seg prefixes))
@@ -278,8 +274,7 @@
 
   :body
 
-  (b* ((ctx 'x86-imul-Op/En-RM)
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -371,9 +366,7 @@
 
   :body
 
-  (b* ((ctx 'x86-imul-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 

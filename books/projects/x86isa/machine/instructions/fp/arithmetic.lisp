@@ -86,9 +86,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-adds?/subs?/muls?/divs?/maxs?/mins?-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -174,9 +172,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-addps/subps/mulps/divps/maxps/minps-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -317,9 +313,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-addpd/subpd/mulpd/divpd/maxpd/minpd-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
        (lock (eql #.*lock* (prefixes->lck prefixes)))
@@ -439,9 +433,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-sqrts?-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
        (lock (eql #.*lock* (prefixes->lck prefixes)))
@@ -524,9 +516,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-sqrtps-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
        (lock (eql #.*lock* (prefixes->lck prefixes)))
@@ -656,9 +646,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-sqrtpd-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
        (lock (eql #.*lock* (prefixes->lck prefixes)))

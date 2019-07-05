@@ -1970,7 +1970,7 @@ reference made from privilege level 3.</blockquote>"
 
 	 ,@(and returns `(:returns ,returns))
 
-	 ,body
+	 (b* ((?ctx ',name)) ,body)
 
 	 ///
 

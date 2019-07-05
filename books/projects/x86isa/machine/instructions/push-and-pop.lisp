@@ -118,9 +118,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -191,9 +189,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-Ev)
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
 		 (prefixes->adr prefixes)))
 
@@ -286,9 +282,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-I)
-
-       (byte-imm? (eql opcode #x6A))
+  (b* ((byte-imm? (eql opcode #x6A))
        ((the (integer 1 8) imm-size)
 	(select-operand-size
          proc-mode byte-imm? rex-byte t prefixes nil nil nil x86))
@@ -385,9 +379,7 @@
 
   :body
 
-  (b* ((ctx 'x86-push-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -462,9 +454,7 @@
 						 unsigned-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-pop-general-register)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -537,9 +527,7 @@
 						 unsigned-byte-p)))))
   :body
 
-  (b* ((ctx 'x86-pop-Ev)
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -648,8 +636,7 @@
 
 ;;   :body
 
-;;   (b* ((ctx 'x86-pop-Ev)
-;;        (lock (equal #.*lock* (prefixes->lck prefixes)))
+;;   (b* ((lock (equal #.*lock* (prefixes->lck prefixes)))
 ;;        ((when lock)
 ;;         (!!ms-fresh :lock-prefix prefixes))
 ;;        (p2 (prefixes->group-2-prefix prefixes))
@@ -755,9 +742,7 @@
 
   :body
 
-  (b* ((ctx 'x86-pushf)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -878,9 +863,7 @@
 
   :body
 
-  (b* ((ctx 'x86-popf)
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -983,9 +966,7 @@
   ((local (in-theory (e/d* () (not (tau-system))))))
   :body
 
-  (b* ((ctx 'x86-pusha)
-
-       ((the (integer 2 4) operand-size)
+  (b* (((the (integer 2 4) operand-size)
 	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 
@@ -1112,9 +1093,7 @@
 			   ((tau-system))))))
 
   :body
-  (b* ((ctx 'x86-popa)
-
-       ((the (integer 2 4) operand-size)
+  (b* (((the (integer 2 4) operand-size)
 	(select-operand-size
          proc-mode nil 0 nil prefixes nil nil nil x86))
 

@@ -96,9 +96,7 @@
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-bt-0f-a3)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
@@ -206,9 +204,7 @@
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-bt-0f-ba)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
 
        ((the (integer 1 8) operand-size)

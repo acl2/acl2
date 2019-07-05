@@ -84,9 +84,7 @@
 
   :body
 
-  (b* ((ctx 'x86-syscall-app-view)
-
-       (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+  (b* ((ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
@@ -224,9 +222,7 @@
 
   :body
 
-  (b* ((ctx 'x86-syscall)
-
-       (ia32-efer (n12 (msri #.*ia32_efer-idx* x86)))
+  (b* ((ia32-efer (n12 (msri #.*ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
@@ -419,9 +415,7 @@
 
   :body
 
-  (b* ((ctx 'x86-sysret)
-
-       ;; We can't *call* SYSRET in any mode other than 64-bit mode
+  (b* (;; We can't *call* SYSRET in any mode other than 64-bit mode
        ;; (including compatibility mode), but when it is called from
        ;; the 64-bit mode *without* REX.W, a mode switch to
        ;; compatibility mode is effected.  From then on, the machine

@@ -68,9 +68,7 @@
 
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-MR)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -141,9 +139,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -201,9 +197,7 @@
 					(unsigned-byte-p))))
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-FD)
-
-       ;; This instruction does not require a ModR/M byte.
+  (b* (;; This instruction does not require a ModR/M byte.
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
@@ -293,9 +287,7 @@
 					(unsigned-byte-p))))
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-TD)
-
-       ;; This instruction does not require a ModR/M byte.
+  (b* (;; This instruction does not require a ModR/M byte.
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
@@ -392,9 +384,7 @@
 
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-OI)
-
-       (byte-operand? (and (<= #xB0 opcode) ;; B0+rb
+  (b* ((byte-operand? (and (<= #xB0 opcode) ;; B0+rb
 			   (<= opcode #xB7)))
        ((the (integer 1 8) operand-size)
 	(select-operand-size
@@ -444,9 +434,7 @@
 
   :body
 
-  (b* ((ctx 'x86-mov-Op/En-MI)
-
-       (mod (modr/m->mod modr/m))
+  (b* ((mod (modr/m->mod modr/m))
        (r/m (modr/m->r/m modr/m))
 
        (p2 (prefixes->seg prefixes))
@@ -544,9 +532,7 @@
 
   :body
 
-  (b* ((ctx 'x86-lea)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
@@ -606,9 +592,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-movsx)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -695,9 +679,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-movsxd)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -793,9 +775,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-movzx)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -886,9 +866,7 @@
 
   :body
 
-  (b* ((?ctx 'x86-mov-control-regs-Op/En-MR)
-
-       ;; The r/m field specifies the GPR (destination).
+  (b* (;; The r/m field specifies the GPR (destination).
        (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        ;; MOD field is ignored.
        ;; The reg field specifies the control register (source).

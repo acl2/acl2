@@ -79,9 +79,7 @@
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-xchg)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
        (reg (modr/m->reg modr/m))
 
@@ -191,9 +189,7 @@
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((ctx 'x86-cmpxchg)
-
-       (r/m (modr/m->r/m modr/m))
+  (b* ((r/m (modr/m->r/m modr/m))
        (mod (modr/m->mod modr/m))
        (reg (modr/m->reg modr/m))
 
@@ -293,9 +289,7 @@
 
   :body
 
-  (b* ((ctx 'x86-two-byte-nop)
-
-       ;; [Shilpi] Though Intel Manuals (May 2018 edition) specifically mention
+  (b* (;; [Shilpi] Though Intel Manuals (May 2018 edition) specifically mention
        ;; in two different places (the opcode maps and the instruction
        ;; description page for NOP) that reg = 0 for this instruction, I have
        ;; not observed an x86 machine to throw a UD if reg != 0.

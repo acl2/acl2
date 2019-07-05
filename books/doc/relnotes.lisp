@@ -350,6 +350,10 @@
     (xdoc::li "@('SHRD r/m32, r32, CL')")
     (xdoc::li "@('SHRD r/m64, r64, CL')"))
 
+   (xdoc::p
+    "The @('def-inst') macro has been extended
+     to generate more boilerplate code.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "aignet" "Aignet Library"))

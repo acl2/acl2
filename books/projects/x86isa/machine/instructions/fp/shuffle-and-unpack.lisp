@@ -103,9 +103,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-shufps-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -207,9 +205,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
-  (b* ((ctx 'x86-shufpd-Op/En-RMI)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -318,9 +314,7 @@
                                          (unsigned-byte-p-of-logtail)))))))
 
   :body
-  (b* ((ctx 'x86-unpck?ps-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 
@@ -443,9 +437,7 @@
                                          (unsigned-byte-p-of-logtail)))))))
 
   :body
-  (b* ((ctx 'x86-unpck?pd-Op/En-RM)
-
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
        (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
 

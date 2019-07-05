@@ -151,8 +151,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((ctx 'x86-hlt)
-       ;; Update the x86 state:
+  (b* (;; Update the x86 state:
        ;; Intel Vol. 2A, HLT specification: Instruction pointer is saved.
        ;; "If an interrupt ... is used to resume execution after a HLT
        ;; instruction, the saved instruction pointer points to the instruction
@@ -179,9 +178,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((?ctx 'x86-cmc/clc/stc/cld/std)
-
-       (x86 (case opcode
+  (b* ((x86 (case opcode
               (#xF5 ;; CMC
                (let* ((cf (the (unsigned-byte 1)
                             (flgi :cf x86)))
@@ -213,8 +210,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   :returns (x86 x86p :hyp (x86p x86))
   :body
 
-  (b* ((?ctx 'x86-sahf)
-       ((the (unsigned-byte 16) ax) (rr16 #.*rax* x86))
+  (b* (((the (unsigned-byte 16) ax) (rr16 #.*rax* x86))
        ((the (unsigned-byte 8) ah) (ash ax -8))
        ((the (unsigned-byte 32) rflags) (rflags x86))
        ;; Bits 1, 3, and 5 of eflags are unaffected, with the values remaining
@@ -268,8 +264,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :body
 
-  (b* ((?ctx 'x86-lahf)
-       ((the (unsigned-byte 32) rflags) (rflags x86))
+  (b* (((the (unsigned-byte 32) rflags) (rflags x86))
        (cf (rflagsBits->cf rflags))
        (pf (rflagsBits->pf rflags))
        (af (rflagsBits->af rflags))
@@ -336,9 +331,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 
   :body
 
-  (b* ((ctx 'x86-rdrand)
-
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
+  (b* ((reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ((the (integer 1 8) operand-size)
         (select-operand-size
