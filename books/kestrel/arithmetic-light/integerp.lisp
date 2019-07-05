@@ -45,6 +45,12 @@
                                   (x (+ x y)))
            :in-theory (disable integerp-of--))))
 
+(defthm integerp-of-+-of---and--
+  (equal (integerp (+ (- x) (- y)))
+         (integerp (+ x y)))
+  :hints (("Goal" :use (:instance integerp-of-- (x (+ x y)))
+           :in-theory (disable integerp-of--))))
+
 (local (include-book "mod"))
 
 ;; two different ways of say an integer is odd
@@ -55,9 +61,3 @@
   :hints (("Goal" :use (:instance integerp-of-*-of-/-becomes-equal-of-0-and-mod
                                   (x (- x 1))
                                   (y 2)))))
-
-(defthm integerp-of-+-of---and--
-  (equal (integerp (+ (- x) (- y)))
-         (integerp (+ x y)))
-  :hints (("Goal" :use (:instance integerp-of-- (x (+ x y)))
-           :in-theory (disable integerp-of--))))
