@@ -15,6 +15,7 @@
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times"))
+(local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
@@ -66,3 +67,14 @@
            (equal (floor (floor i 2) (* 1/2 (expt 2 n)))
                   (floor i (expt 2 n))))
   :hints (("Goal" :in-theory (enable floor-of-floor))))
+
+(defthm floor-of-*-of-expt-and-expt
+  (implies  (and (< size size2)
+                 (natp size)
+                 (integerp size2)
+                 (integerp i))
+            (equal (floor (* i (expt 2 size))
+                          (expt 2 size2))
+                   (floor i (expt 2 (- size2 size)))))
+  :hints (("Goal" :in-theory (e/d (floor-normalize-denominator expt-of-+)
+                                  (FLOOR-OF-*-OF-/-AND-1)))))

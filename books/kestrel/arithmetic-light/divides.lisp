@@ -71,3 +71,27 @@
                            (x1 0)
                            (x2 (/ x))
                            (y (- x))))))
+
+
+    ;gen
+(defthm <-of-/-and-/
+  (implies (and (< 0 x)
+                (< 0 y)
+                (rationalp x)
+                (rationalp y))
+           (equal (< (/ x) (/ y))
+                  (< y x)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                                  (x1 (/ y))
+                                  (x2 (/ X))
+                                  (y (* x y)))
+           :in-theory (disable <-of-*-and-*-cancel))))
+
+(defthm <=-of-/-linear
+  (implies (and (<= x0 x)
+                (< 0 x)
+                (< 0 x0)
+                (rationalp x)
+                (rationalp x0))
+           (<= (/ x) (/ x0)))
+  :rule-classes :linear)
