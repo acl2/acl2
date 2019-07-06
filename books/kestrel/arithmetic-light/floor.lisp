@@ -102,7 +102,6 @@
   :hints (("Goal" :use (:instance floor-unique)
            :in-theory (disable floor-unique))))
 
-;strengthen as we did for nniq?
 ;enable?
 (defthmd my-floor-lower-bound ;floor-lower-bound is a theorem in rtl
   (implies (and (rationalp i)
@@ -1044,3 +1043,20 @@
   :hints (("Goal" :in-theory (enable floor))))
 
 (theory-invariant (incompatible (:rewrite floor-of-*-of-/-and-1) (:rewrite floor-normalize-denominator)))
+
+(defthmd my-floor-lower-bound-2
+  (implies (and (integerp i)
+                (<= 0 i) ;gen
+                (posp j))
+           (<= (+ -1 (/ i j) (/ j)) (floor i j)))
+  :rule-classes ((:linear :trigger-terms ((floor i j))))
+  :hints (("Goal"
+           :use (<=-of-denominator-of-*-of-/
+                 (:instance <=-of-/-linear
+                            (x0 (DENOMINATOR (* I (/ J))))
+                            (x (* I (/ J))))
+                 (:instance nonnegative-integer-quotient-lower-bound-linear2
+                            (i (NUMERATOR (* I (/ J))))
+                            (j (DENOMINATOR (* I (/ J))))))
+           :in-theory (e/d (floor)
+                           (<=-of-denominator-of-*-of-/)))))

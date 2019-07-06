@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "floor"))
+(local (include-book "floor-and-expt"))
 (local (include-book "mod"))
 (local (include-book "expt2"))
 (local (include-book "times"))
@@ -112,3 +114,35 @@
                            (y (expt 2 (+ -1 n))))
            :in-theory (e/d (equal-of-0-and-mod expt-of-+)
                            (integerp-of-*)))))
+
+(local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
+
+(local
+ (defthm mod-of-*-of-expt-and-expt-bound-helper
+   (implies (and (< size size2)
+                 (natp size)
+                 (integerp size2)
+                 (integerp i)
+                 (<= 0 i) ;dropped below
+                 )
+            (<= (mod (* i (expt 2 size))
+                     (expt 2 size2))
+                (- (expt 2 size2)
+                   (expt 2 size))))
+   :hints (("Goal" :in-theory (enable mod my-floor-lower-bound-2)
+            :use (:instance my-floor-lower-bound-2
+                            (i i)
+                            (j (expt 2 (+ (- size) size2))))))))
+
+(defthm mod-of-*-of-expt-and-expt-bound
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2)
+                (integerp i))
+           (<= (mod (* i (expt 2 size))
+                    (expt 2 size2))
+               (- (expt 2 size2)
+                  (expt 2 size))))
+  :hints (("Goal" :use (:instance mod-of-*-of-expt-and-expt-bound-helper
+                                  (i (mod i (expt 2 size2))))
+           :in-theory (disable mod-of-*-of-expt-and-expt-bound-helper))))
