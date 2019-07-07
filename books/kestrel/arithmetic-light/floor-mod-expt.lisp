@@ -19,8 +19,9 @@
 (local (include-book "times"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-(local (include-book "floor-and-expt"))
 (local (include-book "mod"))
+(local (include-book "floor-and-expt"))
+(local (include-book "mod-and-expt"))
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
 
 ;not clear which is better
@@ -67,3 +68,18 @@
                   (floor (mod j (expt 2 n)) 2)))
   :hints (("Goal" :use (:instance mod-of-floor-of-2-and-expt-of-one-less)
            :in-theory (e/d () (mod-of-floor-of-2-and-expt-of-one-less)))))
+
+(local
+ (defthm not-equal-when-even-and-odd
+   (implies (and (integerp (* 1/2 x))
+                 (not (integerp (* 1/2 y))))
+            (not (equal x y)))))
+
+;move
+(defthm floor-of-+-1-and-*-2-and-expt
+  (implies (and (posp n)
+                (integerp i))
+           (equal (floor (+ 1 (* 2 i)) (expt 2 n))
+                  (floor i (expt 2 (+ -1 n)))))
+  :hints (("Goal"
+           :in-theory (enable not-equal-when-even-and-odd))))
