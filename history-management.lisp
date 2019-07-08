@@ -17578,43 +17578,44 @@
         (:put
          (with-ctx-summarized
           (make-ctx-for-event event-form ctx)
-          (let* ((tbl (getpropc name 'table-alist nil wrld)))
+          (let* ((tbl (getpropc name 'table-alist nil wrld))
+                 (old-pair (assoc-equal key tbl)))
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
-              ((let ((pair (assoc-equal key tbl)))
-                 (and pair (equal val (cdr pair))))
+              ((and old-pair (equal val (cdr old-pair)))
                (stop-redundant-event ctx state))
               (t (er-let*
-                  ((pair (chk-table-guard name key val ctx wrld ens state))
-                   (wrld1 (cond
-                           ((null pair)
-                            (value wrld))
-                           (t (let ((ttags-allowed1 (car pair))
-                                    (ttags-seen1 (cdr pair)))
-                                (pprogn (f-put-global 'ttags-allowed
-                                                      ttags-allowed1
-                                                      state)
-                                        (value (global-set?
-                                                'ttags-seen
-                                                ttags-seen1
-                                                wrld
-                                                (global-val 'ttags-seen
-                                                            wrld)))))))))
-                  (install-event
-                   name
-                   event-form
-                   'table
-                   0
-                   nil
-                   (table-cltl-cmd name key val op ctx wrld)
-                   nil ; theory-related events do their own checking
-                   nil
-                   (putprop name 'table-alist
-                            (put-assoc-equal-fast
-                             key val tbl)
-                            wrld1)
-                   state))))))))
+                     ((pair (chk-table-guard name key val ctx wrld ens state))
+                      (wrld1 (cond
+                              ((null pair)
+                               (value wrld))
+                              (t (let ((ttags-allowed1 (car pair))
+                                       (ttags-seen1 (cdr pair)))
+                                   (pprogn (f-put-global 'ttags-allowed
+                                                         ttags-allowed1
+                                                         state)
+                                           (value (global-set?
+                                                   'ttags-seen
+                                                   ttags-seen1
+                                                   wrld
+                                                   (global-val 'ttags-seen
+                                                               wrld)))))))))
+                   (install-event
+                    name
+                    event-form
+                    'table
+                    0
+                    nil
+                    (table-cltl-cmd name key val op ctx wrld)
+                    nil ; theory-related events do their own checking
+                    nil
+                    (putprop name 'table-alist
+                             (if old-pair
+                                 (put-assoc-equal key val tbl)
+                               (acons key val tbl))
+                             wrld1)
+                    state))))))))
         (:clear
          (with-ctx-summarized
           (make-ctx-for-event event-form ctx)
