@@ -11,6 +11,7 @@
 (in-package "CRYPTO")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/crypto/ecurve/secp256k1-domain-parameters" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -39,15 +40,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define secp256k1-prime ()
-  :short "The prime @($p$) of the field of the curve."
-  #xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
-  :no-function t
-  ///
-  (assert-event (equal (integer-length (secp256k1-prime)) 256)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection secp256k1-field
   :short "Fixtype of the elements of the field."
   :long
@@ -58,7 +50,7 @@
     :returns (yes/no booleanp)
     :parents (secp256k1-field)
     :short "Recognizer for @(tsee secp256k1-field)."
-    (integer-range-p 0 (secp256k1-prime) x)
+    (integer-range-p 0 (ecurve::secp256k1-prime) x)
     :no-function t
     ///
 
@@ -66,8 +58,9 @@
      `(defrule natp-and-below-prime-when-secp256k1-fieldp
         (implies (secp256k1-fieldp x)
                  (and (natp x)
-                      (< x ,(secp256k1-prime))))
-        :rule-classes :tau-system)))
+                      (< x ,(ecurve::secp256k1-prime))))
+        :rule-classes :tau-system
+        :enable ecurve::secp256k1-prime)))
 
   (define secp256k1-field-fix ((x secp256k1-fieldp))
     :returns (fixed-x secp256k1-fieldp)
@@ -120,21 +113,14 @@
 (define secp256k1-generator ()
   :short "The generator @($G$) of the group of the curve."
   (secp256k1-point
-   #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
-   #x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8)
+   (ecurve::secp256k1-generator-x)
+   (ecurve::secp256k1-generator-y))
+  :guard-hints (("Goal" :in-theory (enable ecurve::secp256k1-generator-x
+                                           ecurve::secp256k1-generator-y)))
   :no-function t
   ///
   (assert-event (secp256k1-fieldp (secp256k1-point->x (secp256k1-generator))))
   (assert-event (secp256k1-fieldp (secp256k1-point->y (secp256k1-generator)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-order ()
-  :short "The order @($n$) of the group of the curve."
-  #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
-  :no-function t
-  ///
-  (assert-event (equal (integer-length (secp256k1-order)) 256)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +134,7 @@
     :returns (yes/no booleanp)
     :parents (secp256k1-priv-key)
     :short "Recognizer for @(tsee secp256k1-priv-key)."
-    (integer-range-p 1 (secp256k1-order) x)
+    (integer-range-p 1 (ecurve::secp256k1-order) x)
     :no-function t
     ///
 
@@ -156,8 +142,9 @@
      `(defrule posp-and-below-order-when-secp256k1-priv-key-p
         (implies (secp256k1-priv-key-p privkey)
                  (and (posp privkey)
-                      (< privkey ,(secp256k1-order))))
-        :rule-classes :tau-system)))
+                      (< privkey ,(ecurve::secp256k1-order))))
+        :rule-classes :tau-system
+        :enable ecurve::secp256k1-order)))
 
   (define secp256k1-priv-key-fix ((x secp256k1-priv-key-p))
     :returns (fixed-x secp256k1-priv-key-p)

@@ -233,8 +233,13 @@
     " has been extended with an (abstract) signing operation.")
 
    (xdoc::p
-    "An elliptic curve library has been added,
-     which currently contains all the secp256k1 domain parameters.")
+    "An elliptic curve sub-library has been added,
+     which currently contains all the secp256k1 domain parameters.
+     The parameters that were previously part of the "
+    (xdoc::seeurl "crypto::secp256k1-interface"
+                  "elliptic curve secp256k1 interface")
+    "have been removed from that interface,
+     which now includes the domain parameters from the new sub-library.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
