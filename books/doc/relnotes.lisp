@@ -232,6 +232,10 @@
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
 
+   (xdoc::p
+    "An elliptic curve library has been added,
+     which currently contains all the secp256k1 domain parameters.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seeurl "ethereum::ethereum" "Ethereum Library"))

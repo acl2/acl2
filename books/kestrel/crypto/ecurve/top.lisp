@@ -1,4 +1,4 @@
-; Cryptographic Library
+; Elliptic Curve Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,13 +8,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "CRYPTO")
+(in-package "ECURVE")
 
-(include-book "ecurve/top")
-(include-book "interfaces/top")
+(include-book "secp256k1-domain-parameters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc cryptography
-  :parents (acl2::kestrel-books acl2::projects)
-  :short "A library for cryptography.")
+(defxdoc elliptic-curves
+  :parents (crypto::cryptography)
+  :short "Elliptic curve cryptography.")
