@@ -17,3 +17,8 @@
 (include-book "all-unsigned-byte-p-of-reverse-list")
 (include-book "all-unsigned-byte-p-of-repeat")
 (include-book "unsigned-byte-listp")
+(include-book "len-mult-of-8p")
+(include-book "bits-to-byte")
+(include-book "bits-to-byte-little")
+(include-book "bits-to-bytes")
+(include-book "bits-to-bytes-little")
