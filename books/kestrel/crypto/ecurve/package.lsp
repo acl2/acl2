@@ -19,13 +19,18 @@
 (defpkg "ECURVE"
   (append '(;; added symbols
             assert!
+            b*
+            byte-listp
             define
+            defrule
+            defsection
             defxdoc
             defxdoc+
-            repeat
             i*
             i+
             i-
+            nat=>bebytes
+            repeat
             pfield::fep
             pfield::mul
             pfield::add

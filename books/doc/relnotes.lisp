@@ -234,7 +234,8 @@
 
    (xdoc::p
     "An elliptic curve sub-library has been added,
-     which currently contains all the secp256k1 domain parameters.
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
      The parameters that were previously part of the "
     (xdoc::seeurl "crypto::secp256k1-interface"
                   "elliptic curve secp256k1 interface")

@@ -11,6 +11,7 @@
 (in-package "ECURVE")
 
 (include-book "secp256k1-domain-parameters")
+(include-book "secp256k1-types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
