@@ -20,4 +20,7 @@
 (in-theory (disable logapp-<-0 ;we have <-of-logapp-and-0
                     logapp-0
                     associativity-of-logapp
-                    unsigned-byte-p-logapp))
+                    unsigned-byte-p-logapp
+                    logtail-0-i
+                    logtail-logapp
+                    logtail-logtail))
