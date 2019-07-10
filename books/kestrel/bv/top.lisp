@@ -13,3 +13,11 @@
 
 (include-book "unsigned-byte-p")
 (include-book "unsigned-byte-p-forced")
+(include-book "lognot")
+(include-book "logand")
+(include-book "logior")
+(include-book "logorc1")
+(include-book "logeqv")
+(include-book "logxor")
+(include-book "logapp")
+(include-book "logtail")
