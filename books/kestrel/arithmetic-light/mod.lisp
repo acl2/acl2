@@ -492,3 +492,36 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 (theory-invariant (incompatible (:definition mod) (:rewrite equal-of-*-2-of-floor-of-2-same)))
+
+(defthmd floor-when-mod-0
+  (implies (and (equal 0 (mod x y))
+                (rationalp x)
+                (rationalp y)
+                (not (equal 0 y)))
+           (equal (floor x y)
+                  (/ x y)))
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthm mod-of-*-subst-constant-arg1
+  (implies (and (equal (mod x p) free)
+                (syntaxp (and (quotep free)
+                              (not (quotep x))))
+                (integerp y)
+                (integerp x)
+                (rationalp free)
+                (integerp p)
+                (< 0 p))
+           (equal (mod (* x y) p)
+                  (mod (* free y) p))))
+
+(defthm mod-of-*-subst-constant-arg2
+  (implies (and (equal (mod x p) free)
+                (syntaxp (and (quotep free)
+                              (not (quotep x))))
+                (integerp y)
+                (integerp x)
+                (rationalp free)
+                (integerp p)
+                (< 0 p))
+           (equal (mod (* y x) p)
+                  (mod (* y free) p))))
