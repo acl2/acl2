@@ -13,8 +13,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "ihs/logops-lemmas" :dir :system)) ;for UNSIGNED-BYTE-P*
-(local (include-book "ihs/math-lemmas" :dir :system)) ;for *-PRESERVES->-FOR-NONNEGATIVES-1
+(local (include-book "../../ihs/logops-lemmas")) ;for unsigned-byte-p*
+(local (include-book "../../ihs/math-lemmas")) ;for *-preserves->-for-nonnegatives-1
 
 (in-theory (disable unsigned-byte-p))
 
