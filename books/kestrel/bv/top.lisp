@@ -23,3 +23,5 @@
 (include-book "logtail")
 (include-book "bvcat-def")
 (include-book "bvcat2")
+(include-book "getbit-def")
+(include-book "slice-def")
