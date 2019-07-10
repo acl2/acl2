@@ -21,3 +21,5 @@
 (include-book "logxor")
 (include-book "logapp")
 (include-book "logtail")
+(include-book "bvcat-def")
+(include-book "bvcat2")
