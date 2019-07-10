@@ -11,7 +11,7 @@
 (in-package "CRYPTO")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/crypto/ecurve/secp256k1-domain-parameters" :dir :system)
+(include-book "kestrel/crypto/ecurve/secp256k1-types" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -30,184 +30,9 @@
     " and "
     (xdoc::a :href "http://www.secg.org/sec2-v2.pdf"
       "Standards for Efficient Cryptography 2 (SEC 2)")
-    ".")
-   (xdoc::p
-    "Currently this interface actually includes several concrete definitions.
-     Eventually these may be moved somewhere else,
-     or replaced with more abstract, constrained functions."))
+    "."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection secp256k1-field
-  :short "Fixtype of the elements of the field."
-  :long
-  (xdoc::topstring-p
-   "These are natural numbers below @($p$).")
-
-  (define secp256k1-fieldp (x)
-    :returns (yes/no booleanp)
-    :parents (secp256k1-field)
-    :short "Recognizer for @(tsee secp256k1-field)."
-    (integer-range-p 0 (ecurve::secp256k1-prime) x)
-    :no-function t
-    ///
-
-    (make-event ; to avoid expanding SECP256K1-PRIME manually
-     `(defrule natp-and-below-prime-when-secp256k1-fieldp
-        (implies (secp256k1-fieldp x)
-                 (and (natp x)
-                      (< x ,(ecurve::secp256k1-prime))))
-        :rule-classes :tau-system
-        :enable ecurve::secp256k1-prime)))
-
-  (define secp256k1-field-fix ((x secp256k1-fieldp))
-    :returns (fixed-x secp256k1-fieldp)
-    :parents (secp256k1-field)
-    :short "Fixer for @(tsee secp256k1-field)."
-    (mbe :logic (if (secp256k1-fieldp x) x 0)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-field-fix-when-secp256k1-fieldp
-      (implies (secp256k1-fieldp x)
-               (equal (secp256k1-field-fix x)
-                      x))))
-
-  (fty::deffixtype secp256k1-field
-    :pred secp256k1-fieldp
-    :fix secp256k1-field-fix
-    :equiv secp256k1-field-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod secp256k1-point
-  :short "Fixtype of points on the curve."
-  :long
-  (xdoc::topstring-p
-   "Points consist of two coordinates that are elements of the field.
-    We do not require the point to be on the curve for now.")
-  ((x secp256k1-field)
-   (y secp256k1-field))
-  :pred secp256k1-pointp
-  :layout :list
-  :xvar p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-infinityp ((point secp256k1-pointp))
-  :returns (yes/no booleanp)
-  :short "Check if a point is
-          the point at infinity @($\\mathcal{O}$) of the curve."
-  (and (equal (secp256k1-point->x point) 0)
-       (equal (secp256k1-point->y point) 0))
-  :no-function t
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-generator ()
-  :short "The generator @($G$) of the group of the curve."
-  (secp256k1-point
-   (ecurve::secp256k1-generator-x)
-   (ecurve::secp256k1-generator-y))
-  :guard-hints (("Goal" :in-theory (enable ecurve::secp256k1-generator-x
-                                           ecurve::secp256k1-generator-y)))
-  :no-function t
-  ///
-  (assert-event (secp256k1-fieldp (secp256k1-point->x (secp256k1-generator))))
-  (assert-event (secp256k1-fieldp (secp256k1-point->y (secp256k1-generator)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection secp256k1-priv-key
-  :short "Fixtype of private keys."
-  :long
-  (xdoc::topstring-p
-   "A private key is a positive integer below @($n$).")
-
-  (define secp256k1-priv-key-p (x)
-    :returns (yes/no booleanp)
-    :parents (secp256k1-priv-key)
-    :short "Recognizer for @(tsee secp256k1-priv-key)."
-    (integer-range-p 1 (ecurve::secp256k1-order) x)
-    :no-function t
-    ///
-
-    (make-event ; to avoid expanding SECP256K1-ORDER manually
-     `(defrule posp-and-below-order-when-secp256k1-priv-key-p
-        (implies (secp256k1-priv-key-p privkey)
-                 (and (posp privkey)
-                      (< privkey ,(ecurve::secp256k1-order))))
-        :rule-classes :tau-system
-        :enable ecurve::secp256k1-order)))
-
-  (define secp256k1-priv-key-fix ((x secp256k1-priv-key-p))
-    :returns (fixed-x secp256k1-priv-key-p)
-    :parents (secp256k1-priv-key)
-    :short "Fixer for @(tsee secp256k1-priv-key)."
-    (mbe :logic (if (secp256k1-priv-key-p x) x 1)
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-priv-key-fix-when-secp256k1-priv-key-p
-      (implies (secp256k1-priv-key-p x)
-               (equal (secp256k1-priv-key-fix x)
-                      x))))
-
-  (fty::deffixtype secp256k1-priv-key
-    :pred secp256k1-priv-key-p
-    :fix secp256k1-priv-key-fix
-    :equiv secp256k1-priv-key-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection secp256k1-pub-key
-  :short "Fixtype of public keys."
-  :long
-  (xdoc::topstring-p
-   "A public key is a point that is not the point at infinity.")
-
-  (define secp256k1-pub-key-p (x)
-    :returns (yes/no booleanp)
-    :parents (secp256k1-pub-key)
-    :short "Recognizer for @(tsee secp256k1-pub-key)."
-    (and (secp256k1-pointp x)
-         (not (secp256k1-infinityp x)))
-    :no-function t
-    ///
-
-    (defrule secp256k1-pointp-when-secp256k1-pub-key-p
-      (implies (secp256k1-pub-key-p x)
-               (secp256k1-pointp x))))
-
-  (define secp256k1-pub-key-fix ((x secp256k1-pub-key-p))
-    :returns (fixed-x secp256k1-pub-key-p)
-    :parents (secp256k1-pub-key)
-    :short "Fixer for @(tsee secp256k1-pub-key)."
-    (mbe :logic (if (secp256k1-pub-key-p x) x (secp256k1-point 1 1))
-         :exec x)
-    :no-function t
-    ///
-
-    (defrule secp256k1-pub-key-fix-when-secp256k1-pub-key-p
-      (implies (secp256k1-pub-key-p x)
-               (equal (secp256k1-pub-key-fix x)
-                      x))))
-
-  (fty::deffixtype secp256k1-pub-key
-    :pred secp256k1-pub-key-p
-    :fix secp256k1-pub-key-fix
-    :equiv secp256k1-pub-key-equiv
-    :define t
-    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,14 +76,14 @@
     :hints (("Goal"
              :use (secp256k1-fixes-input-point1
                    (:instance secp256k1-fixes-input-point1
-                    (point1 point1-equiv)))
+                    (point1 ecurve::point1-equiv)))
              :in-theory (disable secp256k1-fixes-input-point1))))
 
   (defcong secp256k1-point-equiv equal (secp256k1-add point1 point2) 2
     :hints (("Goal"
              :use (secp256k1-fixes-input-point2
                    (:instance secp256k1-fixes-input-point2
-                    (point2 point2-equiv)))
+                    (point2 ecurve::point2-equiv)))
              :in-theory (disable secp256k1-fixes-input-point2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -323,7 +148,8 @@
   (defcong secp256k1-point-equiv equal (secp256k1-mul nat point) 2
     :hints (("Goal"
              :use (secp256k1-fixes-input-point
-                   (:instance secp256k1-fixes-input-point (point point-equiv)))
+                   (:instance secp256k1-fixes-input-point
+                    (point ecurve::point-equiv)))
              :in-theory (disable secp256k1-fixes-input-point)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,31 +167,6 @@
   :hooks (:fix)
   ///
   (in-theory (disable (:e secp256k1-priv-to-pub))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-point-to-bytes ((point secp256k1-pointp)
-                                  (compressp booleanp))
-  :returns (bytes byte-listp)
-  :short "Represent a point in compressed or uncompressed form."
-  :long
-  (xdoc::topstring-p
-   "This is specified in Section 2.3.3 of SEC 1.")
-  (b* (((secp256k1-point point) point))
-    (cond ((secp256k1-infinityp point) (list 0))
-          (compressp (cons (if (evenp point.y) 2 3)
-                           (nat=>bebytes 32 point.x)))
-          (t (cons 4 (append (nat=>bebytes 32 point.x)
-                             (nat=>bebytes 32 point.y))))))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule len-of-secp256k1-point-to-bytes
-    (equal (len (secp256k1-point-to-bytes point compressp))
-           (cond ((secp256k1-infinityp point) 1)
-                 (compressp 33)
-                 (t 65)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -541,7 +342,7 @@
     :hints (("Goal"
              :use (secp256k1-sign-fixes-input-priv
                    (:instance secp256k1-sign-fixes-input-priv
-                    (priv priv-equiv)))
+                    (priv ecurve::priv-equiv)))
              :in-theory (disable secp256k1-sign-fixes-input-priv))))
 
   (defcong iff equal (secp256k1-sign hash priv small-x? small-s?) 3
