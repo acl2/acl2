@@ -406,6 +406,22 @@ End of new version.
 
 |#
 
+
+#|
+
+From rtl/rel11/lib/top.lisp, where various arithmetic-5
+theorems are disabled.
+
+|#
+
+(in-theory
+ #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)|
+                |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| mod-cancel-*-const
+                cancel-mod-+ reduce-additive-constant-< ash-to-floor |(floor x 2)|
+                |(equal x (if a b c))| |(equal (if a b c) x)| |(logior 1 x)|
+                mod-theorem-one-b |(mod (- x) y)|))
+
+
 (defthm numerator-1-decreases
   (implies (rationalp n)
            (< (numerator (- n 1))
