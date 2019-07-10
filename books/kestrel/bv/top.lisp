@@ -25,3 +25,6 @@
 (include-book "bvcat2")
 (include-book "getbit-def")
 (include-book "slice-def")
+(include-book "getbit")
+(include-book "slice")
+(include-book "bvcat")
