@@ -45,7 +45,7 @@
     ". In particular, if it can be proved that
      the termination test holds on every argument value,
      then the termination test can be transformed away
-     (e.g. via @(tsee apt::simplify)),
+     (e.g. via a simplification transformation),
      obtaining a simpler, provably equivalent logic-mode function,
      which may be executable
      if the initial program-mode function was executable.
