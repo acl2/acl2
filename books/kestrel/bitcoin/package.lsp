@@ -69,14 +69,14 @@
                             crypto::ripemd-160-bytes
                             crypto::sha-256-bytes
                             crypto::secp256k1-add
-                            crypto::secp256k1-generator
-                            crypto::secp256k1-infinityp
                             crypto::secp256k1-mul
-                            crypto::secp256k1-order
-                            crypto::secp256k1-point-to-bytes
-                            crypto::secp256k1-pointp
-                            crypto::secp256k1-priv-key
-                            crypto::secp256k1-priv-key-p
                             crypto::secp256k1-priv-to-pub
-                            crypto::secp256k1-pub-key
-                            crypto::secp256k1-pub-key-p)))
+                            ecurve::secp256k1-order
+                            ecurve::secp256k1-point-generator
+                            ecurve::secp256k1-point-infinityp
+                            ecurve::secp256k1-point-to-bytes
+                            ecurve::secp256k1-pointp
+                            ecurve::secp256k1-priv-key
+                            ecurve::secp256k1-priv-key-p
+                            ecurve::secp256k1-pub-key
+                            ecurve::secp256k1-pub-key-p)))

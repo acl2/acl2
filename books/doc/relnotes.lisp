@@ -132,6 +132,21 @@
      processor that quickly removes irrelevant parts of a clause during mutual
      inductions using @('tools/flag.lisp').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
+
+   (xdoc::p
+    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
+     has been added, to introduce recursive functions
+     without having to prove termination right away.
+     There exist similar macros in the community books,
+     but the specifics of this new macro are motivated for use with "
+    (xdoc::seeurl "apt::apt" "APT")
+    ". See the "
+    (xdoc::seeurl "defarbrec-related" "related tools section")
+    " of the documentation of @(tsee defarbrec) for more information.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -234,12 +249,14 @@
 
    (xdoc::p
     "An elliptic curve sub-library has been added,
-     which currently contains all the secp256k1 domain parameters.
-     The parameters that were previously part of the "
+     which currently contains all the secp256k1 domain parameters,
+     and fixtypes for secp256k1 field elements, points, and keys.
+     The parameters and the fixtypes that were previously part of the "
     (xdoc::seeurl "crypto::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     "have been removed from that interface,
-     which now includes the domain parameters from the new sub-library.")
+     which now includes the domain parameters and the fixtypes
+     from the new sub-library.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
