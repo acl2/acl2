@@ -1875,8 +1875,9 @@
 (defun-raw time-left (stop-time ctx state)
   (let ((now (get-internal-run-time)))
     (if (< now stop-time)
-        (value (/ (- stop-time now)
-                  (coerce internal-time-units-per-second 'float)))
+        (value (rationalize
+                (/ (- stop-time now)
+                   (coerce internal-time-units-per-second 'float))))
       (time-er ctx))))
 
 (defun-raw time-check (stop-time ctx state)
