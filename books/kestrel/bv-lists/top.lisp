@@ -28,3 +28,7 @@
 (include-book "bytes-to-bits-little")
 (include-book "bvxor-list")
 (include-book "bvchop-list")
+(include-book "packbv-def")
+(include-book "packbv")
+(include-book "unpackbv")
+(include-book "packbv-and-unpackbv")
