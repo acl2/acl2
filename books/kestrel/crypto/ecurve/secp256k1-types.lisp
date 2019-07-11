@@ -96,7 +96,7 @@
    (xdoc::p
     "Since the point @($(0,0)$) does not satisfy the curve equation,
      it can be used to represent the point at infinity
-     (see @(tsee secp256k1-infinityp)."))
+     (see @(tsee secp256k1-point-infinityp)."))
   ((x secp256k1-field)
    (y secp256k1-field))
   :pred secp256k1-pointp
@@ -105,7 +105,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define secp256k1-infinityp ((point secp256k1-pointp))
+(define secp256k1-point-infinityp ((point secp256k1-pointp))
   :returns (yes/no booleanp)
   :short "Check if a secp256k1 point is
           the point at infinity @($\\mathcal{O}$) of the curve."
@@ -116,8 +116,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define secp256k1-generator ()
-  :short "The generator @($G$) of the group of the secp256k1 curve."
+(define secp256k1-point-generator ()
+  :short "The generator point @($G$) of the group of the secp256k1 curve."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -130,8 +130,10 @@
                                            secp256k1-generator-y)))
   :no-function t
   ///
-  (assert-event (secp256k1-fieldp (secp256k1-point->x (secp256k1-generator))))
-  (assert-event (secp256k1-fieldp (secp256k1-point->y (secp256k1-generator)))))
+  (assert-event
+   (secp256k1-fieldp (secp256k1-point->x (secp256k1-point-generator))))
+  (assert-event
+   (secp256k1-fieldp (secp256k1-point->y (secp256k1-point-generator)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,7 +193,7 @@
     :parents (secp256k1-pub-key)
     :short "Recognizer for @(tsee secp256k1-pub-key)."
     (and (secp256k1-pointp x)
-         (not (secp256k1-infinityp x)))
+         (not (secp256k1-point-infinityp x)))
     :no-function t
     ///
 
@@ -230,7 +232,7 @@
   (xdoc::topstring-p
    "This is specified in Section 2.3.3 of SEC 1.")
   (b* (((secp256k1-point point) point))
-    (cond ((secp256k1-infinityp point) (list 0))
+    (cond ((secp256k1-point-infinityp point) (list 0))
           (compressp (cons (if (evenp point.y) 2 3)
                            (nat=>bebytes 32 point.x)))
           (t (cons 4 (append (nat=>bebytes 32 point.x)
@@ -241,6 +243,6 @@
 
   (defrule len-of-secp256k1-point-to-bytes
     (equal (len (secp256k1-point-to-bytes point compressp))
-           (cond ((secp256k1-infinityp point) 1)
+           (cond ((secp256k1-point-infinityp point) 1)
                  (compressp 33)
                  (t 65)))))

@@ -135,7 +135,7 @@
 
     (defrule secp256k1-pub-key-p-of-mul-when-priv-key-p
       (implies (and (secp256k1-priv-key-p k)
-                    (equal point (secp256k1-generator)))
+                    (equal point (secp256k1-point-generator)))
                (secp256k1-pub-key-p (secp256k1-mul k point)))))
 
   (defcong nat-equiv equal (secp256k1-mul nat point) 1
@@ -161,7 +161,7 @@
   (xdoc::topstring-p
    "This consists in multiplying the generator by the private key.")
   (b* ((priv (mbe :logic (secp256k1-priv-key-fix priv) :exec priv))
-       (pub (secp256k1-mul priv (secp256k1-generator))))
+       (pub (secp256k1-mul priv (secp256k1-point-generator))))
     pub)
   :no-function t
   :hooks (:fix)

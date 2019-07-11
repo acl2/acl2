@@ -29,12 +29,17 @@
                            nat-equiv
                            nat=>bebytes
                            pos-fix
+                           ecurve::secp256k1-a
+                           ecurve::secp256k1-b
                            ecurve::secp256k1-fieldp
-                           ecurve::secp256k1-generator
+                           ecurve::secp256k1-point-generator
                            ecurve::secp256k1-point
+                           ecurve::secp256k1-point->x
+                           ecurve::secp256k1-point->y
                            ecurve::secp256k1-point-equiv
                            ecurve::secp256k1-point-fix
                            ecurve::secp256k1-pointp
+                           ecurve::secp256k1-prime
                            ecurve::secp256k1-priv-key-equiv
                            ecurve::secp256k1-priv-key-fix
                            ecurve::secp256k1-priv-key-p

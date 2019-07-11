@@ -71,9 +71,9 @@
                             crypto::secp256k1-add
                             crypto::secp256k1-mul
                             crypto::secp256k1-priv-to-pub
-                            ecurve::secp256k1-generator
-                            ecurve::secp256k1-infinityp
                             ecurve::secp256k1-order
+                            ecurve::secp256k1-point-generator
+                            ecurve::secp256k1-point-infinityp
                             ecurve::secp256k1-point-to-bytes
                             ecurve::secp256k1-pointp
                             ecurve::secp256k1-priv-key

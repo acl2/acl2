@@ -51,7 +51,7 @@
    (xdoc::ul
     (xdoc::li
      "@($\\mathsf{point}$) is @(tsee secp256k1-mul)
-      with point @(tsee secp256k1-generator);
+      with point @(tsee secp256k1-point-generator);
       when the argument is a private key,
       we use @(tsee secp256k1-priv-to-pub).")
     (xdoc::li
@@ -287,9 +287,9 @@
        (n (secp256k1-order))
        ((when (>= parsed-big-i-l n)) (mv t irrelevant-child))
        (child.key (secp256k1-add (secp256k1-mul parsed-big-i-l
-                                                (secp256k1-generator))
+                                                (secp256k1-point-generator))
                                  parent.key))
-       ((when (secp256k1-infinityp child.key)) (mv t irrelevant-child))
+       ((when (secp256k1-point-infinityp child.key)) (mv t irrelevant-child))
        (child.chain-code big-i-r))
     (mv nil (bip32-ext-pub-key child.key child.chain-code)))
   :no-function t
