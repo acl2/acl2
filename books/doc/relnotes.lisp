@@ -132,6 +132,21 @@
      processor that quickly removes irrelevant parts of a clause during mutual
      inductions using @('tools/flag.lisp').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seeurl "defarbrec" "Arbitrary Recursion Library"))
+
+   (xdoc::p
+    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
+     has been added, to introduce recursive functions
+     without having to prove termination right away.
+     There exist similar macros in the community books,
+     but the specifics of this new macro are motivated for use with "
+    (xdoc::seeurl "apt::apt" "APT")
+    ". See the "
+    (xdoc::seeurl "defarbrec-related" "related tools section")
+    " of the documentation of @(tsee defarbrec) for more information.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
