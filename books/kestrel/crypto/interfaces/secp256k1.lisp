@@ -36,6 +36,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection secp256k1-priv-to-pub
+  :short "Calculate a public key from a private key."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We constrain this function to return a public key unconditionally.")
+   (xdoc::p
+    "We also constrain this function to fix its argument to a private key."))
+
+  (encapsulate
+
+    (((secp256k1-priv-to-pub *) => *
+      :formals (priv)
+      :guard (secp256k1-priv-key-p priv)))
+
+    (local
+     (defun secp256k1-priv-to-pub (priv)
+       (declare (ignore priv))
+       (secp256k1-point 1 1)))
+
+    (defrule secp256k1-pub-key-p-of-secp256k1-priv-to-pub
+      (secp256k1-pub-key-p (secp256k1-priv-to-pub priv)))
+
+    (defrule secp256k1-priv-to-pub-fixes-input-priv
+      (equal (secp256k1-priv-to-pub (secp256k1-priv-key-fix priv))
+             (secp256k1-priv-to-pub priv))))
+
+  (defcong secp256k1-priv-key-equiv equal (secp256k1-priv-to-pub priv) 1
+    :hints (("Goal"
+             :use (secp256k1-priv-to-pub-fixes-input-priv
+                   (:instance secp256k1-priv-to-pub-fixes-input-priv
+                    (priv ecurve::priv-equiv)))
+             :in-theory (disable secp256k1-priv-to-pub-fixes-input-priv)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection secp256k1-add
   :short "Addition of two points on the curve."
   :long
@@ -151,22 +187,6 @@
                    (:instance secp256k1-fixes-input-point
                     (point ecurve::point-equiv)))
              :in-theory (disable secp256k1-fixes-input-point)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-priv-to-pub ((priv secp256k1-priv-key-p))
-  :returns (pub secp256k1-pub-key-p)
-  :short "Calculate a public key from a private key."
-  :long
-  (xdoc::topstring-p
-   "This consists in multiplying the generator by the private key.")
-  (b* ((priv (mbe :logic (secp256k1-priv-key-fix priv) :exec priv))
-       (pub (secp256k1-mul priv (secp256k1-point-generator))))
-    pub)
-  :no-function t
-  :hooks (:fix)
-  ///
-  (in-theory (disable (:e secp256k1-priv-to-pub))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
