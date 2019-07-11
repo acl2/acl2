@@ -32,7 +32,7 @@
     (xdoc::a :href "res/kestrel-utilities-design-notes/defarbrec.pdf"
       "these notes")
     ", which use "
-    (xdoc::a :href "res/kestrel-general-design-notes/notation.pdf"
+    (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
       "this notation")
     ".")
 
