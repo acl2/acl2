@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Main Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,11 +19,18 @@
 
 (defpkg "ECURVE"
   (append '(;; added symbols
+            all-unsigned-byte-p
             assert!
             b*
+            bebytes=>bits
+            bit-listp
+            bool-fix
+            byte-list-equiv
+            byte-list-fix
             byte-listp
             define
             defrule
+            defrulel
             defsection
             defxdoc
             defxdoc+
@@ -30,6 +38,9 @@
             i+
             i-
             nat=>bebytes
+            nat-equiv
+            patbind-unless
+            patbind-when
             repeat
             pfield::fep
             pfield::mul

@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
+(include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
 (include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 (include-book "words")

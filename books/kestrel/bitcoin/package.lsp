@@ -68,9 +68,9 @@
                             crypto::pbkdf2-hmac-sha-512
                             crypto::ripemd-160-bytes
                             crypto::sha-256-bytes
-                            crypto::secp256k1-add
-                            crypto::secp256k1-mul
-                            crypto::secp256k1-priv-to-pub
+                            ecurve::secp256k1-add
+                            ecurve::secp256k1-mul
+                            ecurve::secp256k1-priv-to-pub
                             ecurve::secp256k1-order
                             ecurve::secp256k1-point-generator
                             ecurve::secp256k1-point-infinityp

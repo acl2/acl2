@@ -1,4 +1,4 @@
-; Cryptographic Library
+; Elliptic Curve Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,19 +8,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "CRYPTO")
+(in-package "ECURVE")
 
-(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/secp256k1-types" :dir :system)
-(include-book "kestrel/utilities/bytes-as-digits" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ secp256k1-interface
-  :parents (interfaces)
-  :short "Elliptic curve secp256k1 interface."
+  :parents (crypto::interfaces)
+  :short (xdoc::topstring
+          "Elliptic curve secp256k1 "
+          (xdoc::seeurl "crypto::interfaces" "interface")
+          ".")
   :long
   (xdoc::topstring
    (xdoc::p
@@ -37,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection secp256k1-priv-to-pub
-  :short "Calculate a public key from a private key."
+  :short "Calculate a secp256k1 public key from a private key."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -67,13 +66,13 @@
     :hints (("Goal"
              :use (secp256k1-priv-to-pub-fixes-input-priv
                    (:instance secp256k1-priv-to-pub-fixes-input-priv
-                    (priv ecurve::priv-equiv)))
+                    (priv priv-equiv)))
              :in-theory (disable secp256k1-priv-to-pub-fixes-input-priv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection secp256k1-add
-  :short "Addition of two points on the curve."
+  :short "Addition of two points on the secp256k1 curve."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -112,20 +111,20 @@
     :hints (("Goal"
              :use (secp256k1-fixes-input-point1
                    (:instance secp256k1-fixes-input-point1
-                    (point1 ecurve::point1-equiv)))
+                    (point1 point1-equiv)))
              :in-theory (disable secp256k1-fixes-input-point1))))
 
   (defcong secp256k1-point-equiv equal (secp256k1-add point1 point2) 2
     :hints (("Goal"
              :use (secp256k1-fixes-input-point2
                    (:instance secp256k1-fixes-input-point2
-                    (point2 ecurve::point2-equiv)))
+                    (point2 point2-equiv)))
              :in-theory (disable secp256k1-fixes-input-point2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection secp256k1-mul
-  :short "Multiplication of a point on the curve by a number."
+  :short "Multiplication of a point on the secp256k1 curve by a number."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -185,13 +184,13 @@
     :hints (("Goal"
              :use (secp256k1-fixes-input-point
                    (:instance secp256k1-fixes-input-point
-                    (point ecurve::point-equiv)))
+                    (point point-equiv)))
              :in-theory (disable secp256k1-fixes-input-point)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection secp256k1-sign
-  :short "ECDSA deterministic signature with public key recovery."
+  :short "ECDSA deterministic signature with public key recovery for secp256k1."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -362,7 +361,7 @@
     :hints (("Goal"
              :use (secp256k1-sign-fixes-input-priv
                    (:instance secp256k1-sign-fixes-input-priv
-                    (priv ecurve::priv-equiv)))
+                    (priv priv-equiv)))
              :in-theory (disable secp256k1-sign-fixes-input-priv))))
 
   (defcong iff equal (secp256k1-sign hash priv small-x? small-s?) 3
