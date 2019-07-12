@@ -1,21 +1,19 @@
-; Cryptographic Library
+; Elliptic Curve Digital Signature Algorithm Library
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "CRYPTO")
+(in-package "ECDSA")
 
-(include-book "ecurve/top")
-(include-book "ecdsa/top")
-(include-book "interfaces/top")
+(include-book "xdoc/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc cryptography
-  :parents (acl2::kestrel-books acl2::projects)
-  :short "A library for cryptography.")
+(defxdoc elliptic-curve-digital-signature-algorithm
+  :parents (crypto::cryptography)
+  :short "Elliptic Curve Digital Signature Algorithm (ECDSA).")

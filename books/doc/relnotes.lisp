@@ -248,7 +248,7 @@
     " has been extended with an (abstract) signing operation.")
 
    (xdoc::p
-    "An elliptic curve sub-library has been added,
+    "A sub-library for elliptic curves has been added,
      which currently contains all the secp256k1 domain parameters,
      and fixtypes for secp256k1 field elements, points, and keys.
      The parameters and the fixtypes that were previously part of the "
@@ -257,6 +257,10 @@
     "have been removed from that interface,
      which now includes the domain parameters and the fixtypes
      from the new sub-library.")
+
+   (xdoc::p
+    "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
+     has been added, which will be populated soon.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
