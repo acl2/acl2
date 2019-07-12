@@ -345,9 +345,9 @@
   :hints (("Goal" :in-theory (e/d (mod) ()))))
 
 (defthm equal-of-mod-of-+-and-mod-of-+-cancel
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z)
                 (integerp p)
                 (< 0 p))
            (equal (equal (mod (+ x y) p)
