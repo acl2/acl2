@@ -135,17 +135,18 @@
   ;; Op/En: M
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (modr/m->r/m modr/m))
-       ;; Note that the reg field serves as an opcode extension for
+  (b* (;; Note that the reg field serves as an opcode extension for
        ;; this instruction.  The reg field will always be 4 when this
        ;; function is called.
-       (mod (modr/m->mod modr/m))
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
@@ -281,7 +282,9 @@
 (def-inst x86-far-jmp-Op/En-D
 
   :parents (one-byte-opcodes)
+
   :short "Absolute Indirect Jump: Far"
+
   :long "<p>Op/En: D</p>
 <p><tt>FF/5: JMP m16:16 or m16:32 or m16:64</tt></p>
 
@@ -339,12 +342,11 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                     gdtr/idtrbits->limit
                                     )))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-
-       ;; Note that this exception was not mentioned in the Intel
+  (b* (;; Note that this exception was not mentioned in the Intel
        ;; Manuals, but I think that the reason for this omission was
        ;; that the JMP instruction reference sheet mentioned direct
        ;; addressing opcodes too (which are unavailable in the 64-bit
@@ -827,6 +829,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
   ;; bits)."
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          rime-size
@@ -843,6 +846,7 @@ indirectly with a memory location \(m16:16 or m16:32 or m16:64\).</p>"
                                 not
                                 rml-size
                                 select-operand-size)))))
+
   :prepwork
   ((local (in-theory (e/d* (far-jump-guard-helpers)
                            (unsigned-byte-p

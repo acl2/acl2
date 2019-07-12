@@ -194,20 +194,20 @@
   84, 85: TEST     p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+
   :guard (and (natp operation)
 	      (<= operation 8))
+
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
@@ -315,6 +315,7 @@
   3A, 3B: CMP   c p a z s o <br/>"
 
   :operation t
+
   :guard (and (not (equal operation #.*OP-TEST*))
 	      (natp operation)
 	      (<= operation 8))
@@ -323,13 +324,12 @@
 		:hints (("Goal" :in-theory (e/d* ()
 						 (unsigned-byte-p
 						  signed-byte-p)))))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (eql 0 (the (unsigned-byte 1)
@@ -429,6 +429,7 @@
   F6-F7 (000): TEST    p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+
   :guard (and (natp operation)
 	      (<= operation 8)
 	      ;; The opcode 82H is an alternative encoding that generates #UD
@@ -437,6 +438,7 @@
 	      (if (eql opcode #x82)
                   (not (equal proc-mode #.*64-bit-mode*))
                   t))
+
   :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
 					 n16-to-i16
 					 n32-to-i32
@@ -458,12 +460,12 @@
 						  select-operand-size
 						  unsigned-byte-p
 						  signed-byte-p)))))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
 		 (prefixes->adr prefixes)))
 
@@ -585,6 +587,7 @@
     x86))
 
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-test-rAX-I
+
   :parents (one-byte-opcodes)
 
   :short "Operand Fetch and Execute for ADD, ADC, SUB, SBB, OR, AND,
@@ -609,12 +612,16 @@
   A8, A9: TEST         p   z s   \(o and c cleared, a undefined\)<br/>"
 
   :operation t
+
   :guard (and (natp operation)
 	      (<= operation 8))
+
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
 					   rme-size-of-2-to-rme16
 					   rme-size-of-4-to-rme32)))
+
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
+
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()
 						 (force (force)
@@ -703,13 +710,12 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -796,6 +802,7 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
   (b* (;; This is not encodable in 64-bit mode, because in that mode a 4x byte
@@ -850,13 +857,12 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 

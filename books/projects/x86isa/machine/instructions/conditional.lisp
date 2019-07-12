@@ -194,10 +194,12 @@
   ;; 7F    JNLE/G rel8                                  Jump if ZF = 0 and SF = OF
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (enable rime-size))))
+
   :body
 
   (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
@@ -264,6 +266,7 @@
   ;; 0F 8F JNLE/G rel32                                 Jump if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32 rime-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86)
@@ -325,6 +328,7 @@
   ;; Op/En: D
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
 					 riml32
 					 rime-size
@@ -333,6 +337,7 @@
 
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (enable rime-size))))
+
   :body
 
   (b* (;; temp-rip right now points to the rel8 byte.  Add 1 to
@@ -396,18 +401,18 @@
   ;; 0F 4F CMOVG/CMOVNLE r16/32/64, r/m16/32/64         Move if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
 
        ((the (integer 1 8) operand-size)
 	(select-operand-size
@@ -479,17 +484,18 @@
   ;; 0F 9F SETG/SETNLE r/m8                             Set if ZF = 0 and SF = OF
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
 
   :body
 
   ;; Note, opcode here denotes the second byte of the two-byte opcode.
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 

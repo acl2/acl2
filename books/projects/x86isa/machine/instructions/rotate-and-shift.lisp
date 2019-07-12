@@ -64,7 +64,9 @@
    :rule-classes (:rewrite :type-prescription)))
 
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
+
   :guard (not (equal (modr/m->reg modr/m) 6))
+
   :guard-hints (("Goal"
                  :in-theory (e/d ()
                                  (unsigned-byte-p
@@ -138,13 +140,11 @@
   D3/7: SAR r/m16/32/64, CL<br/>
   </p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-       (reg (modr/m->reg modr/m))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (byte-operand? (or (equal opcode #xC0)
@@ -302,13 +302,11 @@
    0F AD: SHRD r/m64, r64, CL<br/>
    </p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
-       (reg (modr/m->reg modr/m))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 2 8) operand-size)

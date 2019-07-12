@@ -68,6 +68,7 @@
   ;;      8          -2^63 to 2^63-1
 
   :parents (two-byte-opcodes)
+
   :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
@@ -92,15 +93,13 @@
 		     signed-byte-p
 		     unsigned-byte-p)))))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -200,14 +199,13 @@
 
   :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08)))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
 	(select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 

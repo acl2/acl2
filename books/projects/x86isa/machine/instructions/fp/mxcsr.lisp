@@ -66,12 +66,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       (p2 (prefixes->seg prefixes))
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
                  (prefixes->adr prefixes)))
 

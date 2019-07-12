@@ -85,12 +85,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (integer 4 8) operand-size)
+  :body
+
+  (b* (((the (integer 4 8) operand-size)
         (if (equal sp/dp #.*OP-DP*) 8 4))
        ((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
@@ -171,12 +170,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        ((the (unsigned-byte 128) xmm)
@@ -312,11 +310,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
+
+  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -432,11 +430,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
+
+  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -515,11 +513,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
+
+  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 
@@ -645,11 +643,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-       (lock (eql #.*lock* (prefixes->lck prefixes)))
+
+  (b* ((lock (eql #.*lock* (prefixes->lck prefixes)))
        ((when lock)
         (!!ms-fresh :lock-prefix prefixes))
 

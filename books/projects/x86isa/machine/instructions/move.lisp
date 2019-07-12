@@ -61,18 +61,17 @@
   ;; 89: MOV r/m64, r64
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
 					())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
+  (b* ((p2 (the (unsigned-byte 8) (prefixes->seg prefixes)))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -134,16 +133,16 @@
   ;; 8B: MOV r64, r/m64
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -195,6 +194,7 @@
 					 rme-size
 					 rime-size)
 					(unsigned-byte-p))))
+
   :body
 
   (b* (;; This instruction does not require a ModR/M byte.
@@ -378,6 +378,7 @@
   ;; B8 + rd: MOV r64, imm64
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (rme-size riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
@@ -426,18 +427,18 @@
   ;; C7/0: MOV r/m64, imm32
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
 					 riml32
 					 rme-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((mod (modr/m->mod modr/m))
-       (r/m (modr/m->r/m modr/m))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -526,17 +527,16 @@
   ;; LEA r64, m
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m  modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod  modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-
-       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+  (b* ((p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ;; this is the operand size
        ;; in Intel manual, Mar'17, Vol 2, Tables 3-53 and 3-54:
@@ -587,16 +587,16 @@
   ;;       MOVSXD r64, r/m32 (Move doubleword to quadword with sign-extension)
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
 
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
@@ -669,6 +669,7 @@
   ;; just an omission from the manuals, and therefore our model supports it.
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32
 					       n08-to-i08
 					       n16-to-i16
@@ -677,13 +678,12 @@
 					())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
 		   (prefixes->adr prefixes)))
 
@@ -770,16 +770,16 @@
   ;; just an omission from the manuals, and therefore our model supports it.
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
@@ -860,17 +860,18 @@
   ;; data and limits.
 
   :parents (two-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
   (b* (;; The r/m field specifies the GPR (destination).
-       (r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
        ;; MOD field is ignored.
        ;; The reg field specifies the control register (source).
-       (reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
 
        ;; *operand-size-override* and REX.W are ignored.
 

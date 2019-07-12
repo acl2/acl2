@@ -122,12 +122,11 @@
        :gen-type t
        :gen-linear t)))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
@@ -280,12 +279,11 @@
        :gen-type t
        :gen-linear t)))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) rgf-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) rgf-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))

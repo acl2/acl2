@@ -102,12 +102,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
@@ -204,12 +203,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
@@ -313,12 +311,11 @@
       :hints-l (("Goal" :in-theory (e/d* ()
                                          (unsigned-byte-p-of-logtail)))))))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))
@@ -436,12 +433,11 @@
       :hints-l (("Goal" :in-theory (e/d* ()
                                          (unsigned-byte-p-of-logtail)))))))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
        ((the (unsigned-byte 128) xmm)
         (xmmi-size 16 xmm-index x86))

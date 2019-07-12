@@ -55,6 +55,7 @@
 ;; ======================================================================
 
 (def-inst x86-lgdt
+
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
@@ -78,15 +79,14 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* (((when (app-view x86))
         (!!ms-fresh :lgdt-unimplemented-in-app-view))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception is raised
        ;; --- this is handled during dispatch; see opcode-maps for details.
@@ -172,9 +172,11 @@
 ;; ======================================================================
 
 (def-inst x86-lidt
+
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard (not (equal (modr/m->mod modr/m) #b11))
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :long
@@ -194,15 +196,14 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* (((when (app-view x86))
         (!!ms-fresh :lidt-unimplemented))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception is
        ;; raised. This is handled during dispatch --- see opcode-maps for
@@ -288,6 +289,7 @@
 ;; ======================================================================
 
 (def-inst x86-lldt
+
   :parents (privileged-opcodes two-byte-opcodes)
 
   :guard-hints (("Goal" :in-theory (e/d (riml08
@@ -302,6 +304,7 @@
                                          system-segment-descriptorbits->limit15-0
                                          system-segment-descriptorbits->limit19-16)
                                         ())))
+
   :long "<h3>Op/En = M: \[OP r/m16\]</h3>
   \[OP  M\]<br/>
   0F 00/2: LLDT r/m16<br/>
@@ -323,15 +326,14 @@ a non-canonical form, raise the SS exception.</p>"
 
   :returns (x86 x86p :hyp (x86p x86))
 
+  :modr/m t
+
   :body
 
   ;; Note: opcode is the second byte of the two-byte opcode.
 
   (b* (((when (app-view x86))
         (!!ms-fresh :lldt-unimplemented))
-
-       (r/m (modr/m->r/m modr/m))
-       (mod (modr/m->mod modr/m))
 
        ;; If the current privilege level is not 0, the #GP exception is
        ;; raised. This is handled during dispatch --- see opcode-maps for

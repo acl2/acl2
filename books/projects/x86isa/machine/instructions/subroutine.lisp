@@ -88,6 +88,7 @@
   ;; since we have no memory operands.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          rime-size-of-2-to-rime16
@@ -165,12 +166,15 @@
   ;; Note that FF/2 r/m16 and r/m32 are N.E. in 64-bit mode.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          select-address-size)
                                         ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
 
   :body
 
@@ -179,8 +183,6 @@
 
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-       (mod (modr/m->mod modr/m))
-       (r/m (modr/m->r/m modr/m))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
        ;; Note that the reg field serves as an opcode extension for
@@ -301,9 +303,11 @@
   ;;        #xC3:    NP: Near return to calling procedure
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (rime-size rme-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
   (b* ((rsp (read-*sp proc-mode x86))
@@ -425,6 +429,7 @@
   ;; 64-bit mode.
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (;;riml08
                                          ;;riml32
                                          rme-size-of-2-to-rme16

@@ -77,12 +77,11 @@
       MUL r/m32: EDX:EAX := EAX \* r/m32<br/>
       MUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
@@ -185,12 +184,11 @@
       IMUL r/m32: EDX:EAX := EAX \* r/m32<br/>
       IMUL r/m64: RDX:RAX := RAX \* r/m64<br/></p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
@@ -258,6 +256,7 @@
     x86))
 
 (def-inst x86-imul-Op/En-RM
+
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86)
@@ -272,13 +271,11 @@
       IMUL r32, r/m32: r32 := r32 \* r/m32 <br/>
       IMUL r64, r/m64: r64 := r64 \* r/m64 <br/> </p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes->adr prefixes)))
 
@@ -364,13 +361,11 @@
                                            rme-size-of-2-to-rme16
                                            rme-size-of-4-to-rme32)))
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        ((the (integer 1 8) reg/mem-size)

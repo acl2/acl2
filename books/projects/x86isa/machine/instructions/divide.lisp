@@ -78,7 +78,9 @@
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
+
   :guard (equal (modr/m->reg modr/m) 6)
+
   :guard-hints (("Goal" :in-theory (e/d () ((tau-system)))))
 
   :long
@@ -91,12 +93,11 @@
       DIV r/m32: \(EDX:EAX div r/m8\), EDX := Remainder, EAX := Quotient<br/>
       DIV r/m64: \(RDX:RAX div r/m8\), RDX := Remainder, RAX := Quotient<br/></p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))
@@ -200,6 +201,7 @@
 		:hints (("Goal" :in-theory (e/d () (force (force))))))
 
   :guard (equal (modr/m->reg modr/m) 7)
+
   :guard-hints (("Goal" :in-theory (e/d () ((tau-system)))))
 
   :long
@@ -213,12 +215,11 @@
      IDIV r/m32: \(EDX:EAX div r/m8\), EDX := Remainder, EAX := Quotient <br/>
      IDIV r/m64: \(RDX:RAX div r/m8\), RDX := Remainder, RAX := Quotient</p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-
-       (p2 (prefixes->seg prefixes))
+  (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
        (select-byte-operand (equal opcode #xF6))

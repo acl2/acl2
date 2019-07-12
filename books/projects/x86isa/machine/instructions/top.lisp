@@ -146,9 +146,11 @@ writes the final value of the instruction pointer into RIP.</p>")
   ;; F4
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
   (b* (;; Update the x86 state:
@@ -173,9 +175,11 @@ writes the final value of the instruction pointer into RIP.</p>")
   ;; FD: STD (DF set, all other flags are unaffected)
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
   (b* ((x86 (case opcode
@@ -205,9 +209,11 @@ writes the final value of the instruction pointer into RIP.</p>")
   ;; Opcode: #x9E
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
+
   :body
 
   (b* (((the (unsigned-byte 16) ax) (rr16 #.*rax* x86))
@@ -246,6 +252,7 @@ writes the final value of the instruction pointer into RIP.</p>")
   ;; Opcode: #x9F
 
   :parents (one-byte-opcodes)
+
   :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables
                                           riml08 riml32)
                                          ((tau-system)))))
@@ -329,11 +336,11 @@ writes the final value of the instruction pointer into RIP.</p>")
  href='http://software.intel.com/en-us/articles/intel-digital-random-number-generator-drng-software-implementation-guide/'>Intel's
  Digital Random Number Generator Guide</a> for more details.</p>"
 
+  :modr/m t
+
   :body
 
-  (b* ((reg (the (unsigned-byte 3) (modr/m->reg  modr/m)))
-
-       ((the (integer 1 8) operand-size)
+  (b* (((the (integer 1 8) operand-size)
         (select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 

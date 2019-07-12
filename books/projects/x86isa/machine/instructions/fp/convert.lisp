@@ -83,12 +83,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (integer 4 8) reg-size)
+  :body
+
+  (b* (((the (integer 4 8) reg-size)
         (if (logbitp #.*w* rex-byte) 8 4))
 
        ((the (integer 4 8) xmm/mem-size)
@@ -172,12 +171,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (integer 4 8) reg/mem-size)
+  :body
+
+  (b* (((the (integer 4 8) reg/mem-size)
         (if (logbitp #.*w* rex-byte) 8 4))
 
        ((the (integer 4 8) xmm-size)
@@ -263,12 +261,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (integer 4 8) xmm-size)
+  :body
+
+  (b* (((the (integer 4 8) xmm-size)
         (if (equal dp-to-sp #.*DP-TO-SP*) 4 8))
 
        ((the (integer 4 8) xmm/mem-size)
@@ -347,12 +344,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))
@@ -448,12 +444,11 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :body
-  (b* ((r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-       (mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-       (reg (the (unsigned-byte 3) (modr/m->reg modr/m)))
+  :modr/m t
 
-       ((the (unsigned-byte 4) xmm-index)
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
         (reg-index reg rex-byte #.*r*))
 
        (p2 (prefixes->seg prefixes))
