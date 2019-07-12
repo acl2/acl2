@@ -10,7 +10,7 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
+(include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
 (include-book "kestrel/crypto/interfaces/keccak-256" :dir :system)
 (include-book "bytes")
 (include-book "words")
@@ -369,14 +369,14 @@
      returns a boolean @($v$), which says even if @('t') and odd if @('nil').")
    (xdoc::p
     "The @($v$) component of the signature is public key recovery information.
-     Based on the discussion in @(tsee crypto::secp256k1-sign),
+     Based on the discussion in @(tsee ecurve::secp256k1-sign),
      the @('small-x?') flag passed to this signing function must be @('t'),
      so that the parity of the @($y$) coordinate suffices
      to recover the public key.")
    (xdoc::p
     "[YP:(281)] requires the @($s$) component of the signature
      to be below half of the order of the curve.
-     Based on the discussion in @(tsee crypto::secp256k1-sign),
+     Based on the discussion in @(tsee ecurve::secp256k1-sign),
      the @('small-s?') flag passed to this signing function must be @('t'),
      so that a suitable @($s$) is returned.")
    (xdoc::p

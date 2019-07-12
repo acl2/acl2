@@ -243,7 +243,7 @@
 
    (xdoc::p
     "The "
-    (xdoc::seeurl "crypto::secp256k1-interface"
+    (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     " has been extended with an (abstract) signing operation.")
 
@@ -252,7 +252,7 @@
      which currently contains all the secp256k1 domain parameters,
      and fixtypes for secp256k1 field elements, points, and keys.
      The parameters and the fixtypes that were previously part of the "
-    (xdoc::seeurl "crypto::secp256k1-interface"
+    (xdoc::seeurl "ecurve::secp256k1-interface"
                   "elliptic curve secp256k1 interface")
     "have been removed from that interface,
      which now includes the domain parameters and the fixtypes

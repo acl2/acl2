@@ -10,8 +10,8 @@
 
 (in-package "ECURVE")
 
-(include-book "odd-prime-fields")
 (include-book "secp256k1-domain-parameters")
+(include-book "secp256k1-interface")
 (include-book "secp256k1-types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

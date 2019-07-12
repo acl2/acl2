@@ -11,7 +11,7 @@
 (in-package "BITCOIN")
 
 (include-book "kestrel/crypto/interfaces/hmac-sha-512" :dir :system)
-(include-book "kestrel/crypto/interfaces/secp256k1" :dir :system)
+(include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
