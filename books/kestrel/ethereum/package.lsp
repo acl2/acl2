@@ -12,6 +12,8 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "kestrel/crypto/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecdsa/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,4 +56,5 @@
                              ecurve::secp256k1-point-to-bytes
                              ecurve::secp256k1-priv-key-p
                              ecurve::secp256k1-pub-key-fix
-                             ecurve::secp256k1-pub-key-p)))
+                             ecurve::secp256k1-pub-key-p
+                             ecdsa::secp256k1-sign-det-rec)))

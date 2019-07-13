@@ -260,7 +260,10 @@
 
    (xdoc::p
     "A sub-library for ECDSA (Elliptic Curve Digital Signature Algorithm)
-     has been added, which will be populated soon.")
+     has been added, which curently contains the secp256k1 signing interface,
+     which was previously part of the "
+    (xdoc::seeurl "ecurve::secp256k1-interface"
+                  "elliptic curve secp256k1 interface") ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

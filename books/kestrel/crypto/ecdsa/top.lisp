@@ -10,7 +10,7 @@
 
 (in-package "ECDSA")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "secp256k1-interface")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
