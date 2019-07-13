@@ -498,12 +498,12 @@
 
 (defun type-name (pred wrld)
   (declare (xargs :verify-guards nil))
-  (b* ((tbl (table-alist 'type-metadata-table wrld))
+  (b* ((M (table-alist 'type-metadata-table wrld))
        (ptbl (table-alist 'pred-alias-table wrld))
        (ptype (assoc-equal :type (acl2s::get-alist pred ptbl))))
     (if ptype
         (cdr ptype)
-      (rget2 :predicate pred tbl))))
+      (rget2 :predicate pred M))))
 
 ;; (defmacro table-add-event (nm key val &key (splice 't))
 ;;   "add (append if splice is t) val onto the existing entry at key in table nm. top-level-event"
@@ -604,15 +604,31 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'defdata::pred-alias-table wrld))
 
-(defun base-alias-type (type atbl)
-  (declare (xargs :verify-guards nil))
-  (b* ((atype (assoc-equal :type (acl2s::get-alist type atbl))))
+(defun sym-aalistp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (consp (car x))
+           (symbolp (caar x))
+           (symbol-alistp (cdar x))
+           (sym-aalistp (cdr x)))
+    (null x)))
+
+#|
+This is true when we have defdata available.
+
+(defdata symbol-aalist (alistof symbol symbol-alist))
+(thm (equal (sym-aalistp x) (symbol-aalistp x)))
+|#
+
+(defun base-alias-type (type A)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp A))))
+  (b* ((atype (assoc-equal :type (acl2s::get-alist type A))))
     (if (consp atype)
         (cdr atype)
       type)))
 
 (defun base-alias-pred (pred ptbl)
-  (declare (xargs :verify-guards nil))
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
   (b* ((ppred (assoc-equal :predicate (acl2s::get-alist pred ptbl))))
     (if (consp ppred)
         (cdr ppred)
@@ -621,11 +637,11 @@
 (defmacro defdata-alias (alias type &optional pred)
   `(make-event
     (b* ((pkg (current-package state))
-         (tbl (table-alist 'type-metadata-table (w state)))
-         (atbl (table-alist 'type-alias-table (w state)))
+         (M (table-alist 'type-metadata-table (w state)))
+         (A (table-alist 'type-alias-table (w state)))
          (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
-         (type (base-alias-type ',type atbl))
-         (predicate (acl2s::get-alist :predicate (acl2s::get-alist type tbl)))
+         (type (base-alias-type ',type A))
+         (predicate (acl2s::get-alist :predicate (acl2s::get-alist type M)))
          (x (intern$ "X" pkg))
          ((unless predicate)
           (er hard 'defdata-alias
@@ -646,38 +662,47 @@
                :put)
         (defmacro ,pred (,x) `(,',predicate ,,x))))))
 
-(defmacro predicate-name (tname &optional M)
+(defmacro predicate-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
-  (if M
-      `(get2 ,tname :predicate ,M)
+  (if (and A M)
+      `(get2 (base-alias-type ,tname ,A)
+             :predicate ,M)
     `(get2 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
            :predicate (table-alist 'type-metadata-table wrld))))
 
-(defmacro enumerator-name (tname &optional M)
+(defmacro enumerator-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
-  (if M
-      `(get1 :enumerator (get1 ,tname ,M))
+  (if (and A M)
+      `(get1 :enumerator
+             (get1 (base-alias-type ,tname ,A)
+                   ,M))
     `(get1 :enumerator
            (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
                  (table-alist 'type-metadata-table wrld)))))
 
-(defmacro enum/acc-name (tname &optional M)
+(defmacro enum/acc-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
-  (if M
-      `(get1 :enum/acc (get1 ,tname ,M))
+  (if (and A M)
+      `(get1 :enum/acc
+             (get1 (base-alias-type ,tname ,A)
+                   ,M))
     `(get1 :enum/acc
            (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
                  (table-alist 'type-metadata-table wrld)))))
 
-(defloop predicate-names-fn (tnames M)
+(defloop predicate-names-fn (tnames A M)
   (declare (xargs :guard (and (symbol-listp tnames)
-                              (symbol-alistp M))))
-  (for ((tname in tnames)) (collect (predicate-name tname M))))
+                              (sym-aalistp A)
+                              (sym-aalistp M))))
+  (for ((tname in tnames)) (collect (predicate-name tname A M))))
 
-(defmacro predicate-names (tnames &optional M)
-  (if M
-      `(predicate-names-fn ,tnames ,M)
-    `(predicate-names-fn ,tnames (table-alist 'type-metadata-table wrld))))
+(defmacro predicate-names (tnames &optional A M)
+  (if (and A M)
+      `(predicate-names-fn ,tnames ,A ,M)
+    `(predicate-names-fn
+      ,tnames
+      (table-alist 'type-alias-table wrld)
+      (table-alist 'type-metadata-table wrld))))
 
 (defloop possible-constant-values-p (xs)
   (for ((x in xs)) (always (possible-constant-value-p x))))
@@ -687,7 +712,8 @@
    (declare (xargs :verify-guards nil))
    (cond ((possible-constant-value-p texp) nil)
          ((proper-symbolp texp)
-          (cond ((member texp tnames) (and include-recursive-references-p (list texp)))
+          (cond ((member texp tnames)
+                 (and include-recursive-references-p (list texp)))
                 ((predicate-name texp) (list texp))
                 (t nil)))
          ((atom texp) nil) ;not possible

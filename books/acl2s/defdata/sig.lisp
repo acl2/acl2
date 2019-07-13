@@ -416,7 +416,11 @@ get as much automated polymorphic support as possible.
        (B (table-alist 'builtin-combinator-table wrld))
        (new-types (type-metadata-bases undef-tnames "DEFDATA"))
        (M (append new-types M))
-       (undef-pred-bodies (make-pred-Is undef-n-types (make-list (len undef-n-types) :initial-element 'x) nil M C B wrld))
+       (A (table-alist 'type-alias-table wrld))
+       (undef-pred-bodies
+        (make-pred-Is undef-n-types
+                      (make-list (len undef-n-types) :initial-element 'x)
+                      nil A M C B wrld))
        (undef-pred-names (make-predicate-symbol-lst undef-tnames "DEFDATA")))
 ;   in 
     (append (stitch-up-defuns undef-pred-names 
@@ -570,17 +574,17 @@ Please send this example to the implementors for considering removal of this res
             (remove-undefined (cdr map))))))
 
 
-(defun predicate-name/lambda (type M)
+(defun predicate-name/lambda (type A M)
   "find predicate characterization for type (either a symbol or a quoted
 constant). In the latter return a lambda expression"
   (declare (xargs :guard (and (or (proper-symbolp type) (possible-constant-value-p type))
                               (symbol-alistp M))))
-  (cond ((proper-symbolp type) (predicate-name type M))
+  (cond ((proper-symbolp type) (predicate-name type A M))
         ((possible-constant-value-p type) `(lambda (x) (equal x ,type)))
         (t nil)))
          
-(defloop predicate-names/lambdas (types M)
-  (for ((type in types)) (collect (predicate-name/lambda type M))))
+(defloop predicate-names/lambdas (types A M)
+  (for ((type in types)) (collect (predicate-name/lambda type A M))))
 
 
 
@@ -590,15 +594,25 @@ constant). In the latter return a lambda expression"
   (list-up-lists (strip-cars alist) (strip-cdrs alist)))
 
 (defun polypred-instantiated-pred-alist (ppred->tname-map new-types wrld)
-  (b* ((M (append (table-alist 'tvar-metadata-table wrld) new-types (table-alist 'type-metadata-table wrld)))
-       (inst-preds (predicate-names (strip-cdrs ppred->tname-map) M)))
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld)
+                  new-types
+                  (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
+       (inst-preds (predicate-names (strip-cdrs ppred->tname-map) A M)))
     (pairlis$ (strip-cars ppred->tname-map) inst-preds)))
 
 (defun functional-instantiation-list (ppred->tname-map tvar-sigma new-types kwd-alist wrld)
-  (b* ((M (append (table-alist 'tvar-metadata-table wrld) new-types (table-alist 'type-metadata-table wrld)))
+  (b* ((M (append (table-alist 'tvar-metadata-table wrld)
+                  new-types
+                  (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (A1 (pairlis$
-            (predicate-names/lambdas (acl2::sublis-var-lst *tvar-typename-alist* (strip-cars tvar-sigma)) M)
-            (predicate-names/lambdas (strip-cdrs tvar-sigma) M)))
+            (predicate-names/lambdas
+             (acl2::sublis-var-lst *tvar-typename-alist*
+                                   (strip-cars tvar-sigma))
+             A
+             M)
+            (predicate-names/lambdas (strip-cdrs tvar-sigma) A M)))
        
        (A2 (polypred-instantiated-pred-alist ppred->tname-map new-types wrld))
        (ans (union-alist2 A2 A1)) ;A2 overrides A1
@@ -630,7 +644,11 @@ constant). In the latter return a lambda expression"
 
        (fun-inst-dlist (functional-instantiation-list (remove-undefined ppred->tname-map) tvar-sigma new-types kwd-alist wrld))
 
-       (pred (predicate-name tname (append new-types (table-alist 'type-metadata-table wrld))))
+       (A (table-alist 'type-alias-table wrld))
+       (pred (predicate-name
+              tname
+              A
+              (append new-types (table-alist 'type-metadata-table wrld))))
        (disabled (remove-eq pred (union-eq (filter-proper-symbols (strip-cadrs fun-inst-dlist)) (get1 :disabled kwd-alist))))
        (disabled (set-difference-eq disabled (filter-true-lists disabled wrld))) ;hack to fix an acl2s-issue. TODO
        (enabled (and pred (list pred))) ;TODO.check later
@@ -697,14 +715,17 @@ constant). In the latter return a lambda expression"
       '()
     (b* (((cons tname al) (car M))
          (pdef (get1 :prettyified-def al))
-         ((unless pdef) (find-matches1 ptype (cdr M))) ;skip types with NIL prettyified-def
+         ((unless pdef)
+          (find-matches1 ptype (cdr M))) ;skip types with NIL prettyified-def
          ((mv yes sigma) (find-match ptype pdef)))
       (if yes
           (cons (cons tname sigma) (find-matches1 ptype (cdr M)))
         (find-matches1 ptype (cdr M))))))
       
 (defun find-matches (ptype wrld)
-  (find-matches1 ptype (table-alist 'type-metadata-table wrld)))
+  (find-matches1
+   ptype
+   (table-alist 'type-metadata-table wrld)))
 
 (defun find/make-type-name (ptexp M)
   (if (and (proper-symbolp ptexp)
@@ -715,11 +736,12 @@ constant). In the latter return a lambda expression"
 (defloop find/make-type-names (ptexps M)
   (for ((ptexp in ptexps)) (collect (find/make-type-name ptexp M))))
   
-(defun find/make-predicate-name (tname M)
-  (or (predicate-name tname M) (make-predicate-symbol tname (symbol-package-name tname))))
+(defun find/make-predicate-name (tname A M)
+  (or (predicate-name tname A M)
+      (make-predicate-symbol tname (symbol-package-name tname))))
 
-(defloop find/make-predicate-names (tnames M)
-  (for ((tname in tnames)) (collect (find/make-predicate-name tname M))))
+(defloop find/make-predicate-names (tnames A M)
+  (for ((tname in tnames)) (collect (find/make-predicate-name tname A M))))
 
 (defun instantiate-poly-sig-events-for-current-types (as rtype templ kwd-alist wrld)
   "limited/linear instantiation of poly signatures for all current types of same shape"
@@ -730,10 +752,11 @@ constant). In the latter return a lambda expression"
        (tname-IA-alst (find-matches atype wrld)) ;get type -> (alistof tvar pred)  mapping
        (M (append (table-alist 'tvar-metadata-table wrld) 
                   (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (arg-tnames (find/make-type-names (remove-names-lst as) M))
-       (arg-preds (find/make-predicate-names arg-tnames M))
+       (arg-preds (find/make-predicate-names arg-tnames A M))
        (ret-tname (find/make-type-name (remove-names rtype) M))
-       (ret-pred (find/make-predicate-name ret-tname M))
+       (ret-pred (find/make-predicate-name ret-tname A M))
        (derived-pred->poly-texp-map (cons (cons ret-pred rtype) (pairlis$ arg-preds as)))
        )
     (psig-templ-instantiation-events tname-IA-alst templ derived-pred->poly-texp-map '() kwd-alist wrld)))
@@ -744,10 +767,11 @@ constant). In the latter return a lambda expression"
 (defun make-sig-defthm-body (name arg-types ret-type kwd-alist wrld)
   (b* ((M (append (table-alist 'tvar-metadata-table wrld) 
                   (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (arg-tnames (find/make-type-names (remove-names-lst arg-types) M))
-       (arg-preds (find/make-predicate-names arg-tnames M))
+       (arg-preds (find/make-predicate-names arg-tnames A M))
        (ret-tname (find/make-type-name (remove-names ret-type) M))
-       (ret-pred (find/make-predicate-name ret-tname M))
+       (ret-pred (find/make-predicate-name ret-tname A M))
                  
 
        (x1--xk (numbered-vars 'ACL2S::X (len arg-preds)))

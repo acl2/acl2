@@ -478,12 +478,13 @@ data last modified: [2014-08-06]
        (new-constructors (delete2-key :field-pred-alist new-constructors))
        (C (append new-constructors (table-alist 'data-constructor-table wrld)))
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
        (xvar (if (member-eq 'v avoid-lst) 'v (acl2::generate-variable 'v avoid-lst nil nil wrld)))
-       (pred-body (make-pred-I ndef xvar kwd-alist M C B wrld))
-       (pred-name (predicate-name name M))
+       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
+       (pred-name (predicate-name name A M))
        (Px `(,pred-name ,xvar))
 
        ;; ;; [2017-09-19 Tue] incorporate satisfies support
@@ -494,7 +495,7 @@ data last modified: [2014-08-06]
 
        (mon-fns (all-1-arity-fns new-constructors))
        (all-conx-fns-args (all-conx-fns-args new-constructors 'x))
-       (current-preds (predicate-names (strip-cars new-types) new-types))
+       (current-preds (predicate-names (strip-cars new-types) A new-types))
        (new-fns-and-args (append (list-up-lists current-preds (make-list (len current-preds) :initial-element 'x))
                                  ;; (and (consp dep-exprs) (list (list pred-name-aux 'x)))
                                  (and new-constructors all-conx-fns-args)

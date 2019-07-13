@@ -82,10 +82,11 @@ data last modified: [2014-08-06]
        ((acl2::assocs new-constructors new-types kwd-alist) A)
 
        (M (append new-types (table-alist 'type-metadata-table wrld)))
+       (AT (table-alist 'type-alias-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
 
 ; recursive conx pred
-       (new-preds (predicate-names (strip-cars new-types) M))
+       (new-preds (predicate-names (strip-cars new-types) AT M))
        (conx-recursive-alst (find-recursive-records new-preds new-constructors))
        (conx-non-recur-alst (set-difference-eq new-constructors conx-recursive-alst))
        )
@@ -403,8 +404,10 @@ data last modified: [2014-08-06]
 
 (defun record-theory-events-builtin (name field-pred-alist new-types kwd-alist wrld)
   (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
+       (A (table-alist 'type-alias-table wrld))
        (curr-pkg (get1 :current-package kwd-alist))
-       (pred (or (predicate-name name M) (make-predicate-symbol name curr-pkg))) ;TODO -- Inconsistent across rest of u combinators
+       (pred (or (predicate-name name A M)
+                 (make-predicate-symbol name curr-pkg))) ;TODO -- Inconsistent across rest of u combinators
        ((when (not (proper-symbolp pred))) (er hard? 'record-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
 
 

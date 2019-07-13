@@ -120,9 +120,10 @@
        ((cons & cs2%) (assoc-eq v2 v-cs%-alst.))
        (dt1 (acl2::access cs% cs1% :defdata-type))
        (dt2 (acl2::access cs% cs2% :defdata-type))
-       (M  (table-alist 'defdata::type-metadata-table wrld))
-       (P1 (defdata::predicate-name dt1 M))
-       (P2 (defdata::predicate-name dt2 M))
+       (M (table-alist 'defdata::type-metadata-table wrld))
+       (A (table-alist 'defdata::type-alias-table wrld))
+       (P1 (defdata::predicate-name dt1 A M))
+       (P2 (defdata::predicate-name dt2 A M))
        ((mv v other-v cs% other-cs%) (if (defdata::subtype-p P2 P1 wrld)
                                          (mv v1 v2 cs1% cs2%) ;dt2 is better
                                        (mv v2 v1 cs2% cs1%)
@@ -274,7 +275,9 @@
        (hi (acl2::access acl2::tau-interval interval :hi))
        (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel))
-       (P (defdata::predicate-name type (table-alist 'DEFDATA::TYPE-METADATA-TABLE wrld))))
+       (M (table-alist 'defdata::type-metadata-table wrld))
+       (A (table-alist 'defdata::type-alias-table wrld))
+       (P (defdata::predicate-name type A M)))
     (case (acl2::access acl2::tau-interval interval :domain)
       (acl2::integerp (or (and (defdata::subtype-p P 'ACL2::NATP wrld)
 ;use the fact that integers are squeezed (weak inequalities)
@@ -553,7 +556,9 @@ into eq-constraint field and put interval into range constraint field")
                    fields
                    ""
                    (symbol-package-name x)))
-      (fpreds (defdata::predicate-names ftypes (defdata::type-metadata-table wrld)))
+      (M (table-alist 'defdata::type-metadata-table wrld))
+      (A (table-alist 'defdata::type-alias-table wrld))
+      (fpreds (defdata::predicate-names ftypes A M))
       (pred-calls (acl2::listlis fpreds new-names)))
   (mv (cons conx new-names) pred-calls)))
 
@@ -565,12 +570,10 @@ into eq-constraint field and put interval into range constraint field")
 
 (defun match-constraint (x type C vl wrld)
   (b* ((M (defdata::type-metadata-table wrld))
-       ((unless (defdata::predicate-name type M)) nil)
+       (A (table-alist 'defdata::type-alias-table wrld))
+       ((unless (defdata::predicate-name type A M)) nil)
        (constraint-rules (get2 type :constraint-rules M)))
     (match-constraint/loop constraint-rules C x vl wrld)))
-
-
-
 
 (include-book "propagate")
 (include-book "misc/bash" :dir :system)
