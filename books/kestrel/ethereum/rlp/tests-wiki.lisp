@@ -52,7 +52,7 @@
   (rlp-tree-leaf *cat-bytes*))
 
 (defconst *cat-dog-tree*
-  (rlp-tree-nonleaf (list *cat-tree* *dog-tree*)))
+  (rlp-tree-branch (list *cat-tree* *dog-tree*)))
 
 (defconst *cat-dog-encoding*
   (list #xc8
@@ -91,7 +91,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *empty-list-tree*
-  (rlp-tree-nonleaf nil))
+  (rlp-tree-branch nil))
 
 (defconst *empty-list-encoding*
   (list #xc0))
@@ -206,19 +206,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *set-theory-0-tree*
-  (rlp-tree-nonleaf nil))
+  (rlp-tree-branch nil))
 
 (defconst *set-theory-1-tree*
-  (rlp-tree-nonleaf (list *set-theory-0-tree*)))
+  (rlp-tree-branch (list *set-theory-0-tree*)))
 
 (defconst *set-theory-2-tree*
-  (rlp-tree-nonleaf (list *set-theory-0-tree*
-                          *set-theory-1-tree*)))
+  (rlp-tree-branch (list *set-theory-0-tree*
+                         *set-theory-1-tree*)))
 
 (defconst *set-theory-3-tree*
-  (rlp-tree-nonleaf (list *set-theory-0-tree*
-                          *set-theory-1-tree*
-                          *set-theory-2-tree*)))
+  (rlp-tree-branch (list *set-theory-0-tree*
+                         *set-theory-1-tree*
+                         *set-theory-2-tree*)))
 
 (defconst *set-theory-3-encoding*
   (list #xc7 #xc0 #xc1 #xc0 #xc3 #xc0 #xc1 #xc0))
