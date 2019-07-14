@@ -57,7 +57,8 @@
       controlled by the negation of @($a(\\overline{x})$).
       This is a representative recursive structure,
       but the transformation handles
-      multiple non-recursive and recursive branches.
+      multiple non-recursive and recursive branches,
+      and also recursive functions that occur in their termination theorem.
       In this representative recursive structure,
       @($d_i(\\overline{x})$)
       corresponds to @('update-xi<x1,...,xn>')
