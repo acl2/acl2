@@ -1,0 +1,3 @@
+(in-package "ACL2")
+(include-book "apply-constraints")
+(certify-book "apply" 1)

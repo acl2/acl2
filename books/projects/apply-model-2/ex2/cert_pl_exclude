@@ -1,0 +1,3 @@
+This directory has a custom Makefile, and more to the point here, its
+certification during a regression is directed by ../Makefile.  So this
+directory it is excluded from certification based on cert.pl.
