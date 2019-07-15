@@ -135,13 +135,13 @@
      RLP trees cannot contain scalars.
      The other components are byte arrays that are left unchanged.")
    (xdoc::p
-    "We put all nine components under a non-leaf tree,
+    "We put all nine components under a branching tree,
      which we RLP-encode.
      Encoding may fail,
      if the @($\\mathbf{v}$) signature component is unreasonably large,
      or if the initialization or data array is unreasonably long."))
   (b* (((transaction trans) trans)
-       (tree (rlp-tree-nonleaf
+       (tree (rlp-tree-branch
               (list (rlp-tree-leaf (nat=>bebytes* trans.nonce))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-price))
                     (rlp-tree-leaf (nat=>bebytes* trans.gas-limit))
@@ -332,7 +332,7 @@
      and the fact that the tuples must be hashed,
      suggests that the tuples are in fact RLP trees.
      In the new flavor, the @($()$) in the last two components
-     could denote the non-leaf tree with no subtrees,
+     could denote the branching tree with no subtrees,
      but it is more reasonable that it denotes the empty byte array instead.
      This is also consistent with the fact that, in a transaction,
      the last two components are words,
@@ -394,14 +394,14 @@
        (to (maybe-byte-list20-fix to))
        (value (word-fix value))
        (6/9-tuple (if (zp chain-id)
-                      (rlp-tree-nonleaf
+                      (rlp-tree-branch
                        (list (rlp-tree-leaf (nat=>bebytes* nonce))
                              (rlp-tree-leaf (nat=>bebytes* gas-price))
                              (rlp-tree-leaf (nat=>bebytes* gas-limit))
                              (rlp-tree-leaf to)
                              (rlp-tree-leaf (nat=>bebytes* value))
                              (rlp-tree-leaf init/data)))
-                    (rlp-tree-nonleaf
+                    (rlp-tree-branch
                      (list (rlp-tree-leaf (nat=>bebytes* nonce))
                            (rlp-tree-leaf (nat=>bebytes* gas-price))
                            (rlp-tree-leaf (nat=>bebytes* gas-limit))
