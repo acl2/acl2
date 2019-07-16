@@ -217,10 +217,10 @@
                      (+ (floor i1 j)
                         (floor i2 j))))
      :hints (("Goal"
-              :in-theory (e/d (mod) (FLOOR-UPPER-BOUND-LINEAR  <-of-*-and-*-cancel))
+              :in-theory (e/d (mod) (floor-upper-bound-linear <-of-*-and-*-cancel))
               :use ((:instance <-of-*-and-*-cancel (x1 (+ -1 (* I1 (/ J)) (* I2 (/ J)))) (x2 (+ (FLOOR I1 J) (FLOOR I2 J))) (y j))
-                    (:instance FLOOR-upper-bound-linear (i i1) (j j))
-                    (:instance FLOOR-upper-bound-linear (i i2) (j j))
+                    (:instance floor-upper-bound-linear (i i1) (j j))
+                    (:instance floor-upper-bound-linear (i i2) (j j))
                     (:instance floor-unique
                                (i (+ i1 i2))
                                (n (+ (floor i1 j)
@@ -425,19 +425,17 @@
                                   (j y))
            :in-theory (disable floor-of-+-when-mult-arg1))))
 
-(DEFTHM <-*-/-LEFT-with-addends-middle
-  (IMPLIES (AND (< 0 Y)
-                (REAL/RATIONALP X)
+(defthm <-*-/-left-with-addends-middle
+  (implies (and (< 0 y)
+                (real/rationalp x)
                 (rationalp k)
                 (rationalp k2)
-                (REAL/RATIONALP Y)
-                (REAL/RATIONALP A))
-           (EQUAL (< (+ k (* X (/ Y)) k2) A)
-                  (< (+ (* k y) (* k2 y) X) (* A Y))))
-  :hints (("Goal" :use (:instance <-*-/-LEFT (x (+ (* k y) (* k2 y) X)))
-           :in-theory (disable <-*-/-LEFT))))
-
-;FIXMEE can we use test cases on a subgoal to see which hypotheses contradict??
+                (real/rationalp y)
+                (real/rationalp a))
+           (equal (< (+ k (* x (/ y)) k2) a)
+                  (< (+ (* k y) (* k2 y) x) (* a y))))
+  :hints (("Goal" :use (:instance <-*-/-left (x (+ (* k y) (* k2 y) x)))
+           :in-theory (disable <-*-/-left))))
 
 (defthmd floor-equal-split
   (equal (equal (floor x y) (floor z y))
@@ -474,7 +472,6 @@
                   (if (< (mod n y) (- y k))
                       (floor n y)
                     (+ 1 (floor n y)))))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable floor-of-sum))))
 
 ;gen
@@ -531,7 +528,7 @@
   (implies (natp i)
            (equal (floor (+ -1 i) i)
                   0))
-  :hints (("Goal" :in-theory (disable FLOOR-MINUS-ERIC-BETTER)
+  :hints (("Goal" :in-theory (disable floor-minus-eric-better)
            :cases ((equal i 0)))))
 
 (defthm floor-of-minus-and-minus
@@ -684,7 +681,6 @@
                 (< 0 j)
                 (integerp k))
            (< x (+ j (* j k))))
-  :otf-flg t
   :hints (("Goal" :use ((:instance my-floor-lower-bound-alt (i x))
                         (:instance <-*-left-cancel (x k) (y (floor x j)) (z j)))
            :do-not '(generalize eliminate-destructors)
@@ -757,8 +753,7 @@
            (equal (< (floor x n) m)
                   (< x (* m n))))
   :hints (("Goal" :use ((:instance bound-from-floor-bound)
-                        bound-from-floor-bound-back)
-           :in-theory (disable bound-from-floor-bound bound-from-floor-bound-back))))
+                        bound-from-floor-bound-back))))
 
 (defthmd <-of-floor-and-constant
   (implies (and (syntaxp (and (quotep m)
@@ -900,7 +895,7 @@
   :hints (("Goal"
            :use (:instance floor-upper-bound-strict)
            :in-theory (disable floor-upper-bound-strict
-                               <-OF-TIMES-OF-FLOOR-AND-SAME
+                               <-of-times-of-floor-and-same
                                floor-mod-elim))))
 
 
@@ -911,11 +906,11 @@
 ;;            (equal (< (floor x 4) 16)
 ;;                   (< x 64)))
 ;;   :hints (("Goal"
-;;            :in-theory (disable FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3
-;;                                FLOOR-OF-64-WHEN-USB-64
-;;                                FLOOR-OF-64-WHEN-USB-31
+;;            :in-theory (disable floor-bound-lemma2 floor-bound-lemma3
+;;                                floor-of-64-when-usb-64
+;;                                floor-of-64-when-usb-31
 ;;                                floor-when-<
-;;                                my-FLOOR-lower-BOUND-ALT)
+;;                                my-floor-lower-bound-alt)
 ;;            :use ((:instance floor-upper-bound (y 4))
 ;;                  (:instance floor-lower-bound (y 4))))))
 
@@ -928,9 +923,8 @@
            (equal (< (floor x k1) k)
                   (< x (* k k1))))
   :hints (("Goal"
-           :use ((:instance BOUND-FROM-FLOOR-BOUND (n k1) (m k))
-                 (:instance BOUND-FROM-FLOOR-BOUND-back (n k1) (m k)))
-           :in-theory (enable))))
+           :use ((:instance bound-from-floor-bound (n k1) (m k))
+                 (:instance bound-from-floor-bound-back (n k1) (m k))))))
 
 ;slow?
 (defthm *-of-floor-of-same-when-multiple
@@ -1053,10 +1047,10 @@
   :hints (("Goal"
            :use (<=-of-denominator-of-*-of-/
                  (:instance <=-of-/-linear
-                            (x0 (DENOMINATOR (* I (/ J))))
-                            (x (* I (/ J))))
+                            (x0 (denominator (* i (/ j))))
+                            (x (* i (/ j))))
                  (:instance nonnegative-integer-quotient-lower-bound-linear2
-                            (i (NUMERATOR (* I (/ J))))
-                            (j (DENOMINATOR (* I (/ J))))))
+                            (i (numerator (* i (/ j))))
+                            (j (denominator (* i (/ j))))))
            :in-theory (e/d (floor)
                            (<=-of-denominator-of-*-of-/)))))

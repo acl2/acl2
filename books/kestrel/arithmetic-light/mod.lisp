@@ -333,7 +333,7 @@
                 (< 0 y))
            (equal (mod (+ (mod x1 y) x2) y)
                   (mod (+ x1 x2) y)))
-  :hints (("Goal" :in-theory (e/d (mod) ()))))
+  :hints (("Goal" :in-theory (enable mod))))
 
 (defthm mod-of-+-of-mod-arg2
   (implies (and (rationalp x1)
@@ -342,7 +342,7 @@
                 (< 0 y))
            (equal (mod (+ x1 (mod x2 y)) y)
                   (mod (+ x1 x2) y)))
-  :hints (("Goal" :in-theory (e/d (mod) ()))))
+  :hints (("Goal" :in-theory (enable mod))))
 
 (defthm equal-of-mod-of-+-and-mod-of-+-cancel
   (implies (and (rationalp x)
