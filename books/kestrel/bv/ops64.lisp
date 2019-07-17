@@ -17,7 +17,7 @@
 (defmacro and64 (x y)
   `(bvand 64 ,x ,y))
 
-(defmacro add64 (x y)
+(defmacro plus64 (x y)
   `(bvplus 64 ,x ,y))
 
 (defmacro or64 (x y)
