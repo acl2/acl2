@@ -18,29 +18,23 @@
            (type integer y))
   (bvxor 1 x y))
 
-(defthm integerp-of-bitxor
-  (integerp (bitxor x y)))
-
-(defthm natp-of-bitxor
-  (natp (bitxor x y))
-  :hints (("Goal" :in-theory (enable bitxor))))
+(in-theory (disable (:type-prescription bitxor))) ;; bitxor-type is better
 
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
          (bitxor x (bitxor y z)))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
-(defthmd bitxor-commutative-core
+(defthmd bitxor-commutative
   (equal (bitxor x y)
          (bitxor y x))
-  :hints (("Goal" :in-theory (e/d (bitxor bvxor-commutative-core) ()))))
+  :hints (("Goal" :in-theory (enable bitxor bvxor-commutative))))
 
-(defthmd bitxor-commutative-2-core
+(defthmd bitxor-commutative-2
   (equal (bitxor x (bitxor y z))
          (bitxor y (bitxor x z)))
-  :hints (("Goal"
-           :use (:instance bvxor-commutative-2-core (y x) (x y) (z z))
-           :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :use (:instance bvxor-commutative-2 (y x) (x y) (z z))
+           :in-theory (enable bitxor))))
 
 ;more rules like this?
 ;more general rule to commute (if both are nodenums, pull the smaller one in?)
@@ -48,34 +42,34 @@
   (implies (syntaxp (quotep y))
            (equal (bitxor x y)
                   (bitxor y x)))
-  :hints (("Goal" :use (:instance bitxor-commutative-core)
-           :in-theory (disable bitxor-commutative-core))))
+  :hints (("Goal" :use (:instance bitxor-commutative)
+           :in-theory (disable bitxor-commutative))))
 
 (defthmd bitxor-combine-constants
-  (implies (and (syntaxp (quotep x))
-                (syntaxp (quotep y)))
+  (implies (syntaxp (and (quotep x)
+                         (quotep y)))
            (equal (bitxor x (bitxor y z))
                   (bitxor (bitxor x y) z))))
 
 (defthm bitxor-same
   (equal (bitxor x x)
          0)
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthm bitxor-same-2
   (equal (bitxor x (bitxor x y))
          (getbit 0 y))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthm bitxor-of-0-arg1
   (equal (bitxor 0 x)
          (getbit 0 x))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthm bitxor-of-0-arg2
   (equal (bitxor x 0)
          (getbit 0 x))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 ;use trim?
 (defthm bitxor-when-constant-is-not-usb-arg2
@@ -83,7 +77,7 @@
                 (not (unsigned-byte-p 1 k)))
            (equal (bitxor x k)
                   (bitxor x (getbit 0 k))))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 ;use trim?
 (defthm bitxor-when-constant-is-not-usb-arg1
@@ -91,17 +85,24 @@
                 (not (unsigned-byte-p 1 k)))
            (equal (bitxor k x)
                   (bitxor (getbit 0 k) x)))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-bitxor
   (unsigned-byte-p 1 (bitxor x y))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
+
+(defthm bitxor-type
+  (or (equal 0 (bitxor x y))
+      (equal 1 (bitxor x y)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-bitxor)
+           :in-theory (disable unsigned-byte-p-1-of-bitxor))))
 
 (defthm unsigned-byte-p-of-bitxor
   (implies (posp size)
            (unsigned-byte-p size (bitxor x y)))
-  :hints (("Goal" :in-theory (e/d (bitxor) ()))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthm bitxor-of-getbit-arg2
   (equal (bitxor y (getbit 0 x))
@@ -111,19 +112,19 @@
 (defthm bitxor-of-getbit-arg1
   (equal (bitxor (getbit 0 x) y)
          (bitxor x y))
-  :hints (("Goal" :in-theory (enable bitxor-commutative-core))))
+  :hints (("Goal" :in-theory (enable bitxor-commutative))))
 
 (defthm bitxor-when-x-is-not-an-integer
   (implies (not (integerp x))
            (equal (bitxor x y)
                   (getbit 0 y)))
-  :hints (("Goal" :in-theory (e/d (bitxor bvxor-when-x-is-not-an-integer) ()))))
+  :hints (("Goal" :in-theory (enable bitxor bvxor-when-x-is-not-an-integer))))
 
 (defthm bitxor-when-y-is-not-an-integer
   (implies (not (integerp y))
            (equal (bitxor x y)
                   (getbit 0 x)))
-  :hints (("Goal" :in-theory (e/d (bitxor bvxor-when-y-is-not-an-integer) ()))))
+  :hints (("Goal" :in-theory (enable bitxor bvxor-when-y-is-not-an-integer))))
 
 (defthmd bitxor-split
   (equal (bitxor x y)
@@ -189,7 +190,7 @@
            :use (:instance bitxor-both-sides (x (bitxor k1 k2))
                            (y (getbit 0 x))
                            (z k2))
-           :in-theory (enable bitxor-commutative-core))))
+           :in-theory (enable bitxor-commutative))))
 
 ;more like this!
 (defthm equal-of-bitxor-and-bitxor-same
@@ -206,12 +207,3 @@
   (equal (bitxor x (ifix y))
          (bitxor x y))
   :hints (("Goal" :in-theory (enable getbit-when-val-is-not-an-integer))))
-
-(defthm bitxor-type
-  (or (equal 0 (bitxor x y))
-      (equal 1 (bitxor x y)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-bitxor)
-           :in-theory (disable unsigned-byte-p-1-of-bitxor))))
-
-(in-theory (disable (:type-prescription bitxor))) ;our rule is better

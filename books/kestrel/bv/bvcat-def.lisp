@@ -24,10 +24,10 @@
            (type (integer 0 *) highsize lowsize))
   (logapp lowsize lowval (bvchop highsize highval)))
 
-(defthm natp-of-bvcat
+(defthm natp-of-bvcat-type
   (natp (bvcat highsize highval lowsize lowval))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (bvcat natp) ()))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable bvcat natp))))
 
-;; natp-of-bvcat is at least as good
+;; natp-of-bvcat-type is at least as good
 (in-theory (disable (:type-prescription bvcat)))
