@@ -37,4 +37,5 @@
 (include-book "leftrotate")
 (include-book "rightrotate")
 (include-book "ops32")
+(include-book "ops64")
 (include-book "set-bits")
