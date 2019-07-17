@@ -73,6 +73,11 @@
 (table allp-aliases nil)
 (table allp-aliases 'allp 'all :put) ;all will be registered as a defdata type below.
 
+(defun allp-aliases-table (wrld)
+  "api to get the alist representing alias table allp-aliases"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::allp-aliases-table wrld))
+
 ; Matt K. addition: Avoid ACL2(p) failure due to override-hints.
 (set-override-hints nil) ; a local event enabling waterfall-parallelism off
 (local (include-book "std/system/non-parallel-book" :dir :system))

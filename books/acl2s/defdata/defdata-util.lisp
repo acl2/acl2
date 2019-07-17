@@ -246,6 +246,22 @@
 (table pred-alias-table nil nil :clear)
 (table type-alias-table nil nil :clear)
 
+(defun type-metadata-table (wrld)
+  "api to get the alist representing defdata type metadata table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::type-metadata-table wrld))
+
+(defun type-alias-table (wrld)
+  "api to get the alist representing defdata type-alias table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::type-alias-table wrld))
+
+(defun pred-alias-table (wrld)
+  "api to get the alist representing defdata pred-alias table"
+  (declare (xargs :guard (plist-worldp wrld)))
+  (table-alist 'defdata::pred-alias-table wrld))
+
+
 ; Doesnt work
 ;; (defthm table-alist-are-alists
 ;;   (implies (and (plist-worldp w)
@@ -498,7 +514,7 @@
 
 (defun type-name (pred wrld)
   (declare (xargs :verify-guards nil))
-  (b* ((M (table-alist 'type-metadata-table wrld))
+  (b* ((M (type-metadata-table wrld))
        (ptbl (table-alist 'pred-alias-table wrld))
        (ptype (assoc-equal :type (acl2s::get-alist pred ptbl))))
     (if ptype
@@ -589,21 +605,6 @@
                               (natp k))))
   (reverse (symbol-fns::item-to-numbered-symbol-list-rec x k)))
 
-(defun type-metadata-table (wrld)
-  "api to get the alist representing defdata type metadata table"
-  (declare (xargs :guard (plist-worldp wrld)))
-  (table-alist 'defdata::type-metadata-table wrld))
-
-(defun type-alias-table (wrld)
-  "api to get the alist representing defdata type-alias table"
-  (declare (xargs :guard (plist-worldp wrld)))
-  (table-alist 'defdata::type-alias-table wrld))
-
-(defun pred-alias-table (wrld)
-  "api to get the alist representing defdata pred-alias table"
-  (declare (xargs :guard (plist-worldp wrld)))
-  (table-alist 'defdata::pred-alias-table wrld))
-
 (defun sym-aalistp (x)
   (declare (xargs :guard t))
   (if (consp x)
@@ -637,8 +638,8 @@ This is true when we have defdata available.
 (defmacro defdata-alias (alias type &optional pred)
   `(make-event
     (b* ((pkg (current-package state))
-         (M (table-alist 'type-metadata-table (w state)))
-         (A (table-alist 'type-alias-table (w state)))
+         (M (type-metadata-table (w state)))
+         (A (type-alias-table (w state)))
          (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
          (type (base-alias-type ',type A))
          (predicate (acl2s::get-alist :predicate (acl2s::get-alist type M)))
@@ -667,8 +668,8 @@ This is true when we have defdata available.
   (if (and A M)
       `(get2 (base-alias-type ,tname ,A)
              :predicate ,M)
-    `(get2 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
-           :predicate (table-alist 'type-metadata-table wrld))))
+    `(get2 (base-alias-type ,tname (type-alias-table wrld))
+           :predicate (type-metadata-table wrld))))
 
 (defmacro enumerator-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
@@ -677,8 +678,8 @@ This is true when we have defdata available.
              (get1 (base-alias-type ,tname ,A)
                    ,M))
     `(get1 :enumerator
-           (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
-                 (table-alist 'type-metadata-table wrld)))))
+           (get1 (base-alias-type ,tname (type-alias-table wrld))
+                 (type-metadata-table wrld)))))
 
 (defmacro enum/acc-name (tname &optional A M)
 ; if Metadata table is not provided, wrld should be in scope.
@@ -687,8 +688,8 @@ This is true when we have defdata available.
              (get1 (base-alias-type ,tname ,A)
                    ,M))
     `(get1 :enum/acc
-           (get1 (base-alias-type ,tname (table-alist 'type-alias-table wrld))
-                 (table-alist 'type-metadata-table wrld)))))
+           (get1 (base-alias-type ,tname (type-alias-table wrld))
+                 (type-metadata-table wrld)))))
 
 (defloop predicate-names-fn (tnames A M)
   (declare (xargs :guard (and (symbol-listp tnames)
@@ -701,8 +702,8 @@ This is true when we have defdata available.
       `(predicate-names-fn ,tnames ,A ,M)
     `(predicate-names-fn
       ,tnames
-      (table-alist 'type-alias-table wrld)
-      (table-alist 'type-metadata-table wrld))))
+      (type-alias-table wrld)
+      (type-metadata-table wrld))))
 
 (defloop possible-constant-values-p (xs)
   (for ((x in xs)) (always (possible-constant-value-p x))))
@@ -736,9 +737,9 @@ This is true when we have defdata available.
 
 (defun recursive-type-p (type-name wrld)
   (declare (xargs :verify-guards nil))
-  (b* ((table (table-alist 'type-metadata-table wrld))
+  (b* ((table (type-metadata-table wrld))
        (type-name
-        (base-alias-type type-name (table-alist 'type-alias-table wrld)))
+        (base-alias-type type-name (type-alias-table wrld)))
        (norm-def (get2 type-name :normalized-def table))
        (clique-names (get2 type-name :clique table)))
     (is-recursive-type-exp norm-def clique-names wrld)))
