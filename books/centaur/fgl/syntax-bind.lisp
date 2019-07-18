@@ -61,6 +61,12 @@ state.</p>")
   :enabled t
   nil)
 
+(define assume (test val)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  nil)
+
 (defmacro syntax-interp (form)
   `(syntax-interp-fn ,form ',form))
 
