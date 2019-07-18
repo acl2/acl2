@@ -269,8 +269,11 @@ functions over natural numbers.
                 (o< (nat-id x) (nat-id y))))
   :rule-classes :well-founded-relation)
 
-(defmacro defthmskip (name &rest args)
-  `(skip-proofs (defthm ,name ,@args)))
+(defmacro defthm-test-no-proof (name &rest args)
+  `(acl2::with-outer-locals
+    (local (acl2s-defaults :set testing-enabled t))
+    (test? ,@args)
+    (skip-proofs (defthm ,name ,@args))))
 
 (defmacro defthmskipall (name &rest args)
   `(skip-proofs (defthm-no-test ,name ,@args)))
